@@ -333,7 +333,6 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 > should correctly update t
       "methodName": "indy",
       "schemaId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H/anoncreds/v0/SCHEMA/AnotherSchema/5.12",
       "tag": "TAG2222",
-      "unqualifiedCredentialDefinitionId": "A4CYPASJYRZRt98YWrac3H:3:CL:728266:TAG2222",
     },
     "type": "AnonCredsCredentialDefinitionRecord",
     "value": {
@@ -432,7 +431,6 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 > should correctly update t
       "methodName": "indy",
       "schemaId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H/anoncreds/v0/SCHEMA/Test Schema/5.0",
       "tag": "TAG",
-      "unqualifiedCredentialDefinitionId": "A4CYPASJYRZRt98YWrac3H:3:CL:728265:TAG",
     },
     "type": "AnonCredsCredentialDefinitionRecord",
     "value": {
@@ -673,7 +671,6 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 > should correctly update t
       "schemaIssuerDid": undefined,
       "schemaName": "AnotherSchema",
       "schemaVersion": "5.12",
-      "unqualifiedSchemaId": "A4CYPASJYRZRt98YWrac3H:2:AnotherSchema:5.12",
     },
     "type": "AnonCredsSchemaRecord",
     "value": {
@@ -772,7 +769,6 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 > should correctly update t
       "schemaIssuerDid": undefined,
       "schemaName": "Test Schema",
       "schemaVersion": "5.0",
-      "unqualifiedSchemaId": "A4CYPASJYRZRt98YWrac3H:2:Test Schema:5.0",
     },
     "type": "AnonCredsSchemaRecord",
     "value": {

@@ -30,7 +30,6 @@ export class DrizzleAnonCredsCredentialDefinitionRecordAdapter extends BaseDrizz
       issuerId: issuerIdTag,
       tag: tagTag,
       methodName,
-      unqualifiedCredentialDefinitionId,
       ...customTags
     } = record.getTags()
 
@@ -39,7 +38,6 @@ export class DrizzleAnonCredsCredentialDefinitionRecordAdapter extends BaseDrizz
     return {
       credentialDefinitionId,
       methodName,
-      unqualifiedCredentialDefinitionId,
 
       schemaId,
       issuerId,
@@ -51,7 +49,7 @@ export class DrizzleAnonCredsCredentialDefinitionRecordAdapter extends BaseDrizz
   }
 
   public toRecord(values: DrizzleAnonCredsCredentialDefinitionAdapterValues): AnonCredsCredentialDefinitionRecord {
-    const { customTags, unqualifiedCredentialDefinitionId, issuerId, schemaId, tag, ...remainingValues } = values
+    const { customTags, issuerId, schemaId, tag, ...remainingValues } = values
 
     const record = JsonTransformer.fromJSON(
       {
@@ -60,10 +58,7 @@ export class DrizzleAnonCredsCredentialDefinitionRecordAdapter extends BaseDrizz
       },
       AnonCredsCredentialDefinitionRecord
     )
-    record.setTags({
-      ...customTags,
-      unqualifiedCredentialDefinitionId: unqualifiedCredentialDefinitionId ?? undefined,
-    } as TagsBase)
+    record.setTags({ ...customTags } as TagsBase)
 
     return record
   }

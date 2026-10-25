@@ -151,6 +151,13 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
     const queueTransportRepository =
       agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
 
+    const liveSession = agentContext.dependencyManager
+      .resolve(DidCommMessagePickupSessionService)
+      .getLiveSessionByConnectionId(agentContext, {
+        connectionId: connection.id,
+        role: DidCommMessagePickupSessionRole.MessageHolder,
+      })
+
     const statusMessage = new DidCommStatusV2Message({
       threadId: messageContext.message.threadId,
       recipientKey,
@@ -158,6 +165,7 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
         connectionId: connection.id,
         recipientDid: recipientKey ? verkeyToDidKey(recipientKey) : undefined,
       }),
+      liveDelivery: liveSession !== undefined && liveSession.transportSessionId === messageContext.sessionId,
     })
 
     return new DidCommOutboundMessageContext(statusMessage, {
@@ -273,6 +281,8 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
       limit,
       recipientKey,
     })
+    // pickupMessages waits for the status that ends the pickup on the thread it started
+    deliveryRequestMessage.setThread({ threadId: statusMessage.threadId })
 
     return deliveryRequestMessage
   }
@@ -302,7 +312,7 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
 
     const statusMessage = new DidCommStatusV2Message({
       threadId: message.threadId,
-      liveDelivery: message.liveDelivery,
+      liveDelivery: message.liveDelivery && Boolean(sessionId),
       messageCount: await queueTransportRepository.getAvailableMessageCount(agentContext, {
         connectionId: connection.id,
       }),
@@ -337,8 +347,11 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
       })
     }
 
-    return new DidCommMessagesReceivedV2Message({
+    const messagesReceivedMessage = new DidCommMessagesReceivedV2Message({
       messageIdList: ids,
     })
+    messagesReceivedMessage.setThread({ threadId: messageContext.message.threadId })
+
+    return messagesReceivedMessage
   }
 }

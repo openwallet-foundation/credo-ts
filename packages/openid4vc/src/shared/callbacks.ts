@@ -29,7 +29,20 @@ import { clientAuthenticationDynamic, decodeJwtHeader } from '@openid4vc/oauth2'
 import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 import type { OpenId4VcVerificationTypes } from './OpenId4VcTrustedIssuersVerificationTypes'
 
-import { getPublicJwkFromDid, supportedJarmContentEncryptionAlgorithms } from './utils'
+import {
+  getPublicJwkFromDid,
+  supportedResponseEncryptionContentAlgorithms,
+  supportedResponseEncryptionKeyAgreementAlgorithms,
+} from './utils'
+
+/**
+ * Normalizes a jwt `typ` header value so it can be compared to the type without the `application/` prefix.
+ * Media types are case-insensitive, and RFC 7515 allows omitting the `application/` prefix in `typ`.
+ */
+function normalizeJwtTyp(typ?: string) {
+  const lowerCaseTyp = typ?.toLowerCase()
+  return lowerCaseTyp?.startsWith('application/') ? lowerCaseTyp.slice('application/'.length) : lowerCaseTyp
+}
 
 /**
  * Maps the `typ` header of a jwt verified by oid4vc-ts to the trust verification context.
@@ -39,6 +52,7 @@ import { getPublicJwkFromDid, supportedJarmContentEncryptionAlgorithms } from '.
  * for which only the signature is verified.
  */
 function getOid4vcJwtVerificationContext(options: {
+  /** normalized with {@link normalizeJwtTyp} */
   typ?: string
   compact: string
   payload: Record<string, unknown>
@@ -125,9 +139,27 @@ export function getOid4vcJwtVerifyCallback(
 
   return async (signer, { compact, header, payload }) => {
     let trustedCertificates = options?.trustedCertificates
+    const typ = normalizeJwtTyp(header.typ)
+
+    // Wallet and key attestations signed with a bare `jwk` can't be checked against the trusted issuers
+    // (there is no `jwk` variant of `VerificationSigner`/`TrustedIssuer`), so any client could sign its own.
+    // This is checked regardless of the issuance session, so it applies to every endpoint.
+    if (signer.method === 'jwk') {
+      if (typ === 'oauth-client-attestation+jwt') {
+        throw new CredoError(
+          `Wallet attestations signed with a 'jwk' header are not supported. Use 'x5c' or 'did' to sign the wallet attestation.`
+        )
+      }
+
+      if (typ === 'keyattestation+jwt' || typ === 'key-attestation+jwt') {
+        throw new CredoError(
+          `Key attestations signed with a 'jwk' header are not supported. Use 'x5c' or 'did' to sign the key attestation.`
+        )
+      }
+    }
 
     const verificationContext = getOid4vcJwtVerificationContext({
-      typ: header.typ,
+      typ,
       compact,
       payload,
       issuanceSession: options?.issuanceSession,
@@ -162,8 +194,8 @@ export function getOid4vcJwtVerifyCallback(
         })
       }
 
-      // NOTE: jwts signed with a bare `jwk` are not checked against a trust list, as there is no
-      // `jwk` variant of `VerificationSigner`/`TrustedIssuer`.
+      // NOTE: other jwts signed with a bare `jwk` are not checked against a trust list, as there is no
+      // `jwk` variant of `VerificationSigner`/`TrustedIssuer`. Wallet and key attestations are rejected above.
     }
 
     const alg = signer.alg as Kms.KnownJwaSignatureAlgorithm
@@ -229,20 +261,26 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
       throw new CredoError('Expected kid to be defined on the JWK')
     }
 
-    if (jweEncryptor.alg !== 'ECDH-ES') {
-      throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response encryption")
-    }
-
     if (
-      !supportedJarmContentEncryptionAlgorithms.includes(
-        jweEncryptor.enc as (typeof supportedJarmContentEncryptionAlgorithms)[number]
+      !supportedResponseEncryptionKeyAgreementAlgorithms.includes(
+        jweEncryptor.alg as (typeof supportedResponseEncryptionKeyAgreementAlgorithms)[number]
       )
     ) {
       throw new CredoError(
-        `Only ${supportedJarmContentEncryptionAlgorithms.map((alg) => `'${alg}'`).join(', ')} are supported as 'enc' value for JARM response encryption`
+        `Only ${supportedResponseEncryptionKeyAgreementAlgorithms.map((alg) => `'${alg}'`).join(', ')} are supported as 'alg' value for response encryption`
       )
     }
-    const enc = jweEncryptor.enc as (typeof supportedJarmContentEncryptionAlgorithms)[number]
+
+    if (
+      !supportedResponseEncryptionContentAlgorithms.includes(
+        jweEncryptor.enc as (typeof supportedResponseEncryptionContentAlgorithms)[number]
+      )
+    ) {
+      throw new CredoError(
+        `Only ${supportedResponseEncryptionContentAlgorithms.map((alg) => `'${alg}'`).join(', ')} are supported as 'enc' value for response encryption`
+      )
+    }
+    const enc = jweEncryptor.enc as (typeof supportedResponseEncryptionContentAlgorithms)[number]
 
     const jwkJson = jwk.toJson()
     if (jwkJson.kty !== 'EC' && jwkJson.kty !== 'OKP') {
@@ -254,55 +292,42 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
     }
 
     // TODO: create a JWE service that handles this
-    const ephmeralKey = await kms.createKey({
-      type: jwkJson,
+    let encodedHeader: string | undefined
+    const { encrypted, iv, tag } = await kms.encrypt({
+      key: {
+        keyAgreement: {
+          algorithm: 'ECDH-ES',
+          externalPublicJwk: jwkJson,
+          apu: jweEncryptor.apu ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apu) : undefined,
+          apv: jweEncryptor.apv ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apv) : undefined,
+        },
+      },
+      data: TypedArrayEncoder.fromUtf8String(compact),
+      encryption: {
+        algorithm: enc,
+        aad: ({ ephemeralPublicJwk }) => {
+          encodedHeader = JsonEncoder.toBase64Url({
+            kid: jweEncryptor.publicJwk.kid,
+            apu: jweEncryptor.apu,
+            apv: jweEncryptor.apv,
+            enc,
+            alg: 'ECDH-ES',
+            epk: ephemeralPublicJwk,
+          })
+          return TypedArrayEncoder.fromUtf8String(encodedHeader)
+        },
+      },
     })
 
-    try {
-      const header = {
-        kid: jweEncryptor.publicJwk.kid,
-        apu: jweEncryptor.apu,
-        apv: jweEncryptor.apv,
-        enc,
-        alg: 'ECDH-ES',
-        epk: ephmeralKey.publicJwk,
-      }
-      const encodedHeader = JsonEncoder.toBase64Url(header)
-
-      const encrypted = await kms.encrypt({
-        key: {
-          keyAgreement: {
-            // FIXME: We can make the keyId optional for ECDH-ES
-            // That way we don't have to store the key
-            keyId: ephmeralKey.keyId,
-            algorithm: 'ECDH-ES',
-            apu: jweEncryptor.apu ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apu) : undefined,
-            apv: jweEncryptor.apv ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apv) : undefined,
-            externalPublicJwk: jwkJson,
-          },
-        },
-        data: TypedArrayEncoder.fromUtf8String(compact),
-        encryption: {
-          algorithm: enc,
-          aad: TypedArrayEncoder.fromUtf8String(encodedHeader),
-        },
-      })
-
-      if (!encrypted.iv || !encrypted.tag) {
-        throw new CredoError("Expected 'iv' and 'tag' to be defined")
-      }
-
-      const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64Url(encrypted.iv)}.${TypedArrayEncoder.toBase64Url(
-        encrypted.encrypted
-      )}.${TypedArrayEncoder.toBase64Url(encrypted.tag)}`
-
-      return { encryptionJwk: jweEncryptor.publicJwk, jwe: compactJwe }
-    } finally {
-      // Delete the key
-      await kms.deleteKey({
-        keyId: ephmeralKey.keyId,
-      })
+    if (!encodedHeader || !iv || !tag) {
+      throw new CredoError('Expected protected header, iv and tag')
     }
+
+    const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64Url(iv)}.${TypedArrayEncoder.toBase64Url(
+      encrypted
+    )}.${TypedArrayEncoder.toBase64Url(tag)}`
+
+    return { encryptionJwk: jweEncryptor.publicJwk, jwe: compactJwe }
   }
 }
 
@@ -361,7 +386,7 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
         key: {
           keyAgreement: {
             algorithm: header.alg,
-            externalPublicJwk: epk.toJson() as Kms.KmsJwkPublicEcdh,
+            ephemeralPublicJwk: epk.toJson() as Kms.KmsJwkPublicEcdh,
             keyId: kid,
             apu: typeof header.apu === 'string' ? TypedArrayEncoder.fromBase64Url(header.apu) : undefined,
             apv: typeof header.apv === 'string' ? TypedArrayEncoder.fromBase64Url(header.apv) : undefined,

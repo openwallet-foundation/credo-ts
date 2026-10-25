@@ -54,7 +54,6 @@ import {
 } from '../utils/credential'
 import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
-import { getStoreCredentialOptions } from '../utils/w3cAnonCredsUtils'
 import type {
   AnonCredsDidCommCredentialFormat,
   AnonCredsDidCommCredentialProposalFormat,
@@ -404,7 +403,7 @@ export class AnonCredsDidCommCredentialFormatService
       agentContext,
       anonCredsCredential.cred_def_id
     )
-    const { schema, indyNamespace } = await fetchSchema(agentContext, anonCredsCredential.schema_id)
+    const { schema } = await fetchSchema(agentContext, anonCredsCredential.schema_id)
 
     // Resolve revocation registry if credential is revocable
     const revocationRegistryResult = anonCredsCredential.rev_reg_id
@@ -415,25 +414,20 @@ export class AnonCredsDidCommCredentialFormatService
     const recordCredentialValues = convertAttributesToCredentialValues(credentialExchangeRecord.credentialAttributes)
     assertCredentialValuesMatch(anonCredsCredential.values, recordCredentialValues)
 
-    const storeCredentialOptions = getStoreCredentialOptions(
-      {
-        credentialId: utils.uuid(),
-        credentialRequestMetadata,
-        credential: anonCredsCredential,
-        credentialDefinitionId,
-        credentialDefinition,
-        schema,
-        revocationRegistry: revocationRegistryResult?.revocationRegistryDefinition
-          ? {
-              definition: revocationRegistryResult.revocationRegistryDefinition,
-              id: revocationRegistryResult.revocationRegistryDefinitionId,
-            }
-          : undefined,
-      },
-      indyNamespace
-    )
-
-    const credentialId = await anonCredsHolderService.storeCredential(agentContext, storeCredentialOptions)
+    const credentialId = await anonCredsHolderService.storeCredential(agentContext, {
+      credentialId: utils.uuid(),
+      credentialRequestMetadata,
+      credential: anonCredsCredential,
+      credentialDefinitionId,
+      credentialDefinition,
+      schema,
+      revocationRegistry: revocationRegistryResult?.revocationRegistryDefinition
+        ? {
+            definition: revocationRegistryResult.revocationRegistryDefinition,
+            id: revocationRegistryResult.revocationRegistryDefinitionId,
+          }
+        : undefined,
+    })
 
     // If the credential is revocable, store the revocation identifiers in the credential record
     if (anonCredsCredential.rev_reg_id) {
