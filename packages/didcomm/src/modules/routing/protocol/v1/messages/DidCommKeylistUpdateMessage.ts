@@ -1,8 +1,8 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
 
-import { DidCommMessage } from '../../../DidCommMessage'
-import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
+import { DidCommMessage } from '../../../../../DidCommMessage'
+import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export enum DidCommKeylistUpdateAction {
   add = 'add',
