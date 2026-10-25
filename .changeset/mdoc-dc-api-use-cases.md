@@ -2,7 +2,7 @@
 '@credo-ts/core': minor
 ---
 
-Support the request information of ISO/IEC TS 23220-4 (taken up by the second edition of ISO/IEC 18013-5) in the ISO mdoc DC API, by updating `@owf/mdoc` to `0.9.0-alpha`, `@owf/*` to `0.5.1-alpha` and `@sd-jwt/*` to `0.23.1-alpha`.
+Support the request information of ISO/IEC TS 23220-4 (taken up by the second edition of ISO/IEC 18013-5) in the ISO mdoc DC API, by updating `@owf/mdoc` to `^0.9.0`, `@owf/*` to `^0.5.0` and `@sd-jwt/*` to `^0.23.1`.
 
 Verifier:
 
