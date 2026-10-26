@@ -155,6 +155,16 @@ describe('DidCommMessagePickupApi', () => {
     ).rejects.toThrow(CredoError)
   })
 
+  it('does not take messages for a live session that ended while loading the connection', async () => {
+    mockFunction(messagePickupSessionService.getLiveSession)
+      .mockReturnValueOnce({ connectionId: mockConnection.id, protocolVersion: 'v2' } as DidCommMessagePickupSession)
+      .mockReturnValueOnce(undefined)
+    mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
+
+    await expect(api.deliverMessagesFromQueue({ pickupSessionId: 'pickup-1' })).rejects.toThrow(CredoError)
+    expect(queueTransportRepository.takeFromQueue).not.toHaveBeenCalled()
+  })
+
   it('sends v4 delivery message when session uses v4 protocol', async () => {
     const mockConnectionV3 = getMockConnection({
       state: DidCommDidExchangeState.Completed,
