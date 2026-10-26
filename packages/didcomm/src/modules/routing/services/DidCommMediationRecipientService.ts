@@ -25,15 +25,15 @@ import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidC
 import { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
 import type { DidCommKeylistUpdatedEvent, DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
-import type { DidCommMediationDenyMessage } from '../messages'
+import { DidCommMediationRole, DidCommMediationState } from '../models'
+import type { DidCommMediationDenyMessage } from '../protocol/v1/messages'
 import {
   DidCommKeylistUpdateAction,
   DidCommKeylistUpdateResponseMessage,
   DidCommMediationGrantMessage,
   DidCommMediationRequestMessage,
-} from '../messages'
-import { DidCommKeylistUpdate, DidCommKeylistUpdateMessage } from '../messages/DidCommKeylistUpdateMessage'
-import { DidCommMediationRole, DidCommMediationState } from '../models'
+} from '../protocol/v1/messages'
+import { DidCommKeylistUpdate, DidCommKeylistUpdateMessage } from '../protocol/v1/messages/DidCommKeylistUpdateMessage'
 import { DidCommMediationRecord } from '../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../repository/DidCommMediationRepository'
 import type { GetRoutingOptions, RemoveRoutingOptions } from './DidCommRoutingService'
