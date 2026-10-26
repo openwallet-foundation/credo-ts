@@ -2614,12 +2614,12 @@ packages:
       typescript:
         optional: true
 
-  '@expo/router-server@57.0.12':
-    resolution: {integrity: sha512-afP8Lu+ozEP/6qvLuxeBKoBVSeU+e0zwk+iYBUM6fBxGRniJQyG1HqpHQFr0ZEocuVxRjmq9eoCnspFuuzDQoA==}
+  '@expo/router-server@57.0.14':
+    resolution: {integrity: sha512-8776d+wDmkGCg0KqefAb/zwu5s2ieRg5UK3CbltrplhdzIXf+BDBlttu9p9R+fBOxg+Rrf0HKedInjn83yEeFg==}
     peerDependencies:
-      '@expo/metro-runtime': ^57.0.16
+      '@expo/metro-runtime': ^57.0.17
       expo: '*'
-      expo-constants: ^57.0.21
+      expo-constants: ^57.0.22
       expo-font: ^57.0.4
       expo-router: '*'
       expo-server: ^57.0.3
@@ -9140,7 +9140,7 @@ snapshots:
       '@expo/plist': 0.8.1
       '@expo/prebuild-config': 57.0.16(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
       '@expo/require-utils': 57.0.6(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
-      '@expo/router-server': 57.0.12(expo-constants@57.0.21(expo@57.0.26)(react-native@0.84.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1))(expo-font@57.0.4(expo@57.0.26)(react-native@0.84.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1))(expo-server@57.0.3)(expo@57.0.26)(react@19.3.1)(supports-color@8.1.1)
+      '@expo/router-server': 57.0.14(expo-constants@57.0.21(expo@57.0.26)(react-native@0.84.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1))(expo-font@57.0.4(expo@57.0.26)(react-native@0.84.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1))(expo-server@57.0.3)(expo@57.0.26)(react@19.3.1)(supports-color@8.1.1)
       '@expo/schema-utils': 57.0.2
       '@expo/spawn-async': 1.8.0
       '@expo/ws-tunnel': 2.0.1(ws@8.22.0)
@@ -9460,7 +9460,7 @@ snapshots:
       - supports-color
     optional: true
 
-  '@expo/router-server@57.0.12(expo-constants@57.0.21(expo@57.0.26)(react-native@0.84.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1))(expo-font@57.0.4(expo@57.0.26)(react-native@0.84.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1))(expo-server@57.0.3)(expo@57.0.26)(react@19.3.1)(supports-color@8.1.1)':
+  '@expo/router-server@57.0.14(expo-constants@57.0.21(expo@57.0.26)(react-native@0.84.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1))(expo-font@57.0.4(expo@57.0.26)(react-native@0.84.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1))(expo-server@57.0.3)(expo@57.0.26)(react@19.3.1)(supports-color@8.1.1)':
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       expo: 57.0.26(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@57.0.1)(@typescript/typescript6@6.0.2)(react-native@0.84.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
