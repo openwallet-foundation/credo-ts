@@ -5949,8 +5949,8 @@ packages:
     resolution: {integrity: sha512-e7IpWJrnanNUroVK2taAgMxoEZvHLXdQiNjeExSu/DEIWm83jaKGBgb7tLmu2rMYpA027qFB3iLR/k3AVpFRnA==}
     engines: {node: '>= 18'}
 
-  koffi@2.15.2:
-    resolution: {integrity: sha512-r9tjJLVRSOhCRWdVyQlF3/Ugzeg13jlzS4czS82MAgLff4W+BcYOW7g8Y62t9O5JYjYOLAjAovAZDNlDfZNu+g==}
+  koffi@2.16.3:
+    resolution: {integrity: sha512-E9y1AsgYGlaxMhcZzHr8y96QF2U5XzA12GGVAfbWqIubTwPNMXQarfBzePNXHe0xtIEtNd6ifAv3GAKYGUeBAQ==}
 
   ky@1.14.3:
     resolution: {integrity: sha512-9zy9lkjac+TR1c2tG+mkNSVlyOpInnWdSMiue4F+kq8TwJSgv6o8jhLRg8Ho6SnZ9wOYUq/yozts9qQCfk7bIw==}
@@ -9843,7 +9843,7 @@ snapshots:
   '@hyperledger/anoncreds-nodejs@0.4.1':
     dependencies:
       '@hyperledger/anoncreds-shared': 0.4.1
-      koffi: 2.15.2
+      koffi: 2.16.3
 
   '@hyperledger/anoncreds-shared@0.4.1':
     dependencies:
@@ -9852,7 +9852,7 @@ snapshots:
   '@hyperledger/indy-vdr-nodejs@0.3.0':
     dependencies:
       '@hyperledger/indy-vdr-shared': 0.3.0
-      koffi: 2.15.2
+      koffi: 2.16.3
 
   '@hyperledger/indy-vdr-shared@0.3.0':
     dependencies:
@@ -10278,7 +10278,7 @@ snapshots:
   '@openwallet-foundation/askar-nodejs@0.6.1':
     dependencies:
       '@openwallet-foundation/askar-shared': 0.6.1
-      koffi: 2.15.2
+      koffi: 2.16.3
 
   '@openwallet-foundation/askar-shared@0.6.1':
     dependencies:
@@ -13128,7 +13128,7 @@ snapshots:
       type-is: 2.1.0
       vary: 1.1.2
 
-  koffi@2.15.2: {}
+  koffi@2.16.3: {}
 
   ky@1.14.3: {}
 
