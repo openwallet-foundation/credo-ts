@@ -130,19 +130,27 @@ export class DidCommMediatorService {
             })
           } catch (error) {
             const sessionService = agentContext.dependencyManager.resolve(DidCommMessagePickupSessionService)
-            const closeTransport =
+            const endSession =
               error instanceof MessageSendingError &&
               sessionService.getLiveSession(agentContext, session.id) !== undefined
             this.logger.warn(
-              `Live mode delivery failed for connection '${mediationRecord.connectionId}'${closeTransport ? ', closing its transport session' : ''}`,
+              `Live mode delivery failed for connection '${mediationRecord.connectionId}'${endSession ? ', ending its live mode session' : ''}`,
               { error: error.message }
             )
-            // a Credo recipient only restarts pickup when its socket closes, ending just the live session would strand it
-            if (closeTransport) {
-              await agentContext.dependencyManager
-                .resolve(DidCommTransportService)
-                .findSessionById(session.transportSessionId)
-                ?.close()
+            if (endSession) {
+              sessionService.removeLiveSession(agentContext, { connectionId: mediationRecord.connectionId })
+              // a Credo recipient only restarts pickup when its socket closes
+              try {
+                await agentContext.dependencyManager
+                  .resolve(DidCommTransportService)
+                  .findSessionById(session.transportSessionId)
+                  ?.close()
+              } catch (closeError) {
+                this.logger.warn(
+                  `Unable to close the transport session of connection '${mediationRecord.connectionId}'`,
+                  { error: closeError.message }
+                )
+              }
             }
           }
         }

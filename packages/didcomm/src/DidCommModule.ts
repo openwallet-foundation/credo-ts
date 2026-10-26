@@ -37,7 +37,6 @@ import type { DidCommCredentialsModuleConfigOptions } from './modules/credential
 import { DidCommMediationRecipientModule } from './modules/routing/DidCommMediationRecipientModule'
 import { DidCommMediatorModule } from './modules/routing/DidCommMediatorModule'
 import { DidCommMessageRepository } from './repository'
-import { InMemoryQueueTransportRepository } from './transport/queue/InMemoryQueueTransportRepository'
 import { updateV0_1ToV0_2 } from './updates/0.1-0.2'
 import { updateV0_2ToV0_3 } from './updates/0.2-0.3'
 import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
@@ -209,9 +208,7 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
       )
       .subscribe()
 
-    if (this.config.queueTransportRepository instanceof InMemoryQueueTransportRepository) {
-      this.config.queueTransportRepository.start(agentContext)
-    }
+    await this.config.queueTransportRepository.start?.(agentContext)
 
     for (const transport of this.config.inboundTransports) {
       await transport.start(agentContext)
