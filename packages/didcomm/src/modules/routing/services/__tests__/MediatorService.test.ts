@@ -753,7 +753,7 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
   })
 
   test.each(['v1', 'v2'] as const)(
-    'closes the transport session and completes the %s forward when the live delivery send fails',
+    'ends the live mode session, closes its transport and completes the %s forward when the live delivery send fails',
     async (version) => {
       vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(sendError)
       const warnSpy = vi.spyOn(agentConfig.logger, 'warn')
@@ -761,12 +761,21 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
       await forward(version)
 
       expect(transportSession.close).toHaveBeenCalledTimes(1)
-      expect(liveTransportSessionId()).toBe('transportSessionId')
+      expect(liveTransportSessionId()).toBeUndefined()
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(`'${mockConnection.id}'`), {
         error: 'Message is undeliverable',
       })
     }
   )
+
+  test('completes the forward when closing the transport throws', async () => {
+    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(sendError)
+    vi.spyOn(transportSession, 'close').mockRejectedValue(new Error('close failed'))
+
+    await expect(forward('v1')).resolves.toBeUndefined()
+
+    expect(liveTransportSessionId()).toBeUndefined()
+  })
 
   test('keeps a live mode session that replaced the failed one', async () => {
     vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockImplementation(async () => {
