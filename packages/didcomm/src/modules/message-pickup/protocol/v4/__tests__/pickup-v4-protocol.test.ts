@@ -11,6 +11,7 @@ import { InMemoryQueueTransportRepository } from '../../../../../transport/queue
 import type { DidCommEncryptedMessage } from '../../../../../types'
 import { DidCommConnectionService, DidCommDidExchangeState, DidCommTrustPingMessage } from '../../../../connections'
 import { DidCommMessagePickupModuleConfig } from '../../../DidCommMessagePickupModuleConfig'
+import { DidCommMessagePickupSessionRole } from '../../../DidCommMessagePickupSession'
 import { DidCommMessagePickupSessionService } from '../../../services/DidCommMessagePickupSessionService'
 import { DidCommMessagePickupV1Protocol } from '../../v1'
 import { DidCommMessagePickupV2Protocol } from '../../v2'
@@ -112,6 +113,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
           id: message.id,
           threadId: statusRequest.threadId,
           messageCount: 0,
+          liveDelivery: false,
         })
       )
       expect(queueTransportRepository.getAvailableMessageCount).toHaveBeenCalledWith(
@@ -139,6 +141,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
           id: message.id,
           threadId: statusRequest.threadId,
           messageCount: 5,
+          liveDelivery: false,
         })
       )
       expect(queueTransportRepository.getAvailableMessageCount).toHaveBeenCalledWith(
@@ -164,6 +167,33 @@ describe('DidCommMessagePickupV4Protocol', () => {
         connectionId: mockConnection.id,
         recipientDid: 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc',
       })
+    })
+
+    test('reports live delivery only for the transport session that holds the live session', async () => {
+      mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(0)
+      messagePickupSessionService.saveLiveSession(agentContext, {
+        connectionId: mockConnection.id,
+        protocolVersion: 'v4',
+        role: DidCommMessagePickupSessionRole.MessageHolder,
+        transportSessionId: 'live-socket',
+      })
+
+      const liveDeliveryFor = async (sessionId?: string): Promise<boolean | undefined> => {
+        const messageContext = new DidCommInboundMessageContext(new DidCommStatusRequestV4Message({}), {
+          connection: mockConnection,
+          agentContext,
+          sessionId,
+        })
+        const result = await pickupProtocol.processStatusRequest(messageContext)
+        if (!result) throw new Error('Expected processStatusRequest result to be defined')
+        return (result.message as DidCommStatusV4Message).liveDelivery
+      }
+
+      expect(await liveDeliveryFor('live-socket')).toBe(true)
+      expect(await liveDeliveryFor('other-socket')).toBe(false)
+      expect(await liveDeliveryFor()).toBe(false)
+
+      messagePickupSessionService.removeLiveSession(agentContext, { connectionId: mockConnection.id })
     })
   })
 

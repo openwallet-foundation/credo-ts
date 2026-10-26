@@ -39,6 +39,7 @@ import type {
 } from './protocol'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 import { DidCommStatusV2Message } from './protocol/v2/messages'
+import { DidCommStatusV4Message } from './protocol/v4/messages'
 import { DidCommMessagePickupSessionService } from './services/DidCommMessagePickupSessionService'
 
 export interface DidCommMessagePickupApi<MPPs extends DidCommMessagePickupProtocol[]> {
@@ -337,7 +338,8 @@ export class DidCommMessagePickupApi<
 
     if (options.awaitConfirmation) {
       const reply = await firstValueFrom(replySubject)
-      if (!(reply instanceof DidCommStatusV2Message) || reply.liveDelivery === !options.liveDelivery) {
+      const isStatus = reply instanceof DidCommStatusV2Message || reply instanceof DidCommStatusV4Message
+      if (!isStatus || reply.liveDelivery === !options.liveDelivery) {
         throw new CredoError(`Live delivery change was not confirmed, the mediator replied with '${reply.type}'`)
       }
     }

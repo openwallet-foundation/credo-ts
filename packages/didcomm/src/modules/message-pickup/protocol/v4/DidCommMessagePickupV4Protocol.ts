@@ -156,6 +156,13 @@ export class DidCommMessagePickupV4Protocol extends DidCommBaseMessagePickupProt
     const queueTransportRepository =
       agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
 
+    const liveSession = agentContext.dependencyManager
+      .resolve(DidCommMessagePickupSessionService)
+      .getLiveSessionByConnectionId(agentContext, {
+        connectionId: connection.id,
+        role: DidCommMessagePickupSessionRole.MessageHolder,
+      })
+
     const statusMessage = new DidCommStatusV4Message({
       threadId: messageContext.message.threadId,
       recipientDid,
@@ -163,6 +170,7 @@ export class DidCommMessagePickupV4Protocol extends DidCommBaseMessagePickupProt
         connectionId: connection.id,
         recipientDid,
       }),
+      liveDelivery: liveSession !== undefined && liveSession.transportSessionId === messageContext.sessionId,
     })
 
     return new DidCommOutboundMessageContext(statusMessage, {

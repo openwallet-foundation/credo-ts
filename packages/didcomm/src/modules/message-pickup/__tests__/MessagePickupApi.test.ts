@@ -25,7 +25,7 @@ import {
   DidCommStatusV2Message,
 } from '../protocol'
 import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
-import { DidCommMessageDeliveryV4Message } from '../protocol/v4'
+import { DidCommMessageDeliveryV4Message, DidCommStatusV4Message } from '../protocol/v4'
 import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'
 
 const mockConnection = getMockConnection({
@@ -218,14 +218,17 @@ describe('DidCommMessagePickupApi', () => {
   describe('setLiveDeliveryMode with awaitConfirmation', () => {
     const processed$ = new Subject<BaseEvent>()
 
-    function replyToLiveDeliveryChange(liveDelivery: boolean): void {
+    function replyToLiveDeliveryChange(
+      liveDelivery: boolean,
+      Status: typeof DidCommStatusV2Message | typeof DidCommStatusV4Message = DidCommStatusV2Message
+    ): void {
       mockFunction(messageSender.sendMessage).mockImplementation(async (outboundMessageContext) => {
         const { message } = outboundMessageContext as DidCommOutboundMessageContext
         processed$.next({
           type: DidCommEventTypes.DidCommMessageProcessed,
           metadata: { contextCorrelationId: agentContext.contextCorrelationId },
           payload: {
-            message: new DidCommStatusV2Message({ threadId: message.threadId, messageCount: 0, liveDelivery }),
+            message: new Status({ threadId: message.threadId, messageCount: 0, liveDelivery }),
             connection: mockConnection,
           },
         })
@@ -244,6 +247,21 @@ describe('DidCommMessagePickupApi', () => {
         api.setLiveDeliveryMode({
           connectionId: mockConnection.id,
           protocolVersion: 'v2',
+          liveDelivery: true,
+          awaitConfirmation: true,
+        })
+      ).resolves.toBeUndefined()
+    })
+
+    it('resolves once a pickup 4.0 status reply confirms live delivery', async () => {
+      const mockConnectionV2 = getMockConnection({ state: DidCommDidExchangeState.Completed, didcommVersion: 'v2' })
+      mockFunction(connectionService.getById).mockResolvedValue(mockConnectionV2)
+      replyToLiveDeliveryChange(true, DidCommStatusV4Message)
+
+      await expect(
+        api.setLiveDeliveryMode({
+          connectionId: mockConnectionV2.id,
+          protocolVersion: 'v4',
           liveDelivery: true,
           awaitConfirmation: true,
         })
