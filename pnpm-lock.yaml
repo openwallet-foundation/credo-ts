@@ -180,14 +180,14 @@ catalogs:
       specifier: ^4.2.0
       version: 4.2.1
     '@cosmjs/crypto':
-      specifier: ^0.39.0
-      version: 0.39.0
+      specifier: ^0.36.2
+      version: 0.36.2
     '@cosmjs/proto-signing':
-      specifier: ^0.39.0
-      version: 0.39.0
+      specifier: ^0.36.2
+      version: 0.36.2
     '@cosmjs/stargate':
-      specifier: ^0.39.0
-      version: 0.39.0
+      specifier: ^0.36.2
+      version: 0.36.2
     '@hyperledger/anoncreds-nodejs':
       specifier: ^0.4.1
       version: 0.4.1
@@ -454,8 +454,8 @@ importers:
         specifier: workspace:*
         version: link:../packages/node
       '@hiero-did-sdk/client':
-        specifier: ^0.2.1
-        version: 0.2.1(expo-crypto@15.0.8)
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       '@types/figlet':
         specifier: ^1.7.0
         version: 1.7.0
@@ -667,13 +667,13 @@ importers:
         version: 4.2.1
       '@cosmjs/crypto':
         specifier: 'catalog:'
-        version: 0.39.0
+        version: 0.36.2
       '@cosmjs/proto-signing':
         specifier: 'catalog:'
-        version: 0.39.0
+        version: 0.36.2
       '@cosmjs/stargate':
         specifier: 'catalog:'
-        version: 0.39.0
+        version: 0.36.2
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
@@ -980,26 +980,26 @@ importers:
         specifier: ^2.81.0
         version: 2.81.0(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       '@hiero-did-sdk/cache':
-        specifier: ^0.2.1
-        version: 0.2.1(expo-crypto@15.0.8)
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       '@hiero-did-sdk/client':
-        specifier: ^0.2.1
-        version: 0.2.1(expo-crypto@15.0.8)
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       '@hiero-did-sdk/core':
-        specifier: ^0.2.1
-        version: 0.2.1(expo-crypto@15.0.8)
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       '@hiero-did-sdk/hcs':
-        specifier: ^0.2.1
-        version: 0.2.1(expo-crypto@15.0.8)
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       '@hiero-did-sdk/publisher-internal':
-        specifier: ^0.2.1
-        version: 0.2.1(expo-crypto@15.0.8)
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       '@hiero-did-sdk/registrar':
-        specifier: ^0.2.1
-        version: 0.2.1(expo-crypto@15.0.8)
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       '@hiero-did-sdk/resolver':
-        specifier: ^0.2.1
-        version: 0.2.1(expo-crypto@15.0.8)
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       buffer:
         specifier: ^6.0.3
         version: 6.0.3
@@ -1011,8 +1011,8 @@ importers:
         specifier: workspace:*
         version: link:../node
       '@hiero-did-sdk/anoncreds':
-        specifier: ^0.2.1
-        version: 0.2.1(expo-crypto@15.0.8)
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
         version: 0.4.1
@@ -1303,9 +1303,6 @@ importers:
         version: 2.5.0
 
 packages:
-
-  '@adraffy/ens-normalize@1.10.1':
-    resolution: {integrity: sha512-96Z2IP3mYmF1Xg2cDm8f1gWGf/HUVedQ3FMifV4kG/PQ4yEP51xDtRAEfhVNt5f/uzpNkZHwWQuUcu6D6K+Ekw==}
 
   '@animo-id/expo-secure-environment@0.1.5':
     resolution: {integrity: sha512-fqAU+/4gekexE5z2i1v2WQ4uNHtk8b+3OXfRxxib2pKHi2MomZIUiCiPLX88Q5+5IN6eavTnGTCLLGe8Nwh9Ww==}
@@ -1853,68 +1850,35 @@ packages:
   '@cosmjs/amino@0.36.2':
     resolution: {integrity: sha512-r4yV1bhl412gwHGlyaUaJHIJnmldtyGsAwyz3oHHVxduiECj06Rv6wqeyLZfQa9W6hU+MlZwy7LabSUkkyGwjA==}
 
-  '@cosmjs/amino@0.39.0':
-    resolution: {integrity: sha512-56WqsZ4xbdJE4KWJTPbw7hUzePflRxRLuxoBlUsa8qIiFumpzZRW0Ycb7IloEF8wAmdgsdfrG1hSJSBlqdFE7A==}
-
   '@cosmjs/crypto@0.36.2':
     resolution: {integrity: sha512-QL4NHtcqR6DEKIN200aLeR8gKO433K0f5avKV0TVFP/g12UtnEGSk79PJq5Gv1PLc9GtATHgLLQI/3D8TEe+ig==}
-
-  '@cosmjs/crypto@0.39.0':
-    resolution: {integrity: sha512-ATRhSXN8w3fvUkj9xzLHwvzylDvvn4f3cC1CQwhQc2OxyzpEEFACS3wHS6iwdJJS99acV8dq+oVOYflUqI0brQ==}
 
   '@cosmjs/encoding@0.36.2':
     resolution: {integrity: sha512-i3+P1EKYoLcONAsmpJPhDAc3Wh3ajZNRHt/hczi/JEQXmleTJLVzv2mXUyllM6Qa+B6ybbr3Z2lnEFa8L3yLqg==}
 
-  '@cosmjs/encoding@0.39.0':
-    resolution: {integrity: sha512-+poEaeM8YjGNVtrHLQNWqkhEeDxapjrdpnPCT+JCRh8YNbeHEdftzZLCH5VCBSOtvo7PF0gK1B7sbQbBl6q5pQ==}
-
   '@cosmjs/json-rpc@0.36.2':
     resolution: {integrity: sha512-3IRamylHVCxBevXGlnIoWUdJCLsP5LwHbXYUsBnC9T8UttZ5oYRN5gDf6+2dQEPk+p9xOv2i8xrCwNWxo7675Q==}
-
-  '@cosmjs/json-rpc@0.39.0':
-    resolution: {integrity: sha512-slyo76IYkTuSxrzxvF1s1ScFPIGnW7PbNSx8lr++NzdyPluqe053+cSqsxLUioXb5qI9Nxny2fWxOK8isSn+cg==}
 
   '@cosmjs/math@0.36.2':
     resolution: {integrity: sha512-uJZRzxqnBk3MgxFgeyUwLgUzWkAIcmznWSB/tgGCjGCnUNebzI+44dA3ncEDCMqQysi/MZ+cSwAcDU7IY2PFeA==}
 
-  '@cosmjs/math@0.39.0':
-    resolution: {integrity: sha512-FSLy/oDF+BtOP/J60RsjL5W4MCKiCfBjSoeV5xj6qg2g8N884Ue853iuWanjqGkQJwkXCp+JbeK8Mv9j6AaYHw==}
-
   '@cosmjs/proto-signing@0.36.2':
     resolution: {integrity: sha512-dyZsgZBQgGkaE4cazHVX8GDwrRJVKUVDnrODkyFXVNbxMnm4t6nxpK1qwgY9GHlWUhck3Dh9NT3BoMbXiMYTZQ==}
-
-  '@cosmjs/proto-signing@0.39.0':
-    resolution: {integrity: sha512-jthQ2PA092fvrbFaZRRKuHV7awOsayjDLIBACaGIblFj9yJCcrvhFp+8YV87ia990DjKmWJc3sstHvQZ3yK/EQ==}
 
   '@cosmjs/socket@0.36.2':
     resolution: {integrity: sha512-Pb7JcTFWnq6yfY0IEejHrpSxNDJYcqjjAa1D29a6b/obk4qa4o3oIV5bIx6zAbdRq8uLoBfvWs0bHTNnVuBWJg==}
 
-  '@cosmjs/socket@0.39.0':
-    resolution: {integrity: sha512-mvA+/ycMn7dnjjdooSPq516poFpSARRXhFhKjCXxGUmBZA+74vLDLbtD6VGzHd08A2JSZBSiAhVOZpjYqgV78A==}
-
   '@cosmjs/stargate@0.36.2':
     resolution: {integrity: sha512-vnNK4dXF+s2v1aKPfYxKVrvXPcnBQb8rPoBScnTpPWnRt3XXbLw7Oo6fTQQWwKYNKQzi6DOApeEB+bCYcaPAAw==}
-
-  '@cosmjs/stargate@0.39.0':
-    resolution: {integrity: sha512-dQtucU9czF2NUUbEKs19PMfv+EusDFKWHMVK6Hinytmpq9sdk5JUIln+g/8k+UjKcV4HPv6S0AywbhE+tl84kQ==}
 
   '@cosmjs/stream@0.36.2':
     resolution: {integrity: sha512-FlZx2Buovem837LdTLPkPFcxzuQ7zierAqSXwMPr/MG3k+qMxHNfLFTTCXMNWQ4ZlbYedud8ZqCL3/HKdS5mig==}
 
-  '@cosmjs/stream@0.39.0':
-    resolution: {integrity: sha512-h56it+ku5F6nlO94VyVAyz3pQqYsGRJ8v+5Y5erXYlQ0Qmr+rLrlSMCiViFEMK9INRSilAypdI5hKPCzotiqRg==}
-
   '@cosmjs/tendermint-rpc@0.36.2':
     resolution: {integrity: sha512-76Z99C1NVf/Yv/1bWU0wul8MhRwVdqiZxqU5bcHqvJLoQ2nKUfGpSSYRdbMHfZ63J8ryRqQ95uPvPTfrBb+agw==}
 
-  '@cosmjs/tendermint-rpc@0.39.0':
-    resolution: {integrity: sha512-KowP/6P6Tx+OnGoimYnxuSBIfhB+vWqWER2pZpEIOHId8ZfcjQ9JS2F+Ah+WmZ9D+bKgn4pJ5ImAS13TeShIEw==}
-
   '@cosmjs/utils@0.36.2':
     resolution: {integrity: sha512-OOr2HU/Ph+/GI1Fx2UCf3LOyX9YTCP51d2HitTOjjEJRYnkfKXP3lMBl1FZo5QaFWxnfuBc+Cj+cSoiQUJRyzQ==}
-
-  '@cosmjs/utils@0.39.0':
-    resolution: {integrity: sha512-h7fy7Tbcl9v8ABntp8+kqw2VmUus2HbnRJFyzTkM7byRktLtECHYNMsztwyl1rdHkzc8Nc2xs6K/56d7a+75aw==}
 
   '@digitalbazaar/security-context@1.0.1':
     resolution: {integrity: sha512-0WZa6tPiTZZF8leBtQgYAfXQePFQp2z5ivpCEN/iZguYYZ0TB9qRmWtan5XH6mNFuusHtMcyIzAcReyE6rZPhA==}
@@ -2632,10 +2596,6 @@ packages:
     resolution: {integrity: sha512-JXUj6PI0oqqzTGvKtzOkxtpsyPRNsrmhh41TtIz/zEB6J+AUiZZ0dxWzcMwO9Ns5rmSPuMdghlTbUuqIM48d3Q==}
     engines: {node: '>=12.10.0'}
 
-  '@grpc/grpc-js@1.13.6':
-    resolution: {integrity: sha512-S9U8ioEds9fo8zCt4K8CyWHLJPg63FBgZo/hYUPVTiKppwsx/ykTnFg4g4/70beoa/DYao9uROQRcoahVH8PVQ==}
-    engines: {node: '>=12.10.0'}
-
   '@grpc/grpc-js@1.14.4':
     resolution: {integrity: sha512-k9Dj3DV/itK9D06Y8f190Qgop7/Ui+D0njFV3LHMPwPT75DpXLQohE9Wmz0QElrJnzsjB7KPWiKJbOl7IPDArQ==}
     engines: {node: '>=12.10.0'}
@@ -2678,80 +2638,61 @@ packages:
     peerDependencies:
       bn.js: 5.2.3
 
-  '@hiero-did-sdk/anoncreds@0.2.1':
-    resolution: {integrity: sha512-q9IFfz5a05ocIkUhhxYXD+jNHSxruIoIbARFxNZSAP3BiF9EKBZFzPaoJWuQK0tHMzAeOfRaChFRDo4ELUioxQ==}
+  '@hiero-did-sdk/anoncreds@0.1.8':
+    resolution: {integrity: sha512-+IQzoU/SBcavspISi+8Wg0FpikpfClrLHNkdU3bmADHMH++my3qL71HE+XfXVVZ7RH914Z29MjEDQPV0eGvPtg==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/cache@0.2.1':
-    resolution: {integrity: sha512-51k9jI0xEY61TabyYerwu5a16800npaaquMwAd1IMHj8mr44V9T5kJMqqfzvUysJ2Aw748EY2xcIODl26Mnkig==}
+  '@hiero-did-sdk/cache@0.1.8':
+    resolution: {integrity: sha512-HGC4ckyzK6ollXzwliEcyy9398srz2eSmBbYBFQawc/D3wCqK1Dd2jHhhQoutsUp8s/7+EhpB4urZ3CSOHFjBA==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/client@0.2.1':
-    resolution: {integrity: sha512-Xn1wV1zTH3GeY8lH7wP6G6Mq+WSKNIkrfnaMPtny7iV5MZthToko+jUPCRD71nLBYMSRsqlGJX0UfTrZPJkfaA==}
+  '@hiero-did-sdk/client@0.1.8':
+    resolution: {integrity: sha512-1ZH9H7ESEjVTyCjzjQX7KIKUpyvMQnmV82EwpD8qO1LEuY4K1PUtHJx93sPQ5kBLRzbIwRhRfC8tH5f/1cNwZQ==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/core@0.2.1':
-    resolution: {integrity: sha512-pwjw99mp/BTWYVMO48srauRLcyW3ix2ivAKKozxbt7Nco7ubYZeL22obe8HYpRjUaLP8diq5ucAnVvLa91ma3Q==}
+  '@hiero-did-sdk/core@0.1.8':
+    resolution: {integrity: sha512-Nu/pf7yc4Nf5yiJ5KCP1puzeHSNFcANaqQePZMTz0OOV8BGGkNgJR7mDQhx/rtxCgTTQPOBbEyHEE8joIR6NCQ==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/crypto@0.2.1':
-    resolution: {integrity: sha512-l3anQRvMeso0INt93F958AFseycyfDfCah5HwBCfMhX1Bv/SoMIDBcf4I56pxqwrwNkbQ/OY+uXEbHcw+VgYyg==}
+  '@hiero-did-sdk/crypto@0.1.8':
+    resolution: {integrity: sha512-qqdM2gQBV2/dZco3SvkClq/anzLGGCFcaHGbw3gxr2IUT6WwoZXBTRDX8KPYbix56XW5MLdf2MPQ4JlOb06rXg==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/hcs@0.2.1':
-    resolution: {integrity: sha512-lSsKlQbZJiQKbkTkxr4MIV6cVMdHlsNiFSvTmBL8vTRpity8H2YUDZEhQgLAbTVMfic1vFWisoFXf7uCuElLVg==}
+  '@hiero-did-sdk/hcs@0.1.8':
+    resolution: {integrity: sha512-0lEFQPpp6YzPHJT/mRhRABnipeAZLnQRrkswwpgi58suPjSfSKPeRMFv13nu6vLAGZddtvOxPEhhpKW+QU0t8A==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/lifecycle@0.2.1':
-    resolution: {integrity: sha512-pih7mzf/w94n4HYkXYDxqZFHTpOJ1G3MRZxw2txkGybXT9lS+o099UJbmPRqumAyEUN97WsVbwpdjYYA0YEQSA==}
+  '@hiero-did-sdk/lifecycle@0.1.8':
+    resolution: {integrity: sha512-mydU6Wd2uozDbOdtb10XiWRaLuIoLLiMGGv4nXDaYM5Hp01XccEvWl1p89Dqv/QLVMkIlZHBJWSaWWUW+4rfNQ==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/messages@0.2.1':
-    resolution: {integrity: sha512-04oFFQSCfNKgNPdHjF9dASGHGQ4LdXjbT1GfseOJmXem1OWSVxv4JaY6hQkf3pzkoFnpgWHn4gL7Awb3oX89NQ==}
+  '@hiero-did-sdk/messages@0.1.8':
+    resolution: {integrity: sha512-L6G3q0ZPOcBFz2Klph9/3y+UR+Jdr7zuiHz2iAWkmDWQFyX/VPx2WI75cKrztBgPiEDIjrinar1qM6iS6uqsaQ==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/publisher-internal@0.2.1':
-    resolution: {integrity: sha512-qh/xILCBY0qpHaYciXV6shDVKYFqmaiXf0fuZfthUR0mavOEEeasOVtLN4G/yTIo2uM1xJT9XuPsOKZfC7HYyg==}
+  '@hiero-did-sdk/publisher-internal@0.1.8':
+    resolution: {integrity: sha512-1osOZIkv1trSTEV/lufh0zz+0GlItetC6tmoPpDSuq1w17HThq4n87PPBy2QCznxPLBcTYRxKLbTuOT+Fsl2vQ==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/registrar@0.2.1':
-    resolution: {integrity: sha512-q6hapx4d5VIrGvz0Biec1S7FuchIwRC+MrwXoDidzd9prBFsiiErBAiWaKgrRMI4FbfrTwwJnNBz8Mk7Ye/P+Q==}
+  '@hiero-did-sdk/registrar@0.1.8':
+    resolution: {integrity: sha512-VPgki1/ZwjQMBeWrqCkVVtkySzMpOqSW/Sxsosmi0jwso9Y1xpHQlawYA6WVq3282Ttrys30Z1L6foo8ZBo0AQ==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/resolver@0.2.1':
-    resolution: {integrity: sha512-fHRVTUcimQfUyfc8F0LiRF6SGD7Kk7fadg1UTUmdtDCW64k39frnqrH+3037lqjNVawMLUookwG5iBm/QSogVg==}
+  '@hiero-did-sdk/resolver@0.1.8':
+    resolution: {integrity: sha512-z3hVY/lHkMcbcf3PGwqv8Vd6Vrd6IDVSHZ+l3q8v8Ie56ImtaW2XqwXaHYOCZrGakeTC+Ynq9dktMtln3GW2pA==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/signer-internal@0.2.1':
-    resolution: {integrity: sha512-RJo/zW/RUk0blM7OIzfUO4ngH/s1YynFv/mRNgYtYneJsc0roJeHKUvMpsU1g8IaQwcohakwYUQ5xlVjK4AQ6w==}
+  '@hiero-did-sdk/signer-internal@0.1.8':
+    resolution: {integrity: sha512-IZY3CJL7wBEJ57n4Jb/s02pEmKcaZMJoywp9WIjyRBtKr8pwa8uX58dEBGvDmHWN1aCBSFrKbRiIRnkU04b17Q==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/verifier-internal@0.2.1':
-    resolution: {integrity: sha512-LQsga3G312yEigLuR2FYJIo6AbSFu5XKlxWvUf/SbB+BkChbnHKxxk+YpPIPAlVd1JmMtUB0OkVvyhwNehE9Vw==}
+  '@hiero-did-sdk/verifier-internal@0.1.8':
+    resolution: {integrity: sha512-LzvWEJGlDmKGWNOMJbXw5pqiJNVE+h5boEV7E/82isrfdJjaup9TpB3+mdIx+TLmFQOLC60cm98xk8GHBvq4wA==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/zstd@0.2.1':
-    resolution: {integrity: sha512-WthXRnFY8b6EEve8Ugg4W+bSgw51ZMbt6efgU3LJJb8dSCRfkTAIIzbQIFJKZTMIaTY6d1Alrt2LW0ikmx31ng==}
+  '@hiero-did-sdk/zstd@0.1.8':
+    resolution: {integrity: sha512-P7q223JlO/BuZkZ2Ifkyqdul0O0ywa8xm88yJ0BmAIFBE0j4ft6Iw8Zg3kRMzYZX25vjl0ZssHJIA5LVUnBETg==}
     engines: {node: '>=20'}
-
-  '@hiero-ledger/cryptography@1.23.0':
-    resolution: {integrity: sha512-WcLntFBbY3t4oDBZrnzCQts6xPEw9lgXy/76G7F+m4H6oGU8FDE+9cqzW0J72YV/IF3HR1S6Xt8kgxKvUt6+dA==}
-    engines: {node: '>=20.19.0'}
-    peerDependencies:
-      expo-crypto: '*'
-    peerDependenciesMeta:
-      expo-crypto:
-        optional: true
-
-  '@hiero-ledger/proto@2.32.0':
-    resolution: {integrity: sha512-tyA4kcRhPM5lvLnpb1n3SDoyTfgnbwCEWk6U5rReWE20+Gjw+Cgx84gy2+FgZe9PPrp1gC791tD1tribxEf64g==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      protobufjs: ^8.6.6
-
-  '@hiero-ledger/sdk@2.90.1':
-    resolution: {integrity: sha512-BLBGDoTkRutkgbHteSVjWL8NebP6QUbcruwelzJK9OUDw1PKmaoB3dt6Q7q55Npw9m+qG7asHKNWgUlBl6t1LA==}
-    engines: {node: '>=18.0.0'}
 
   '@hyperledger/anoncreds-nodejs@0.4.1':
     resolution: {integrity: sha512-2H7gbQDt/SJ6T2nnWJjpHfjE6rt2MWlBskC6Ktyour8zSa5cwKu8ZxQK5XfNMXzcikiKGvU9qhaJJrucPkpPCw==}
@@ -3053,16 +2994,9 @@ packages:
     resolution: {integrity: sha512-2I0gnIVPtfnMw9ee9h1dJG7tp81+8Ob3OJb3Mv37rx5L40/b0i7djjCVvGOVqc9AEIQyvyu1i6ypKdFw8R8gQw==}
     engines: {node: ^14.21.3 || >=16}
 
-  '@noble/ciphers@2.2.0':
-    resolution: {integrity: sha512-Z6pjIZ/8IJcCGzb2S/0Px5J81yij85xASuk1teLNeg75bfT07MV3a/O2Mtn1I2se43k3lkVEcFaR10N4cgQcZA==}
-    engines: {node: '>= 20.19.0'}
-
   '@noble/ciphers@2.4.0':
     resolution: {integrity: sha512-AnjFn0Jv92laAkvMrghlFZq4qQCIN/4DxFV/eooqtC2YTjB7kBeLMS2T9KJX4Dn+ZVXLOwK0lSgqDtx9gvxtiw==}
     engines: {node: '>= 20.19.0'}
-
-  '@noble/curves@1.2.0':
-    resolution: {integrity: sha512-oYclrNgRaM9SsBUBVbb8M6DTV7ZHRTKugureoYEncY5c65HOmRzvSiTE3y5CYaPYJA/GVkrhXEoF0M3Ya9PMnw==}
 
   '@noble/curves@1.8.1':
     resolution: {integrity: sha512-warwspo+UYUPep0Q+vtdVB4Ugn8GGQj8iyB3gnRWsztmUHTI3S1nhdiWNsPUGL0vud7JlRRk1XEu7Lq1KGTnMQ==}
@@ -3072,17 +3006,9 @@ packages:
     resolution: {integrity: sha512-gbKGcRUYIjA3/zCCNaWDciTMFI0dCkvou3TL8Zmy5Nc7sJ47a0jtOeZoTaMxkuqRo9cRhjOdZJXegxYE5FN/xw==}
     engines: {node: ^14.21.3 || >=16}
 
-  '@noble/curves@2.2.0':
-    resolution: {integrity: sha512-T/BoHgFXirb0ENSPBquzX0rcjXeM6Lo892a2jlYJkqk83LqZx0l1Of7DzlKJ6jkpvMrkHSnAcgb5JegL8SeIkQ==}
-    engines: {node: '>= 20.19.0'}
-
   '@noble/curves@2.4.0':
     resolution: {integrity: sha512-P4/62zrgfH33CneE3Dn4WhJVA22YUU0eR51wKIan4NVRvwsA0YnPTwWGpNbpuacSujmSFLvyzpyuR30+fbq2Ew==}
     engines: {node: '>= 20.19.0'}
-
-  '@noble/hashes@1.3.2':
-    resolution: {integrity: sha512-MVC8EAQp7MvEcm30KWENFjgR+Mkmf+D189XJTkFIlwohU5hcBbn1ZkKq7KVTi2Hme3PMGF390DaL52beVrIihQ==}
-    engines: {node: '>= 16'}
 
   '@noble/hashes@1.6.1':
     resolution: {integrity: sha512-pq5D8h10hHBjyqX+cfBm0i8JUXJ0UhczFc4r74zbuT9XgewFo2E3J1cOaGtdZynILNmQ685YWGzGE1Zv6io50w==}
@@ -3739,17 +3665,8 @@ packages:
   '@scure/base@1.2.6':
     resolution: {integrity: sha512-g/nm5FgUa//MCj1gV09zTJTaM6KBAHqLN907YVQqf7zC49+DcO4B1so4ZX07Ef10Twr6nuqYEH9GEggFXA4Fmg==}
 
-  '@scure/base@2.2.0':
-    resolution: {integrity: sha512-b8XEupJibegiXV+tDUseI8oLQc8ei3d/4Jkb2RpbHh3MfE054ov3uIz2dhFkB3FI8iwYkEh0gGCApkrYggkPNg==}
-
   '@scure/base@2.4.0':
     resolution: {integrity: sha512-thZ1TuJwFwBblOhgsjDKvvGirBxNp+wSvY/DR6tJBJOTDhdAAcHJ8Vbr2eFnqaxeca4+t0i9KBf+uHYGWwZORg==}
-
-  '@scure/bip32@2.2.0':
-    resolution: {integrity: sha512-zFr7t2F+a9+5tB7QbarF2HQNYrgjCNaoLAupZdKkrFMYMozJf5zqH2WJCQibMzm1qQ0QogrxVGO3qXfQDYMaQg==}
-
-  '@scure/bip39@2.4.0':
-    resolution: {integrity: sha512-82dxFbZUYboyOf0AXiydsQrFQ5Q4h9mX+O2UkE91ROYmsc0BKMGZLwDmy96Jpa2+vrtoxomjUhy1RPIgH/r2nA==}
 
   '@sd-jwt/core@0.23.0':
     resolution: {integrity: sha512-/9/z3Gpfd50hOUk/kj8QfUjhDcKU9sdrTxt9HqhG/YkjpGU+7iIU24qYYPagf0btUKN4jbUQ0uS7eWYdvdzhJg==}
@@ -3948,9 +3865,6 @@ packages:
 
   '@types/node@22.20.4':
     resolution: {integrity: sha512-zJRE40jpHtKqE/C4fgHrAKQLJuSpzEnP9ff9Y7YtoR3Wd2pwqzlekDeEuUQXjRd+QCYnVnNwuJYmhdk9XV8gvA==}
-
-  '@types/node@22.7.5':
-    resolution: {integrity: sha512-jML7s2NAzMWc//QSJ1a3prpk78cOPchGvXJsC3C6R6PSMoooztvRVQEz89gmBTBY1SPMaqo5teB4uNHPdetShQ==}
 
   '@types/node@26.6.2':
     resolution: {integrity: sha512-X1P21scMv4zGKLYqjdGjaKa7COa0RKVYYZZN/NfvLQ1JegxFhdhpZG/Lyn8AXx6CDUavKAd11v6BvfpkDByK8g==}
@@ -4266,9 +4180,6 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  aes-js@4.0.0-beta.5:
-    resolution: {integrity: sha512-G965FqalsNyrPqgEGON7nIx1e/OVENSgiEIzyC63haUMuvNnwIgIjMs52hlTCKhkBny7A2ORNlfY9Zu+jmGk1Q==}
-
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
@@ -4500,9 +4411,6 @@ packages:
   big-integer@1.6.52:
     resolution: {integrity: sha512-QxD8cf2eVqJOOz63z6JIN9BzvVs/dlySa5HGSBH5xtR8dPteIRQnBxxKqkNTiT6jbDTF6jAfrd4oMcND9RGbQg==}
     engines: {node: '>=0.6'}
-
-  bignumber.js@11.1.2:
-    resolution: {integrity: sha512-9idDyC15Vpk+53w4OfxEu2PqHSKFQUffrH1oTvnkJ9fduTJ032tpuI2sxS04oCzocklokWUZmWVEkTEQdLmUOQ==}
 
   bignumber.js@9.1.1:
     resolution: {integrity: sha512-pHm4LsMJ6lzgNGVfZHjMoO8sdoRhOzOH4MLmY65Jg70bpxCKu5iOHNJyfF6OyvYw7t8Fpf35RuzUyqnQsj8Vig==}
@@ -4800,10 +4708,6 @@ packages:
 
   cosmjs-types@0.10.1:
     resolution: {integrity: sha512-CENXb4O5GN+VyB68HYXFT2SOhv126Z59631rZC56m8uMWa6/cSlFeai8BwZGT1NMepw0Ecf+U8XSOnBzZUWh9Q==}
-
-  cosmjs-types@0.11.0:
-    resolution: {integrity: sha512-kDSkgHpRTrg1413jCNehT3P21+EBxZWFMBr9JEzVfmPiNdtuwAoLAkCYo7c7i/pTakAwyHsXbxOg8kkD+AN33w==}
-    engines: {node: '>=20.19'}
 
   cpu-features@0.0.10:
     resolution: {integrity: sha512-9IkYqtX3YHPCzoVg1Py+o9057a3i0fp7S530UWokCSaFVTc7CwXPRiOjRjBQQ18ZCNafx78YfnG+HALxtVmOGA==}
@@ -5204,10 +5108,6 @@ packages:
   etag@1.8.1:
     resolution: {integrity: sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==}
     engines: {node: '>= 0.6'}
-
-  ethers@6.16.0:
-    resolution: {integrity: sha512-U1wulmetNymijEhpSEQ7Ct/P/Jw9/e7R1j5XIbPRydgV2DjLVMsULDlNksq3RQnFgKoLlZf88ijYtWEXcPa07A==}
-    engines: {node: '>=14.0.0'}
 
   event-target-shim@5.0.1:
     resolution: {integrity: sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==}
@@ -6588,10 +6488,6 @@ packages:
     resolution: {integrity: sha512-jx6+sE9h/UryaCZhsJWbJtTEy47yXoGNYI4z8ZaRncM0zBKeRqjO2JEcOUYwrYGb1WLhXM1FfMzW3annvFv0rw==}
     engines: {node: '>=12.0.0'}
 
-  protobufjs@8.6.6:
-    resolution: {integrity: sha512-RkLIhE+Tdc2Kpq1F4Uw6OnpAXPca7B+GSDov/GqGCqNBpVyDskQ9yReZfgM+C7xw9AAix873iQZXbBWXj6NzYQ==}
-    engines: {node: '>=12.0.0'}
-
   protobufjs@8.8.0:
     resolution: {integrity: sha512-N3xhQ5yyBx3vQq4gubBfASzYhJGNzeDbjqBpu61g7UVylsN/qyffU96TKWD3GbbLOKF82VGNRNvv1+BFgE31Eg==}
     engines: {node: '>=12.0.0'}
@@ -6700,9 +6596,6 @@ packages:
 
   readdir-glob@1.1.3:
     resolution: {integrity: sha512-v05I2k7xN8zXvPD9N+z/uhXPaj0sUFCe2rcWZIpBsqxfP7xXFQ0tipAd/wjj1YxWyWtUS5IDJpOG82JKt2EAVA==}
-
-  readonly-date-esm@2.0.0:
-    resolution: {integrity: sha512-adlyzz144ofU22kjnnRIN0HPPqIbc5IZvMmMuVtEgMY4mKgNyKqOVb4Fa2GUzE2By4TEPOYoGqDoKRyqmeEuPQ==}
 
   readonly-date@1.0.0:
     resolution: {integrity: sha512-tMKIV7hlk0h4mO3JTmmVuIlJVXjKk3Sep9Bf5OH0O+758ruuVkUy2J9SttDLm91IEX/WHlXPSpxMGjPj4beMIQ==}
@@ -7234,9 +7127,6 @@ packages:
   tslib@1.14.1:
     resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
 
-  tslib@2.7.0:
-    resolution: {integrity: sha512-gLXCKdN1/j47AiHiOkJN69hJmcbGTHI0ImLmbYLHykhgeN0jVGola9yVjFgzCUklsZQMW55o+dW7IXv3RCXDzA==}
-
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
@@ -7319,9 +7209,6 @@ packages:
 
   undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
-
-  undici-types@6.19.8:
-    resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}
 
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
@@ -7579,18 +7466,6 @@ packages:
       utf-8-validate:
         optional: true
 
-  ws@8.17.1:
-    resolution: {integrity: sha512-6XQFvXTkbfUOZOKKILFG1PDK2NDQs4azKQl26T0YS5CxqWLgXajbPZ+h4gZekJyRqFU8pvnbAbbs/3TgRPy+GQ==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   ws@8.22.0:
     resolution: {integrity: sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==}
     engines: {node: '>=10.0.0'}
@@ -7690,8 +7565,6 @@ packages:
     engines: {node: ^12.22.0 || ^14.17.0 || ^15.12.0 || >=16}
 
 snapshots:
-
-  '@adraffy/ens-normalize@1.10.1': {}
 
   '@animo-id/expo-secure-environment@0.1.5(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)':
     dependencies:
@@ -8447,13 +8320,6 @@ snapshots:
       '@cosmjs/math': 0.36.2
       '@cosmjs/utils': 0.36.2
 
-  '@cosmjs/amino@0.39.0':
-    dependencies:
-      '@cosmjs/crypto': 0.39.0
-      '@cosmjs/encoding': 0.39.0
-      '@cosmjs/math': 0.39.0
-      '@cosmjs/utils': 0.39.0
-
   '@cosmjs/crypto@0.36.2':
     dependencies:
       '@cosmjs/encoding': 0.36.2
@@ -8464,41 +8330,18 @@ snapshots:
       '@noble/hashes': 1.8.0
       hash-wasm: 4.12.0
 
-  '@cosmjs/crypto@0.39.0':
-    dependencies:
-      '@cosmjs/encoding': 0.39.0
-      '@cosmjs/math': 0.39.0
-      '@cosmjs/utils': 0.39.0
-      '@noble/ciphers': 2.4.0
-      '@noble/curves': 2.4.0
-      '@noble/hashes': 2.4.0
-      '@scure/bip39': 2.4.0
-
   '@cosmjs/encoding@0.36.2':
     dependencies:
       base64-js: 1.5.1
       bech32: 1.1.4
       readonly-date: 1.0.0
 
-  '@cosmjs/encoding@0.39.0':
-    dependencies:
-      '@scure/base': 2.4.0
-      base64-js: 1.5.1
-      readonly-date-esm: 2.0.0
-
   '@cosmjs/json-rpc@0.36.2':
     dependencies:
       '@cosmjs/stream': 0.36.2
       xstream: 11.14.0
 
-  '@cosmjs/json-rpc@0.39.0':
-    dependencies:
-      '@cosmjs/stream': 0.39.0
-      xstream: 11.14.0
-
   '@cosmjs/math@0.36.2': {}
-
-  '@cosmjs/math@0.39.0': {}
 
   '@cosmjs/proto-signing@0.36.2':
     dependencies:
@@ -8509,28 +8352,9 @@ snapshots:
       '@cosmjs/utils': 0.36.2
       cosmjs-types: 0.10.1
 
-  '@cosmjs/proto-signing@0.39.0':
-    dependencies:
-      '@cosmjs/amino': 0.39.0
-      '@cosmjs/crypto': 0.39.0
-      '@cosmjs/encoding': 0.39.0
-      '@cosmjs/math': 0.39.0
-      '@cosmjs/utils': 0.39.0
-      cosmjs-types: 0.11.0
-
   '@cosmjs/socket@0.36.2':
     dependencies:
       '@cosmjs/stream': 0.36.2
-      isomorphic-ws: 4.0.1(ws@7.5.13)
-      ws: 7.5.13
-      xstream: 11.14.0
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-
-  '@cosmjs/socket@0.39.0':
-    dependencies:
-      '@cosmjs/stream': 0.39.0
       isomorphic-ws: 4.0.1(ws@7.5.13)
       ws: 7.5.13
       xstream: 11.14.0
@@ -8552,25 +8376,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@cosmjs/stargate@0.39.0':
-    dependencies:
-      '@cosmjs/amino': 0.39.0
-      '@cosmjs/encoding': 0.39.0
-      '@cosmjs/math': 0.39.0
-      '@cosmjs/proto-signing': 0.39.0
-      '@cosmjs/stream': 0.39.0
-      '@cosmjs/tendermint-rpc': 0.39.0
-      '@cosmjs/utils': 0.39.0
-      cosmjs-types: 0.11.0
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-
   '@cosmjs/stream@0.36.2':
-    dependencies:
-      xstream: 11.14.0
-
-  '@cosmjs/stream@0.39.0':
     dependencies:
       xstream: 11.14.0
 
@@ -8589,24 +8395,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@cosmjs/tendermint-rpc@0.39.0':
-    dependencies:
-      '@cosmjs/crypto': 0.39.0
-      '@cosmjs/encoding': 0.39.0
-      '@cosmjs/json-rpc': 0.39.0
-      '@cosmjs/math': 0.39.0
-      '@cosmjs/socket': 0.39.0
-      '@cosmjs/stream': 0.39.0
-      '@cosmjs/utils': 0.39.0
-      readonly-date-esm: 2.0.0
-      xstream: 11.14.0
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-
   '@cosmjs/utils@0.36.2': {}
-
-  '@cosmjs/utils@0.39.0': {}
 
   '@digitalbazaar/security-context@1.0.1': {}
 
@@ -9025,7 +8814,7 @@ snapshots:
       '@ethersproject/properties': 5.8.0
       '@ethersproject/strings': 5.8.0
 
-  '@expo/cli@57.0.27(@expo/dom-webview@57.0.1)(@typescript/typescript6@6.0.2)(expo-constants@57.0.21(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1))(expo-font@57.0.4(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1))(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)':
+  '@expo/cli@57.0.27(@expo/dom-webview@57.0.1)(@typescript/typescript6@6.0.2)(expo-constants@57.0.21(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1))(expo-font@57.0.4(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1))(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)':
     dependencies:
       '@expo/code-signing-certificates': 0.0.6
       '@expo/config': 57.0.10(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
@@ -9035,7 +8824,7 @@ snapshots:
       '@expo/image-utils': 0.11.6(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
       '@expo/inline-modules': 0.1.8(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
       '@expo/json-file': 11.2.1
-      '@expo/log-box': 57.0.4(@expo/dom-webview@57.0.1)(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
+      '@expo/log-box': 57.0.4(@expo/dom-webview@57.0.1)(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
       '@expo/metro': 56.0.2(supports-color@8.1.1)
       '@expo/metro-config': 57.0.13(@typescript/typescript6@6.0.2)(expo@57.0.26)(supports-color@8.1.1)
       '@expo/metro-file-map': 57.0.4(supports-color@8.1.1)
@@ -9044,7 +8833,7 @@ snapshots:
       '@expo/plist': 0.8.1
       '@expo/prebuild-config': 57.0.16(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
       '@expo/require-utils': 57.0.6(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
-      '@expo/router-server': 57.0.12(expo-constants@57.0.21(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1))(expo-font@57.0.4(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1))(expo-server@57.0.3)(expo@57.0.26)(react@19.3.1)(supports-color@8.1.1)
+      '@expo/router-server': 57.0.12(expo-constants@57.0.21(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1))(expo-font@57.0.4(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1))(expo-server@57.0.3)(expo@57.0.26)(react@19.3.1)(supports-color@8.1.1)
       '@expo/schema-utils': 57.0.2
       '@expo/spawn-async': 1.8.0
       '@expo/ws-tunnel': 2.0.1(ws@8.22.0)
@@ -9156,7 +8945,7 @@ snapshots:
       - supports-color
     optional: true
 
-  '@expo/devtools@57.0.1(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)':
+  '@expo/devtools@57.0.1(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)':
     dependencies:
       chalk: 4.1.2
     optionalDependencies:
@@ -9164,7 +8953,7 @@ snapshots:
       react-native: 0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
     optional: true
 
-  '@expo/dom-webview@57.0.1(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)':
+  '@expo/dom-webview@57.0.1(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)':
     dependencies:
       expo: 57.0.26(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@57.0.1)(@typescript/typescript6@6.0.2)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
       react: 19.3.1
@@ -9243,9 +9032,9 @@ snapshots:
       - typescript
     optional: true
 
-  '@expo/log-box@57.0.4(@expo/dom-webview@57.0.1)(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)':
+  '@expo/log-box@57.0.4(@expo/dom-webview@57.0.1)(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)':
     dependencies:
-      '@expo/dom-webview': 57.0.1(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
+      '@expo/dom-webview': 57.0.1(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
       anser: 1.4.10
       expo: 57.0.26(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@57.0.1)(@typescript/typescript6@6.0.2)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
       react: 19.3.1
@@ -9370,12 +9159,12 @@ snapshots:
       - supports-color
     optional: true
 
-  '@expo/router-server@57.0.12(expo-constants@57.0.21(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1))(expo-font@57.0.4(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1))(expo-server@57.0.3)(expo@57.0.26)(react@19.3.1)(supports-color@8.1.1)':
+  '@expo/router-server@57.0.12(expo-constants@57.0.21(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1))(expo-font@57.0.4(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1))(expo-server@57.0.3)(expo@57.0.26)(react@19.3.1)(supports-color@8.1.1)':
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       expo: 57.0.26(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@57.0.1)(@typescript/typescript6@6.0.2)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
-      expo-constants: 57.0.21(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
-      expo-font: 57.0.4(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
+      expo-constants: 57.0.21(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      expo-font: 57.0.4(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
       expo-server: 57.0.3
       react: 19.3.1
     transitivePeerDependencies:
@@ -9409,11 +9198,6 @@ snapshots:
     optional: true
 
   '@grpc/grpc-js@1.12.6':
-    dependencies:
-      '@grpc/proto-loader': 0.7.15
-      '@js-sdsl/ordered-map': 4.4.2
-
-  '@grpc/grpc-js@1.13.6':
     dependencies:
       '@grpc/proto-loader': 0.7.15
       '@js-sdsl/ordered-map': 4.4.2
@@ -9500,182 +9284,156 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/anoncreds@0.2.1(expo-crypto@15.0.8)':
+  '@hiero-did-sdk/anoncreds@0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)':
     dependencies:
-      '@hiero-did-sdk/core': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/hcs': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/zstd': 0.2.1
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/hcs': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/zstd': 0.1.8
       buffer: 6.0.3
     transitivePeerDependencies:
-      - bufferutil
+      - bn.js
       - expo-crypto
-      - utf-8-validate
+      - react-native
+      - supports-color
 
-  '@hiero-did-sdk/cache@0.2.1(expo-crypto@15.0.8)':
+  '@hiero-did-sdk/cache@0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)':
     dependencies:
-      '@hiero-did-sdk/core': 0.2.1(expo-crypto@15.0.8)
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
     transitivePeerDependencies:
-      - bufferutil
+      - bn.js
       - expo-crypto
-      - utf-8-validate
+      - react-native
+      - supports-color
 
-  '@hiero-did-sdk/client@0.2.1(expo-crypto@15.0.8)':
+  '@hiero-did-sdk/client@0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)':
     dependencies:
-      '@hiero-ledger/sdk': 2.90.1(expo-crypto@15.0.8)
+      '@hashgraph/sdk': 2.81.0(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
     transitivePeerDependencies:
-      - bufferutil
+      - bn.js
       - expo-crypto
-      - utf-8-validate
+      - react-native
+      - supports-color
 
-  '@hiero-did-sdk/core@0.2.1(expo-crypto@15.0.8)':
+  '@hiero-did-sdk/core@0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)':
     dependencies:
-      '@hiero-ledger/sdk': 2.90.1(expo-crypto@15.0.8)
+      '@hashgraph/sdk': 2.81.0(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       '@scure/base': 1.2.6
       buffer: 6.0.3
       cbor-x: 1.6.6
       varint: 6.0.0
     transitivePeerDependencies:
-      - bufferutil
+      - bn.js
       - expo-crypto
-      - utf-8-validate
+      - react-native
+      - supports-color
 
-  '@hiero-did-sdk/crypto@0.2.1':
+  '@hiero-did-sdk/crypto@0.1.8':
     dependencies:
       buffer: 6.0.3
 
-  '@hiero-did-sdk/hcs@0.2.1(expo-crypto@15.0.8)':
+  '@hiero-did-sdk/hcs@0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)':
     dependencies:
-      '@hiero-did-sdk/cache': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/client': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/core': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/crypto': 0.2.1
-      '@hiero-did-sdk/zstd': 0.2.1
-      '@hiero-ledger/sdk': 2.90.1(expo-crypto@15.0.8)
+      '@hashgraph/sdk': 2.81.0(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/cache': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/client': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/crypto': 0.1.8
+      '@hiero-did-sdk/zstd': 0.1.8
       buffer: 6.0.3
     transitivePeerDependencies:
-      - bufferutil
+      - bn.js
       - expo-crypto
-      - utf-8-validate
+      - react-native
+      - supports-color
 
-  '@hiero-did-sdk/lifecycle@0.2.1(expo-crypto@15.0.8)':
+  '@hiero-did-sdk/lifecycle@0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)':
     dependencies:
-      '@hiero-did-sdk/core': 0.2.1(expo-crypto@15.0.8)
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       buffer: 6.0.3
     transitivePeerDependencies:
-      - bufferutil
+      - bn.js
       - expo-crypto
-      - utf-8-validate
+      - react-native
+      - supports-color
 
-  '@hiero-did-sdk/messages@0.2.1(expo-crypto@15.0.8)':
+  '@hiero-did-sdk/messages@0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)':
     dependencies:
-      '@hiero-did-sdk/core': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/lifecycle': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/resolver': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-ledger/sdk': 2.90.1(expo-crypto@15.0.8)
+      '@hashgraph/sdk': 2.81.0(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/lifecycle': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/resolver': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       buffer: 6.0.3
     transitivePeerDependencies:
-      - bufferutil
+      - bn.js
       - expo-crypto
-      - utf-8-validate
+      - react-native
+      - supports-color
 
-  '@hiero-did-sdk/publisher-internal@0.2.1(expo-crypto@15.0.8)':
+  '@hiero-did-sdk/publisher-internal@0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)':
     dependencies:
-      '@hiero-did-sdk/core': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-ledger/sdk': 2.90.1(expo-crypto@15.0.8)
+      '@hashgraph/sdk': 2.81.0(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       buffer: 6.0.3
     transitivePeerDependencies:
-      - bufferutil
+      - bn.js
       - expo-crypto
-      - utf-8-validate
+      - react-native
+      - supports-color
 
-  '@hiero-did-sdk/registrar@0.2.1(expo-crypto@15.0.8)':
+  '@hiero-did-sdk/registrar@0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)':
     dependencies:
-      '@hiero-did-sdk/core': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/lifecycle': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/messages': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/publisher-internal': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/resolver': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/signer-internal': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/verifier-internal': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-ledger/sdk': 2.90.1(expo-crypto@15.0.8)
+      '@hashgraph/sdk': 2.81.0(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/lifecycle': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/messages': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/publisher-internal': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/resolver': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/signer-internal': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/verifier-internal': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       buffer: 6.0.3
     transitivePeerDependencies:
-      - bufferutil
+      - bn.js
       - expo-crypto
-      - utf-8-validate
+      - react-native
+      - supports-color
 
-  '@hiero-did-sdk/resolver@0.2.1(expo-crypto@15.0.8)':
+  '@hiero-did-sdk/resolver@0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)':
     dependencies:
-      '@hiero-did-sdk/client': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/core': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/hcs': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-did-sdk/verifier-internal': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-ledger/sdk': 2.90.1(expo-crypto@15.0.8)
+      '@hashgraph/sdk': 2.81.0(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/client': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/hcs': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/verifier-internal': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       buffer: 6.0.3
     transitivePeerDependencies:
-      - bufferutil
+      - bn.js
       - expo-crypto
-      - utf-8-validate
+      - react-native
+      - supports-color
 
-  '@hiero-did-sdk/signer-internal@0.2.1(expo-crypto@15.0.8)':
+  '@hiero-did-sdk/signer-internal@0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)':
     dependencies:
-      '@hiero-did-sdk/core': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-ledger/sdk': 2.90.1(expo-crypto@15.0.8)
+      '@hashgraph/sdk': 2.81.0(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       buffer: 6.0.3
     transitivePeerDependencies:
-      - bufferutil
+      - bn.js
       - expo-crypto
-      - utf-8-validate
+      - react-native
+      - supports-color
 
-  '@hiero-did-sdk/verifier-internal@0.2.1(expo-crypto@15.0.8)':
+  '@hiero-did-sdk/verifier-internal@0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)':
     dependencies:
-      '@hiero-did-sdk/core': 0.2.1(expo-crypto@15.0.8)
-      '@hiero-ledger/sdk': 2.90.1(expo-crypto@15.0.8)
+      '@hashgraph/sdk': 2.81.0(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       buffer: 6.0.3
     transitivePeerDependencies:
-      - bufferutil
+      - bn.js
       - expo-crypto
-      - utf-8-validate
+      - react-native
+      - supports-color
 
-  '@hiero-did-sdk/zstd@0.2.1': {}
-
-  '@hiero-ledger/cryptography@1.23.0(expo-crypto@15.0.8)':
-    dependencies:
-      '@noble/ciphers': 2.2.0
-      '@noble/curves': 2.2.0
-      '@noble/hashes': 2.2.0
-      '@scure/base': 2.2.0
-      '@scure/bip32': 2.2.0
-      asn1js: 3.0.6
-      bignumber.js: 11.1.2
-      forge-light: 1.1.4
-    optionalDependencies:
-      expo-crypto: 15.0.8(expo@57.0.26)
-
-  '@hiero-ledger/proto@2.32.0(protobufjs@8.6.6)':
-    dependencies:
-      long: 5.3.2
-      protobufjs: 8.6.6
-
-  '@hiero-ledger/sdk@2.90.1(expo-crypto@15.0.8)':
-    dependencies:
-      '@grpc/grpc-js': 1.13.6
-      '@hiero-ledger/cryptography': 1.23.0(expo-crypto@15.0.8)
-      '@hiero-ledger/proto': 2.32.0(protobufjs@8.6.6)
-      bignumber.js: 11.1.2
-      crypto-js: 4.2.0
-      ethers: 6.16.0
-      js-base64: 3.7.4
-      long: 5.3.2
-      pino: 10.1.0
-      pino-pretty: 13.0.0
-      protobufjs: 8.6.6
-      rfc4648: 1.5.3
-      utf8: 3.0.0
-    transitivePeerDependencies:
-      - bufferutil
-      - expo-crypto
-      - utf-8-validate
+  '@hiero-did-sdk/zstd@0.1.8': {}
 
   '@hyperledger/anoncreds-nodejs@0.4.1':
     dependencies:
@@ -9987,13 +9745,7 @@ snapshots:
 
   '@noble/ciphers@1.3.0': {}
 
-  '@noble/ciphers@2.2.0': {}
-
   '@noble/ciphers@2.4.0': {}
-
-  '@noble/curves@1.2.0':
-    dependencies:
-      '@noble/hashes': 1.3.2
 
   '@noble/curves@1.8.1':
     dependencies:
@@ -10003,15 +9755,9 @@ snapshots:
     dependencies:
       '@noble/hashes': 1.8.0
 
-  '@noble/curves@2.2.0':
-    dependencies:
-      '@noble/hashes': 2.2.0
-
   '@noble/curves@2.4.0':
     dependencies:
       '@noble/hashes': 2.4.0
-
-  '@noble/hashes@1.3.2': {}
 
   '@noble/hashes@1.6.1': {}
 
@@ -10448,7 +10194,7 @@ snapshots:
 
   '@react-native/normalize-colors@0.88.0': {}
 
-  '@react-native/virtualized-lists@0.88.0(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)':
+  '@react-native/virtualized-lists@0.88.0(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)':
     dependencies:
       invariant: 2.2.4
       nullthrows: 1.1.1
@@ -10599,19 +10345,7 @@ snapshots:
 
   '@scure/base@1.2.6': {}
 
-  '@scure/base@2.2.0': {}
-
   '@scure/base@2.4.0': {}
-
-  '@scure/bip32@2.2.0':
-    dependencies:
-      '@noble/curves': 2.2.0
-      '@noble/hashes': 2.2.0
-      '@scure/base': 2.2.0
-
-  '@scure/bip39@2.4.0':
-    dependencies:
-      '@noble/hashes': 2.4.0
 
   '@sd-jwt/core@0.23.0':
     dependencies:
@@ -10867,10 +10601,6 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
-  '@types/node@22.7.5':
-    dependencies:
-      undici-types: 6.19.8
-
   '@types/node@26.6.2':
     dependencies:
       undici-types: 8.9.0
@@ -11103,8 +10833,6 @@ snapshots:
       negotiator: 1.0.0
 
   acorn@8.19.0: {}
-
-  aes-js@4.0.0-beta.5: {}
 
   agent-base@7.1.4: {}
 
@@ -11375,8 +11103,6 @@ snapshots:
 
   big-integer@1.6.52:
     optional: true
-
-  bignumber.js@11.1.2: {}
 
   bignumber.js@9.1.1: {}
 
@@ -11697,8 +11423,6 @@ snapshots:
       vary: 1.1.2
 
   cosmjs-types@0.10.1: {}
-
-  cosmjs-types@0.11.0: {}
 
   cpu-features@0.0.10:
     dependencies:
@@ -12064,19 +11788,6 @@ snapshots:
 
   etag@1.8.1: {}
 
-  ethers@6.16.0:
-    dependencies:
-      '@adraffy/ens-normalize': 1.10.1
-      '@noble/curves': 1.2.0
-      '@noble/hashes': 1.3.2
-      '@types/node': 22.7.5
-      aes-js: 4.0.0-beta.5
-      tslib: 2.7.0
-      ws: 8.17.1
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-
   event-target-shim@5.0.1: {}
 
   events-universal@1.0.1:
@@ -12091,11 +11802,11 @@ snapshots:
 
   expect-type@1.4.0: {}
 
-  expo-asset@57.0.19(@typescript/typescript6@6.0.2)(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1):
+  expo-asset@57.0.19(@typescript/typescript6@6.0.2)(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1):
     dependencies:
       '@expo/image-utils': 0.11.6(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
       expo: 57.0.26(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@57.0.1)(@typescript/typescript6@6.0.2)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
-      expo-constants: 57.0.21(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      expo-constants: 57.0.21(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       react: 19.3.1
       react-native: 0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
     transitivePeerDependencies:
@@ -12103,7 +11814,7 @@ snapshots:
       - typescript
     optional: true
 
-  expo-constants@57.0.21(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1):
+  expo-constants@57.0.21(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1):
     dependencies:
       '@expo/env': 2.4.3(supports-color@8.1.1)
       expo: 57.0.26(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@57.0.1)(@typescript/typescript6@6.0.2)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
@@ -12118,13 +11829,13 @@ snapshots:
       expo: 57.0.26(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@57.0.1)(@typescript/typescript6@6.0.2)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
     optional: true
 
-  expo-file-system@57.0.7(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1)):
+  expo-file-system@57.0.7(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)):
     dependencies:
       expo: 57.0.26(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@57.0.1)(@typescript/typescript6@6.0.2)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
       react-native: 0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
     optional: true
 
-  expo-font@57.0.4(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1):
+  expo-font@57.0.4(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1):
     dependencies:
       expo: 57.0.26(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@57.0.1)(@typescript/typescript6@6.0.2)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
       fontfaceobserver: 2.3.0
@@ -12149,16 +11860,16 @@ snapshots:
       - typescript
     optional: true
 
-  expo-modules-core@57.0.20(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1):
+  expo-modules-core@57.0.20(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1):
     dependencies:
       '@expo/expo-modules-macros-plugin': 0.6.1
-      expo-modules-jsi: 57.1.1(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))
+      expo-modules-jsi: 57.1.1(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))
       invariant: 2.2.4
       react: 19.3.1
       react-native: 0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
     optional: true
 
-  expo-modules-jsi@57.1.1(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1)):
+  expo-modules-jsi@57.1.1(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)):
     dependencies:
       react-native: 0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
     optional: true
@@ -12169,31 +11880,31 @@ snapshots:
   expo@57.0.26(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@57.0.1)(@typescript/typescript6@6.0.2)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1):
     dependencies:
       '@babel/runtime': 7.29.7
-      '@expo/cli': 57.0.27(@expo/dom-webview@57.0.1)(@typescript/typescript6@6.0.2)(expo-constants@57.0.21(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1))(expo-font@57.0.4(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1))(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
+      '@expo/cli': 57.0.27(@expo/dom-webview@57.0.1)(@typescript/typescript6@6.0.2)(expo-constants@57.0.21(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1))(expo-font@57.0.4(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1))(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
       '@expo/config': 57.0.10(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
       '@expo/config-plugins': 57.0.10(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
-      '@expo/devtools': 57.0.1(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
+      '@expo/devtools': 57.0.1(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
       '@expo/fingerprint': 0.20.14(supports-color@8.1.1)
       '@expo/local-build-cache-provider': 57.0.8(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
-      '@expo/log-box': 57.0.4(@expo/dom-webview@57.0.1)(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
+      '@expo/log-box': 57.0.4(@expo/dom-webview@57.0.1)(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
       '@expo/metro': 56.0.2(supports-color@8.1.1)
       '@expo/metro-config': 57.0.13(@typescript/typescript6@6.0.2)(expo@57.0.26)(supports-color@8.1.1)
       '@ungap/structured-clone': 1.4.0
       babel-preset-expo: 57.0.13(@babel/core@7.29.7(supports-color@8.1.1))(@babel/runtime@7.29.7)(expo@57.0.26)(react-refresh@0.14.2)(supports-color@8.1.1)
-      expo-asset: 57.0.19(@typescript/typescript6@6.0.2)(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
-      expo-constants: 57.0.21(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
-      expo-file-system: 57.0.7(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))
-      expo-font: 57.0.4(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
+      expo-asset: 57.0.19(@typescript/typescript6@6.0.2)(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
+      expo-constants: 57.0.21(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
+      expo-file-system: 57.0.7(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))
+      expo-font: 57.0.4(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
       expo-keep-awake: 57.0.2(expo@57.0.26)(react@19.3.1)
       expo-modules-autolinking: 57.0.13(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
-      expo-modules-core: 57.0.20(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
+      expo-modules-core: 57.0.20(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
       pretty-format: 29.7.0
       react: 19.3.1
       react-native: 0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1)
       react-refresh: 0.14.2
       whatwg-url-minimum: 0.1.2
     optionalDependencies:
-      '@expo/dom-webview': 57.0.1(expo@57.0.26)(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
+      '@expo/dom-webview': 57.0.1(expo@57.0.26)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
     transitivePeerDependencies:
       - '@babel/core'
       - bufferutil
@@ -13748,10 +13459,6 @@ snapshots:
       '@types/node': 26.6.2
       long: 5.3.2
 
-  protobufjs@8.6.6:
-    dependencies:
-      long: 5.3.2
-
   protobufjs@8.8.0:
     dependencies:
       long: 5.3.2
@@ -13844,7 +13551,7 @@ snapshots:
       '@react-native/community-cli-plugin': 0.88.0(supports-color@8.1.1)
       '@react-native/gradle-plugin': 0.88.0
       '@react-native/normalize-colors': 0.88.0
-      '@react-native/virtualized-lists': 0.88.0(react-native@0.88.0(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
+      '@react-native/virtualized-lists': 0.88.0(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
       anser: 1.4.10
       ansi-regex: 5.0.1
       base64-js: 1.5.1
@@ -13908,8 +13615,6 @@ snapshots:
   readdir-glob@1.1.3:
     dependencies:
       minimatch: 5.1.9
-
-  readonly-date-esm@2.0.0: {}
 
   readonly-date@1.0.0: {}
 
@@ -14563,8 +14268,6 @@ snapshots:
 
   tslib@1.14.1: {}
 
-  tslib@2.7.0: {}
-
   tslib@2.8.1: {}
 
   tslog@4.10.2: {}
@@ -14658,8 +14361,6 @@ snapshots:
       quansync: 1.0.0
 
   undici-types@5.26.5: {}
-
-  undici-types@6.19.8: {}
 
   undici-types@6.21.0: {}
 
@@ -14842,8 +14543,6 @@ snapshots:
   wrappy@1.0.2: {}
 
   ws@7.5.13: {}
-
-  ws@8.17.1: {}
 
   ws@8.22.0: {}
 
