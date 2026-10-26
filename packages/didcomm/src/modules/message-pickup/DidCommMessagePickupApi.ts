@@ -197,15 +197,14 @@ export class DidCommMessagePickupApi<
       throw new CredoError(`No active live mode session found with id ${pickupSessionId}`)
     }
     const connectionRecord = await this.connectionService.getById(this.agentContext, session.connectionId)
-
-    if (!this.messagePickupSessionService.getLiveSession(this.agentContext, pickupSessionId)) {
-      throw new CredoError(`Live mode session ${pickupSessionId} ended while loading its connection`)
-    }
-
     if (session.protocolVersion === 'v4') {
       assertDidCommV2Connection(connectionRecord, 'Message Pickup 4.0')
     } else {
       assertDidCommV1Connection(connectionRecord, 'Message Pickup')
+    }
+
+    if (!this.messagePickupSessionService.getLiveSession(this.agentContext, pickupSessionId)) {
+      throw new CredoError(`Live mode session ${pickupSessionId} ended while loading its connection`)
     }
 
     const protocol = this.getProtocol(session.protocolVersion)

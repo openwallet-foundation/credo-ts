@@ -155,16 +155,6 @@ describe('DidCommMessagePickupApi', () => {
     ).rejects.toThrow(CredoError)
   })
 
-  it('does not take messages for a live session that ended while loading the connection', async () => {
-    mockFunction(messagePickupSessionService.getLiveSession)
-      .mockReturnValueOnce({ connectionId: mockConnection.id, protocolVersion: 'v2' } as DidCommMessagePickupSession)
-      .mockReturnValueOnce(undefined)
-    mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
-
-    await expect(api.deliverMessagesFromQueue({ pickupSessionId: 'pickup-1' })).rejects.toThrow(CredoError)
-    expect(queueTransportRepository.takeFromQueue).not.toHaveBeenCalled()
-  })
-
   it('sends v4 delivery message when session uses v4 protocol', async () => {
     const mockConnectionV3 = getMockConnection({
       state: DidCommDidExchangeState.Completed,
@@ -193,6 +183,20 @@ describe('DidCommMessagePickupApi', () => {
     expect(sendMessageMock).toHaveBeenCalledTimes(1)
     const [outboundCtx] = sendMessageMock.mock.calls[0]
     expect(outboundCtx.message.type).toEqual(DidCommMessageDeliveryV4Message.type.messageTypeUri)
+  })
+
+  it('does not take messages for a live session that ended while loading the connection', async () => {
+    mockFunction(messagePickupSessionService.getLiveSession)
+      .mockReturnValueOnce({ connectionId: mockConnection.id, protocolVersion: 'v2' } as DidCommMessagePickupSession)
+      .mockReturnValueOnce(undefined)
+    mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
+    const takeFromQueue = vi.spyOn(
+      agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository,
+      'takeFromQueue'
+    )
+
+    await expect(api.deliverMessagesFromQueue({ pickupSessionId: 'pickup-1' })).rejects.toThrow(CredoError)
+    expect(takeFromQueue).not.toHaveBeenCalled()
   })
 
   it('pickupMessages only completes on the completed event of its own thread', async () => {

@@ -772,7 +772,7 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
     vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(sendError)
     vi.spyOn(transportSession, 'close').mockRejectedValue(new Error('close failed'))
 
-    await expect(forward('v1')).resolves.toBeUndefined()
+    await expect(forward()).resolves.toBeUndefined()
 
     expect(liveTransportSessionId()).toBeUndefined()
   })
