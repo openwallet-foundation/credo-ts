@@ -1,4 +1,4 @@
-FROM node:22.23.3-bookworm
+FROM node:24.22.1-bookworm
 
 # Set working directory
 WORKDIR /www
