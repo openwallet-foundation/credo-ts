@@ -698,6 +698,8 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
   )
 
   const recipientKey = '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'
+  const recipientDid = 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc'
+  const payload = { protected: 'base64url', iv: 'base64url', ciphertext: 'base64url', tag: 'base64url' }
   const sendError = new MessageSendingError('Message is undeliverable', {
     outboundMessageContext: {} as DidCommOutboundMessageContext,
   })
@@ -716,11 +718,14 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
       ?.transportSessionId
   }
 
-  async function forward(): Promise<void> {
-    const message = new DidCommForwardMessage({
-      to: recipientKey,
-      message: { protected: 'base64url', iv: 'base64url', ciphertext: 'base64url', tag: 'base64url' },
-    })
+  async function forward(version: 'v1' | 'v2' = 'v1'): Promise<void> {
+    let message: DidCommForwardMessage | DidCommForwardV2Message
+    if (version === 'v1') {
+      message = new DidCommForwardMessage({ to: recipientKey, message: payload })
+    } else {
+      message = new DidCommForwardV2Message({ to: [], next: recipientDid })
+      message.appendedAttachments = [new DidCommAttachment({ id: 'msg-1', data: { json: payload } })]
+    }
     await mediatorService.processForwardMessage(new DidCommInboundMessageContext(message, { agentContext }))
   }
 
@@ -730,15 +735,15 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
     transportSession = new DummyTransportSession('transportSessionId')
     vi.spyOn(transportSession, 'close').mockResolvedValue()
     transportService.saveSession(transportSession)
-    mockFunction(mediationRepository.findSingleByRecipientKey).mockResolvedValue(
-      new DidCommMediationRecord({
-        connectionId: mockConnection.id,
-        role: DidCommMediationRole.Mediator,
-        state: DidCommMediationState.Granted,
-        threadId: 'threadId',
-        recipientKeys: [recipientKey],
-      })
-    )
+    const mediationRecord = new DidCommMediationRecord({
+      connectionId: mockConnection.id,
+      role: DidCommMediationRole.Mediator,
+      state: DidCommMediationState.Granted,
+      threadId: 'threadId',
+      recipientKeys: [recipientKey],
+    })
+    mockFunction(mediationRepository.findSingleByRecipientKey).mockResolvedValue(mediationRecord)
+    mockFunction(mediationRepository.findSingleByRecipientDid).mockResolvedValue(mediationRecord)
     mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
     saveLiveSession('transportSessionId')
     vi.spyOn(mediationPickupApi, 'queueMessage').mockResolvedValue(undefined)
@@ -747,18 +752,21 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
     )
   })
 
-  test('ends the live mode session, closes its transport and completes the forward when the live delivery send fails', async () => {
-    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(sendError)
-    const warnSpy = vi.spyOn(agentConfig.logger, 'warn')
+  test.each(['v1', 'v2'] as const)(
+    'ends the live mode session, closes its transport and completes the %s forward when the live delivery send fails',
+    async (version) => {
+      vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(sendError)
+      const warnSpy = vi.spyOn(agentConfig.logger, 'warn')
 
-    await forward()
+      await forward(version)
 
-    expect(transportSession.close).toHaveBeenCalledTimes(1)
-    expect(liveTransportSessionId()).toBeUndefined()
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(`'${mockConnection.id}'`), {
-      error: 'Message is undeliverable',
-    })
-  })
+      expect(transportSession.close).toHaveBeenCalledTimes(1)
+      expect(liveTransportSessionId()).toBeUndefined()
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(`'${mockConnection.id}'`), {
+        error: 'Message is undeliverable',
+      })
+    }
+  )
 
   test('completes the forward when closing the transport throws', async () => {
     vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(sendError)
