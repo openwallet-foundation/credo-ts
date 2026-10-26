@@ -27,10 +27,10 @@
     "@credo-ts/hedera": "workspace:*",
     "@credo-ts/indy-vdr": "workspace:*",
     "@credo-ts/node": "workspace:*",
-    "@hiero-did-sdk/client": "^0.1.8",
+    "@hiero-did-sdk/client": "^0.2.1",
     "@types/figlet": "^1.7.0",
     "clear": "^0.1.0",
-    "figlet": "^1.10.0",
+    "figlet": "^1.12.0",
     "vite-node": "^6.0.0"
   }
 }
