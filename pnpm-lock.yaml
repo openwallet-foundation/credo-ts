@@ -5341,8 +5341,8 @@ packages:
       expo: '*'
       react: '*'
 
-  expo-modules-autolinking@57.0.13:
-    resolution: {integrity: sha512-Hj5NjZRlfccazhKab+wK19leRVUr1Y/PUERaRvegIbUSkq4GVxKq6lU9QHlKQyC16MdD/VS4iwsiLivB4o7lvQ==}
+  expo-modules-autolinking@57.0.16:
+    resolution: {integrity: sha512-OJh6rMMIIZ/dfwOk2FufJjjsUSw5Boy1Y5Tl+zbBmua/FcD03eEg097dkYIf3iBHVkQ6q9eR08qT88qxvnelow==}
     hasBin: true
 
   expo-modules-core@57.0.20:
@@ -9545,7 +9545,7 @@ snapshots:
       '@expo/json-file': 11.0.1
       '@react-native/normalize-colors': 0.86.3
       debug: 4.4.3(supports-color@8.1.1)
-      expo-modules-autolinking: 57.0.13(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
+      expo-modules-autolinking: 57.0.16(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
       resolve-from: 5.0.0
       semver: 7.8.5
     transitivePeerDependencies:
@@ -12433,7 +12433,7 @@ snapshots:
       react: 19.3.1
     optional: true
 
-  expo-modules-autolinking@57.0.13(@typescript/typescript6@6.0.2)(supports-color@8.1.1):
+  expo-modules-autolinking@57.0.16(@typescript/typescript6@6.0.2)(supports-color@8.1.1):
     dependencies:
       '@expo/require-utils': 57.0.6(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
       '@expo/spawn-async': 1.8.0
@@ -12480,7 +12480,7 @@ snapshots:
       expo-file-system: 57.0.7(expo@57.0.26)(react-native@0.84.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))
       expo-font: 57.0.4(expo@57.0.26)(react-native@0.84.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
       expo-keep-awake: 57.0.2(expo@57.0.26)(react@19.3.1)
-      expo-modules-autolinking: 57.0.13(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
+      expo-modules-autolinking: 57.0.16(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
       expo-modules-core: 57.0.20(react-native@0.84.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)
       pretty-format: 29.7.0
       react: 19.3.1
