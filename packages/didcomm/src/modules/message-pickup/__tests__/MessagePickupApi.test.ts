@@ -10,6 +10,7 @@ import { DidCommModuleConfig } from '../../../../../didcomm/src'
 import { DidCommEventTypes } from '../../../DidCommEvents'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import type { DidCommOutboundMessageContext } from '../../../models'
+import { InMemoryQueueTransportRepository } from '../../../transport/queue/InMemoryQueueTransportRepository'
 import { DidCommDidExchangeState } from '../../connections/models/DidCommDidExchangeState'
 import { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
 import { DidCommMessagePickupApi } from '../DidCommMessagePickupApi'
@@ -20,9 +21,11 @@ import {
   DidCommMessageDeliveryV2Message,
   DidCommMessagePickupV1Protocol,
   DidCommMessagePickupV2Protocol,
+  DidCommMessagePickupV4Protocol,
   DidCommStatusV2Message,
 } from '../protocol'
 import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
+import { DidCommMessageDeliveryV4Message, DidCommStatusV4Message } from '../protocol/v4'
 import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'
 
 const mockConnection = getMockConnection({
@@ -33,6 +36,7 @@ vi.mock('../../../../../core/src/agent/EventEmitter')
 vi.mock('../../../DidCommMessageSender')
 vi.mock('../../connections/services/DidCommConnectionService')
 vi.mock('../services/DidCommMessagePickupSessionService')
+vi.mock('../../../transport/queue/InMemoryQueueTransportRepository')
 
 const EventEmitterMock = EventEmitter as MockedClassConstructor<typeof EventEmitter>
 const MessageSenderMock = DidCommMessageSender as MockedClassConstructor<typeof DidCommMessageSender>
@@ -43,7 +47,11 @@ const MessagePickupSessionServiceMock = DidCommMessagePickupSessionService as Mo
 
 const messagePickupModuleConfig = new DidCommMessagePickupModuleConfig({
   maximumBatchSize: 10,
-  protocols: [new DidCommMessagePickupV1Protocol(), new DidCommMessagePickupV2Protocol()],
+  protocols: [
+    new DidCommMessagePickupV1Protocol(),
+    new DidCommMessagePickupV2Protocol(),
+    new DidCommMessagePickupV4Protocol(),
+  ],
 })
 
 // Mock classes
@@ -51,6 +59,11 @@ const eventEmitter = new EventEmitterMock()
 const messageSender = new MessageSenderMock()
 const connectionService = new ConnectionServiceMock()
 const messagePickupSessionService = new MessagePickupSessionServiceMock()
+
+const queueTransportRepository = new (
+  InMemoryQueueTransportRepository as MockedClassConstructor<typeof InMemoryQueueTransportRepository>
+)()
+const didCommModuleConfigWithQueue = new DidCommModuleConfig({ queueTransportRepository })
 
 // Mock typed object
 const agentContext = getAgentContext({
@@ -60,7 +73,7 @@ const agentContext = getAgentContext({
     [DidCommConnectionService, connectionService],
     [DidCommMessagePickupModuleConfig, messagePickupModuleConfig],
     [DidCommMessagePickupSessionService, messagePickupSessionService],
-    [DidCommModuleConfig, new DidCommModuleConfig()],
+    [DidCommModuleConfig, didCommModuleConfigWithQueue],
   ],
 })
 
@@ -142,6 +155,36 @@ describe('DidCommMessagePickupApi', () => {
     ).rejects.toThrow(CredoError)
   })
 
+  it('sends v4 delivery message when session uses v4 protocol', async () => {
+    const mockConnectionV3 = getMockConnection({
+      state: DidCommDidExchangeState.Completed,
+    })
+    mockConnectionV3.didcommVersion = 'v2'
+    mockFunction(messagePickupSessionService.getLiveSession).mockReturnValue({
+      connectionId: mockConnectionV3.id,
+      protocolVersion: 'v4',
+    } as DidCommMessagePickupSession)
+    mockFunction(connectionService.getById).mockResolvedValue(mockConnectionV3)
+    mockFunction(queueTransportRepository.takeFromQueue).mockResolvedValue([
+      {
+        id: 'msg-1',
+        encryptedMessage: { protected: 'p', iv: 'i', ciphertext: 'c', tag: 't' },
+        receivedAt: new Date(),
+      },
+    ])
+
+    await api.deliverMessagesFromQueue({
+      pickupSessionId: 'pickup-1',
+      recipientDid: 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc',
+      batchSize: 10,
+    })
+
+    const sendMessageMock = messageSender.sendMessage as MockedFunction<(typeof messageSender)['sendMessage']>
+    expect(sendMessageMock).toHaveBeenCalledTimes(1)
+    const [outboundCtx] = sendMessageMock.mock.calls[0]
+    expect(outboundCtx.message.type).toEqual(DidCommMessageDeliveryV4Message.type.messageTypeUri)
+  })
+
   it('pickupMessages only completes on the completed event of its own thread', async () => {
     const completed$ = new Subject<BaseEvent>()
     mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
@@ -175,14 +218,17 @@ describe('DidCommMessagePickupApi', () => {
   describe('setLiveDeliveryMode with awaitConfirmation', () => {
     const processed$ = new Subject<BaseEvent>()
 
-    function replyToLiveDeliveryChange(liveDelivery: boolean): void {
+    function replyToLiveDeliveryChange(
+      liveDelivery: boolean,
+      Status: typeof DidCommStatusV2Message | typeof DidCommStatusV4Message = DidCommStatusV2Message
+    ): void {
       mockFunction(messageSender.sendMessage).mockImplementation(async (outboundMessageContext) => {
         const { message } = outboundMessageContext as DidCommOutboundMessageContext
         processed$.next({
           type: DidCommEventTypes.DidCommMessageProcessed,
           metadata: { contextCorrelationId: agentContext.contextCorrelationId },
           payload: {
-            message: new DidCommStatusV2Message({ threadId: message.threadId, messageCount: 0, liveDelivery }),
+            message: new Status({ threadId: message.threadId, messageCount: 0, liveDelivery }),
             connection: mockConnection,
           },
         })
@@ -201,6 +247,21 @@ describe('DidCommMessagePickupApi', () => {
         api.setLiveDeliveryMode({
           connectionId: mockConnection.id,
           protocolVersion: 'v2',
+          liveDelivery: true,
+          awaitConfirmation: true,
+        })
+      ).resolves.toBeUndefined()
+    })
+
+    it('resolves once a pickup 4.0 status reply confirms live delivery', async () => {
+      const mockConnectionV2 = getMockConnection({ state: DidCommDidExchangeState.Completed, didcommVersion: 'v2' })
+      mockFunction(connectionService.getById).mockResolvedValue(mockConnectionV2)
+      replyToLiveDeliveryChange(true, DidCommStatusV4Message)
+
+      await expect(
+        api.setLiveDeliveryMode({
+          connectionId: mockConnectionV2.id,
+          protocolVersion: 'v4',
           liveDelivery: true,
           awaitConfirmation: true,
         })
