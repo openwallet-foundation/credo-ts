@@ -80,7 +80,7 @@ describe('RevocationNotificationService', () => {
       } satisfies AnonCredsCredentialMetadata
 
       // Set required tags
-      credentialRecord.setTag('anonCredsUnqualifiedRevocationRegistryId', metadata.revocationRegistryId)
+      credentialRecord.setTag('anonCredsRevocationRegistryId', metadata.revocationRegistryId)
       credentialRecord.setTag('anonCredsCredentialRevocationId', metadata.credentialRevocationId)
 
       mockFunction(credentialRepository.getSingleByQuery).mockResolvedValueOnce(credentialRecord)

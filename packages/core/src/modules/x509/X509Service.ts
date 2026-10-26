@@ -17,6 +17,7 @@ import type {
   X509GetLeafCertificateOptions,
   X509ParseCertificateOptions,
   X509ParseCertificateSigningRequestOptions,
+  X509ParseOptions,
   X509ValidateCertificateChainOptions,
 } from './X509ServiceOptions'
 import { X509RevocationCheckMode } from './X509ValidationOptions'
@@ -65,10 +66,12 @@ export class X509Service {
       verificationDate = new Date(),
       trustedCertificates,
       allowNonRootTrustedCertificate = true,
+      parseOptions,
     }: X509ValidateCertificateChainOptions
   ) {
     const validations: X509ValidationResult['validations'] = {}
     const config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+    const effectiveParseOptions = parseOptions ?? config.parseOptions
 
     let parsedChain: X509Certificate[]
 
@@ -82,9 +85,9 @@ export class X509Service {
       let parsedLeafCertificate: x509.X509Certificate
       let certificatesToBuildChain: x509.X509Certificate[]
       try {
-        parsedLeafCertificate = new x509.X509Certificate(certificate)
+        parsedLeafCertificate = new x509.X509Certificate(certificate, { berOptions: effectiveParseOptions })
         certificatesToBuildChain = [...certificateChain, ...(trustedCertificates ?? [])].map(
-          (c) => new x509.X509Certificate(c)
+          (c) => new x509.X509Certificate(c, { berOptions: effectiveParseOptions })
         )
       } catch (error) {
         throw new X509Error('Error during parsing of x509 certificate', { cause: error })
@@ -98,7 +101,9 @@ export class X509Service {
 
       // The chain is reversed here as the `x5c` header (the expected input),
       // has the leaf certificate as the first entry, while the `x509` library expects this as the last
-      parsedChain = chain.map((c) => X509Certificate.fromRawCertificate(new Uint8Array(c.rawData))).reverse()
+      parsedChain = chain
+        .map((c) => X509Certificate.fromRawCertificate(new Uint8Array(c.rawData), effectiveParseOptions))
+        .reverse()
 
       // We allow longer parsed chain, in case the root cert was not part of the chain, but in the
       // list of trusted certificates
@@ -110,7 +115,7 @@ export class X509Service {
 
       if (trustedCertificates) {
         const parsedTrustedCertificates = trustedCertificates.map((trustedCertificate) =>
-          X509Certificate.fromEncodedCertificate(trustedCertificate)
+          X509Certificate.fromEncodedCertificate(trustedCertificate, effectiveParseOptions)
         )
 
         const trustedCertificateIndex = parsedChain.findIndex((cert) =>
@@ -175,7 +180,7 @@ export class X509Service {
     }
 
     // Phase 2: Basic constraints validation for CA certificates
-    validations.basicConstraints = X509Service.validateBasicConstraintsForChain(parsedChain)
+    validations.basicConstraints = X509Service.validateBasicConstraintsForChain(parsedChain, effectiveParseOptions)
     if (!validations.basicConstraints.isValid) {
       throw new X509ValidationError(
         validations.basicConstraints.error?.message ?? 'Basic constraints validation failed',
@@ -194,7 +199,7 @@ export class X509Service {
     }
 
     // Phase 3: Path length constraint validation
-    validations.pathLength = X509Service.validatePathLengthConstraints(parsedChain)
+    validations.pathLength = X509Service.validatePathLengthConstraints(parsedChain, effectiveParseOptions)
     if (!validations.pathLength.isValid) {
       throw new X509ValidationError(
         validations.pathLength.error?.message ?? 'Path length constraint validation failed',
@@ -203,7 +208,9 @@ export class X509Service {
     }
 
     // Phase 4: Critical extension validation
-    const peculiarChain = parsedChain.map((cert) => new x509.X509Certificate(cert.rawCertificate))
+    const peculiarChain = parsedChain.map(
+      (cert) => new x509.X509Certificate(cert.rawCertificate, { berOptions: effectiveParseOptions })
+    )
     validations.criticalExtensions = validateCriticalExtensionsForChain(peculiarChain)
     if (!validations.criticalExtensions.isValid) {
       throw new X509ValidationError(
@@ -218,7 +225,8 @@ export class X509Service {
         agentContext,
         parsedChain,
         config,
-        verificationDate
+        verificationDate,
+        effectiveParseOptions
       )
       if (!validations.revocationStatus.isValid) {
         throw new X509ValidationError(validations.revocationStatus.error?.message ?? 'Revocation check failed', {
@@ -240,21 +248,23 @@ export class X509Service {
    *
    */
   public static parseCertificate(
-    _agentContext: AgentContext,
-    { encodedCertificate }: X509ParseCertificateOptions
+    agentContext: AgentContext,
+    { encodedCertificate, parseOptions }: X509ParseCertificateOptions
   ): X509Certificate {
-    const certificate = X509Certificate.fromEncodedCertificate(encodedCertificate)
+    const config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+    const certificate = X509Certificate.fromEncodedCertificate(encodedCertificate, parseOptions ?? config.parseOptions)
 
     return certificate
   }
 
   public static getLeafCertificate(
-    _agentContext: AgentContext,
-    { certificateChain }: X509GetLeafCertificateOptions
+    agentContext: AgentContext,
+    { certificateChain, parseOptions }: X509GetLeafCertificateOptions
   ): X509Certificate {
     if (certificateChain.length === 0) throw new X509Error('Certificate chain is empty')
 
-    const certificate = X509Certificate.fromEncodedCertificate(certificateChain[0])
+    const config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+    const certificate = X509Certificate.fromEncodedCertificate(certificateChain[0], parseOptions ?? config.parseOptions)
 
     return certificate
   }
@@ -299,10 +309,15 @@ export class X509Service {
     return crl
   }
 
-  public static parseCertificateSigningRequest({
-    encodedCertificateSigningRequest,
-  }: X509ParseCertificateSigningRequestOptions) {
-    const csr = CertificateSigningRequest.fromEncodedCertificateRequest(encodedCertificateSigningRequest)
+  public static parseCertificateSigningRequest(
+    agentContext: AgentContext,
+    { encodedCertificateSigningRequest, parseOptions }: X509ParseCertificateSigningRequestOptions
+  ) {
+    const config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+    const csr = CertificateSigningRequest.fromEncodedCertificateRequest(
+      encodedCertificateSigningRequest,
+      parseOptions ?? config.parseOptions
+    )
 
     return csr
   }
@@ -312,7 +327,8 @@ export class X509Service {
    * Per RFC 5280 Section 4.2.1.9
    */
   private static validatePathLengthConstraints(
-    certificateChain: X509Certificate[]
+    certificateChain: X509Certificate[],
+    parseOptions?: X509ParseOptions
   ): X509CertificateSingleValidationResult {
     let currentPathLength = 0
 
@@ -321,7 +337,7 @@ export class X509Service {
     // the number of CAs that follow it toward the leaf.
     for (let i = certificateChain.length - 1; i >= 0; i--) {
       const cert = certificateChain[i]
-      const peculiarCert = new x509.X509Certificate(cert.rawCertificate)
+      const peculiarCert = new x509.X509Certificate(cert.rawCertificate, { berOptions: parseOptions })
       const basicConstraintsExt = peculiarCert.getExtension(X509ExtensionIdentifier.BasicConstraints)
 
       if (!basicConstraintsExt) {
@@ -331,7 +347,9 @@ export class X509Service {
         continue
       }
 
-      const basicConstraints = new x509.BasicConstraintsExtension(basicConstraintsExt.rawData)
+      const basicConstraints = new x509.BasicConstraintsExtension(basicConstraintsExt.rawData, {
+        berOptions: parseOptions,
+      })
 
       // Skip leaf certificates (not CA)
       if (!basicConstraints.ca) {
@@ -364,13 +382,14 @@ export class X509Service {
    * Per RFC 5280 Section 4.2.1.9
    */
   private static validateBasicConstraintsForChain(
-    certificateChain: X509Certificate[]
+    certificateChain: X509Certificate[],
+    parseOptions?: X509ParseOptions
   ): X509CertificateSingleValidationResult {
     // Check all certificates except the last one (which is typically the end-entity/leaf)
     // In a properly ordered chain, CA certificates will be before the leaf
     for (let i = 0; i < certificateChain.length - 1; i++) {
       const cert = certificateChain[i]
-      const peculiarCert = new x509.X509Certificate(cert.rawCertificate)
+      const peculiarCert = new x509.X509Certificate(cert.rawCertificate, { berOptions: parseOptions })
       const basicConstraintsExt = peculiarCert.getExtension(X509ExtensionIdentifier.BasicConstraints)
 
       if (!basicConstraintsExt) {
@@ -382,7 +401,9 @@ export class X509Service {
         }
       }
 
-      const basicConstraints = new x509.BasicConstraintsExtension(basicConstraintsExt.rawData)
+      const basicConstraints = new x509.BasicConstraintsExtension(basicConstraintsExt.rawData, {
+        berOptions: parseOptions,
+      })
 
       // Intermediate and root CAs MUST have ca=true
       if (!basicConstraints.ca) {

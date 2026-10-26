@@ -178,6 +178,7 @@ export class OpenId4VpHolderService {
             signer: verifiedAuthorizationRequest.jar?.signer,
             payload: verifiedAuthorizationRequest.jar.jwt.payload,
             header: verifiedAuthorizationRequest.jar.jwt.header,
+            compact: verifiedAuthorizationRequest.jar.jwt.compact,
           }
         : undefined,
     }
