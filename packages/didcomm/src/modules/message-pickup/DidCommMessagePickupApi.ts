@@ -203,6 +203,10 @@ export class DidCommMessagePickupApi<
       assertDidCommV1Connection(connectionRecord, 'Message Pickup')
     }
 
+    if (!this.messagePickupSessionService.getLiveSession(this.agentContext, pickupSessionId)) {
+      throw new CredoError(`Live mode session ${pickupSessionId} ended while loading its connection`)
+    }
+
     const protocol = this.getProtocol(session.protocolVersion)
 
     const deliverMessagesReturn = await protocol.createDeliveryMessage(this.agentContext, {

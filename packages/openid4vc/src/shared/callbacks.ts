@@ -4,6 +4,7 @@ import {
   type EncodedX509Certificate,
   Hasher,
   JsonEncoder,
+  JweService,
   JwsService,
   type JwsSignerWithJwk,
   JwtPayload,
@@ -245,8 +246,6 @@ export function getOid4vcJwtVerifyCallback(
 }
 
 export function getOid4vcEncryptJweCallback(agentContext: AgentContext): EncryptJweCallback {
-  const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-
   return async (jweEncryptor, compact) => {
     if (jweEncryptor.method !== 'jwk') {
       throw new CredoError(
@@ -282,50 +281,15 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
     }
     const enc = jweEncryptor.enc as (typeof supportedResponseEncryptionContentAlgorithms)[number]
 
-    const jwkJson = jwk.toJson()
-    if (jwkJson.kty !== 'EC' && jwkJson.kty !== 'OKP') {
-      throw new CredoError(`Expected EC or OKP jwk for encryption, found ${Kms.getJwkHumanDescription(jwkJson)}`)
-    }
-
-    if (jwkJson.crv === 'Ed25519') {
-      throw new CredoError(`Expected ${jwkJson.kty} with crv X25519, found ${Kms.getJwkHumanDescription(jwkJson)}`)
-    }
-
-    // TODO: create a JWE service that handles this
-    let encodedHeader: string | undefined
-    const { encrypted, iv, tag } = await kms.encrypt({
-      key: {
-        keyAgreement: {
-          algorithm: 'ECDH-ES',
-          externalPublicJwk: jwkJson,
-          apu: jweEncryptor.apu ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apu) : undefined,
-          apv: jweEncryptor.apv ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apv) : undefined,
-        },
-      },
+    const jweService = agentContext.dependencyManager.resolve(JweService)
+    const compactJwe = await jweService.encryptJweCompact(agentContext, {
+      keyAgreement: { algorithm: 'ECDH-ES', recipient: { publicJwk: jwk } },
+      enc,
+      apu: jweEncryptor.apu ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apu) : undefined,
+      apv: jweEncryptor.apv ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apv) : undefined,
+      protectedHeaderOptions: { kid: jweEncryptor.publicJwk.kid },
       data: TypedArrayEncoder.fromUtf8String(compact),
-      encryption: {
-        algorithm: enc,
-        aad: ({ ephemeralPublicJwk }) => {
-          encodedHeader = JsonEncoder.toBase64Url({
-            kid: jweEncryptor.publicJwk.kid,
-            apu: jweEncryptor.apu,
-            apv: jweEncryptor.apv,
-            enc,
-            alg: 'ECDH-ES',
-            epk: ephemeralPublicJwk,
-          })
-          return TypedArrayEncoder.fromUtf8String(encodedHeader)
-        },
-      },
     })
-
-    if (!encodedHeader || !iv || !tag) {
-      throw new CredoError('Expected protected header, iv and tag')
-    }
-
-    const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64Url(iv)}.${TypedArrayEncoder.toBase64Url(
-      encrypted
-    )}.${TypedArrayEncoder.toBase64Url(tag)}`
 
     return { encryptionJwk: jweEncryptor.publicJwk, jwe: compactJwe }
   }
@@ -354,10 +318,6 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
       }
     }
 
-    // TODO: decodeJwe method in oid4vc-ts
-    // encryption key is not used (we don't use key wrapping)
-    const [encodedHeader /* encryptionKey */, , encodedIv, encodedCiphertext, encodedTag] = jwe.split('.')
-
     if (header.alg !== 'ECDH-ES') {
       throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response decryption")
     }
@@ -371,28 +331,9 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
     let decryptedPayload: string
     let publicJwk: Kms.PublicJwk
 
-    const epk = Kms.PublicJwk.fromUnknown(header.epk)
-
     try {
-      const decrypted = await kms.decrypt({
-        encrypted: TypedArrayEncoder.fromBase64Url(encodedCiphertext),
-        decryption: {
-          algorithm: header.enc,
-          // aad is the base64 encoded bytes (not just the bytes)
-          aad: TypedArrayEncoder.fromUtf8String(encodedHeader),
-          iv: TypedArrayEncoder.fromBase64Url(encodedIv),
-          tag: TypedArrayEncoder.fromBase64Url(encodedTag),
-        },
-        key: {
-          keyAgreement: {
-            algorithm: header.alg,
-            ephemeralPublicJwk: epk.toJson() as Kms.KmsJwkPublicEcdh,
-            keyId: kid,
-            apu: typeof header.apu === 'string' ? TypedArrayEncoder.fromBase64Url(header.apu) : undefined,
-            apv: typeof header.apv === 'string' ? TypedArrayEncoder.fromBase64Url(header.apv) : undefined,
-          },
-        },
-      })
+      const jweService = agentContext.dependencyManager.resolve(JweService)
+      const decrypted = await jweService.decryptJwe(agentContext, { jwe, recipientKeyId: kid })
 
       // TODO: decrypt should return the public jwk instance
       publicJwk = Kms.PublicJwk.fromUnknown(

@@ -185,6 +185,20 @@ describe('DidCommMessagePickupApi', () => {
     expect(outboundCtx.message.type).toEqual(DidCommMessageDeliveryV4Message.type.messageTypeUri)
   })
 
+  it('does not take messages for a live session that ended while loading the connection', async () => {
+    mockFunction(messagePickupSessionService.getLiveSession)
+      .mockReturnValueOnce({ connectionId: mockConnection.id, protocolVersion: 'v2' } as DidCommMessagePickupSession)
+      .mockReturnValueOnce(undefined)
+    mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
+    const takeFromQueue = vi.spyOn(
+      agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository,
+      'takeFromQueue'
+    )
+
+    await expect(api.deliverMessagesFromQueue({ pickupSessionId: 'pickup-1' })).rejects.toThrow(CredoError)
+    expect(takeFromQueue).not.toHaveBeenCalled()
+  })
+
   it('pickupMessages only completes on the completed event of its own thread', async () => {
     const completed$ = new Subject<BaseEvent>()
     mockFunction(connectionService.getById).mockResolvedValue(mockConnection)

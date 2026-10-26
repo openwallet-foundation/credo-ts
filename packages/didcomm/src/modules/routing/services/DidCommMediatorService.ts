@@ -24,11 +24,13 @@ import {
 } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
+import { DidCommTransportService } from '../../../DidCommTransportService'
+import { MessageSendingError } from '../../../errors'
 import type { DidCommInboundMessageContext } from '../../../models'
 import type { DidCommConnectionRecord } from '../../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../../connections/services'
-import { DidCommMessagePickupApi } from '../../message-pickup'
+import { DidCommMessagePickupApi, DidCommMessagePickupSessionService } from '../../message-pickup'
 import { DidCommMessagePickupSessionRole } from '../../message-pickup/DidCommMessagePickupSession'
 import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
 import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
@@ -244,10 +246,36 @@ export class DidCommMediatorService {
           role: DidCommMessagePickupSessionRole.MessageHolder,
         })
         if (session) {
-          await messagePickupApi.deliverMessagesFromQueue({
-            pickupSessionId: session.id,
-            recipientDid,
-          })
+          try {
+            await messagePickupApi.deliverMessagesFromQueue({
+              pickupSessionId: session.id,
+              recipientDid,
+            })
+          } catch (error) {
+            const sessionService = agentContext.dependencyManager.resolve(DidCommMessagePickupSessionService)
+            const endSession =
+              error instanceof MessageSendingError &&
+              sessionService.getLiveSession(agentContext, session.id) !== undefined
+            this.logger.warn(
+              `Live mode delivery failed for connection '${mediationRecord.connectionId}'${endSession ? ', ending its live mode session' : ''}`,
+              { error: error.message }
+            )
+            if (endSession) {
+              sessionService.removeLiveSession(agentContext, { connectionId: mediationRecord.connectionId })
+              // a Credo recipient only restarts pickup when its socket closes
+              try {
+                await agentContext.dependencyManager
+                  .resolve(DidCommTransportService)
+                  .findSessionById(session.transportSessionId)
+                  ?.close()
+              } catch (closeError) {
+                this.logger.warn(
+                  `Unable to close the transport session of connection '${mediationRecord.connectionId}'`,
+                  { error: closeError.message }
+                )
+              }
+            }
+          }
         }
         break
       }
