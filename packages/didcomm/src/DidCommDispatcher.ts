@@ -7,11 +7,19 @@ import { DidCommMessageSender } from './DidCommMessageSender'
 import { DidCommProblemReportError } from './errors/problem-reports'
 import { DidCommMessageHandlerMiddlewareRunner } from './handlers'
 import type { DidCommMessageHandlerMiddleware } from './handlers/DidCommMessageHandlerMiddleware'
-import { DidCommProblemReportMessage } from './messages'
+import { DidCommProblemReportMessage, DidCommProblemReportV2Message } from './messages'
 import { DidCommOutboundMessageContext } from './models'
 import type { DidCommInboundMessageContext } from './models/DidCommInboundMessageContext'
 import { DidCommProblemReportReason } from './models/problem-reports'
-import { canHandleMessageType, parseMessageType } from './util/messageType'
+import { canHandleMessageType, type ParsedMessageType, parseMessageType } from './util/messageType'
+
+// Answering a problem report with another one can loop forever: https://identity.foundation/didcomm-messaging/spec/v2.1/#cascading-problems
+export function isProblemReportMessageType(messageType: ParsedMessageType): boolean {
+  return (
+    canHandleMessageType(DidCommProblemReportMessage, messageType) ||
+    canHandleMessageType(DidCommProblemReportV2Message, messageType)
+  )
+}
 
 @injectable()
 export class DidCommDispatcher {
@@ -91,7 +99,7 @@ export class DidCommDispatcher {
 
       if (problemReportMessage instanceof DidCommProblemReportMessage && messageContext.connection) {
         const messageType = parseMessageType(messageContext.message.type)
-        if (canHandleMessageType(DidCommProblemReportMessage, messageType)) {
+        if (isProblemReportMessageType(messageType)) {
           throw new CredoError(`Not sending problem report in response to problem report: ${message}`)
         }
 
@@ -110,11 +118,23 @@ export class DidCommDispatcher {
           })
         }
 
-        outboundMessage = new DidCommOutboundMessageContext(problemReportMessage, {
-          agentContext,
-          connection: messageContext.connection,
-          inboundMessageContext: messageContext,
-        })
+        const outboundProblemReport: DidCommMessage | undefined =
+          messageContext.connection.didcommVersion === 'v2' &&
+          problemReportMessage.type === DidCommProblemReportMessage.type.messageTypeUri
+            ? DidCommProblemReportV2Message.fromProblemReportMessage(problemReportMessage, message)
+            : problemReportMessage
+
+        if (outboundProblemReport) {
+          outboundMessage = new DidCommOutboundMessageContext(outboundProblemReport, {
+            agentContext,
+            connection: messageContext.connection,
+            inboundMessageContext: messageContext,
+          })
+        } else {
+          this.logger.warn(`Not sending a problem report for message ${message.id}, its id is not a valid pthid`, {
+            error,
+          })
+        }
       } else {
         this.logger.error(`Error handling message with type ${message.type}`, {
           message: message.toJSON(),

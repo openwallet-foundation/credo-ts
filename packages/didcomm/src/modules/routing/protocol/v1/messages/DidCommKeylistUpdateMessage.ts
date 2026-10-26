@@ -2,6 +2,7 @@ import { Expose, Type } from 'class-transformer'
 import { IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export enum DidCommKeylistUpdateAction {
@@ -41,6 +42,8 @@ export interface DidCommKeylistUpdateMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#keylist-update
  */
 export class DidCommKeylistUpdateMessage extends DidCommMessage {
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
+
   public constructor(options: DidCommKeylistUpdateMessageOptions) {
     super()
 

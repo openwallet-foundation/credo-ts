@@ -3,6 +3,7 @@ import {
   AgentContext,
   CredoError,
   DidKey,
+  DidsApi,
   EventEmitter,
   filterContextCorrelationId,
   InjectionSymbols,
@@ -12,18 +13,23 @@ import {
   JsonTransformer,
   Kms,
   type Logger,
+  MessageValidator,
+  PeerDidNumAlgo,
+  utils,
 } from '@credo-ts/core'
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 import { DidCommEventTypes, type DidCommMessageReceivedEvent } from '../../DidCommEvents'
 import type { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import type { DidCommAttachment } from '../../decorators/attachment/DidCommAttachment'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import type { DidCommRouting } from '../../models'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommDocumentService } from '../../services'
 import type { DidCommPlaintextMessage } from '../../types'
+import type { DidCommVersion } from '../../util/didcommVersion'
 import {
   parseDidCommProtocolUri,
   parseMessageType,
@@ -31,10 +37,13 @@ import {
   supportsIncomingMessageType,
 } from '../../util/messageType'
 import { parseInvitationShortUrl } from '../../util/parseInvitation'
+import { buildV2PlaintextFromMessage } from '../../v2/plaintextBuilder'
+import type { DidCommV2Attachment, DidCommV2KeyAgreementJwk } from '../../v2/types'
 import { DidCommConnectionRecord, DidCommDidExchangeState, DidCommHandshakeProtocol } from '../connections'
 import { DidCommConnectionsApi } from '../connections/DidCommConnectionsApi'
+import { createPeerDidForV2OOB, routingToServices } from '../connections/services/helpers'
 import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
-
+import { convertV2InvitationToOutOfBandInvitation, didCommAttachmentToV2Attachment } from './converters'
 import { DidCommOutOfBandService } from './DidCommOutOfBandService'
 import type { DidCommHandshakeReusedEvent } from './domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandEventTypes } from './domain/DidCommOutOfBandEvents'
@@ -43,6 +52,7 @@ import { DidCommOutOfBandState } from './domain/DidCommOutOfBandState'
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
 import { outOfBandServiceToInlineKeysNumAlgo2Did } from './helpers'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from './messages'
+import { DidCommOutOfBandInvitationV2 } from './messages/DidCommOutOfBandInvitationV2'
 import { DidCommOutOfBandRepository } from './repository'
 import { type DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRecord } from './repository/DidCommOutOfBandRecord'
 import { DidCommOutOfBandRecordMetadataKeys } from './repository/outOfBandRecordMetadataTypes'
@@ -67,6 +77,25 @@ export interface CreateOutOfBandInvitationConfig {
    * Did to use in the invitation. Cannot be used in combination with `routing`.
    */
   invitationDid?: string
+
+  /**
+   * DIDComm version for the invitation. When 'v2', creates out-of-band/2.0 invitation
+   * (no handshake, first-message connection establishment).
+   * @default from didcommVersions (v2 when enabled, else v1)
+   */
+  didCommVersion?: DidCommVersion
+
+  /**
+   * Peer DID numAlgo for V2 OOB invitation. Overrides module config peerDidNumAlgoForV2OOB.
+   * Use did:peer:2 (MultipleInceptionKeyWithoutDoc) for legacy; did:peer:4 (ShortFormAndLongForm) is default.
+   */
+  peerDidNumAlgoForV2OOB?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
+
+  /**
+   * For v2 OOB: reuse this DID as the inviter's "from" instead of creating a new one.
+   * Used in bidirectional connection setup so both agents have matching DIDs for lookup.
+   */
+  ourDid?: string
 }
 
 interface BaseReceiveOutOfBandInvitationConfig {
@@ -87,6 +116,12 @@ export interface ReceiveOutOfBandImplicitInvitationConfig
   extends Omit<BaseReceiveOutOfBandInvitationConfig, 'isImplicit' | 'reuseConnection'> {
   did: string
   handshakeProtocols?: DidCommHandshakeProtocol[]
+  /**
+   * When set, forces the DIDComm version for the implicit invitation. When omitted, the version is
+   * resolved from the DID document via {@link DidCommDocumentService.getSupportedDidCommVersionsFromDidDoc}
+   * (dual-stack docs default to v2). `handshakeProtocols` is ignored for v2.
+   */
+  didCommVersion?: DidCommVersion
 }
 
 @injectable()
@@ -100,6 +135,7 @@ export class DidCommOutOfBandApi {
   private eventEmitter: EventEmitter
   private agentContext: AgentContext
   private logger: Logger
+  private didCommModuleConfig: DidCommModuleConfig
 
   public constructor(
     messageHandlerRegistry: DidCommMessageHandlerRegistry,
@@ -110,7 +146,8 @@ export class DidCommOutOfBandApi {
     messageSender: DidCommMessageSender,
     eventEmitter: EventEmitter,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    agentContext: AgentContext
+    agentContext: AgentContext,
+    didCommModuleConfig: DidCommModuleConfig
   ) {
     this.messageHandlerRegistry = messageHandlerRegistry
     this.didCommDocumentService = didCommDocumentService
@@ -121,6 +158,15 @@ export class DidCommOutOfBandApi {
     this.connectionsApi = connectionsApi
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
+    this.didCommModuleConfig = didCommModuleConfig
+  }
+
+  private assertAgentSupportsDidCommVersion(version: DidCommVersion): void {
+    if (!this.didCommModuleConfig.didcommVersions.includes(version)) {
+      throw new CredoError(
+        `DIDComm ${version} is not enabled for this agent. Configured didcommVersions: [${this.didCommModuleConfig.didcommVersions.join(', ')}]. Add "${version}" to didcommVersions in DidCommModuleConfig.`
+      )
+    }
   }
 
   /**
@@ -139,20 +185,50 @@ export class DidCommOutOfBandApi {
    * @returns out-of-band record
    */
   public async createInvitation(config: CreateOutOfBandInvitationConfig = {}): Promise<DidCommOutOfBandRecord> {
-    const multiUseInvitation = config.multiUseInvitation ?? false
     const handshake = config.handshake ?? true
-    const customHandshakeProtocols = config.handshakeProtocols
+    const hasMessages = (config.messages && config.messages.length > 0) || false
+    const hasAppendedAttachments = (config.appendedAttachments && config.appendedAttachments.length > 0) || false
+    if (!handshake && !hasMessages && !hasAppendedAttachments) {
+      throw new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
+    }
+    const hasAttachments = hasMessages || hasAppendedAttachments
+    // V2 OOB has no handshake; use v1 when caller explicitly requests handshake or includes messages/attachments.
+    // When routing is provided, use v1 so invitation DIDs stay consistent for connection reuse flows.
+    const hasExplicitHandshakeProtocols =
+      config.handshakeProtocols !== undefined && config.handshakeProtocols.length > 0
+    const hasRouting = config.routing !== undefined
+    const didCommVersion =
+      config.didCommVersion ??
+      (hasAttachments || hasExplicitHandshakeProtocols || hasRouting
+        ? 'v1'
+        : this.didCommModuleConfig.isSupported('v2')
+          ? 'v2'
+          : 'v1')
+    this.assertAgentSupportsDidCommVersion(didCommVersion)
+    const unsupportedMessage = config.messages?.find(
+      ({ supportedDidCommVersions }) =>
+        supportedDidCommVersions?.length && !supportedDidCommVersions.includes(didCommVersion)
+    )
+    if (unsupportedMessage) {
+      throw new CredoError(
+        `Message type ${unsupportedMessage.type} only supports DIDComm ${unsupportedMessage.supportedDidCommVersions?.join(', ')} but the invitation uses DIDComm ${didCommVersion}`
+      )
+    }
     const autoAcceptConnection = config.autoAcceptConnection ?? this.connectionsApi.config.autoAcceptConnections
+
+    // V2 OOB path: no handshake, did:peer:2, first-message connection establishment
+    if (didCommVersion === 'v2') {
+      return this.createV2Invitation(config, autoAcceptConnection)
+    }
+
+    const multiUseInvitation = config.multiUseInvitation ?? false
+    const customHandshakeProtocols = config.handshakeProtocols
     // We don't want to treat an empty array as messages being provided
     const messages = config.messages && config.messages.length > 0 ? config.messages : undefined
     const label = config.label
     const imageUrl = config.imageUrl
     const appendedAttachments =
       config.appendedAttachments && config.appendedAttachments.length > 0 ? config.appendedAttachments : undefined
-
-    if (!handshake && !messages) {
-      throw new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
-    }
 
     if (!handshake && customHandshakeProtocols) {
       throw new CredoError(`Attribute 'handshake' can not be 'false' when 'handshakeProtocols' is defined.`)
@@ -190,17 +266,17 @@ export class DidCommOutOfBandApi {
       const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
       mediatorId = routing?.mediatorId
 
-      services = routing.endpoints.map((endpoint, index) => {
+      services = routingToServices(routing).map((service) => {
         // Store the key id for the recipient key
         invitationInlineServiceKeys.push({
           kmsKeyId: routing.recipientKey.keyId,
           recipientKeyFingerprint: routing.recipientKey.fingerprint,
         })
         return new OutOfBandDidCommService({
-          id: `#inline-${index}`,
-          serviceEndpoint: endpoint,
-          recipientKeys: [routing.recipientKey].map((key) => new DidKey(key).did),
-          routingKeys: routing.routingKeys.map((key) => new DidKey(key).did),
+          id: service.id,
+          serviceEndpoint: service.serviceEndpoint,
+          recipientKeys: service.recipientKeys.map((key) => new DidKey(key).did),
+          routingKeys: service.routingKeys.map((key) => new DidKey(key).did),
         })
       })
     }
@@ -247,6 +323,113 @@ export class DidCommOutOfBandApi {
     return outOfBandRecord
   }
 
+  /**
+   * Creates a v2 OOB invitation (out-of-band/2.0) with did:peer (default did:peer:4).
+   * No handshake; connection is established on first encrypted message.
+   */
+  private async createV2Invitation(
+    config: CreateOutOfBandInvitationConfig,
+    autoAcceptConnection: boolean
+  ): Promise<DidCommOutOfBandRecord> {
+    const multiUseInvitation = config.multiUseInvitation ?? false
+    const messages = config.messages && config.messages.length > 0 ? config.messages : undefined
+    const appendedAttachments =
+      config.appendedAttachments && config.appendedAttachments.length > 0 ? config.appendedAttachments : undefined
+
+    if (config.routing && config.invitationDid) {
+      throw new CredoError("Both 'routing' and 'invitationDid' cannot be provided at the same time.")
+    }
+
+    if (messages && multiUseInvitation) {
+      throw new CredoError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined.")
+    }
+
+    const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
+
+    let did: string
+    let recipientKeyFingerprints: string[]
+
+    if (config.ourDid) {
+      // Reuse existing DID (e.g. from first connection in bidirectional setup)
+      const didsApi = this.agentContext.dependencyManager.resolve(DidsApi)
+      const { didDocument } = await didsApi.resolveCreatedDidDocumentWithKeys(config.ourDid)
+      did = config.ourDid
+      // Collect fingerprints for all recipient keys (Ed25519 + X25519) without
+      // requiring birational derivation. With independent keys the X25519 key is
+      // not derived from the Ed25519 key, so mapX25519ToEd25519 would fail.
+      const recipientKeys = didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
+      recipientKeyFingerprints = recipientKeys.map((k) => k.publicJwk.fingerprint)
+    } else {
+      const numAlgo = config.peerDidNumAlgoForV2OOB ?? this.didCommModuleConfig.peerDidNumAlgoForV2OOB
+      const result = await createPeerDidForV2OOB(this.agentContext, routing, numAlgo)
+      did = result.did
+      await this.routingService.registerRecipientDidForV2Routing(this.agentContext, routing, did)
+      recipientKeyFingerprints = [routing.recipientKey.fingerprint]
+      // Include the X25519 key agreement fingerprint for recipient key matching.
+      // Uses the independent keyAgreementKey if available, otherwise derives from Ed25519.
+      if (routing.keyAgreementKey) {
+        recipientKeyFingerprints.push(routing.keyAgreementKey.fingerprint)
+      } else if (routing.recipientKey.is(Kms.Ed25519PublicJwk)) {
+        recipientKeyFingerprints.push(
+          (routing.recipientKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk).fingerprint
+        )
+      }
+    }
+
+    // Build v2 attachments from caller-supplied messages and appended v1 attachments.
+    const v2Attachments: DidCommV2Attachment[] = []
+    if (messages) {
+      for (const message of messages) {
+        if (message.service) {
+          // Newer OOB messages carry services on the invitation, not the attached message.
+          message.service = undefined
+        }
+        v2Attachments.push({
+          id: utils.uuid(),
+          media_type: 'application/json',
+          data: { json: buildV2PlaintextFromMessage(message) },
+        })
+      }
+    }
+    if (appendedAttachments) {
+      for (const v1Attachment of appendedAttachments) {
+        v2Attachments.push(didCommAttachmentToV2Attachment(v1Attachment))
+      }
+    }
+
+    const v2Invitation = new DidCommOutOfBandInvitationV2({
+      from: did,
+      body: {
+        goalCode: config.goalCode,
+        goal: config.goal,
+        accept: ['didcomm/v2'],
+      },
+      attachments: v2Attachments.length > 0 ? v2Attachments : undefined,
+    })
+    MessageValidator.validateSync(v2Invitation)
+
+    const outOfBandRecord = new DidCommOutOfBandRecord({
+      mediatorId: routing.mediatorId,
+      role: DidCommOutOfBandRole.Sender,
+      state: DidCommOutOfBandState.AwaitResponse,
+      alias: config.alias,
+      outOfBandInvitation: convertV2InvitationToOutOfBandInvitation(v2Invitation),
+      reusable: multiUseInvitation,
+      autoAcceptConnection,
+      tags: {
+        recipientKeyFingerprints,
+        recipientDid: did,
+        sharedRecipientDid: config.ourDid ? true : undefined,
+      },
+    })
+    outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.V2Invitation, v2Invitation.toJSON())
+
+    await this.outOfBandService.save(this.agentContext, outOfBandRecord)
+    this.outOfBandService.emitStateChangedEvent(this.agentContext, outOfBandRecord, null)
+
+    return outOfBandRecord
+  }
+
   public async createLegacyConnectionlessInvitation<Message extends DidCommMessage>(config: {
     /**
      * @deprecated this value is not used anymore, as the legacy connection-less exchange is now
@@ -258,9 +441,11 @@ export class DidCommOutOfBandApi {
     domain: string
     routing?: DidCommRouting
   }): Promise<{ message: Message; invitationUrl: string; outOfBandRecord: DidCommOutOfBandRecord }> {
+    // Legacy connectionless uses v1 ~service (recipientKeys); v2 OOB format does not map to it.
     const outOfBandRecord = await this.createInvitation({
       messages: [config.message],
       routing: config.routing,
+      didCommVersion: 'v1',
     })
 
     // Set legacy invitation type
@@ -342,7 +527,9 @@ export class DidCommOutOfBandApi {
    * `autoAcceptInvitation` attribute in `config` parameter to `false` and accept the message later by
    * calling `acceptInvitation`.
    *
-   * Handshake protocol to be used depends on handshakeProtocols (DID Exchange by default)
+   * When `didCommVersion` is omitted, the version is inferred from the DID document (dual-stack
+   * defaults to v2). For v1, handshake follows `handshakeProtocols` (DID Exchange by default);
+   * for v2, creates a v2 implicit OOB (no handshake messages).
    *
    * Agent role: receiver (invitee)
    *
@@ -351,16 +538,57 @@ export class DidCommOutOfBandApi {
    * @returns out-of-band record and connection record if one has been created.
    */
   public async receiveImplicitInvitation(config: ReceiveOutOfBandImplicitInvitationConfig) {
-    const handshakeProtocols = this.getSupportedHandshakeProtocols(
-      config.handshakeProtocols ?? [DidCommHandshakeProtocol.DidExchange]
-    ).map((p) => p.parsedProtocolUri.protocolUri)
+    let didCommVersion: DidCommVersion
 
-    const invitation = new DidCommOutOfBandInvitation({
-      id: config.did,
-      label: config.alias ?? '',
-      services: [config.did],
-      handshakeProtocols,
-    })
+    if (config.didCommVersion !== undefined) {
+      didCommVersion = config.didCommVersion
+    } else {
+      const { versions: didVersions } = await this.didCommDocumentService.getSupportedDidCommVersionsFromDidDoc(
+        this.agentContext,
+        config.did
+      )
+      const agentVersions = this.didCommModuleConfig.didcommVersions
+      const supported = didVersions.filter((v) => agentVersions.includes(v))
+      if (supported.length === 0) {
+        throw new CredoError(
+          `DID ${config.did} advertises DIDComm [${didVersions.join(', ')}] but this agent supports only [${agentVersions.join(', ')}]. Add a matching version to didcommVersions in DidCommModuleConfig.`
+        )
+      }
+      didCommVersion = supported.includes('v2') ? 'v2' : 'v1'
+    }
+    this.assertAgentSupportsDidCommVersion(didCommVersion)
+
+    if (didCommVersion === 'v2') {
+      const hasHandshakeProtocols = config.handshakeProtocols !== undefined && config.handshakeProtocols.length > 0
+      if (hasHandshakeProtocols) {
+        throw new CredoError(
+          `handshakeProtocols cannot be used with DIDComm v2 (v2 has no handshake). Omit handshakeProtocols or set didCommVersion: 'v1'.`
+        )
+      }
+    }
+
+    let invitation: DidCommOutOfBandInvitation
+
+    if (didCommVersion === 'v2') {
+      const v2Invitation = new DidCommOutOfBandInvitationV2({
+        from: config.did,
+        body: {
+          accept: ['didcomm/v2'],
+        },
+      })
+      invitation = convertV2InvitationToOutOfBandInvitation(v2Invitation)
+    } else {
+      const handshakeProtocols = this.getSupportedHandshakeProtocols(
+        config.handshakeProtocols ?? [DidCommHandshakeProtocol.DidExchange]
+      ).map((p) => p.parsedProtocolUri.protocolUri)
+
+      invitation = new DidCommOutOfBandInvitation({
+        id: config.did,
+        label: config.alias ?? '',
+        services: [config.did],
+        handshakeProtocols,
+      })
+    }
 
     return this._receiveInvitation(invitation, { ...config, isImplicit: true })
   }
@@ -382,10 +610,15 @@ export class DidCommOutOfBandApi {
     const alias = config.alias
 
     const messages = outOfBandInvitation.getRequests()
+    const isV2Invitation = !!outOfBandInvitation.v2Invitation
 
     const isConnectionless = handshakeProtocols === undefined || handshakeProtocols.length === 0
 
-    if ((!handshakeProtocols || handshakeProtocols.length === 0) && (!messages || messages?.length === 0)) {
+    if (
+      !isV2Invitation &&
+      (!handshakeProtocols || handshakeProtocols.length === 0) &&
+      (!messages || messages?.length === 0)
+    ) {
       throw new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
     }
 
@@ -421,9 +654,12 @@ export class DidCommOutOfBandApi {
       outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.RecipientRouting, {
         recipientKeyFingerprint: routing.recipientKey.fingerprint,
         recipientKeyId: routing.recipientKey.keyId,
-        routingKeyFingerprints: routing.routingKeys.map((key) => key.fingerprint),
+        keyAgreementKeyFingerprint: routing.keyAgreementKey?.fingerprint,
+        keyAgreementKeyId: routing.keyAgreementKey?.keyId,
+        routingKeyFingerprints: (routing.routingKeys ?? []).map((key) => key.fingerprint),
         endpoints: routing.endpoints,
         mediatorId: routing.mediatorId,
+        routingDid: routing.routingDid,
       })
       outOfBandRecord.setTags({ recipientRoutingKeyFingerprint: routing.recipientKey.fingerprint })
     }
@@ -433,6 +669,18 @@ export class DidCommOutOfBandApi {
       outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.LegacyInvitation, {
         legacyInvitationType: outOfBandInvitation.invitationType,
       })
+    }
+
+    // V2 OOB: v2Invitation is @Exclude() and lost when record is loaded from storage. Persist in metadata.
+    if (outOfBandInvitation.v2Invitation) {
+      outOfBandRecord.metadata.set(
+        DidCommOutOfBandRecordMetadataKeys.V2Invitation,
+        outOfBandInvitation.v2Invitation.toJSON()
+      )
+      if (config.isImplicit) {
+        // The invitation id of an implicit invitation was generated locally and never sent, so it must not become a pthid
+        outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.V2ImplicitInvitation, {})
+      }
     }
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)
@@ -502,17 +750,65 @@ export class DidCommOutOfBandApi {
       ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
       recipientPublicJwk.keyId = recipientRouting.recipientKeyId ?? recipientPublicJwk.legacyKeyId
 
-      routing = {
+      // Restore the independent keyAgreement key (X25519 or P-256) from metadata if available.
+      let keyAgreementKey: DidCommV2KeyAgreementJwk | undefined
+      if (recipientRouting.keyAgreementKeyFingerprint) {
+        keyAgreementKey = Kms.PublicJwk.fromFingerprint(
+          recipientRouting.keyAgreementKeyFingerprint
+        ) as DidCommV2KeyAgreementJwk
+        keyAgreementKey.keyId = recipientRouting.keyAgreementKeyId ?? keyAgreementKey.legacyKeyId
+      }
+
+      const baseRouting = {
         recipientKey: recipientPublicJwk,
-        routingKeys: recipientRouting.routingKeyFingerprints.map(
-          (fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
-        ),
+        keyAgreementKey,
         endpoints: recipientRouting.endpoints,
         mediatorId: recipientRouting.mediatorId,
       }
+      routing = recipientRouting.routingDid
+        ? { ...baseRouting, routingDid: recipientRouting.routingDid, routingKeys: [] }
+        : {
+            ...baseRouting,
+            routingKeys: recipientRouting.routingKeyFingerprints.map(
+              (fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+            ),
+          }
     }
 
     const { handshakeProtocols } = outOfBandInvitation
+    const isV2Invitation = !!outOfBandInvitation.v2Invitation
+
+    // Enforce didcommVersions here so the explicit/scanned receive path fails fast like the implicit one.
+    this.assertAgentSupportsDidCommVersion(isV2Invitation ? 'v2' : 'v1')
+
+    // V2 OOB: reuse or create a connection with protocol None, no handshake messages sent
+    if (outOfBandInvitation.v2Invitation) {
+      // A hung-up or v1 connection keeps its invitationDid but cannot carry the v2 pthid
+      const existingConnection = reuseConnection
+        ? (await this.connectionsApi.findByInvitationDid(outOfBandInvitation.v2Invitation.from)).find(
+            ({ didcommVersion, did, theirDid }) => didcommVersion === 'v2' && did && theirDid
+          )
+        : undefined
+      const connectionRecord = existingConnection
+        ? await this.connectionsApi.reuseForOutOfBandInvitation(outOfBandRecord, existingConnection.id)
+        : await this.connectionsApi.acceptOutOfBandInvitation(outOfBandRecord, {
+            label,
+            alias,
+            protocol: DidCommHandshakeProtocol.None,
+            routing,
+            ourDid,
+          })
+      await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
+
+      // Dispatch any messages carried as attachments on the v2 invitation. Mirrors the v1
+      // `requests~attach` flow: each attached protocol message is emitted on the connection
+      // so the matching protocol handler can pick it up.
+      if (messages && messages.length > 0) {
+        await this.emitWithConnection(outOfBandRecord, connectionRecord, messages)
+      }
+
+      return { outOfBandRecord, connectionRecord }
+    }
 
     const existingConnection = await this.findExistingConnection(outOfBandInvitation)
 
@@ -695,7 +991,9 @@ export class DidCommOutOfBandApi {
   }
 
   private getSupportedHandshakeProtocols(limitToHandshakeProtocols?: DidCommHandshakeProtocol[]) {
-    const allHandshakeProtocols = limitToHandshakeProtocols ?? Object.values(DidCommHandshakeProtocol)
+    const allHandshakeProtocols = (limitToHandshakeProtocols ?? Object.values(DidCommHandshakeProtocol)).filter(
+      (h) => h !== DidCommHandshakeProtocol.None
+    )
 
     // Replace .x in the handshake protocol with .0 to allow it to be parsed
     const parsedHandshakeProtocolUris = allHandshakeProtocols.map((h) => ({
@@ -930,19 +1228,19 @@ export class DidCommOutOfBandApi {
           this.agentContext,
           service
         )
-        recipientKeyFingerprints.push(
-          ...resolvedDidCommServices
-            .reduce<Kms.PublicJwk<Kms.Ed25519PublicJwk | Kms.X25519PublicJwk>[]>(
-              // biome-ignore lint/performance/noAccumulatingSpread: no explanation
-              (aggr, { recipientKeys }) => [...aggr, ...recipientKeys],
-              []
-            )
-            .map((key) => key.fingerprint)
+        const keys = resolvedDidCommServices.reduce<Kms.PublicJwk<Kms.Ed25519PublicJwk | Kms.X25519PublicJwk>[]>(
+          // biome-ignore lint/performance/noAccumulatingSpread: no explanation
+          (aggr, { recipientKeys }) => [...aggr, ...recipientKeys],
+          []
         )
+        for (const key of keys) {
+          recipientKeyFingerprints.push(key.fingerprint)
+        }
       } else {
-        recipientKeyFingerprints.push(
-          ...service.recipientKeys.map((didKey) => DidKey.fromDid(didKey).publicJwk.fingerprint)
-        )
+        for (const didKeyStr of service.recipientKeys) {
+          const key = DidKey.fromDid(didKeyStr).publicJwk
+          recipientKeyFingerprints.push(key.fingerprint)
+        }
       }
     }
 

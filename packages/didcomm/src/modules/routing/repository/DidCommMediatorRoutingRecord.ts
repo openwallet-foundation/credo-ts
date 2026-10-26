@@ -36,9 +36,6 @@ export class DidCommMediatorRoutingRecord extends BaseRecord<DefaultDidCommMedia
   public static readonly type = 'MediatorRoutingRecord'
   public readonly type = DidCommMediatorRoutingRecord.type
 
-  public static readonly allowCache = true
-  public readonly allowCache = true
-
   public constructor(props: DidCommMediatorRoutingRecordProps) {
     super()
 
@@ -67,8 +64,9 @@ export class DidCommMediatorRoutingRecord extends BaseRecord<DefaultDidCommMedia
       const publicJwk = Kms.PublicJwk.fromFingerprint(routingKey.routingKeyFingerprint)
       publicJwk.keyId = routingKey.kmsKeyId
 
-      if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
-        throw new CredoError('Expected mediator routing record key to be of type Ed25519.')
+      // The Ed25519 key serves DIDComm v1 forwards, the X25519 key serves DIDComm v2 forwards
+      if (!publicJwk.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk)) {
+        throw new CredoError('Expected mediator routing record key to be of type Ed25519 or X25519.')
       }
       return publicJwk
     })
