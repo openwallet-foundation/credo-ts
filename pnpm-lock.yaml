@@ -757,11 +757,11 @@ importers:
         specifier: ^2.4.0
         version: 2.4.0
       '@sd-jwt/core':
-        specifier: ^0.23.0
-        version: 0.23.0
+        specifier: ^0.23.1
+        version: 0.23.1
       '@sd-jwt/sd-jwt-vc':
-        specifier: ^0.23.0
-        version: 0.23.0
+        specifier: ^0.23.1
+        version: 0.23.1
       '@sphereon/pex-models':
         specifier: 'catalog:'
         version: 2.3.2
@@ -3569,8 +3569,8 @@ packages:
   '@scure/base@2.4.0':
     resolution: {integrity: sha512-thZ1TuJwFwBblOhgsjDKvvGirBxNp+wSvY/DR6tJBJOTDhdAAcHJ8Vbr2eFnqaxeca4+t0i9KBf+uHYGWwZORg==}
 
-  '@sd-jwt/core@0.23.0':
-    resolution: {integrity: sha512-/9/z3Gpfd50hOUk/kj8QfUjhDcKU9sdrTxt9HqhG/YkjpGU+7iIU24qYYPagf0btUKN4jbUQ0uS7eWYdvdzhJg==}
+  '@sd-jwt/core@0.23.1':
+    resolution: {integrity: sha512-M4w4TLtqDA8dt/VdqW9jnBrJtRqzE5M3p0g31XvKdkzGJD1i4jJgJmB/WScDvCOIW497/igv82XUmZ4AffWPdg==}
 
   '@sd-jwt/decode@0.15.0':
     resolution: {integrity: sha512-c9PX4/Cnl1G0pSUXU236lkDx1AzkbgGKFnevBaVIPX8WlJl0nII345uDW/KWCV4rs5Ci8j4ZviWVOJm8TCt2fg==}
@@ -3592,8 +3592,8 @@ packages:
     engines: {node: '>=18'}
     deprecated: Package got merged into @sd-jwt/core, please use this instead
 
-  '@sd-jwt/sd-jwt-vc@0.23.0':
-    resolution: {integrity: sha512-/XtRYZTHD1PAdez8YXuwc36XGo2aHkLUjX4IR01+nHJakSvbwTSpy/SFweIN80L3TNgxt8N5UsFUyIZANIbxlA==}
+  '@sd-jwt/sd-jwt-vc@0.23.1':
+    resolution: {integrity: sha512-20ohdKVKlPExEV3OXutdWdcPvQ78exfYqV/zXcdQrfxDvyNq8Hvi7ufSQ3eR1zCW2IGK1SnynP38pcxm3oI9Dg==}
 
   '@sd-jwt/types@0.15.0':
     resolution: {integrity: sha512-3b/jz4xkQ9HAOVtnR5s+R9qzqPUig8EvTK4kDOL1rSdTHSQ8E50+Gji1k2m/0hF/DP4EskWc5iQJKrk2qRohaQ==}
@@ -10196,7 +10196,7 @@ snapshots:
 
   '@scure/base@2.4.0': {}
 
-  '@sd-jwt/core@0.23.0':
+  '@sd-jwt/core@0.23.1':
     dependencies:
       '@owf/identity-common': 0.5.0
 
@@ -10221,11 +10221,11 @@ snapshots:
       '@sd-jwt/types': 0.7.2
       '@sd-jwt/utils': 0.7.2
 
-  '@sd-jwt/sd-jwt-vc@0.23.0':
+  '@sd-jwt/sd-jwt-vc@0.23.1':
     dependencies:
       '@owf/identity-common': 0.5.0
       '@owf/token-status-list': 0.5.0
-      '@sd-jwt/core': 0.23.0
+      '@sd-jwt/core': 0.23.1
       zod: 4.6.7
 
   '@sd-jwt/types@0.15.0': {}

@@ -26,7 +26,13 @@ import {
   MdocRecord,
   type MdocSessionTranscriptOptions,
 } from '../mdoc'
-import { SdJwtVcApi, SdJwtVcRecord, SdJwtVcService } from '../sd-jwt-vc'
+import {
+  type SdJwtVc,
+  SdJwtVcApi,
+  SdJwtVcRecord,
+  SdJwtVcService,
+  type SdJwtVcWithTypeMetadataChain,
+} from '../sd-jwt-vc'
 import {
   applyDisclosuresForPaths,
   buildDisclosureFrameForPayload,
@@ -228,7 +234,8 @@ export class DcqlService {
 
   public async getDcqlCredentialRepresentation(
     agentContext: AgentContext,
-    presentation: VerifiablePresentation,
+    // An SD-JWT VC presentation can carry its resolved type metadata chain
+    presentation: Exclude<VerifiablePresentation, SdJwtVc> | SdJwtVcWithTypeMetadataChain,
     queryCredential: DcqlQuery['credentials'][number]
   ): Promise<DcqlCredential> {
     // SD-JWT credential can be used as both dc+sd-jwt and vc+sd-jwt
@@ -238,16 +245,22 @@ export class DcqlService {
 
       let presentationVctValues = [presentation.payload.vct]
       // FIXME: we should probably add an option whether to resolve VCT if we didn't get a direct hit
-      if (!requestedVcts?.includes(presentation.payload.vct)) {
-        const typeMetadataChain = await agentContext
-          .resolve(SdJwtVcService)
-          .fetchTypeMetadata(agentContext, presentation, {
-            throwErrorOnFetchError: false,
-            throwErrorOnUnsupportedVctValue: false,
-          })
+      // Only `dc+sd-jwt` queries with `vct_values` match extended types. Other queries (including the
+      // legacy `vc+sd-jwt` format) match on the presented `vct`, so they don't need the type metadata.
+      if (requestedVcts && !requestedVcts.includes(presentation.payload.vct)) {
+        // Reuse a chain resolved earlier (e.g. before verifying the presentation), so the query is
+        // matched against the same chain the issuer was trusted for.
+        const typeMetadataChain =
+          presentation.typeMetadataChain ??
+          (
+            await agentContext.resolve(SdJwtVcService).fetchTypeMetadata(agentContext, presentation, {
+              throwErrorOnFetchError: false,
+              throwErrorOnUnsupportedVctValue: false,
+            })
+          )?.typeMetadataChain
 
         if (typeMetadataChain) {
-          presentationVctValues = typeMetadataChain?.vctValues
+          presentationVctValues = typeMetadataChain.map((typeMetadata) => typeMetadata.vct)
         }
       }
 

@@ -2395,6 +2395,33 @@ describe('SdJwtVcService', () => {
       })
     })
 
+    test('Fetch type metadata throws error when the type metadata describes another vct', async () => {
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      })
+
+      // The holder of the URL claims another type, which a verifier could be requesting
+      nock('https://example.com')
+        .get('/credentials/identity')
+        .reply(200, { vct: 'urn:eudi:pid:1', name: 'Identity Credential' })
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(
+          agent.context,
+          {
+            payload: {
+              vct: 'https://example.com/credentials/identity',
+            },
+          } as unknown as SdJwtVc,
+          { throwErrorOnFetchError: false, throwErrorOnUnsupportedVctValue: false }
+        )
+      ).rejects.toThrow(
+        "Type metadata fetched for vct 'https://example.com/credentials/identity' describes vct 'urn:eudi:pid:1'"
+      )
+    })
+
     test('Fetch type metadata throws error for non-https vct', async () => {
       mockJwtDecode({
         payload: {
