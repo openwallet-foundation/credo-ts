@@ -18,6 +18,7 @@ import {
 } from './AskarModuleConfig'
 import {
   AskarError,
+  AskarStoreAlreadyRegisteredError,
   AskarStoreDuplicateError,
   AskarStoreError,
   AskarStoreExportPathExistsError,
@@ -122,6 +123,7 @@ export class AskarStoreManager {
 
   /**
    * @throws {AskarStoreDuplicateError} if the wallet already exists
+   * @throws {AskarStoreAlreadyRegisteredError} if another store was opened while this one was being provisioned
    * @throws {AskarStoreError} if another error occurs
    */
   public async provisionStore(agentContext: AgentContext): Promise<Store> {
@@ -189,6 +191,7 @@ export class AskarStoreManager {
 
   /**
    * @throws {AskarStoreNotFoundError} if the wallet does not exist
+   * @throws {AskarStoreAlreadyRegisteredError} if another store was opened while this one was being opened
    * @throws {AskarStoreError} if another error occurs
    */
   public async openStore(agentContext: AgentContext): Promise<Store> {
@@ -492,7 +495,15 @@ export class AskarStoreManager {
    */
   private async registerStore(agentContext: AgentContext, store: Store) {
     if (this.getStore(agentContext)) {
-      await store.close()
+      try {
+        await store.close()
+      } catch (error) {
+        // The registered store is still usable, so we only log the error and report that a store was already registered
+        agentContext.config.logger.warn('Error closing store that was opened while another store was registered', {
+          error,
+        })
+      }
+
       throw new AskarStoreAlreadyRegisteredError(
         'Store already opened. Close the currently opened store before re-opening the store'
       )
@@ -627,8 +638,3 @@ export class AskarStoreManager {
     return this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.DatabasePerWallet
   }
 }
-
-/**
- * Thrown when another store was registered while a store was being opened or provisioned.
- */
-class AskarStoreAlreadyRegisteredError extends AskarStoreError {}

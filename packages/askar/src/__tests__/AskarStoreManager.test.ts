@@ -1,3 +1,4 @@
+import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { InjectionSymbols, utils } from '@credo-ts/core'
@@ -7,7 +8,7 @@ import { getAgentConfig, getAgentContext } from '../../../core/tests'
 import { NodeFileSystem } from '../../../node/src/NodeFileSystem'
 import { AskarModuleConfig, type AskarModuleConfigStoreOptions } from '../AskarModuleConfig'
 import { AskarStoreManager } from '../AskarStoreManager'
-import { AskarStoreError } from '../error'
+import { AskarStoreAlreadyRegisteredError } from '../error'
 
 function getStoreManagerAndContext(store: AskarModuleConfigStoreOptions) {
   const config = new AskarModuleConfig({ askar: NativeAskar, store })
@@ -23,8 +24,14 @@ function getStoreManagerAndContext(store: AskarModuleConfigStoreOptions) {
 }
 
 describe('AskarStoreManager', () => {
+  const storeDirectory = path.join(tmpdir(), 'credo-askar-store-manager', utils.uuid())
+
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  afterAll(async () => {
+    await rm(storeDirectory, { recursive: true, force: true })
   })
 
   it('opens the store once when sessions are opened concurrently', async () => {
@@ -56,7 +63,7 @@ describe('AskarStoreManager', () => {
       keyDerivationMethod: 'raw',
       database: {
         type: 'sqlite',
-        config: { path: path.join(tmpdir(), 'credo-askar-store-manager', utils.uuid(), 'sqlite.db') },
+        config: { path: path.join(storeDirectory, utils.uuid(), 'sqlite.db') },
       },
     })
 
@@ -72,7 +79,7 @@ describe('AskarStoreManager', () => {
     expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1)
     expect(results.find((result) => result.status === 'rejected')).toEqual({
       status: 'rejected',
-      reason: expect.any(AskarStoreError),
+      reason: expect.any(AskarStoreAlreadyRegisteredError),
     })
     expect(closeSpy).toHaveBeenCalledTimes(1)
     expect(storeManager.isStoreOpen(agentContext)).toBe(true)
@@ -87,7 +94,7 @@ describe('AskarStoreManager', () => {
       keyDerivationMethod: 'raw',
       database: {
         type: 'sqlite',
-        config: { path: path.join(tmpdir(), 'credo-askar-store-manager', utils.uuid(), 'sqlite.db') },
+        config: { path: path.join(storeDirectory, utils.uuid(), 'sqlite.db') },
       },
     })
 
@@ -147,10 +154,42 @@ describe('AskarStoreManager', () => {
     await storeManager.provisionStore(agentContext)
     onReleaseFirstProvision()
 
-    await expect(firstProvision).rejects.toBeInstanceOf(AskarStoreError)
-    await expect(firstProvision).rejects.toThrow(
-      'Store already opened. Close the currently opened store before re-opening the store'
-    )
+    await expect(firstProvision).rejects.toBeInstanceOf(AskarStoreAlreadyRegisteredError)
+
+    await storeManager.closeStore(agentContext)
+  })
+
+  it('throws AskarStoreAlreadyRegisteredError when closing the store that loses a concurrent provision fails', async () => {
+    const { agentContext, storeManager } = getStoreManagerAndContext({
+      id: 'concurrent-provision-close-error',
+      key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
+      keyDerivationMethod: 'raw',
+      database: { type: 'sqlite', config: { inMemory: true } },
+    })
+
+    // Hold the first provision until the second one has registered its store
+    const provisionStore = Store.provision.bind(Store)
+    let onReleaseFirstProvision!: () => void
+    const releaseFirstProvision = new Promise<void>((resolve) => {
+      onReleaseFirstProvision = resolve
+    })
+    vi.spyOn(Store, 'provision').mockImplementationOnce(async (options) => {
+      await releaseFirstProvision
+      return provisionStore(options)
+    })
+
+    const firstProvision = storeManager.provisionStore(agentContext)
+    await storeManager.provisionStore(agentContext)
+
+    const closeStore = Store.prototype.close
+    vi.spyOn(Store.prototype, 'close').mockImplementationOnce(async function (this: Store) {
+      await closeStore.call(this)
+      throw new Error('close failed')
+    })
+    onReleaseFirstProvision()
+
+    await expect(firstProvision).rejects.toBeInstanceOf(AskarStoreAlreadyRegisteredError)
+    expect(storeManager.isStoreOpen(agentContext)).toBe(true)
 
     await storeManager.closeStore(agentContext)
   })
