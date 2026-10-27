@@ -55,15 +55,12 @@ export async function getRevocationMetadata(
   )
   const updatedTimestamp = timestamp ?? _revocationStatusList.timestamp
 
-  const revocationRegistryDefinition = RevocationRegistryDefinition.fromJson(
-    anonCredsRevocationRegistryDefinition as unknown as JsonObject
-  )
-
-  const revocationStatusList = RevocationStatusList.fromJson(_revocationStatusList as unknown as JsonObject)
+  const revocationRegistryDefinition = anonCredsRevocationRegistryDefinition as unknown as JsonObject
+  const revocationStatusList = _revocationStatusList as unknown as JsonObject
   const revocationState = revocationRegistryIndex
-    ? CredentialRevocationState.create({
+    ? createRevocationState({
         revocationRegistryIndex: Number(revocationRegistryIndex),
-        revocationRegistryDefinition: revocationRegistryDefinition,
+        revocationRegistryDefinition,
         tailsPath: tailsFilePath,
         revocationStatusList,
       })
@@ -101,10 +98,60 @@ export async function getRevocationMetadata(
   }
 }
 
+/**
+ * Creates the revocation state of a credential as JSON, and frees the native objects it needs for that
+ */
+function createRevocationState(options: {
+  revocationRegistryIndex: number
+  revocationRegistryDefinition: JsonObject
+  revocationStatusList: JsonObject
+  tailsPath: string
+}) {
+  let revocationRegistryDefinition: RevocationRegistryDefinition | undefined
+  let revocationStatusList: RevocationStatusList | undefined
+  let revocationState: CredentialRevocationState | undefined
+  try {
+    revocationRegistryDefinition = RevocationRegistryDefinition.fromJson(options.revocationRegistryDefinition)
+    revocationStatusList = RevocationStatusList.fromJson(options.revocationStatusList)
+    revocationState = CredentialRevocationState.create({
+      revocationRegistryIndex: options.revocationRegistryIndex,
+      revocationRegistryDefinition,
+      tailsPath: options.tailsPath,
+      revocationStatusList,
+    })
+
+    return revocationState.toJson()
+  } finally {
+    revocationState?.handle.clear()
+    revocationStatusList?.handle.clear()
+    revocationRegistryDefinition?.handle.clear()
+  }
+}
+
+/**
+ * Reads the metadata of a W3C AnonCreds credential, and frees the native credential it needs for that
+ */
+export function getW3cAnonCredsCredentialProofDetails(credentialJson: JsonObject) {
+  let credential: AnonCredsW3cCredential | undefined
+  try {
+    credential = AnonCredsW3cCredential.fromJson(credentialJson)
+
+    return {
+      schemaId: credential.schemaId,
+      credentialDefinitionId: credential.credentialDefinitionId,
+      revocationRegistryId: credential.revocationRegistryId,
+      revocationRegistryIndex: credential.revocationRegistryIndex,
+      timestamp: credential.timestamp,
+    }
+  } finally {
+    credential?.handle.clear()
+  }
+}
+
 export const getW3cAnonCredsCredentialMetadata = (w3cJsonLdVerifiableCredential: W3cJsonLdVerifiableCredential) => {
   const w3cJsonLdVerifiableCredentialJson = JsonTransformer.toJSON(w3cJsonLdVerifiableCredential)
 
-  const { schemaId, credentialDefinitionId, revocationRegistryId } = AnonCredsW3cCredential.fromJson(
+  const { schemaId, credentialDefinitionId, revocationRegistryId } = getW3cAnonCredsCredentialProofDetails(
     w3cJsonLdVerifiableCredentialJson
   )
 

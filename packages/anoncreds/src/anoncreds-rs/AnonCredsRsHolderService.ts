@@ -73,7 +73,7 @@ import type { AnonCredsCredentialRequestMetadata, W3cAnonCredsCredentialMetadata
 import { W3cAnonCredsCredentialMetadataKey } from '../utils/metadata'
 import { getAnoncredsCredentialInfoFromRecord, getW3cRecordAnonCredsTags } from '../utils/w3cAnonCredsUtils'
 
-import { getRevocationMetadata } from './utils'
+import { getRevocationMetadata, getW3cAnonCredsCredentialProofDetails } from './utils'
 
 @injectable()
 export class AnonCredsRsHolderService implements AnonCredsHolderService {
@@ -152,6 +152,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
         let revocationState: CredentialRevocationState | undefined
         let revocationRegistryDefinition: RevocationRegistryDefinition | undefined
+        let revocationStatusListObj: RevocationStatusList | undefined
         try {
           if (timestamp && credentialRevocationId && revocationRegistryId) {
             if (!options.revocationRegistries[revocationRegistryId]) {
@@ -170,11 +171,12 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
             }
 
             revocationRegistryDefinition = RevocationRegistryDefinition.fromJson(definition as unknown as JsonObject)
+            revocationStatusListObj = RevocationStatusList.fromJson(revocationStatusList as unknown as JsonObject)
             revocationState = CredentialRevocationState.create({
               revocationRegistryIndex: Number(credentialRevocationId),
               revocationRegistryDefinition,
               tailsPath: tailsFilePath,
-              revocationStatusList: RevocationStatusList.fromJson(revocationStatusList as unknown as JsonObject),
+              revocationStatusList: revocationStatusListObj,
             })
           }
 
@@ -204,6 +206,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           }
         } finally {
           revocationState?.handle.clear()
+          revocationStatusListObj?.handle.clear()
           revocationRegistryDefinition?.handle.clear()
         }
       }
@@ -331,10 +334,17 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
   public async w3cToLegacyCredential(_agentContext: AgentContext, options: W3cToLegacyCredentialOptions) {
     const credentialJson = JsonTransformer.toJSON(options.credential)
-    const w3cAnonCredsCredentialObj = W3cAnonCredsCredential.fromJson(credentialJson)
-    const w3cCredentialObj = w3cAnonCredsCredentialObj.toLegacy()
-    const legacyCredential = w3cCredentialObj.toJson() as unknown as AnonCredsCredential
-    return legacyCredential
+
+    let w3cAnonCredsCredentialObj: W3cAnonCredsCredential | undefined
+    let legacyCredentialObj: Credential | undefined
+    try {
+      w3cAnonCredsCredentialObj = W3cAnonCredsCredential.fromJson(credentialJson)
+      legacyCredentialObj = w3cAnonCredsCredentialObj.toLegacy()
+      return legacyCredentialObj.toJson() as unknown as AnonCredsCredential
+    } finally {
+      legacyCredentialObj?.handle.clear()
+      w3cAnonCredsCredentialObj?.handle.clear()
+    }
   }
 
   public async processW3cCredential(
@@ -356,14 +366,17 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     }
 
     const credentialJson = JsonTransformer.toJSON(credential)
-    const w3cAnonCredsCredential = W3cAnonCredsCredential.fromJson(credentialJson)
-    const processedW3cAnonCredsCredential = w3cAnonCredsCredential.process(processCredentialOptions)
 
-    const processedW3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(
-      processedW3cAnonCredsCredential.toJson(),
-      W3cJsonLdVerifiableCredential
-    )
-    return processedW3cJsonLdVerifiableCredential
+    let w3cAnonCredsCredential: W3cAnonCredsCredential | undefined
+    try {
+      w3cAnonCredsCredential = W3cAnonCredsCredential.fromJson(credentialJson)
+      // Processing replaces the native credential of the object (and frees the previous one)
+      w3cAnonCredsCredential.process(processCredentialOptions)
+
+      return JsonTransformer.fromJSON(w3cAnonCredsCredential.toJson(), W3cJsonLdVerifiableCredential)
+    } finally {
+      w3cAnonCredsCredential?.handle.clear()
+    }
   }
 
   public async legacyToW3cCredential(agentContext: AgentContext, options: LegacyToW3cCredentialOptions) {
@@ -420,7 +433,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     // this thows an error if the link secret is not found
     await getLinkSecret(agentContext, credentialRequestMetadata.link_secret_name)
 
-    const { revocationRegistryIndex } = W3cAnonCredsCredential.fromJson(JsonTransformer.toJSON(credential))
+    const { revocationRegistryIndex } = getW3cAnonCredsCredentialProofDetails(JsonTransformer.toJSON(credential))
 
     if (Array.isArray(credential.credentialSubject)) {
       throw new CredoError('Credential subject must be an object, not an array.')
@@ -795,7 +808,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       credentialsWithMetadata.map(async ({ credential, nonRevoked }) => {
         const credentialJson = JsonTransformer.toJSON(credential)
         const { revocationRegistryIndex, revocationRegistryId, timestamp } =
-          W3cAnonCredsCredential.fromJson(credentialJson)
+          getW3cAnonCredsCredentialProofDetails(credentialJson)
 
         if (!nonRevoked) return { credential: credentialJson, revocationState: undefined, timestamp: undefined }
 
