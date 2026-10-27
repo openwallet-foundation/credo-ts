@@ -1,6 +1,6 @@
 ---
-'@credo-ts/openid4vc': minor
-'@credo-ts/drizzle-storage': minor
+'@credo-ts/openid4vc': patch
+'@credo-ts/drizzle-storage': patch
 ---
 
 The issuer now supports credential request encryption (OID4VCI §10). Configure `credentialRequestEncryption` with one or more P-256 public JWKs from the agent's KMS (the `kid` must be the KMS key id) when creating or updating an issuer. The issuer advertises them in `credential_request_encryption` and decrypts (deferred) credential requests sent as a compact JWE with `Content-Type: application/jwt`. Set `required: true` to reject unencrypted requests with `invalid_encryption_parameters`. Unencrypted requests that ask for response encryption are rejected too.

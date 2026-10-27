@@ -19,7 +19,7 @@ import {
   Oauth2ResourceServer,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
-import { AuthorizationFlow } from '@openid4vc/openid4vci'
+import { AuthorizationFlow, Openid4vciClient } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
@@ -681,6 +681,37 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       expect(response.status).toBe(400)
       expect(await response.json()).toMatchObject({ error: 'invalid_encryption_parameters' })
     }
+
+    const { c_nonce } = await (await fetch(`${issuerUrl}/nonce`, { method: 'POST' })).json()
+    const holderKey = await holderTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const { jwt } = await new Openid4vciClient({
+      callbacks: getOid4vcCallbacks(holderTenant.context),
+    }).createCredentialRequestJwtProof({
+      issuerMetadata: resolvedCredentialOffer.metadata,
+      credentialConfigurationId: 'universityDegree',
+      nonce: c_nonce,
+      signer: { method: 'jwk', alg: 'ES256', publicJwk: holderKey.publicJwk as Jwk },
+    })
+    const responseEncryptionKey = await holderTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const credentialResponse = await post(
+      'credential',
+      await encrypt(requestEncryptionKey.publicJwk as Jwk, {
+        credential_configuration_id: 'universityDegree',
+        proofs: { jwt: [jwt] },
+        credential_response_encryption: {
+          jwk: { ...responseEncryptionKey.publicJwk, alg: 'ECDH-ES' },
+          enc: 'A256GCM',
+        },
+      })
+    )
+    expect(credentialResponse.status).toBe(200)
+    expect(credentialResponse.headers.get('Content-Type')).toContain('application/jwt')
+    const decryptedCredentialResponse = await getOid4vcCallbacks(holderTenant.context).decryptJwe(
+      await credentialResponse.text(),
+      { jwk: responseEncryptionKey.publicJwk as Jwk }
+    )
+    if (!decryptedCredentialResponse.decrypted) throw new Error('Unable to decrypt the credential response')
+    expect(JSON.parse(decryptedCredentialResponse.payload).credentials).toHaveLength(1)
 
     await holderTenant.endSession()
   })

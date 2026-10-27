@@ -765,7 +765,7 @@ export interface OpenId4VciCredentialRequestEncryptionOptions {
   required?: boolean
 
   // each `kid` must be the KMS key id, it's used to find the private key when decrypting
-  jwks: [Kms.KmsJwkPublic, ...Kms.KmsJwkPublic[]]
+  jwks: [Kms.KmsJwkPublic & { kid: string }, ...Array<Kms.KmsJwkPublic & { kid: string }>]
 }
 
 export type OpenId4VciCreateIssuerOptions = {
