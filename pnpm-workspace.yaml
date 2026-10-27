@@ -45,7 +45,7 @@ catalog:
   '@vitest/coverage-v8': ^5.0.5
   class-transformer: 0.5.1
   class-validator: ^0.14.3
-  express: ^5.2.1
+  express: ^5.3.0
   hpke: ^1.1.4
   nock: ^15.0.5
   reflect-metadata: 0.2.2
