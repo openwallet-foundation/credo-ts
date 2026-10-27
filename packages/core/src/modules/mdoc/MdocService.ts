@@ -28,6 +28,17 @@ import {
   MdocVerificationSessionRepository,
 } from './repository'
 
+const mergeNameSpaces = <Value>(nameSpacesList: Array<Record<string, Record<string, Value>> | undefined>) => {
+  const merged: Record<string, Record<string, Value>> = {}
+  for (const nameSpaces of nameSpacesList) {
+    for (const [nameSpace, elements] of Object.entries(nameSpaces ?? {})) {
+      merged[nameSpace] = { ...merged[nameSpace], ...elements }
+    }
+  }
+
+  return Object.keys(merged).length > 0 ? merged : undefined
+}
+
 /**
  * @internal
  */
@@ -90,6 +101,9 @@ export class MdocService {
    * treated as alternatives, the first use case that can be answered is. Per doc request the first
    * valid credential is selected, with the first option of each claim: an alternative set when the
    * element itself is not in the mdoc, and the device signed values the request was resolved with.
+   *
+   * When the same credential is selected for several doc requests, it answers them with a single
+   * document, unless the doc requests have different alternatives for an element that takes one.
    */
   public selectCredentialsForRequest<ResolvedRequest extends MdocResolvedRequest>(
     resolvedRequest: ResolvedRequest,
@@ -137,17 +151,83 @@ export class MdocService {
       )
     }
 
+    const credentials = Array.from(selected.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([docRequestIndex, credential]) => ({
+        docRequestIndex,
+        record: credential.record,
+        useMode,
+        ...this.getDisclosureForValidCredential(credential),
+      }))
+
+    // Doc requests that are answered with the same credential get a single document, which discloses
+    // the elements of all of them, rather than one document per doc request with the same IssuerAuth.
+    const credentialsByRecord = new Map<string, typeof credentials>()
+    for (const credential of credentials) {
+      credentialsByRecord.set(credential.record.id, [
+        ...(credentialsByRecord.get(credential.record.id) ?? []),
+        credential,
+      ])
+    }
+
     return {
       resolvedRequest,
-      credentials: Array.from(selected.entries())
-        .sort(([a], [b]) => a - b)
-        .map(([docRequestIndex, credential]) => ({
-          docRequestIndex,
-          record: credential.record,
-          useMode,
-          ...this.getDisclosureForValidCredential(credential),
-        })),
+      credentials: Array.from(credentialsByRecord.values()).flatMap(
+        (recordCredentials): MdocSelectedCredentials<ResolvedRequest>['credentials'] => {
+          const [first, ...rest] = recordCredentials
+          if (rest.length === 0 || !this.canAnswerWithOneDocument(resolvedRequest, recordCredentials)) {
+            return recordCredentials
+          }
+
+          return [
+            {
+              ...first,
+              docRequestIndex: recordCredentials.map(({ docRequestIndex }) => docRequestIndex),
+              alternatives: mergeNameSpaces(recordCredentials.map(({ alternatives }) => alternatives)),
+              deviceNameSpaces: mergeNameSpaces(recordCredentials.map(({ deviceNameSpaces }) => deviceNameSpaces)),
+            },
+          ]
+        }
+      ),
     }
+  }
+
+  /**
+   * Whether doc requests answered with the same credential can share one document. An alternative set
+   * can only be chosen for an element when every doc request that requests the element has the same
+   * alternatives for it, and the same set is chosen for it.
+   */
+  private canAnswerWithOneDocument(
+    resolvedRequest: MdocResolvedRequest,
+    credentials: Array<{ docRequestIndex: number; alternatives?: Record<string, Record<string, number>> }>
+  ) {
+    const docRequests = credentials.map(({ docRequestIndex }) =>
+      resolvedRequest.docRequests.find((docRequest) => docRequest.docRequestIndex === docRequestIndex)
+    )
+
+    for (const { alternatives = {} } of credentials) {
+      for (const [nameSpace, elements] of Object.entries(alternatives)) {
+        for (const [element, chosen] of Object.entries(elements)) {
+          let expectedAlternativeElementSets: string | undefined
+
+          for (const [index, credential] of credentials.entries()) {
+            const docRequest = docRequests[index]
+            if (docRequest?.nameSpaces[nameSpace]?.[element] === undefined) continue
+            if (credential.alternatives?.[nameSpace]?.[element] !== chosen) return false
+
+            const alternativeElementSets = JSON.stringify(
+              docRequest.requestInfo?.alternativeDataElements?.find(
+                ({ requestedElement }) => requestedElement[0] === nameSpace && requestedElement[1] === element
+              )?.alternativeElementSets
+            )
+            expectedAlternativeElementSets ??= alternativeElementSets
+            if (alternativeElementSets !== expectedAlternativeElementSets) return false
+          }
+        }
+      }
+    }
+
+    return true
   }
 
   /**

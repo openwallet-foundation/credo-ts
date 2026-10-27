@@ -2,7 +2,7 @@
 '@credo-ts/core': minor
 ---
 
-Support the request information of ISO/IEC TS 23220-4 (taken up by the second edition of ISO/IEC 18013-5) in the ISO mdoc DC API, by updating `@owf/mdoc` to `^0.9.0`, `@owf/*` to `^0.5.0` and `@sd-jwt/*` to `^0.23.1`.
+Support the request information of ISO/IEC TS 23220-4 (taken up by the second edition of ISO/IEC 18013-5) in the ISO mdoc DC API, by updating `@owf/mdoc` to `^0.9.1`, `@owf/*` to `^0.6.0` and `@sd-jwt/*` to `^0.23.2`.
 
 Verifier:
 
@@ -21,7 +21,8 @@ await agent.mdoc.createDcApiVerificationSession({
 
 Wallet:
 
-- New `agent.mdoc.selectCredentialsForRequest` selects the credentials to answer a resolved request with, like `selectCredentialsForDcqlRequest`: the first matching document set of every mandatory use case (or, without mandatory use cases, of the first use case that can be answered), the first credential per doc request that can be used with `useMode`, and per claim its first option, including the alternative sets and device signed values that takes. For a resolved DC API request the result can be passed to `createDcApiResponse` as is.
+- New `agent.mdoc.selectCredentialsForRequest` selects the credentials to answer a resolved request with, like `selectCredentialsForDcqlRequest`: the first matching document set of every mandatory use case (or, without mandatory use cases, of the first use case that can be answered), the first credential per doc request that can be used with `useMode`, and per claim its first option, including the alternative sets and device signed values that takes. Doc requests answered with the same credential share one document. For a resolved DC API request the result can be passed to `createDcApiResponse` as is.
+- The resolved request types drop `DcApi` from their name, as they do not depend on the DC API: `MdocResolvedDocRequest(Success|Failure)`, `MdocValidCredential`, `MdocFailedCredential` and `MdocCredentialMatch`. The `MdocDcApi*` names stay as deprecated aliases. `MdocDcApiResolvedRequest` extends the new `MdocResolvedRequest`.
 - `createDcApiResponse` takes several doc request indexes in `docRequestIndex`, to answer several doc requests of a credential's docType with a single document.
 - `createDcApiResponse` takes `alternatives` per credential, to disclose an alternative set in place of a requested element. The claim `options` in the resolved request list the sets an mdoc can disclose. It throws when the credentials do not answer the use cases of the request.
 
@@ -47,5 +48,3 @@ if (resolved.success && resolved.useCasesSource === 'allDocRequests') {
   // every doc request has a valid credential
 }
 ```
-
-- The resolved request types drop `DcApi` from their name, as they do not depend on the DC API: `MdocResolvedDocRequest(Success|Failure)`, `MdocValidCredential`, `MdocFailedCredential` and `MdocCredentialMatch`. `MdocDcApiResolvedRequest` extends the new `MdocResolvedRequest`.

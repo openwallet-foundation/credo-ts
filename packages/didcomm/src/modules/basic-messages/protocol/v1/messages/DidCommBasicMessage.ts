@@ -1,9 +1,9 @@
 import { Expose, Transform } from 'class-transformer'
 import { IsDate, IsString } from 'class-validator'
 
-import { DidCommMessage } from '../../../DidCommMessage'
-import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
-import { DateParser } from '../../../util/transformers'
+import { DidCommMessage } from '../../../../../DidCommMessage'
+import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
+import { DateParser } from '../../../../../util/transformers'
 
 export class DidCommBasicMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true

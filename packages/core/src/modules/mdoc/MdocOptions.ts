@@ -219,7 +219,8 @@ export type MdocDocRequestInfo = {
   uniqueDocSetRequired?: boolean
 
   /**
-   * The largest unencrypted device response, in bytes, the verifier accepts.
+   * The largest unencrypted device response, in bytes, the wallet may send. The wallet applies it
+   * when it creates the response. The verifier does not check it.
    */
   maximumResponseSize?: number
 }
@@ -550,6 +551,19 @@ export type MdocResolvedDocRequestFailure = MdocResolvedDocRequestBase & {
 
 export type MdocResolvedDocRequest = MdocResolvedDocRequestSuccess | MdocResolvedDocRequestFailure
 
+/** @deprecated use {@link MdocValidCredential} */
+export type MdocDcApiValidCredential = MdocValidCredential
+/** @deprecated use {@link MdocFailedCredential} */
+export type MdocDcApiFailedCredential = MdocFailedCredential
+/** @deprecated use {@link MdocCredentialMatch} */
+export type MdocDcApiCredentialMatch = MdocCredentialMatch
+/** @deprecated use {@link MdocResolvedDocRequestSuccess} */
+export type MdocDcApiResolvedDocRequestSuccess = MdocResolvedDocRequestSuccess
+/** @deprecated use {@link MdocResolvedDocRequestFailure} */
+export type MdocDcApiResolvedDocRequestFailure = MdocResolvedDocRequestFailure
+/** @deprecated use {@link MdocResolvedDocRequest} */
+export type MdocDcApiResolvedDocRequest = MdocResolvedDocRequest
+
 /**
  * Whether the stored mdocs can satisfy a use case of the request, and with which document sets.
  * A response answers every doc request of exactly one document set of a use case.
@@ -681,9 +695,7 @@ export type MdocSelectCredentialsForRequestOptions = {
  */
 export type MdocSelectedCredentials<ResolvedRequest extends MdocResolvedRequest = MdocResolvedRequest> = {
   resolvedRequest: ResolvedRequest
-  credentials: Array<
-    MdocCredentialForRequest & { docRequestIndex: number; record: MdocRecord; useMode: CredentialMultiInstanceUseMode }
-  >
+  credentials: Array<MdocCredentialForRequest & { record: MdocRecord; useMode: CredentialMultiInstanceUseMode }>
 }
 
 export type MdocSignOptions = {

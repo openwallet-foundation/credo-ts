@@ -45,9 +45,9 @@ catalog:
   '@vitest/coverage-v8': ^5.0.5
   class-transformer: 0.5.1
   class-validator: ^0.14.3
-  express: ^5.2.1
+  express: ^5.3.0
   hpke: ^1.1.4
-  nock: ^15.0.2
+  nock: ^15.0.5
   reflect-metadata: 0.2.2
   rxjs: ^7.8.2
   tsyringe: ^4.10.0
@@ -62,9 +62,15 @@ catalogs:
     '@openwallet-foundation/askar-shared': 0.6.1
 
 minimumReleaseAgeExclude:
-  - '@openid4vc/oauth2@0.8.0'
-  - '@openid4vc/openid4vci@0.8.0'
-  - '@openid4vc/openid4vp@0.8.0'
-  - '@openid4vc/utils@0.8.0'
+  - '@openid4vc/oauth2@0.7.0 || 0.8.0'
+  - '@openid4vc/openid4vci@0.7.0 || 0.8.0'
+  - '@openid4vc/openid4vp@0.7.0 || 0.8.0'
+  - '@openid4vc/utils@0.7.0 || 0.8.0'
+  - '@owf/cose@0.4.2 || 0.5.0'
+  - '@owf/identity-common@0.4.2 || 0.5.0'
+  - '@owf/mdoc@0.8.2 || 0.8.3'
+  - '@owf/token-status-list@0.4.2 || 0.5.0'
+  - '@sd-jwt/core@0.22.0 || 0.23.0 || 0.23.1'
+  - '@sd-jwt/sd-jwt-vc@0.22.0 || 0.23.0 || 0.23.1'
   - '@peculiar/x509@2.2.0'
   - nock@15.0.2
