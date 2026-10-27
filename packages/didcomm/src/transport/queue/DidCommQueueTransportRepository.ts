@@ -8,6 +8,8 @@ import type {
 } from './QueueTransportRepositoryOptions'
 
 export interface DidCommQueueTransportRepository {
+  /** Called when the agent initializes, before the transports are started. */
+  start?(agentContext: AgentContext): void | Promise<void>
   getAvailableMessageCount(
     agentContext: AgentContext,
     options: GetAvailableMessageCountOptions

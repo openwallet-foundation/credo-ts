@@ -1,5 +1,5 @@
-import { DidCommMessage } from '../../../DidCommMessage'
-import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
+import { DidCommMessage } from '../../../../../DidCommMessage'
+import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface DidCommMediationRequestMessageOptions {
   sentTime?: Date
