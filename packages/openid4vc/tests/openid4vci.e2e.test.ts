@@ -683,7 +683,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       expect(await response.json()).toMatchObject({ error: 'invalid_encryption_parameters' })
     }
 
-    const { c_nonce } = await (await fetch(`${issuerUrl}/nonce`, { method: 'POST' })).json()
+    const { c_nonce } = (await (await fetch(`${issuerUrl}/nonce`, { method: 'POST' })).json()) as { c_nonce: string }
     const holderKey = await holderTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
     const { jwt } = await new Openid4vciClient({
       callbacks: getOid4vcCallbacks(holderTenant.context),
