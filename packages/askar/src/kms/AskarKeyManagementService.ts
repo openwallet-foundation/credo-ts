@@ -133,7 +133,11 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     const key = await this.fetchAskarKey(agentContext, keyId)
     if (!key) return null
 
-    return this.publicJwkFromKey(agentContext, key.key, { kid: keyId })
+    try {
+      return this.publicJwkFromKey(agentContext, key.key, { kid: keyId })
+    } finally {
+      key.key?.handle.free()
+    }
   }
 
   public async importKey<Jwk extends Kms.KmsJwkPrivate>(
@@ -931,12 +935,11 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
       // Get the key entry
       const keyEntryList = new KeyEntryList({ handle })
-      const keyEntry = keyEntryList.getEntryByIndex(0)
-
-      const keyEntryObject = keyEntry.toJson()
-      keyEntryList.handle.free()
-
-      return keyEntryObject
+      try {
+        return keyEntryList.getEntryByIndex(0).toJson()
+      } finally {
+        keyEntryList.handle.free()
+      }
     })
   }
 
