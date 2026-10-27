@@ -76,6 +76,7 @@ import type {
   OpenId4VciProofOfPossessionRequirements,
   OpenId4VciResolvedAuthorizationRequest,
   OpenId4VciResolvedCredentialOffer,
+  OpenId4VciResolveIssuerMetadataOptions,
   OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
   OpenId4VciSendNotificationOptions,
   OpenId4VciSupportedCredentialFormats,
@@ -103,11 +104,14 @@ export class OpenId4VciHolderService {
 
   public async resolveIssuerMetadata(
     agentContext: AgentContext,
-    credentialIssuer: string
+    credentialIssuer: string,
+    options?: OpenId4VciResolveIssuerMetadataOptions
   ): Promise<OpenId4VciMetadata> {
     const client = this.getClient(agentContext)
 
-    const metadata = await client.resolveIssuerMetadata(credentialIssuer)
+    const metadata = await client.resolveIssuerMetadata(credentialIssuer, {
+      signedMetadata: options?.signedMetadata ?? 'disallowed',
+    })
     this.logger.debug('fetched credential issuer metadata', { metadata })
 
     return metadata
@@ -115,12 +119,15 @@ export class OpenId4VciHolderService {
 
   public async resolveCredentialOffer(
     agentContext: AgentContext,
-    credentialOffer: string
+    credentialOffer: string,
+    options?: OpenId4VciResolveIssuerMetadataOptions
   ): Promise<OpenId4VciResolvedCredentialOffer> {
     const client = this.getClient(agentContext)
 
     const credentialOfferObject = await client.resolveCredentialOffer(credentialOffer)
-    const metadata = await client.resolveIssuerMetadata(credentialOfferObject.credential_issuer)
+    const metadata = await client.resolveIssuerMetadata(credentialOfferObject.credential_issuer, {
+      signedMetadata: options?.signedMetadata ?? 'disallowed',
+    })
     this.logger.debug('fetched credential offer and issuer metadata', { metadata, credentialOfferObject })
 
     const credentialConfigurationsSupported = getOfferedCredentials(

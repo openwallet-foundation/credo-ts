@@ -224,8 +224,19 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(signedMetadata.header.x5c).toEqual([certificate.toString('base64')])
     expect(signedMetadata.payload.additionalClaims.issuer_info).toEqual(issuerInfo)
 
+    await expect(
+      holder.agent.openid4vc.holder.resolveIssuerMetadata(`${issuanceBaseUrl}/${created.issuerId}`, {
+        signedMetadata: 'required',
+      })
+    ).rejects.toThrow('No trusted certificate was found')
+
     holder.agent.x509.config.addTrustedCertificate(certificate)
-    const metadata = await holder.agent.openid4vc.holder.resolveIssuerMetadata(`${issuanceBaseUrl}/${created.issuerId}`)
+    const metadata = await holder.agent.openid4vc.holder.resolveIssuerMetadata(
+      `${issuanceBaseUrl}/${created.issuerId}`,
+      {
+        signedMetadata: 'required',
+      }
+    )
     expect(metadata.credentialIssuer.issuer_info).toEqual(issuerInfo)
 
     const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({

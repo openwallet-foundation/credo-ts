@@ -7,4 +7,6 @@ The issuer now supports credential request encryption (OID4VCI §10). Configure 
 
 As OID4VCI §8.2 only allows response encryption on an encrypted request, `credential_response_encryption` is now only advertised when `credentialRequestEncryption` is configured, and configuring `credentialResponseEncryption` without it throws.
 
+The holder's `resolveIssuerMetadata` and `resolveCredentialOffer` take a `signedMetadata` option (`required`, `preferred` or `disallowed`). It defaults to `disallowed`, so plain JSON metadata is still fetched unless signed metadata is requested.
+
 The drizzle storage stores the issuer's `credentialRequestEncryption` configuration in a new `credential_request_encryption` column; run the drizzle migrations when upgrading.

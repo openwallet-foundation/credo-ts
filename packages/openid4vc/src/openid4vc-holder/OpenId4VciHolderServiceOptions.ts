@@ -37,6 +37,11 @@ export const openId4VciSupportedCredentialFormats: OpenId4VciSupportedCredential
   OpenId4VciCredentialFormatProfile.MsoMdoc,
 ]
 
+export interface OpenId4VciResolveIssuerMetadataOptions {
+  // defaults to 'disallowed', so plain JSON metadata is fetched unless the wallet opts in
+  signedMetadata?: 'required' | 'preferred' | 'disallowed'
+}
+
 export interface OpenId4VciDpopRequestOptions {
   jwk: Kms.PublicJwk
   alg: Kms.KnownJwaSignatureAlgorithm
