@@ -1,5 +1,6 @@
 import {
   AgentContext,
+  type DependencyManager,
   type FileSystem,
   InjectionSymbols,
   inject,
@@ -36,6 +37,9 @@ import {
 
 @injectable()
 export class AskarStoreManager {
+  // Store initializations in progress, keyed by the dependency manager the store is registered on
+  private storeInitializations = new WeakMap<DependencyManager, Promise<Store>>()
+
   public constructor(
     @inject(InjectionSymbols.FileSystem) private fileSystem: FileSystem,
     private config: AskarModuleConfig
@@ -151,14 +155,14 @@ export class AskarStoreManager {
         keyMethod: askarStoreConfig.keyMethod,
         passKey: askarStoreConfig.passKey,
       })
-      agentContext.dependencyManager.registerInstance(Store, store)
+      await this.registerStore(agentContext, store)
 
       // For new stores we need to set the framework storage version
       await this.withSession(agentContext, (session) => this.setCurrentFrameworkStorageVersionOnSession(session))
 
       return store
     } catch (error) {
-      if (error instanceof AskarStoreDuplicateError) throw error
+      if (error instanceof AskarStoreError) throw error
 
       // FIXME: Askar should throw a Duplicate error code, but is currently returning Encryption
       // And if we provide the very same wallet key, it will open it without any error
@@ -203,9 +207,10 @@ export class AskarStoreManager {
         keyMethod: askarStoreConfig.keyMethod,
         passKey: askarStoreConfig.passKey,
       })
-      agentContext.dependencyManager.registerInstance(Store, store)
+      await this.registerStore(agentContext, store)
       return store
     } catch (error) {
+      if (error instanceof AskarStoreError) throw error
       if (
         isAskarError(error) &&
         (error.code === AskarErrorCode.NotFound ||
@@ -481,6 +486,21 @@ export class AskarStoreManager {
     return this._withSession(agentContext, callback, false)
   }
 
+  /**
+   * Registers a newly opened store. If another store was registered while this one was being opened,
+   * the new store is closed so it doesn't stay open without being used.
+   */
+  private async registerStore(agentContext: AgentContext, store: Store) {
+    if (this.getStore(agentContext)) {
+      await store.close()
+      throw new AskarStoreAlreadyRegisteredError(
+        'Store already opened. Close the currently opened store before re-opening the store'
+      )
+    }
+
+    agentContext.dependencyManager.registerInstance(Store, store)
+  }
+
   private getStore(agentContext: AgentContext, { recursive = false }: { recursive?: boolean } = {}) {
     const isRegistered = agentContext.dependencyManager.isRegistered(Store, recursive)
     if (!isRegistered) return null
@@ -529,30 +549,61 @@ export class AskarStoreManager {
   }
 
   public async getInitializedStoreWithProfile(agentContext: AgentContext) {
-    let store = this.getStore(agentContext, {
-      // In case we use a profile per wallet, we want to use the parent store, otherwise we only
-      // want to use a store that is directly registered on this context.
-      recursive: this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet,
-    })
-
-    if (!store) {
-      try {
-        store = await this.openStore(agentContext)
-      } catch (error) {
-        // Only auto-provision a store when the agent context is initialized
-        if (error instanceof AskarStoreNotFoundError && agentContext.isInitialized) {
-          store = await this.provisionStore(agentContext)
-        } else {
-          throw error
-        }
-      }
-    }
+    const store =
+      this.getStore(agentContext, {
+        // In case we use a profile per wallet, we want to use the parent store, otherwise we only
+        // want to use a store that is directly registered on this context.
+        recursive: this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet,
+      }) ?? (await this.initializeStore(agentContext))
 
     return {
       // If we're on store level the default profile can be used automatically
       // otherwise we need to set the profile, which we do based on the context correlation id
       profile: this.isStoreLevel(agentContext) ? undefined : agentContext.contextCorrelationId,
       store,
+    }
+  }
+
+  /**
+   * Opens the store, or provisions it if it doesn't exist yet. Concurrent calls for the same
+   * context share one initialization, so the store is opened only once.
+   */
+  private initializeStore(agentContext: AgentContext): Promise<Store> {
+    const { dependencyManager } = agentContext
+
+    let initialization = this.storeInitializations.get(dependencyManager)
+    if (!initialization) {
+      initialization = this.openOrProvisionStore(agentContext)
+        .catch((error) => {
+          // A direct openStore or provisionStore call can register a store while this initialization
+          // runs, which makes our own open or provision fail. In that case we use the registered store.
+          const store = this.getStore(agentContext)
+          if (
+            store &&
+            (error instanceof AskarStoreAlreadyRegisteredError || error instanceof AskarStoreDuplicateError)
+          ) {
+            return store
+          }
+
+          throw error
+        })
+        .finally(() => this.storeInitializations.delete(dependencyManager))
+      this.storeInitializations.set(dependencyManager, initialization)
+    }
+
+    return initialization
+  }
+
+  private async openOrProvisionStore(agentContext: AgentContext): Promise<Store> {
+    try {
+      return await this.openStore(agentContext)
+    } catch (error) {
+      // Only auto-provision a store when the agent context is initialized
+      if (error instanceof AskarStoreNotFoundError && agentContext.isInitialized) {
+        return await this.provisionStore(agentContext)
+      }
+
+      throw error
     }
   }
 
@@ -576,3 +627,8 @@ export class AskarStoreManager {
     return this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.DatabasePerWallet
   }
 }
+
+/**
+ * Thrown when another store was registered while a store was being opened or provisioned.
+ */
+class AskarStoreAlreadyRegisteredError extends AskarStoreError {}
