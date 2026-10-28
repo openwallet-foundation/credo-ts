@@ -1,5 +1,21 @@
 # @credo-ts/askar-to-drizzle-storage-migration
 
+## 0.7.4
+
+### Patch Changes
+
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+  - @credo-ts/core@0.7.4
+  - @credo-ts/askar@0.7.4
+  - @credo-ts/drizzle-storage@0.7.4
+  - @credo-ts/tenants@0.7.4
+
 ## 0.7.3
 
 ### Patch Changes
