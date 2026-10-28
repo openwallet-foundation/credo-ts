@@ -17,7 +17,16 @@ import { JwsService } from '../../../../crypto'
 import { ClassValidationError, CredoError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
 import { CacheModuleConfig, InMemoryLruCache } from '../../../cache'
-import { DidJwk, DidKey, DidRepository, DidsApi, DidsModuleConfig } from '../../../dids'
+import {
+  DidDocument,
+  DidJwk,
+  DidKey,
+  DidRepository,
+  DidsApi,
+  DidsModuleConfig,
+  getJsonWebKey2020,
+  VerificationMethod,
+} from '../../../dids'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
 import { X509ModuleConfig } from '../../../x509/X509ModuleConfig'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
@@ -398,6 +407,53 @@ describe('W3cJwtCredentialService', () => {
   })
 
   describe('verifyPresentation', () => {
+    test('rejects a presentation signed with a key that names the holder as its controller', async () => {
+      const signerDid = 'did:web:signer.example'
+      const signerKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const verificationMethod = new VerificationMethod({
+        ...getJsonWebKey2020({
+          did: signerDid,
+          verificationMethodId: `${signerDid}#key-1`,
+          publicJwk: PublicJwk.fromPublicJwk(signerKey.publicJwk),
+        }),
+        controller: holderDidKey.did,
+      })
+      await dids.import({
+        did: signerDid,
+        didDocument: new DidDocument({
+          id: signerDid,
+          verificationMethod: [verificationMethod],
+          authentication: [verificationMethod.id],
+        }),
+        keys: [{ didDocumentRelativeKeyId: '#key-1', kmsKeyId: signerKey.keyId }],
+      })
+
+      // No holder, so the JWT has no iss and is attributed to the signer of its kid
+      const signedJwtVp = await w3cJwtCredentialService.signPresentation(agentContext, {
+        presentation: new W3cPresentation({
+          context: [CREDENTIALS_CONTEXT_V1_URL],
+          type: ['VerifiablePresentation'],
+          verifiableCredential: [W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)],
+        }),
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
+        challenge: 'challenge',
+        domain: 'example.com',
+        format: ClaimFormat.JwtVp,
+        verificationMethod: verificationMethod.id,
+      })
+
+      const result = await w3cJwtCredentialService.verifyPresentation(agentContext, {
+        presentation: signedJwtVp,
+        challenge: 'challenge',
+        domain: 'example.com',
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain(
+        `is controlled by '${holderDidKey.did}', not by the DID document '${signerDid}' it is listed in`
+      )
+    })
+
     test('verifies an ES256 JWT vp signed by Credo', async () => {
       const result = await w3cJwtCredentialService.verifyPresentation(agentContext, {
         presentation: CredoEs256DidKeyJwtVp,

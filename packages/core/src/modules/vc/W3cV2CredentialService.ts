@@ -9,7 +9,7 @@ import {
   W3cV2DataIntegrityVerifiableCredential,
   W3cV2DataIntegrityVerifiablePresentation,
 } from './data-integrity'
-import { getSignerForDataIntegrityProof } from './data-integrity/v2-di-utils'
+import { resolveDataIntegritySigner } from './data-integrity/v2-di-utils'
 import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiablePresentation } from './jwt-vc'
 import { W3cV2JwtCredentialService } from './jwt-vc/W3cV2JwtCredentialService'
 import type {
@@ -34,7 +34,7 @@ import {
   W3cV2SdJwtVerifiableCredential,
   W3cV2SdJwtVerifiablePresentation,
 } from './sd-jwt-vc'
-import { getVerificationMethodForJwt } from './v2-jwt-utils'
+import { getSignerForJwt } from './v2-jwt-utils'
 import type {
   W3cV2DiSignCredentialOptions,
   W3cV2DiSignPresentationOptions,
@@ -230,8 +230,7 @@ export class W3cV2CredentialService {
         signerId = holderId
       } else {
         try {
-          const verificationMethod = await getVerificationMethodForJwt(agentContext, presentation, ['authentication'])
-          signerId = verificationMethod.controller
+          signerId = (await getSignerForJwt(agentContext, presentation, ['authentication'])).signer
         } catch (error) {
           validationResults.isValid = false
           validationResults.error = error
@@ -256,8 +255,7 @@ export class W3cV2CredentialService {
         signerId = holderId
       } else {
         try {
-          const verificationMethod = await getVerificationMethodForJwt(agentContext, presentation, ['authentication'])
-          signerId = verificationMethod.controller
+          signerId = (await getSignerForJwt(agentContext, presentation, ['authentication'])).signer
         } catch (error) {
           validationResults.isValid = false
           validationResults.error = error
@@ -282,13 +280,11 @@ export class W3cV2CredentialService {
         try {
           // The holder is optional in VCDM 2.0, so fall back to the identity that authenticated the
           // presentation, mirroring how the JWT and SD-JWT branches above derive their signer.
-          // No expected controller is passed: with no declared holder there is nothing to
+          // No expected signer is passed: with no declared holder there is nothing to
           // disambiguate against, so an ambiguous proof set is rejected rather than guessed at.
-          signerId = await getSignerForDataIntegrityProof(
-            agentContext,
-            presentation.securedPresentation,
-            'authentication'
-          )
+          signerId = (
+            await resolveDataIntegritySigner(agentContext, presentation.securedPresentation, 'authentication')
+          ).signer
         } catch (error) {
           validationResults.isValid = false
           validationResults.error = error

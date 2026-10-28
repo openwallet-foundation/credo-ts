@@ -24,9 +24,10 @@ import type {
   W3cV2VerifyCredentialResult,
   W3cV2VerifyPresentationResult,
 } from '../models'
+import { validateSignerIsExpectedParty } from '../resolveSigner'
 import {
   extractHolderFromPresentationCredentials,
-  getVerificationMethodForJwt,
+  getSignerForJwt,
   validateAndResolveVerificationMethod,
 } from '../v2-jwt-utils'
 import {
@@ -171,7 +172,8 @@ export class W3cV2SdJwtCredentialService {
         return validationResults
       }
 
-      const issuerVerificationMethod = await getVerificationMethodForJwt(agentContext, credential, ['assertionMethod'])
+      const issuer = await getSignerForJwt(agentContext, credential, ['assertionMethod'])
+      const issuerVerificationMethod = issuer.verificationMethod
       const issuerPublicKey = getPublicJwkFromVerificationMethod(issuerVerificationMethod)
 
       // Ensure the issuer is trusted according to the (optional) `getTrustedIssuersForVerification`
@@ -214,20 +216,11 @@ export class W3cV2SdJwtCredentialService {
         }
       }
 
-      // Validate whether the credential is signed with the 'issuer' id
-      // NOTE: this uses the verificationMethod.controller. We may want to use the verificationMethod.id?
-      if (credential.resolvedCredential.issuerId !== issuerVerificationMethod.controller) {
-        validationResults.validations.issuerIsSigner = {
-          isValid: false,
-          error: new CredoError(
-            `Credential is signed using verification method ${issuerVerificationMethod.id}, while the issuer of the credential is '${credential.resolvedCredential.issuerId}'`
-          ),
-        }
-      } else {
-        validationResults.validations.issuerIsSigner = {
-          isValid: true,
-        }
-      }
+      validationResults.validations.issuerIsSigner = validateSignerIsExpectedParty(
+        issuer,
+        credential.resolvedCredential.issuerId,
+        'issuer'
+      )
 
       validationResults.isValid = Object.values(validationResults.validations).every(
         (validation) => validation?.isValid === true
@@ -357,8 +350,8 @@ export class W3cV2SdJwtCredentialService {
         return validationResults
       }
 
-      const proverVerificationMethod = await getVerificationMethodForJwt(agentContext, presentation, ['authentication'])
-      const proverPublicKey = getPublicJwkFromVerificationMethod(proverVerificationMethod)
+      const prover = await getSignerForJwt(agentContext, presentation, ['authentication'])
+      const proverPublicKey = getPublicJwkFromVerificationMethod(prover.verificationMethod)
       const holderBinding = parseHolderBindingFromCredential(presentation.sdJwt.prettyClaims)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
@@ -387,25 +380,11 @@ export class W3cV2SdJwtCredentialService {
         }
       }
 
-      // Validate whether the presentation is signed with the 'holder' id
-      // NOTE: this uses the verificationMethod.controller. We may want to use the verificationMethod.id?
-      if (
-        presentation.resolvedPresentation.holderId &&
-        proverVerificationMethod.controller !== presentation.resolvedPresentation.holderId
-      ) {
-        validationResults.presentation.validations.holderIsSigner = {
-          isValid: false,
-          error: new CredoError(
-            `Presentation is signed using verification method ${proverVerificationMethod.id}, while the holder of the presentation is '${presentation.resolvedPresentation.holderId}'`
-          ),
-        }
-      } else {
-        // If no holderId is present, this validation passes by default as there can't be
-        // a mismatch between the 'holder' property and the signer of the presentation.
-        validationResults.presentation.validations.holderIsSigner = {
-          isValid: true,
-        }
-      }
+      validationResults.presentation.validations.holderIsSigner = validateSignerIsExpectedParty(
+        prover,
+        presentation.resolvedPresentation.holderId,
+        'holder'
+      )
 
       validationResults.presentation.isValid = Object.values(validationResults.presentation.validations).every(
         (validation) => validation.isValid

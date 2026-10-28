@@ -1,7 +1,7 @@
 import { getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
 import type { AgentContext } from '../../../../agent/context'
 import { CredoError } from '../../../../error'
-import { DidResolverService, DidsApi } from '../../../dids'
+import { DidDocument, DidResolverService, DidsApi, VerificationMethod } from '../../../dids'
 import { KeyManagementApi } from '../../../kms'
 import { Ed25519PublicJwk } from '../../../kms/jwk'
 import {
@@ -22,6 +22,26 @@ import type { W3cV2DataIntegrityContextValidationResult } from '../W3cV2DataInte
 import { W3cV2DataIntegrityContextValidator } from '../W3cV2DataIntegrityContextValidator'
 import { W3cV2DataIntegrityCredentialService } from '../W3cV2DataIntegrityCredentialService'
 import { CredoDidKeyDiExampleCredentialToSign } from './fixtures/credo-di-vc'
+
+function createDidDocument(
+  did: string,
+  verificationMethodId: string,
+  controller: string,
+  purpose: 'assertionMethod' | 'authentication'
+) {
+  return new DidDocument({
+    id: did,
+    verificationMethod: [
+      new VerificationMethod({
+        id: verificationMethodId,
+        type: 'Ed25519VerificationKey2018',
+        controller,
+        publicKeyBase58: 'base58',
+      }),
+    ],
+    [purpose]: [verificationMethodId],
+  })
+}
 
 describe('W3cV2DataIntegrityCredentialService', () => {
   test('verifyCredential falls back to default error message when no DI issues are present', async () => {
@@ -238,6 +258,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
         dependencyManager: {
           resolve: vi.fn().mockReturnValue({
             resolveDidDocument: vi.fn().mockResolvedValue({
+              id: testIssuerDid,
               dereferenceKey: vi.fn().mockReturnValue({
                 id: testIssuerVerificationMethod,
                 controller: testIssuerDid,
@@ -677,25 +698,31 @@ describe('W3cV2DataIntegrityCredentialService', () => {
       return new W3cV2DataIntegrityCredentialService(proofService, contextPolicyValidator as never)
     }
 
+    const otherDid = 'did:web:someone-else.example'
+    const otherVerificationMethodId = `${otherDid}#key-1`
+
     function createAgentContext(controller: string) {
+      const documents: Record<string, unknown> = {
+        [issuerDid]: createDidDocument(issuerDid, issuerVerificationMethodId, issuerDid, 'assertionMethod'),
+        [otherDid]: createDidDocument(otherDid, otherVerificationMethodId, controller, 'assertionMethod'),
+      }
+
       return {
         dependencyManager: {
           resolve: vi.fn().mockReturnValue({
-            resolveDidDocument: vi.fn().mockResolvedValue({
-              dereferenceKey: vi.fn().mockReturnValue({ id: issuerVerificationMethodId, controller }),
-            }),
+            resolveDidDocument: vi.fn(async (didUrl: string) => documents[didUrl.split('#')[0]]),
           }),
         },
       } as never
     }
 
-    function createOptions(issuer: string) {
+    function createOptions(issuer: string, verificationMethodId = issuerVerificationMethodId) {
       return {
         credential: {
           securedCredential: {
             proof: {
               type: 'DataIntegrityProof',
-              verificationMethod: issuerVerificationMethodId,
+              verificationMethod: verificationMethodId,
               proofPurpose: 'assertionMethod',
             },
           },
@@ -705,7 +732,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     }
 
     test('passes when the credential is signed by its declared issuer', async () => {
-      const result = await createService().verifyCredential(createAgentContext(issuerDid), createOptions(issuerDid))
+      const result = await createService().verifyCredential(createAgentContext(otherDid), createOptions(issuerDid))
 
       expect(result.validations.issuerIsSigner?.isValid).toBe(true)
       expect(result.isValid).toBe(true)
@@ -713,13 +740,26 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     test('fails when the credential is signed by someone other than its declared issuer', async () => {
       const result = await createService().verifyCredential(
-        createAgentContext('did:key:zSomeoneElse'),
-        createOptions(issuerDid)
+        createAgentContext(otherDid),
+        createOptions(issuerDid, otherVerificationMethodId)
       )
 
       expect(result.validations.issuerIsSigner?.isValid).toBe(false)
       expect(result.validations.issuerIsSigner?.error?.message).toContain(
         `the issuer of the credential is '${issuerDid}'`
+      )
+      expect(result.isValid).toBe(false)
+    })
+
+    test('fails when the signer names the issuer as the controller of its key', async () => {
+      const result = await createService().verifyCredential(
+        createAgentContext(issuerDid),
+        createOptions(issuerDid, otherVerificationMethodId)
+      )
+
+      expect(result.validations.issuerIsSigner?.isValid).toBe(false)
+      expect(result.validations.issuerIsSigner?.error?.message).toContain(
+        `Verification method '${otherVerificationMethodId}' is controlled by '${issuerDid}', not by the DID document '${otherDid}' it is listed in`
       )
       expect(result.isValid).toBe(false)
     })
@@ -748,26 +788,32 @@ describe('W3cV2DataIntegrityCredentialService', () => {
       return new W3cV2DataIntegrityCredentialService(proofService, contextPolicyValidator as never)
     }
 
+    const otherDid = 'did:web:someone-else.example'
+    const otherVerificationMethodId = `${otherDid}#key-1`
+
     function createAgentContext(controller: string) {
+      const documents: Record<string, unknown> = {
+        [holderDid]: createDidDocument(holderDid, verificationMethodId, holderDid, 'authentication'),
+        [otherDid]: createDidDocument(otherDid, otherVerificationMethodId, controller, 'authentication'),
+      }
+
       return {
         dependencyManager: {
           resolve: vi.fn().mockReturnValue({
-            resolveDidDocument: vi.fn().mockResolvedValue({
-              dereferenceKey: vi.fn().mockReturnValue({ id: verificationMethodId, controller }),
-            }),
+            resolveDidDocument: vi.fn(async (didUrl: string) => documents[didUrl.split('#')[0]]),
           }),
         },
       } as never
     }
 
-    function createOptions(holder?: string) {
+    function createOptions(holder?: string, proofVerificationMethodId = verificationMethodId) {
       return {
         challenge: 'challenge',
         presentation: {
           securedPresentation: {
             proof: {
               type: 'DataIntegrityProof',
-              verificationMethod: verificationMethodId,
+              verificationMethod: proofVerificationMethodId,
               proofPurpose: 'authentication',
             },
           },
@@ -777,16 +823,29 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     }
 
     test('passes when the presentation is signed by its declared holder', async () => {
-      const result = await createService().verifyPresentation(createAgentContext(holderDid), createOptions(holderDid))
+      const result = await createService().verifyPresentation(createAgentContext(otherDid), createOptions(holderDid))
 
       expect(result.presentation.validations.holderIsSigner?.isValid).toBe(true)
       expect(result.isValid).toBe(true)
     })
 
+    test('fails when the signer names the holder as the controller of its key', async () => {
+      const result = await createService().verifyPresentation(
+        createAgentContext(holderDid),
+        createOptions(holderDid, otherVerificationMethodId)
+      )
+
+      expect(result.presentation.validations.holderIsSigner?.isValid).toBe(false)
+      expect(result.presentation.validations.holderIsSigner?.error?.message).toContain(
+        `Verification method '${otherVerificationMethodId}' is controlled by '${holderDid}', not by the DID document '${otherDid}' it is listed in`
+      )
+      expect(result.isValid).toBe(false)
+    })
+
     test('fails when the presentation is signed by someone other than its declared holder', async () => {
       const result = await createService().verifyPresentation(
-        createAgentContext('did:key:zSomeoneElse'),
-        createOptions(holderDid)
+        createAgentContext(otherDid),
+        createOptions(holderDid, otherVerificationMethodId)
       )
 
       expect(result.presentation.validations.holderIsSigner?.isValid).toBe(false)
@@ -797,7 +856,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     })
 
     test('passes when no holder is declared, since there is no claim to contradict', async () => {
-      const result = await createService().verifyPresentation(createAgentContext(holderDid), createOptions(undefined))
+      const result = await createService().verifyPresentation(createAgentContext(otherDid), createOptions(undefined))
 
       expect(result.presentation.validations.holderIsSigner?.isValid).toBe(true)
       expect(result.isValid).toBe(true)
@@ -827,6 +886,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
       const mockDidsApi = {
         getCreatedDids: vi.fn().mockResolvedValue([]),
         resolveDidDocument: vi.fn().mockResolvedValue({
+          id: verificationMethod.split('#')[0],
           dereferenceKey: vi.fn().mockReturnValue({
             id: verificationMethod,
             controller: verificationMethod.split('#')[0],
