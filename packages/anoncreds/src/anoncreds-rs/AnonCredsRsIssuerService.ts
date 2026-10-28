@@ -314,15 +314,10 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         credentialDefinition: credentialDefinitionRecord.credentialDefinition as unknown as JsonObject,
         credentialOffer: credentialOffer as unknown as JsonObject,
         credentialRequest: credentialRequest as unknown as JsonObject,
-        revocationRegistryId: revocationRegistryDefinitionId,
         attributeEncodedValues,
         attributeRawValues,
         credentialDefinitionPrivate: credentialDefinitionPrivateRecord.value,
         revocationConfiguration,
-        // FIXME: duplicated input parameter?
-        revocationStatusList: revocationStatusList
-          ? RevocationStatusList.fromJson(revocationStatusList as unknown as JsonObject)
-          : undefined,
       })
 
       return {

@@ -219,7 +219,6 @@ describe('AnonCredsRsHolderService', () => {
       keyCorrectnessProof: personKeyCorrectnessProof,
       linkSecret,
       linkSecretId: 'linkSecretId',
-      revocationRegistryDefinitionId: 'personrevregid:uri',
     })
     const personRecord = await storeCredential(agentContext, personCredential, {
       credentialDefinitionId: 'personcreddef:uri',
@@ -245,7 +244,6 @@ describe('AnonCredsRsHolderService', () => {
       keyCorrectnessProof: phoneKeyCorrectnessProof,
       linkSecret,
       linkSecretId: 'linkSecretId',
-      revocationRegistryDefinitionId: 'phonerevregid:uri',
     })
 
     const phoneRecord = await storeCredential(agentContext, phoneCredential, {
@@ -635,7 +633,6 @@ describe('AnonCredsRsHolderService', () => {
       keyCorrectnessProof,
       linkSecret,
       linkSecretId: 'linkSecretId',
-      revocationRegistryDefinitionId: 'did:indy:sovrin:test:12345/anoncreds/v0/REV_REG_DEF/420/someTag/anotherTag',
     })
 
     await storeCredential(agentContext, credential, {
