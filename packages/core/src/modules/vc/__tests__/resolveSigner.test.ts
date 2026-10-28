@@ -1,4 +1,5 @@
 import { DidDocument, getJsonWebKey2020, VerificationMethod } from '../../dids'
+import { didDocumentToNumAlgo4Did, didToNumAlgo4DidDocument } from '../../dids/methods/peer/peerDidNumAlgo4'
 import { KnownJwaSignatureAlgorithms, PublicJwk } from '../../kms'
 import { resolveJwtSigner, resolveSigner, validateSignerIsExpectedParty } from '../resolveSigner'
 
@@ -61,6 +62,28 @@ describe('resolveSigner', () => {
     await expect(resolveSigner(agentContext, signerVerificationMethod.id, ['assertionMethod'])).rejects.toThrow(
       `Verification method '${signerVerificationMethod.id}' is controlled by '${issuerDid}', not by the DID document '${signerDid}' it is listed in`
     )
+  })
+
+  test('rejects a long-form did:peer:4 whose key names another DID as controller', async () => {
+    // A long-form did:peer:4 resolves offline to the document it encodes, controller included
+    const { longFormDid } = didDocumentToNumAlgo4Did(
+      new DidDocument({
+        id: 'did:peer:4',
+        verificationMethod: [
+          new VerificationMethod({
+            ...getJsonWebKey2020({ did: 'did:peer:4', verificationMethodId: '#key-1', publicJwk }),
+            controller: issuerDid,
+          }),
+        ],
+        authentication: ['#key-1'],
+      })
+    )
+    const peerDidDocument = didToNumAlgo4DidDocument(longFormDid)
+    const verificationMethodId = `${longFormDid}#key-1`
+
+    await expect(
+      resolveSigner(createAgentContext(peerDidDocument), verificationMethodId, ['authentication'])
+    ).rejects.toThrow(`is controlled by '${issuerDid}', not by the DID document '${longFormDid}' it is listed in`)
   })
 
   test('rejects a verification method that is not listed under the purpose', async () => {

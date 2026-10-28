@@ -71,7 +71,9 @@ export class W3cV2SdJwtCredentialService {
 
     // Add iat and cnf to the payload
     payload.iat = nowInSeconds()
-    payload.cnf = options.holder ? (await extractKeyFromHolderBinding(agentContext, options.holder)).cnf : undefined
+    payload.cnf = options.holder
+      ? (await extractKeyFromHolderBinding(agentContext, options.holder, { didPurposes: ['authentication'] })).cnf
+      : undefined
 
     // Validate and resolve the verification method
     const publicJwk = await validateAndResolveVerificationMethod(agentContext, options.verificationMethod, [
@@ -189,7 +191,9 @@ export class W3cV2SdJwtCredentialService {
       )
 
       const holderBinding = parseHolderBindingFromCredential(credential.sdJwt.prettyClaims)
-      const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
+      const holder = holderBinding
+        ? await extractKeyFromHolderBinding(agentContext, holderBinding, { didPurposes: ['authentication'] })
+        : undefined
 
       setJwkAlgFromJwtHeader(issuerPublicKey, credential.sdJwt.header.alg)
       if (holder && credential.sdJwt.kbJwt) {
@@ -204,6 +208,8 @@ export class W3cV2SdJwtCredentialService {
       try {
         await sdJwt.verify(credential.encoded, {
           skewSeconds: agentContext.config.validitySkewSeconds,
+          keyBindingNonce: options.keyBinding?.nonce,
+          expectedKeyBindingAudience: options.keyBinding?.audience,
         })
 
         validationResults.validations.signature = {

@@ -7,7 +7,7 @@ import { extractKeyFromHolderBinding, parseHolderBindingFromCredential } from '.
 import { W3cV2JwtVerifiableCredential } from './jwt-vc/W3cV2JwtVerifiableCredential'
 import { W3cV2JwtVerifiablePresentation } from './jwt-vc/W3cV2JwtVerifiablePresentation'
 import { W3cV2EnvelopedVerifiableCredential } from './models/credential/W3cV2EnvelopedVerifiableCredential'
-import type { W3cV2Presentation } from './models/presentation/W3cV2Presentation'
+import type { W3cV2Presentation, W3cV2PresentationCredentialEntry } from './models/presentation/W3cV2Presentation'
 import { resolveJwtSigner } from './resolveSigner'
 import { W3cV2SdJwtVerifiableCredential } from './sd-jwt-vc/W3cV2SdJwtVerifiableCredential'
 import { W3cV2SdJwtVerifiablePresentation } from './sd-jwt-vc/W3cV2SdJwtVerifiablePresentation'
@@ -55,7 +55,7 @@ export async function extractHolderFromPresentationCredentials(
 
     const authenticationMethods = didDocument.findVerificationMethodsByPurpose(['authentication'])
 
-    const candidateMethods = authenticationMethods.filter((method) =>
+    let candidateMethods = authenticationMethods.filter((method) =>
       keys?.some(({ didDocumentRelativeKeyId }) => method.id.endsWith(didDocumentRelativeKeyId))
     )
 
@@ -66,9 +66,28 @@ export async function extractHolderFromPresentationCredentials(
     }
 
     if (candidateMethods.length > 1) {
-      throw new CredoError(
-        `Unable to deterministically resolve signer key for presentation holder '${holderDid}'. Multiple locally controlled authentication verification methods found.`
-      )
+      // Pick the key the credentials are bound to
+      const credentialHolders = await getCredentialHolders(agentContext, credentials, {
+        didPurposes: ['authentication'],
+      })
+      const boundMethods = candidateMethods.filter((method) => {
+        const publicJwk = getPublicJwkFromVerificationMethod(method)
+        return credentialHolders.some((holder) => holder.publicJwk.equals(publicJwk))
+      })
+
+      if (boundMethods.length === 0) {
+        throw new CredoError(
+          `Unable to deterministically resolve signer key for presentation holder '${holderDid}'. Multiple locally controlled authentication verification methods found, and the presentation credentials are not bound to any of them.`
+        )
+      }
+
+      if (boundMethods.length > 1) {
+        throw new CredoError(
+          `Unable to deterministically resolve signer key for presentation holder '${holderDid}'. Multiple locally controlled authentication verification methods found, and the presentation credentials are bound to more than one of them.`
+        )
+      }
+
+      candidateMethods = boundMethods
     }
 
     const selectedMethod = candidateMethods[0]
@@ -93,7 +112,29 @@ export async function extractHolderFromPresentationCredentials(
     }
   }
 
-  const fallbackHolders: Array<Awaited<ReturnType<typeof extractKeyFromHolderBinding>>> = []
+  const credentialHolders = await getCredentialHolders(agentContext, credentials, { forSigning: true })
+  if (credentialHolders.length === 0) {
+    throw new CredoError('Unable to determine signer from presentation credentials, and presentation.holder is missing')
+  }
+
+  if (credentialHolders.length > 1) {
+    throw new CredoError(
+      'Unable to determine signer from presentation credentials. Multiple distinct holder bindings found and presentation.holder is missing.'
+    )
+  }
+
+  return credentialHolders[0]
+}
+
+/**
+ * Returns the distinct keys that the credentials are bound to with `cnf`.
+ */
+async function getCredentialHolders(
+  agentContext: AgentContext,
+  credentials: W3cV2PresentationCredentialEntry[],
+  options: Parameters<typeof extractKeyFromHolderBinding>[2]
+) {
+  const holders = new Map<string, Awaited<ReturnType<typeof extractKeyFromHolderBinding>>>()
 
   for (const credential of credentials) {
     if (!(credential instanceof W3cV2EnvelopedVerifiableCredential)) continue
@@ -110,21 +151,11 @@ export async function extractHolderFromPresentationCredentials(
     const holderBinding = parseHolderBindingFromCredential(claims)
     if (!holderBinding) continue
 
-    fallbackHolders.push(await extractKeyFromHolderBinding(agentContext, holderBinding, { forSigning: true }))
+    const holder = await extractKeyFromHolderBinding(agentContext, holderBinding, options)
+    holders.set(holder.publicJwk.fingerprint, holder)
   }
 
-  if (fallbackHolders.length === 0) {
-    throw new CredoError('Unable to determine signer from presentation credentials, and presentation.holder is missing')
-  }
-
-  const uniqueFallbackHolders = new Map(fallbackHolders.map((holder) => [holder.publicJwk.fingerprint, holder]))
-  if (uniqueFallbackHolders.size > 1) {
-    throw new CredoError(
-      'Unable to determine signer from presentation credentials. Multiple distinct holder bindings found and presentation.holder is missing.'
-    )
-  }
-
-  return uniqueFallbackHolders.values().next().value as Awaited<ReturnType<typeof extractKeyFromHolderBinding>>
+  return Array.from(holders.values())
 }
 
 /**
