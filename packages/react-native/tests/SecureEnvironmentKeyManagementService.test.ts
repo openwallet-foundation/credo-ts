@@ -43,7 +43,7 @@ describe('SecureEnvironmentKeyManagementService', () => {
     secureEnvironment.getPublicBytesForKeyId.mockReset().mockResolvedValue(createPublicKeyBytes())
     secureEnvironment.sign.mockReset().mockResolvedValue(new Uint8Array([1]))
     secureEnvironment.sessionSign.mockReset().mockResolvedValue(new Uint8Array([2]))
-    // Authenticates once, then runs the callback with a session
+    // Runs the callback with a session
     secureEnvironment.withUserAuthentication
       .mockReset()
       .mockImplementation(async (callback) => callback({ sign: secureEnvironment.sessionSign }))
@@ -117,10 +117,7 @@ describe('SecureEnvironmentKeyManagementService', () => {
 
   describe('withUserAuthentication', () => {
     test('signs with the authentication while the callback runs, and asks for every signature after', async () => {
-      const options: SecureEnvironmentUserAuthenticationOptions = {
-        methods: ['biometric'],
-        prompt: { title: 'Share 2 credentials' },
-      }
+      const options: SecureEnvironmentUserAuthenticationOptions = { prompt: { title: 'Share 2 credentials' } }
       const signatures = await backend.withUserAuthentication(
         agentContext,
         async () => [await sign('key-1'), await sign('key-2')],

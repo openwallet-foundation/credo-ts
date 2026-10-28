@@ -12,7 +12,8 @@ import { importSecureEnvironment } from './secureEnvironment'
 
 /**
  * Options for a key in the secure environment, the `generateKeypair` options of `@animo-id/expo-secure-environment`:
- * the user authentication the key requires, the minimum key storage on Android and a key attestation challenge.
+ * the user authentication the key requires, the minimum key storage and StrongBox preference on Android and a key
+ * attestation challenge.
  * Without options the key requires biometrics for every signature, and on Android StrongBox.
  */
 export type SecureEnvironmentCreateKeyOptions = GenerateKeypairOptions
@@ -52,13 +53,12 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
   private readonly userAuthentications = new Map<string, { session: UserAuthenticationSession; keyIds?: string[] }>()
 
   /**
-   * Asks the user to authenticate once, and then runs `callback`. While it runs, signatures of this agent context
-   * with keys in this backend use the authentication instead of asking the user again, for example to present
-   * multiple credentials with one authentication. Limit it to the keys of the presentation with `keyIds`.
+   * Runs `callback`, and while it runs, signatures of this agent context with keys in this backend ask the user to
+   * authenticate at most once, for the first key that requires it. For example to present multiple credentials with
+   * one authentication. Limit it to the keys of the presentation with `keyIds`.
    *
-   * This uses `withUserAuthentication` of `@animo-id/expo-secure-environment`, which on iOS works for all keys
-   * generated with the same `methods`. On Android it only works for keys with a validity above `0`: keys with a
-   * validity of `0` still ask for every signature, after the prompt of this method itself.
+   * This uses `withUserAuthentication` of `@animo-id/expo-secure-environment`. On iOS the next keys reuse the
+   * authentication. On Android it signs as without it: keys with a validity of `0` ask for every signature.
    *
    * ```ts
    * // The instance configured as backend of the KeyManagementModule
