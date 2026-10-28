@@ -267,6 +267,32 @@ describe('W3cV2CredentialService routing', () => {
     expect(result.isValid).toBe(true)
   })
 
+  test('verifyPresentation passes the trusted issuers to every enclosed credential', async () => {
+    diService.verifyPresentation.mockResolvedValue({
+      isValid: true,
+      presentation: { isValid: true, validations: {} },
+      credentialEntries: [],
+    })
+    jwtService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
+    sdJwtService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
+    diService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
+    const trustedIssuers = [{ method: 'did' as const, issuance: 'did:example:issuer' }]
+
+    await service.verifyPresentation(agentContext, {
+      presentation: mixedDiOuterVpWithAllEntries,
+      challenge: 'challenge-123',
+      trustedIssuers,
+    } as never)
+
+    for (const verifyCredential of [
+      jwtService.verifyCredential,
+      sdJwtService.verifyCredential,
+      diService.verifyCredential,
+    ]) {
+      expect(verifyCredential).toHaveBeenCalledWith(agentContext, expect.objectContaining({ trustedIssuers }))
+    }
+  })
+
   test('verifyPresentation short-circuits when DI outer presentation verification fails', async () => {
     diService.verifyPresentation.mockResolvedValue({
       isValid: false,

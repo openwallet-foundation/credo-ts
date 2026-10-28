@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../agent/context'
 import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
-import type { TrustedIssuerDid } from '../../../agent/TrustedIssuersForVerification'
+import type { GetTrustedIssuersForCredential, TrustedIssuerDid } from '../../../agent/TrustedIssuersForVerification'
 import { createKmsKeyPairClass } from '../../../crypto/KmsKeyPair'
 import { CredoError, RecordNotFoundError } from '../../../error'
 import { injectable } from '../../../plugins'
@@ -348,7 +348,7 @@ export class W3cJsonLdCredentialService {
   private async ensureCredentialIssuerTrusted(
     agentContext: AgentContext,
     credential: W3cJsonLdVerifiableCredential,
-    trustedIssuers?: TrustedIssuerDid[]
+    trustedIssuers?: TrustedIssuerDid[] | GetTrustedIssuersForCredential
   ): Promise<void> {
     const issuerId = credential.issuerId
 
@@ -368,7 +368,7 @@ export class W3cJsonLdCredentialService {
         )
       }
 
-      await TrustedIssuerContext.ensureTrustedSigner(
+      await TrustedIssuerContext.ensureTrustedCredentialSigner(
         agentContext,
         {
           signer: { method: 'did', didUrl: verificationMethod },
