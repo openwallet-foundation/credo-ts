@@ -1,6 +1,6 @@
 import type { Logger } from '@credo-ts/core'
 import type { DidCommPlaintextMessage } from '../types'
-import { mapV2AttachmentToV1 } from './plaintextBuilder'
+import { formatAttachmentKeys, mapV2AttachmentToV1 } from './plaintextBuilder'
 import type { DidCommV2PlaintextMessage } from './types'
 
 const reservedBodyKeys = [
@@ -87,8 +87,26 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?:
     v1['~please_ack'] = { on: ['RECEIPT'] }
   }
 
-  if (attachments !== undefined && Array.isArray(attachments) && attachments.length > 0) {
-    v1['~attach'] = attachments.map(mapV2AttachmentToV1)
+  const formatAttachmentKey = formatAttachmentKeys[type]
+  const formatAttachments =
+    formatAttachmentKey && Array.isArray(attachments)
+      ? attachments.filter((attachment) => attachment.format !== undefined)
+      : []
+  if (formatAttachmentKey && formatAttachments.length > 0) {
+    v1.formats = [
+      ...(Array.isArray(bodyFields.formats) ? bodyFields.formats : []),
+      ...formatAttachments.map((attachment) => ({ attach_id: attachment.id, format: attachment.format })),
+    ]
+    v1[formatAttachmentKey] = formatAttachments.map((attachment) =>
+      mapV2AttachmentToV1({ ...attachment, format: undefined })
+    )
+  }
+
+  const otherAttachments = Array.isArray(attachments)
+    ? attachments.filter((attachment) => !formatAttachments.includes(attachment))
+    : []
+  if (otherAttachments.length > 0) {
+    v1['~attach'] = otherAttachments.map(mapV2AttachmentToV1)
   }
 
   if (return_route !== undefined) {

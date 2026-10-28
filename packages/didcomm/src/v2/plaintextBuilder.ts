@@ -2,6 +2,47 @@ import { utils } from '@credo-ts/core'
 import type { DidCommMessage } from '../DidCommMessage'
 import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from './types'
 
+export const formatAttachmentKeys: Record<string, string> = {
+  'https://didcomm.org/issue-credential/2.0/propose-credential': 'filters~attach',
+  'https://didcomm.org/issue-credential/2.0/offer-credential': 'offers~attach',
+  'https://didcomm.org/issue-credential/2.0/request-credential': 'requests~attach',
+  'https://didcomm.org/issue-credential/2.0/issue-credential': 'credentials~attach',
+  'https://didcomm.org/present-proof/2.0/propose-presentation': 'proposals~attach',
+  'https://didcomm.org/present-proof/2.0/request-presentation': 'request_presentations~attach',
+  'https://didcomm.org/present-proof/2.0/presentation': 'presentations~attach',
+}
+
+interface AttachmentFormat {
+  attach_id: string
+  format: string
+}
+
+function splitFormatAttachments(
+  type: string,
+  body: Record<string, unknown>
+): { body: Record<string, unknown>; attachments: DidCommV2Attachment[] } {
+  const key = formatAttachmentKeys[type]
+  const formats = body.formats as AttachmentFormat[] | undefined
+  const attachments = key ? body[key] : undefined
+  if (!Array.isArray(formats) || !Array.isArray(attachments)) return { body, attachments: [] }
+
+  const v2Attachments = attachments.map((attachment: Record<string, unknown>) => {
+    const v2 = mapV1AttachmentToV2(attachment)
+    const format = formats.find((entry) => entry.attach_id === v2.id)?.format
+    if (format !== undefined) v2.format = format
+    return v2
+  })
+
+  const rest = Object.fromEntries(Object.entries(body).filter(([name]) => name !== key && name !== 'formats'))
+  // RFC 0454 lets a proposal list a format with no attachment, that entry stays in the body
+  const unattachedFormats = formats.filter((entry) => !v2Attachments.some(({ id }) => id === entry.attach_id))
+
+  return {
+    body: unattachedFormats.length > 0 ? { ...rest, formats: unattachedFormats } : rest,
+    attachments: v2Attachments,
+  }
+}
+
 /**
  * Map a v1 ~attach item to v2 attachments format.
  * v1: @id, mime-type, data; v2: id, media_type, data.
@@ -102,10 +143,15 @@ export function buildV2PlaintextFromMessage(
     ...rest
   } = v1
 
+  const { body, attachments: formatAttachments } = splitFormatAttachments(
+    type as string,
+    Object.fromEntries(Object.entries(rest).filter(([key]) => !key.startsWith('~')))
+  )
+
   const v2: DidCommV2PlaintextMessage = {
     id: id as string,
     type: type as string,
-    body: Object.fromEntries(Object.entries(rest).filter(([key]) => !key.startsWith('~'))),
+    body,
   }
 
   const fromVal = (from ?? config?.from) as string | undefined
@@ -129,9 +175,11 @@ export function buildV2PlaintextFromMessage(
     if (returnRoute !== undefined) v2.return_route = returnRoute as string
   }
 
-  if (attach !== undefined && Array.isArray(attach) && attach.length > 0) {
-    v2.attachments = attach.map((a) => mapV1AttachmentToV2(a as Record<string, unknown>))
-  }
+  const attachments = [
+    ...formatAttachments,
+    ...(Array.isArray(attach) ? attach.map((a) => mapV1AttachmentToV2(a as Record<string, unknown>)) : []),
+  ]
+  if (attachments.length > 0) v2.attachments = attachments
 
   // Other ~timing fields have no v2 header (spec v2.1 Message Headers)
   const outTime = message.timing?.outTime

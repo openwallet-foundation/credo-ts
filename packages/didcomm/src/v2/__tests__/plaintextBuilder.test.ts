@@ -4,6 +4,12 @@ import { DidCommAttachment, DidCommAttachmentData } from '../../decorators/attac
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { DidCommProblemReportV2Message } from '../../messages/problem-reports/DidCommProblemReportV2Message'
 import { DidCommTrustPingMessage } from '../../modules/connections/messages/DidCommTrustPingMessage'
+import { DidCommCredentialFormatSpec } from '../../modules/credentials/models'
+import { DidCommCredentialV2Preview } from '../../modules/credentials/protocol/v2/messages/DidCommCredentialV2Preview'
+import { DidCommOfferCredentialV2Message } from '../../modules/credentials/protocol/v2/messages/DidCommOfferCredentialV2Message'
+import { DidCommBatchMessage } from '../../modules/message-pickup/protocol/v1/messages/DidCommBatchMessage'
+import { DidCommProofFormatSpec } from '../../modules/proofs/models/DidCommProofFormatSpec'
+import { DidCommProposePresentationV2Message } from '../../modules/proofs/protocol/v2/messages/DidCommProposePresentationV2Message'
 import { normalizeV2PlaintextToV1 } from '../normalize'
 import { buildV2PlaintextFromMessage } from '../plaintextBuilder'
 
@@ -160,5 +166,66 @@ describe('buildV2PlaintextFromMessage', () => {
       return_route: 'all',
       body: { code: 'e.p.msg.message-parse-failure', comment: 'Bad message: {1}', args: ['detail'] },
     })
+  })
+
+  it('moves a formats attachment array into attachments with the format of each attachment', () => {
+    const message = new DidCommOfferCredentialV2Message({
+      id: 'offer-1',
+      formats: [
+        new DidCommCredentialFormatSpec({ attachmentId: 'anoncreds', format: 'anoncreds/credential-offer@v1.0' }),
+      ],
+      offerAttachments: [
+        new DidCommAttachment({
+          id: 'anoncreds',
+          mimeType: 'application/json',
+          data: new DidCommAttachmentData({ base64: 'e30=' }),
+        }),
+      ],
+      credentialPreview: DidCommCredentialV2Preview.fromRecord({ name: 'Alice' }),
+    })
+    message.addAppendedAttachment(
+      new DidCommAttachment({ id: 'extra', data: new DidCommAttachmentData({ json: { foo: 'bar' } }) })
+    )
+
+    const v2 = buildV2PlaintextFromMessage(message)
+
+    expect(v2.body).toEqual({ credential_preview: expect.anything() })
+    expect(v2.attachments).toEqual([
+      {
+        id: 'anoncreds',
+        media_type: 'application/json',
+        format: 'anoncreds/credential-offer@v1.0',
+        data: { base64: 'e30=' },
+      },
+      { id: 'extra', data: { json: { foo: 'bar' } } },
+    ])
+  })
+
+  it('keeps a proposal format without an attachment in body formats', () => {
+    const message = new DidCommProposePresentationV2Message({
+      formats: [
+        new DidCommProofFormatSpec({ attachmentId: 'dif', format: 'dif/presentation-exchange/definitions@v1.0' }),
+        new DidCommProofFormatSpec({ attachmentId: 'anoncreds', format: 'anoncreds/proof-request@v1.0' }),
+      ],
+      proposalAttachments: [
+        new DidCommAttachment({ id: 'dif', data: new DidCommAttachmentData({ json: { input_descriptors: [] } }) }),
+      ],
+    })
+
+    const v2 = buildV2PlaintextFromMessage(message)
+
+    expect(v2.body).toEqual({ formats: [{ attach_id: 'anoncreds', format: 'anoncreds/proof-request@v1.0' }] })
+    expect(v2.attachments).toEqual([
+      { id: 'dif', format: 'dif/presentation-exchange/definitions@v1.0', data: { json: { input_descriptors: [] } } },
+    ])
+  })
+
+  it('leaves a named attachment array in the body when the message has no formats', () => {
+    const message = new DidCommBatchMessage({ messages: [] })
+
+    const v2 = buildV2PlaintextFromMessage(message)
+
+    expect(v2.body).toEqual({ 'messages~attach': [] })
+    expect(v2.attachments).toBeUndefined()
   })
 })
