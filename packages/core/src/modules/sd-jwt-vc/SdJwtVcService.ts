@@ -91,6 +91,20 @@ export interface SdJwtVc<
   typeMetadata?: SdJwtVcTypeMetadata
 }
 
+/**
+ * An SD-JWT VC with the resolved chain of type metadata documents.
+ */
+export type SdJwtVcWithTypeMetadataChain<
+  Header extends SdJwtVcHeader = SdJwtVcHeader,
+  Payload extends SdJwtVcPayload = SdJwtVcPayload,
+> = SdJwtVc<Header, Payload> & {
+  /**
+   * The type metadata of the `vct`, followed by the type metadata of each `extends` value. Only set
+   * when the type metadata was resolved.
+   */
+  typeMetadataChain?: NonEmptyArray<SdJwtVcTypeMetadata>
+}
+
 export interface VerificationResult {
   isValid: boolean
   isValidJwtPayload?: boolean

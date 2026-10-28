@@ -715,14 +715,14 @@ importers:
         specifier: ^2.0.1
         version: 2.4.0
       '@owf/cose':
-        specifier: ^0.5.0
-        version: 0.5.0
+        specifier: ^0.6.0
+        version: 0.6.0
       '@owf/mdoc':
-        specifier: ^0.8.3
-        version: 0.8.3
+        specifier: ^0.9.1
+        version: 0.9.1
       '@owf/token-status-list':
-        specifier: ^0.5.0
-        version: 0.5.0
+        specifier: ^0.6.0
+        version: 0.6.0
       '@peculiar/asn1-ecc':
         specifier: ^2.11.0
         version: 2.11.0
@@ -731,10 +731,10 @@ importers:
         version: 2.11.0
       '@peculiar/asn1-schema':
         specifier: ^2.11.0
-        version: 2.11.0
+        version: 2.11.1
       '@peculiar/asn1-x509':
         specifier: ^2.11.0
-        version: 2.11.0
+        version: 2.11.1
       '@peculiar/x509':
         specifier: 'catalog:'
         version: 2.2.0
@@ -742,11 +742,11 @@ importers:
         specifier: ^2.4.0
         version: 2.4.0
       '@sd-jwt/core':
-        specifier: ^0.23.0
-        version: 0.23.0
+        specifier: ^0.23.2
+        version: 0.23.2
       '@sd-jwt/sd-jwt-vc':
-        specifier: ^0.23.0
-        version: 0.23.0
+        specifier: ^0.23.2
+        version: 0.23.2
       '@stablelib/ed25519':
         specifier: 'catalog:'
         version: 2.1.0
@@ -3007,17 +3007,20 @@ packages:
   '@openwallet-foundation/askar-shared@0.6.1':
     resolution: {integrity: sha512-xjFYyK5Zk/uTFKfTn2BnnldmBLGWBkVfPhOoXQl122YcRVPN7BadAvFUi6Ad+zu7Nk3axj416+fvXtUUQm1Vig==}
 
-  '@owf/cose@0.5.0':
-    resolution: {integrity: sha512-QYTZP1pHJzraX9GVx3MvRs0DWVnYDho5fWyyElBNvr0axG3xHOmaK1v3EFFABHkxRhD8xbFC/YwnWqw+1MQHZw==}
+  '@owf/cose@0.6.0':
+    resolution: {integrity: sha512-DC+6m3msVyMWr4y10zxHbXRXM5EpxVin3RwXTPfsBhyDr+4GfdUz17N4a8Zd/qtYbitBaDu13vU48LrD8gfmRA==}
 
-  '@owf/identity-common@0.5.0':
-    resolution: {integrity: sha512-h8lto+C1h6wYLe9HwF3C7NaZyB0wydstmdkgrGrpWhfCyyX+XfBZtIC494reAaj19pQTXIdEsNC91Gheo25T+Q==}
+  '@owf/identity-common@0.6.0':
+    resolution: {integrity: sha512-ZWtjvU9nWKuOhxjNIEYM3jBAA3WY6xFZ5D/m22HZHhqETQtHOiH07EGLEOMstYT/rhkpzCdzR325XgLrV7vHBQ==}
 
-  '@owf/mdoc@0.8.3':
-    resolution: {integrity: sha512-hNakQwZByOaEvrJL3/lv9ld64zcff34T+RpOsoFeFofzLZ1HLpakvIqsybZ4s9AYYEXpR7QkXPvzzNL0041MlA==}
+  '@owf/mdoc@0.9.1':
+    resolution: {integrity: sha512-cjBjQq35K0MmY/8TlMuDpoVDdom8U3cwt4K2K6vgmghUrIrg2ULHDQpHtsQKgxExLaukXY1Q6gLyUOtxEIV4Fw==}
 
-  '@owf/token-status-list@0.5.0':
-    resolution: {integrity: sha512-sM3WsYsCdwlUUrRekCOwslIhS8QfBDON/WErUzqHRt0ubgX4IDgLdlJXxOAjmK6LOW4spOSLf02GJIJOrefb4A==}
+  '@owf/token-status-list@0.6.0':
+    resolution: {integrity: sha512-HWakmZYvaSEkuV43mknobAeSqoyEBurDQR1zo+poybifYDBPG0NqhKPtYy++CcY3uGytElIfh9TPaegRU35UqA==}
+
+  '@owf/x509@0.6.0':
+    resolution: {integrity: sha512-4lorYbeBuot/00xtPDcGHq7/zYkdCdr1Q5RwUqZlNtA6M1GZDdv0lADKkvCpy7o+5N4Yt3DUqmLEMpu2x7d1GA==}
 
   '@oxc-project/types@0.112.0':
     resolution: {integrity: sha512-m6RebKHIRsax2iCwVpYW2ErQwa4ywHJrE4sCK3/8JK8ZZAWOKXaRJFl/uP51gaVyyXlaS4+chU1nSCdzYf6QqQ==}
@@ -3171,8 +3174,8 @@ packages:
     resolution: {integrity: sha512-S2sBJmbfI09Kzdt9cEhE6pDNjHpVTkURs+811+PxS8AvsTLxC4woMNRhxHYaIbClkkNfAVt0tZxJdINVfUmzuA==}
     engines: {node: '>=14'}
 
-  '@peculiar/asn1-schema@2.11.0':
-    resolution: {integrity: sha512-8xh4avo53/vXO6UEv9yaoJ83hY581geaLTygf61NPIXP5AeIZCPjJhpTaYU23IZkG+NpLN/C9FYzWp7hphIT9A==}
+  '@peculiar/asn1-schema@2.11.1':
+    resolution: {integrity: sha512-jaU9OaCcbZUdyXx9hMETZB9xoNmxTGjOGFqd3cOwKFkpKnyKd9WxF3uqj4PvX4cyOMP9bSdHg5YyML2qtx/d/g==}
     engines: {node: '>=14'}
 
   '@peculiar/asn1-schema@2.6.0':
@@ -3186,8 +3189,16 @@ packages:
     resolution: {integrity: sha512-K6EnquTX3xJ2G+uLPFH0jVkh7W8y6eTzoCxvSoXAj0sWS5uvVB2PEvpBPdzY4+ytaedUM3x9ZVgX0AZKb316ew==}
     engines: {node: '>=14'}
 
-  '@peculiar/asn1-x509@2.11.0':
-    resolution: {integrity: sha512-J1sHAwGNlk+8J+FeR1eLVc6Gq0T9f9ITc3HWyPYgJraoW6U8AJuQiWVJ3SCEpltfTdpOY7fHdHT5oKAsbK/jww==}
+  '@peculiar/asn1-x509-qualified-etsi@2.11.1':
+    resolution: {integrity: sha512-s/MKDklY1EZL5TNVkIIWJ9OauJGGtTlrH+VhwUY5GT/L2IPih0ihtZ3nzUumm6bxagwq4HjM+MJQDWmg2uqxlQ==}
+    engines: {node: '>=14'}
+
+  '@peculiar/asn1-x509-qualified@2.11.1':
+    resolution: {integrity: sha512-8h/M3Gv75aKxMixxoeeS4j1YfEGqi7qzKD+nky0LzP1kXbYtD/JJWiH8zzO0pAnuMX0Fg/zaRonzTopS5nXJ9w==}
+    engines: {node: '>=14'}
+
+  '@peculiar/asn1-x509@2.11.1':
+    resolution: {integrity: sha512-SXU4/X6B3FquqQAN6ARI0bFDUV7+L1WlvPEPMKzEMkstd2D7UyM0r93fv241+OjdhqAKYGx5MvV3gzZMAp0APA==}
     engines: {node: '>=14'}
 
   '@peculiar/asn1-x509@2.6.1':
@@ -3520,11 +3531,11 @@ packages:
   '@scure/base@2.4.0':
     resolution: {integrity: sha512-thZ1TuJwFwBblOhgsjDKvvGirBxNp+wSvY/DR6tJBJOTDhdAAcHJ8Vbr2eFnqaxeca4+t0i9KBf+uHYGWwZORg==}
 
-  '@sd-jwt/core@0.23.0':
-    resolution: {integrity: sha512-/9/z3Gpfd50hOUk/kj8QfUjhDcKU9sdrTxt9HqhG/YkjpGU+7iIU24qYYPagf0btUKN4jbUQ0uS7eWYdvdzhJg==}
+  '@sd-jwt/core@0.23.2':
+    resolution: {integrity: sha512-E1v/lt9K9RsQAesCDqEl7mLe0cVIDiVjlwLb6zZ6KE4iEL5bR1GeW8LO7XgRCFBEdGnpfBjt7QFna6UqD6PzfQ==}
 
-  '@sd-jwt/sd-jwt-vc@0.23.0':
-    resolution: {integrity: sha512-/XtRYZTHD1PAdez8YXuwc36XGo2aHkLUjX4IR01+nHJakSvbwTSpy/SFweIN80L3TNgxt8N5UsFUyIZANIbxlA==}
+  '@sd-jwt/sd-jwt-vc@0.23.2':
+    resolution: {integrity: sha512-/LA9RQqJ3gFC469e1oWXXq/SRw6tlOgpP36Pevqe+vCH4OKstxZXhIvBuzFdHKnsZWevZ6lzCnj6qaMlTRMkcA==}
 
   '@sinclair/typebox@0.27.12':
     resolution: {integrity: sha512-hhyNJ+nbR6ZR7pToHvllEFun9TL0sbL+tk/ON75lo+Xas054uez98qRbsuNt7MBCyZKK4+8Yli/OAGZhmfBZ/g==}
@@ -9456,29 +9467,39 @@ snapshots:
       buffer: 6.0.3
       tar: 7.5.22
 
-  '@owf/cose@0.5.0':
+  '@owf/cose@0.6.0':
     dependencies:
-      '@owf/identity-common': 0.5.0
+      '@owf/identity-common': 0.6.0
       cbor-x: 1.6.8
       zod: 4.6.7
       zod-validation-error: 5.0.0(zod@4.6.7)
 
-  '@owf/identity-common@0.5.0': {}
+  '@owf/identity-common@0.6.0': {}
 
-  '@owf/mdoc@0.8.3':
+  '@owf/mdoc@0.9.1':
     dependencies:
-      '@owf/cose': 0.5.0
-      '@owf/identity-common': 0.5.0
-      '@owf/token-status-list': 0.5.0
+      '@owf/cose': 0.6.0
+      '@owf/identity-common': 0.6.0
+      '@owf/token-status-list': 0.6.0
+      '@owf/x509': 0.6.0
       zod: 4.6.7
 
-  '@owf/token-status-list@0.5.0':
+  '@owf/token-status-list@0.6.0':
     dependencies:
-      '@owf/cose': 0.5.0
-      '@owf/identity-common': 0.5.0
+      '@owf/cose': 0.6.0
+      '@owf/identity-common': 0.6.0
       cbor-x: 1.6.8
       pako: 3.0.2
       zod: 4.6.7
+
+  '@owf/x509@0.6.0':
+    dependencies:
+      '@owf/identity-common': 0.6.0
+      '@peculiar/asn1-schema': 2.11.1
+      '@peculiar/asn1-x509': 2.11.1
+      '@peculiar/asn1-x509-qualified': 2.11.1
+      '@peculiar/asn1-x509-qualified-etsi': 2.11.1
+      asn1js: 3.0.10
 
   '@oxc-project/types@0.112.0':
     optional: true
@@ -9562,30 +9583,30 @@ snapshots:
   '@peculiar/asn1-asym-key@2.11.0':
     dependencies:
       '@peculiar/asn1-pkcs8': 2.11.0
-      '@peculiar/asn1-schema': 2.11.0
-      '@peculiar/asn1-x509': 2.11.0
+      '@peculiar/asn1-schema': 2.11.1
+      '@peculiar/asn1-x509': 2.11.1
       asn1js: 3.0.10
       tslib: 2.8.1
 
   '@peculiar/asn1-cms@2.11.0':
     dependencies:
-      '@peculiar/asn1-schema': 2.11.0
-      '@peculiar/asn1-x509': 2.11.0
+      '@peculiar/asn1-schema': 2.11.1
+      '@peculiar/asn1-x509': 2.11.1
       '@peculiar/asn1-x509-attr': 2.11.0
       asn1js: 3.0.10
       tslib: 2.8.1
 
   '@peculiar/asn1-csr@2.11.0':
     dependencies:
-      '@peculiar/asn1-schema': 2.11.0
-      '@peculiar/asn1-x509': 2.11.0
+      '@peculiar/asn1-schema': 2.11.1
+      '@peculiar/asn1-x509': 2.11.1
       asn1js: 3.0.10
       tslib: 2.8.1
 
   '@peculiar/asn1-ecc@2.11.0':
     dependencies:
-      '@peculiar/asn1-schema': 2.11.0
-      '@peculiar/asn1-x509': 2.11.0
+      '@peculiar/asn1-schema': 2.11.1
+      '@peculiar/asn1-x509': 2.11.1
       asn1js: 3.0.10
       tslib: 2.8.1
 
@@ -9601,14 +9622,14 @@ snapshots:
       '@peculiar/asn1-cms': 2.11.0
       '@peculiar/asn1-pkcs8': 2.11.0
       '@peculiar/asn1-rsa': 2.11.0
-      '@peculiar/asn1-schema': 2.11.0
+      '@peculiar/asn1-schema': 2.11.1
       asn1js: 3.0.10
       tslib: 2.8.1
 
   '@peculiar/asn1-pkcs8@2.11.0':
     dependencies:
-      '@peculiar/asn1-schema': 2.11.0
-      '@peculiar/asn1-x509': 2.11.0
+      '@peculiar/asn1-schema': 2.11.1
+      '@peculiar/asn1-x509': 2.11.1
       asn1js: 3.0.10
       tslib: 2.8.1
 
@@ -9617,20 +9638,20 @@ snapshots:
       '@peculiar/asn1-cms': 2.11.0
       '@peculiar/asn1-pfx': 2.11.0
       '@peculiar/asn1-pkcs8': 2.11.0
-      '@peculiar/asn1-schema': 2.11.0
-      '@peculiar/asn1-x509': 2.11.0
+      '@peculiar/asn1-schema': 2.11.1
+      '@peculiar/asn1-x509': 2.11.1
       '@peculiar/asn1-x509-attr': 2.11.0
       asn1js: 3.0.10
       tslib: 2.8.1
 
   '@peculiar/asn1-rsa@2.11.0':
     dependencies:
-      '@peculiar/asn1-schema': 2.11.0
-      '@peculiar/asn1-x509': 2.11.0
+      '@peculiar/asn1-schema': 2.11.1
+      '@peculiar/asn1-x509': 2.11.1
       asn1js: 3.0.10
       tslib: 2.8.1
 
-  '@peculiar/asn1-schema@2.11.0':
+  '@peculiar/asn1-schema@2.11.1':
     dependencies:
       '@peculiar/utils': 2.0.3
       asn1js: 3.0.10
@@ -9644,22 +9665,35 @@ snapshots:
 
   '@peculiar/asn1-x509-attr@2.11.0':
     dependencies:
-      '@peculiar/asn1-schema': 2.11.0
-      '@peculiar/asn1-x509': 2.11.0
+      '@peculiar/asn1-schema': 2.11.1
+      '@peculiar/asn1-x509': 2.11.1
       asn1js: 3.0.10
       tslib: 2.8.1
 
   '@peculiar/asn1-x509-post-quantum@2.11.0':
     dependencies:
       '@peculiar/asn1-asym-key': 2.11.0
-      '@peculiar/asn1-schema': 2.11.0
-      '@peculiar/asn1-x509': 2.11.0
+      '@peculiar/asn1-schema': 2.11.1
+      '@peculiar/asn1-x509': 2.11.1
       asn1js: 3.0.10
       tslib: 2.8.1
 
-  '@peculiar/asn1-x509@2.11.0':
+  '@peculiar/asn1-x509-qualified-etsi@2.11.1':
     dependencies:
-      '@peculiar/asn1-schema': 2.11.0
+      '@peculiar/asn1-schema': 2.11.1
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/asn1-x509-qualified@2.11.1':
+    dependencies:
+      '@peculiar/asn1-schema': 2.11.1
+      '@peculiar/asn1-x509': 2.11.1
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/asn1-x509@2.11.1':
+    dependencies:
+      '@peculiar/asn1-schema': 2.11.1
       '@peculiar/utils': 2.0.3
       asn1js: 3.0.10
       tslib: 2.8.1
@@ -9686,8 +9720,8 @@ snapshots:
       '@peculiar/asn1-ecc': 2.11.0
       '@peculiar/asn1-pkcs9': 2.11.0
       '@peculiar/asn1-rsa': 2.11.0
-      '@peculiar/asn1-schema': 2.11.0
-      '@peculiar/asn1-x509': 2.11.0
+      '@peculiar/asn1-schema': 2.11.1
+      '@peculiar/asn1-x509': 2.11.1
       '@peculiar/asn1-x509-post-quantum': 2.11.0
       pvtsutils: 1.3.6
       tslib: 2.8.1
@@ -9946,15 +9980,15 @@ snapshots:
 
   '@scure/base@2.4.0': {}
 
-  '@sd-jwt/core@0.23.0':
+  '@sd-jwt/core@0.23.2':
     dependencies:
-      '@owf/identity-common': 0.5.0
+      '@owf/identity-common': 0.6.0
 
-  '@sd-jwt/sd-jwt-vc@0.23.0':
+  '@sd-jwt/sd-jwt-vc@0.23.2':
     dependencies:
-      '@owf/identity-common': 0.5.0
-      '@owf/token-status-list': 0.5.0
-      '@sd-jwt/core': 0.23.0
+      '@owf/identity-common': 0.6.0
+      '@owf/token-status-list': 0.6.0
+      '@sd-jwt/core': 0.23.2
       zod: 4.6.7
 
   '@sinclair/typebox@0.27.12': {}
@@ -13928,7 +13962,7 @@ snapshots:
 
   webcrypto-core@1.9.2:
     dependencies:
-      '@peculiar/asn1-schema': 2.11.0
+      '@peculiar/asn1-schema': 2.11.1
       '@peculiar/json-schema': 1.1.12
       '@peculiar/utils': 2.0.3
       asn1js: 3.0.10

@@ -34,6 +34,7 @@ import {
   type Query,
   type QueryOptions,
   SdJwtVcApi,
+  type SdJwtVcWithTypeMetadataChain,
   SignatureSuiteRegistry,
   type TrustedIssuer,
   TrustedIssuerContext,
@@ -75,7 +76,11 @@ import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import { credoJwtIssuerToOpenId4VcJwtIssuer, dcqlCredentialQueryToPresentationFormat } from '../shared/utils'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
-import { type OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
+import {
+  type OpenId4VcVerificationSessionStateChangedEvent,
+  type OpenId4VcVerificationSessionStateChangedEventPayload,
+  OpenId4VcVerifierEvents,
+} from './OpenId4VcVerifierEvents'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import type {
   OpenId4VpCreateAuthorizationRequestOptions,
@@ -578,6 +583,7 @@ export class OpenId4VpVerifierService {
                   mdocGeneratedNonce,
                   verificationSession: result.verificationSession,
                   presentation,
+                  dcql: { query: dcqlQuery, credentialQueryId: credentialId },
                 })
               )
             )
@@ -739,13 +745,24 @@ export class OpenId4VpVerifierService {
       throw error
     }
 
-    result.verificationSession.authorizationResponsePayload = result.authorizationResponsePayload
-    await this.updateState(agentContext, result.verificationSession, OpenId4VcVerificationSessionState.ResponseVerified)
-
-    return {
+    const verifiedAuthorizationResponse = {
       presentationExchange: pexResponse,
       dcql: dcqlResponse,
       transactionData,
+    }
+
+    result.verificationSession.authorizationResponsePayload = result.authorizationResponsePayload
+    await this.updateState(
+      agentContext,
+      result.verificationSession,
+      OpenId4VcVerificationSessionState.ResponseVerified,
+      {
+        verifiedAuthorizationResponse,
+      }
+    )
+
+    return {
+      ...verifiedAuthorizationResponse,
       verificationSession: result.verificationSession,
     }
   }
@@ -1156,6 +1173,7 @@ export class OpenId4VpVerifierService {
       origin?: string
       verificationSession: OpenId4VcVerificationSessionRecord
       presentation: string | Record<string, unknown>
+      dcql?: OpenId4VcVerificationTypeOid4VpCredential['dcql']
       format: ClaimFormat.LdpVp | ClaimFormat.JwtVp | ClaimFormat.SdJwtW3cVp | ClaimFormat.SdJwtDc | ClaimFormat.MsoMdoc
       version: OpenId4VpVersion
       encryptionJwk?: Kms.PublicJwk
@@ -1185,8 +1203,28 @@ export class OpenId4VpVerifierService {
           throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
         }
 
-        const sdJwtVc = sdJwtVcApi.fromCompact(presentation)
+        const sdJwtVc: SdJwtVcWithTypeMetadataChain = sdJwtVcApi.fromCompact(presentation)
         const issuer = sdJwtVc.issuer
+
+        // A DCQL query also matches a credential whose type metadata extends a requested vct. The
+        // chain is resolved once, before deciding which issuers to trust, and set on the
+        // presentation so DCQL matching reuses it. Both see the same chain.
+        const credentialQuery = options.dcql?.query.credentials.find(({ id }) => id === options.dcql?.credentialQueryId)
+        const requestedVcts = credentialQuery?.format === 'dc+sd-jwt' ? credentialQuery.meta?.vct_values : undefined
+        if (requestedVcts && !requestedVcts.includes(sdJwtVc.payload.vct)) {
+          const resolvedTypeMetadata = await sdJwtVcApi.fetchTypeMetadata(sdJwtVc, {
+            throwErrorOnFetchError: false,
+            throwErrorOnUnsupportedVctValue: false,
+          })
+          if (!resolvedTypeMetadata) {
+            throw new CredoError(
+              `Presented vct '${sdJwtVc.payload.vct}' is not one of the requested vct values, and its type metadata could not be resolved.`
+            )
+          }
+
+          sdJwtVc.typeMetadata = resolvedTypeMetadata.mergedTypeMetadata
+          sdJwtVc.typeMetadataChain = resolvedTypeMetadata.typeMetadataChain
+        }
 
         // `issuer` is undefined when the credential is not did/x5c signed. In that case we leave
         // `trustedIssuers` undefined and let `sdJwtVcApi.verify` surface the unsupported-issuer error.
@@ -1205,6 +1243,7 @@ export class OpenId4VpVerifierService {
                 type: 'openId4VpCredential',
                 credential: sdJwtVc,
                 openId4VcVerificationSessionRecord: options.verificationSession,
+                dcql: options.dcql,
               } satisfies OpenId4VcVerificationTypes,
             })
           )?.trustedIssuers
@@ -1270,6 +1309,7 @@ export class OpenId4VpVerifierService {
                   type: 'openId4VpCredential',
                   credential: mdoc,
                   openId4VcVerificationSessionRecord: options.verificationSession,
+                  dcql: options.dcql,
                 } satisfies OpenId4VcVerificationTypes,
               })
             )?.trustedIssuers ??
@@ -1346,6 +1386,7 @@ export class OpenId4VpVerifierService {
         const trustedIssuers = await this.getOid4vpW3cTrustedIssuers(
           agentContext,
           options.verificationSession,
+          options.dcql,
           asArray(jwtVp.verifiableCredential).map((credential) => ({ credential, issuerId: credential.issuerId }))
         )
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
@@ -1367,6 +1408,7 @@ export class OpenId4VpVerifierService {
         const trustedIssuers = await this.getOid4vpW3cTrustedIssuers(
           agentContext,
           options.verificationSession,
+          options.dcql,
           asArray(sdJwtW3cVp.resolvedPresentation.verifiableCredential).map((enveloped) => ({
             credential: (enveloped as W3cV2EnvelopedVerifiableCredential).envelopedCredential,
             issuerId: (enveloped as W3cV2EnvelopedVerifiableCredential).resolvedCredential.issuerId,
@@ -1387,6 +1429,7 @@ export class OpenId4VpVerifierService {
         const trustedIssuers = await this.getOid4vpW3cTrustedIssuers(
           agentContext,
           options.verificationSession,
+          options.dcql,
           asArray(ldpVp.verifiableCredential).map((credential) => ({ credential, issuerId: credential.issuerId }))
         )
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
@@ -1425,6 +1468,7 @@ export class OpenId4VpVerifierService {
   private async getOid4vpW3cTrustedIssuers(
     agentContext: AgentContext,
     verificationSession: OpenId4VcVerificationSessionRecord,
+    dcql: OpenId4VcVerificationTypeOid4VpCredential['dcql'],
     credentials: Array<{ credential: OpenId4VcVerificationTypeOid4VpCredential['credential']; issuerId: string }>
   ): Promise<TrustedIssuerDid[] | undefined> {
     const resolved = await Promise.all(
@@ -1435,6 +1479,7 @@ export class OpenId4VpVerifierService {
             type: 'openId4VpCredential',
             credential,
             openId4VcVerificationSessionRecord: verificationSession,
+            dcql,
           } satisfies OpenId4VcVerificationTypes,
         })
       )
@@ -1451,7 +1496,25 @@ export class OpenId4VpVerifierService {
   public async updateState(
     agentContext: AgentContext,
     verificationSession: OpenId4VcVerificationSessionRecord,
-    newState: OpenId4VcVerificationSessionState
+    newState: OpenId4VcVerificationSessionState.ResponseVerified,
+    options: Pick<
+      Extract<
+        OpenId4VcVerificationSessionStateChangedEventPayload,
+        { state: OpenId4VcVerificationSessionState.ResponseVerified }
+      >,
+      'verifiedAuthorizationResponse'
+    >
+  ): Promise<void>
+  public async updateState(
+    agentContext: AgentContext,
+    verificationSession: OpenId4VcVerificationSessionRecord,
+    newState: Exclude<OpenId4VcVerificationSessionState, OpenId4VcVerificationSessionState.ResponseVerified>
+  ): Promise<void>
+  public async updateState(
+    agentContext: AgentContext,
+    verificationSession: OpenId4VcVerificationSessionRecord,
+    newState: OpenId4VcVerificationSessionState,
+    options: Pick<OpenId4VcVerificationSessionStateChangedEventPayload, 'verifiedAuthorizationResponse'> = {}
   ) {
     agentContext.config.logger.debug(
       `Updating openid4vc verification session record ${verificationSession.id} to state ${newState} (previous=${verificationSession.state})`
@@ -1461,22 +1524,33 @@ export class OpenId4VpVerifierService {
     verificationSession.state = newState
     await this.openId4VcVerificationSessionRepository.update(agentContext, verificationSession)
 
-    this.emitStateChangedEvent(agentContext, verificationSession, previousState)
+    this.emitStateChangedEvent(agentContext, verificationSession, previousState, options)
   }
 
   protected emitStateChangedEvent(
     agentContext: AgentContext,
     verificationSession: OpenId4VcVerificationSessionRecord,
-    previousState: OpenId4VcVerificationSessionState | null
+    previousState: OpenId4VcVerificationSessionState | null,
+    options: Pick<OpenId4VcVerificationSessionStateChangedEventPayload, 'verifiedAuthorizationResponse'> = {}
   ) {
     const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
+
+    if (verificationSession.state === OpenId4VcVerificationSessionState.ResponseVerified) {
+      if (!options.verifiedAuthorizationResponse) {
+        throw new CredoError(
+          `Verification session '${verificationSession.id}' moved to '${verificationSession.state}' without a verified authorization response.`
+        )
+      }
+    }
 
     eventEmitter.emit<OpenId4VcVerificationSessionStateChangedEvent>(agentContext, {
       type: OpenId4VcVerifierEvents.VerificationSessionStateChanged,
       payload: {
         verificationSession: verificationSession.clone(),
         previousState,
-      },
+        state: verificationSession.state,
+        verifiedAuthorizationResponse: options.verifiedAuthorizationResponse,
+      } as OpenId4VcVerificationSessionStateChangedEventPayload,
     })
   }
 }

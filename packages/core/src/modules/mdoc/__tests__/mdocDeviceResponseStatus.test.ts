@@ -128,7 +128,9 @@ describe('mdoc device-response status list verification', () => {
         trustedCertificates: [{ issuance: [rootCertificate.toString('base64')] }],
         sessionTranscriptOptions,
       })
-    ).resolves.toBeUndefined()
+    ).resolves.toEqual({
+      documents: [{ documentIndex: 0, mdoc: expect.any(Mdoc), trustedIssuanceChain: expect.any(Array) }],
+    })
   })
 
   test('verify fails when status list is anchored to a different root and no status certificates are configured', async () => {
@@ -203,6 +205,8 @@ describe('mdoc device-response status list verification', () => {
         ],
         sessionTranscriptOptions,
       })
-    ).resolves.toBeUndefined()
+    ).resolves.toEqual({
+      documents: [{ documentIndex: 0, mdoc: expect.any(Mdoc), trustedIssuanceChain: expect.any(Array) }],
+    })
   })
 })

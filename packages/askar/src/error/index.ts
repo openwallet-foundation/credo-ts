@@ -1,4 +1,5 @@
 export { AskarError } from './AskarError'
+export { AskarStoreAlreadyRegisteredError } from './AskarStoreAlreadyRegisteredError'
 export { AskarStoreDuplicateError } from './AskarStoreDuplicateError'
 export { AskarStoreError } from './AskarStoreError'
 export { AskarStoreExportPathExistsError } from './AskarStoreExportPathExistsError'

@@ -18,6 +18,7 @@ export type {
 export { AskarStoreManager } from './AskarStoreManager'
 // Errors
 export {
+  AskarStoreAlreadyRegisteredError,
   AskarStoreDuplicateError,
   AskarStoreError,
   AskarStoreExportPathExistsError,

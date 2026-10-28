@@ -3,7 +3,13 @@ import path from 'node:path'
 import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { p521 } from '@noble/curves/nist.js'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
-import { AskarError, Session } from '@openwallet-foundation/askar-shared'
+import {
+  AskarError,
+  KeyEntryList,
+  KeyEntryListHandle,
+  LocalKeyHandle,
+  Session,
+} from '@openwallet-foundation/askar-shared'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
 import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from '../../AskarModuleConfig'
@@ -638,6 +644,31 @@ describe('AskarKeyManagementService', () => {
     it('returns null if key does not exist', async () => {
       const result = await service.getPublicKey(agentContext, 'nonexistent')
       expect(result).toBeNull()
+    })
+
+    it('frees the fetched key', async () => {
+      const { keyId } = await service.createKey(agentContext, {
+        type: { kty: 'EC', crv: 'P-256' },
+      })
+
+      const freeKeySpy = vi.spyOn(LocalKeyHandle.prototype, 'free')
+      await service.getPublicKey(agentContext, keyId)
+
+      expect(freeKeySpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('frees the key entry list when reading the entry fails', async () => {
+      const { keyId } = await service.createKey(agentContext, {
+        type: { kty: 'EC', crv: 'P-256' },
+      })
+
+      vi.spyOn(KeyEntryList.prototype, 'getEntryByIndex').mockImplementation(() => {
+        throw new Error('getEntryByIndex failed')
+      })
+      const freeKeyEntryListSpy = vi.spyOn(KeyEntryListHandle.prototype, 'free')
+
+      await expect(service.getPublicKey(agentContext, keyId)).rejects.toThrow('getEntryByIndex failed')
+      expect(freeKeyEntryListSpy).toHaveBeenCalledTimes(1)
     })
 
     it('returns public key for EC key pair', async () => {
