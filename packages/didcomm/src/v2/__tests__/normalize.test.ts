@@ -402,6 +402,18 @@ describe('normalizeV2PlaintextToV1', () => {
     expect(message.appendedAttachments?.[0].id).toBe('extra')
   })
 
+  it('rebuilds the named attachment array for a newer minor version of the protocol', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      id: 'offer-1',
+      type: 'https://didcomm.org/issue-credential/2.1/offer-credential',
+      body: {},
+      attachments: [{ id: 'anoncreds', format: 'anoncreds/credential-offer@v1.0', data: { base64: 'e30=' } }],
+    })
+
+    expect(v1['offers~attach']).toEqual([{ '@id': 'anoncreds', data: { base64: 'e30=' } }])
+    expect(v1['~attach']).toBeUndefined()
+  })
+
   it('keeps body formats that have no attachment next to the rebuilt ones', () => {
     const v1 = normalizeV2PlaintextToV1({
       id: 'propose-1',

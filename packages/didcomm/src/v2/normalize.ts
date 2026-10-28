@@ -1,6 +1,6 @@
 import type { Logger } from '@credo-ts/core'
 import type { DidCommPlaintextMessage } from '../types'
-import { formatAttachmentKeys, mapV2AttachmentToV1 } from './plaintextBuilder'
+import { getFormatAttachmentKey, mapV2AttachmentToV1 } from './plaintextBuilder'
 import type { DidCommV2PlaintextMessage } from './types'
 
 const reservedBodyKeys = [
@@ -25,7 +25,7 @@ const reservedBodyKeys = [
 
 /**
  * Normalize a DIDComm v2 plaintext message to v1 shape so existing handlers work.
- * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→lang and ~l10n, please_ack→~please_ack, ack→ack, attachments→~attach.
+ * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→lang and ~l10n, please_ack→~please_ack, ack→ack, attachments→~attach (or formats + the named *~attach array for 2.0 credential and proof messages).
  * This allows v2 plaintext to be processed by v1 message handlers without changes.
  *
  * @param v2 - The DIDComm v2 plaintext message
@@ -87,16 +87,18 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?:
     v1['~please_ack'] = { on: ['RECEIPT'] }
   }
 
-  const formatAttachmentKey = formatAttachmentKeys[type]
+  const formatAttachmentKey = getFormatAttachmentKey(type)
   const formatAttachments =
     formatAttachmentKey && Array.isArray(attachments)
       ? attachments.filter((attachment) => attachment.format !== undefined)
       : []
-  if (formatAttachmentKey && formatAttachments.length > 0) {
-    v1.formats = [
-      ...(Array.isArray(bodyFields.formats) ? bodyFields.formats : []),
-      ...formatAttachments.map((attachment) => ({ attach_id: attachment.id, format: attachment.format })),
-    ]
+  if (formatAttachmentKey) {
+    if (formatAttachments.length > 0) {
+      v1.formats = [
+        ...(Array.isArray(bodyFields.formats) ? bodyFields.formats : []),
+        ...formatAttachments.map((attachment) => ({ attach_id: attachment.id, format: attachment.format })),
+      ]
+    }
     v1[formatAttachmentKey] = formatAttachments.map((attachment) =>
       mapV2AttachmentToV1({ ...attachment, format: undefined })
     )

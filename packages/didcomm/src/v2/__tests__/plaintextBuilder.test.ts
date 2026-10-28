@@ -220,7 +220,22 @@ describe('buildV2PlaintextFromMessage', () => {
     ])
   })
 
-  it('leaves a named attachment array in the body when the message has no formats', () => {
+  it('round trips a proposal that lists a format without any attachment', () => {
+    const message = new DidCommProposePresentationV2Message({
+      formats: [new DidCommProofFormatSpec({ attachmentId: 'anoncreds', format: 'anoncreds/proof-request@v1.0' })],
+      proposalAttachments: [],
+    })
+
+    const received = JsonTransformer.fromJSON(
+      normalizeV2PlaintextToV1(buildV2PlaintextFromMessage(message)),
+      DidCommProposePresentationV2Message
+    )
+
+    expect(received.formats.map(({ attachmentId }) => attachmentId)).toEqual(['anoncreds'])
+    expect(received.proposalAttachments).toEqual([])
+  })
+
+  it('leaves the named attachment array of a type without formats in the body', () => {
     const message = new DidCommBatchMessage({ messages: [] })
 
     const v2 = buildV2PlaintextFromMessage(message)

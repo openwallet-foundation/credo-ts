@@ -1,8 +1,9 @@
 import { utils } from '@credo-ts/core'
 import type { DidCommMessage } from '../DidCommMessage'
+import { type ParsedMessageType, parseMessageType, supportsIncomingMessageType } from '../util/messageType'
 import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from './types'
 
-export const formatAttachmentKeys: Record<string, string> = {
+const formatAttachmentKeys: Record<string, string> = {
   'https://didcomm.org/issue-credential/2.0/propose-credential': 'filters~attach',
   'https://didcomm.org/issue-credential/2.0/offer-credential': 'offers~attach',
   'https://didcomm.org/issue-credential/2.0/request-credential': 'requests~attach',
@@ -10,6 +11,18 @@ export const formatAttachmentKeys: Record<string, string> = {
   'https://didcomm.org/present-proof/2.0/propose-presentation': 'proposals~attach',
   'https://didcomm.org/present-proof/2.0/request-presentation': 'request_presentations~attach',
   'https://didcomm.org/present-proof/2.0/presentation': 'presentations~attach',
+}
+
+export function getFormatAttachmentKey(type: string): string | undefined {
+  let incoming: ParsedMessageType
+  try {
+    incoming = parseMessageType(type)
+  } catch {
+    return undefined
+  }
+  return Object.entries(formatAttachmentKeys).find(([uri]) =>
+    supportsIncomingMessageType(incoming, parseMessageType(uri))
+  )?.[1]
 }
 
 interface AttachmentFormat {
@@ -21,7 +34,7 @@ function splitFormatAttachments(
   type: string,
   body: Record<string, unknown>
 ): { body: Record<string, unknown>; attachments: DidCommV2Attachment[] } {
-  const key = formatAttachmentKeys[type]
+  const key = getFormatAttachmentKey(type)
   const formats = body.formats as AttachmentFormat[] | undefined
   const attachments = key ? body[key] : undefined
   if (!Array.isArray(formats) || !Array.isArray(attachments)) return { body, attachments: [] }
@@ -90,7 +103,7 @@ export function mapV2AttachmentToV1(v2: DidCommV2Attachment): Record<string, unk
 /**
  * Build a DIDComm v2 plaintext message from a DidCommMessage.
  * For messages that implement toV2Plaintext() (e.g. DidCommBasicMessageV2), uses that directly.
- * Otherwise maps v1 shape: @type→type, @id→id, ~thread→thid/pthid, lang or ~l10n→lang, ~please_ack→please_ack, ~attach→attachments, ~timing→created_time/expires_time, remaining non-decorator fields→body.
+ * Otherwise maps v1 shape: @type→type, @id→id, ~thread→thid/pthid, lang or ~l10n→lang, ~please_ack→please_ack, ~attach and the formats + named *~attach array→attachments, ~timing→created_time/expires_time, remaining non-decorator fields→body.
  *
  * @param message - The DidCommMessage to convert
  * @param config - Optional config (e.g. useDidSovPrefixWhereAllowed, from/to override for connection-based sends)
