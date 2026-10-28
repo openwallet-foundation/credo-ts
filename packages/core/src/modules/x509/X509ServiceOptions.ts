@@ -252,6 +252,12 @@ export type X509CertificateSigningRequestExtensionsOptions = Pick<
 export interface X509CertificateIssuerAndSubjectOptions {
   countryName?: string
   stateOrProvinceName?: string
+  organizationName?: string
+
+  /**
+   * The registered identifier of the organization (OID 2.5.4.97), for example `NTRNL-12345678`
+   */
+  organizationIdentifier?: string
   organizationalUnit?: string
   commonName?: string
 }
