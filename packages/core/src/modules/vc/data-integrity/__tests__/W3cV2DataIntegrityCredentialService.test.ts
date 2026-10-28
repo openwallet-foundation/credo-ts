@@ -702,10 +702,10 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     const otherDid = 'did:web:someone-else.example'
     const otherVerificationMethodId = `${otherDid}#key-1`
 
-    function createAgentContext(controller: string) {
+    function createAgentContext({ otherKeyController = otherDid }: { otherKeyController?: string } = {}) {
       const documents: Record<string, unknown> = {
         [issuerDid]: createDidDocument(issuerDid, issuerVerificationMethodId, issuerDid, 'assertionMethod'),
-        [otherDid]: createDidDocument(otherDid, otherVerificationMethodId, controller, 'assertionMethod'),
+        [otherDid]: createDidDocument(otherDid, otherVerificationMethodId, otherKeyController, 'assertionMethod'),
       }
 
       return {
@@ -734,7 +734,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     }
 
     test('passes when the credential is signed by its declared issuer', async () => {
-      const result = await createService().verifyCredential(createAgentContext(otherDid), createOptions(issuerDid))
+      const result = await createService().verifyCredential(createAgentContext(), createOptions(issuerDid))
 
       expect(result.validations.issuerIsSigner?.isValid).toBe(true)
       expect(result.isValid).toBe(true)
@@ -742,7 +742,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     test('fails when the credential is signed by someone other than its declared issuer', async () => {
       const result = await createService().verifyCredential(
-        createAgentContext(otherDid),
+        createAgentContext(),
         createOptions(issuerDid, otherVerificationMethodId)
       )
 
@@ -753,9 +753,9 @@ describe('W3cV2DataIntegrityCredentialService', () => {
       expect(result.isValid).toBe(false)
     })
 
-    test('fails when the signer names the issuer as the controller of its key', async () => {
+    test('fails when the credential is signed by another DID that names the issuer as the controller of its key', async () => {
       const result = await createService().verifyCredential(
-        createAgentContext(issuerDid),
+        createAgentContext({ otherKeyController: issuerDid }),
         createOptions(issuerDid, otherVerificationMethodId)
       )
 
@@ -767,7 +767,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     })
 
     test('passes when the issuer is one of the trusted issuers', async () => {
-      const result = await createService().verifyCredential(createAgentContext(issuerDid), {
+      const result = await createService().verifyCredential(createAgentContext(), {
         ...createOptions(issuerDid),
         trustedIssuers: [{ method: 'did', issuance: issuerDid }],
       })
@@ -776,7 +776,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     })
 
     test('fails when the issuer is not one of the trusted issuers', async () => {
-      const result = await createService().verifyCredential(createAgentContext(issuerDid), {
+      const result = await createService().verifyCredential(createAgentContext(), {
         ...createOptions(issuerDid),
         trustedIssuers: [{ method: 'did', issuance: 'did:key:zSomeoneElse' }],
       })
@@ -787,7 +787,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     test('fails when the trust callback trusts no issuer for the credential', async () => {
       const getTrustedIssuersForVerification = vi.fn().mockResolvedValue({ trustedIssuers: [] })
-      const agentContext = createAgentContext(issuerDid)
+      const agentContext = createAgentContext()
       ;(agentContext as { config: unknown }).config = { getTrustedIssuersForVerification }
       const options = createOptions(issuerDid)
 
@@ -828,10 +828,10 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     const otherDid = 'did:web:someone-else.example'
     const otherVerificationMethodId = `${otherDid}#key-1`
 
-    function createAgentContext(controller: string) {
+    function createAgentContext({ otherKeyController = otherDid }: { otherKeyController?: string } = {}) {
       const documents: Record<string, unknown> = {
         [holderDid]: createDidDocument(holderDid, verificationMethodId, holderDid, 'authentication'),
-        [otherDid]: createDidDocument(otherDid, otherVerificationMethodId, controller, 'authentication'),
+        [otherDid]: createDidDocument(otherDid, otherVerificationMethodId, otherKeyController, 'authentication'),
       }
 
       return {
@@ -860,15 +860,15 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     }
 
     test('passes when the presentation is signed by its declared holder', async () => {
-      const result = await createService().verifyPresentation(createAgentContext(otherDid), createOptions(holderDid))
+      const result = await createService().verifyPresentation(createAgentContext(), createOptions(holderDid))
 
       expect(result.presentation.validations.holderIsSigner?.isValid).toBe(true)
       expect(result.isValid).toBe(true)
     })
 
-    test('fails when the signer names the holder as the controller of its key', async () => {
+    test('fails when the presentation is signed by another DID that names the holder as the controller of its key', async () => {
       const result = await createService().verifyPresentation(
-        createAgentContext(holderDid),
+        createAgentContext({ otherKeyController: holderDid }),
         createOptions(holderDid, otherVerificationMethodId)
       )
 
@@ -881,7 +881,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     test('fails when the presentation is signed by someone other than its declared holder', async () => {
       const result = await createService().verifyPresentation(
-        createAgentContext(otherDid),
+        createAgentContext(),
         createOptions(holderDid, otherVerificationMethodId)
       )
 
@@ -893,7 +893,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     })
 
     test('passes when no holder is declared, since there is no claim to contradict', async () => {
-      const result = await createService().verifyPresentation(createAgentContext(otherDid), createOptions(undefined))
+      const result = await createService().verifyPresentation(createAgentContext(), createOptions(undefined))
 
       expect(result.presentation.validations.holderIsSigner?.isValid).toBe(true)
       expect(result.isValid).toBe(true)

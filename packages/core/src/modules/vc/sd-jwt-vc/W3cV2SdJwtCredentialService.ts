@@ -204,6 +204,8 @@ export class W3cV2SdJwtCredentialService {
       try {
         await sdJwt.verify(credential.encoded, {
           skewSeconds: agentContext.config.validitySkewSeconds,
+          keyBindingNonce: options.keyBinding?.nonce,
+          expectedKeyBindingAudience: options.keyBinding?.audience,
         })
 
         validationResults.validations.signature = {
