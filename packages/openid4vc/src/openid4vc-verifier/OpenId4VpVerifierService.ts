@@ -1,6 +1,5 @@
 import {
   AgentContext,
-  asArray,
   ClaimFormat,
   CredoError,
   type DcqlEncodedPresentations,
@@ -11,6 +10,7 @@ import {
   type DifPresentationExchangeSubmission,
   EventEmitter,
   extractPresentationsWithDescriptorsFromSubmission,
+  type GetTrustedIssuersForCredential,
   getDomainFromUrl,
   Hasher,
   type HashName,
@@ -38,7 +38,6 @@ import {
   SignatureSuiteRegistry,
   type TrustedIssuer,
   TrustedIssuerContext,
-  type TrustedIssuerDid,
   TypedArrayEncoder,
   utils,
   type VerifiablePresentation,
@@ -46,7 +45,6 @@ import {
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
   W3cV2CredentialService,
-  W3cV2EnvelopedVerifiableCredential,
   W3cV2SdJwtVerifiablePresentation,
   X509Certificate,
   X509ModuleConfig,
@@ -1383,17 +1381,11 @@ export class OpenId4VpVerifierService {
 
         const jwtVp = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
         verifiablePresentation = jwtVp
-        const trustedIssuers = await this.getOid4vpW3cTrustedIssuers(
-          agentContext,
-          options.verificationSession,
-          options.dcql,
-          asArray(jwtVp.verifiableCredential).map((credential) => ({ credential, issuerId: credential.issuerId }))
-        )
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
           presentation,
           challenge: options.nonce,
           domain: options.audience,
-          trustedIssuers,
+          trustedIssuers: this.getOid4vpW3cTrustedIssuers(agentContext, options.verificationSession, options.dcql),
         })
 
         isValid = verificationResult.isValid
@@ -1405,20 +1397,11 @@ export class OpenId4VpVerifierService {
 
         const sdJwtW3cVp = W3cV2SdJwtVerifiablePresentation.fromCompact(presentation)
         verifiablePresentation = sdJwtW3cVp
-        const trustedIssuers = await this.getOid4vpW3cTrustedIssuers(
-          agentContext,
-          options.verificationSession,
-          options.dcql,
-          asArray(sdJwtW3cVp.resolvedPresentation.verifiableCredential).map((enveloped) => ({
-            credential: (enveloped as W3cV2EnvelopedVerifiableCredential).envelopedCredential,
-            issuerId: (enveloped as W3cV2EnvelopedVerifiableCredential).resolvedCredential.issuerId,
-          }))
-        )
         const verificationResult = await this.w3cV2CredentialService.verifyPresentation(agentContext, {
           presentation: sdJwtW3cVp,
           challenge: options.nonce,
           domain: options.audience,
-          trustedIssuers,
+          trustedIssuers: this.getOid4vpW3cTrustedIssuers(agentContext, options.verificationSession, options.dcql),
         })
 
         isValid = verificationResult.isValid
@@ -1426,17 +1409,11 @@ export class OpenId4VpVerifierService {
       } else {
         const ldpVp = JsonTransformer.fromJSON(presentation, W3cJsonLdVerifiablePresentation)
         verifiablePresentation = ldpVp
-        const trustedIssuers = await this.getOid4vpW3cTrustedIssuers(
-          agentContext,
-          options.verificationSession,
-          options.dcql,
-          asArray(ldpVp.verifiableCredential).map((credential) => ({ credential, issuerId: credential.issuerId }))
-        )
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
           presentation: ldpVp,
           challenge: options.nonce,
           domain: options.audience,
-          trustedIssuers,
+          trustedIssuers: this.getOid4vpW3cTrustedIssuers(agentContext, options.verificationSession, options.dcql),
         })
 
         isValid = verificationResult.isValid
@@ -1465,28 +1442,23 @@ export class OpenId4VpVerifierService {
     }
   }
 
-  private async getOid4vpW3cTrustedIssuers(
+  private getOid4vpW3cTrustedIssuers(
     agentContext: AgentContext,
     verificationSession: OpenId4VcVerificationSessionRecord,
-    dcql: OpenId4VcVerificationTypeOid4VpCredential['dcql'],
-    credentials: Array<{ credential: OpenId4VcVerificationTypeOid4VpCredential['credential']; issuerId: string }>
-  ): Promise<TrustedIssuerDid[] | undefined> {
-    const resolved = await Promise.all(
-      credentials.map(({ credential, issuerId }) =>
-        TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
-          signer: { method: 'did', didUrl: issuerId },
+    dcql: OpenId4VcVerificationTypeOid4VpCredential['dcql']
+  ): GetTrustedIssuersForCredential {
+    return async ({ signer, verification }) =>
+      (
+        await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+          signer,
           verification: {
             type: 'openId4VpCredential',
-            credential,
+            credential: verification.credential,
             openId4VcVerificationSessionRecord: verificationSession,
             dcql,
           } satisfies OpenId4VcVerificationTypes,
         })
-      )
-    )
-
-    if (!resolved.some((result) => result !== undefined)) return undefined
-    return resolved.flatMap((result) => result?.trustedIssuers ?? [])
+      )?.trustedIssuers
   }
 
   /**

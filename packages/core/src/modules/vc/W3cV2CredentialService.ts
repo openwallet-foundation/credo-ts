@@ -1,4 +1,5 @@
 import type { AgentContext } from '../../agent/context'
+import type { GetTrustedIssuersForCredential, TrustedIssuerDid } from '../../agent/TrustedIssuersForVerification'
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
@@ -301,7 +302,9 @@ export class W3cV2CredentialService {
 
     // Phase 2: walk enclosed credential entries and verify recursively by entry format.
     validationResults.credentialEntries = (
-      await Promise.all(entries.map((entry) => this.verifyPresentationEntry(agentContext, entry, signerId)))
+      await Promise.all(
+        entries.map((entry) => this.verifyPresentationEntry(agentContext, entry, signerId, options.trustedIssuers))
+      )
     ).flat()
 
     validationResults.isValid =
@@ -313,7 +316,8 @@ export class W3cV2CredentialService {
   private async verifyPresentationEntry(
     agentContext: AgentContext,
     entry: W3cV2PresentationCredentialEntry,
-    signerId: string
+    signerId: string,
+    trustedIssuers: TrustedIssuerDid[] | GetTrustedIssuersForCredential | undefined
   ): Promise<W3cV2PresentationCredentialEntryResult[]> {
     if (entry instanceof W3cV2DataIntegrityVerifiablePresentation) {
       return [
@@ -326,6 +330,7 @@ export class W3cV2CredentialService {
     if (entry instanceof W3cV2DataIntegrityVerifiableCredential) {
       const credentialResult = await this.w3cV2DataIntegrityCredentialService.verifyCredential(agentContext, {
         credential: entry,
+        trustedIssuers,
       } as W3cV2DiVerifyCredentialOptions)
 
       return [
@@ -357,10 +362,12 @@ export class W3cV2CredentialService {
     if (enclosed instanceof W3cV2JwtVerifiableCredential) {
       credentialResult = await this.w3cV2JwtCredentialService.verifyCredential(agentContext, {
         credential: enclosed,
+        trustedIssuers,
       } as W3cV2JwtVerifyCredentialOptions)
     } else if (enclosed instanceof W3cV2SdJwtVerifiableCredential) {
       credentialResult = await this.w3cV2SdJwtCredentialService.verifyCredential(agentContext, {
         credential: enclosed,
+        trustedIssuers,
       } as W3cV2SdJwtVerifyCredentialOptions)
     } else {
       return [

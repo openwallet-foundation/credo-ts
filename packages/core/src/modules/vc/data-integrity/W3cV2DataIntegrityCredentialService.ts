@@ -1,4 +1,5 @@
 import type { AgentContext } from '../../../agent/context'
+import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { JsonTransformer, MessageValidator } from '../../../utils'
@@ -15,7 +16,7 @@ import { W3cV2Presentation } from '../models/presentation/W3cV2Presentation'
 import type { W3cV2VerifiablePresentation } from '../models/presentation/W3cV2VerifiablePresentation'
 import type { W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models/W3cV2VerifyResult'
 import type { SingleValidationResult } from '../models/W3cVerifyResult'
-import { validateSignerIsExpectedParty } from '../resolveSigner'
+import { type ResolvedSigner, validateSignerIsExpectedParty } from '../resolveSigner'
 import { validateVc2ContextBaseline, validateVc2CredentialStatus } from '../validators'
 import type {
   W3cV2DiSignCredentialOptions,
@@ -104,7 +105,7 @@ export class W3cV2DataIntegrityCredentialService {
       verifyCredentialStatus: options.verifyCredentialStatus,
     })
 
-    const issuerIsSigner = await this.verifySignerIsExpectedParty(
+    const { validation: issuerIsSigner, signer: issuer } = await this.verifySignerIsExpectedParty(
       agentContext,
       securedCredential,
       'assertionMethod',
@@ -112,16 +113,31 @@ export class W3cV2DataIntegrityCredentialService {
       'issuer'
     )
 
-    const isValid = credentialStatus.isValid && issuerIsSigner.isValid
+    const validations = {
+      dataModel: { isValid: true },
+      signature: { isValid: true },
+      credentialStatus,
+      issuerIsSigner,
+    }
+
+    if (issuer && issuerIsSigner.isValid) {
+      try {
+        await TrustedIssuerContext.ensureTrustedCredentialSigner(
+          agentContext,
+          {
+            signer: { method: 'did', didUrl: issuer.verificationMethod.id },
+            verification: { type: 'credential', credential: options.credential },
+          },
+          options.trustedIssuers
+        )
+      } catch (error) {
+        return { isValid: false, validations, error }
+      }
+    }
 
     return {
-      isValid,
-      validations: {
-        dataModel: { isValid: true },
-        signature: { isValid: true },
-        credentialStatus,
-        issuerIsSigner,
-      },
+      isValid: credentialStatus.isValid && issuerIsSigner.isValid,
+      validations,
     }
   }
 
@@ -194,7 +210,7 @@ export class W3cV2DataIntegrityCredentialService {
       return this.invalidResult(presentationContextResult.errors as DataIntegrityIssueList, 'presentation')
     }
 
-    const holderIsSigner = await this.verifySignerIsExpectedParty(
+    const { validation: holderIsSigner } = await this.verifySignerIsExpectedParty(
       agentContext,
       options.presentation.securedPresentation,
       'authentication',
@@ -222,16 +238,16 @@ export class W3cV2DataIntegrityCredentialService {
     purpose: 'assertionMethod' | 'authentication',
     expectedSigner: string | undefined,
     role: 'issuer' | 'holder'
-  ): Promise<SingleValidationResult> {
+  ): Promise<{ validation: SingleValidationResult; signer?: ResolvedSigner }> {
     if (!expectedSigner) {
-      return { isValid: true }
+      return { validation: { isValid: true } }
     }
 
     try {
       const signer = await resolveDataIntegritySigner(agentContext, securedDocument, purpose, expectedSigner)
-      return validateSignerIsExpectedParty(signer, expectedSigner, role)
+      return { validation: validateSignerIsExpectedParty(signer, expectedSigner, role), signer }
     } catch (error) {
-      return { isValid: false, error }
+      return { validation: { isValid: false, error } }
     }
   }
 

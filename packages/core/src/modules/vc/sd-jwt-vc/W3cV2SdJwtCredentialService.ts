@@ -179,7 +179,7 @@ export class W3cV2SdJwtCredentialService {
       // Ensure the issuer is trusted according to the (optional) `getTrustedIssuersForVerification`
       // callback. For did-based issuers this is a no-op when no trusted issuers are configured,
       // preserving the previous "trust any valid signature" behavior. Throws when the issuer is not trusted.
-      await TrustedIssuerContext.ensureTrustedSigner(
+      await TrustedIssuerContext.ensureTrustedCredentialSigner(
         agentContext,
         {
           signer: { method: 'did', didUrl: issuerVerificationMethod.id },

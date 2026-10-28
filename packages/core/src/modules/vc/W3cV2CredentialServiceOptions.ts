@@ -1,4 +1,4 @@
-import type { TrustedIssuerDid } from '../../agent/TrustedIssuersForVerification'
+import type { GetTrustedIssuersForCredential, TrustedIssuerDid } from '../../agent/TrustedIssuersForVerification'
 import type { HashName } from '../../crypto'
 import type { KnownJwaSignatureAlgorithm } from '../kms'
 import type { IDisclosureFrame, IPresentationFrame, SdJwtVcHolderBinding } from '../sd-jwt-vc'
@@ -120,9 +120,9 @@ interface W3cV2VerifyCredentialOptionsBase<Credential = unknown> {
   verifyCredentialStatus?: boolean
 
   /**
-   * Trusted issuers for the verification.
+   * Trusted issuers for the verification, or a callback that resolves them for each credential.
    */
-  trustedIssuers?: TrustedIssuerDid[]
+  trustedIssuers?: TrustedIssuerDid[] | GetTrustedIssuersForCredential
 }
 
 export interface W3cV2JwtVerifyCredentialOptions
@@ -189,9 +189,9 @@ interface W3cV2VerifyPresentationOptionsBase<Presentation = unknown> {
   domain?: string
 
   /**
-   * Trusted issuers for the verification.
+   * Trusted issuers for the verification, or a callback that resolves them for each credential.
    */
-  trustedIssuers?: TrustedIssuerDid[]
+  trustedIssuers?: TrustedIssuerDid[] | GetTrustedIssuersForCredential
 }
 
 export interface W3cV2JwtVerifyPresentationOptions

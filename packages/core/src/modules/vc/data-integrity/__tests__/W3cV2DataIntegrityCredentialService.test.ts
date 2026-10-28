@@ -255,6 +255,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     function createIssuerResolvingAgentContext() {
       return {
+        config: {},
         dependencyManager: {
           resolve: vi.fn().mockReturnValue({
             resolveDidDocument: vi.fn().mockResolvedValue({
@@ -708,6 +709,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
       }
 
       return {
+        config: {},
         dependencyManager: {
           resolve: vi.fn().mockReturnValue({
             resolveDidDocument: vi.fn(async (didUrl: string) => documents[didUrl.split('#')[0]]),
@@ -762,6 +764,41 @@ describe('W3cV2DataIntegrityCredentialService', () => {
         `Verification method '${otherVerificationMethodId}' is controlled by '${issuerDid}', not by the DID document '${otherDid}' it is listed in`
       )
       expect(result.isValid).toBe(false)
+    })
+
+    test('passes when the issuer is one of the trusted issuers', async () => {
+      const result = await createService().verifyCredential(createAgentContext(issuerDid), {
+        ...createOptions(issuerDid),
+        trustedIssuers: [{ method: 'did', issuance: issuerDid }],
+      })
+
+      expect(result.isValid).toBe(true)
+    })
+
+    test('fails when the issuer is not one of the trusted issuers', async () => {
+      const result = await createService().verifyCredential(createAgentContext(issuerDid), {
+        ...createOptions(issuerDid),
+        trustedIssuers: [{ method: 'did', issuance: 'did:key:zSomeoneElse' }],
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toBe(`Signer did ${issuerDid} is not trusted. Unable to verify signature.`)
+    })
+
+    test('fails when the trust callback trusts no issuer for the credential', async () => {
+      const getTrustedIssuersForVerification = vi.fn().mockResolvedValue({ trustedIssuers: [] })
+      const agentContext = createAgentContext(issuerDid)
+      ;(agentContext as { config: unknown }).config = { getTrustedIssuersForVerification }
+      const options = createOptions(issuerDid)
+
+      const result = await createService().verifyCredential(agentContext, options)
+
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toBe(`Signer did ${issuerDid} is not trusted. Unable to verify signature.`)
+      expect(getTrustedIssuersForVerification).toHaveBeenCalledWith(agentContext, {
+        signer: { method: 'did', didUrl: issuerVerificationMethodId },
+        verification: { type: 'credential', credential: options.credential },
+      })
     })
   })
 

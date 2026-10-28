@@ -407,6 +407,56 @@ describe('W3cJwtCredentialService', () => {
   })
 
   describe('verifyPresentation', () => {
+    test('applies the trusted issuers of each credential to that credential only', async () => {
+      const signCredential = (type: string) =>
+        w3cJwtCredentialService.signCredential(agentContext, {
+          alg: KnownJwaSignatureAlgorithms.ES256,
+          format: ClaimFormat.JwtVc,
+          verificationMethod: issuerDidJwk.verificationMethodId,
+          credential: JsonTransformer.fromJSON(
+            { ...Ed256DidJwkJwtVcUnsigned, type: ['VerifiableCredential', type] },
+            W3cCredential
+          ),
+        })
+
+      // Both credentials have the same issuer, which is only trusted for the allowed credential
+      const signedJwtVp = await w3cJwtCredentialService.signPresentation(agentContext, {
+        presentation: new W3cPresentation({
+          context: [CREDENTIALS_CONTEXT_V1_URL],
+          type: ['VerifiablePresentation'],
+          verifiableCredential: [
+            await signCredential('RestrictedCredential'),
+            await signCredential('AllowedCredential'),
+          ],
+          holder: holderDidKey.did,
+        }),
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
+        challenge: 'challenge',
+        domain: 'example.com',
+        format: ClaimFormat.JwtVp,
+        verificationMethod: `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`,
+      })
+
+      const result = await w3cJwtCredentialService.verifyPresentation(agentContext, {
+        presentation: signedJwtVp,
+        challenge: 'challenge',
+        domain: 'example.com',
+        trustedIssuers: async ({ verification }) =>
+          (verification.credential as W3cJwtVerifiableCredential).type.includes('AllowedCredential')
+            ? [{ method: 'did', issuance: issuerDidJwk.did }]
+            : [],
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.validations.credentials).toMatchObject([
+        {
+          isValid: false,
+          error: { message: `Signer did ${issuerDidJwk.did} is not trusted. Unable to verify signature.` },
+        },
+        { isValid: true },
+      ])
+    })
+
     test('rejects a presentation signed with a key that names the holder as its controller', async () => {
       const signerDid = 'did:web:signer.example'
       const signerKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
