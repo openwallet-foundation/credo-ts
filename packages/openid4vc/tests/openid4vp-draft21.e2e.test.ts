@@ -166,43 +166,35 @@ describe('OpenID4VP Draft 21', () => {
     const resolvedAuthorizationRequest =
       await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
-    expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
-      areRequirementsSatisfied: true,
-      name: undefined,
-      purpose: undefined,
-      requirements: [
+    expect(resolvedAuthorizationRequest.presentationExchange?.queryResult).toMatchObject({
+      can_be_satisfied: true,
+      input_descriptors: [
         {
-          isRequirementSatisfied: true,
-          needsCount: 1,
-          rule: 'pick',
-          submissionEntry: [
+          input_descriptor_id: 'OpenBadgeCredentialDescriptor',
+          satisfied: true,
+          matching_credentials: [
             {
-              name: undefined,
-              purpose: undefined,
-              inputDescriptorId: 'OpenBadgeCredentialDescriptor',
-              verifiableCredentials: [
-                {
-                  claimFormat: ClaimFormat.SdJwtDc,
-                  credentialRecord: expect.objectContaining({
-                    credentialInstances: [
-                      expect.objectContaining({
-                        compactSdJwtVc: signedSdJwtVc.compact,
-                      }),
-                    ],
+              record: expect.objectContaining({
+                credentialInstances: [
+                  expect.objectContaining({
+                    compactSdJwtVc: signedSdJwtVc.compact,
                   }),
-                  // Name is NOT in here
-                  disclosedPayload: {
-                    cnf: {
-                      kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
-                    },
-                    degree: 'bachelor',
-                    iat: expect.any(Number),
-                    iss: 'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
-                    university: 'innsbruck',
-                    vct: 'OpenBadgeCredential',
+                ],
+              }),
+              // Name is NOT in here
+              disclosure: {
+                output: {
+                  cnf: {
+                    kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
                   },
+                  degree: 'bachelor',
+                  iat: expect.any(Number),
+                  iss: 'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
+                  university: 'innsbruck',
+                  vct: 'OpenBadgeCredential',
                 },
-              ],
+                disclosed_paths: [['vct'], ['degree'], ['cnf'], ['iss'], ['iat'], ['university']],
+              },
             },
           ],
         },
@@ -214,7 +206,7 @@ describe('OpenID4VP Draft 21', () => {
     }
 
     const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
-      resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
+      resolvedAuthorizationRequest.presentationExchange.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =
@@ -486,79 +478,63 @@ describe('OpenID4VP Draft 21', () => {
     const resolvedAuthorizationRequest =
       await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
-    expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
-      areRequirementsSatisfied: true,
-      name: undefined,
-      purpose: undefined,
-      requirements: expect.arrayContaining([
+    expect(resolvedAuthorizationRequest.presentationExchange?.queryResult).toMatchObject({
+      can_be_satisfied: true,
+      input_descriptors: [
         {
-          isRequirementSatisfied: true,
-          needsCount: 1,
-          rule: 'pick',
-          submissionEntry: [
+          input_descriptor_id: 'org.eu.university',
+          satisfied: true,
+          matching_credentials: [
             {
-              name: undefined,
-              purpose: undefined,
-              inputDescriptorId: 'org.eu.university',
-              verifiableCredentials: [
-                {
-                  claimFormat: ClaimFormat.MsoMdoc,
-                  credentialRecord: expect.objectContaining({
-                    credentialInstances: [
-                      expect.objectContaining({
-                        issuerSignedBase64Url: expect.any(String),
-                      }),
-                    ],
+              record: expect.objectContaining({
+                credentialInstances: [
+                  expect.objectContaining({
+                    issuerSignedBase64Url: expect.any(String),
                   }),
-                  // Name is NOT in here
-                  disclosedPayload: {
-                    'eu.europa.ec.eudi.pid.1': {
-                      degree: 'bachelor',
-                      name: 'John Doe',
-                    },
-                  },
-                },
-              ],
-            },
-          ],
-        },
-
-        {
-          isRequirementSatisfied: true,
-          needsCount: 1,
-          rule: 'pick',
-          submissionEntry: [
-            {
-              name: undefined,
-              purpose: undefined,
-              inputDescriptorId: 'OpenBadgeCredentialDescriptor',
-              verifiableCredentials: [
-                {
-                  claimFormat: ClaimFormat.SdJwtDc,
-                  credentialRecord: expect.objectContaining({
-                    credentialInstances: [
-                      expect.objectContaining({
-                        compactSdJwtVc: signedSdJwtVc.compact,
-                      }),
-                    ],
-                  }),
-                  // Name is NOT in here
-                  disclosedPayload: {
-                    cnf: {
-                      kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
-                    },
+                ],
+              }),
+              // Name is NOT in here
+              disclosure: {
+                output: {
+                  'eu.europa.ec.eudi.pid.1': {
                     degree: 'bachelor',
-                    iat: expect.any(Number),
-                    iss: 'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
-                    university: 'innsbruck',
-                    vct: 'OpenBadgeCredential',
+                    name: 'John Doe',
                   },
                 },
-              ],
+              },
             },
           ],
         },
-      ]),
+        {
+          input_descriptor_id: 'OpenBadgeCredentialDescriptor',
+          satisfied: true,
+          matching_credentials: [
+            {
+              record: expect.objectContaining({
+                credentialInstances: [
+                  expect.objectContaining({
+                    compactSdJwtVc: signedSdJwtVc.compact,
+                  }),
+                ],
+              }),
+              // Name is NOT in here
+              disclosure: {
+                output: {
+                  cnf: {
+                    kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+                  },
+                  degree: 'bachelor',
+                  iat: expect.any(Number),
+                  iss: 'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
+                  university: 'innsbruck',
+                  vct: 'OpenBadgeCredential',
+                },
+                disclosed_paths: [['vct'], ['degree'], ['cnf'], ['iss'], ['iat'], ['university']],
+              },
+            },
+          ],
+        },
+      ],
     })
 
     if (!resolvedAuthorizationRequest.presentationExchange) {
@@ -566,7 +542,7 @@ describe('OpenID4VP Draft 21', () => {
     }
 
     const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
-      resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
+      resolvedAuthorizationRequest.presentationExchange.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =

@@ -37,12 +37,11 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@astronautlabs/jsonpath": "catalog:",
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
-    "@sphereon/pex-models": "catalog:",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
+    "presentation-exchange": "catalog:",
     "reflect-metadata": "catalog:"
   },
   "devDependencies": {

@@ -236,7 +236,7 @@ export class Holder extends BaseAgent<ReturnType<ReturnType<typeof getOpenIdHold
       presentationExchange: resolvedPresentationRequest.presentationExchange
         ? {
             credentials: this.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
-              resolvedPresentationRequest.presentationExchange.credentialsForRequest
+              resolvedPresentationRequest.presentationExchange.queryResult
             ),
           }
         : undefined,

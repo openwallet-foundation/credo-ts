@@ -1,4 +1,3 @@
-import { JSONPath } from '@astronautlabs/jsonpath'
 import type {
   AgentContext,
   AnonCredsW3cCredentialVerifyPresentation,
@@ -18,7 +17,14 @@ import {
   JsonTransformer,
   TypedArrayEncoder,
 } from '@credo-ts/core'
-import type { Descriptor, FieldV2, InputDescriptorV1, InputDescriptorV2 } from '@sphereon/pex-models'
+import {
+  type Descriptor,
+  type FieldV2,
+  type InputDescriptorV1,
+  type InputDescriptorV2,
+  parseJsonPath,
+  resolveDescriptorLocation,
+} from 'presentation-exchange'
 import type { AnonCredsProofRequest, AnonCredsRequestedPredicate } from '../models'
 import type { CredentialWithRevocationMetadata } from '../models/utils'
 import type { AnonCredsCredentialProve, AnonCredsHolderService, CreateW3cPresentationOptions } from '../services'
@@ -30,8 +36,6 @@ import { getAnonCredsTagsFromRecord } from '../utils/w3cAnonCredsUtils'
 import type { AnonCredsRsVerifierService } from './AnonCredsRsVerifierService'
 
 import { getW3cAnonCredsCredentialMetadata } from './utils'
-
-export type PathComponent = string | number
 
 @injectable()
 export class AnonCredsW3cCredentialService implements IAnonCredsW3cCredentialService {
@@ -54,31 +58,23 @@ export class AnonCredsW3cCredentialService implements IAnonCredsW3cCredentialSer
 
     return credential.proof
   }
-  private extractPathNodes(obj: unknown, paths: string[]): { value: unknown; path: PathComponent[] }[] {
-    let result: { value: unknown; path: PathComponent[] }[] = []
-    if (paths) {
-      for (const path of paths) {
-        result = JSONPath.nodes(obj, path)
-        if (result.length) break
-      }
-    }
-    return result
-  }
-
   private async getCredentialMetadataForDescriptor(
     _agentContext: AgentContext,
     descriptorMapObject: Descriptor,
     selectedCredentials: W3cJsonLdVerifiableCredential[]
   ) {
-    const credentialExtractionResult = this.extractPathNodes({ verifiableCredential: selectedCredentials }, [
-      descriptorMapObject.path,
-    ])
+    // The submission is embedded in the presentation, so the path points at a credential in it, e.g.
+    // `$.verifiableCredential[0]`
+    const location = resolveDescriptorLocation(descriptorMapObject)
+    const w3cJsonLdVerifiableCredential =
+      location.success && location.location.credential_index !== undefined
+        ? selectedCredentials[location.location.credential_index]
+        : undefined
 
-    if (credentialExtractionResult.length === 0 || credentialExtractionResult.length > 1) {
+    if (!w3cJsonLdVerifiableCredential) {
       throw new Error('Could not extract credential from presentation submission')
     }
 
-    const w3cJsonLdVerifiableCredential = credentialExtractionResult[0].value as W3cJsonLdVerifiableCredential
     const w3cJsonLdVerifiableCredentialJson = JsonTransformer.toJSON(w3cJsonLdVerifiableCredential)
 
     const entryIndex = selectedCredentials.findIndex((credential) =>
@@ -132,19 +128,38 @@ export class AnonCredsW3cCredentialService implements IAnonCredsW3cCredentialSer
     return predicates
   }
 
+  /**
+   * The AnonCreds attribute a field asks for: the claim of `credentialSubject` its path addresses, such as
+   * `$.credentialSubject.age` or `$['credentialSubject']['age']`. A field with no path into `credentialSubject`
+   * asks for no attribute.
+   *
+   * A path to a claim that can't be an attribute, such as a nested claim, is rejected. Leaving the field out of the
+   * proof request would leave it unproven, while the verifier's presentation exchange check accepts it.
+   */
   private getClaimNameForField(field: FieldV2) {
     if (!field.path) throw new CredoError('Field path is required')
-    // fixme: could the path start otherwise?
-    const baseClaimPath = '$.credentialSubject.'
-    const claimPaths = field.path.filter((path) => path.startsWith(baseClaimPath))
-    if (claimPaths.length === 0) return undefined
+
+    const subjectPaths = field.path
+      .map((path) => {
+        try {
+          return parseJsonPath(path)
+        } catch {
+          return undefined
+        }
+      })
+      .filter((segments) => segments?.[0] === 'credentialSubject')
+    if (subjectPaths.length === 0) return undefined
 
     // FIXME: we should iterate over all attributes of the schema here and check if the path is valid
     // see https://identity.foundation/presentation-exchange/#presentation-definition
-    const claimNames = claimPaths.map((path) => path.slice(baseClaimPath.length))
-    const propertyName = claimNames[0]
+    const [segments] = subjectPaths
+    if (segments?.length !== 2 || typeof segments[1] !== 'string') {
+      throw new CredoError(
+        `Field path '${field.path.join("', '")}' does not address an attribute of the AnonCreds credential, which must be a claim of 'credentialSubject'`
+      )
+    }
 
-    return propertyName
+    return segments[1]
   }
 
   public createAnonCredsProofRequestAndMetadata = async (

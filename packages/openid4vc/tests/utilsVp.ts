@@ -9,7 +9,7 @@ export const universityDegreePresentationDefinition: DifPresentationExchangeDefi
       format: { jwt_vc: { alg: ['EdDSA'] } },
       // changed $.type to $.vc.type
       constraints: {
-        fields: [{ path: ['$.vc.type.*'], filter: { type: 'string', pattern: 'UniversityDegree' } }],
+        fields: [{ path: ['$.vc.type.*'], filter: { type: 'string', const: 'UniversityDegreeCredential' } }],
       },
     },
   ],
@@ -36,7 +36,7 @@ export const openBadgePresentationDefinition: DifPresentationExchangeDefinitionV
       format: { jwt_vc: { alg: ['EdDSA'] } },
       // changed $.type to $.vc.type
       constraints: {
-        fields: [{ path: ['$.vc.type.*'], filter: { type: 'string', pattern: 'OpenBadgeCredential' } }],
+        fields: [{ path: ['$.vc.type.*'], filter: { type: 'string', const: 'OpenBadgeCredential' } }],
       },
     },
   ],

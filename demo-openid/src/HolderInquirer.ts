@@ -245,10 +245,10 @@ export class HolderInquirer extends BaseInquirer {
         greenText(`Received DIF Presentation Exchange request with purpose: '${presentationDefinition.purpose}'`)
       )
 
-      if (this.resolvedPresentationRequest.presentationExchange.credentialsForRequest.areRequirementsSatisfied) {
+      if (this.resolvedPresentationRequest.presentationExchange.queryResult.can_be_satisfied) {
         const selectedCredentials = Object.values(
           this.holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
-            this.resolvedPresentationRequest.presentationExchange.credentialsForRequest
+            this.resolvedPresentationRequest.presentationExchange.queryResult
           )
         ).flat()
         console.log(

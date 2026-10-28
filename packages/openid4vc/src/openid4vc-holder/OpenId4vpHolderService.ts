@@ -70,21 +70,21 @@ export class OpenId4VpHolderService {
 
     const presentationExchange = {
       definition: presentationDefinition,
-      credentialsForRequest: await this.presentationExchangeService.getCredentialsForRequest(
+      queryResult: await this.presentationExchangeService.getCredentialsForRequest(
         agentContext,
         presentationDefinition
       ),
     }
 
-    const availableCredentialIds = presentationExchange.credentialsForRequest.requirements.flatMap((requirement) =>
-      requirement.submissionEntry.map((entry) => entry.inputDescriptorId)
-    )
+    const satisfiedInputDescriptorIds = presentationExchange.queryResult.input_descriptors
+      .filter(({ satisfied }) => satisfied)
+      .map(({ input_descriptor_id }) => input_descriptor_id)
 
     // for each transaction data entry, get all credentials that can be used to sign the respective transaction
     const matchedTransactionData = transactionData?.map((entry) => ({
       entry,
       matchedCredentialIds: entry.transactionData.credential_ids.filter((credentialId) =>
-        availableCredentialIds.includes(credentialId)
+        satisfiedInputDescriptorIds.includes(credentialId)
       ),
     }))
 
@@ -494,7 +494,7 @@ export class OpenId4VpHolderService {
             authorizationRequestPayload.presentation_definition as unknown as DifPresentationExchangeDefinition,
           challenge: nonce,
           domain: audience,
-          presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
+          presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.External,
           mdocSessionTranscript: mdocSessionTranscript,
         })
 

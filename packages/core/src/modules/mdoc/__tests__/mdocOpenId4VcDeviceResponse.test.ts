@@ -1,13 +1,13 @@
 import { DeviceResponse } from '@owf/mdoc'
-import type { InputDescriptorV2 } from '@sphereon/pex-models'
+import type { InputDescriptorV2 } from 'presentation-exchange'
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import type { DifPresentationExchangeDefinition } from '../../dif-presentation-exchange'
-import { assertMdocInputDescriptor, inputDescriptorToDocumentRequest } from '../../dif-presentation-exchange/utils/mdoc'
 import { PublicJwk } from '../../kms'
 import { X509Certificate } from '../../x509'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
+import { inputDescriptorToDocumentRequest } from '../utils/inputDescriptorToDocumentRequest'
 
 const DEVICE_JWK_PUBLIC_P256 = {
   kty: 'EC',
@@ -197,8 +197,8 @@ describe('mdoc device-response openid4vp test', () => {
           mdocs: [mdoc],
           documentRequests: (PRESENTATION_DEFINITION_1.input_descriptors as InputDescriptorV2[])
             .filter((id) => Object.keys(id.format ?? {}).includes('mso_mdoc'))
-            .map(assertMdocInputDescriptor)
-            .map(inputDescriptorToDocumentRequest)
+            .map((inputDescriptor) => inputDescriptorToDocumentRequest(inputDescriptor))
+            .filter((documentRequest) => documentRequest !== undefined)
             // Device signed values are only disclosed when requested
             .map((documentRequest) => ({
               ...documentRequest,
@@ -369,8 +369,8 @@ describe('mdoc device-response openid4vp test', () => {
         mdocs: [mdoc],
         documentRequests: (PRESENTATION_DEFINITION_1.input_descriptors as InputDescriptorV2[])
           .filter((id) => Object.keys(id.format ?? {}).includes('mso_mdoc'))
-          .map(assertMdocInputDescriptor)
-          .map(inputDescriptorToDocumentRequest)
+          .map((inputDescriptor) => inputDescriptorToDocumentRequest(inputDescriptor))
+          .filter((documentRequest) => documentRequest !== undefined)
           // Device signed values are only disclosed when requested
           .map((documentRequest) => ({
             ...documentRequest,

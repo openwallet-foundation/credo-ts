@@ -37,8 +37,6 @@
     "rxjs": "catalog:"
   },
   "devDependencies": {
-    "@animo-id/pex": "catalog:",
-    "@sphereon/pex-models": "catalog:",
     "@types/luxon": "^3.7.6",
     "reflect-metadata": "catalog:",
     "typescript": "catalog:"

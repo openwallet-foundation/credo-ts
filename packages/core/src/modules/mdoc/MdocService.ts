@@ -6,7 +6,6 @@ import { Mdoc } from './Mdoc'
 import { MdocDeviceResponse } from './MdocDeviceResponse'
 import type {
   MdocDeleteVerificationSessionOptions,
-  MdocDeviceResponseDcqlQueryOptions,
   MdocDeviceResponseOptions,
   MdocDeviceResponsePresentationDefinitionOptions,
   MdocDeviceResponseVerifyOptions,
@@ -58,18 +57,6 @@ export class MdocService {
     options: MdocDeviceResponsePresentationDefinitionOptions
   ) {
     return MdocDeviceResponse.createDeviceResponseWithPresentationDefinition(agentContext, options)
-  }
-
-  /**
-   * @deprecated Credo does not use this method itself, and it only supports part of DCQL. Every claim
-   * of every `mso_mdoc` credential query is requested: `credential_sets`, `claim_sets` and `values`
-   * are ignored, credential queries with the same doctype are merged, nested claim paths are
-   * truncated, and a claim missing from the mdoc throws instead of being treated as optional. Use
-   * `DcqlService.createPresentation` to present mdocs for a DCQL query, or
-   * {@link MdocService.createDeviceResponse} with explicit `documentRequests`.
-   */
-  public async createDcqlQueryDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseDcqlQueryOptions) {
-    return MdocDeviceResponse.createDeviceResponseWithDcqlQuery(agentContext, options)
   }
 
   public async verifyDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseVerifyOptions) {

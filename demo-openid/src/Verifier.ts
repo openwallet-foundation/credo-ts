@@ -78,14 +78,14 @@ const universityDegreePresentationDefinition = {
             path: ['$.vc.type.*', '$.vct', '$.type'],
             filter: {
               type: 'string',
-              pattern: 'UniversityDegree',
+              const: 'UniversityDegreeCredential',
             },
           },
         ],
       },
     },
   ],
-}
+} satisfies DifPresentationExchangeDefinitionV2
 
 const openBadgeCredentialPresentationDefinition = {
   id: 'OpenBadgeCredential - DIF Presentation Exchange',
@@ -100,14 +100,14 @@ const openBadgeCredentialPresentationDefinition = {
             path: ['$.vc.type.*', '$.vct', '$.type'],
             filter: {
               type: 'string',
-              pattern: 'OpenBadgeCredential',
+              const: 'OpenBadgeCredential',
             },
           },
         ],
       },
     },
   ],
-}
+} satisfies DifPresentationExchangeDefinitionV2
 
 export const dcqls = [
   { id: 'UniversityDegreeCredential - DCQL', dcql: universityDegreeDcql },

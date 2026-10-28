@@ -7,7 +7,6 @@ import type {
   IsoMdocDcApiResponse,
   ValidityInfoOptions,
 } from '@owf/mdoc'
-import type { DcqlQuery } from 'dcql'
 import type { NonEmptyArray } from '../../types'
 import type { CredentialMultiInstanceUseMode } from '../../utils/credentialUseTypes'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
@@ -96,16 +95,6 @@ export type MdocDeviceResponseOptions = {
 export type MdocDeviceResponsePresentationDefinitionOptions = {
   mdocs: [Mdoc, ...Mdoc[]]
   presentationDefinition: DifPresentationExchangeDefinition
-  deviceNameSpaces?: MdocNameSpaces
-  sessionTranscriptOptions: MdocSessionTranscriptOptions
-}
-
-/**
- * @deprecated only used by the deprecated `MdocDeviceResponse.createDeviceResponseWithDcqlQuery`.
- */
-export type MdocDeviceResponseDcqlQueryOptions = {
-  mdocs: [Mdoc, ...Mdoc[]]
-  dcqlQuery: DcqlQuery
   deviceNameSpaces?: MdocNameSpaces
   sessionTranscriptOptions: MdocSessionTranscriptOptions
 }

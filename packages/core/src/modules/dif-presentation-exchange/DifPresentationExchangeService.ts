@@ -1,31 +1,39 @@
-import type { Checked, PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@animo-id/pex'
-import { PEX, Status } from '@animo-id/pex'
-import { type PartialSdJwtDecodedVerifiableCredential, PEVersion } from '@animo-id/pex/dist/main/lib/index.js'
-import type { InputDescriptorV2 } from '@sphereon/pex-models'
-import type {
-  SdJwtDecodedVerifiableCredential,
-  W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
-  W3CVerifiablePresentation,
-} from '@sphereon/ssi-types'
+import {
+  createPresentationSubmission,
+  type FieldMatch,
+  getEffectiveFormat,
+  getPresentationDefinitionIssues,
+  getPresentationFormat,
+  type InputDescriptorV2,
+  type ParsedPresentationDefinition,
+  type PresentationSubmissionEntry,
+  presentationSubmissionModel,
+  runPexQuery,
+  safeParsePresentationDefinition,
+} from 'presentation-exchange'
 import type { AgentContext } from '../../agent'
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query } from '../../storage/StorageService'
-import { JsonTransformer } from '../../utils'
+import { asArray, dateToSeconds, JsonTransformer } from '../../utils'
 import { uuid } from '../../utils/uuid'
 import type { VerificationMethod } from '../dids'
 import { DidsApi, getPublicJwkFromVerificationMethod } from '../dids'
 import { getJwkHumanDescription } from '../kms'
 import { MdocApi, MdocRecord, type MdocSessionTranscriptOptions } from '../mdoc'
 import { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
+import { fieldMatchesToDocumentRequest } from '../mdoc/utils/inputDescriptorToDocumentRequest'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
 import { SdJwtVcApi } from '../sd-jwt-vc'
+import { buildDisclosureFrameForPayload, buildPresentationFrameForPaths } from '../sd-jwt-vc/disclosureFrame'
 import type { W3cCredentialRecord, W3cJsonPresentation } from '../vc'
 import {
   ClaimFormat,
   SignatureSuiteRegistry,
   W3cCredentialRepository,
   W3cCredentialService,
+  W3cJsonLdVerifiablePresentation,
+  W3cJwtVerifiablePresentation,
   W3cPresentation,
 } from '../vc'
 import type { IAnonCredsW3cCredentialService } from '../vc/anoncreds-w3c-credential'
@@ -36,12 +44,13 @@ import {
 import { purposes } from '../vc/linked-data-proofs/adapters/jsonld-signatures-adapter'
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import type {
-  DifPexCredentialsForRequest,
   DifPexInputDescriptorToCredentials,
+  DifPexQueryResult,
   DifPresentationExchangeDefinition,
   DifPresentationExchangeDefinitionV1,
   DifPresentationExchangeDefinitionV2,
   DifPresentationExchangeSubmission,
+  SubmissionEntryCredential,
   VerifiablePresentation,
 } from './models'
 import { DifPresentationExchangeSubmissionLocation } from './models'
@@ -49,101 +58,96 @@ import type { PresentationToCreate } from './utils'
 import {
   getCredentialsForRequest,
   getPresentationsToCreate,
-  getSphereonOriginalVerifiableCredential,
-  getSphereonOriginalVerifiablePresentation,
   getVerifiablePresentationFromEncoded,
+  selectCredentialsForRequest,
 } from './utils'
+import {
+  formatMismatchReasons,
+  getPexCredentialsForRecords,
+  runPexPresentationSubmission,
+} from './utils/pexCredentials'
+
+const PRESENTATION_SUBMISSION_CONTEXT_URL = 'https://identity.foundation/presentation-exchange/submission/v1'
 
 /**
  * @todo create a public api for using dif presentation exchange
  */
 @injectable()
 export class DifPresentationExchangeService {
-  private pex = new PEX()
-
   public constructor(private w3cCredentialService: W3cCredentialService) {}
 
+  /**
+   * Queries the credentials in the wallet with the presentation definition. For each input descriptor this
+   * returns the credentials that satisfy it, and the ones that don't with the reasons why, so a wallet can
+   * show what is missing. Also when the presentation definition can't be satisfied.
+   */
   public async getCredentialsForRequest(
     agentContext: AgentContext,
     presentationDefinition: DifPresentationExchangeDefinition
-  ): Promise<DifPexCredentialsForRequest> {
-    const credentialRecords = await this.queryCredentialForPresentationDefinition(agentContext, presentationDefinition)
-    return getCredentialsForRequest(agentContext, this.pex, presentationDefinition, credentialRecords)
+  ): Promise<DifPexQueryResult> {
+    const parsedDefinition = this.parsePresentationDefinition(presentationDefinition)
+    const credentialRecords = await this.queryCredentialForPresentationDefinition(agentContext, parsedDefinition)
+    return getCredentialsForRequest(parsedDefinition, credentialRecords)
   }
 
   /**
    * Selects the credentials to use based on the output from `getCredentialsForRequest`
    * Use this method if you don't want to manually select the credentials yourself.
    */
-  public selectCredentialsForRequest(
-    credentialsForRequest: DifPexCredentialsForRequest
-  ): DifPexInputDescriptorToCredentials {
-    if (!credentialsForRequest.areRequirementsSatisfied) {
-      throw new CredoError('Could not find the required credentials for the presentation submission')
-    }
-
-    const credentials: DifPexInputDescriptorToCredentials = {}
-
-    for (const requirement of credentialsForRequest.requirements) {
-      // Take needsCount entries from the submission entry
-      for (const submission of requirement.submissionEntry.slice(0, requirement.needsCount)) {
-        if (!credentials[submission.inputDescriptorId]) {
-          credentials[submission.inputDescriptorId] = []
-        }
-
-        // We pick the first matching VC if we are auto-selecting
-        credentials[submission.inputDescriptorId].push(submission.verifiableCredentials[0])
-      }
-    }
-
-    return credentials
+  public selectCredentialsForRequest(queryResult: DifPexQueryResult): DifPexInputDescriptorToCredentials {
+    return selectCredentialsForRequest(queryResult)
   }
 
   public validatePresentationDefinition(presentationDefinition: DifPresentationExchangeDefinition) {
-    const validation = PEX.validateDefinition(presentationDefinition)
-    const errorMessages = this.formatValidated(validation)
-
-    if (errorMessages.length > 0) {
-      throw new DifPresentationExchangeError('Invalid presentation definition', { additionalMessages: errorMessages })
-    }
+    this.parsePresentationDefinition(presentationDefinition)
   }
 
   public validatePresentationSubmission(presentationSubmission: DifPresentationExchangeSubmission) {
-    const validation = PEX.validateSubmission(presentationSubmission)
-    const errorMessages = this.formatValidated(validation)
-    if (errorMessages.length > 0) {
-      throw new DifPresentationExchangeError('Invalid presentation submission', { additionalMessages: errorMessages })
+    const result = presentationSubmissionModel.safeParse(presentationSubmission)
+    if (!result.success) {
+      throw new DifPresentationExchangeError('Invalid presentation submission', {
+        additionalMessages: [result.message],
+      })
     }
   }
 
+  /**
+   * Checks that the presentations satisfy the presentation definition. Every credential is checked against
+   * the input descriptor its `descriptor_map` entry claims it satisfies, and the satisfied input descriptors
+   * against the submission requirements.
+   *
+   * Without `presentationSubmission`, the presentation must be a single W3C presentation that embeds it.
+   *
+   * This does not verify the presentations themselves (signatures, holder binding).
+   */
   public validatePresentation(
     presentationDefinition: DifPresentationExchangeDefinition,
     presentations: VerifiablePresentation | VerifiablePresentation[],
     presentationSubmission?: DifPresentationExchangeSubmission
   ) {
-    const result = this.pex.evaluatePresentation(
-      presentationDefinition,
-      Array.isArray(presentations)
-        ? presentations.map(getSphereonOriginalVerifiablePresentation)
-        : getSphereonOriginalVerifiablePresentation(presentations),
-      {
-        limitDisclosureSignatureSuites: ['DataIntegrityProof.anoncreds-2023'],
-        presentationSubmission,
-      }
-    )
+    const parsedDefinition = this.parsePresentationDefinition(presentationDefinition)
+    const presentationsArray = asArray(presentations)
+    const submission = presentationSubmission ?? this.getEmbeddedPresentationSubmission(presentationsArray)
 
-    if (result.areRequiredCredentialsPresent === Status.ERROR) {
-      const errorMessages = this.formatValidated(result.errors)
-      throw new DifPresentationExchangeError('Invalid presentation', { additionalMessages: errorMessages })
+    const result = runPexPresentationSubmission(parsedDefinition, submission, presentationsArray)
+
+    if (!result.valid) {
+      const errorMessages = [
+        ...result.issues,
+        ...result.descriptors
+          .filter((descriptor) => !descriptor.satisfied)
+          .flatMap((descriptor) =>
+            formatMismatchReasons(descriptor).map(
+              (reason) => `Descriptor ${descriptor.descriptor_index} ('${descriptor.input_descriptor_id}'): ${reason}`
+            )
+          ),
+      ]
+
+      throw new DifPresentationExchangeError('Invalid presentation', {
+        additionalMessages:
+          errorMessages.length > 0 ? errorMessages : ['Presentations do not satisfy the submission requirements'],
+      })
     }
-  }
-
-  private formatValidated(v?: Checked[] | Validated) {
-    const validated = Array.isArray(v) ? v : v ? [v] : []
-    return validated
-      .filter((r) => r.status === Status.ERROR)
-      .map((r) => r.message)
-      .filter((r): r is string => Boolean(r))
   }
 
   public async createPresentation(
@@ -152,7 +156,7 @@ export class DifPresentationExchangeService {
       credentialsForInputDescriptor: DifPexInputDescriptorToCredentials
       presentationDefinition: DifPresentationExchangeDefinition
       /**
-       * Defaults to {@link DifPresentationExchangeSubmissionLocation.PRESENTATION}
+       * Defaults to {@link DifPresentationExchangeSubmissionLocation.Presentation}
        */
       presentationSubmissionLocation?: DifPresentationExchangeSubmissionLocation
       /**
@@ -173,29 +177,42 @@ export class DifPresentationExchangeService {
   ) {
     const { presentationDefinition, domain, challenge, mdocSessionTranscript } = options
     const presentationSubmissionLocation =
-      options.presentationSubmissionLocation ?? DifPresentationExchangeSubmissionLocation.PRESENTATION
+      options.presentationSubmissionLocation ?? DifPresentationExchangeSubmissionLocation.Presentation
+    const isExternal = presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.External
+    const parsedDefinition = this.parsePresentationDefinition(presentationDefinition)
 
-    const verifiablePresentationResultsWithFormat: Array<{
-      verifiablePresentationResult: VerifiablePresentationResult
-      claimFormat: PresentationToCreate['claimFormat']
-    }> = []
+    const getMatch = this.assertCredentialsSatisfyInputDescriptors(
+      parsedDefinition,
+      options.credentialsForInputDescriptor
+    )
 
     const presentationsToCreate = getPresentationsToCreate(options.credentialsForInputDescriptor)
-    for (const presentationToCreate of presentationsToCreate) {
-      // We create a presentation for each subject
-      // Thus for each subject we need to filter all the related input descriptors and credentials
-      const inputDescriptorIds = presentationToCreate.verifiableCredentials.map((c) => c.inputDescriptorId)
-      const inputDescriptorsForPresentation = (
-        presentationDefinition as DifPresentationExchangeDefinitionV1
-      ).input_descriptors.filter((inputDescriptor) => inputDescriptorIds.includes(inputDescriptor.id))
+    if (presentationsToCreate.length === 0) {
+      throw new DifPresentationExchangeError('No verifiable presentations created')
+    }
 
-      const presentationDefinitionForSubject: DifPresentationExchangeDefinition = {
-        ...presentationDefinition,
-        input_descriptors: inputDescriptorsForPresentation,
+    const presentationSubmission: DifPresentationExchangeSubmission = {
+      id: uuid(),
+      definition_id: presentationDefinition.id,
+      descriptor_map: [],
+    }
+    const encodedVerifiablePresentations: Array<string | W3cJsonPresentation> = []
 
-        // We remove the submission requirements, as it will otherwise fail to create the VP
-        submission_requirements: undefined,
-      }
+    for (const [presentationIndex, presentationToCreate] of presentationsToCreate.entries()) {
+      // when multiple presentations are submitted externally, paths are $[0], $[1]
+      const entries = presentationToCreate.verifiableCredentials.map(
+        ({ credential, inputDescriptorId }, credentialIndex): PresentationSubmissionEntry => ({
+          input_descriptor_id: inputDescriptorId,
+          format: getMatch(inputDescriptorId, credential).format,
+          presentation_index: isExternal && presentationsToCreate.length > 1 ? presentationIndex : undefined,
+          credential_index: credentialIndex,
+        })
+      )
+      const submissionForPresentation = createPresentationSubmission(parsedDefinition.definition, {
+        id: presentationSubmission.id,
+        location: presentationSubmissionLocation,
+        entries,
+      })
 
       if (presentationToCreate.claimFormat === ClaimFormat.MsoMdoc) {
         if (presentationToCreate.verifiableCredentials.length !== 1) {
@@ -210,125 +227,360 @@ export class DifPresentationExchangeService {
           )
         }
 
-        const { credential, inputDescriptorId } = presentationToCreate.verifiableCredentials[0]
-
-        const deviceResponse = await MdocDeviceResponse.createDeviceResponseWithPresentationDefinition(agentContext, {
-          mdocs: [credential.firstCredential],
-          presentationDefinition,
-          sessionTranscriptOptions: mdocSessionTranscript,
-        })
-
-        if (presentationSubmissionLocation !== DifPresentationExchangeSubmissionLocation.EXTERNAL) {
+        if (!isExternal) {
           throw new DifPresentationExchangeError(
-            'Only EXTERNAL DifPresentationExchangeSubmissionLocation supported for mdoc presentations'
+            'Only the External DifPresentationExchangeSubmissionLocation is supported for mdoc presentations'
           )
         }
 
-        verifiablePresentationResultsWithFormat.push({
-          verifiablePresentationResult: {
-            presentationSubmission: {
-              id: `MdocPresentationSubmission ${uuid()}`,
-              definition_id: presentationDefinition.id,
-              descriptor_map: [
-                {
-                  id: inputDescriptorId,
-                  format: 'mso_mdoc',
-                  path: '$',
-                },
-              ],
-            },
-            verifiablePresentations: [deviceResponse.encoded],
-            presentationSubmissionLocation,
-          },
-          claimFormat: presentationToCreate.claimFormat,
+        // Requests the data elements the fields matched, which is also what querying showed. The input descriptor id
+        // is the doctype (ISO 18013-7).
+        const { credential, inputDescriptorId } = presentationToCreate.verifiableCredentials[0]
+        const mdoc = credential.firstCredential
+        const documentRequest = fieldMatchesToDocumentRequest(
+          inputDescriptorId,
+          getMatch(inputDescriptorId, credential).fields
+        )
+        if (!documentRequest) {
+          throw new DifPresentationExchangeError(
+            `Input descriptor '${inputDescriptorId}' requests no data element of the mdoc. A field path must address one, such as $['org.iso.18013.5.1']['family_name']`
+          )
+        }
+
+        const deviceResponse = await MdocDeviceResponse.createDeviceResponse(agentContext, {
+          mdocs: [mdoc],
+          documentRequests: [documentRequest],
+          sessionTranscriptOptions: mdocSessionTranscript,
         })
+
+        encodedVerifiablePresentations.push(deviceResponse.encoded)
+      } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtDc) {
+        if (!isExternal) {
+          throw new DifPresentationExchangeError(
+            'Only the External DifPresentationExchangeSubmissionLocation is supported for SD-JWT VC presentations'
+          )
+        }
+
+        encodedVerifiablePresentations.push(
+          await this.createSdJwtVcPresentation(agentContext, presentationToCreate, { challenge, domain })
+        )
       } else {
-        // Get all the credentials for the presentation
-        const credentialsForPresentation = presentationToCreate.verifiableCredentials.map((c) =>
-          getSphereonOriginalVerifiableCredential(c.credential)
-        )
+        // We create a presentation for each subject, with only the input descriptors of its credentials
+        const inputDescriptorIds = presentationToCreate.verifiableCredentials.map((c) => c.inputDescriptorId)
+        const presentationDefinitionForSubject = {
+          ...presentationDefinition,
+          input_descriptors: presentationDefinition.input_descriptors.filter((inputDescriptor) =>
+            inputDescriptorIds.includes(inputDescriptor.id)
+          ),
+          submission_requirements: undefined,
+        } as DifPresentationExchangeDefinition
 
-        const extraProofOptions = this.shouldSignWithAnonCredsW3cService(presentationToCreate)
-          ? {
-              typeSupportsSelectiveDisclosure: true,
-              type: `DataIntegrityProof.${ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE}`,
-            }
-          : {}
+        if (this.shouldSignWithAnonCredsW3cService(presentationToCreate, submissionForPresentation)) {
+          // make sure the descriptors format properties are set correctly
+          submissionForPresentation.descriptor_map = submissionForPresentation.descriptor_map.map((descriptor) => ({
+            ...descriptor,
+            format: 'di_vp',
+          }))
+        }
 
-        const verifiablePresentationResult = await this.pex.verifiablePresentationFrom(
-          presentationDefinitionForSubject,
-          credentialsForPresentation,
-          this.getPresentationSignCallback(agentContext, presentationToCreate),
-          {
-            proofOptions: {
-              challenge,
-              domain,
-
-              ...extraProofOptions,
-            },
+        encodedVerifiablePresentations.push(
+          await this.createW3cPresentation(agentContext, presentationToCreate, {
+            presentationDefinition: presentationDefinitionForSubject,
+            credentialFormats: entries.map(({ format }) => format),
+            presentationSubmission: submissionForPresentation,
             presentationSubmissionLocation,
-          }
+            challenge,
+            domain,
+          })
         )
+      }
 
-        verifiablePresentationResultsWithFormat.push({
-          verifiablePresentationResult,
-          claimFormat: presentationToCreate.claimFormat,
-        })
+      presentationSubmission.descriptor_map.push(...submissionForPresentation.descriptor_map)
+    }
+
+    return {
+      verifiablePresentations: encodedVerifiablePresentations.map((encoded) =>
+        getVerifiablePresentationFromEncoded(agentContext, encoded)
+      ),
+      encodedVerifiablePresentations,
+      presentationSubmission,
+      presentationSubmissionLocation,
+    }
+  }
+
+  /**
+   * Checks the selected credentials against the input descriptors they are selected for, as these can be
+   * selected by hand. Whether they satisfy the submission requirements is left to the verifier.
+   *
+   * Returns a function giving how a credential satisfies an input descriptor: the format designation to present it
+   * under, the most preferred one it satisfies, and the fields it matched. The input descriptor can restrict designations differently, such as
+   * `vc+sd-jwt` and `dc+sd-jwt`, so this is not always the first one it allows.
+   */
+  private assertCredentialsSatisfyInputDescriptors(
+    parsedDefinition: ParsedPresentationDefinition,
+    credentialsForInputDescriptor: DifPexInputDescriptorToCredentials
+  ) {
+    const parsed = parsedDefinition
+    const errorMessages: string[] = []
+    type Match = { format: PresentationSubmissionEntry['format']; fields: FieldMatch[] }
+    const matches = new Map<string, Map<SubmissionEntryCredential['credentialRecord'], Match>>()
+
+    for (const [inputDescriptorId, credentials] of Object.entries(credentialsForInputDescriptor)) {
+      const inputDescriptor = parsed.definition.input_descriptors.find(({ id }) => id === inputDescriptorId)
+      if (!inputDescriptor) {
+        errorMessages.push(`Input descriptor '${inputDescriptorId}' is not in the presentation definition`)
+        continue
+      }
+
+      const records = credentials.map(({ credentialRecord }) => credentialRecord)
+      const { credentials: pexCredentials, recordIndexes } = getPexCredentialsForRecords(records)
+      const [result] = runPexQuery(
+        {
+          ...parsed,
+          definition: {
+            ...parsed.definition,
+            input_descriptors: [inputDescriptor],
+            submission_requirements: undefined,
+          },
+        } as ParsedPresentationDefinition,
+        { credentials: pexCredentials }
+      ).input_descriptors
+
+      const matchForRecord = new Map<SubmissionEntryCredential['credentialRecord'], Match>()
+      matches.set(inputDescriptorId, matchForRecord)
+
+      for (const [recordIndex, record] of records.entries()) {
+        const recordMatches = result.matching_credentials
+          .filter(({ credential_index }) => recordIndexes[credential_index] === recordIndex)
+          .sort((a, b) => a.credential_index - b.credential_index)
+        // A credential is only offered under credential designations, see `getPexCredentialsForRecords`
+        const designations = recordMatches.map(
+          ({ credential_index }) =>
+            pexCredentials[credential_index].credential_format as PresentationSubmissionEntry['format']
+        )
+        if (recordMatches.length > 0) {
+          const format = this.getPreferredFormatDesignation(parsed.definition, inputDescriptor, designations)
+          matchForRecord.set(record, { format, fields: recordMatches[designations.indexOf(format)].fields })
+          continue
+        }
+
+        errorMessages.push(
+          ...result.non_matching_credentials
+            .filter(({ credential_index }) => recordIndexes[credential_index] === recordIndex)
+            .flatMap(formatMismatchReasons)
+            .map((issue) => `Credential ${record.id} for input descriptor '${inputDescriptorId}': ${issue}`)
+        )
       }
     }
 
-    if (verifiablePresentationResultsWithFormat.length === 0) {
-      throw new DifPresentationExchangeError('No verifiable presentations created')
+    if (errorMessages.length > 0) {
+      throw new DifPresentationExchangeError(
+        'Could not create presentation, selected credentials do not satisfy the presentation definition',
+        { additionalMessages: errorMessages }
+      )
     }
 
-    if (presentationsToCreate.length !== verifiablePresentationResultsWithFormat.length) {
-      throw new DifPresentationExchangeError('Invalid amount of verifiable presentations created')
+    return (inputDescriptorId: string, record: SubmissionEntryCredential['credentialRecord']) => {
+      const match = matches.get(inputDescriptorId)?.get(record)
+      if (!match) {
+        throw new DifPresentationExchangeError(
+          `Credential ${record.id} was not checked against input descriptor '${inputDescriptorId}'`
+        )
+      }
+      return match
+    }
+  }
+
+  /**
+   * The designation to present a credential under, of the `designations` it satisfies an input descriptor under.
+   *
+   * A presentation format such as `jwt_vp_json` also admits the credential formats it carries, so a credential can
+   * satisfy a format that doesn't name its designation. The designation the format names, either itself or through
+   * its presentation format, is used. Otherwise, or when it names several, the most preferred one is used, as the
+   * credentials of a record are ordered by preference.
+   */
+  private getPreferredFormatDesignation(
+    definition: ParsedPresentationDefinition['definition'],
+    inputDescriptor: ParsedPresentationDefinition['definition']['input_descriptors'][number],
+    designations: PresentationSubmissionEntry['format'][]
+  ) {
+    const format = getEffectiveFormat(definition, inputDescriptor) ?? {}
+    const isNamed = (designation: PresentationSubmissionEntry['format']) =>
+      designation in format || getPresentationFormat(designation).presentationFormat in format
+
+    return designations.find(isNamed) ?? designations[0]
+  }
+
+  private parsePresentationDefinition(
+    presentationDefinition: DifPresentationExchangeDefinition
+  ): ParsedPresentationDefinition {
+    const result = safeParsePresentationDefinition(presentationDefinition)
+    if (!result.success) {
+      throw new DifPresentationExchangeError('Invalid presentation definition', {
+        additionalMessages: [result.message],
+      })
     }
 
-    const presentationSubmission: DifPresentationExchangeSubmission = {
-      id: verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.id,
-      definition_id:
-        verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.definition_id,
-      descriptor_map: [],
+    // Parsing only checks the structure. These are the checks that need the whole definition, such as duplicate
+    // input descriptor ids, or submission requirements that reference an undeclared group or have min > max.
+    const issues = getPresentationDefinitionIssues(result.definition)
+    if (issues.length > 0) {
+      throw new DifPresentationExchangeError('Invalid presentation definition', {
+        additionalMessages: issues.map((issue) => `${issue.path}: ${issue.message}`),
+      })
     }
 
-    verifiablePresentationResultsWithFormat.forEach(({ verifiablePresentationResult }, index) => {
-      const descriptorMap = verifiablePresentationResult.presentationSubmission.descriptor_map.map((d) => {
-        const descriptor = { ...d }
+    return { version: result.version, definition: result.definition } as ParsedPresentationDefinition
+  }
 
-        // when multiple presentations are submitted, path should be $[0], $[1]
-        // FIXME: this should be addressed in the PEX/OID4VP lib.
-        // See https://github.com/Sphereon-Opensource/SIOP-OID4VP/issues/62
-        if (
-          presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.EXTERNAL &&
-          verifiablePresentationResultsWithFormat.length > 1
-        ) {
-          descriptor.path = `$[${index}]`
-        }
+  /**
+   * The presentation submission embedded in a single W3C presentation, as in the DIDComm attachment.
+   */
+  private getEmbeddedPresentationSubmission(presentations: VerifiablePresentation[]) {
+    const [presentation, ...otherPresentations] = presentations
+    if (
+      otherPresentations.length > 0 ||
+      !(presentation instanceof W3cJwtVerifiablePresentation || presentation instanceof W3cJsonLdVerifiablePresentation)
+    ) {
+      throw new DifPresentationExchangeError(
+        'A presentation submission is required, unless it is embedded in a single W3C presentation'
+      )
+    }
 
-        return descriptor
+    const json =
+      presentation instanceof W3cJwtVerifiablePresentation ? presentation.presentation.toJSON() : presentation.toJSON()
+    const submission = json.presentation_submission
+    if (!submission) {
+      throw new DifPresentationExchangeError('Presentation does not contain a presentation submission')
+    }
+
+    this.validatePresentationSubmission(submission)
+    return submission
+  }
+
+  private async createSdJwtVcPresentation(
+    agentContext: AgentContext,
+    presentationToCreate: Extract<PresentationToCreate, { claimFormat: ClaimFormat.SdJwtDc }>,
+    { challenge, domain }: { challenge: string; domain?: string }
+  ) {
+    if (!domain) {
+      throw new CredoError("Missing 'domain' property, unable to set required 'aud' property in SD-JWT KB-JWT")
+    }
+
+    const { credential, disclosedPaths, disclosedPayload, additionalPayload } =
+      presentationToCreate.verifiableCredentials[0]
+
+    // NOTE: we use the first credential instance. We don't support the new useMode (for single-use credentials) for PEX
+    const sdJwtVc = credential.firstCredential
+    const presentationFrame = disclosedPaths
+      ? buildPresentationFrameForPaths(sdJwtVc.compact, disclosedPaths)
+      : buildDisclosureFrameForPayload(disclosedPayload)
+
+    return this.getSdJwtVcApi(agentContext).present({
+      sdJwtVc,
+      presentationFrame,
+      verifierMetadata: {
+        audience: domain,
+        nonce: challenge,
+        // TODO: we should make this optional
+        issuedAt: dateToSeconds(new Date()),
+      },
+      additionalPayload,
+    })
+  }
+
+  private async createW3cPresentation(
+    agentContext: AgentContext,
+    presentationToCreate: Extract<PresentationToCreate, { claimFormat: ClaimFormat.JwtVp | ClaimFormat.LdpVp }>,
+    options: {
+      presentationDefinition: DifPresentationExchangeDefinition
+      // The format designations the credentials are presented under
+      credentialFormats: string[]
+      presentationSubmission: DifPresentationExchangeSubmission
+      presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation
+      challenge: string
+      domain?: string
+    }
+  ): Promise<string | W3cJsonPresentation> {
+    const { presentationDefinition, credentialFormats, presentationSubmission, challenge, domain } = options
+
+    if (!challenge) {
+      throw new CredoError('challenge MUST be provided when signing a Verifiable Presentation')
+    }
+
+    if (
+      presentationToCreate.claimFormat === ClaimFormat.LdpVp &&
+      this.shouldSignWithAnonCredsW3cService(presentationToCreate, presentationSubmission)
+    ) {
+      const anoncredsW3cCredentialService = agentContext.dependencyManager.resolve<IAnonCredsW3cCredentialService>(
+        AnonCredsW3cCredentialServiceSymbol
+      )
+      const presentation = await anoncredsW3cCredentialService.createPresentation(agentContext, {
+        presentationDefinition,
+        presentationSubmission,
+        selectedCredentialRecords: presentationToCreate.verifiableCredentials.map((vc) => vc.credential),
+        challenge,
+      })
+      return {
+        ...presentation.toJSON(),
+        presentation_submission: presentationSubmission,
+      } as W3cJsonPresentation
+    }
+
+    if (!presentationToCreate.subjectIds) {
+      throw new DifPresentationExchangeError('Cannot create presentation for credentials without subject id')
+    }
+
+    // Determine a suitable verification method for the presentation
+    const verificationMethod = await this.getVerificationMethodForSubjectId(
+      agentContext,
+      presentationToCreate.subjectIds[0]
+    )
+
+    const isEmbedded = options.presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.Presentation
+    const w3cPresentation = JsonTransformer.fromJSON(
+      {
+        '@context': [
+          'https://www.w3.org/2018/credentials/v1',
+          ...(isEmbedded ? [PRESENTATION_SUBMISSION_CONTEXT_URL] : []),
+        ],
+        type: ['VerifiablePresentation', ...(isEmbedded ? ['PresentationSubmission'] : [])],
+        ...(isEmbedded && { presentation_submission: presentationSubmission }),
+        verifiableCredential: presentationToCreate.verifiableCredentials.map(
+          ({ credential }) => credential.firstCredential.encoded
+        ),
+      },
+      W3cPresentation
+    )
+    w3cPresentation.holder = verificationMethod.controller
+
+    if (presentationToCreate.claimFormat === ClaimFormat.JwtVp) {
+      const signedPresentation = await this.w3cCredentialService.signPresentation<ClaimFormat.JwtVp>(agentContext, {
+        format: ClaimFormat.JwtVp,
+        alg: this.getSigningAlgorithmForJwtVp(presentationDefinition, credentialFormats, verificationMethod),
+        verificationMethod: verificationMethod.id,
+        presentation: w3cPresentation,
+        challenge,
+        domain,
       })
 
-      presentationSubmission.descriptor_map.push(...descriptorMap)
+      return signedPresentation.encoded
+    }
+
+    const signedPresentation = await this.w3cCredentialService.signPresentation(agentContext, {
+      format: ClaimFormat.LdpVp,
+      // TODO: we should move the check for which proof to use for a presentation to earlier
+      // as then we know when determining which VPs to submit already if the proof types are supported
+      // by the verifier, and we can then just add this to the vpToCreate interface
+      proofType: this.getProofTypeForLdpVp(agentContext, presentationDefinition, verificationMethod),
+      proofPurpose: new purposes.AuthenticationProofPurpose({ challenge, domain }),
+      verificationMethod: verificationMethod.id,
+      presentation: w3cPresentation,
+      challenge,
+      domain,
     })
 
-    return {
-      verifiablePresentations: verifiablePresentationResultsWithFormat.flatMap((resultWithFormat) =>
-        resultWithFormat.verifiablePresentationResult.verifiablePresentations.map((vp) =>
-          getVerifiablePresentationFromEncoded(agentContext, vp)
-        )
-      ),
-      encodedVerifiablePresentations: verifiablePresentationResultsWithFormat.flatMap(
-        (resultWithFormat) =>
-          resultWithFormat.verifiablePresentationResult.verifiablePresentations as unknown as (
-            | string
-            | W3cJsonPresentation
-          )[]
-      ),
-      presentationSubmission,
-      presentationSubmissionLocation:
-        verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmissionLocation,
-    }
+    return signedPresentation.encoded as W3cJsonPresentation
   }
 
   private getSigningAlgorithmFromVerificationMethod(
@@ -398,72 +650,114 @@ export class DifPresentationExchangeService {
     return suitableAlgorithms
   }
 
-  private getSigningAlgorithmForJwtVc(
+  /**
+   * What the formats of the presentation definition and its input descriptors restrict for a presentation, for the
+   * `property` of a format designation (such as `alg`).
+   *
+   * The presentation must use one of the `required` values: those of the presentation formats (such as `jwt_vp`),
+   * which restrict the presentation itself. The `preferred` values are those of the credential formats (such as
+   * `jwt_vc`), which restrict the credentials. Verifiers often only restrict those, and then likely accept them for
+   * the presentation as well.
+   */
+  private getPresentationFormatRestrictions(
     presentationDefinition: DifPresentationExchangeDefinitionV1 | DifPresentationExchangeDefinitionV2,
-    verificationMethod: VerificationMethod
+    {
+      presentationFormats,
+      credentialFormats,
+      property,
+    }: { presentationFormats: string[]; credentialFormats: string[]; property: 'alg' | 'proof_type' }
   ) {
-    const algorithmsSatisfyingDefinition = presentationDefinition.format?.jwt_vc?.alg ?? []
+    type Format = Record<string, Partial<Record<typeof property, string[]>> | undefined> | undefined
+    const getValues = (format: Format, designations: string[]) =>
+      designations.flatMap((designation) => format?.[designation]?.[property] ?? [])
 
-    const inputDescriptorAlgorithms: Array<Array<string>> = presentationDefinition.input_descriptors
-      .map((descriptor) => (descriptor as InputDescriptorV2).format?.jwt_vc?.alg ?? [])
-      .filter((alg) => alg.length > 0)
-
-    const suitableAlgorithms = this.getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
-      algorithmsSatisfyingDefinition,
-      inputDescriptorAlgorithms
+    const formats = presentationDefinition.input_descriptors.map(
+      (inputDescriptor) => (inputDescriptor as InputDescriptorV2).format as Format
     )
+    const definitionFormat = presentationDefinition.format as Format
 
-    return this.getSigningAlgorithmFromVerificationMethod(verificationMethod, suitableAlgorithms)
+    const required = this.getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
+      getValues(definitionFormat, presentationFormats),
+      formats.map((format) => getValues(format, presentationFormats)).filter((values) => values.length > 0)
+    )
+    const preferred = [definitionFormat, ...formats].flatMap((format) => getValues(format, credentialFormats))
+
+    return { required, preferred }
   }
 
-  private getProofTypeForLdpVc(
+  /**
+   * The algorithm to sign a JWT VP with: one the `jwt_vp` (or for `jwt_vc_json` credentials `jwt_vp_json`) format
+   * allows. Without such a restriction, one the `jwt_vc` (or `jwt_vc_json`) format allows is preferred, and otherwise
+   * the default algorithm of the key is used.
+   */
+  private getSigningAlgorithmForJwtVp(
+    presentationDefinition: DifPresentationExchangeDefinitionV1 | DifPresentationExchangeDefinitionV2,
+    credentialFormats: string[],
+    verificationMethod: VerificationMethod
+  ) {
+    const { required, preferred } = this.getPresentationFormatRestrictions(presentationDefinition, {
+      presentationFormats: [
+        ...new Set(credentialFormats.map((format) => (format === 'jwt_vc_json' ? 'jwt_vp_json' : 'jwt_vp'))),
+      ],
+      credentialFormats,
+      property: 'alg',
+    })
+    if (required) return this.getSigningAlgorithmFromVerificationMethod(verificationMethod, required)
+
+    // The first algorithm the verifier lists that the key supports
+    const { supportedSignatureAlgorithms, signatureAlgorithm } = getPublicJwkFromVerificationMethod(verificationMethod)
+    const algorithm = preferred
+      .map((preferredAlgorithm) => supportedSignatureAlgorithms.find((supported) => supported === preferredAlgorithm))
+      .find((supported) => supported !== undefined)
+
+    return algorithm ?? signatureAlgorithm
+  }
+
+  /**
+   * The proof type to sign an LDP VP with: one the `ldp_vp` format allows. Without such a restriction, one the
+   * `ldp_vc` format allows is preferred, and otherwise the first signature suite for the key is used.
+   */
+  private getProofTypeForLdpVp(
     agentContext: AgentContext,
     presentationDefinition: DifPresentationExchangeDefinitionV1 | DifPresentationExchangeDefinitionV2,
     verificationMethod: VerificationMethod
   ) {
-    const algorithmsSatisfyingDefinition = presentationDefinition.format?.ldp_vc?.proof_type ?? []
+    const { required, preferred } = this.getPresentationFormatRestrictions(presentationDefinition, {
+      presentationFormats: ['ldp_vp'],
+      credentialFormats: ['ldp_vc'],
+      property: 'proof_type',
+    })
 
-    const inputDescriptorAlgorithms: Array<Array<string>> = presentationDefinition.input_descriptors
-      .map((descriptor) => (descriptor as InputDescriptorV2).format?.ldp_vc?.proof_type ?? [])
-      .filter((alg) => alg.length > 0)
-
-    const suitableSignatureSuites = this.getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
-      algorithmsSatisfyingDefinition,
-      inputDescriptorAlgorithms
-    )
-
-    // For each of the supported algs, find the key types, then find the proof types
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
-
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-    const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwkType(publicJwk)
-    if (supportedSignatureSuites.length === 0) {
+    // The suites that can sign with the verification method: those for its key that accept its type
+    const supportedProofTypes = signatureSuiteRegistry
+      .getAllByPublicJwkType(publicJwk)
+      .filter(({ verificationMethodTypes }) => verificationMethodTypes.includes(verificationMethod.type))
+      .map(({ proofType }) => proofType)
+    if (supportedProofTypes.length === 0) {
       throw new DifPresentationExchangeError(
-        `Couldn't find a supported signature suite for the given jwk ${getJwkHumanDescription(publicJwk.toJson())}`
+        `Couldn't find a supported signature suite for verification method type '${verificationMethod.type}' and jwk ${getJwkHumanDescription(publicJwk.toJson())}`
       )
     }
 
-    if (suitableSignatureSuites) {
-      const foundSignatureSuite = supportedSignatureSuites.find((suite) =>
-        suitableSignatureSuites.includes(suite.proofType)
-      )
-
-      if (!foundSignatureSuite) {
+    if (required) {
+      const proofType = supportedProofTypes.find((supported) => required.includes(supported))
+      if (!proofType) {
         throw new DifPresentationExchangeError(
           [
             'No possible signature suite found for the given verification method.',
             `Verification method type: ${verificationMethod.type}`,
             `jwk type: ${getJwkHumanDescription(publicJwk.toJson())}`,
-            `SupportedSignatureSuites: '${supportedSignatureSuites.map((s) => s.proofType).join(', ')}'`,
-            `SuitableSignatureSuites: ${suitableSignatureSuites.join(', ')}`,
+            `SupportedSignatureSuites: '${supportedProofTypes.join(', ')}'`,
+            `SuitableSignatureSuites: ${required.join(', ')}`,
           ].join('\n')
         )
       }
-
-      return foundSignatureSuite.proofType
+      return proofType
     }
 
-    return supportedSignatureSuites[0].proofType
+    return preferred.find((proofType) => supportedProofTypes.includes(proofType)) ?? supportedProofTypes[0]
   }
 
   /**
@@ -492,132 +786,6 @@ export class DifPresentationExchangeService {
     })
 
     return validDescriptorFormat && credentialsAreSignedWithAnonCredsW3c
-  }
-
-  private getPresentationSignCallback(agentContext: AgentContext, presentationToCreate: PresentationToCreate) {
-    return async (callBackParams: PresentationSignCallBackParams) => {
-      // The created partial proof and presentation, as well as original supplied options
-      const {
-        presentation: presentationInput,
-        options,
-        presentationDefinition,
-        presentationSubmission,
-      } = callBackParams
-      const { challenge, domain } = options.proofOptions ?? {}
-
-      if (!challenge) {
-        throw new CredoError('challenge MUST be provided when signing a Verifiable Presentation')
-      }
-
-      if (presentationToCreate.claimFormat === ClaimFormat.JwtVp) {
-        if (!presentationToCreate.subjectIds) {
-          throw new DifPresentationExchangeError('Cannot create presentation for credentials without subject id')
-        }
-
-        // Determine a suitable verification method for the presentation
-        const verificationMethod = await this.getVerificationMethodForSubjectId(
-          agentContext,
-          presentationToCreate.subjectIds[0]
-        )
-
-        const w3cPresentation = JsonTransformer.fromJSON(presentationInput, W3cPresentation)
-        w3cPresentation.holder = verificationMethod.controller
-
-        const signedPresentation = await this.w3cCredentialService.signPresentation<ClaimFormat.JwtVp>(agentContext, {
-          format: ClaimFormat.JwtVp,
-          alg: this.getSigningAlgorithmForJwtVc(presentationDefinition, verificationMethod),
-          verificationMethod: verificationMethod.id,
-          presentation: w3cPresentation,
-          challenge,
-          domain,
-        })
-
-        return signedPresentation.encoded as W3CVerifiablePresentation
-      }
-      if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
-        if (this.shouldSignWithAnonCredsW3cService(presentationToCreate, presentationSubmission)) {
-          // make sure the descriptors format properties are set correctly
-          presentationSubmission.descriptor_map = presentationSubmission.descriptor_map.map((descriptor) => ({
-            ...descriptor,
-            format: 'di_vp',
-          }))
-          const anoncredsW3cCredentialService = agentContext.dependencyManager.resolve<IAnonCredsW3cCredentialService>(
-            AnonCredsW3cCredentialServiceSymbol
-          )
-          const presentation = await anoncredsW3cCredentialService.createPresentation(agentContext, {
-            presentationDefinition,
-            presentationSubmission,
-            selectedCredentialRecords: presentationToCreate.verifiableCredentials.map((vc) => vc.credential),
-            challenge,
-          })
-          return {
-            ...presentation.toJSON(),
-            presentation_submission: presentationSubmission,
-          } as unknown as SphereonW3cVerifiablePresentation
-        }
-
-        if (!presentationToCreate.subjectIds) {
-          throw new DifPresentationExchangeError('Cannot create presentation for credentials without subject id')
-        }
-        // Determine a suitable verification method for the presentation
-        const verificationMethod = await this.getVerificationMethodForSubjectId(
-          agentContext,
-          presentationToCreate.subjectIds[0]
-        )
-
-        const w3cPresentation = JsonTransformer.fromJSON(presentationInput, W3cPresentation)
-        w3cPresentation.holder = verificationMethod.controller
-
-        const signedPresentation = await this.w3cCredentialService.signPresentation(agentContext, {
-          format: ClaimFormat.LdpVp,
-          // TODO: we should move the check for which proof to use for a presentation to earlier
-          // as then we know when determining which VPs to submit already if the proof types are supported
-          // by the verifier, and we can then just add this to the vpToCreate interface
-          proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
-          proofPurpose: new purposes.AuthenticationProofPurpose({ challenge, domain }),
-          verificationMethod: verificationMethod.id,
-          presentation: w3cPresentation,
-          challenge,
-          domain,
-        })
-
-        return signedPresentation.encoded as W3CVerifiablePresentation
-      }
-      if (presentationToCreate.claimFormat === ClaimFormat.SdJwtDc) {
-        const sdJwtInput = presentationInput as
-          | SdJwtDecodedVerifiableCredential
-          | PartialSdJwtDecodedVerifiableCredential
-
-        if (!domain) {
-          throw new CredoError("Missing 'domain' property, unable to set required 'aud' property in SD-JWT KB-JWT")
-        }
-
-        const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
-
-        // NOTE: we use the kmsKeyId from the first credential. We don't support the new useMode (for single-use credentials) for PEX
-        const originalSdJwtVc = sdJwtVcApi.fromCompact(sdJwtInput.compactSdJwtVc)
-        originalSdJwtVc.kmsKeyId =
-          presentationToCreate.verifiableCredentials[0].credential.credentialInstances[0].kmsKeyId
-
-        const sdJwtVc = await sdJwtVcApi.present({
-          sdJwtVc: originalSdJwtVc,
-          // SD is already handled by PEX, so we presents all keys
-          presentationFrame: undefined,
-          verifierMetadata: {
-            audience: domain,
-            nonce: challenge,
-            // TODO: we should make this optional
-            issuedAt: Math.floor(Date.now() / 1000),
-          },
-          additionalPayload: presentationToCreate.verifiableCredentials[0].additionalPayload,
-        })
-
-        return sdJwtVc
-      }
-      throw new DifPresentationExchangeError(
-        'Only JWT, SD-JWT-VC, JSONLD credentials are supported for a single presentation'
-      )
-    }
   }
 
   private async getVerificationMethodForSubjectId(agentContext: AgentContext, subjectId: string) {
@@ -649,29 +817,18 @@ export class DifPresentationExchangeService {
    */
   private async queryCredentialForPresentationDefinition(
     agentContext: AgentContext,
-    presentationDefinition: DifPresentationExchangeDefinition
+    parsedDefinition: ParsedPresentationDefinition
   ): Promise<Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord>> {
     const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
     const w3cQuery: Array<Query<W3cCredentialRecord>> = []
     const sdJwtVcQuery: Array<Query<SdJwtVcRecord>> = []
     const mdocQuery: Array<Query<MdocRecord>> = []
 
-    const presentationDefinitionVersion = PEX.definitionVersionDiscovery(presentationDefinition)
-
-    if (!presentationDefinitionVersion.version) {
-      throw new DifPresentationExchangeError(
-        'Unable to determine the Presentation Exchange version from the presentation definition',
-        presentationDefinitionVersion.error ? { additionalMessages: [presentationDefinitionVersion.error] } : {}
-      )
-    }
-
     // FIXME: in the query we should take into account the supported proof types of the verifier
     // this could help enormously in the amount of credentials we have to retrieve from storage.
-    if (presentationDefinitionVersion.version === PEVersion.v1) {
-      const pd = presentationDefinition as DifPresentationExchangeDefinitionV1
-
+    if (parsedDefinition.version === 'v1') {
       // The schema.uri can contain either an expanded type, or a context uri
-      for (const inputDescriptor of pd.input_descriptors) {
+      for (const inputDescriptor of parsedDefinition.definition.input_descriptors) {
         for (const schema of inputDescriptor.schema) {
           sdJwtVcQuery.push({
             vct: schema.uri,
@@ -684,15 +841,10 @@ export class DifPresentationExchangeService {
           })
         }
       }
-    } else if (presentationDefinitionVersion.version === PEVersion.v2) {
-      // FIXME: As PE version 2 does not have the `schema` anymore, we can't query by schema anymore.
-      // We probably need
-      // to find some way to do initial filtering, hopefully if there's a filter on the `type` field or something.
-    } else {
-      throw new DifPresentationExchangeError(
-        `Unsupported presentation definition version ${presentationDefinitionVersion.version as unknown as string}`
-      )
     }
+    // FIXME: As PE version 2 does not have the `schema` anymore, we can't query by schema anymore.
+    // We probably need to find some way to do initial filtering, hopefully if there's a filter on the
+    // `type` field or something.
 
     const allRecords: Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord> = []
 

@@ -1,6 +1,7 @@
 import type { JsonObject } from '../../../types'
 import { MdocRecord } from '../../mdoc'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
+import type { ClaimPath } from '../../sd-jwt-vc/disclosureFrame'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
 import type { DifPexInputDescriptorToCredentials } from '../models'
 
@@ -12,6 +13,12 @@ export interface SdJwtVcPresentationToCreate {
     {
       credential: SdJwtVcRecord
       inputDescriptorId: string
+
+      /**
+       * What to disclose, as in the submission entry credential
+       */
+      disclosedPayload: JsonObject
+      disclosedPaths?: ClaimPath[]
 
       /**
        * Additional payload to include in the Key Binding JWT
@@ -79,6 +86,8 @@ export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexIn
             {
               inputDescriptorId,
               credential: credential.credentialRecord,
+              disclosedPayload: credential.disclosedPayload,
+              disclosedPaths: credential.disclosedPaths,
               additionalPayload: credential.additionalPayload,
             },
           ],

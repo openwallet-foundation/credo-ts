@@ -10,13 +10,7 @@ import {
   type MdocContext,
   SessionTranscript,
 } from '@owf/mdoc'
-import type { InputDescriptorV2 } from '@sphereon/pex-models'
-import {
-  convertDcqlQueryToDeviceRequest,
-  convertPresentationDefinitionToDeviceRequest,
-  type Field,
-  type PresentationDefinition,
-} from '@verifiables/request-converter'
+import type { InputDescriptorV2 } from 'presentation-exchange'
 import { AgentContext } from '../../agent'
 import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { TypedArrayEncoder } from './../../utils'
@@ -25,10 +19,11 @@ import { ClaimFormat } from '../vc'
 import type { Mdoc } from './Mdoc'
 import { MdocError } from './MdocError'
 import type {
-  MdocDeviceResponseDcqlQueryOptions,
   MdocDeviceResponseOptions,
   MdocDeviceResponsePresentationDefinitionOptions,
   MdocDeviceResponseVerifyOptions,
+  MdocDocumentRequest,
+  MdocNameSpaces,
   MdocSessionTranscriptOptions,
 } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
@@ -39,7 +34,7 @@ import {
   nameSpacesRecordToDeviceNamespaces,
   nameSpacesRecordToMap,
 } from './mdocUtil'
-import { convertDocumentRequest } from './utils/convertDocumentRequest'
+import { inputDescriptorToDocumentRequest } from './utils/inputDescriptorToDocumentRequest'
 
 export type DeviceAndIssuerClaims = {
   [docType: string]: {
@@ -102,28 +97,14 @@ export class MdocDeviceResponse {
     agentContext: AgentContext,
     options: MdocDeviceResponsePresentationDefinitionOptions
   ) {
-    // @ts-expect-error: we need to match the types credo uses and the converter expects
-    const { deviceRequest } = convertPresentationDefinitionToDeviceRequest(options.presentationDefinition)
-    const documentRequests = convertDocumentRequest(deviceRequest.docRequests)
-
-    return MdocDeviceResponse.createDeviceResponse(agentContext, { ...options, documentRequests })
-  }
-
-  /**
-   * @deprecated Credo does not use this method itself, and it only supports part of DCQL. Every claim
-   * of every `mso_mdoc` credential query is requested: `credential_sets`, `claim_sets` and `values`
-   * are ignored, credential queries with the same doctype are merged, nested claim paths are
-   * truncated, and a claim missing from the mdoc throws instead of being treated as optional. Use
-   * `DcqlService.createPresentation` to present mdocs for a DCQL query, or
-   * {@link MdocDeviceResponse.createDeviceResponse} with explicit `documentRequests`.
-   */
-  public static async createDeviceResponseWithDcqlQuery(
-    agentContext: AgentContext,
-    options: MdocDeviceResponseDcqlQueryOptions
-  ) {
-    // @ts-expect-error: we need to match the types credo uses and the converter expects
-    const { deviceRequest } = convertDcqlQueryToDeviceRequest(options.dcqlQuery)
-    const documentRequests = convertDocumentRequest(deviceRequest.docRequests)
+    // Per mdoc, the requests of the input descriptors for its doctype. An optional field only requests a data element
+    // the mdoc has.
+    const documentRequests = options.mdocs.flatMap((mdoc) =>
+      options.presentationDefinition.input_descriptors
+        .filter((inputDescriptor) => inputDescriptor.id === mdoc.docType)
+        .map((inputDescriptor) => inputDescriptorToDocumentRequest(inputDescriptor, { mdoc }))
+        .filter((documentRequest) => documentRequest !== undefined)
+    )
 
     return MdocDeviceResponse.createDeviceResponse(agentContext, { ...options, documentRequests })
   }
@@ -134,50 +115,25 @@ export class MdocDeviceResponse {
   ) {
     const inputDescriptor = MdocDeviceResponse.assertMdocInputDescriptor(options.inputDescriptor)
 
-    // First we try with all optional fields enabled, if the mdoc cannot satisfy that request, we try again, skipping all optional fields
-    const docRequestMatch =
-      MdocDeviceResponse.matchInputDescriptor(mdoc, inputDescriptor, { skipOptionalFields: false }) ??
-      MdocDeviceResponse.matchInputDescriptor(mdoc, inputDescriptor, { skipOptionalFields: true })
+    // Optional fields only request the data elements the mdoc has
+    const documentRequest = inputDescriptorToDocumentRequest(inputDescriptor, { mdoc })
+    if (!documentRequest) return {}
 
-    if (!docRequestMatch) {
-      throw new MdocError(`Mdoc with doctype ${mdoc.docType} does not satisfy the input descriptor`)
-    }
-
-    const disclosedPayloadAsRecord: Record<string, Record<string, unknown>> = {}
-    for (const claim of docRequestMatch.claims.validClaims) {
-      disclosedPayloadAsRecord[claim.namespace] ??= {}
-      disclosedPayloadAsRecord[claim.namespace][claim.disclosedElementIdentifier] = claim.elementValue
-    }
-
-    return disclosedPayloadAsRecord
+    return MdocDeviceResponse.limitDisclosureToDocumentRequest(mdoc, documentRequest)
   }
 
-  private static matchInputDescriptor(
-    mdoc: Mdoc,
-    inputDescriptor: PresentationDefinition['input_descriptors'][number],
-    { skipOptionalFields }: { skipOptionalFields: boolean }
-  ) {
-    // We take the first document request as we also only input a single input descriptor
-    const {
-      deviceRequest: {
-        docRequests: [convertedDocumentRequest],
-      },
-    } = convertPresentationDefinitionToDeviceRequest(
-      {
-        id: '<UNUSED_CREDO_ID>',
-        input_descriptors: [inputDescriptor],
-      },
-      { skipOptionalFields }
-    )
-
+  /**
+   * The data elements of the mdoc that a device response for the document request discloses.
+   */
+  public static limitDisclosureToDocumentRequest(mdoc: Mdoc, documentRequest: MdocDocumentRequest): MdocNameSpaces {
     const { docRequests } = Holder.matchDeviceRequest({
       deviceRequest: DeviceRequest.create({
         version: '1.0',
         docRequests: [
           DocRequest.create({
             itemsRequest: ItemsRequest.create({
-              docType: convertedDocumentRequest.itemsRequest.docType,
-              namespaces: convertedDocumentRequest.itemsRequest.nameSpaces,
+              docType: documentRequest.docType,
+              namespaces: nameSpacesRecordToMap(documentRequest.nameSpaces),
             }),
           }),
         ],
@@ -185,7 +141,22 @@ export class MdocDeviceResponse {
       credentials: [mdoc.issuerSigned],
     })
 
-    return docRequests[0].success ? docRequests[0].validCredentials[0] : undefined
+    const [docRequestMatch] = docRequests
+    if (!docRequestMatch.success) {
+      throw new MdocError(`Mdoc with doctype ${mdoc.docType} does not satisfy the document request`)
+    }
+
+    // Maps, as the name spaces and data elements come from the request, and a `__proto__` key must not reach a prototype
+    const disclosed = new Map<string, Map<string, unknown>>()
+    for (const claim of docRequestMatch.validCredentials[0].claims.validClaims) {
+      const dataElements = disclosed.get(claim.namespace) ?? new Map<string, unknown>()
+      dataElements.set(claim.disclosedElementIdentifier, claim.elementValue)
+      disclosed.set(claim.namespace, dataElements)
+    }
+
+    return Object.fromEntries(
+      Array.from(disclosed, ([nameSpace, dataElements]) => [nameSpace, Object.fromEntries(dataElements)])
+    )
   }
 
   private static assertMdocInputDescriptor(inputDescriptor: InputDescriptorV2) {
@@ -220,9 +191,9 @@ export class MdocDeviceResponse {
             ...field,
             intent_to_retain: field.intent_to_retain ?? false,
           }
-        }) as Field[],
+        }),
       },
-    } satisfies PresentationDefinition['input_descriptors'][number]
+    } satisfies InputDescriptorV2
   }
 
   public static async createDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseOptions) {

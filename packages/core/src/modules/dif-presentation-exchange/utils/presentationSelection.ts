@@ -1,4 +1,4 @@
-import { JSONPath } from '@astronautlabs/jsonpath'
+import { resolveDescriptorCredential } from 'presentation-exchange'
 import { CredoError } from '../../../error'
 import type { SingleOrArray } from '../../../types'
 import { MdocDeviceResponse } from '../../mdoc'
@@ -17,6 +17,7 @@ import type {
   DifPresentationExchangeSubmission,
   VerifiablePresentation,
 } from '../models'
+import { getPexPresentations } from './pexCredentials'
 
 export type DifPexPresentationWithDescriptor = ReturnType<
   typeof extractPresentationsWithDescriptorsFromSubmission
@@ -26,15 +27,21 @@ export function extractPresentationsWithDescriptorsFromSubmission(
   submission: DifPresentationExchangeSubmission,
   definition: DifPresentationExchangeDefinition
 ) {
-  return submission.descriptor_map.map((descriptor) => {
-    const [presentation] = JSONPath.query(presentations, descriptor.path) as [VerifiablePresentation | undefined]
-    const inputDescriptor = definition.input_descriptors.find(({ id }) => id === descriptor.id)
+  const presentationsArray = Array.isArray(presentations) ? presentations : [presentations]
+  const pexPresentations = getPexPresentations(presentationsArray)
 
-    if (!presentation) {
+  return submission.descriptor_map.map((descriptor) => {
+    // The credential the presentation exchange library evaluates for this entry when verifying the submission
+    const resolved = resolveDescriptorCredential(descriptor, pexPresentations)
+    if (!resolved.success) {
       throw new CredoError(
-        `Unable to extract presentation at path '${descriptor.path}' for submission descriptor '${descriptor.id}'`
+        `Unable to extract the credential of submission descriptor '${descriptor.id}' at path '${descriptor.path}': ${resolved.message}`
       )
     }
+
+    const { presentation_index: presentationIndex, credential_index: credentialIndex } = resolved.location
+    const presentation = presentationsArray[presentationIndex] as VerifiablePresentation
+    const inputDescriptor = definition.input_descriptors.find(({ id }) => id === descriptor.id)
 
     if (!inputDescriptor) {
       throw new Error(
@@ -43,10 +50,10 @@ export function extractPresentationsWithDescriptorsFromSubmission(
     }
 
     if (presentation instanceof MdocDeviceResponse) {
-      const document = presentation.deviceResponse.documents?.find((document) => document.docType === descriptor.id)
+      const document = presentation.deviceResponse.documents?.[credentialIndex]
       if (!document) {
-        throw new Error(
-          `Unable to extract mdoc document with doctype '${descriptor.id}' from mdoc device response for submission '${submission.id}'.`
+        throw new CredoError(
+          `Unable to extract mdoc document ${credentialIndex} from mdoc device response for submission '${submission.id}'.`
         )
       }
 
@@ -62,21 +69,15 @@ export function extractPresentationsWithDescriptorsFromSubmission(
       presentation instanceof W3cJwtVerifiablePresentation ||
       presentation instanceof W3cJsonLdVerifiablePresentation
     ) {
-      if (!descriptor.path_nested) {
-        throw new Error(
-          `Submission descriptor '${descriptor.id}' for submission '${submission.id}' has no 'path_nested' but presentation is format '${presentation.claimFormat}'`
-        )
-      }
-
-      const [verifiableCredential] = JSONPath.query(
-        // Path is `$.vp.verifiableCredential[]` in case of jwt vp
-        presentation.claimFormat === ClaimFormat.JwtVp ? { vp: presentation } : presentation,
-        descriptor.path_nested.path
-      ) as [W3cJwtVerifiableCredential | W3cJsonLdVerifiableCredential | undefined]
+      const credentials = Array.isArray(presentation.verifiableCredential)
+        ? presentation.verifiableCredential
+        : [presentation.verifiableCredential]
+      const verifiableCredential: W3cJwtVerifiableCredential | W3cJsonLdVerifiableCredential | undefined =
+        credentials[credentialIndex]
 
       if (!verifiableCredential) {
         throw new CredoError(
-          `Unable to extract credential at path '${descriptor.path_nested.path}' from presentation at path '${descriptor.path}' for submission descriptor '${descriptor.id}'`
+          `Unable to extract credential ${credentialIndex} from presentation ${presentationIndex} for submission descriptor '${descriptor.id}'`
         )
       }
 

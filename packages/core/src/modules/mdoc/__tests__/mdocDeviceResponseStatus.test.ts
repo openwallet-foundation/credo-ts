@@ -1,12 +1,10 @@
 import { Buffer } from 'node:buffer'
 import { MediaTypes } from '@owf/token-status-list'
-import type { DcqlQuery } from 'dcql'
 import nock from 'nock'
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { KnownJwaSignatureAlgorithms, PublicJwk } from '../../kms'
 import { TokenStatusListApi } from '../../token-status-list'
-import { ClaimFormat } from '../../vc'
 import { X509Certificate, X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
@@ -23,19 +21,6 @@ const verifierGeneratedNonce = 'abcdefg'
 const mdocGeneratedNonce = '123456'
 const clientId = 'Cq1anPb8vZU5j5C0d7hcsbuJLBpIawUJIDQRi2Ebwb4'
 const responseUri = 'http://localhost:4000/api/presentation_request/dc8999df-d6ea-4c84-9985-37a8b81a82ec/callback'
-
-const dcqlQuery = {
-  credentials: [
-    {
-      id: 'mdl-status-test',
-      format: ClaimFormat.MsoMdoc,
-      multiple: false,
-      require_cryptographic_holder_binding: true,
-      meta: { doctype_value: docType },
-      claims: [{ path: [namespace, 'family_name'] }],
-    },
-  ],
-} satisfies DcqlQuery
 
 const sessionTranscriptOptions = {
   type: 'openId4VpDraft18',
@@ -111,9 +96,9 @@ describe('mdoc device-response status list verification', () => {
   }
 
   const createDeviceResponse = async (mdoc: Mdoc) => {
-    const { encoded } = await MdocDeviceResponse.createDeviceResponseWithDcqlQuery(agent.context, {
+    const { encoded } = await MdocDeviceResponse.createDeviceResponse(agent.context, {
       mdocs: [mdoc],
-      dcqlQuery,
+      documentRequests: [{ docType, nameSpaces: { [namespace]: { family_name: false } } }],
       sessionTranscriptOptions,
     })
 

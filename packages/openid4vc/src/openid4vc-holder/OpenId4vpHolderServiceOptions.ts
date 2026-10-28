@@ -1,8 +1,8 @@
 import type {
   DcqlCredentialsForRequest,
   DcqlQueryResult,
-  DifPexCredentialsForRequest,
   DifPexInputDescriptorToCredentials,
+  DifPexQueryResult,
   DifPresentationExchangeDefinition,
   EncodedX509Certificate,
 } from '@credo-ts/core'
@@ -26,7 +26,7 @@ export interface OpenId4VpResolvedAuthorizationRequest {
    */
   presentationExchange?: {
     definition: DifPresentationExchangeDefinition
-    credentialsForRequest: DifPexCredentialsForRequest
+    queryResult: DifPexQueryResult
   }
 
   /**
