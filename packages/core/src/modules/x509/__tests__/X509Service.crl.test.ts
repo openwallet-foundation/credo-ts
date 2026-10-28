@@ -168,6 +168,32 @@ describe('X509RevocationService CRL API', () => {
     })
   })
 
+  describe('validateCertificateChain without revocationCheck configured', () => {
+    it('rejects a revoked leaf certificate', async () => {
+      const leaf = await createLeaf('1101')
+      mockCrl(CRL_URL, await crlBytes({ entries: [{ serialNumber: '1101' }] }))
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain: [leaf.toString('base64')],
+          trustedCertificates: [issuerCertificate.toString('base64')],
+        })
+      ).rejects.toThrow('revoked')
+    })
+
+    it('accepts a leaf certificate that is not revoked', async () => {
+      const leaf = await createLeaf('1102')
+      mockCrl(CRL_URL, await crlBytes({ entries: [{ serialNumber: '1101' }] }))
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain: [leaf.toString('base64')],
+          trustedCertificates: [issuerCertificate.toString('base64')],
+        })
+      ).resolves.toHaveLength(2)
+    })
+  })
+
   describe('fetchCertificateRevocationList', () => {
     it('fetches and verifies a CRL against the issuer certificate', async () => {
       mockCrl(CRL_URL, await crlBytes({ entries: [{ serialNumber: 'beef' }] }))
