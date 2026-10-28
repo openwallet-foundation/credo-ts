@@ -976,7 +976,7 @@ export class DcqlService {
 
           const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
           const w3cV2Presentation = new W3cV2Presentation({
-            holder: presentationToCreate.credentialRecord.firstCredential.resolvedCredential.credentialSchemaIds[0],
+            holder: presentationToCreate.credentialRecord.firstCredential.resolvedCredential.credentialSubjectIds[0],
             verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(sdJwtVc)],
           })
 
@@ -1075,7 +1075,8 @@ export class DcqlService {
 
 /**
  * A credential is bound to its holder through a key (`cnf`) or its subject. Verifying a presentation
- * checks that the presenter proves the binding.
+ * checks that the presenter proves the binding. A subject id that is not a DID also counts, so such
+ * a credential can't be presented.
  */
 function hasHolderBinding(cnf: unknown, credentialSubjectIds: string[]) {
   return cnf !== undefined || credentialSubjectIds.length > 0

@@ -301,7 +301,7 @@ export class W3cV2CredentialService {
         entries.map((entry) =>
           this.verifyPresentationEntry(agentContext, entry, signer, options.trustedIssuers, {
             nonce: options.challenge,
-            audience: options.domain ?? getPresentationAudience(presentation),
+            audience: options.domain,
           })
         )
       )
@@ -318,7 +318,7 @@ export class W3cV2CredentialService {
     entry: W3cV2PresentationCredentialEntry,
     signer: ResolvedSigner,
     trustedIssuers: TrustedIssuerDid[] | GetTrustedIssuersForCredential | undefined,
-    presentationBinding: { nonce: string; audience?: string | string[] }
+    presentationBinding: { nonce: string; audience?: string }
   ): Promise<W3cV2PresentationCredentialEntryResult[]> {
     if (entry instanceof W3cV2DataIntegrityVerifiablePresentation) {
       return [
@@ -371,7 +371,7 @@ export class W3cV2CredentialService {
       if (enclosed.sdJwt.kbJwt && !audience) {
         return [
           this.createInvalidCredentialEntryResult(
-            new CredoError('Credential has a KB-JWT, but the presentation has no audience to match it to')
+            new CredoError('Credential has a KB-JWT, but no domain is provided to verify its audience')
           ),
         ]
       }
@@ -414,7 +414,10 @@ export class W3cV2CredentialService {
       const holderBinding = parseHolderBindingFromCredential(claims)
       if (!holderBinding) return { isValid: true }
 
-      const { publicJwk } = await extractKeyFromHolderBinding(agentContext, holderBinding)
+      // The presentation signer is resolved under `authentication`, so the holder key must be too
+      const { publicJwk } = await extractKeyFromHolderBinding(agentContext, holderBinding, {
+        didPurposes: ['authentication'],
+      })
       if (publicJwk.equals(getPublicJwkFromVerificationMethod(signer.verificationMethod))) return { isValid: true }
 
       return {
@@ -535,20 +538,4 @@ export class W3cV2CredentialService {
     const result = await this.w3cV2CredentialRepository.findSingleByQuery(agentContext, query)
     return result?.firstCredential
   }
-}
-
-function getPresentationAudience(
-  presentation:
-    | W3cV2JwtVerifiablePresentation
-    | W3cV2SdJwtVerifiablePresentation
-    | W3cV2DataIntegrityVerifiablePresentation
-): string | string[] | undefined {
-  if (presentation instanceof W3cV2JwtVerifiablePresentation) return presentation.jwt.payload.aud
-  if (presentation instanceof W3cV2SdJwtVerifiablePresentation)
-    return presentation.sdJwt.payload.aud as string | string[] | undefined
-
-  const domains = asArray(presentation.securedPresentation.proof as { domain?: string | string[] }).flatMap((proof) =>
-    asArray(proof.domain ?? [])
-  )
-  return domains.length > 0 ? domains : undefined
 }
