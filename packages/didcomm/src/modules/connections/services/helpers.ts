@@ -149,7 +149,7 @@ export function routingToServices(routing: DidCommRouting): ResolvedDidCommServi
  * Asserts that the keys we are going to use for creating a did document haven't already been used in another did document
  * Due to how DIDComm v1 works (only reference the key not the did in encrypted message) we can't have multiple dids containing
  * the same key as we won't know which did (and thus which connection) a message is intended for.
- * 
+ *
  */
 export async function assertNoCreatedDidExistsForKeys(agentContext: AgentContext, recipientKeys: Kms.PublicJwk[]) {
   if (recipientKeys.length === 0) return
