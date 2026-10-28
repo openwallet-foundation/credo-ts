@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.4
+
+### Patch Changes
+
+- 84b55f2: DCQL now only reports cryptographic holder binding for credentials that are bound to a key or to their subject, so presentations of credentials without holder binding are rejected unless the credential query sets `require_cryptographic_holder_binding: false`. Wallets no longer offer such credentials for queries that require holder binding. The Credo OpenID4VP verifier still rejects queries that set `require_cryptographic_holder_binding: false`, so it can't accept credentials without holder binding yet. This only applies to other verifiers and to the wallet side.
+- 84b55f2: DID resolution now returns an `invalidDidDocument` error when the id of the resolved DID document does not match the resolved DID.
+- 84b55f2: Verifying a W3C credential or presentation (JWT, SD-JWT, Data Integrity and JSON-LD) now rejects a signing key whose controller is not the DID of the document it is listed in. Before, a DID document could name another DID as the controller of its keys, and a Data Integrity credential or presentation, or a JWT presentation without `iss`, was then attributed to that DID.
+- 84b55f2: The `trustedIssuers` option for verifying W3C credentials and presentations now also accepts a callback that resolves the trusted issuers for each credential. OpenID4VP verification uses it to apply the trust callback's result to that credential only. Before, the trusted issuers of all credentials in a W3C presentation were merged and applied to each credential.
+- 84b55f2: Verifying a W3C VC 2.0 presentation now checks that every credential bound to a key with `cnf` is presented with that key, and that a KB-JWT on an SD-JWT credential is for that presentation. Before, a credential bound only through `cnf` could be presented by anyone. A KB-JWT is only accepted when a `domain` is given, and `cnf` can no longer be selectively disclosed. A `cnf` DID URL must now point to an `authentication` key, not an `assertionMethod` key. Signing a presentation for a holder with several authentication keys uses the key the credentials are bound to.
+- 84b55f2: Verifying a W3C VC 2.0 Data Integrity credential now checks that its issuer is trusted, using `trustedIssuers` or the `getTrustedIssuersForVerification` callback. Verifying a VC 2.0 presentation now also passes `trustedIssuers` to the credentials it contains.
+- 84b55f2: X.509 certificate chain validation now checks revocation by default (`SoftFail` for the full chain), as documented for the `revocationCheck` option of the X509 module. Set `revocationCheck: { mode: X509RevocationCheckMode.Disabled }` to turn it off. Revocation options passed to `checkCertificateRevocation` or `fetchCertificateRevocationList` now use the module's `revocationCheck` for any option they don't set.
+
 ## 0.7.3
 
 ### Patch Changes
