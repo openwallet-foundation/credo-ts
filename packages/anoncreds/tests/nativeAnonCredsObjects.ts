@@ -1,9 +1,5 @@
 import { type Anoncreds, NativeAnoncreds, ObjectHandle } from '@hyperledger/anoncreds-shared'
 
-// Objects that @hyperledger/anoncreds-shared 0.4 creates and never frees itself: the `W3cCredential` getters cache the
-// proof details of the credential. Remove once Credo uses a release with anoncreds/anoncreds-wrapper-javascript's fix
-const leakedByAnonCredsShared = ['w3cCredentialGetIntegrityProofDetails']
-
 /**
  * Wraps the registered native AnonCreds to keep track of the native objects that are created and not freed yet, so a
  * test can check that Credo frees every object it creates. A method creates an object when it returns an
@@ -46,7 +42,7 @@ export const trackNativeAnonCredsObjects = () => {
      * The creating methods of the objects that are still open, and forgets them
      */
     takeOpen: () => {
-      const methods = [...open.values()].filter((method) => !leakedByAnonCredsShared.includes(method)).sort()
+      const methods = [...open.values()].sort()
       open.clear()
       return methods
     },

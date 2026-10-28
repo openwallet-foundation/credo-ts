@@ -21,11 +21,8 @@ import type {
 import {
   Credential,
   CredentialRequest,
-  CredentialRevocationState,
   LinkSecret,
   Presentation,
-  RevocationRegistryDefinition,
-  RevocationStatusList,
   W3cCredential as W3cAnonCredsCredential,
   W3cPresentation as W3cAnonCredsPresentation,
 } from '@hyperledger/anoncreds-shared'
@@ -73,7 +70,7 @@ import type { AnonCredsCredentialRequestMetadata, W3cAnonCredsCredentialMetadata
 import { W3cAnonCredsCredentialMetadataKey } from '../utils/metadata'
 import { getAnoncredsCredentialInfoFromRecord, getW3cRecordAnonCredsTags } from '../utils/w3cAnonCredsUtils'
 
-import { getRevocationMetadata, getW3cAnonCredsCredentialProofDetails } from './utils'
+import { createRevocationState, getRevocationMetadata, getW3cAnonCredsCredentialProofDetails } from './utils'
 
 @injectable()
 export class AnonCredsRsHolderService implements AnonCredsHolderService {
@@ -150,64 +147,54 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         // sending back a mandatory string in Credential.revocationRegistryId)
         const timestamp = attribute.timestamp
 
-        let revocationState: CredentialRevocationState | undefined
-        let revocationRegistryDefinition: RevocationRegistryDefinition | undefined
-        let revocationStatusListObj: RevocationStatusList | undefined
-        try {
-          if (timestamp && credentialRevocationId && revocationRegistryId) {
-            if (!options.revocationRegistries[revocationRegistryId]) {
-              throw new AnonCredsRsError(`Revocation Registry ${revocationRegistryId} not found`)
-            }
-
-            const { definition, revocationStatusLists, tailsFilePath } =
-              options.revocationRegistries[revocationRegistryId]
-
-            // Extract revocation status list for the given timestamp
-            const revocationStatusList = revocationStatusLists[timestamp]
-            if (!revocationStatusList) {
-              throw new CredoError(
-                `Revocation status list for revocation registry ${revocationRegistryId} and timestamp ${timestamp} not found in revocation status lists. All revocation status lists must be present.`
-              )
-            }
-
-            revocationRegistryDefinition = RevocationRegistryDefinition.fromJson(definition as unknown as JsonObject)
-            revocationStatusListObj = RevocationStatusList.fromJson(revocationStatusList as unknown as JsonObject)
-            revocationState = CredentialRevocationState.create({
-              revocationRegistryIndex: Number(credentialRevocationId),
-              revocationRegistryDefinition,
-              tailsPath: tailsFilePath,
-              revocationStatusList: revocationStatusListObj,
-            })
+        let revocationState: JsonObject | undefined
+        if (timestamp && credentialRevocationId && revocationRegistryId) {
+          if (!options.revocationRegistries[revocationRegistryId]) {
+            throw new AnonCredsRsError(`Revocation Registry ${revocationRegistryId} not found`)
           }
 
-          const credential =
-            credentialRecord instanceof W3cCredentialRecord
-              ? await this.w3cToLegacyCredential(agentContext, {
-                  credential: credentialRecord.firstCredential as W3cJsonLdVerifiableCredential,
-                })
-              : (credentialRecord.credential as AnonCredsCredential)
+          const { definition, revocationStatusLists, tailsFilePath } =
+            options.revocationRegistries[revocationRegistryId]
 
-          // A credential that the 0.4 to 0.5 storage update converted from the legacy format can contain
-          // unqualified identifiers in its proof. The record tags always contain the qualified identifiers,
-          // which must match the keys of the schemas and credential definitions passed to anoncreds-rs.
-          // These identifiers are not part of the credential signature, so we can safely overwrite them.
-          credential.schema_id = schemaId
-          credential.cred_def_id = credentialDefinitionId
-          credential.rev_reg_id = revocationRegistryId ?? undefined
-
-          return {
-            linkSecretId,
-            credentialId: attribute.credentialId,
-            credentialEntry: {
-              credential: credential as unknown as JsonObject,
-              revocationState: revocationState?.toJson(),
-              timestamp,
-            },
+          // Extract revocation status list for the given timestamp
+          const revocationStatusList = revocationStatusLists[timestamp]
+          if (!revocationStatusList) {
+            throw new CredoError(
+              `Revocation status list for revocation registry ${revocationRegistryId} and timestamp ${timestamp} not found in revocation status lists. All revocation status lists must be present.`
+            )
           }
-        } finally {
-          revocationState?.handle.clear()
-          revocationStatusListObj?.handle.clear()
-          revocationRegistryDefinition?.handle.clear()
+
+          revocationState = createRevocationState({
+            revocationRegistryIndex: Number(credentialRevocationId),
+            revocationRegistryDefinition: definition as unknown as JsonObject,
+            tailsPath: tailsFilePath,
+            revocationStatusList: revocationStatusList as unknown as JsonObject,
+          })
+        }
+
+        const credential =
+          credentialRecord instanceof W3cCredentialRecord
+            ? await this.w3cToLegacyCredential(agentContext, {
+                credential: credentialRecord.firstCredential as W3cJsonLdVerifiableCredential,
+              })
+            : (credentialRecord.credential as AnonCredsCredential)
+
+        // A credential that the 0.4 to 0.5 storage update converted from the legacy format can contain
+        // unqualified identifiers in its proof. The record tags always contain the qualified identifiers,
+        // which must match the keys of the schemas and credential definitions passed to anoncreds-rs.
+        // These identifiers are not part of the credential signature, so we can safely overwrite them.
+        credential.schema_id = schemaId
+        credential.cred_def_id = credentialDefinitionId
+        credential.rev_reg_id = revocationRegistryId ?? undefined
+
+        return {
+          linkSecretId,
+          credentialId: attribute.credentialId,
+          credentialEntry: {
+            credential: credential as unknown as JsonObject,
+            revocationState,
+            timestamp,
+          },
         }
       }
 
