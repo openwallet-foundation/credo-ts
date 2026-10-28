@@ -213,7 +213,7 @@ export class X509Service {
     }
 
     // Phase 5: Revocation checking (if enabled)
-    if (config.revocationCheck && config.revocationCheck.mode !== X509RevocationCheckMode.Disabled) {
+    if (config.revocationCheck.mode !== X509RevocationCheckMode.Disabled) {
       validations.revocationStatus = await X509RevocationService.checkCertificateChainRevocation(
         agentContext,
         parsedChain,
