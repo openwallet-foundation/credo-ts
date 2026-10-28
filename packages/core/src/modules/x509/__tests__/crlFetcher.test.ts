@@ -49,19 +49,19 @@ describe('fetchCrl', () => {
   it('rejects responses larger than maxSizeBytes via Content-Length', async () => {
     mockCrl(URL_A, new Uint8Array(1000))
 
-    await expect(fetchCrl({ url: URL_A, agentContext, maxSizeBytes: 100 })).rejects.toThrow(X509Error)
+    await expect(fetchCrl({ url: URL_A, agentContext, timeoutMs: 5000, maxSizeBytes: 100 })).rejects.toThrow(X509Error)
   })
 
   it('throws on a non-OK HTTP response', async () => {
     mockCrlHttpError(URL_A, 500)
 
-    await expect(fetchCrl({ url: URL_A, agentContext })).rejects.toThrow(X509Error)
+    await expect(fetchCrl({ url: URL_A, agentContext, timeoutMs: 5000, maxSizeBytes: 1000 })).rejects.toThrow(X509Error)
   })
 
   it('throws an X509Error on a network failure', async () => {
     mockCrlNetworkError(URL_A)
 
-    await expect(fetchCrl({ url: URL_A, agentContext })).rejects.toThrow(X509Error)
+    await expect(fetchCrl({ url: URL_A, agentContext, timeoutMs: 5000, maxSizeBytes: 1000 })).rejects.toThrow(X509Error)
   })
 })
 

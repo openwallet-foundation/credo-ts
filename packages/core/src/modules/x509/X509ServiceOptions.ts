@@ -77,8 +77,8 @@ export interface X509CheckCertificateRevocationOptions {
   issuerCertificate: EncodedX509Certificate | X509Certificate
 
   /**
-   * Options controlling how revocation is checked. When omitted, the module's configured
-   * `revocationCheck` options are used, falling back to {@link X509RevocationCheckMode.SoftFail}.
+   * Options controlling how revocation is checked. Options that are not set use the module's
+   * `revocationCheck` options.
    */
   revocationCheckOptions?: X509RevocationCheckOptions
 }
@@ -99,14 +99,12 @@ export interface X509FetchCertificateRevocationListOptions {
   issuerCertificate?: EncodedX509Certificate | X509Certificate
 
   /**
-   * Timeout in milliseconds for the CRL fetch.
-   * @default 5000
+   * Timeout in milliseconds for the CRL fetch. Defaults to the module's `revocationCheck.timeoutMs`.
    */
   timeoutMs?: number
 
   /**
-   * Maximum size in bytes for the CRL download.
-   * @default 10485760 (10 MB)
+   * Maximum size in bytes for the CRL download. Defaults to the module's `revocationCheck.maxCrlSizeBytes`.
    */
   maxCrlSizeBytes?: number
 
