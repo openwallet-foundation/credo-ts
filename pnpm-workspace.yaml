@@ -33,7 +33,7 @@ catalog:
   '@hyperledger/indy-vdr-nodejs': ^0.3.0
   '@hyperledger/indy-vdr-shared': ^0.3.0
   '@openwallet-foundation/askar-nodejs': 0.6.1
-  '@openwallet-foundation/askar-shared': 0.6.1
+  '@openwallet-foundation/askar-shared': ^0.4.3 || ^0.5.0 || ^0.6.0
   '@panva/hpke-noble': ^1.1.4
   '@peculiar/x509': ^2.2.0
   '@sphereon/pex-models': ^2.3.2
@@ -41,34 +41,37 @@ catalog:
   '@types/express': ^5.0.6
   '@types/node': ^22.19.0
   '@types/ws': ^8.18.2
+  '@typescript/native': npm:typescript@^7.0.2
   '@vitest/coverage-v8': ^5.0.5
   class-transformer: 0.5.1
   class-validator: ^0.14.3
-  express: ^5.2.1
+  express: ^5.3.0
   hpke: ^1.1.4
-  nock: ^15.0.2
+  nock: ^15.0.5
   reflect-metadata: 0.2.2
   rxjs: ^7.8.2
   tsyringe: ^4.10.0
-  typescript: ~5.9.3
+  typescript: npm:@typescript/typescript6@^6.0.2
   vitest: ^5.0.5
   ws: ^8.22.0
-  zod: ^4.6.5
+  zod: ^4.6.7
+
+catalogs:
+  dev:
+    # askar-nodejs pins askar-shared exactly, keep this in sync with it
+    '@openwallet-foundation/askar-shared': 0.6.1
 
 minimumReleaseAgeExclude:
-  - '@openid4vc/oauth2@0.7.0'
-  - '@openid4vc/openid4vci@0.7.0'
-  - '@openid4vc/openid4vp@0.7.0'
-  - '@openid4vc/utils@0.7.0'
-  - '@owf/cose@0.4.2'
-  - '@owf/identity-common@0.4.2'
-  - '@owf/mdoc@0.8.2'
-  - '@owf/token-status-list@0.4.2'
-  - '@sd-jwt/core@0.22.0'
-  - '@sd-jwt/sd-jwt-vc@0.22.0'
+  - '@openid4vc/oauth2@0.7.0 || 0.8.0'
+  - '@openid4vc/openid4vci@0.7.0 || 0.8.0'
+  - '@openid4vc/openid4vp@0.7.0 || 0.8.0'
+  - '@openid4vc/utils@0.7.0 || 0.8.0'
+  - '@owf/cose@0.4.2 || 0.5.0'
+  - '@owf/identity-common@0.4.2 || 0.5.0'
+  - '@owf/mdoc@0.8.2 || 0.8.3'
+  - '@owf/token-status-list@0.4.2 || 0.5.0'
+  - '@sd-jwt/core@0.22.0 || 0.23.0 || 0.23.1'
+  - '@sd-jwt/sd-jwt-vc@0.22.0 || 0.23.0 || 0.23.1'
   - '@peculiar/x509@2.2.0'
   - nock@15.0.2
-
-# LOCAL ONLY, do not commit: unreleased @animo-id/expo-secure-environment rewrite (animo/expo-secure-environment#46, c27bce3)
-overrides:
-  '@animo-id/expo-secure-environment': file:../local-tarballs/expo-secure-environment-rewrite/animo-id-expo-secure-environment-0.0.0.tgz
+  - '@animo-id/expo-secure-environment@0.3.0'

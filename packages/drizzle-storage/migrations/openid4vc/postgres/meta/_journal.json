@@ -36,6 +36,20 @@
       "when": 1787652194269,
       "tag": "0004_add_access_token_signer_kms_backend",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792243245134,
+      "tag": "0005_add_issuer_info",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792424958994,
+      "tag": "0006_add_credential_response_encryption",
+      "breakpoints": true
     }
   ]
 }

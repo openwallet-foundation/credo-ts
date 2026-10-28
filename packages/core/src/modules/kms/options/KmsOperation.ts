@@ -4,7 +4,7 @@ import type { KmsCreateKeyType } from './KmsCreateKeyOptions'
 import type { KmsDecryptDataDecryption } from './KmsDecryptOptions'
 import type { KmsEncryptDataEncryption } from './KmsEncryptOptions'
 import type { KmsKeyAgreementDecryptOptions } from './KmsKeyAgreementDecryptOptions'
-import type { KmsKeyAgreementEncryptOptions } from './KmsKeyAgreementEncryptOptions'
+import type { KmsJwkPublicEcdh, KmsKeyAgreementEncryptOptions } from './KmsKeyAgreementEncryptOptions'
 
 export type KmsOperationCreateKey = {
   operation: 'createKey'
@@ -32,8 +32,7 @@ export type KmsOperationVerify = {
 
 /**
  * The key id is not needed to determine whether an operation is supported, and is
- * often not known yet when checking for support (e.g. the ephemeral key for `ECDH-ES`
- * is only created once we know the key agreement is supported).
+ * often not known yet when checking for support.
  */
 type WithOptionalKeyId<Options> = Options extends { keyId: string }
   ? Omit<Options, 'keyId'> & { keyId?: string }
@@ -55,6 +54,21 @@ export type KmsOperationDecrypt = {
    */
   decryption: KmsDecryptDataDecryption
   keyAgreement?: WithOptionalKeyId<KmsKeyAgreementDecryptOptions>
+}
+
+/**
+ * The public keys in a key agreement: the recipients on encrypt, the sender's ephemeral and static keys on decrypt.
+ */
+export function keyAgreementPublicJwks(
+  keyAgreement: NonNullable<KmsOperationEncrypt['keyAgreement'] | KmsOperationDecrypt['keyAgreement']>
+): KmsJwkPublicEcdh[] {
+  if ('recipients' in keyAgreement) return keyAgreement.recipients.map(({ externalPublicJwk }) => externalPublicJwk)
+
+  return [
+    'externalPublicJwk' in keyAgreement ? keyAgreement.externalPublicJwk : undefined,
+    'ephemeralPublicJwk' in keyAgreement ? keyAgreement.ephemeralPublicJwk : undefined,
+    'senderPublicJwk' in keyAgreement ? keyAgreement.senderPublicJwk : undefined,
+  ].filter((jwk) => jwk !== undefined)
 }
 
 export type KmsOperationRandomBytes = {

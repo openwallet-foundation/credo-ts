@@ -40,6 +40,8 @@ export interface SetLiveDeliveryModeOptions<
   connectionId: string
   protocolVersion: DidCommMessagePickupProtocolVersionType<MPPs>
   liveDelivery: boolean
+  awaitConfirmation?: boolean
+  awaitConfirmationTimeoutMs?: number
 }
 
 export type QueueMessageReturnType = undefined

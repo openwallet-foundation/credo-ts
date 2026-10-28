@@ -291,6 +291,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       goalCode: options.goalCode,
       goal: options.goal,
       willConfirm: options.willConfirm,
+      expiresTime: options.expiresTime,
     })
 
     const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
@@ -427,6 +428,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       goalCode: options.goalCode,
       goal: options.goal,
       willConfirm: options.willConfirm,
+      expiresTime: options.expiresTime,
     })
   }
 

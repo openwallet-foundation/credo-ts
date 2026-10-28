@@ -36,8 +36,10 @@ export class DrizzleOpenid4vcIssuerRecordAdapter extends BaseDrizzleRecordAdapte
       clientAttestationPopSigningAlgValuesSupported: record.clientAttestationPopSigningAlgValuesSupported,
       signedMetadata: record.signedMetadata,
       display: record.display,
+      issuerInfo: record.issuerInfo ?? null,
       authorizationServerConfigs: record.authorizationServerConfigs,
       batchCredentialIssuance: record.batchCredentialIssuance,
+      credentialResponseEncryption: record.credentialResponseEncryption ?? null,
 
       customTags,
     }

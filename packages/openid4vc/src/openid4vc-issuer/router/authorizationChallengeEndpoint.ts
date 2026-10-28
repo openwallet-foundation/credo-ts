@@ -259,6 +259,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     clientAttestation: {
       ...getClientAttestationToVerify(config, parseResult.clientAttestation, walletAttestationRequired),
       required: walletAttestationRequired,
+      expectedConfirmationJwkThumbprint: issuanceSession.walletAttestation?.confirmationJwkThumbprint,
       // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not set. Per draft §7.2/§7.3 the DPoP key
       // only has to match the attestation `cnf.jwk` in DPoP combined mode, which this endpoint doesn't support.
     },
@@ -285,6 +286,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     issuanceSession.walletAttestation = {
       // If client attestation is provided at the start, it's required from now on.
       required: true,
+      confirmationJwkThumbprint: clientAttestation.clientAttestation.confirmationJwkThumbprint,
     }
   }
 
@@ -429,6 +431,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
       // We only look at the issuance session here. If it is required
       // it will be defined on the issuance session now.
       required: issuanceSession.walletAttestation?.required,
+      expectedConfirmationJwkThumbprint: issuanceSession.walletAttestation?.confirmationJwkThumbprint,
       // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not set. Per draft §7.2/§7.3 the DPoP key
       // only has to match the attestation `cnf.jwk` in DPoP combined mode, which this endpoint doesn't support.
     },

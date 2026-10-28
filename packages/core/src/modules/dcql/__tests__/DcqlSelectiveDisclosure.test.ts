@@ -9,6 +9,7 @@ import { type SdJwtVc, SdJwtVcRecord, SdJwtVcService } from '../../sd-jwt-vc'
 import { type ClaimPath, getClaimPathsForDcqlClaimSet } from '../../sd-jwt-vc/disclosureFrame'
 import { W3cV2CredentialRecord } from '../../vc'
 import { W3cV2SdJwtVerifiablePresentation } from '../../vc/sd-jwt-vc'
+import { DcqlNotDisclosed } from '..'
 import { DcqlService } from '../DcqlService'
 import type { DcqlQueryResult } from '../models'
 
@@ -841,13 +842,19 @@ describe('getClaimPathsForDcqlClaimSet', () => {
     expect(
       getClaimPathsForDcqlClaimSet([['address']], { address: { street: 'Main St', country: { code: 'DE' } } })
     ).toStrictEqual([['address']])
+    expect(getClaimPathsForDcqlClaimSet([['value'], ['list', null]], { value: null, list: [null] })).toStrictEqual([
+      ['value'],
+      ['list', 0],
+    ])
   })
 
-  test('selects the elements DCQL did not leave null, undefined or nothing for', () => {
-    // `null`, as in the output of a claims query
-    expect(getClaimPathsForDcqlClaimSet([['list', 2]], { list: [null, null, 'c'] })).toStrictEqual([['list', 2]])
-    // `undefined` and holes, as in the output of a claim set
-    expect(getClaimPathsForDcqlClaimSet([['list', null]], { list: [undefined, 'b', undefined, 'd'] })).toStrictEqual([
+  test('skips undisclosed and missing array elements while preserving their positions', () => {
+    expect(
+      getClaimPathsForDcqlClaimSet([['list', 2]], { list: [DcqlNotDisclosed, DcqlNotDisclosed, 'c'] })
+    ).toStrictEqual([['list', 2]])
+    expect(
+      getClaimPathsForDcqlClaimSet([['list', null]], { list: [DcqlNotDisclosed, 'b', undefined, 'd'] })
+    ).toStrictEqual([
       ['list', 1],
       ['list', 3],
     ])
@@ -859,7 +866,7 @@ describe('getClaimPathsForDcqlClaimSet', () => {
       ['list', 3],
     ])
     expect(
-      getClaimPathsForDcqlClaimSet([['list', null, 'name']], { list: [{ name: 'a' }, null, { name: 'c' }] })
+      getClaimPathsForDcqlClaimSet([['list', null, 'name']], { list: [{ name: 'a' }, DcqlNotDisclosed, { name: 'c' }] })
     ).toStrictEqual([
       ['list', 0, 'name'],
       ['list', 2, 'name'],

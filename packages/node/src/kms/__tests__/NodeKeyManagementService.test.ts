@@ -1338,7 +1338,7 @@ describe('NodeKeyManagementService', () => {
           keyAgreement: {
             algorithm: 'ECDH-ES',
             keyId: recipientKey.keyId,
-            externalPublicJwk: header.epk,
+            ephemeralPublicJwk: header.epk,
             apu: TypedArrayEncoder.fromBase64Url(header.apu),
             apv: TypedArrayEncoder.fromBase64Url(header.apv),
           },
@@ -1353,6 +1353,7 @@ describe('NodeKeyManagementService', () => {
     const didcommVectors = JSON.parse(
       readFileSync(path.join(__dirname, '../__fixtures__/didcomm-v2.1-encrypted-messages.json')).toString('utf-8')
     ) as {
+      senderSecrets: Kms.KmsJwkPrivate[]
       recipientSecrets: Kms.KmsJwkPrivate[]
       encryptedMessages: Record<
         string,
@@ -1374,6 +1375,7 @@ describe('NodeKeyManagementService', () => {
         for (const recipient of jwe.recipients) {
           const privateJwk = didcommVectors.recipientSecrets.find(({ kid }) => kid === recipient.header.kid)
           const { keyId } = await service.importKey(agentContext, { privateJwk: privateJwk as Kms.KmsJwkPrivate })
+          const senderPrivateJwk = didcommVectors.senderSecrets.find(({ kid }) => kid === header.skid)
 
           const { data } = await service.decrypt(agentContext, {
             key: {
@@ -1381,7 +1383,10 @@ describe('NodeKeyManagementService', () => {
                 algorithm: header.alg,
                 keyId,
                 encryptedKey: { encrypted: TypedArrayEncoder.fromBase64Url(recipient.encrypted_key) },
-                externalPublicJwk: header.epk,
+                ephemeralPublicJwk: header.epk,
+                senderPublicJwk:
+                  senderPrivateJwk && (Kms.publicJwkFromPrivateJwk(senderPrivateJwk) as Kms.KmsJwkPublicEcdh),
+                apu: header.apu && TypedArrayEncoder.fromBase64Url(header.apu),
                 apv: TypedArrayEncoder.fromBase64Url(header.apv),
               },
             },
@@ -1394,7 +1399,9 @@ describe('NodeKeyManagementService', () => {
             encrypted: TypedArrayEncoder.fromBase64Url(jwe.ciphertext),
           })
 
-          expect(JsonEncoder.fromUint8Array(data)).toMatchObject({
+          // The C.3 P-256 authcrypt message is signed before it is encrypted
+          const message = JsonEncoder.fromUint8Array(data)
+          expect(message.payload ? JsonEncoder.fromBase64Url(message.payload) : message).toMatchObject({
             id: '1234567890',
             from: 'did:example:alice',
             to: ['did:example:bob'],
@@ -1403,44 +1410,291 @@ describe('NodeKeyManagementService', () => {
         }
       }
     )
+  })
+
+  describe('encrypt with ECDH key agreement', () => {
+    const apu = TypedArrayEncoder.fromUtf8String('did:example:alice#key-1')
+    const apv = TypedArrayEncoder.fromUtf8String('did:example:bob')
+    const aad = TypedArrayEncoder.fromUtf8String('eyJhbGciOiJFQ0RILTFQVStBMjU2S1cifQ')
+    const data = TypedArrayEncoder.fromUtf8String('heelllo')
+
+    async function encryptForRecipients(options: {
+      algorithm: 'ECDH-ES+A128KW' | 'ECDH-ES+A192KW' | 'ECDH-ES+A256KW' | 'ECDH-1PU+A256KW'
+      encryption: 'A256GCM' | 'A128CBC-HS256' | 'A256CBC-HS512'
+      type: Kms.KmsCreateKeyTypeEc | Kms.KmsCreateKeyTypeOkp
+    }) {
+      const { algorithm, encryption, type } = options
+      const sender = await service.createKey(agentContext, { type })
+      const recipients: Kms.KmsCreateKeyReturn<typeof type>[] = []
+      for (let i = 0; i < 3; i++) recipients.push(await service.createKey(agentContext, { type }))
+      const recipientJwks = recipients.map(({ publicJwk }) => ({
+        externalPublicJwk: publicJwk as Kms.KmsJwkPublicEcdh,
+      }))
+      const set = vi.spyOn(storage, 'set')
+      const buildAad = vi.fn(() => aad)
+
+      const result = await service.encrypt(agentContext, {
+        key: {
+          keyAgreement:
+            algorithm === 'ECDH-1PU+A256KW'
+              ? { algorithm, keyId: sender.keyId, recipients: recipientJwks, apu, apv }
+              : { algorithm, recipients: recipientJwks, apu, apv },
+        },
+        encryption: { algorithm: encryption, aad: buildAad },
+        data,
+      })
+
+      const decryptAs = (index: number, decryptAad = aad): Promise<Kms.KmsDecryptReturn> =>
+        service.decrypt(agentContext, {
+          key: {
+            keyAgreement: {
+              algorithm,
+              keyId: recipients[index].keyId,
+              encryptedKey: result.encryptedKeys?.[index],
+              ephemeralPublicJwk: result.ephemeralPublicJwk,
+              senderPublicJwk: sender.publicJwk,
+              apu,
+              apv,
+            },
+          },
+          decryption: { algorithm: encryption, iv: result.iv, tag: result.tag, aad: decryptAad },
+          encrypted: result.encrypted,
+        } as Kms.KmsDecryptOptions)
+
+      return { result, decryptAs, set, buildAad }
+    }
 
     it.each([
-      { algorithm: 'ECDH-ES+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'OKP', crv: 'X25519' } },
-      { algorithm: 'ECDH-ES+A192KW', encryption: 'A192GCM', type: { kty: 'EC', crv: 'P-256' } },
+      { algorithm: 'ECDH-ES+A128KW', encryption: 'A256GCM', type: { kty: 'OKP', crv: 'X25519' } },
+      { algorithm: 'ECDH-ES+A192KW', encryption: 'A256GCM', type: { kty: 'EC', crv: 'P-256' } },
+      { algorithm: 'ECDH-ES+A256KW', encryption: 'A256GCM', type: { kty: 'EC', crv: 'P-521' } },
+      { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'EC', crv: 'P-256' } },
+      { algorithm: 'ECDH-1PU+A256KW', encryption: 'A128CBC-HS256', type: { kty: 'OKP', crv: 'X25519' } },
+    ] as const)('$algorithm with $encryption encrypts once for three $type.crv recipients', async (options) => {
+      const { result, decryptAs, set } = await encryptForRecipients(options)
+
+      expect(set).not.toHaveBeenCalled()
+      expect(result.encryptedKeys).toHaveLength(3)
+      expect(result.ephemeralPublicJwk).toMatchObject({ kty: options.type.kty, crv: options.type.crv })
+
+      for (const index of [0, 1, 2]) {
+        const { data: decrypted } = await decryptAs(index)
+        expect(TypedArrayEncoder.toUtf8String(decrypted)).toEqual('heelllo')
+      }
+    })
+
+    it('calls aad once with the returned ephemeral public key and binds it into the tag', async () => {
+      const { result, decryptAs, buildAad } = await encryptForRecipients({
+        algorithm: 'ECDH-ES+A256KW',
+        encryption: 'A256CBC-HS512',
+        type: { kty: 'OKP', crv: 'X25519' },
+      })
+
+      expect(buildAad).toHaveBeenCalledTimes(1)
+      expect(buildAad).toHaveBeenCalledWith({ ephemeralPublicJwk: result.ephemeralPublicJwk })
+      await expect(decryptAs(0, TypedArrayEncoder.fromUtf8String('other'))).rejects.toThrow(Kms.KeyManagementError)
+    })
+
+    it('rethrows errors from the aad callback as is', async () => {
+      const recipient = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'X25519' } })
+      const aadError = new Error('aad failed')
+
+      await expect(
+        service.encrypt(agentContext, {
+          key: {
+            keyAgreement: {
+              algorithm: 'ECDH-ES+A256KW',
+              recipients: [{ externalPublicJwk: recipient.publicJwk as Kms.KmsJwkPublicEcdh }],
+            },
+          },
+          encryption: {
+            algorithm: 'A256CBC-HS512',
+            aad: () => {
+              throw aadError
+            },
+          },
+          data,
+        })
+      ).rejects.toBe(aadError)
+    })
+
+    it('rejects an aad callback that does not return a Uint8Array', async () => {
+      const recipient = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'X25519' } })
+
+      await expect(
+        service.encrypt(agentContext, {
+          key: {
+            keyAgreement: {
+              algorithm: 'ECDH-ES+A256KW',
+              recipients: [{ externalPublicJwk: recipient.publicJwk as Kms.KmsJwkPublicEcdh }],
+            },
+          },
+          encryption: { algorithm: 'A256CBC-HS512', aad: (async () => aad) as unknown as () => Uint8Array },
+          data,
+        })
+      ).rejects.toThrow(`'encryption.aad' callback must return a Uint8Array`)
+    })
+
+    it.each([
+      { algorithm: 'ECDH-ES+A192KW', encryption: 'A256GCM', type: { kty: 'EC', crv: 'P-256' }, supported: true },
+      { algorithm: 'ECDH-ES+A256KW', encryption: 'XC20P', type: { kty: 'EC', crv: 'P-256' }, supported: false },
+      {
+        algorithm: 'ECDH-1PU+A256KW',
+        encryption: 'A256CBC-HS512',
+        type: { kty: 'OKP', crv: 'X25519' },
+        supported: true,
+      },
+      { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'EC', crv: 'P-256' }, supported: true },
+      { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'EC', crv: 'P-384' }, supported: true },
+      {
+        algorithm: 'ECDH-1PU+A256KW',
+        encryption: 'A256CBC-HS512',
+        type: { kty: 'EC', crv: 'P-521' },
+        supported: false,
+      },
+      {
+        algorithm: 'ECDH-1PU+A256KW',
+        encryption: 'A256CBC-HS512',
+        type: { kty: 'EC', crv: 'secp256k1' },
+        supported: false,
+      },
     ] as const)(
-      'decrypts with $algorithm and $encryption using $type.crv keys',
-      async ({ algorithm, encryption, type }) => {
-        const recipient = await service.createKey(agentContext, { type })
-        const ephemeral = await service.createKey(agentContext, { type })
+      'reports support for $algorithm with $encryption on $type.crv as $supported',
+      async ({ algorithm, encryption, type, supported }) => {
+        const { publicJwk } = await service.createKey(agentContext, { type })
+        const jwk = publicJwk as Kms.KmsJwkPublicEcdh
 
-        const { encrypted, iv, tag, encryptedKey } = await service.encrypt(agentContext, {
-          key: {
+        expect(
+          service.isOperationSupported(agentContext, {
+            operation: 'encrypt',
+            encryption: { algorithm: encryption },
+            keyAgreement: { algorithm, recipients: [{ externalPublicJwk: jwk }] },
+          })
+        ).toBe(supported)
+        expect(
+          service.isOperationSupported(agentContext, {
+            operation: 'decrypt',
+            decryption: { algorithm: encryption, iv: new Uint8Array(16), tag: new Uint8Array(32) },
             keyAgreement: {
               algorithm,
-              keyId: ephemeral.keyId,
-              externalPublicJwk: recipient.publicJwk as Kms.KmsJwkPublicEcdh,
+              encryptedKey: { encrypted: new Uint8Array(72) },
+              ephemeralPublicJwk: jwk,
+              senderPublicJwk: jwk,
             },
-          },
-          encryption: { algorithm: encryption },
-          data: TypedArrayEncoder.fromUtf8String('heelllo'),
-        })
-
-        const { data } = await service.decrypt(agentContext, {
-          key: {
-            keyAgreement: {
-              algorithm,
-              keyId: recipient.keyId,
-              encryptedKey: { encrypted: encryptedKey?.encrypted as Uint8Array },
-              externalPublicJwk: ephemeral.publicJwk as Kms.KmsJwkPublicEcdh,
-            },
-          },
-          decryption: { algorithm: encryption, iv: iv as Uint8Array, tag: tag as Uint8Array },
-          encrypted,
-        })
-
-        expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
+          } as Kms.KmsOperation)
+        ).toBe(supported)
       }
     )
+  })
+
+  describe('ECDH-1PU+A256KW decryption', () => {
+    async function encryptEcdh1Pu(type: Kms.KmsCreateKeyTypeEc | Kms.KmsCreateKeyTypeOkp): Promise<{
+      key: { keyAgreement: Kms.KmsKeyAgreementDecryptEcdh1Pu }
+      decryption: { algorithm: 'A256CBC-HS512'; iv: Uint8Array; tag: Uint8Array }
+      encrypted: Uint8Array
+    }> {
+      const sender = await service.createKey(agentContext, { type })
+      const recipient = await service.createKey(agentContext, { type })
+
+      const { encrypted, iv, tag, ephemeralPublicJwk, encryptedKeys } = await service.encrypt(agentContext, {
+        key: {
+          keyAgreement: {
+            algorithm: 'ECDH-1PU+A256KW',
+            keyId: sender.keyId,
+            recipients: [{ externalPublicJwk: recipient.publicJwk as Kms.KmsJwkPublicEcdh }],
+          },
+        },
+        encryption: { algorithm: 'A256CBC-HS512' },
+        data: TypedArrayEncoder.fromUtf8String('heelllo'),
+      })
+
+      return {
+        key: {
+          keyAgreement: {
+            algorithm: 'ECDH-1PU+A256KW',
+            keyId: recipient.keyId,
+            encryptedKey: encryptedKeys?.[0] as Kms.KmsEncryptedKey,
+            ephemeralPublicJwk: ephemeralPublicJwk as Kms.KmsJwkPublicEcdh,
+            senderPublicJwk: sender.publicJwk as Kms.KmsJwkPublicEcdh,
+          },
+        },
+        decryption: { algorithm: 'A256CBC-HS512', iv: iv as Uint8Array, tag: tag as Uint8Array },
+        encrypted,
+      }
+    }
+
+    it('rejects a changed tag or sender key', async () => {
+      const decryptOptions = await encryptEcdh1Pu({ kty: 'OKP', crv: 'X25519' })
+      const other = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'X25519' } })
+      const tag = Uint8Array.from(decryptOptions.decryption.tag)
+      tag[0] ^= 1
+
+      await expect(
+        service.decrypt(agentContext, { ...decryptOptions, decryption: { ...decryptOptions.decryption, tag } })
+      ).rejects.toThrow('Error unwrapping content encryption key')
+      await expect(
+        service.decrypt(agentContext, {
+          ...decryptOptions,
+          key: {
+            keyAgreement: {
+              ...decryptOptions.key.keyAgreement,
+              senderPublicJwk: other.publicJwk as Kms.KmsJwkPublicEcdh,
+            },
+          },
+        })
+      ).rejects.toThrow('Error unwrapping content encryption key')
+    })
+
+    // Any wrong key already makes the key unwrap fail, so these pin the error from the import or derivation check
+    it.each(['P-256', 'P-384'] as const)('rejects an off-curve %s ephemeral or sender key', async (crv) => {
+      const decryptOptions = await encryptEcdh1Pu({ kty: 'EC', crv })
+
+      for (const field of ['ephemeralPublicJwk', 'senderPublicJwk'] as const) {
+        const jwk = decryptOptions.key.keyAgreement[field] as Kms.KmsJwkPublicEc
+        const y = TypedArrayEncoder.fromBase64Url(jwk.y)
+        y[y.length - 1] ^= 1
+
+        await expect(
+          service.decrypt(agentContext, {
+            ...decryptOptions,
+            key: {
+              keyAgreement: {
+                ...decryptOptions.key.keyAgreement,
+                [field]: { ...jwk, y: TypedArrayEncoder.toBase64Url(y) },
+              },
+            },
+          })
+        ).rejects.toMatchObject({ code: 'ERR_CRYPTO_INVALID_JWK' })
+      }
+    })
+
+    it('rejects an all-zero X25519 ephemeral or sender key', async () => {
+      const decryptOptions = await encryptEcdh1Pu({ kty: 'OKP', crv: 'X25519' })
+      const allZero = { kty: 'OKP', crv: 'X25519', x: TypedArrayEncoder.toBase64Url(new Uint8Array(32)) } as const
+
+      for (const field of ['ephemeralPublicJwk', 'senderPublicJwk'] as const) {
+        await expect(
+          service.decrypt(agentContext, {
+            ...decryptOptions,
+            key: { keyAgreement: { ...decryptOptions.key.keyAgreement, [field]: allZero } },
+          })
+        ).rejects.toMatchObject({ code: 'ERR_OSSL_FAILED_DURING_DERIVATION' })
+      }
+    })
+
+    it('rejects a sender key of another type than the recipient key', async () => {
+      const decryptOptions = await encryptEcdh1Pu({ kty: 'OKP', crv: 'X25519' })
+      const { publicJwk } = await service.createKey(agentContext, { type: { kty: 'EC', crv: 'P-256' } })
+
+      await expect(
+        service.decrypt(agentContext, {
+          ...decryptOptions,
+          key: {
+            keyAgreement: { ...decryptOptions.key.keyAgreement, senderPublicJwk: publicJwk as Kms.KmsJwkPublicEcdh },
+          },
+        })
+      ).rejects.toThrow('Expected jwk types to match')
+    })
   })
 
   describe('getPublicKey', () => {

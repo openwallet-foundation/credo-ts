@@ -30,6 +30,8 @@ export interface DidCommMessageProcessedEvent extends BaseEvent {
     connection?: DidCommConnectionRecord
     receivedAt?: Date
     encryptedMessage?: DidCommEncryptedMessage
+    /** `true` once the message handler returned and every middleware called `next` */
+    handled: boolean
   }
 }
 

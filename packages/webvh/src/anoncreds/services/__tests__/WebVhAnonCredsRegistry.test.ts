@@ -732,6 +732,18 @@ describe('WebVhAnonCredsRegistry', () => {
       expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
     })
 
+    it('should return false for a verified proof that does not use eddsa-jcs-2022', async () => {
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
+      testProof.cryptosuite = 'ecdsa-jcs-2019'
+      testInput.proof = testProof
+
+      // Data Integrity verifies any cryptosuite registered with the agent
+      const result = await registry.verifyProof(agentContext, testInput)
+      expect(result).toBe(false)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
+    })
+
     it('should return false for missing verificationMethod', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
