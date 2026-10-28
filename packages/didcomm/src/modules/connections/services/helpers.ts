@@ -146,31 +146,26 @@ export function routingToServices(routing: DidCommRouting): ResolvedDidCommServi
 }
 
 /**
- * Asserts that the keys we are going to use for creating a did document haven't already been used in another did document
- * Due to how DIDComm v1 works (only reference the key not the did in encrypted message) we can't have multiple dids containing
- * the same key as we won't know which did (and thus which connection) a message is intended for.
+ * Prevents recipient-key reuse across created DIDs, which makes DIDComm v1 key-based routing ambiguous.
  */
 export async function assertNoCreatedDidExistsForKeys(agentContext: AgentContext, recipientKeys: Kms.PublicJwk[]) {
+  if (recipientKeys.length === 0) return
+
   const didRepository = agentContext.dependencyManager.resolve(DidRepository)
-  const recipientKeyFingerprints = recipientKeys.map((key) => key.fingerprint)
+  const uniqueKeys = new Map(recipientKeys.map((key) => [key.fingerprint, key]))
+  const matchingFingerprints: string[] = []
 
-  const didsForServices = await didRepository.findByQuery(agentContext, {
-    role: DidDocumentRole.Created,
+  // Avoid a role + $or query: query each selective fingerprint sequentially and filter role in memory.
+  for (const [fingerprint, key] of uniqueKeys) {
+    const records = await didRepository.findAllByRecipientKey(agentContext, key)
+    if (records.some((record) => record.role === DidDocumentRole.Created)) {
+      matchingFingerprints.push(fingerprint)
+    }
+  }
 
-    // We want an $or query so we query for each key individually, not one did document
-    // containing exactly the same keys as the did document we are trying to create
-    $or: recipientKeyFingerprints.map((fingerprint) => ({
-      recipientKeyFingerprints: [fingerprint],
-    })),
-  })
-
-  if (didsForServices.length > 0) {
-    const allDidRecipientKeys = didsForServices.flatMap((did) => did.getTags().recipientKeyFingerprints ?? [])
-    const matchingFingerprints = allDidRecipientKeys.filter((f) => recipientKeyFingerprints.includes(f))
+  if (matchingFingerprints.length > 0) {
     throw new CredoError(
-      `A did already exists for some of the keys in the provided services. DIDComm v1 uses key based routing, and therefore it is not allowed to re-use the same key in multiple did documents for DIDComm. If you use the same 'routing' object for multiple invitations, instead provide an 'invitationDid' to the create invitation method. The following fingerprints are already in use: ${matchingFingerprints.join(
-        ','
-      )}`
+      `A did already exists for some of the keys in the provided services. DIDComm v1 uses key based routing, and therefore it is not allowed to re-use the same key in multiple did documents for DIDComm. If you use the same 'routing' object for multiple invitations, instead provide an 'invitationDid' to the create invitation method. The following fingerprints are already in use: ${matchingFingerprints.join(',')}`
     )
   }
 }
@@ -185,7 +180,6 @@ export async function createPeerDidFromServices(
   // Create did document without the id property
   const { didDocument, keys } = createPeerDidDocumentFromServices(services, true)
 
-  // Assert that the keys we are going to use for creating a did document haven't already been used in another did document
   await assertNoCreatedDidExistsForKeys(agentContext, didDocument.recipientKeys)
 
   // Register did:peer document. This will generate the id property and save it to a did record
