@@ -1,6 +1,8 @@
+import { parseIndyDid } from '@credo-ts/anoncreds'
 import type { Agent } from '@credo-ts/core'
 import { DidCommV1Service, DidDocumentService, NewDidCommV2Service, NewDidCommV2ServiceEndpoint } from '@credo-ts/core'
-import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
+import type { IndyVdrPool, IndyVdrRequest } from '@hyperledger/indy-vdr-nodejs'
+import { GetAttribRequest, indyVdr, PoolCreate } from '@hyperledger/indy-vdr-nodejs'
 import { sleep } from '../../core/src/utils/sleep'
 import { genesisTransactions } from '../../core/tests/helpers'
 import type { IndyVdrDidCreateOptions } from '../src/dids/IndyVdrIndyDidRegistrar'
@@ -67,8 +69,38 @@ export async function createDidOnLedger(agent: Agent, endorserDid: string) {
     )
   }
 
-  // Wait some time pass to let ledger settle the object
-  await sleep(1000)
+  const { namespaceIdentifier } = parseIndyDid(createResult.didState.did)
+  await waitForAllLedgerNodes(() => new GetAttribRequest({ targetDid: namespaceIdentifier, raw: 'endpoint' }))
 
   return { did: createResult.didState.did, key }
+}
+
+let allNodesPool: IndyVdrPool | undefined
+
+// seqNo is only set when the node has the object (a missing schema still returns data).
+// Replies of nodes that failed or timed out are not always JSON.
+function nodeHasObject(reply: string | undefined) {
+  try {
+    return reply !== undefined && Boolean(JSON.parse(reply).result?.seqNo)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * A write is confirmed once a quorum of nodes applied it, but a read is served by a single node that can still
+ * be behind. Waits until every node returns the object, so any read that follows finds it.
+ */
+export async function waitForAllLedgerNodes(createRequest: () => IndyVdrRequest, timeoutMs = 20000) {
+  allNodesPool ??= new PoolCreate({ parameters: { transactions: genesisTransactions } })
+  const { nodes } = await allNodesPool.status
+  const deadline = Date.now() + timeoutMs
+
+  while (true) {
+    const replies = (await allNodesPool.submitAction(createRequest(), { nodes })) as Record<string, string>
+    if (nodes.every((node) => nodeHasObject(replies[node]))) return
+
+    if (Date.now() > deadline) throw new Error(`Not all ledger nodes have the object after ${timeoutMs}ms`)
+    await sleep(200)
+  }
 }
