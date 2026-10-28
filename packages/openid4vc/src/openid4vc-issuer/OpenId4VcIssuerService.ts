@@ -614,10 +614,7 @@ export class OpenId4VcIssuerService {
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
-    const parsedCredentialRequest = vcIssuer.parseCredentialRequestPayload({
-      issuerMetadata,
-      credentialRequest: options.credentialRequest,
-    })
+    const { parsedCredentialRequest } = options
     const { credentialRequest, credentialIdentifier, format } = parsedCredentialRequest
 
     if (credentialIdentifier) {
@@ -704,7 +701,7 @@ export class OpenId4VcIssuerService {
 
       verification,
 
-      credentialRequest: options.credentialRequest,
+      credentialRequest,
       credentialRequestFormat: format,
 
       // Matching credential configuration

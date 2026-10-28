@@ -24,6 +24,7 @@ import type {
   OpenId4VciCredentialRequestFormatSpecific,
   OpenId4VciDeferredCredentialRequest,
   OpenId4VciIssuerInfo,
+  OpenId4VciParsedCredentialRequest,
   OpenId4VciTxCode,
   OpenId4VcJwtIssuer,
   VerifiedOpenId4VcCredentialHolderBinding,
@@ -218,7 +219,7 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {
-  credentialRequest: OpenId4VciCredentialRequest
+  parsedCredentialRequest: OpenId4VciParsedCredentialRequest
   authorization: OpenId4VciCredentialRequestAuthorization
 
   /**

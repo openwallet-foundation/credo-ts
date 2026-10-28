@@ -286,7 +286,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         agentContext,
         {
           issuanceSession,
-          credentialRequest: parsedCredentialRequest.credentialRequest,
+          parsedCredentialRequest,
           authorization: {
             authorizationServer,
             accessToken: {
