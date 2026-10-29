@@ -930,6 +930,41 @@ describe('W3cJsonLdCredentialsService', () => {
   })
 
   describe('Ed25519Signature2020', () => {
+    it('should reject a credential signed with a key whose controller is another DID', async () => {
+      const issuer = await create2020Identity(
+        agentContext,
+        'did:example:issuer-2020-other-controller',
+        'did:example:issuer-2020-other-controller#key-1'
+      )
+      const controllerDid = 'did:example:controller-2020'
+
+      const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
+        format: ClaimFormat.LdpVc,
+        credential: JsonTransformer.fromJSON(
+          { ...Ed25519Signature2020Fixtures.TEST_LD_DOCUMENT, issuer: issuer.did },
+          W3cCredential
+        ),
+        proofType: 'Ed25519Signature2020',
+        verificationMethod: issuer.verificationMethod,
+      })
+
+      // The issuer's DID document names another DID as the controller of its key, which lists the key
+      const issuerDocument = documents[issuer.did] as { verificationMethod: Array<{ controller: string }> }
+      issuerDocument.verificationMethod[0].controller = controllerDid
+      documents[controllerDid] = {
+        '@context': ['https://www.w3.org/ns/did/v1'],
+        id: controllerDid,
+        assertionMethod: [issuer.verificationMethod],
+      }
+
+      const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain(
+        `is controlled by '${controllerDid}', not by the DID document '${issuer.did}'`
+      )
+    })
+
     it('should dynamically sign and verify a credential', async () => {
       const issuer = await create2020Identity(
         agentContext,
