@@ -6,7 +6,7 @@ import {
   getCredentialConfigurationsMatchingRequestFormat,
 } from '@openid4vc/openid4vci'
 import type { Response, Router } from 'express'
-import { getCredentialConfigurationsSupportedForScopes } from '../../shared'
+import { getCredentialConfigurationsSupportedForScopes, type OpenId4VciParsedCredentialRequest } from '../../shared'
 import {
   getRequestContext,
   sendJsonResponse,
@@ -54,7 +54,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
 
     const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
 
-    let parsedCredentialRequest: Awaited<ReturnType<typeof vcIssuer.parseCredentialRequest>>
+    let parsedCredentialRequest: OpenId4VciParsedCredentialRequest
     try {
       parsedCredentialRequest = await vcIssuer.parseCredentialRequest({
         credentialRequest: request.body,
