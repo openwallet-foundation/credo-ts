@@ -3,6 +3,7 @@ import type { DependencyManager } from '../../../../../core/src/index'
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { DidCommProtocol } from '../../../models'
 import { DidCommDiscoverFeaturesModule } from '../DidCommDiscoverFeaturesModule'
 import { DidCommDiscoverFeaturesV1Service } from '../protocol/v1'
@@ -29,6 +30,7 @@ describe('DiscoverFeaturesModule', () => {
       registerInstances: [
         [DidCommFeatureRegistry, featureRegistry],
         [DidCommMessageHandlerRegistry, new DidCommMessageHandlerRegistry()],
+        [DidCommModuleConfig, new DidCommModuleConfig()],
         [DidCommDiscoverFeaturesV2Service, { register: vi.fn() } as unknown as DidCommDiscoverFeaturesV2Service],
         [DidCommDiscoverFeaturesV1Service, { register: vi.fn() } as unknown as DidCommDiscoverFeaturesV1Service],
       ],
