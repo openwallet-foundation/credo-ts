@@ -2,6 +2,8 @@ import { ClassValidationError, JsonTransformer } from '@credo-ts/core'
 
 import { DidCommProblemReportV2Message } from '../../messages/problem-reports/DidCommProblemReportV2Message'
 import { DidCommTrustPingMessage } from '../../modules/connections/messages/DidCommTrustPingMessage'
+import { DidCommOfferCredentialV2Message } from '../../modules/credentials/protocol/v2/messages/DidCommOfferCredentialV2Message'
+import { DidCommProposePresentationV2Message } from '../../modules/proofs/protocol/v2/messages/DidCommProposePresentationV2Message'
 import { DidCommForwardV2Message } from '../../modules/routing/protocol/v2/messages/DidCommForwardV2Message'
 import { normalizeV2PlaintextToV1 } from '../normalize'
 import type { DidCommV2PlaintextMessage } from '../types'
@@ -340,6 +342,17 @@ describe('normalizeV2PlaintextToV1', () => {
     expect(v1.expires_time).toBe(1547581321)
   })
 
+  it('maps the expires_time header to the ~timing expiry', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      id: 'msg-1',
+      type: 'https://didcomm.org/trust_ping/1.0/ping',
+      expires_time: 1547581321,
+    })
+
+    expect(v1['~timing']).toEqual({ expires_time: '2019-01-15T19:42:01.000Z' })
+    const message = JsonTransformer.fromJSON(v1, DidCommTrustPingMessage)
+    expect(message.timing?.expiresTime).toEqual(new Date('2019-01-15T19:42:01.000Z'))
+  })
   it('round-trip: v2 with lang, attachments, thread, and body normalizes to v1', () => {
     const v2: DidCommV2PlaintextMessage = {
       id: 'msg-round',
@@ -371,5 +384,75 @@ describe('normalizeV2PlaintextToV1', () => {
     expect(attach).toHaveLength(1)
     expect(attach[0]).toMatchObject({ '@id': 'att-1', data: { json: { foo: 'bar' } } })
     expect(v1.comment).toBe('hello')
+  })
+
+  it('rebuilds formats and the named attachment array from attachments that have a format', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      id: 'offer-1',
+      type: 'https://didcomm.org/issue-credential/2.0/offer-credential',
+      body: {},
+      attachments: [
+        {
+          id: 'anoncreds',
+          media_type: 'application/json',
+          format: 'anoncreds/credential-offer@v1.0',
+          data: { base64: 'e30=' },
+        },
+        { id: 'extra', data: { json: { foo: 'bar' } } },
+      ],
+    })
+
+    expect(v1).toMatchObject({
+      formats: [{ attach_id: 'anoncreds', format: 'anoncreds/credential-offer@v1.0' }],
+      'offers~attach': [{ '@id': 'anoncreds', 'mime-type': 'application/json', data: { base64: 'e30=' } }],
+      '~attach': [{ '@id': 'extra', data: { json: { foo: 'bar' } } }],
+    })
+    const message = JsonTransformer.fromJSON(v1, DidCommOfferCredentialV2Message)
+    expect(message.formats[0].attachmentId).toBe('anoncreds')
+    expect(message.offerAttachments[0].getDataAsJson()).toEqual({})
+    expect(message.appendedAttachments?.[0].id).toBe('extra')
+  })
+
+  it('rebuilds the named attachment array for a newer minor version of the protocol', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      id: 'offer-1',
+      type: 'https://didcomm.org/issue-credential/2.1/offer-credential',
+      body: {},
+      attachments: [{ id: 'anoncreds', format: 'anoncreds/credential-offer@v1.0', data: { base64: 'e30=' } }],
+    })
+
+    expect(v1['offers~attach']).toEqual([{ '@id': 'anoncreds', data: { base64: 'e30=' } }])
+    expect(v1['~attach']).toBeUndefined()
+  })
+
+  it('keeps body formats that have no attachment next to the rebuilt ones', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      id: 'propose-1',
+      type: 'https://didcomm.org/present-proof/2.0/propose-presentation',
+      body: { formats: [{ attach_id: 'anoncreds', format: 'anoncreds/proof-request@v1.0' }] },
+      attachments: [
+        { id: 'dif', format: 'dif/presentation-exchange/definitions@v1.0', data: { json: { input_descriptors: [] } } },
+      ],
+    })
+
+    const message = JsonTransformer.fromJSON(v1, DidCommProposePresentationV2Message)
+    expect(message.formats.map(({ attachmentId }) => attachmentId)).toEqual(['anoncreds', 'dif'])
+    expect(message.proposalAttachments.map(({ id }) => id)).toEqual(['dif'])
+  })
+
+  it('keeps a named attachment array sent in the body next to the rebuilt one', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      id: 'offer-1',
+      type: 'https://didcomm.org/issue-credential/2.0/offer-credential',
+      body: {
+        formats: [{ attach_id: 'old', format: 'anoncreds/credential-offer@v1.0' }],
+        'offers~attach': [{ '@id': 'old', 'mime-type': 'application/json', data: { base64: 'e30=' } }],
+      },
+      attachments: [{ id: 'new', format: 'anoncreds/credential-offer@v1.0', data: { base64: 'e30=' } }],
+    })
+
+    const message = JsonTransformer.fromJSON(v1, DidCommOfferCredentialV2Message)
+    expect(message.formats.map(({ attachmentId }) => attachmentId)).toEqual(['old', 'new'])
+    expect(message.offerAttachments.map(({ id }) => id)).toEqual(['old', 'new'])
   })
 })

@@ -1,6 +1,6 @@
 import type { Logger } from '@credo-ts/core'
 import type { DidCommPlaintextMessage } from '../types'
-import { mapV2AttachmentToV1 } from './plaintextBuilder'
+import { getFormatAttachmentKey, mapV2AttachmentToV1 } from './plaintextBuilder'
 import type { DidCommV2PlaintextMessage } from './types'
 
 const reservedBodyKeys = [
@@ -25,7 +25,7 @@ const reservedBodyKeys = [
 
 /**
  * Normalize a DIDComm v2 plaintext message to v1 shape so existing handlers work.
- * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→lang and ~l10n, please_ack→~please_ack, ack→ack, attachments→~attach.
+ * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→lang and ~l10n, please_ack→~please_ack, ack→ack, attachments→~attach (or formats + the named *~attach array for 2.0 credential and proof messages).
  * This allows v2 plaintext to be processed by v1 message handlers without changes.
  *
  * @param v2 - The DIDComm v2 plaintext message
@@ -87,8 +87,30 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?:
     v1['~please_ack'] = { on: ['RECEIPT'] }
   }
 
-  if (attachments !== undefined && Array.isArray(attachments) && attachments.length > 0) {
-    v1['~attach'] = attachments.map(mapV2AttachmentToV1)
+  const formatAttachmentKey = getFormatAttachmentKey(type)
+  // Assumes any attachment with a format on a 2.0 credential or proof message is a protocol format attachment
+  const formatAttachments =
+    formatAttachmentKey && Array.isArray(attachments)
+      ? attachments.filter((attachment) => attachment.format !== undefined)
+      : []
+  if (formatAttachmentKey) {
+    if (formatAttachments.length > 0) {
+      v1.formats = [
+        ...(Array.isArray(bodyFields.formats) ? bodyFields.formats : []),
+        ...formatAttachments.map((attachment) => ({ attach_id: attachment.id, format: attachment.format })),
+      ]
+    }
+    v1[formatAttachmentKey] = [
+      ...(Array.isArray(bodyFields[formatAttachmentKey]) ? bodyFields[formatAttachmentKey] : []),
+      ...formatAttachments.map((attachment) => mapV2AttachmentToV1({ ...attachment, format: undefined })),
+    ]
+  }
+
+  const otherAttachments = Array.isArray(attachments)
+    ? attachments.filter((attachment) => !formatAttachments.includes(attachment))
+    : []
+  if (otherAttachments.length > 0) {
+    v1['~attach'] = otherAttachments.map(mapV2AttachmentToV1)
   }
 
   if (return_route !== undefined) {
@@ -96,7 +118,11 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?:
   }
 
   if (created_time !== undefined) v1.created_time = created_time
-  if (expires_time !== undefined) v1.expires_time = expires_time
+  if (expires_time !== undefined) {
+    v1.expires_time = expires_time
+    const expiresDate = typeof expires_time === 'number' ? new Date(expires_time * 1000) : undefined
+    if (expiresDate && !Number.isNaN(expiresDate.getTime())) v1['~timing'] = { expires_time: expiresDate.toISOString() }
+  }
 
   return v1
 }

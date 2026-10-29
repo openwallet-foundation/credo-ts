@@ -4,6 +4,12 @@ import { DidCommAttachment, DidCommAttachmentData } from '../../decorators/attac
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { DidCommProblemReportV2Message } from '../../messages/problem-reports/DidCommProblemReportV2Message'
 import { DidCommTrustPingMessage } from '../../modules/connections/messages/DidCommTrustPingMessage'
+import { DidCommCredentialFormatSpec } from '../../modules/credentials/models'
+import { DidCommCredentialV2Preview } from '../../modules/credentials/protocol/v2/messages/DidCommCredentialV2Preview'
+import { DidCommOfferCredentialV2Message } from '../../modules/credentials/protocol/v2/messages/DidCommOfferCredentialV2Message'
+import { DidCommBatchMessage } from '../../modules/message-pickup/protocol/v1/messages/DidCommBatchMessage'
+import { DidCommProofFormatSpec } from '../../modules/proofs/models/DidCommProofFormatSpec'
+import { DidCommProposePresentationV2Message } from '../../modules/proofs/protocol/v2/messages/DidCommProposePresentationV2Message'
 import { normalizeV2PlaintextToV1 } from '../normalize'
 import { buildV2PlaintextFromMessage } from '../plaintextBuilder'
 
@@ -47,6 +53,30 @@ describe('buildV2PlaintextFromMessage', () => {
       media_type: 'application/json',
       data: { json: { foo: 'bar' } },
     })
+  })
+
+  it('maps data.sha256 to a multihash data.hash and back', () => {
+    const message = new DidCommTrustPingMessage({ comment: 'hi' })
+    message.addAppendedAttachment(
+      new DidCommAttachment({
+        id: 'att-1',
+        data: new DidCommAttachmentData({
+          links: ['https://example.com/hello'],
+          sha256: '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+        }),
+      })
+    )
+
+    const v2 = buildV2PlaintextFromMessage(message)
+    expect(v2.attachments?.[0].data).toEqual({
+      links: ['https://example.com/hello'],
+      hash: 'zQmRN6wdp1S2A5EtjW9A3M1vKSBuQQGcgvuhoMUoEz4iiT5',
+    })
+
+    const received = JsonTransformer.fromJSON(normalizeV2PlaintextToV1(v2), DidCommTrustPingMessage)
+    expect(received.appendedAttachments?.[0].data.sha256).toBe(
+      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
+    )
   })
 
   it('lifts ~transport return_route to a top-level v2 return_route header', () => {
@@ -160,5 +190,81 @@ describe('buildV2PlaintextFromMessage', () => {
       return_route: 'all',
       body: { code: 'e.p.msg.message-parse-failure', comment: 'Bad message: {1}', args: ['detail'] },
     })
+  })
+
+  it('moves a formats attachment array into attachments with the format of each attachment', () => {
+    const message = new DidCommOfferCredentialV2Message({
+      id: 'offer-1',
+      formats: [
+        new DidCommCredentialFormatSpec({ attachmentId: 'anoncreds', format: 'anoncreds/credential-offer@v1.0' }),
+      ],
+      offerAttachments: [
+        new DidCommAttachment({
+          id: 'anoncreds',
+          mimeType: 'application/json',
+          data: new DidCommAttachmentData({ base64: 'e30=' }),
+        }),
+      ],
+      credentialPreview: DidCommCredentialV2Preview.fromRecord({ name: 'Alice' }),
+    })
+    message.addAppendedAttachment(
+      new DidCommAttachment({ id: 'extra', data: new DidCommAttachmentData({ json: { foo: 'bar' } }) })
+    )
+
+    const v2 = buildV2PlaintextFromMessage(message)
+
+    expect(v2.body).toEqual({ credential_preview: expect.anything() })
+    expect(v2.attachments).toEqual([
+      {
+        id: 'anoncreds',
+        media_type: 'application/json',
+        format: 'anoncreds/credential-offer@v1.0',
+        data: { base64: 'e30=' },
+      },
+      { id: 'extra', data: { json: { foo: 'bar' } } },
+    ])
+  })
+
+  it('keeps a proposal format without an attachment in body formats', () => {
+    const message = new DidCommProposePresentationV2Message({
+      formats: [
+        new DidCommProofFormatSpec({ attachmentId: 'dif', format: 'dif/presentation-exchange/definitions@v1.0' }),
+        new DidCommProofFormatSpec({ attachmentId: 'anoncreds', format: 'anoncreds/proof-request@v1.0' }),
+      ],
+      proposalAttachments: [
+        new DidCommAttachment({ id: 'dif', data: new DidCommAttachmentData({ json: { input_descriptors: [] } }) }),
+      ],
+    })
+
+    const v2 = buildV2PlaintextFromMessage(message)
+
+    expect(v2.body).toEqual({ formats: [{ attach_id: 'anoncreds', format: 'anoncreds/proof-request@v1.0' }] })
+    expect(v2.attachments).toEqual([
+      { id: 'dif', format: 'dif/presentation-exchange/definitions@v1.0', data: { json: { input_descriptors: [] } } },
+    ])
+  })
+
+  it('round trips a proposal that lists a format without any attachment', () => {
+    const message = new DidCommProposePresentationV2Message({
+      formats: [new DidCommProofFormatSpec({ attachmentId: 'anoncreds', format: 'anoncreds/proof-request@v1.0' })],
+      proposalAttachments: [],
+    })
+
+    const received = JsonTransformer.fromJSON(
+      normalizeV2PlaintextToV1(buildV2PlaintextFromMessage(message)),
+      DidCommProposePresentationV2Message
+    )
+
+    expect(received.formats.map(({ attachmentId }) => attachmentId)).toEqual(['anoncreds'])
+    expect(received.proposalAttachments).toEqual([])
+  })
+
+  it('leaves the named attachment array of a type without formats in the body', () => {
+    const message = new DidCommBatchMessage({ messages: [] })
+
+    const v2 = buildV2PlaintextFromMessage(message)
+
+    expect(v2.body).toEqual({ 'messages~attach': [] })
+    expect(v2.attachments).toBeUndefined()
   })
 })

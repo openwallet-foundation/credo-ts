@@ -1,6 +1,82 @@
-import { utils } from '@credo-ts/core'
+import { MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder, utils } from '@credo-ts/core'
 import type { DidCommMessage } from '../DidCommMessage'
+import { type ParsedMessageType, parseMessageType, supportsIncomingMessageType } from '../util/messageType'
 import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from './types'
+
+const formatAttachmentKeys: Record<string, string> = {
+  'https://didcomm.org/issue-credential/2.0/propose-credential': 'filters~attach',
+  'https://didcomm.org/issue-credential/2.0/offer-credential': 'offers~attach',
+  'https://didcomm.org/issue-credential/2.0/request-credential': 'requests~attach',
+  'https://didcomm.org/issue-credential/2.0/issue-credential': 'credentials~attach',
+  'https://didcomm.org/present-proof/2.0/propose-presentation': 'proposals~attach',
+  'https://didcomm.org/present-proof/2.0/request-presentation': 'request_presentations~attach',
+  'https://didcomm.org/present-proof/2.0/presentation': 'presentations~attach',
+}
+
+export function getFormatAttachmentKey(type: string): string | undefined {
+  let incoming: ParsedMessageType
+  try {
+    incoming = parseMessageType(type)
+  } catch {
+    return undefined
+  }
+  return Object.entries(formatAttachmentKeys).find(([uri]) =>
+    supportsIncomingMessageType(incoming, parseMessageType(uri))
+  )?.[1]
+}
+
+interface AttachmentFormat {
+  attach_id: string
+  format: string
+}
+
+function splitFormatAttachments(
+  type: string,
+  body: Record<string, unknown>
+): { body: Record<string, unknown>; attachments: DidCommV2Attachment[] } {
+  const key = getFormatAttachmentKey(type)
+  const formats = body.formats as AttachmentFormat[] | undefined
+  const attachments = key ? body[key] : undefined
+  if (!Array.isArray(formats) || !Array.isArray(attachments)) return { body, attachments: [] }
+
+  const v2Attachments = attachments.map((attachment: Record<string, unknown>) => {
+    const v2 = mapV1AttachmentToV2(attachment)
+    const format = formats.find((entry) => entry.attach_id === v2.id)?.format
+    if (format !== undefined) v2.format = format
+    return v2
+  })
+
+  const rest = Object.fromEntries(Object.entries(body).filter(([name]) => name !== key && name !== 'formats'))
+  // RFC 0454 lets a proposal list a format with no attachment, that entry stays in the body
+  const unattachedFormats = formats.filter((entry) => !v2Attachments.some(({ id }) => id === entry.attach_id))
+
+  return {
+    body: unattachedFormats.length > 0 ? { ...rest, formats: unattachedFormats } : rest,
+    attachments: v2Attachments,
+  }
+}
+
+const sha256MultiHashPrefix = Uint8Array.of(0x12, 0x20)
+
+// Spec v2.1 does not say how the multihash is written as a string. Multibase base58btc, as in hashlinks
+function mapV1DataToV2(data: Record<string, unknown>): DidCommV2Attachment['data'] {
+  const { sha256, ...rest } = data
+  if (typeof sha256 !== 'string' || !/^[0-9a-f]{64}$/i.test(sha256)) return data as DidCommV2Attachment['data']
+  const multiHash = TypedArrayEncoder.concat([sha256MultiHashPrefix, TypedArrayEncoder.fromHex(sha256)])
+  return { ...rest, hash: MultiBaseEncoder.encode(multiHash, 'base58btc') }
+}
+
+function mapV2DataToV1(data: DidCommV2Attachment['data']): Record<string, unknown> {
+  if (typeof data?.hash !== 'string') return data
+  const { hash, ...rest } = data
+  try {
+    const multiHash = MultiHashEncoder.decode(MultiBaseEncoder.decode(hash).data)
+    if (multiHash.hashName !== 'sha-256' || multiHash.data.length !== 32) return data
+    return { ...rest, sha256: TypedArrayEncoder.toHex(multiHash.data) }
+  } catch {
+    return data
+  }
+}
 
 /**
  * Map a v1 ~attach item to v2 attachments format.
@@ -9,7 +85,7 @@ import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from './types'
 export function mapV1AttachmentToV2(att: Record<string, unknown>): DidCommV2Attachment {
   const v2: DidCommV2Attachment = {
     id: (att['@id'] ?? att.id) as string,
-    data: (att.data ?? {}) as DidCommV2Attachment['data'],
+    data: mapV1DataToV2((att.data ?? {}) as Record<string, unknown>),
   }
   if (att.description !== undefined) v2.description = att.description as string
   if (att.filename !== undefined) v2.filename = att.filename as string
@@ -31,7 +107,7 @@ export function mapV1AttachmentToV2(att: Record<string, unknown>): DidCommV2Atta
 export function mapV2AttachmentToV1(v2: DidCommV2Attachment): Record<string, unknown> {
   const v1: Record<string, unknown> = {
     '@id': v2.id,
-    data: v2.data,
+    data: mapV2DataToV1(v2.data),
   }
   if (v2.description !== undefined) v1.description = v2.description
   if (v2.filename !== undefined) v1.filename = v2.filename
@@ -49,7 +125,7 @@ export function mapV2AttachmentToV1(v2: DidCommV2Attachment): Record<string, unk
 /**
  * Build a DIDComm v2 plaintext message from a DidCommMessage.
  * For messages that implement toV2Plaintext() (e.g. DidCommBasicMessageV2), uses that directly.
- * Otherwise maps v1 shape: @type→type, @id→id, ~thread→thid/pthid, lang or ~l10n→lang, ~please_ack→please_ack, ~attach→attachments, ~timing→created_time/expires_time, remaining non-decorator fields→body.
+ * Otherwise maps v1 shape: @type→type, @id→id, ~thread→thid/pthid, lang or ~l10n→lang, ~please_ack→please_ack, ~attach and the formats + named *~attach array→attachments, ~timing→created_time/expires_time, remaining non-decorator fields→body.
  *
  * @param message - The DidCommMessage to convert
  * @param config - Optional config (e.g. useDidSovPrefixWhereAllowed, from/to override for connection-based sends)
@@ -102,10 +178,15 @@ export function buildV2PlaintextFromMessage(
     ...rest
   } = v1
 
+  const { body, attachments: formatAttachments } = splitFormatAttachments(
+    type as string,
+    Object.fromEntries(Object.entries(rest).filter(([key]) => !key.startsWith('~')))
+  )
+
   const v2: DidCommV2PlaintextMessage = {
     id: id as string,
     type: type as string,
-    body: Object.fromEntries(Object.entries(rest).filter(([key]) => !key.startsWith('~'))),
+    body,
   }
 
   const fromVal = (from ?? config?.from) as string | undefined
@@ -129,9 +210,11 @@ export function buildV2PlaintextFromMessage(
     if (returnRoute !== undefined) v2.return_route = returnRoute as string
   }
 
-  if (attach !== undefined && Array.isArray(attach) && attach.length > 0) {
-    v2.attachments = attach.map((a) => mapV1AttachmentToV2(a as Record<string, unknown>))
-  }
+  const attachments = [
+    ...formatAttachments,
+    ...(Array.isArray(attach) ? attach.map((a) => mapV1AttachmentToV2(a as Record<string, unknown>)) : []),
+  ]
+  if (attachments.length > 0) v2.attachments = attachments
 
   // Other ~timing fields have no v2 header (spec v2.1 Message Headers)
   const outTime = message.timing?.outTime
