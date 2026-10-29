@@ -66,6 +66,30 @@ describe('DidCommBasicMessageV2', () => {
       expect(v2.pthid).toBe('parent-123')
     })
 
+    it('reads created_time of a received v2 message', () => {
+      const received = JsonTransformer.fromJSON(
+        normalizeV2PlaintextToV1({
+          id: 'msg-123',
+          type: 'https://didcomm.org/basicmessage/2.0/message',
+          created_time: 1700000000,
+          body: { content: 'Hello' },
+        }),
+        DidCommBasicMessageV2
+      )
+      expect(received.createdTime).toBe(1700000000)
+      expect(received.toV2Plaintext().created_time).toBe(1700000000)
+    })
+
+    it('carries created_time as the ~timing out_time over DIDComm v1', () => {
+      const msg = new DidCommBasicMessageV2({ content: 'Hello', id: 'msg-123', createdTime: 1700000000 })
+      expect(JSON.parse(JSON.stringify(msg.toJSON()))).toEqual({
+        '@id': 'msg-123',
+        '@type': 'https://didcomm.org/basicmessage/2.0/message',
+        content: 'Hello',
+        '~timing': { out_time: '2023-11-14T22:13:20.000Z' },
+      })
+    })
+
     it('keeps lang after a v2 receive round trip', () => {
       const msg = new DidCommBasicMessageV2({ content: 'Bonjour', lang: 'fr' })
       const received = JsonTransformer.fromJSON(normalizeV2PlaintextToV1(msg.toV2Plaintext()), DidCommBasicMessageV2)

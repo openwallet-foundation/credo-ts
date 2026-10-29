@@ -11,8 +11,6 @@ const reservedBodyKeys = [
   'from_prior',
   'ack',
   'lang',
-  'created_time',
-  'expires_time',
   // class-transformer also binds a decorator from its property name, not only from its ~ key
   'service',
   'timing',
@@ -25,7 +23,7 @@ const reservedBodyKeys = [
 
 /**
  * Normalize a DIDComm v2 plaintext message to v1 shape so existing handlers work.
- * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→lang and ~l10n, please_ack→~please_ack, ack→ack, attachments→~attach (or formats + the named *~attach array for 2.0 credential and proof messages).
+ * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→lang and ~l10n, please_ack→~please_ack, ack→ack, attachments→~attach (or formats + the named *~attach array for 2.0 credential and proof messages), created_time/expires_time→~timing.
  * This allows v2 plaintext to be processed by v1 message handlers without changes.
  *
  * @param v2 - The DIDComm v2 plaintext message
@@ -117,12 +115,19 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?:
     v1['~transport'] = { return_route }
   }
 
-  if (created_time !== undefined) v1.created_time = created_time
-  if (expires_time !== undefined) {
-    v1.expires_time = expires_time
-    const expiresDate = typeof expires_time === 'number' ? new Date(expires_time * 1000) : undefined
-    if (expiresDate && !Number.isNaN(expiresDate.getTime())) v1['~timing'] = { expires_time: expiresDate.toISOString() }
-  }
+  // The headers become the ~timing decorator and nothing else, so a body field with the same name stays protocol data
+  const timing: Record<string, string> = {}
+  const createdDate = secondsToDate(created_time)
+  if (createdDate) timing.out_time = createdDate.toISOString()
+  const expiresDate = secondsToDate(expires_time)
+  if (expiresDate) timing.expires_time = expiresDate.toISOString()
+  if (Object.keys(timing).length > 0) v1['~timing'] = timing
 
   return v1
+}
+
+function secondsToDate(seconds: unknown): Date | undefined {
+  if (typeof seconds !== 'number') return undefined
+  const date = new Date(seconds * 1000)
+  return Number.isNaN(date.getTime()) ? undefined : date
 }

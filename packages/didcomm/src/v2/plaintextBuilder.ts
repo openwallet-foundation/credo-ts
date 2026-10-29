@@ -123,41 +123,23 @@ export function mapV2AttachmentToV1(v2: DidCommV2Attachment): Record<string, unk
 }
 
 /**
- * Build a DIDComm v2 plaintext message from a DidCommMessage.
- * For messages that implement toV2Plaintext() (e.g. DidCommBasicMessageV2), uses that directly.
- * Otherwise maps v1 shape: @type→type, @id→id, ~thread→thid/pthid, lang or ~l10n→lang, ~please_ack→please_ack, ~attach and the formats + named *~attach array→attachments, ~timing→created_time/expires_time, remaining non-decorator fields→body.
+ * Build a DIDComm v2 plaintext message from a DidCommMessage with the default mapping.
+ *
+ * Maps v1 shape: @type→type, @id→id, ~thread→thid/pthid, lang or ~l10n→lang, ~please_ack→please_ack,
+ * ~attach and the formats + named *~attach array→attachments, ~timing→created_time/expires_time,
+ * remaining non-decorator fields→body.
+ *
+ * A message class whose v2 variant differs from this mapping can call this function from its own
+ * `toV2Plaintext()` and then adjust the result, for example to move a body field into a header.
  *
  * @param message - The DidCommMessage to convert
- * @param config - Optional config (e.g. useDidSovPrefixWhereAllowed, from/to override for connection-based sends)
+ * @param config - Optional config (e.g. useDidSovPrefixWhereAllowed)
  * @returns A DIDComm v2 plaintext message
  */
-export function buildV2PlaintextFromMessage(
+export function buildDefaultV2PlaintextFromMessage(
   message: DidCommMessage,
-  config?: {
-    useDidSovPrefixWhereAllowed?: boolean
-    /** Override from (e.g. connection.did) when message doesn't have it */
-    from?: string
-    /** Override to (e.g. [connection.theirDid]) when message doesn't have it */
-    to?: string[]
-    /** Compact JWS to attach as the `from_prior` header (DIDComm V2 DID rotation). */
-    fromPrior?: string
-  }
+  config?: { useDidSovPrefixWhereAllowed?: boolean }
 ): DidCommV2PlaintextMessage {
-  const v2Native = message as unknown as { toV2Plaintext?: () => DidCommV2PlaintextMessage }
-  if (typeof v2Native.toV2Plaintext === 'function') {
-    const plaintext = v2Native.toV2Plaintext()
-    if (plaintext.from === undefined && config?.from !== undefined) plaintext.from = config.from
-    if (plaintext.to === undefined && config?.to !== undefined) {
-      plaintext.to = Array.isArray(config.to) ? config.to : [config.to]
-    }
-    if (plaintext.from_prior === undefined && config?.fromPrior !== undefined) {
-      plaintext.from_prior = config.fromPrior
-    }
-    // thid stays with each class because a problem report carries the reported thread as pthid only
-    if (plaintext.pthid === undefined && message.thread?.parentThreadId) plaintext.pthid = message.thread.parentThreadId
-    return plaintext
-  }
-
   const v1 = message.toJSON({
     useDidSovPrefixWhereAllowed: config?.useDidSovPrefixWhereAllowed ?? false,
   })
@@ -171,10 +153,12 @@ export function buildV2PlaintextFromMessage(
     '~transport': transport,
     '~please_ack': pleaseAck,
     lang,
-    created_time,
-    expires_time,
     from,
     to,
+    // The ack header is set by buildV2PlaintextFromMessage for every message class
+    ack: _ack,
+    // A rotation proof is never replayed from a received message. The sender sets it through the config.
+    from_prior: _fromPrior,
     ...rest
   } = v1
 
@@ -189,10 +173,8 @@ export function buildV2PlaintextFromMessage(
     body,
   }
 
-  const fromVal = (from ?? config?.from) as string | undefined
-  const toVal = (to ?? config?.to) as string | string[] | undefined
-  if (fromVal !== undefined) v2.from = fromVal
-  if (toVal !== undefined) v2.to = Array.isArray(toVal) ? toVal : [toVal as string]
+  if (from !== undefined) v2.from = from as string
+  if (to !== undefined) v2.to = Array.isArray(to) ? (to as string[]) : [to as string]
   if (thread && typeof thread === 'object') {
     if ('thid' in thread && thread.thid !== undefined) v2.thid = thread.thid as string
     if ('pthid' in thread && thread.pthid !== undefined) v2.pthid = thread.pthid as string
@@ -216,15 +198,56 @@ export function buildV2PlaintextFromMessage(
   ]
   if (attachments.length > 0) v2.attachments = attachments
 
+  // The headers come from the ~timing decorator only. A body field with the same name is protocol data and stays in the body.
   // Other ~timing fields have no v2 header (spec v2.1 Message Headers)
   const outTime = message.timing?.outTime
   const expiresTime = message.timing?.expiresTime
-  if (created_time !== undefined) v2.created_time = created_time as number
-  else if (outTime) v2.created_time = utils.dateToSeconds(outTime)
-  if (expires_time !== undefined) v2.expires_time = expires_time as number
-  else if (expiresTime) v2.expires_time = utils.dateToSeconds(expiresTime)
-
-  if (config?.fromPrior !== undefined) v2.from_prior = config.fromPrior
+  if (outTime) v2.created_time = utils.dateToSeconds(outTime)
+  if (expiresTime) v2.expires_time = utils.dateToSeconds(expiresTime)
 
   return v2
+}
+
+/**
+ * Build a DIDComm v2 plaintext message from a DidCommMessage.
+ * For messages that implement toV2Plaintext() (e.g. DidCommBasicMessageV2), uses that directly.
+ * Otherwise uses {@link buildDefaultV2PlaintextFromMessage}.
+ * Then adds the from, to, from_prior, ack and pthid headers that the class did not set.
+ *
+ * @param message - The DidCommMessage to convert
+ * @param config - Optional config (e.g. useDidSovPrefixWhereAllowed, from/to override for connection-based sends)
+ * @returns A DIDComm v2 plaintext message
+ */
+export function buildV2PlaintextFromMessage(
+  message: DidCommMessage,
+  config?: {
+    useDidSovPrefixWhereAllowed?: boolean
+    /** Override from (e.g. connection.did) when message doesn't have it */
+    from?: string
+    /** Override to (e.g. [connection.theirDid]) when message doesn't have it */
+    to?: string[]
+    /** Compact JWS to attach as the `from_prior` header (DIDComm V2 DID rotation). */
+    fromPrior?: string
+  }
+): DidCommV2PlaintextMessage {
+  const v2Native = message as unknown as { toV2Plaintext?: () => DidCommV2PlaintextMessage }
+  const plaintext =
+    typeof v2Native.toV2Plaintext === 'function'
+      ? v2Native.toV2Plaintext()
+      : buildDefaultV2PlaintextFromMessage(message, {
+          useDidSovPrefixWhereAllowed: config?.useDidSovPrefixWhereAllowed,
+        })
+
+  if (plaintext.from === undefined && config?.from !== undefined) plaintext.from = config.from
+  if (plaintext.to === undefined && config?.to !== undefined) {
+    plaintext.to = Array.isArray(config.to) ? config.to : [config.to]
+  }
+  if (plaintext.from_prior === undefined && config?.fromPrior !== undefined) {
+    plaintext.from_prior = config.fromPrior
+  }
+  // The ack header applies to every message class, so a class does not copy it in its own toV2Plaintext()
+  if (plaintext.ack === undefined && Array.isArray(message.ack) && message.ack.length > 0) plaintext.ack = message.ack
+  // thid stays with each class because a problem report carries the reported thread as pthid only
+  if (plaintext.pthid === undefined && message.thread?.parentThreadId) plaintext.pthid = message.thread.parentThreadId
+  return plaintext
 }

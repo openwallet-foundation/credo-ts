@@ -330,18 +330,6 @@ describe('normalizeV2PlaintextToV1', () => {
     expect(() => JsonTransformer.fromJSON(v1, DidCommProblemReportV2Message)).toThrow(ClassValidationError)
   })
 
-  it('passes through created_time and expires_time', () => {
-    const v2: DidCommV2PlaintextMessage = {
-      id: 'msg-1',
-      type: 'https://didcomm.org/trust-ping/1.0/ping',
-      created_time: 1547577721,
-      expires_time: 1547581321,
-    }
-    const v1 = normalizeV2PlaintextToV1(v2)
-    expect(v1.created_time).toBe(1547577721)
-    expect(v1.expires_time).toBe(1547581321)
-  })
-
   it('maps the expires_time header to the ~timing expiry', () => {
     const v1 = normalizeV2PlaintextToV1({
       id: 'msg-1',
@@ -379,7 +367,8 @@ describe('normalizeV2PlaintextToV1', () => {
     expect(v1.to).toEqual(v2.to)
     expect(v1['~thread']).toEqual({ thid: 'thread-1', pthid: 'pthread-1' })
     expect(v1['~l10n']).toEqual({ locale: 'fr' })
-    expect(v1.created_time).toBe(1547577721)
+    expect(v1['~timing']).toEqual({ out_time: '2019-01-15T18:42:01.000Z' })
+    expect(v1.created_time).toBeUndefined()
     const attach = v1['~attach'] as Array<Record<string, unknown>>
     expect(attach).toHaveLength(1)
     expect(attach[0]).toMatchObject({ '@id': 'att-1', data: { json: { foo: 'bar' } } })
@@ -454,5 +443,43 @@ describe('normalizeV2PlaintextToV1', () => {
     const message = JsonTransformer.fromJSON(v1, DidCommOfferCredentialV2Message)
     expect(message.formats.map(({ attachmentId }) => attachmentId)).toEqual(['old', 'new'])
     expect(message.offerAttachments.map(({ id }) => id)).toEqual(['old', 'new'])
+  })
+
+  it('maps the created_time header to the ~timing out_time', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      id: 'msg-1',
+      type: 'https://didcomm.org/trust_ping/1.0/ping',
+      created_time: 1547577721,
+      expires_time: 1547581321,
+    })
+
+    expect(v1['~timing']).toEqual({ out_time: '2019-01-15T18:42:01.000Z', expires_time: '2019-01-15T19:42:01.000Z' })
+    const message = JsonTransformer.fromJSON(v1, DidCommTrustPingMessage)
+    expect(message.timing?.outTime).toEqual(new Date('2019-01-15T18:42:01.000Z'))
+  })
+
+  it('keeps a body field named like a timing header over the header', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      id: 'msg-1',
+      type: 'https://didcomm.org/shorten-url/1.0/shortened-url',
+      expires_time: 1547581321,
+      body: { shortened_url: 'https://s.io/abc', expires_time: 1793872800 },
+    })
+
+    expect(v1.expires_time).toBe(1793872800)
+    expect(v1['~timing']).toEqual({ expires_time: '2019-01-15T19:42:01.000Z' })
+    expect(v1.created_time).toBeUndefined()
+  })
+
+  it('maps the ack header to the ack property', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      id: 'msg-1',
+      type: 'https://didcomm.org/trust_ping/1.0/ping',
+      ack: ['msg-0'],
+      body: { response_requested: false },
+    })
+
+    const message = JsonTransformer.fromJSON(v1, DidCommTrustPingMessage)
+    expect(message.ack).toEqual(['msg-0'])
   })
 })

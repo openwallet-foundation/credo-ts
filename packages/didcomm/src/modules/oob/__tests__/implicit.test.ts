@@ -335,7 +335,12 @@ describe('out of band implicit', () => {
       withKeyAgreement: true,
       alsoKnownAs: [aliasDid],
     })
-    const resolveAlias = resolveAliasTo(aliasDid, await faberAgent.dids.resolveDidDocument(faberDid))
+    // The resolver rejects a document whose id differs from the DID, so the alias document points back through alsoKnownAs
+    const faberDidDocument = await faberAgent.dids.resolveDidDocument(faberDid)
+    const resolveAlias = resolveAliasTo(
+      aliasDid,
+      new DidDocument({ ...faberDidDocument, id: aliasDid, alsoKnownAs: [faberDid] })
+    )
     const [aliceMessageReplay] = setupEventReplaySubjects(
       [aliceAgent],
       [DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged]

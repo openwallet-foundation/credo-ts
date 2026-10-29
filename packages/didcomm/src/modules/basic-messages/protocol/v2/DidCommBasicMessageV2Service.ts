@@ -39,7 +39,7 @@ export class DidCommBasicMessageV2Service extends DidCommBaseBasicMessageService
   ) {
     const basicMessage = new DidCommBasicMessageV2({ content, parentThreadId })
 
-    const sentTimeIso = new Date(basicMessage.createdTime * 1000).toISOString()
+    const sentTimeIso = (basicMessage.timing?.outTime ?? new Date()).toISOString()
 
     const basicMessageRecord = new DidCommBasicMessageRecord({
       sentTime: sentTimeIso,
@@ -61,7 +61,7 @@ export class DidCommBasicMessageV2Service extends DidCommBaseBasicMessageService
     { message, agentContext }: DidCommInboundMessageContext<DidCommBasicMessageV2>,
     connection: DidCommConnectionRecord
   ) {
-    const sentTimeIso = new Date(message.createdTime * 1000).toISOString()
+    const sentTimeIso = (message.timing?.outTime ?? new Date()).toISOString()
 
     const basicMessageRecord = new DidCommBasicMessageRecord({
       sentTime: sentTimeIso,
