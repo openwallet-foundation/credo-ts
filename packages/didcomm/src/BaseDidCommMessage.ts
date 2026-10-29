@@ -1,10 +1,11 @@
 import type { Constructor } from '@credo-ts/core'
 import { utils } from '@credo-ts/core'
 import { Expose } from 'class-transformer'
-import { Matches } from 'class-validator'
+import { IsOptional, IsString, Matches } from 'class-validator'
 import type { ParsedMessageType } from './util/messageType'
 
-export const MessageIdRegExp = /[-_./a-zA-Z0-9]{8,64}/
+// First branch stays unanchored: anchoring it would reject ids that only partly match today, like urn:uuid:<uuid>
+export const MessageIdRegExp = /[-_./a-zA-Z0-9]{8,64}|^[-_./~a-zA-Z0-9]{1,64}$/
 export const MessageTypeRegExp = /(.*?)([a-zA-Z0-9._-]+)\/(\d[^/]*)\/([a-zA-Z0-9._-]+)$/
 
 export type BaseMessageConstructor = Constructor<BaseDidCommMessage>
@@ -18,6 +19,20 @@ export class BaseDidCommMessage {
   @Matches(MessageTypeRegExp)
   public readonly type!: string
   public static readonly type: ParsedMessageType
+
+  /** Sender DID (DIDComm v2 plaintext). Set when normalized from v2 envelope. */
+  @Expose()
+  public from?: string
+
+  /** Recipient DID(s) (DIDComm v2 plaintext). Set when normalized from v2 envelope. */
+  @Expose()
+  public to?: string | string[]
+
+  /** Ids of the messages this message acknowledges (DIDComm v2 `ack` header). Set when normalized from v2 envelope. */
+  @Expose()
+  @IsOptional()
+  @IsString({ each: true })
+  public ack?: string[]
 
   public generateId() {
     return utils.uuid()
