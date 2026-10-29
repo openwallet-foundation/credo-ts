@@ -1683,9 +1683,18 @@ describe('OpenId4VcIssuer', () => {
       issuerRecord.credentialResponseEncryption = { required: true }
       await issuerRepository.update(issuer.context, issuerRecord)
 
+      const warn = vi.spyOn(issuer.context.config.logger, 'warn')
+
       const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+      await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
       expect(issuerMetadata.credentialIssuer.credential_response_encryption).toBeUndefined()
       expect(issuerMetadata.credentialIssuer.credential_request_encryption).toBeUndefined()
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("without 'credentialRequestEncryption'"))
+
+      await expect(issuer.openid4vc.issuer.updateIssuer(issuerRecord)).rejects.toThrow(
+        "'credentialResponseEncryption' requires 'credentialRequestEncryption'"
+      )
     })
 
     it('rejects an issuer with response encryption but without request encryption', async () => {

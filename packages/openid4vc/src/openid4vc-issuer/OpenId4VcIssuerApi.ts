@@ -1,6 +1,6 @@
 import { AgentContext, injectable } from '@credo-ts/core'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
-import { assertCredentialEncryptionConfiguration, OpenId4VcIssuerService } from './OpenId4VcIssuerService'
+import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 import type {
   OpenId4VciCreateCredentialOfferOptions,
   OpenId4VciCreateCredentialResponseOptions,
@@ -69,7 +69,6 @@ export class OpenId4VcIssuerApi {
       metadataSigner,
     } = options
 
-    assertCredentialEncryptionConfiguration(options)
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
 
     issuer.credentialConfigurationsSupported = credentialConfigurationsSupported

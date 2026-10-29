@@ -1291,6 +1291,8 @@ export class OpenId4VcIssuerService {
     issuer: OpenId4VcIssuerRecord,
     options?: OpenId4VcUpdateIssuerOptions
   ) {
+    assertCredentialEncryptionConfiguration(issuer)
+
     // An explicitly provided signer takes precedence (including `null` to remove it). Otherwise the
     // previously configured signer is reused, so the signed metadata stays in sync with the updated
     // issuer metadata.
@@ -2313,9 +2315,12 @@ export class OpenId4VcIssuerService {
   }
 }
 
+const issuersWarnedForResponseEncryption = new Set<string>()
+
 function getCredentialResponseEncryptionMetadata(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord) {
   if (!issuerRecord.credentialRequestEncryption) {
-    if (issuerRecord.credentialResponseEncryption) {
+    if (issuerRecord.credentialResponseEncryption && !issuersWarnedForResponseEncryption.has(issuerRecord.id)) {
+      issuersWarnedForResponseEncryption.add(issuerRecord.id)
       agentContext.config.logger.warn(
         `Issuer '${issuerRecord.issuerId}' has 'credentialResponseEncryption' configured without 'credentialRequestEncryption'. Credential response encryption is not advertised, as OID4VCI requires an encrypted credential request when response encryption is used.`
       )
@@ -2361,7 +2366,7 @@ export function assertCredentialEncryptionConfiguration(
   }
 
   const unsupportedKey = options.credentialRequestEncryption?.jwks.find(
-    (jwk) => jwk.kty === 'oct' || !Kms.supportedKeyDerivationAlgsForKey(jwk).includes('ECDH-ES')
+    (jwk) => jwk.kty === 'oct' || !Kms.allowedKeyDerivationAlgsForKey(jwk).includes('ECDH-ES')
   )
   if (unsupportedKey) {
     throw new CredoError(
