@@ -439,4 +439,20 @@ describe('normalizeV2PlaintextToV1', () => {
     expect(message.formats.map(({ attachmentId }) => attachmentId)).toEqual(['anoncreds', 'dif'])
     expect(message.proposalAttachments.map(({ id }) => id)).toEqual(['dif'])
   })
+
+  it('keeps a named attachment array sent in the body next to the rebuilt one', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      id: 'offer-1',
+      type: 'https://didcomm.org/issue-credential/2.0/offer-credential',
+      body: {
+        formats: [{ attach_id: 'old', format: 'anoncreds/credential-offer@v1.0' }],
+        'offers~attach': [{ '@id': 'old', 'mime-type': 'application/json', data: { base64: 'e30=' } }],
+      },
+      attachments: [{ id: 'new', format: 'anoncreds/credential-offer@v1.0', data: { base64: 'e30=' } }],
+    })
+
+    const message = JsonTransformer.fromJSON(v1, DidCommOfferCredentialV2Message)
+    expect(message.formats.map(({ attachmentId }) => attachmentId)).toEqual(['old', 'new'])
+    expect(message.offerAttachments.map(({ id }) => id)).toEqual(['old', 'new'])
+  })
 })

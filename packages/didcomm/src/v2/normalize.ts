@@ -88,6 +88,7 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?:
   }
 
   const formatAttachmentKey = getFormatAttachmentKey(type)
+  // Assumes any attachment with a format on a 2.0 credential or proof message is a protocol format attachment
   const formatAttachments =
     formatAttachmentKey && Array.isArray(attachments)
       ? attachments.filter((attachment) => attachment.format !== undefined)
@@ -99,9 +100,10 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?:
         ...formatAttachments.map((attachment) => ({ attach_id: attachment.id, format: attachment.format })),
       ]
     }
-    v1[formatAttachmentKey] = formatAttachments.map((attachment) =>
-      mapV2AttachmentToV1({ ...attachment, format: undefined })
-    )
+    v1[formatAttachmentKey] = [
+      ...(Array.isArray(bodyFields[formatAttachmentKey]) ? bodyFields[formatAttachmentKey] : []),
+      ...formatAttachments.map((attachment) => mapV2AttachmentToV1({ ...attachment, format: undefined })),
+    ]
   }
 
   const otherAttachments = Array.isArray(attachments)
