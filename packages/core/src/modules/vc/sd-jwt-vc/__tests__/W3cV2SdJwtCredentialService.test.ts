@@ -525,6 +525,7 @@ describe('W3cV2SdJwtCredentialService', () => {
         holder: holderDidKey.did,
       })
 
+      vi.spyOn(Date, 'now').mockReturnValueOnce(1698151532000)
       const signedJwtVp = await w3cV2JwtCredentialService.signPresentation(agentContext, {
         presentation,
         challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
@@ -532,6 +533,7 @@ describe('W3cV2SdJwtCredentialService', () => {
         format: ClaimFormat.SdJwtW3cVp,
       })
 
+      expect(signedJwtVp.sdJwt.payload.iat).toBe(1698151532)
       expect(signedJwtVp.encoded).toEqual(CredoEs256DidKeyJwtVp)
     })
 
