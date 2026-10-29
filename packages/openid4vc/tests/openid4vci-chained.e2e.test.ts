@@ -369,9 +369,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         {
           type: 'chained',
           issuer: 'http://localhost:4747',
-          dpop: {
-            required: true,
-          },
+          requireDpop: true,
           clientAuthentication: {
             type: 'clientSecret',
             clientId: idpClientId,
@@ -1505,16 +1503,16 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     it.each([
       {
-        mode: 'strict with a JWT access token',
-        required: true,
+        mode: 'supported DPoP with a JWT access token',
+        requireDpop: true,
         tokenType: 'dpop',
         opaqueAccessToken: false,
         introspectionAvailable: false,
         introspectionHasJkt: false,
       },
       {
-        mode: 'strict with a JWT access token bound to another key',
-        required: true,
+        mode: 'supported DPoP with a JWT access token bound to another key',
+        requireDpop: true,
         tokenType: 'DPoP',
         opaqueAccessToken: false,
         introspectionAvailable: false,
@@ -1522,44 +1520,54 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         mismatchedJkt: true,
       },
       {
-        mode: 'strict with an opaque introspected access token',
-        required: true,
+        mode: 'uses supported DPoP when it is not required',
+        requireDpop: false,
         tokenType: 'DPoP',
         opaqueAccessToken: true,
         introspectionAvailable: true,
         introspectionHasJkt: true,
       },
       {
-        mode: 'strict with an opaque token and no introspection endpoint',
-        required: true,
+        mode: 'supported DPoP with an opaque token and no introspection endpoint',
+        requireDpop: true,
         tokenType: 'DPoP',
         opaqueAccessToken: true,
         introspectionAvailable: false,
         introspectionHasJkt: false,
       },
       {
-        mode: 'strict with an opaque token without an introspected jkt',
-        required: true,
+        mode: 'supported DPoP with an opaque token without an introspected jkt',
+        requireDpop: true,
         tokenType: 'DPoP',
         opaqueAccessToken: true,
         introspectionAvailable: true,
         introspectionHasJkt: false,
       },
       {
-        mode: 'strict with an inactive opaque token',
-        required: true,
+        mode: 'supported DPoP with an inactive opaque token',
+        requireDpop: true,
         tokenType: 'DPoP',
         opaqueAccessToken: true,
         introspectionAvailable: true,
         introspectionHasJkt: true,
         introspectionActive: false,
       },
-      { mode: 'strict with a non-DPoP token type', required: true, tokenType: 'Bearer', opaqueAccessToken: true },
-      { mode: 'tolerant with a non-DPoP token type', required: false, tokenType: 'Bearer', opaqueAccessToken: true },
+      {
+        mode: 'required DPoP support with a non-DPoP token type',
+        requireDpop: true,
+        tokenType: 'Bearer',
+        opaqueAccessToken: true,
+      },
+      {
+        mode: 'optional DPoP support with a non-DPoP token type',
+        requireDpop: false,
+        tokenType: 'Bearer',
+        opaqueAccessToken: true,
+      },
     ])(
-      'preserves upstream nonce from authorization initiation through token exchange in $mode mode',
+      'preserves upstream nonce from authorization initiation through token exchange with $mode',
       async ({
-        required,
+        requireDpop,
         tokenType,
         opaqueAccessToken,
         introspectionAvailable,
@@ -1700,7 +1708,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           authorizationServerConfigs: [
             createDpopConfig({
               issuer: upstreamIssuer,
-              dpop: { required },
+              requireDpop,
               clientAuthentication: {
                 type: 'clientSecret',
                 clientId: 'upstream-client',
@@ -1755,11 +1763,10 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         const issuerRedirect = new URL(issuerRedirectLocation)
         const dpopTokenResponse = tokenType.toLowerCase() === 'dpop'
         const shouldReject =
-          required &&
-          (!dpopTokenResponse ||
-            mismatchedJkt ||
-            (opaqueAccessToken && (!introspectionAvailable || !introspectionHasJkt || !introspectionActive)))
-        if (required && !dpopTokenResponse) {
+          !dpopTokenResponse ||
+          mismatchedJkt ||
+          (opaqueAccessToken && (!introspectionAvailable || !introspectionHasJkt || !introspectionActive))
+        if (!dpopTokenResponse) {
           expect(issuerRedirect.searchParams.get('error')).toBe('server_error')
           expect(issuerRedirect.searchParams.get('error_description')).toBe(
             'Upstream authorization server did not return a DPoP-bound access token.'
@@ -1821,7 +1828,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       const result = await issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
         issuanceSession: createDpopIssuanceSession(),
         chainedAuthorizationServerConfig: createDpopConfig({
-          dpop: { required: false, keyId: key.keyId },
+          dpop: { keyId: key.keyId },
         }),
         authorizationServerMetadata: upstreamAuthorizationServerMetadata,
       })
@@ -1845,7 +1852,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         algorithm: Kms.KnownJwaSignatureAlgorithms.ES256,
       })
       const rotatedConfig = createDpopConfig({
-        dpop: { required: false, keyId: rotatedKey.keyId },
+        dpop: { keyId: rotatedKey.keyId },
       })
       const existingSessionOptions = await issuerService.getChainedAuthorizationServerDpopOptions(
         dpopAgent.agent.context,
@@ -1910,20 +1917,33 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       await expect(dpopAgent.agent.kms.getPublicKey({ keyId: dpop.session.keyId })).resolves.toBeDefined()
     })
 
-    it('fails closed when required DPoP has no compatible upstream algorithm', async () => {
+    it('fails when the upstream supports DPoP but Credo has no compatible algorithm', async () => {
       await expect(
         issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
           issuanceSession: createDpopIssuanceSession(),
           chainedAuthorizationServerConfig: createDpopConfig({
+            requireDpop: false,
             dpop: {
-              required: true,
               // Upstream only advertises ES256
-              allowedAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
+              signingAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
             },
           }),
           authorizationServerMetadata: upstreamAuthorizationServerMetadata,
         })
       ).rejects.toThrow('No supported dpop signature algorithms')
+    })
+
+    it('fails when the upstream advertises DPoP without signing algorithms', async () => {
+      await expect(
+        issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+          issuanceSession: createDpopIssuanceSession(),
+          chainedAuthorizationServerConfig: createDpopConfig(),
+          authorizationServerMetadata: {
+            ...upstreamAuthorizationServerMetadata,
+            dpop_signing_alg_values_supported: [],
+          },
+        })
+      ).rejects.toThrow('Authorization server advertises DPoP support without any signing algorithms.')
     })
 
     it('allows optional DPoP downgrade when the upstream does not advertise support', async () => {
@@ -1936,9 +1956,33 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         } as AuthorizationServerMetadata,
       })
 
-      expect(result.required).toBe(false)
       expect(result.dpop).toBeUndefined()
       expect(result.session).toBeUndefined()
+    })
+
+    it('requires DPoP when configured and the upstream does not advertise support', async () => {
+      await expect(
+        issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+          issuanceSession: createDpopIssuanceSession(),
+          chainedAuthorizationServerConfig: createDpopConfig({ requireDpop: true }),
+          authorizationServerMetadata: {
+            issuer: upstreamAuthorizationServerMetadata.issuer,
+            token_endpoint: upstreamAuthorizationServerMetadata.token_endpoint,
+          } as AuthorizationServerMetadata,
+        })
+      ).rejects.toThrow('Authorization server does not support DPoP')
+    })
+
+    it('does not silently fall back when a configured DPoP key cannot be resolved', async () => {
+      await expect(
+        issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+          issuanceSession: createDpopIssuanceSession(),
+          chainedAuthorizationServerConfig: createDpopConfig({
+            dpop: { keyId: 'missing-key' },
+          }),
+          authorizationServerMetadata: upstreamAuthorizationServerMetadata,
+        })
+      ).rejects.toThrow("Key with key id 'missing-key' not found")
     })
 
     it('carries the persisted nonce into the next upstream DPoP request', async () => {

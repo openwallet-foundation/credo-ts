@@ -64,6 +64,7 @@ import type { OpenId4VciCredentialConfigurationSupportedWithFormats, OpenId4VciM
 
 import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { getOid4vcCallbacks } from '../shared/callbacks'
+import { getDpopOptions as getSharedDpopOptions } from '../shared/dpop'
 import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
 import type {
   OpenId4VciAcceptCredentialOfferOptions,
@@ -260,67 +261,25 @@ export class OpenId4VciHolderService {
     {
       jwk,
       dpopSigningAlgValuesSupported,
+      signingAlgValuesSupported,
+      keyId,
       nonce,
-    }: { dpopSigningAlgValuesSupported: string[]; jwk?: Kms.PublicJwk; nonce?: string }
+    }: {
+      dpopSigningAlgValuesSupported: string[]
+      signingAlgValuesSupported?: Kms.KnownJwaSignatureAlgorithm[]
+      keyId?: string
+      jwk?: Kms.PublicJwk
+      nonce?: string
+    }
   ): Promise<RequestDpopOptions> {
-    const kms = agentContext.resolve(Kms.KeyManagementApi)
-
-    if (jwk) {
-      const alg = dpopSigningAlgValuesSupported.find((alg) =>
-        jwk.supportedSignatureAlgorithms.includes(alg as Kms.KnownJwaSignatureAlgorithm)
-      )
-
-      if (!alg) {
-        throw new CredoError(
-          `No supported dpop signature algorithms found in dpop_signing_alg_values_supported '${dpopSigningAlgValuesSupported.join(
-            ', '
-          )}' matching jwk ${jwk.jwkTypeHumanDescription}`
-        )
-      }
-
-      return {
-        signer: {
-          method: 'jwk',
-          alg,
-          publicJwk: jwk.toJson() as Jwk,
-        },
-        nonce,
-      }
-    }
-
-    const alg = dpopSigningAlgValuesSupported.find((algorithm): algorithm is Kms.KnownJwaSignatureAlgorithm => {
-      try {
-        Kms.PublicJwk.supportedPublicJwkClassForSignatureAlgorithm(algorithm as Kms.KnownJwaSignatureAlgorithm)
-
-        // TODO: we should allow providing allowed backends to OID4VC API so you can limit which
-        // KMS backends can be used for DPOP
-        const supportedBackends = kms.supportedBackendsForOperation({
-          operation: 'sign',
-          algorithm: algorithm as Kms.KnownJwaSignatureAlgorithm,
-        })
-        return supportedBackends.length > 0
-      } catch {
-        return false
-      }
-    })
-
-    if (!alg) {
-      throw new CredoError(
-        `No supported dpop signature algorithms found in dpop_signing_alg_values_supported '${dpopSigningAlgValuesSupported.join(
-          ', '
-        )}'`
-      )
-    }
-
-    const key = await kms.createKeyForSignatureAlgorithm({ algorithm: alg })
-    return {
-      signer: {
-        method: 'jwk',
-        alg,
-        publicJwk: key.publicJwk as Jwk,
-      },
+    const result = await getSharedDpopOptions(agentContext, {
+      dpopSigningAlgValuesSupported,
+      signingAlgValuesSupported,
+      keyId,
+      jwk,
       nonce,
-    }
+    })
+    return result.options
   }
 
   public async retrieveAuthorizationCodeUsingPresentation(

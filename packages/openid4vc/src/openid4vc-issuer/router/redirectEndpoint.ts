@@ -189,15 +189,20 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
           chainedAuthorizationServerDpop.session.nonce = dpop?.nonce
         }
 
-        if (chainedAuthorizationServerDpop.required) {
-          if (accessTokenResponse.token_type.toLowerCase() !== 'dpop') {
+        const isDpopTokenResponse = accessTokenResponse.token_type.toLowerCase() === 'dpop'
+        if (chainedAuthorizationServerDpop.dpop || isDpopTokenResponse) {
+          if (!chainedAuthorizationServerDpop.dpop || !isDpopTokenResponse) {
             throw new Oauth2ServerErrorResponseError(
               {
                 error: Oauth2ErrorCodes.ServerError,
                 error_description: 'Upstream authorization server did not return a DPoP-bound access token.',
               },
               {
-                internalMessage: `Strict chained DPoP mode is enabled for '${authorizationServerMetadata.issuer}', but the token response type was '${accessTokenResponse.token_type}' instead of 'DPoP'.`,
+                internalMessage: `Credo ${
+                  chainedAuthorizationServerDpop.dpop
+                    ? 'used DPoP but the token response type was'
+                    : 'did not use DPoP but the token response type was'
+                } '${accessTokenResponse.token_type}' for '${authorizationServerMetadata.issuer}'.`,
               }
             )
           }

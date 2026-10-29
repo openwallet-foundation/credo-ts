@@ -67,16 +67,16 @@ export interface OpenId4VciChainedAuthorizationServerConfig {
    */
   clientAuthentication: OpenId4VciAuthorizationServerClientAuthenticationClientSecret
 
-  dpop?: {
-    /**
-     * Whether DPoP is required for chained authorization and token requests. When required, the
-     * token response must identify the access token as DPoP-bound with `token_type: "DPoP"`.
-     * JWT access tokens are verified, and opaque tokens are introspected, to confirm their
-     * `cnf.jkt` matches the DPoP key. Opaque tokens are rejected if introspection is unavailable,
-     * reports the token inactive, or omits `cnf.jkt`.
-     */
-    required: boolean
+  /**
+   * Require the chained authorization server to advertise DPoP support. If support is not
+   * advertised, the authorization request fails. When the server advertises DPoP, Credo always
+   * uses it and errors rather than falling back if it cannot create a compatible proof.
+   *
+   * @default false
+   */
+  requireDpop?: boolean
 
+  dpop?: {
     /**
      * Existing KMS key id to use for new DPoP sessions. Existing issuance sessions retain their
      * persisted key id, allowing the configured key to be rotated without breaking active sessions.
@@ -84,8 +84,8 @@ export interface OpenId4VciChainedAuthorizationServerConfig {
      */
     keyId?: string
 
-    /** Allow-list for DPoP signing algorithms. */
-    allowedAlgorithms?: Kms.KnownJwaSignatureAlgorithm[]
+    /** Restrict DPoP signing algorithms used by Credo. */
+    signingAlgValuesSupported?: Kms.KnownJwaSignatureAlgorithm[]
   }
 
   /**

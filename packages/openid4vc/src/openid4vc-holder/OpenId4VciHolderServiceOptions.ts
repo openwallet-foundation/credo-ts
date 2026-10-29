@@ -40,6 +40,8 @@ export const openId4VciSupportedCredentialFormats: OpenId4VciSupportedCredential
 export interface OpenId4VciDpopRequestOptions {
   jwk: Kms.PublicJwk
   alg: Kms.KnownJwaSignatureAlgorithm
+  /** Optional local algorithm allow-list, intersected with the authorization server's supported algorithms. */
+  signingAlgValuesSupported?: Kms.KnownJwaSignatureAlgorithm[]
   nonce?: string
 }
 

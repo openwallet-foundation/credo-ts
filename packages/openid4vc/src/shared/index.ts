@@ -1,4 +1,5 @@
 export * from './callbacks'
+export * from './dpop'
 export * from './issuerMetadataUtils'
 export * from './models'
 export * from './OpenId4VcTrustedIssuersVerificationTypes'
