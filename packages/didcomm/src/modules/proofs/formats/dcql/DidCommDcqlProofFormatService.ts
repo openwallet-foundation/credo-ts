@@ -257,9 +257,13 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
         throw new CredoError(`vp_token entry for '${credentialQueryId}' has an invalid number of presentations`)
       }
 
+      const requireHolderBinding = credentialQuery.require_cryptographic_holder_binding !== false
       for (const entry of entries) {
         const { nonce, aud } = this.decodeNonceAndAudience(credentialQuery, entry)
-        if ((nonce !== undefined && nonce !== request.nonce) || (aud !== undefined && aud !== request.audience)) {
+        if (
+          ((requireHolderBinding || nonce !== undefined) && nonce !== request.nonce) ||
+          ((requireHolderBinding || aud !== undefined) && aud !== request.audience)
+        ) {
           throw new CredoError(`vp_token entry for '${credentialQueryId}' has a wrong 'nonce' or 'aud'`)
         }
       }
@@ -569,6 +573,13 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     if (typeof sdJwtVc.payload.iss === 'string' && sdJwtVc.payload.iss.startsWith('did:') && sdJwtVc.header.x5c) {
       throw new CredoError("dc+sd-jwt with a DID 'iss' must not have an 'x5c' header")
     }
+    const vctValues = credentialQuery.format === 'dc+sd-jwt' ? credentialQuery.meta?.vct_values : undefined
+    if (!vctValues?.includes(sdJwtVc.payload.vct)) {
+      throw new CredoError("dc+sd-jwt 'vct' is not one of the Credential Query 'meta.vct_values'")
+    }
+    if ('status' in sdJwtVc.prettyClaims) {
+      this.assertSupportedStatus(sdJwtVc.payload.status)
+    }
 
     const requireHolderBinding = credentialQuery.require_cryptographic_holder_binding !== false
     const result = await sdJwtVcApi.verify({
@@ -586,6 +597,19 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     }
 
     return result.sdJwtVc
+  }
+
+  private assertSupportedStatus(status: unknown): void {
+    if (status === undefined || hasSdDigests(status)) {
+      throw new CredoError("dc+sd-jwt 'status' must not be selectively disclosable")
+    }
+    const uri = isJsonObject(status) && isJsonObject(status.status_list) ? status.status_list.uri : undefined
+    if (typeof uri !== 'string') {
+      throw new CredoError("dc+sd-jwt 'status' must have a 'status_list' with a 'uri'")
+    }
+    if (!uri.startsWith('https://')) {
+      throw new CredoError(`dc+sd-jwt status list 'uri' '${uri}' must use https`)
+    }
   }
 
   private async verifyW3cV2SdJwt(

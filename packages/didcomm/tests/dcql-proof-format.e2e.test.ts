@@ -1,10 +1,11 @@
-import type { DcqlQuery } from '@credo-ts/core'
+import type { DcqlQuery, JsonObject } from '@credo-ts/core'
 import {
   Agent,
   ClaimFormat,
   DcqlService,
   DidKey,
   JsonEncoder,
+  SdJwtVcModule,
   SdJwtVcRecord,
   W3cV2Credential,
   W3cV2CredentialRecord,
@@ -40,8 +41,12 @@ import {
 
 const VCT = 'https://credentials.example.com/identity_credential'
 
+const statusLists: Record<string, string> = {}
+const statusListFetcher = vi.fn(async (uri: string) => statusLists[uri])
+
 const getModules = (endpoint: string) =>
   ({
+    sdJwtVc: new SdJwtVcModule({ customStatusListFetcher: statusListFetcher }),
     didcomm: new DidCommModule({
       endpoints: [endpoint],
       connections: { autoAcceptConnections: true },
@@ -97,6 +102,7 @@ describe('DCQL proof format over a DIDComm connection', () => {
   let verifierDid: string
   let issuerKdv: CreateDidKidVerificationMethodReturn
   let holderKdv: CreateDidKidVerificationMethodReturn
+  let statusListUri: string
 
   beforeAll(async () => {
     verifierAgent = new Agent(
@@ -121,6 +127,24 @@ describe('DCQL proof format over a DIDComm connection', () => {
 
     issuerKdv = await createDidKidVerificationMethod(verifierAgent.context)
     holderKdv = await createDidKidVerificationMethod(holderAgent.context)
+
+    statusListUri = 'https://status.example.com/1'
+    const signer = { method: 'did', didUrl: issuerKdv.kid } as const
+    const { statusList } = await verifierAgent.tokenStatusList.createTokenStatusList<'jwt'>({
+      format: 'jwt',
+      signer,
+      alg: 'EdDSA',
+      statusList: { statusListLength: 16, bitsPerStatus: 1 },
+      statusListUri,
+    })
+    const revoked = await verifierAgent.tokenStatusList.updateTokenStatusList<'jwt'>({
+      format: 'jwt',
+      token: statusList,
+      status: { index: 1, status: 1 },
+      signer,
+      alg: 'EdDSA',
+    })
+    statusLists[statusListUri] = revoked.statusList
   })
 
   afterAll(async () => {
@@ -282,6 +306,129 @@ describe('DCQL proof format over a DIDComm connection', () => {
       .split('~')
     const disclosures = decodeDisclosures(credentialDisclosures)
     expect(disclosures.map(([, name, value]) => [name, value])).toEqual([['name', 'John']])
+  })
+
+  const signSdJwtVc = async (payload: { vct: string; status?: JsonObject }, holderBinding = true): Promise<string> => {
+    const { compact } = await verifierAgent.sdJwtVc.sign({
+      issuer: { method: 'did', didUrl: issuerKdv.kid },
+      holder: holderBinding ? { method: 'did', didUrl: holderKdv.kid } : undefined,
+      payload: { ...payload, given_name: 'Erika' },
+      disclosureFrame: { _sd: ['given_name'] },
+    })
+    return compact
+  }
+
+  const storeSdJwtVc = async (compact: string): Promise<void> => {
+    await holderAgent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(holderAgent.sdJwtVc.fromCompact(compact)) })
+  }
+
+  const pidQuery = (vct: string, requireHolderBinding?: boolean): DcqlQuery => ({
+    credentials: [
+      {
+        id: 'pid',
+        format: 'dc+sd-jwt',
+        meta: { vct_values: [vct] },
+        claims: [{ path: ['given_name'] }],
+        require_cryptographic_holder_binding: requireHolderBinding,
+      },
+    ],
+  })
+
+  const mockPidPresentation = (createPid: (options: { challenge: string; domain?: string }) => Promise<string>) =>
+    vi.spyOn(DcqlService.prototype, 'createPresentation').mockImplementationOnce(async (_agentContext, options) => ({
+      dcqlPresentation: {},
+      encodedDcqlPresentation: { pid: [await createPid(options)] },
+    }))
+
+  const presentationRejected = async (dcqlQuery: DcqlQuery): Promise<string> => {
+    const { threadId } = await verifierAgent.didcomm.proofs.requestProof({
+      connectionId: verifierConnectionId,
+      protocolVersion: 'v2',
+      proofFormats: { dcql: { dcqlQuery } },
+    })
+    const holderRecord = await waitForProofExchangeRecordSubject(holderReplay, {
+      threadId,
+      state: DidCommProofState.RequestReceived,
+    })
+    await holderAgent.didcomm.proofs.acceptRequest({ proofExchangeRecordId: holderRecord.id })
+
+    const abandonedRecord = await waitForProofExchangeRecordSubject(verifierReplay, {
+      threadId,
+      state: DidCommProofState.Abandoned,
+    })
+    await waitForProofExchangeRecordSubject(holderReplay, { threadId, state: DidCommProofState.Abandoned })
+
+    return abandonedRecord.errorMessage as string
+  }
+
+  test('dc+sd-jwt: a VALID status list entry is fetched over https and verified', async () => {
+    const vct = `${VCT}/status-valid`
+    await storeSdJwtVc(await signSdJwtVc({ vct, status: { status_list: { idx: 0, uri: statusListUri } } }))
+    statusListFetcher.mockClear()
+
+    await requestAndPresent(pidQuery(vct))
+    expect(statusListFetcher).toHaveBeenCalledOnce()
+    expect(statusListFetcher).toHaveBeenCalledWith(statusListUri, expect.anything())
+  })
+
+  test('dc+sd-jwt: an INVALID status list entry is rejected', async () => {
+    const vct = `${VCT}/status-invalid`
+    await storeSdJwtVc(await signSdJwtVc({ vct, status: { status_list: { idx: 1, uri: statusListUri } } }))
+
+    expect(await presentationRejected(pidQuery(vct))).toContain('Status is not valid')
+  })
+
+  test('dc+sd-jwt: a status list uri that is not https is rejected without fetching it', async () => {
+    const vct = `${VCT}/status-http`
+    const uri = 'http://status.example.com/1'
+    await storeSdJwtVc(await signSdJwtVc({ vct, status: { status_list: { idx: 0, uri } } }))
+    statusListFetcher.mockClear()
+
+    expect(await presentationRejected(pidQuery(vct))).toContain(`dc+sd-jwt status list 'uri' '${uri}' must use https`)
+    expect(statusListFetcher).not.toHaveBeenCalled()
+  })
+
+  test("dc+sd-jwt: a 'vct' that is not in 'meta.vct_values' is rejected", async () => {
+    const vct = `${VCT}/requested`
+    await storeSdJwtVc(await signSdJwtVc({ vct }))
+    const other = await signSdJwtVc({ vct: `${VCT}/other` })
+
+    const createPresentationSpy = mockPidPresentation(({ challenge, domain }) =>
+      holderAgent.sdJwtVc.present({
+        sdJwtVc: other,
+        presentationFrame: { given_name: true },
+        verifierMetadata: { audience: domain as string, nonce: challenge, issuedAt: Math.floor(Date.now() / 1000) },
+      })
+    )
+    const errorMessage = await presentationRejected(pidQuery(vct))
+    createPresentationSpy.mockRestore()
+    expect(errorMessage).toContain("dc+sd-jwt 'vct' is not one of the Credential Query 'meta.vct_values'")
+  })
+
+  test('dc+sd-jwt: without required holder binding a presentation without a KB-JWT is verified', async () => {
+    const vct = `${VCT}/bearer`
+    const bearer = await signSdJwtVc({ vct }, false)
+    await storeSdJwtVc(bearer)
+
+    const createPresentationSpy = mockPidPresentation(() =>
+      holderAgent.sdJwtVc.present({ sdJwtVc: bearer, presentationFrame: { given_name: true } })
+    )
+    const { vpToken } = await requestAndPresent(pidQuery(vct, false))
+    createPresentationSpy.mockRestore()
+    expect(vpToken.pid[0]).toMatch(/~$/)
+  })
+
+  test('dc+sd-jwt: with required holder binding a presentation without a KB-JWT rejects the whole response', async () => {
+    const vct = `${VCT}/bound`
+    await storeSdJwtVc(await signSdJwtVc({ vct }))
+    const bearer = await signSdJwtVc({ vct }, false)
+
+    const createPresentationSpy = mockPidPresentation(() =>
+      holderAgent.sdJwtVc.present({ sdJwtVc: bearer, presentationFrame: { given_name: true } })
+    )
+    const errorMessage = await presentationRejected(pidQuery(vct))
+    createPresentationSpy.mockRestore()
+    expect(errorMessage).toContain("vp_token entry for 'pid' has a wrong 'nonce' or 'aud'")
   })
 
   const requestRejectedAtReceipt = async (tamper: (request: Record<string, unknown>) => void): Promise<string> => {
