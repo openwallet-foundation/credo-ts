@@ -342,6 +342,17 @@ describe('normalizeV2PlaintextToV1', () => {
     expect(v1.expires_time).toBe(1547581321)
   })
 
+  it('maps the expires_time header to the ~timing expiry', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      id: 'msg-1',
+      type: 'https://didcomm.org/trust_ping/1.0/ping',
+      expires_time: 1547581321,
+    })
+
+    expect(v1['~timing']).toEqual({ expires_time: '2019-01-15T19:42:01.000Z' })
+    const message = JsonTransformer.fromJSON(v1, DidCommTrustPingMessage)
+    expect(message.timing?.expiresTime).toEqual(new Date('2019-01-15T19:42:01.000Z'))
+  })
   it('round-trip: v2 with lang, attachments, thread, and body normalizes to v1', () => {
     const v2: DidCommV2PlaintextMessage = {
       id: 'msg-round',

@@ -116,7 +116,11 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?:
   }
 
   if (created_time !== undefined) v1.created_time = created_time
-  if (expires_time !== undefined) v1.expires_time = expires_time
+  if (expires_time !== undefined) {
+    v1.expires_time = expires_time
+    const expiresDate = typeof expires_time === 'number' ? new Date(expires_time * 1000) : undefined
+    if (expiresDate && !Number.isNaN(expiresDate.getTime())) v1['~timing'] = { expires_time: expiresDate.toISOString() }
+  }
 
   return v1
 }

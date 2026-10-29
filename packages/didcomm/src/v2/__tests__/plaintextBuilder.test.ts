@@ -55,6 +55,30 @@ describe('buildV2PlaintextFromMessage', () => {
     })
   })
 
+  it('maps data.sha256 to a multihash data.hash and back', () => {
+    const message = new DidCommTrustPingMessage({ comment: 'hi' })
+    message.addAppendedAttachment(
+      new DidCommAttachment({
+        id: 'att-1',
+        data: new DidCommAttachmentData({
+          links: ['https://example.com/hello'],
+          sha256: '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+        }),
+      })
+    )
+
+    const v2 = buildV2PlaintextFromMessage(message)
+    expect(v2.attachments?.[0].data).toEqual({
+      links: ['https://example.com/hello'],
+      hash: 'zQmRN6wdp1S2A5EtjW9A3M1vKSBuQQGcgvuhoMUoEz4iiT5',
+    })
+
+    const received = JsonTransformer.fromJSON(normalizeV2PlaintextToV1(v2), DidCommTrustPingMessage)
+    expect(received.appendedAttachments?.[0].data.sha256).toBe(
+      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
+    )
+  })
+
   it('lifts ~transport return_route to a top-level v2 return_route header', () => {
     const message = new DidCommTrustPingMessage({ comment: 'hi' })
     message.setReturnRouting(ReturnRouteTypes.all)

@@ -1,4 +1,4 @@
-import { utils } from '@credo-ts/core'
+import { MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder, utils } from '@credo-ts/core'
 import type { DidCommMessage } from '../DidCommMessage'
 import { type ParsedMessageType, parseMessageType, supportsIncomingMessageType } from '../util/messageType'
 import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from './types'
@@ -56,6 +56,28 @@ function splitFormatAttachments(
   }
 }
 
+const sha256MultiHashPrefix = Uint8Array.of(0x12, 0x20)
+
+// Spec v2.1 does not say how the multihash is written as a string. Multibase base58btc, as in hashlinks
+function mapV1DataToV2(data: Record<string, unknown>): DidCommV2Attachment['data'] {
+  const { sha256, ...rest } = data
+  if (typeof sha256 !== 'string' || !/^[0-9a-f]{64}$/i.test(sha256)) return data as DidCommV2Attachment['data']
+  const multiHash = TypedArrayEncoder.concat([sha256MultiHashPrefix, TypedArrayEncoder.fromHex(sha256)])
+  return { ...rest, hash: MultiBaseEncoder.encode(multiHash, 'base58btc') }
+}
+
+function mapV2DataToV1(data: DidCommV2Attachment['data']): Record<string, unknown> {
+  if (typeof data?.hash !== 'string') return data
+  const { hash, ...rest } = data
+  try {
+    const multiHash = MultiHashEncoder.decode(MultiBaseEncoder.decode(hash).data)
+    if (multiHash.hashName !== 'sha-256' || multiHash.data.length !== 32) return data
+    return { ...rest, sha256: TypedArrayEncoder.toHex(multiHash.data) }
+  } catch {
+    return data
+  }
+}
+
 /**
  * Map a v1 ~attach item to v2 attachments format.
  * v1: @id, mime-type, data; v2: id, media_type, data.
@@ -63,7 +85,7 @@ function splitFormatAttachments(
 export function mapV1AttachmentToV2(att: Record<string, unknown>): DidCommV2Attachment {
   const v2: DidCommV2Attachment = {
     id: (att['@id'] ?? att.id) as string,
-    data: (att.data ?? {}) as DidCommV2Attachment['data'],
+    data: mapV1DataToV2((att.data ?? {}) as Record<string, unknown>),
   }
   if (att.description !== undefined) v2.description = att.description as string
   if (att.filename !== undefined) v2.filename = att.filename as string
@@ -85,7 +107,7 @@ export function mapV1AttachmentToV2(att: Record<string, unknown>): DidCommV2Atta
 export function mapV2AttachmentToV1(v2: DidCommV2Attachment): Record<string, unknown> {
   const v1: Record<string, unknown> = {
     '@id': v2.id,
-    data: v2.data,
+    data: mapV2DataToV1(v2.data),
   }
   if (v2.description !== undefined) v1.description = v2.description
   if (v2.filename !== undefined) v1.filename = v2.filename
