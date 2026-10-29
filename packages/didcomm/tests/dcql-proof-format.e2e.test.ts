@@ -1,4 +1,10 @@
-import type { DcqlQuery, JsonObject, JwkDidCreateOptions, W3cV2SdJwtVerifiableCredential } from '@credo-ts/core'
+import type {
+  DcqlQuery,
+  JsonObject,
+  JwkDidCreateOptions,
+  W3cV2CredentialStatusOptions,
+  W3cV2SdJwtVerifiableCredential,
+} from '@credo-ts/core'
 import {
   Agent,
   ClaimFormat,
@@ -563,7 +569,8 @@ describe('DCQL proof format over a DIDComm connection', () => {
   const storeW3cV2SdJwt = async (
     type: string,
     credentialSubject: JsonObject,
-    holderBinding = true
+    holderBinding = true,
+    credentialStatus?: W3cV2CredentialStatusOptions
   ): Promise<W3cV2SdJwtVerifiableCredential> => {
     const credential = await verifierAgent.w3cV2Credentials.signCredential<ClaimFormat.SdJwtW3cVc>({
       format: ClaimFormat.SdJwtW3cVc,
@@ -577,6 +584,7 @@ describe('DCQL proof format over a DIDComm connection', () => {
         issuer: issuerKdv.did,
         validFrom: new Date().toISOString(),
         credentialSubject: { ...credentialSubject, name: 'John' },
+        credentialStatus,
       }),
     })
     await holderAgent.w3cV2Credentials.store({ record: W3cV2CredentialRecord.fromCredential(credential) })
@@ -670,6 +678,21 @@ describe('DCQL proof format over a DIDComm connection', () => {
     const { kid, errorMessage } = await handSignedPresentationRejected('ExampleCnfDidJwkCredential', {}, didJwk)
     expect(kid).toBe(`${didJwk}#0`)
     expect(errorMessage).toContain("vp+sd-jwt header 'kid' must be the credential 'cnf.kid'")
+  })
+
+  test("verifier rejects a vc+sd-jwt whose 'credentialStatus' it cannot check", async () => {
+    await storeW3cV2SdJwt('ExampleStatusCredential', { id: holderKdv.did }, true, {
+      id: 'https://status.example.com/credentials/1#94567',
+      type: 'BitstringStatusListEntry',
+    })
+    const holderRecord = await requestName('ExampleStatusCredential')
+    await holderAgent.didcomm.proofs.acceptRequest({ proofExchangeRecordId: holderRecord.id })
+
+    const abandonedRecord = await waitForProofExchangeRecordSubject(verifierReplay, {
+      threadId: holderRecord.threadId,
+      state: DidCommProofState.Abandoned,
+    })
+    expect(abandonedRecord.errorMessage).toContain("Enveloped credential 'credentialStatus' cannot be checked")
   })
 
   test("prover refuses a vc+sd-jwt query that requires holder binding for a credential without 'cnf'", async () => {

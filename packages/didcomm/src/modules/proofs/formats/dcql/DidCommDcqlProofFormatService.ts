@@ -706,6 +706,10 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
         throw new CredoError(`Enveloped credential claim '${claim}' must not be selectively disclosable`)
       }
     }
+    // RFC 0882 requires a status to be checked when present, and Credo has no status mechanism for W3C VC 2.0
+    if (credential.resolvedCredential.credentialStatus !== undefined) {
+      throw new CredoError("Enveloped credential 'credentialStatus' cannot be checked")
+    }
 
     await TrustedIssuerContext.ensureTrustedSigner(agentContext, {
       signer: { method: 'did', didUrl: credential.resolvedCredential.issuerId },
