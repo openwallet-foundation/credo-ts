@@ -291,7 +291,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     // Submit presentation
     const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
-      resolvedPresentationRequest.presentationExchange.credentialsForRequest
+      resolvedPresentationRequest.presentationExchange.queryResult
     )
     const openId4VpResult = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
       authorizationRequestPayload: resolvedPresentationRequest.authorizationRequestPayload,
@@ -615,7 +615,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     )
     const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
       // biome-ignore lint/style/noNonNullAssertion: presentation exchange is used for this request
-      resolvedPresentationRequest.presentationExchange!.credentialsForRequest
+      resolvedPresentationRequest.presentationExchange!.queryResult
     )
     const openId4VpResult = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
       authorizationRequestPayload: resolvedPresentationRequest.authorizationRequestPayload,

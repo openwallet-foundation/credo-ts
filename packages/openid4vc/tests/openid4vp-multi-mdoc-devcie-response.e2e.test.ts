@@ -115,6 +115,7 @@ describe('OpenId4Vc', () => {
           input_descriptors: [
             {
               id: 'one',
+              format: { mso_mdoc: { alg: ['ES256'] } },
               constraints: {
                 limit_disclosure: 'required',
                 fields: [
@@ -127,6 +128,7 @@ describe('OpenId4Vc', () => {
             },
             {
               id: 'two',
+              format: { mso_mdoc: { alg: ['ES256'] } },
               constraints: {
                 limit_disclosure: 'required',
                 fields: [
@@ -247,6 +249,7 @@ describe('OpenId4Vc', () => {
           input_descriptors: [
             {
               id: 'one',
+              format: { mso_mdoc: { alg: ['ES256'] } },
               constraints: {
                 limit_disclosure: 'required',
                 fields: [
@@ -259,6 +262,7 @@ describe('OpenId4Vc', () => {
             },
             {
               id: 'two',
+              format: { mso_mdoc: { alg: ['ES256'] } },
               constraints: {
                 limit_disclosure: 'required',
                 fields: [

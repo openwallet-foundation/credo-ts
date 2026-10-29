@@ -246,7 +246,7 @@ describe('OpenId4Vc (Wallet Initiated Presentation During Issuance)', () => {
     }
 
     const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
-      resolvedPresentationRequest.presentationExchange.credentialsForRequest
+      resolvedPresentationRequest.presentationExchange.queryResult
     )
     const openId4VpResult = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
       authorizationRequestPayload: resolvedPresentationRequest.authorizationRequestPayload,

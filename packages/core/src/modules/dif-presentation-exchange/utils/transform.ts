@@ -1,36 +1,15 @@
-import type {
-  OriginalVerifiableCredential as SphereonOriginalVerifiableCredential,
-  OriginalVerifiablePresentation as SphereonOriginalVerifiablePresentation,
-} from '@animo-id/pex/dist/main/lib/types/PexCredentialMapper'
-import type { W3CVerifiablePresentation as SphereonW3CVerifiablePresentation } from '@sphereon/ssi-types'
 import type { AgentContext } from '../../../agent'
 import { Jwt } from '../../../crypto'
 import { JsonTransformer } from '../../../utils'
-import type { MdocRecord } from '../../mdoc'
 import { MdocDeviceResponse } from '../../mdoc'
-import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { SdJwtVcApi } from '../../sd-jwt-vc'
-import type { W3cCredentialRecord } from '../../vc'
 import { W3cJsonLdVerifiablePresentation, W3cJwtVerifiablePresentation } from '../../vc'
 import type { W3cJsonPresentation } from '../../vc/models/presentation/W3cJsonPresentation'
-import type { VerifiablePresentation } from '../models'
-
-export function getSphereonOriginalVerifiableCredential(
-  credentialRecord: W3cCredentialRecord | SdJwtVcRecord | MdocRecord
-): SphereonOriginalVerifiableCredential {
-  return credentialRecord.encoded as SphereonOriginalVerifiableCredential
-}
-
-export function getSphereonOriginalVerifiablePresentation(
-  verifiablePresentation: VerifiablePresentation
-): SphereonOriginalVerifiablePresentation {
-  return verifiablePresentation.encoded as SphereonOriginalVerifiablePresentation
-}
 
 // TODO: we might want to move this to some generic vc transformation util
 export function getVerifiablePresentationFromEncoded(
   agentContext: AgentContext,
-  encodedVerifiablePresentation: string | W3cJsonPresentation | SphereonW3CVerifiablePresentation
+  encodedVerifiablePresentation: string | W3cJsonPresentation
 ) {
   if (typeof encodedVerifiablePresentation === 'string' && encodedVerifiablePresentation.includes('~')) {
     const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)

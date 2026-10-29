@@ -33,10 +33,11 @@ export const presentationDefinition: DifPresentationExchangeDefinitionV1 = {
             path: ['$.credentialSubject.name'],
           },
           {
-            path: ['$.credentialSubject.height'],
+            // Bracket notation addresses the same attribute as dot notation
+            path: ["$['credentialSubject']['height']"],
           },
           {
-            path: ['$.credentialSubject.age'],
+            path: ["$['credentialSubject']['age']"],
             predicate: 'preferred' as const,
             filter: {
               type: 'number',

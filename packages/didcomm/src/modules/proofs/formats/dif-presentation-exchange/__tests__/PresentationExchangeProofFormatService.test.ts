@@ -1,6 +1,8 @@
-import { PresentationSubmissionLocation } from '@animo-id/pex'
 import { Agent } from '../../../../../../../core/src/agent/Agent'
-import type { DifPresentationExchangeDefinitionV1 } from '../../../../../../../core/src/index'
+import {
+  type DifPresentationExchangeDefinitionV1,
+  DifPresentationExchangeSubmissionLocation,
+} from '../../../../../../../core/src/index'
 import {
   DifPresentationExchangeModule,
   DifPresentationExchangeService,
@@ -85,7 +87,7 @@ vi.spyOn(W3cCredentialRepository.prototype, 'findByQuery').mockResolvedValue([mo
 vi.spyOn(DifPresentationExchangeService.prototype, 'createPresentation').mockResolvedValue({
   presentationSubmission,
   verifiablePresentations: [verifiablePresentation],
-  presentationSubmissionLocation: PresentationSubmissionLocation.PRESENTATION,
+  presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.Presentation,
   encodedVerifiablePresentations: [verifiablePresentation.toJSON()],
 })
 

@@ -62,6 +62,30 @@ const sdJwtVcRepository = agentContext.dependencyManager.resolve(SdJwtVcReposito
 const mdocRepository = agentContext.dependencyManager.resolve(MdocRepository)
 const pexService = new DifPresentationExchangeService(agentContext.dependencyManager.resolve(W3cCredentialService))
 
+// What the PID SD-JWT VC discloses for the PID input descriptor: the requested claims, and the ones that are not selectively disclosable
+const pidDisclosedPayload = {
+  address: {},
+  age_equal_or_over: {},
+  birthdate: '1964-08-12',
+  cnf: {
+    jwk: {
+      crv: 'P-256',
+      kty: 'EC',
+      x: 'HsK_xN_yIU8yijuoAZXlnwEEM4fXYzuMFgyM19JdX1I',
+      y: 'ADv6zeT9wbh1SFq0mxNG11Fnx-9xWRDW0G_17WREzQI',
+    },
+  },
+  exp: 1733571327,
+  family_name: 'MUSTERMANN',
+  given_name: 'ERIKA',
+  iat: 1732361727,
+  iss: 'https://demo.pid-issuer.bundesdruckerei.de/c1',
+  issuing_authority: 'DE',
+  issuing_country: 'DE',
+  place_of_birth: {},
+  vct: 'https://example.bmi.bund.de/credential/pid/1.0',
+}
+
 const presentationDefinition: DifPresentationExchangeDefinitionV2 = {
   id: '1ad8ea6e-ec51-4e14-b316-dd76a6275480',
   name: 'PID and MDL - Rent a Car (vc+sd-jwt)',
@@ -178,107 +202,92 @@ describe('DifPresentationExchangeService', () => {
   })
 
   test('handles request where two credentials are requested but only one available', async () => {
-    const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, presentationDefinition)
-    expect(credentialsForRequest).toEqual({
-      requirements: [
-        {
-          rule: 'pick',
-          needsCount: 1,
-          submissionEntry: [
-            {
-              inputDescriptorId: 'bf8669f4-0cf3-4d16-b72b-b47eb702a7cd',
-              name: undefined,
-              purpose: undefined,
-              verifiableCredentials: [],
-            },
-          ],
-          isRequirementSatisfied: false,
-        },
-        {
-          rule: 'pick',
-          needsCount: 1,
-          submissionEntry: [
-            {
-              inputDescriptorId: '99fce09b-a0d3-415b-b8a7-3eab8829babc',
-              name: undefined,
-              purpose: undefined,
-              verifiableCredentials: [
-                {
-                  credentialRecord: await sdJwtVcRepository.getById(agentContext, sdJwtVcRecord.id),
-                  disclosedPayload: {
-                    address: {},
-                    age_equal_or_over: {},
-                    birthdate: '1964-08-12',
-                    cnf: {
-                      jwk: {
-                        crv: 'P-256',
-                        kty: 'EC',
-                        x: 'HsK_xN_yIU8yijuoAZXlnwEEM4fXYzuMFgyM19JdX1I',
-                        y: 'ADv6zeT9wbh1SFq0mxNG11Fnx-9xWRDW0G_17WREzQI',
-                      },
-                    },
-                    exp: 1733571327,
-                    family_name: 'MUSTERMANN',
-                    given_name: 'ERIKA',
-                    iat: 1732361727,
-                    iss: 'https://demo.pid-issuer.bundesdruckerei.de/c1',
-                    issuing_authority: 'DE',
-                    issuing_country: 'DE',
-                    place_of_birth: {},
-                    vct: 'https://example.bmi.bund.de/credential/pid/1.0',
-                  },
-                  claimFormat: 'dc+sd-jwt',
-                },
-              ],
-            },
-          ],
-          isRequirementSatisfied: true,
-        },
-        {
-          isRequirementSatisfied: true,
-          needsCount: 1,
-          rule: 'pick',
-          submissionEntry: [
-            {
-              inputDescriptorId: 'eu.europa.ec.eudi.pid.1',
-              name: undefined,
-              purpose: undefined,
-              verifiableCredentials: [
-                {
-                  credentialRecord: await mdocRepository.getById(agentContext, mdocRecord.id),
-                  disclosedPayload: {
-                    'eu.europa.ec.eudi.pid.1': {
-                      birth_date: '1984-01-26',
-                    },
-                  },
-                  claimFormat: 'mso_mdoc',
-                },
-              ],
-            },
-          ],
-        },
-        {
-          rule: 'pick',
-          needsCount: 1,
-          submissionEntry: [
-            {
-              inputDescriptorId: 'org.iso.18013.5.1.mDL',
-              name: undefined,
-              purpose: undefined,
-              verifiableCredentials: [],
-            },
-          ],
-          isRequirementSatisfied: false,
-        },
-      ],
-      areRequirementsSatisfied: false,
+    const queryResult = await pexService.getCredentialsForRequest(agentContext, presentationDefinition)
+    expect(queryResult).toMatchObject({
+      definition_id: presentationDefinition.id,
       name: 'PID and MDL - Rent a Car (vc+sd-jwt)',
       purpose: 'To secure your car reservations and finalize the transaction, we require the following attributes',
+      can_be_satisfied: false,
+      input_descriptors: [
+        {
+          input_descriptor_id: 'bf8669f4-0cf3-4d16-b72b-b47eb702a7cd',
+          satisfied: false,
+          matching_credentials: [],
+          non_matching_credentials: [
+            {
+              // The PID is an SD-JWT VC, but has a different vct and is missing the mDL claims
+              record: { id: sdJwtVcRecord.id },
+              format: 'vc+sd-jwt',
+              reasons: [
+                { type: 'field', field_index: 0, paths: ['$.document_number'], cause: 'path_not_found' },
+                { type: 'field', field_index: 1, paths: ['$.portrait'], cause: 'path_not_found' },
+                { type: 'field', field_index: 2, paths: ['$.issue_date'], cause: 'path_not_found' },
+                { type: 'field', field_index: 3, paths: ['$.expiry_date'], cause: 'path_not_found' },
+                { type: 'field', field_index: 6, paths: ['$.driving_priviliges'], cause: 'path_not_found' },
+                {
+                  type: 'field',
+                  field_index: 7,
+                  paths: ['$.vct'],
+                  cause: 'filter_failed',
+                  issues: [{ keyword: 'enum' }],
+                },
+              ],
+            },
+            {
+              record: { id: mdocRecord.id },
+              format: 'mso_mdoc',
+              reasons: expect.arrayContaining([expect.objectContaining({ type: 'format', allowed: ['vc+sd-jwt'] })]),
+            },
+          ],
+        },
+        {
+          input_descriptor_id: '99fce09b-a0d3-415b-b8a7-3eab8829babc',
+          satisfied: true,
+          matching_credentials: [
+            {
+              record: { id: sdJwtVcRecord.id },
+              format: 'vc+sd-jwt',
+              disclosure: {
+                output: pidDisclosedPayload,
+                disclosed_paths: expect.arrayContaining([['given_name'], ['family_name'], ['birthdate'], ['vct']]),
+              },
+            },
+          ],
+          non_matching_credentials: [{ record: { id: mdocRecord.id }, format: 'mso_mdoc' }],
+        },
+        {
+          input_descriptor_id: 'eu.europa.ec.eudi.pid.1',
+          satisfied: true,
+          matching_credentials: [
+            {
+              record: { id: mdocRecord.id },
+              format: 'mso_mdoc',
+              disclosure: { output: { 'eu.europa.ec.eudi.pid.1': { birth_date: '1984-01-26' } } },
+            },
+          ],
+          non_matching_credentials: [{ record: { id: sdJwtVcRecord.id } }],
+        },
+        {
+          input_descriptor_id: 'org.iso.18013.5.1.mDL',
+          satisfied: false,
+          matching_credentials: [],
+          non_matching_credentials: [
+            { record: { id: sdJwtVcRecord.id } },
+            {
+              record: { id: mdocRecord.id },
+              reasons: [
+                { type: 'mdoc_doctype' },
+                { type: 'field', paths: ["$['hello']['world']"], cause: 'path_not_found' },
+              ],
+            },
+          ],
+        },
+      ],
     })
   })
 
   test('handles request with submission requirements where two credentials are requested but only one available', async () => {
-    const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, {
+    const queryResult = await pexService.getCredentialsForRequest(agentContext, {
       ...presentationDefinition,
       submission_requirements: [
         {
@@ -301,102 +310,95 @@ describe('DifPresentationExchangeService', () => {
         },
       ],
     })
-    expect(credentialsForRequest).toEqual({
-      requirements: [
+    expect(queryResult).toMatchObject({
+      can_be_satisfied: false,
+      input_descriptors: [
+        { input_descriptor_id: 'bf8669f4-0cf3-4d16-b72b-b47eb702a7cd', satisfied: false, matching_credentials: [] },
+        {
+          input_descriptor_id: '99fce09b-a0d3-415b-b8a7-3eab8829babc',
+          satisfied: true,
+          matching_credentials: [
+            {
+              record: { id: sdJwtVcRecord.id },
+              format: 'vc+sd-jwt',
+              disclosure: {
+                output: pidDisclosedPayload,
+                disclosed_paths: expect.arrayContaining([['given_name'], ['family_name'], ['birthdate'], ['vct']]),
+              },
+            },
+          ],
+          non_matching_credentials: [{ record: { id: mdocRecord.id }, format: 'mso_mdoc' }],
+        },
+        { input_descriptor_id: 'eu.europa.ec.eudi.pid.1', satisfied: true },
+        { input_descriptor_id: 'org.iso.18013.5.1.mDL', satisfied: false, matching_credentials: [] },
+      ],
+      submission_requirements: [
+        { rule: 'pick', needs_count: 1, satisfied: false },
+        { rule: 'all', needs_count: 1, satisfied: true },
+        { rule: 'pick', needs_count: 1, satisfied: true },
+        { rule: 'all', needs_count: 1, satisfied: false },
+      ],
+    })
+    expect(() => pexService.selectCredentialsForRequest(queryResult)).toThrow(
+      'Could not find the required credentials for the presentation submission'
+    )
+  })
+
+  test('selects the credentials for nested submission requirements', async () => {
+    const queryResult = await pexService.getCredentialsForRequest(agentContext, {
+      ...presentationDefinition,
+      submission_requirements: [
         {
           rule: 'pick',
-          needsCount: 1,
-          submissionEntry: [
-            {
-              inputDescriptorId: 'bf8669f4-0cf3-4d16-b72b-b47eb702a7cd',
-              name: undefined,
-              purpose: undefined,
-              verifiableCredentials: [],
-            },
+          count: 1,
+          from_nested: [
+            { rule: 'all', from: 'A' },
+            { rule: 'all', from: 'B' },
           ],
-          isRequirementSatisfied: false,
         },
+        // Optional, so not selected
+        { rule: 'pick', min: 0, from: 'C' },
+      ],
+    })
+
+    expect(queryResult).toMatchObject({
+      can_be_satisfied: true,
+      submission_requirements: [
         {
-          rule: 'all',
-          needsCount: 1,
-          submissionEntry: [
-            {
-              inputDescriptorId: '99fce09b-a0d3-415b-b8a7-3eab8829babc',
-              name: undefined,
-              purpose: undefined,
-              verifiableCredentials: [
-                {
-                  credentialRecord: await sdJwtVcRepository.getById(agentContext, sdJwtVcRecord.id),
-                  disclosedPayload: {
-                    address: {},
-                    age_equal_or_over: {},
-                    birthdate: '1964-08-12',
-                    cnf: {
-                      jwk: {
-                        crv: 'P-256',
-                        kty: 'EC',
-                        x: 'HsK_xN_yIU8yijuoAZXlnwEEM4fXYzuMFgyM19JdX1I',
-                        y: 'ADv6zeT9wbh1SFq0mxNG11Fnx-9xWRDW0G_17WREzQI',
-                      },
-                    },
-                    exp: 1733571327,
-                    family_name: 'MUSTERMANN',
-                    given_name: 'ERIKA',
-                    iat: 1732361727,
-                    iss: 'https://demo.pid-issuer.bundesdruckerei.de/c1',
-                    issuing_authority: 'DE',
-                    issuing_country: 'DE',
-                    place_of_birth: {},
-                    vct: 'https://example.bmi.bund.de/credential/pid/1.0',
-                  },
-                  claimFormat: 'dc+sd-jwt',
-                },
-              ],
-            },
-          ],
-          isRequirementSatisfied: true,
-        },
-        {
-          isRequirementSatisfied: true,
-          needsCount: 1,
           rule: 'pick',
-          submissionEntry: [
-            {
-              inputDescriptorId: 'eu.europa.ec.eudi.pid.1',
-              name: undefined,
-              purpose: undefined,
-              verifiableCredentials: [
-                {
-                  credentialRecord: await mdocRepository.getById(agentContext, mdocRecord.id),
-                  disclosedPayload: {
-                    'eu.europa.ec.eudi.pid.1': {
-                      birth_date: '1984-01-26',
-                    },
-                  },
-                  claimFormat: 'mso_mdoc',
-                },
-              ],
-            },
+          needs_count: 1,
+          satisfied: true,
+          from_nested: [
+            { rule: 'all', satisfied: false },
+            { rule: 'all', satisfied: true },
           ],
         },
+        { rule: 'pick', needs_count: 0, satisfied: true },
+      ],
+    })
+
+    expect(pexService.selectCredentialsForRequest(queryResult)).toEqual({
+      '99fce09b-a0d3-415b-b8a7-3eab8829babc': [
         {
-          rule: 'all',
-          needsCount: 1,
-          submissionEntry: [
-            {
-              inputDescriptorId: 'org.iso.18013.5.1.mDL',
-              name: undefined,
-              purpose: undefined,
-              verifiableCredentials: [],
-            },
-          ],
-          isRequirementSatisfied: false,
+          claimFormat: ClaimFormat.SdJwtDc,
+          credentialRecord: expect.objectContaining({ id: sdJwtVcRecord.id }),
+          disclosedPayload: pidDisclosedPayload,
+          disclosedPaths: expect.any(Array),
         },
       ],
-      areRequirementsSatisfied: false,
-      name: 'PID and MDL - Rent a Car (vc+sd-jwt)',
-      purpose: 'To secure your car reservations and finalize the transaction, we require the following attributes',
     })
+  })
+
+  test('throws when selecting credentials for a request that only has optional submission requirements', async () => {
+    const queryResult = await pexService.getCredentialsForRequest(agentContext, {
+      ...presentationDefinition,
+      submission_requirements: [{ rule: 'pick', min: 0, from: 'C' }],
+    })
+
+    expect(queryResult.can_be_satisfied).toBe(true)
+    expect(() => pexService.selectCredentialsForRequest(queryResult)).toThrow(
+      'Presentation Definition does not require any credentials'
+    )
   })
 
   test('handles request with request for one of two mdocs with submission requirements', async () => {
@@ -446,57 +448,42 @@ describe('DifPresentationExchangeService', () => {
       ],
     } satisfies DifPresentationExchangeDefinitionV2
 
-    const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, presentationDefinition)
-    expect(credentialsForRequest).toEqual({
-      requirements: [
+    const queryResult = await pexService.getCredentialsForRequest(agentContext, presentationDefinition)
+    expect(queryResult).toMatchObject({
+      purpose: 'Age check',
+      can_be_satisfied: true,
+      input_descriptors: [
         {
-          rule: 'pick',
-          needsCount: 1,
-          purpose: undefined,
-          name: 'Proof of age and photo',
-          submissionEntry: [
+          input_descriptor_id: 'eu.europa.ec.eudi.pid.1',
+          name: 'Mdoc proof of age and photo',
+          satisfied: true,
+          matching_credentials: [
             {
-              inputDescriptorId: 'eu.europa.ec.eudi.pid.1',
-              name: 'Mdoc proof of age and photo',
-              purpose: undefined,
-              verifiableCredentials: [
-                {
-                  credentialRecord: await mdocRepository.getById(agentContext, mdocRecord.id),
-                  claimFormat: 'mso_mdoc',
-                  disclosedPayload: {
-                    'eu.europa.ec.eudi.pid.1': {
-                      age_in_years: 40,
-                    },
-                  },
-                },
-              ],
-            },
-            {
-              inputDescriptorId: 'org.iso.18013.5.1.mDL',
-              name: 'Driving licence Mdoc date of birth and photo',
-              purpose: undefined,
-              verifiableCredentials: [
-                {
-                  credentialRecord: await mdocRepository.getById(agentContext, randomMdoc.id),
-                  claimFormat: 'mso_mdoc',
-                  disclosedPayload: {
-                    hello: {
-                      world: 'from-mdoc',
-                    },
-                  },
-                },
-              ],
+              record: { id: mdocRecord.id },
+              format: 'mso_mdoc',
+              disclosure: { output: { 'eu.europa.ec.eudi.pid.1': { age_in_years: 40 } } },
             },
           ],
-          isRequirementSatisfied: true,
+          non_matching_credentials: [{ record: { id: sdJwtVcRecord.id } }, { record: { id: randomMdoc.id } }],
+        },
+        {
+          input_descriptor_id: 'org.iso.18013.5.1.mDL',
+          name: 'Driving licence Mdoc date of birth and photo',
+          satisfied: true,
+          matching_credentials: [
+            {
+              record: { id: randomMdoc.id },
+              format: 'mso_mdoc',
+              disclosure: { output: { hello: { world: 'from-mdoc' } } },
+            },
+          ],
+          non_matching_credentials: [{ record: { id: sdJwtVcRecord.id } }, { record: { id: mdocRecord.id } }],
         },
       ],
-      areRequirementsSatisfied: true,
-      name: undefined,
-      purpose: 'Age check',
+      submission_requirements: [{ name: 'Proof of age and photo', rule: 'pick', needs_count: 1, satisfied: true }],
     })
 
-    const selectedCredentials = pexService.selectCredentialsForRequest(credentialsForRequest)
+    const selectedCredentials = pexService.selectCredentialsForRequest(queryResult)
 
     vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]) })
     const presentation = await pexService.createPresentation(agentContext, {
@@ -504,7 +491,7 @@ describe('DifPresentationExchangeService', () => {
       challenge: 'something',
       presentationDefinition,
       domain: 'hello',
-      presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
+      presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.External,
       mdocSessionTranscript: {
         type: 'openId4VpDraft18',
         clientId: 'hello',
@@ -516,7 +503,7 @@ describe('DifPresentationExchangeService', () => {
 
     expect(presentation).toMatchObject({
       presentationSubmission: {
-        id: expect.stringContaining('MdocPresentationSubmission'),
+        id: expect.any(String),
         definition_id: 'OverAgeCheck',
         descriptor_map: [{ id: 'eu.europa.ec.eudi.pid.1', format: 'mso_mdoc', path: '$' }],
       },
@@ -635,57 +622,35 @@ describe('DifPresentationExchangeService', () => {
       ],
     } satisfies DifPresentationExchangeDefinitionV2
 
-    const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, presentationDefinition)
-    expect(credentialsForRequest).toEqual({
-      requirements: [
+    const queryResult = await pexService.getCredentialsForRequest(agentContext, presentationDefinition)
+    expect(queryResult).toMatchObject({
+      can_be_satisfied: true,
+      input_descriptors: [
         {
-          rule: 'pick',
-          needsCount: 1,
-          purpose: undefined,
-          name: 'Proof of age and photo',
-          submissionEntry: [
+          input_descriptor_id: 'eu.europa.ec.eudi.pid.1',
+          satisfied: true,
+          matching_credentials: [
             {
-              inputDescriptorId: 'eu.europa.ec.eudi.pid.1',
-              name: 'Mdoc proof of age and photo',
-              purpose: undefined,
-              verifiableCredentials: [
-                {
-                  credentialRecord: await mdocRepository.getById(agentContext, mdocRecord.id),
-                  claimFormat: 'mso_mdoc',
-                  disclosedPayload: {
-                    'eu.europa.ec.eudi.pid.1': {
-                      age_in_years: 40,
-                    },
-                  },
-                },
-              ],
-            },
-            {
-              inputDescriptorId: 'org.iso.18013.5.1.mDL',
-              name: 'Driving licence Mdoc date of birth and photo',
-              purpose: undefined,
-              verifiableCredentials: [
-                {
-                  credentialRecord: await mdocRepository.getById(agentContext, randomMdoc.id),
-                  claimFormat: 'mso_mdoc',
-                  disclosedPayload: {
-                    hello: {
-                      world: 'from-mdoc',
-                    },
-                  },
-                },
-              ],
+              record: { id: mdocRecord.id },
+              disclosure: { output: { 'eu.europa.ec.eudi.pid.1': { age_in_years: 40 } } },
             },
           ],
-          isRequirementSatisfied: true,
+        },
+        {
+          input_descriptor_id: 'org.iso.18013.5.1.mDL',
+          satisfied: true,
+          matching_credentials: [
+            {
+              record: { id: randomMdoc.id },
+              // The optional element is not in the mdoc, so it is not disclosed
+              disclosure: { output: { hello: { world: 'from-mdoc' } } },
+            },
+          ],
         },
       ],
-      areRequirementsSatisfied: true,
-      name: undefined,
-      purpose: 'Age check',
+      submission_requirements: [{ rule: 'pick', needs_count: 1, satisfied: true }],
     })
-
-    const selectedCredentials = pexService.selectCredentialsForRequest(credentialsForRequest)
+    const selectedCredentials = pexService.selectCredentialsForRequest(queryResult)
 
     vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]) })
 
@@ -694,7 +659,7 @@ describe('DifPresentationExchangeService', () => {
       challenge: 'something',
       presentationDefinition,
       domain: 'hello',
-      presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
+      presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.External,
       mdocSessionTranscript: {
         type: 'openId4VpDraft18',
         clientId: 'hello',
@@ -706,7 +671,7 @@ describe('DifPresentationExchangeService', () => {
 
     expect(presentation).toMatchObject({
       presentationSubmission: {
-        id: expect.stringContaining('MdocPresentationSubmission'),
+        id: expect.any(String),
         definition_id: 'OverAgeCheck',
         descriptor_map: [{ id: 'eu.europa.ec.eudi.pid.1', format: 'mso_mdoc', path: '$' }],
       },
@@ -768,66 +733,45 @@ describe('DifPresentationExchangeService', () => {
       ],
     } satisfies DifPresentationExchangeDefinitionV2
 
-    const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, presentationDefinition)
-    expect(credentialsForRequest).toEqual({
-      requirements: [
+    const queryResult = await pexService.getCredentialsForRequest(agentContext, presentationDefinition)
+    expect(queryResult).toMatchObject({
+      purpose: 'Age check',
+      can_be_satisfied: true,
+      input_descriptors: [
         {
-          rule: 'pick',
-          needsCount: 1,
-          purpose: undefined,
-          name: 'Proof of age and photo',
-          submissionEntry: [
+          input_descriptor_id: 'eu.europa.ec.eudi.pid.1',
+          name: 'Mdoc proof of age and photo',
+          satisfied: true,
+          matching_credentials: [
             {
-              inputDescriptorId: 'eu.europa.ec.eudi.pid.1',
-              name: 'Mdoc proof of age and photo',
-              purpose: undefined,
-              verifiableCredentials: [
-                {
-                  credentialRecord: await mdocRepository.getById(agentContext, mdocRecord.id),
-                  claimFormat: 'mso_mdoc',
-                  disclosedPayload: {
-                    'eu.europa.ec.eudi.pid.1': {
-                      age_in_years: 40,
-                    },
-                  },
-                },
-              ],
+              record: { id: mdocRecord.id },
+              format: 'mso_mdoc',
+              disclosure: { output: { 'eu.europa.ec.eudi.pid.1': { age_in_years: 40 } } },
             },
           ],
-          isRequirementSatisfied: true,
+          non_matching_credentials: [{ record: { id: sdJwtVcRecord.id } }, { record: { id: randomMdoc.id } }],
         },
         {
-          rule: 'pick',
-          needsCount: 1,
-          purpose: undefined,
-          name: 'Proof of age and photo 2',
-          submissionEntry: [
+          input_descriptor_id: 'org.iso.18013.5.1.mDL',
+          name: 'Driving licence Mdoc date of birth and photo',
+          satisfied: true,
+          matching_credentials: [
             {
-              inputDescriptorId: 'org.iso.18013.5.1.mDL',
-              name: 'Driving licence Mdoc date of birth and photo',
-              purpose: undefined,
-              verifiableCredentials: [
-                {
-                  credentialRecord: await mdocRepository.getById(agentContext, randomMdoc.id),
-                  claimFormat: 'mso_mdoc',
-                  disclosedPayload: {
-                    hello: {
-                      world: 'from-mdoc',
-                    },
-                  },
-                },
-              ],
+              record: { id: randomMdoc.id },
+              format: 'mso_mdoc',
+              disclosure: { output: { hello: { world: 'from-mdoc' } } },
             },
           ],
-          isRequirementSatisfied: true,
+          non_matching_credentials: [{ record: { id: sdJwtVcRecord.id } }, { record: { id: mdocRecord.id } }],
         },
       ],
-      areRequirementsSatisfied: true,
-      name: undefined,
-      purpose: 'Age check',
+      submission_requirements: [
+        { name: 'Proof of age and photo', rule: 'pick', needs_count: 1, satisfied: true },
+        { name: 'Proof of age and photo 2', rule: 'pick', needs_count: 1, satisfied: true },
+      ],
     })
 
-    const selectedCredentials = pexService.selectCredentialsForRequest(credentialsForRequest)
+    const selectedCredentials = pexService.selectCredentialsForRequest(queryResult)
 
     vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]) })
 
@@ -836,7 +780,7 @@ describe('DifPresentationExchangeService', () => {
       challenge: 'something',
       presentationDefinition,
       domain: 'hello',
-      presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
+      presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.External,
       mdocSessionTranscript: {
         type: 'openId4VpDraft18',
         clientId: 'hello',
@@ -848,7 +792,7 @@ describe('DifPresentationExchangeService', () => {
 
     expect(presentation).toMatchObject({
       presentationSubmission: {
-        id: expect.stringContaining('MdocPresentationSubmission'),
+        id: expect.any(String),
         definition_id: 'OverAgeCheck',
         descriptor_map: [
           {
@@ -1102,5 +1046,69 @@ describe('DifPresentationExchangeService', () => {
         W3cJsonLdVerifiablePresentation
       )
     )
+  })
+
+  test('matches an SD-JWT VC under either SD-JWT VC format designation', async () => {
+    const pidInputDescriptor = presentationDefinition.input_descriptors[1]
+
+    for (const format of ['vc+sd-jwt', 'dc+sd-jwt'] as const) {
+      const queryResult = await pexService.getCredentialsForRequest(agentContext, {
+        id: 'pid',
+        input_descriptors: [{ ...pidInputDescriptor, format: { [format]: { 'sd-jwt_alg_values': ['ES256'] } } }],
+      })
+
+      // The record is listed once, under the designation the input descriptor allows
+      expect(queryResult).toMatchObject({
+        can_be_satisfied: true,
+        input_descriptors: [
+          {
+            matching_credentials: [{ record: { id: sdJwtVcRecord.id }, format }],
+            non_matching_credentials: [{ record: { id: mdocRecord.id } }],
+          },
+        ],
+      })
+    }
+
+    // The credential is signed with ES256
+    const queryResult = await pexService.getCredentialsForRequest(agentContext, {
+      id: 'pid',
+      input_descriptors: [{ ...pidInputDescriptor, format: { 'dc+sd-jwt': { 'sd-jwt_alg_values': ['EdDSA'] } } }],
+    })
+    expect(queryResult).toMatchObject({
+      can_be_satisfied: false,
+      input_descriptors: [
+        {
+          matching_credentials: [],
+          non_matching_credentials: [
+            { record: { id: sdJwtVcRecord.id }, reasons: [expect.objectContaining({ type: 'format' })] },
+            { record: { id: mdocRecord.id } },
+          ],
+        },
+      ],
+    })
+  })
+
+  test('throws when creating a presentation with a credential that does not satisfy its input descriptor', async () => {
+    const mdocDisclosedPayload = { 'eu.europa.ec.eudi.pid.1': {} }
+
+    await expect(
+      pexService.createPresentation(agentContext, {
+        presentationDefinition,
+        credentialsForInputDescriptor: {
+          // The PID input descriptor asks for an SD-JWT VC
+          '99fce09b-a0d3-415b-b8a7-3eab8829babc': [
+            { claimFormat: ClaimFormat.MsoMdoc, credentialRecord: mdocRecord, disclosedPayload: mdocDisclosedPayload },
+          ],
+        },
+        presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.External,
+        challenge: 'challenge',
+        domain: 'domain',
+      })
+    ).rejects.toMatchObject({
+      message: 'Could not create presentation, selected credentials do not satisfy the presentation definition',
+      additionalMessages: expect.arrayContaining([
+        expect.stringContaining("Credential format 'mso_mdoc' is not allowed"),
+      ]),
+    })
   })
 })

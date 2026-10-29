@@ -1,6 +1,6 @@
 import type {
-  DifPexCredentialsForRequest,
   DifPexInputDescriptorToCredentials,
+  DifPexQueryResult,
   DifPresentationExchangeDefinitionV1,
   W3cJsonPresentation,
 } from '@credo-ts/core'
@@ -54,8 +54,8 @@ export interface DidCommDifPresentationExchangeProofFormat extends DidCommProofF
 
     getCredentialsForRequest: {
       input: DifPexGetCredentialsForProofRequestOptions
-      // Presentation submission details which the options that are available
-      output: DifPexCredentialsForRequest
+      // For each input descriptor, the credentials that satisfy it and the ones that don't
+      output: DifPexQueryResult
     }
 
     selectCredentialsForRequest: {

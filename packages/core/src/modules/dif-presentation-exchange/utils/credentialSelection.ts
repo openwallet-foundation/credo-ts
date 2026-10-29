@@ -1,394 +1,287 @@
-import {
-  type IPresentationDefinition,
-  type PEX,
-  type SelectResults,
-  Status,
-  type SubmissionRequirementMatch,
-} from '@animo-id/pex'
-import type {
-  SubmissionRequirementMatchFrom,
-  SubmissionRequirementMatchInputDescriptor,
-} from '@animo-id/pex/dist/main/lib/evaluation/core'
-import { SubmissionRequirementMatchType } from '@animo-id/pex/dist/main/lib/evaluation/core/index.js'
-import { JSONPath } from '@astronautlabs/jsonpath'
-import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/core'
-import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
-import { Rules } from '@sphereon/pex-models'
-import type { AgentContext } from '../../../agent'
-import { Hasher } from '../../../crypto'
-import { CredoError } from '../../../error'
-import type { JsonObject } from '../../../types'
+import type { CredentialMatch, ParsedPresentationDefinition, SubmissionRequirementResult } from 'presentation-exchange'
+import { runPexQuery } from 'presentation-exchange'
 import { MdocRecord } from '../../mdoc'
 import { MdocDeviceResponse } from '../../mdoc/MdocDeviceResponse'
+import { fieldMatchesToDocumentRequest } from '../../mdoc/utils/inputDescriptorToDocumentRequest'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
+import { applyDisclosuresForPaths, type ClaimPath } from '../../sd-jwt-vc/disclosureFrame'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
 import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
 import type {
-  DifPexCredentialsForRequest,
-  DifPexCredentialsForRequestRequirement,
-  DifPexCredentialsForRequestSubmissionEntry,
+  DifPexCredentialMatch,
+  DifPexCredentialMismatch,
+  DifPexInputDescriptorToCredentials,
+  DifPexQueryResult,
   SubmissionEntryCredential,
 } from '../models'
-import { getSphereonOriginalVerifiableCredential } from './transform'
+import { getPexCredentialsForRecords } from './pexCredentials'
 
-export async function getCredentialsForRequest(
-  agentContext: AgentContext,
-  // PEX instance with hasher defined
-  pex: PEX,
-  presentationDefinition: IPresentationDefinition,
-  credentialRecords: Array<W3cCredentialRecord | SdJwtVcRecord | MdocRecord>
-): Promise<DifPexCredentialsForRequest> {
-  const encodedCredentials = credentialRecords.map(getSphereonOriginalVerifiableCredential)
-  const selectResultsRaw = pex.selectFrom(presentationDefinition, encodedCredentials)
+type CredentialRecord = W3cCredentialRecord | SdJwtVcRecord | MdocRecord
 
-  const selectResults: CredentialRecordSelectResults = {
-    ...selectResultsRaw,
-    matches: selectResultsRaw.matches ?? [],
-    // Map the encoded credential to their respective credential record
-    verifiableCredential:
-      selectResultsRaw.verifiableCredential?.map((selectedEncoded, index): SubmissionEntryCredential => {
-        const credentialRecordIndex = selectResultsRaw.vcIndexes?.[index]
-        if (credentialRecordIndex === undefined || credentialRecordIndex === -1) {
-          throw new DifPresentationExchangeError('Unable to find credential in credential records.')
-        }
-        const credentialRecord = credentialRecords[credentialRecordIndex]
-        if (credentialRecord instanceof SdJwtVcRecord) {
-          // selectedEncoded always string when SdJwtVcRecord
-          // Get the decoded payload from the the selected credential, this already has SD applied
-          const { jwt, disclosures } = decodeSdJwtSync(selectedEncoded as string, Hasher.hash)
-          const prettyClaims = getClaimsSync(jwt.payload, disclosures, Hasher.hash)
+export function getCredentialsForRequest(
+  parsedDefinition: ParsedPresentationDefinition,
+  credentialRecords: Array<CredentialRecord>
+): DifPexQueryResult {
+  const { credentials, recordIndexes } = getPexCredentialsForRecords(credentialRecords)
+  const result = runPexQuery(parsedDefinition, { credentials })
 
-          return {
-            claimFormat: ClaimFormat.SdJwtDc,
-            credentialRecord,
-            disclosedPayload: prettyClaims as JsonObject,
-          }
-        }
-        if (credentialRecord instanceof MdocRecord) {
-          return {
-            claimFormat: ClaimFormat.MsoMdoc,
-            credentialRecord,
-            disclosedPayload: {},
-          }
-        }
-        if (credentialRecord instanceof W3cCredentialRecord) {
-          return {
-            claimFormat: credentialRecord.firstCredential.claimFormat,
-            credentialRecord,
-          }
-        }
-        throw new CredoError('Unrecognized credential record type')
-      }) ?? [],
-  }
+  const inputDescriptors = result.input_descriptors.map((inputDescriptorResult) => {
+    // A record offered under more than one format designation is included once, under the first that matches
+    const matchedRecordIndexes = new Set<number>()
+    const matchingCredentials: DifPexCredentialMatch[] = []
+    for (const { credential_index, ...match } of inputDescriptorResult.matching_credentials) {
+      const recordIndex = recordIndexes[credential_index]
+      if (matchedRecordIndexes.has(recordIndex)) continue
 
-  const presentationSubmission: DifPexCredentialsForRequest = {
-    requirements: [],
-    areRequirementsSatisfied: false,
-    name: presentationDefinition.name,
-    purpose: presentationDefinition.purpose,
-  }
-
-  // If there's no submission requirements, ALL input descriptors MUST be satisfied
-  if (!presentationDefinition.submission_requirements || presentationDefinition.submission_requirements.length === 0) {
-    presentationSubmission.requirements = getSubmissionRequirementsForAllInputDescriptors(
-      presentationDefinition.input_descriptors,
-      selectResults
-    )
-  } else {
-    presentationSubmission.requirements = getSubmissionRequirements(presentationDefinition, selectResults)
-  }
-
-  const allEntries = presentationSubmission.requirements.flatMap((requirement) => requirement.submissionEntry)
-
-  const inputDescriptorsForMdocCredential = new Map<SubmissionEntryCredential, Set<string>>()
-  for (const entry of allEntries)
-    for (const verifiableCredential of entry.verifiableCredentials) {
-      if (verifiableCredential.claimFormat !== ClaimFormat.MsoMdoc) continue
-
-      const set = inputDescriptorsForMdocCredential.get(verifiableCredential) ?? new Set()
-      set.add(entry.inputDescriptorId)
-      inputDescriptorsForMdocCredential.set(verifiableCredential, set)
+      matchedRecordIndexes.add(recordIndex)
+      matchingCredentials.push(getCredentialMatch(credentialRecords[recordIndex], match))
     }
 
-  // NOTE: it might be better to apply disclosure per credential/match (as that's also how mdoc does this)
-  // however this doesn't work very well in wallets, as you usually won't show the same credential twice with
-  // different disclosed attributes
-  // Apply limit disclosure for all mdocs
-  for (const [verifiableCredential, inputDescriptorIds] of inputDescriptorsForMdocCredential.entries()) {
-    if (verifiableCredential.claimFormat !== ClaimFormat.MsoMdoc) continue
+    // A record that matched under none of its designations is included once, preferring the reasons of a
+    // designation the input descriptor allows over a format mismatch
+    const mismatches = new Map<number, DifPexCredentialMismatch>()
+    for (const { credential_index, ...mismatch } of inputDescriptorResult.non_matching_credentials) {
+      const recordIndex = recordIndexes[credential_index]
+      if (matchedRecordIndexes.has(recordIndex)) continue
 
-    const inputDescriptorsForCredential = presentationDefinition.input_descriptors.filter(({ id }) =>
-      inputDescriptorIds.has(id)
-    )
+      const existing = mismatches.get(recordIndex)
+      const isFormatMismatch = (reasons: DifPexCredentialMismatch['reasons']) =>
+        reasons.some(({ type }) => type === 'format')
+      if (existing && (!isFormatMismatch(existing.reasons) || isFormatMismatch(mismatch.reasons))) continue
 
-    const mdoc = verifiableCredential.credentialRecord.firstCredential
-    verifiableCredential.disclosedPayload = await MdocDeviceResponse.limitDisclosureToInputDescriptor(agentContext, {
-      inputDescriptor: {
-        id: mdoc.docType,
-        format: {
-          mso_mdoc: {
-            alg: [],
-          },
-        },
-        constraints: {
-          limit_disclosure: 'required',
-          fields: inputDescriptorsForCredential.flatMap((i) => i.constraints?.fields ?? []),
-        },
-      },
-      mdoc,
-    })
+      mismatches.set(recordIndex, { ...mismatch, record: credentialRecords[recordIndex] })
+    }
+
+    return {
+      ...inputDescriptorResult,
+      matching_credentials: matchingCredentials,
+      non_matching_credentials: [...mismatches.values()],
+    }
+  })
+
+  return {
+    ...result,
+    input_descriptors: inputDescriptors,
+  }
+}
+
+/**
+ * Selects the first matching credential for each input descriptor that the submission requirements need.
+ * Optional credentials are left out, so only the minimum amount of information is disclosed.
+ */
+export function selectCredentialsForRequest(queryResult: DifPexQueryResult): DifPexInputDescriptorToCredentials {
+  if (!queryResult.can_be_satisfied) {
+    throw new DifPresentationExchangeError('Could not find the required credentials for the presentation submission')
   }
 
-  // There may be no requirements if we filter out all optional ones. To not makes things too complicated, we see it as an error
-  // for now if a request is made that has no required requirements (but only e.g. min: 0, which means we don't need to disclose anything)
-  // I see this more as the fault of the presentation definition, as it should have at least some requirements.
-  if (presentationSubmission.requirements.length === 0) {
+  // Without submission requirements, all input descriptors must be satisfied
+  const inputDescriptorIds = queryResult.submission_requirements
+    ? selectInputDescriptorsForSubmissionRequirements(
+        queryResult.input_descriptors,
+        queryResult.submission_requirements
+      )
+    : queryResult.input_descriptors.map(({ input_descriptor_id }) => input_descriptor_id)
+
+  // A request that only has optional requirements (e.g. min: 0) is seen as an error, as the presentation
+  // definition should require at least some credentials.
+  if (inputDescriptorIds.length === 0) {
     throw new DifPresentationExchangeError(
       'Presentation Definition does not require any credentials. Optional credentials are not included in the presentation submission.'
     )
   }
 
-  if (selectResults.areRequiredCredentialsPresent === Status.ERROR) {
-    return presentationSubmission
-  }
+  const credentials: DifPexInputDescriptorToCredentials = {}
+  for (const inputDescriptorId of inputDescriptorIds) {
+    if (credentials[inputDescriptorId]) continue
 
-  return {
-    ...presentationSubmission,
-
-    // If all requirements are satisfied, the presentation submission is satisfied
-    areRequirementsSatisfied: presentationSubmission.requirements.every(
-      (requirement) => requirement.isRequirementSatisfied
-    ),
-  }
-}
-
-function getSubmissionRequirements(
-  presentationDefinition: IPresentationDefinition,
-  selectResults: CredentialRecordSelectResults
-): Array<DifPexCredentialsForRequestRequirement> {
-  const submissionRequirements: Array<DifPexCredentialsForRequestRequirement> = []
-
-  const matches = selectResults.matches as SubmissionRequirementMatchFrom[]
-  if (!matches.every((match) => match.type === SubmissionRequirementMatchType.SubmissionRequirement && match.from)) {
-    throw new DifPresentationExchangeError(
-      `Expected all matches to be of type '${SubmissionRequirementMatchType.SubmissionRequirement}' with 'from' key.`
+    const inputDescriptorResult = queryResult.input_descriptors.find(
+      ({ input_descriptor_id }) => input_descriptor_id === inputDescriptorId
     )
-  }
-
-  // There are submission requirements, so we need to select the input_descriptors
-  // based on the submission requirements
-  presentationDefinition.submission_requirements?.forEach((submissionRequirement, submissionRequirementIndex) => {
-    // Check: if the submissionRequirement uses `from_nested`, as we don't support this yet
-    if (submissionRequirement.from_nested) {
-      throw new DifPresentationExchangeError(
-        "Presentation definition contains requirement using 'from_nested', which is not supported yet."
-      )
-    }
-
-    // Check if there's a 'from'. If not the structure is not as we expect it
-    if (!submissionRequirement.from) {
-      throw new DifPresentationExchangeError("Missing 'from' in submission requirement match")
-    }
-
-    const match = matches.find((match) => match.id === submissionRequirementIndex)
+    const [match] = inputDescriptorResult?.matching_credentials ?? []
     if (!match) {
-      throw new Error(`Unable to find a match for submission requirement with index '${submissionRequirementIndex}'`)
+      throw new DifPresentationExchangeError(`No credential found for input descriptor '${inputDescriptorId}'`)
     }
 
-    if (submissionRequirement.rule === Rules.All) {
-      const selectedSubmission = getSubmissionRequirementRuleAll(
-        submissionRequirement,
-        presentationDefinition,
-        selectResults.verifiableCredential,
-        match
-      )
-      submissionRequirements.push(selectedSubmission)
-    } else {
-      const selectedSubmission = getSubmissionRequirementRulePick(
-        submissionRequirement,
-        presentationDefinition,
-        selectResults.verifiableCredential,
-        match
-      )
-
-      submissionRequirements.push(selectedSubmission)
-    }
-  })
-
-  // Submission may have requirement that doesn't require a credential to be submitted (e.g. min: 0)
-  // We use minimization strategy, and thus only disclose the minimum amount of information
-  const requirementsWithCredentials = submissionRequirements.filter((requirement) => requirement.needsCount > 0)
-
-  return requirementsWithCredentials
-}
-
-function getSubmissionRequirementsForAllInputDescriptors(
-  inputDescriptors: Array<InputDescriptorV1> | Array<InputDescriptorV2>,
-  selectResults: CredentialRecordSelectResults
-): Array<DifPexCredentialsForRequestRequirement> {
-  const submissionRequirements: Array<DifPexCredentialsForRequestRequirement> = []
-
-  const matches = selectResults.matches as SubmissionRequirementMatchInputDescriptor[]
-  if (!matches.every((match) => match.type === SubmissionRequirementMatchType.InputDescriptor)) {
-    throw new DifPresentationExchangeError(
-      `Expected all matches to be of type '${SubmissionRequirementMatchType.InputDescriptor}' when.`
-    )
+    credentials[inputDescriptorId] = [getSubmissionEntryCredentialForMatch(match)]
   }
 
-  for (const inputDescriptor of inputDescriptors) {
-    const submission = getSubmissionForInputDescriptor(inputDescriptor, selectResults.verifiableCredential, matches)
-    submissionRequirements.push({
-      rule: Rules.Pick,
-      needsCount: 1, // Every input descriptor is a distinct requirement, so the count is always 1,
-      submissionEntry: [submission],
-      isRequirementSatisfied: submission.verifiableCredentials.length >= 1,
-    })
-  }
-
-  return submissionRequirements
-}
-
-function getSubmissionRequirementRuleAll(
-  submissionRequirement: SubmissionRequirement,
-  presentationDefinition: IPresentationDefinition,
-  verifiableCredentials: SubmissionEntryCredential[],
-  match: SubmissionRequirementMatchFrom
-) {
-  // Check if there's a 'from'. If not the structure is not as we expect it
-  if (!submissionRequirement.from)
-    throw new DifPresentationExchangeError("Missing 'from' in submission requirement match.")
-
-  const selectedSubmission: DifPexCredentialsForRequestRequirement = {
-    rule: Rules.All,
-    needsCount: 0,
-    name: submissionRequirement.name,
-    purpose: submissionRequirement.purpose,
-    submissionEntry: [],
-    isRequirementSatisfied: false,
-  }
-
-  for (const inputDescriptor of presentationDefinition.input_descriptors) {
-    // We only want to get the submission if the input descriptor belongs to the group
-    if (!inputDescriptor.group?.includes(match.from)) continue
-
-    const submission = getSubmissionForInputDescriptor(inputDescriptor, verifiableCredentials, match.input_descriptors)
-
-    // Rule ALL, so for every input descriptor that matches in this group, we need to add it
-    selectedSubmission.needsCount += 1
-    selectedSubmission.submissionEntry.push(submission)
-  }
-
-  return {
-    ...selectedSubmission,
-
-    // If all submissions have a credential, the requirement is satisfied
-    isRequirementSatisfied: selectedSubmission.submissionEntry.every(
-      (submission) => submission.verifiableCredentials.length >= 1
-    ),
-  }
-}
-
-function getSubmissionRequirementRulePick(
-  submissionRequirement: SubmissionRequirement,
-  presentationDefinition: IPresentationDefinition,
-  verifiableCredentials: SubmissionEntryCredential[],
-  match: SubmissionRequirementMatchFrom
-) {
-  // Check if there's a 'from'. If not the structure is not as we expect it
-  if (!submissionRequirement.from) {
-    throw new DifPresentationExchangeError("Missing 'from' in submission requirement match.")
-  }
-
-  const selectedSubmission: DifPexCredentialsForRequestRequirement = {
-    rule: Rules.Pick,
-    needsCount: submissionRequirement.count ?? submissionRequirement.min ?? 1,
-    name: submissionRequirement.name,
-    purpose: submissionRequirement.purpose,
-    // If there's no count, min, or max we assume one credential is required for submission
-    // however, the exact behavior is not specified in the spec
-    submissionEntry: [],
-    isRequirementSatisfied: false,
-  }
-
-  const satisfiedSubmissions: Array<DifPexCredentialsForRequestSubmissionEntry> = []
-  const unsatisfiedSubmissions: Array<DifPexCredentialsForRequestSubmissionEntry> = []
-
-  for (const inputDescriptor of presentationDefinition.input_descriptors) {
-    // We only want to get the submission if the input descriptor belongs to the group
-    if (!inputDescriptor.group?.includes(match.from)) continue
-
-    const submission = getSubmissionForInputDescriptor(inputDescriptor, verifiableCredentials, match.input_descriptors)
-
-    if (submission.verifiableCredentials.length >= 1) {
-      satisfiedSubmissions.push(submission)
-    } else {
-      unsatisfiedSubmissions.push(submission)
-    }
-
-    // If we have found enough credentials to satisfy the requirement, we could stop
-    // but the user may not want the first x that match, so we continue and return all matches
-    // if (satisfiedSubmissions.length === selectedSubmission.needsCount) break
-  }
-
-  return {
-    ...selectedSubmission,
-
-    // If there are enough satisfied submissions, the requirement is satisfied
-    isRequirementSatisfied: satisfiedSubmissions.length >= selectedSubmission.needsCount,
-
-    // if the requirement is satisfied, we only need to return the satisfied submissions
-    // however if the requirement is not satisfied, we include all entries so the wallet could
-    // render which credentials are missing.
-    submissionEntry:
-      satisfiedSubmissions.length >= selectedSubmission.needsCount
-        ? satisfiedSubmissions
-        : [...satisfiedSubmissions, ...unsatisfiedSubmissions],
-  }
-}
-
-function getSubmissionForInputDescriptor(
-  inputDescriptor: InputDescriptorV1 | InputDescriptorV2,
-  verifiableCredentials: SubmissionEntryCredential[],
-  matches: SubmissionRequirementMatchInputDescriptor[]
-): DifPexCredentialsForRequestSubmissionEntry {
-  const matchesForInputDescriptor = matches.filter((m) => m.id === inputDescriptor.id)
-
-  const submissionEntry: DifPexCredentialsForRequestSubmissionEntry = {
-    inputDescriptorId: inputDescriptor.id,
-    name: inputDescriptor.name,
-    purpose: inputDescriptor.purpose,
-    verifiableCredentials: matchesForInputDescriptor.flatMap((matchForInputDescriptor) =>
-      extractCredentialsFromInputDescriptorMatch(matchForInputDescriptor, verifiableCredentials)
-    ),
-  }
-
-  // return early if no matches.
-  if (!matchesForInputDescriptor?.length) return submissionEntry
-
-  return submissionEntry
-}
-
-function extractCredentialsFromInputDescriptorMatch(
-  match: SubmissionRequirementMatchInputDescriptor,
-  availableCredentials: SubmissionEntryCredential[]
-) {
-  const verifiableCredentials: SubmissionEntryCredential[] = []
-
-  for (const vcPath of match.vc_path) {
-    const [verifiableCredential] = JSONPath.query(
-      { verifiableCredential: availableCredentials },
-      vcPath
-    ) as SubmissionEntryCredential[]
-    verifiableCredentials.push(verifiableCredential)
-  }
-
-  return verifiableCredentials
+  return credentials
 }
 
 /**
- * Custom SelectResults that includes the Credo records instead of the encoded verifiable credential
+ * Above this many input descriptors with a credential, the selection is made per submission requirement instead of
+ * searched, as the search tries every combination.
  */
-type CredentialRecordSelectResults = Omit<SelectResults, 'verifiableCredential'> & {
-  verifiableCredential: SubmissionEntryCredential[]
-  matches: SubmissionRequirementMatch[]
+const MAX_SEARCHED_INPUT_DESCRIPTORS = 16
+
+/**
+ * The input descriptors to submit for the submission requirements: the fewest that satisfy all of them, so that the
+ * least is disclosed, preferring input descriptors that come first in the presentation definition.
+ *
+ * An input descriptor can be in more than one group, and the verifier counts a submitted input descriptor for every
+ * group it is in. So the selection is checked against all requirements at once: picking for each requirement on its
+ * own can submit more members of a group than its `count` or `max` allows.
+ */
+function selectInputDescriptorsForSubmissionRequirements(
+  inputDescriptors: DifPexQueryResult['input_descriptors'],
+  requirements: SubmissionRequirementResult[]
+): string[] {
+  const satisfiesRequirements = (selected: Set<string>) =>
+    requirements.every((requirement) => isSubmissionRequirementSatisfied(requirement, selected))
+
+  // The input descriptors that have a credential and are in a group of a requirement, in definition order
+  const groupMembers = new Set(requirements.flatMap(getGroupMembers))
+  const candidates = inputDescriptors
+    .filter(
+      ({ input_descriptor_id, matching_credentials }) =>
+        groupMembers.has(input_descriptor_id) && matching_credentials.length > 0
+    )
+    .map(({ input_descriptor_id }) => input_descriptor_id)
+
+  if (candidates.length > MAX_SEARCHED_INPUT_DESCRIPTORS) {
+    const selected = [...new Set(requirements.flatMap(getInputDescriptorIdsForSubmissionRequirement))]
+    if (!satisfiesRequirements(new Set(selected))) {
+      throw new DifPresentationExchangeError(
+        'Could not select credentials that satisfy the submission requirements, as an input descriptor is in more than one group. Select the credentials manually.'
+      )
+    }
+    return selected
+  }
+
+  for (let size = 0; size <= candidates.length; size++) {
+    for (const selected of getCombinations(candidates, size)) {
+      if (satisfiesRequirements(new Set(selected))) return selected
+    }
+  }
+
+  throw new DifPresentationExchangeError(
+    'Could not find the required credentials for the presentation submission, as no selection of the available credentials satisfies all submission requirements'
+  )
+}
+
+/**
+ * Whether submitting the `selected` input descriptors satisfies the requirement, as a verifier checks a submission:
+ * `all` needs every member, and `pick` at least `needs_count`, and exactly `count`, or no more than `max`.
+ */
+function isSubmissionRequirementSatisfied(requirement: SubmissionRequirementResult, selected: Set<string>): boolean {
+  const satisfiedCount = requirement.from_nested
+    ? requirement.from_nested.filter((nested) => isSubmissionRequirementSatisfied(nested, selected)).length
+    : requirement.input_descriptors.filter(({ input_descriptor_id }) => selected.has(input_descriptor_id)).length
+
+  if (requirement.rule === 'all') return requirement.needs_count > 0 && satisfiedCount === requirement.needs_count
+  if (satisfiedCount < requirement.needs_count) return false
+  if (requirement.count !== undefined) return satisfiedCount === requirement.count
+  return requirement.max === undefined || satisfiedCount <= requirement.max
+}
+
+function getGroupMembers(requirement: SubmissionRequirementResult): string[] {
+  return requirement.from_nested
+    ? requirement.from_nested.flatMap(getGroupMembers)
+    : requirement.input_descriptors.map(({ input_descriptor_id }) => input_descriptor_id)
+}
+
+/**
+ * The combinations of `size` items, keeping their order, and with the combinations of earlier items first.
+ */
+function* getCombinations<Item>(items: Item[], size: number, start = 0): Generator<Item[]> {
+  if (size === 0) {
+    yield []
+    return
+  }
+
+  for (let index = start; index <= items.length - size; index++) {
+    for (const rest of getCombinations(items, size - 1, index + 1)) {
+      yield [items[index], ...rest]
+    }
+  }
+}
+
+/**
+ * The input descriptors to submit for a satisfied submission requirement on its own: all of them for `all`, and the
+ * first `needs_count` satisfied ones for `pick`.
+ */
+function getInputDescriptorIdsForSubmissionRequirement(submissionRequirement: SubmissionRequirementResult): string[] {
+  if (submissionRequirement.from_nested) {
+    const nested = submissionRequirement.from_nested
+    const selected =
+      submissionRequirement.rule === 'all'
+        ? nested
+        : nested.filter(({ satisfied }) => satisfied).slice(0, submissionRequirement.needs_count)
+
+    return selected.flatMap(getInputDescriptorIdsForSubmissionRequirement)
+  }
+
+  const inputDescriptors =
+    submissionRequirement.rule === 'all'
+      ? submissionRequirement.input_descriptors
+      : submissionRequirement.input_descriptors
+          .filter(({ satisfied }) => satisfied)
+          .slice(0, submissionRequirement.needs_count)
+
+  return inputDescriptors.map(({ input_descriptor_id }) => input_descriptor_id)
+}
+
+/**
+ * The credential to submit for a match, disclosing what the match discloses.
+ */
+export function getSubmissionEntryCredentialForMatch(match: DifPexCredentialMatch): SubmissionEntryCredential {
+  if (match.record instanceof SdJwtVcRecord) {
+    const { disclosure } = match as Extract<DifPexCredentialMatch, { record: SdJwtVcRecord }>
+    return {
+      claimFormat: ClaimFormat.SdJwtDc,
+      credentialRecord: match.record,
+      disclosedPayload: disclosure.output,
+      disclosedPaths: disclosure.disclosed_paths,
+    }
+  }
+
+  if (match.record instanceof MdocRecord) {
+    const { disclosure } = match as Extract<DifPexCredentialMatch, { record: MdocRecord }>
+    return {
+      claimFormat: ClaimFormat.MsoMdoc,
+      credentialRecord: match.record,
+      disclosedPayload: disclosure.output,
+    }
+  }
+
+  return {
+    claimFormat: match.record.firstCredential.claimFormat,
+    credentialRecord: match.record,
+  }
+}
+
+/**
+ * The match of a record for an input descriptor. An SD-JWT VC discloses the claims the matched fields resolved
+ * to, whether or not the input descriptor sets `limit_disclosure`, as `@animo-id/pex` did. An mdoc discloses
+ * the data elements the fields matched, as the device response holds them.
+ */
+function getCredentialMatch(
+  credentialRecord: CredentialRecord,
+  match: Omit<CredentialMatch, 'credential_index'>
+): DifPexCredentialMatch {
+  if (credentialRecord instanceof SdJwtVcRecord) {
+    const paths: ClaimPath[] = match.fields.flatMap((fieldMatch) => fieldMatch.nodes.map(({ path }) => path))
+    const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(credentialRecord.encoded, paths)
+
+    return {
+      ...match,
+      record: credentialRecord,
+      disclosure: { ...match.disclosure, output: prettyClaims, disclosed_paths: disclosedPaths },
+    }
+  }
+
+  if (credentialRecord instanceof MdocRecord) {
+    // The data elements the fields matched, which is also what presenting the mdoc requests
+    const mdoc = credentialRecord.firstCredential
+    const documentRequest = fieldMatchesToDocumentRequest(mdoc.docType, match.fields)
+    const output = documentRequest ? MdocDeviceResponse.limitDisclosureToDocumentRequest(mdoc, documentRequest) : {}
+
+    return { ...match, record: credentialRecord, disclosure: { ...match.disclosure, output } }
+  }
+
+  if (credentialRecord instanceof W3cCredentialRecord) {
+    return { ...match, record: credentialRecord }
+  }
+
+  throw new DifPresentationExchangeError('Unrecognized credential record type')
 }

@@ -229,7 +229,7 @@ export class DidCommDifPresentationExchangeProofFormatService
       throw new CredoError('Invalid amount of verifiable presentations. Only one is allowed.')
     }
 
-    if (presentation.presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.EXTERNAL) {
+    if (presentation.presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.External) {
       throw new CredoError('External presentation submission is not supported.')
     }
 

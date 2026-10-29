@@ -26,6 +26,7 @@ import {
   MdocRecord,
   type MdocSessionTranscriptOptions,
 } from '../mdoc'
+import { mdocNameSpacesForQuery } from '../mdoc/mdocUtil'
 import {
   type SdJwtVc,
   SdJwtVcApi,
@@ -286,22 +287,9 @@ export class DcqlService {
         credential_format: 'mso_mdoc',
         authority: this.getAuthorityForCredential(new Mdoc(presentation.deviceResponse.documents[0].issuerSigned)),
         doctype: presentation.deviceResponse.documents[0].docType,
-        namespaces: Object.entries(
-          Object.fromEntries(
-            presentation.deviceResponse.documents[0].issuerSigned.issuerNamespaces?.issuerNamespaces ?? []
-          )
-        ).reduce(
-          (prev, [key, value]) => ({
-            // biome-ignore lint/performance/noAccumulatingSpread: time complexity not relevant here
-            ...prev,
-            [key]: value.reduce<Record<string, unknown>>(
-              // biome-ignore lint/performance/noAccumulatingSpread: time complexity not relevant here
-              (prev, curr) => ({ ...prev, [curr.elementIdentifier]: curr.elementValue }),
-              {}
-            ),
-          }),
-          {}
-        ),
+        // The element values are CBOR values, which DCQL compares as JSON values. A claims query only addresses a
+        // data element, so the values inside an element are kept as they are.
+        namespaces: mdocNameSpacesForQuery(this.getMdocPresentationNameSpaces(presentation)),
       } satisfies DcqlMdocCredential
     }
     if (presentation.claimFormat === ClaimFormat.JwtVp) {
@@ -372,7 +360,9 @@ export class DcqlService {
           authority: this.getAuthorityForCredential(mdoc),
           credential_format: 'mso_mdoc',
           doctype: mdoc.docType,
-          namespaces: mdoc.issuerSignedNamespaces,
+          // The element values are CBOR values, which DCQL compares as JSON values. A claims query only addresses a
+          // data element, so the values inside an element are kept as they are.
+          namespaces: mdocNameSpacesForQuery(mdoc.issuerSignedNamespaces),
           cryptographic_holder_binding: true,
         } satisfies DcqlCredential
       }
@@ -542,6 +532,9 @@ export class DcqlService {
    * them, and `disclosed_paths` added: the paths to those claims in the credential, which are what to
    * disclose when presenting it.
    *
+   * For an mdoc, the output holds the element values as DCQL compared them, see `mdocNameSpacesForQuery`, so they
+   * are replaced with the element values of the mdoc.
+   *
    * Other credentials disclose the output as it is.
    */
   private getDisclosedClaimSetOutput(
@@ -569,6 +562,15 @@ export class DcqlService {
       return { output: prettyClaims as { [key: string]: JsonValue }, disclosed_paths: disclosedPaths }
     }
 
+    if (record.type === 'MdocRecord') {
+      return {
+        output: this.getMdocClaimSetOutput(
+          claimSet.output as MdocNameSpaces,
+          record.firstCredential.issuerSignedNamespaces
+        ),
+      }
+    }
+
     if (record.type === 'W3cV2CredentialRecord' && record.firstCredential instanceof W3cV2SdJwtVerifiableCredential) {
       const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(record.firstCredential.encoded, getClaimPaths())
 
@@ -582,6 +584,95 @@ export class DcqlService {
     }
 
     return {}
+  }
+
+  /**
+   * The name spaces of the document of an mdoc presentation, with the element values as they are presented.
+   */
+  private getMdocPresentationNameSpaces(presentation: MdocDeviceResponse): MdocNameSpaces {
+    const issuerNamespaces = presentation.deviceResponse.documents?.[0]?.issuerSigned.issuerNamespaces?.issuerNamespaces
+    return Object.fromEntries(
+      Array.from(issuerNamespaces ?? [], ([nameSpace, items]) => [
+        nameSpace,
+        Object.fromEntries(items.map((item) => [item.elementIdentifier, item.elementValue])),
+      ])
+    )
+  }
+
+  /**
+   * The output of a claim set of an mdoc, with the element values of the mdoc instead of the values DCQL compared,
+   * see `mdocNameSpacesForQuery`. The output holds the requested elements by name space.
+   */
+  private getMdocClaimSetOutput<Output>(output: Output, nameSpaces: MdocNameSpaces): Output {
+    if (typeof output !== 'object' || output === null) return output
+
+    return Object.fromEntries(
+      Object.entries(output).map(([nameSpace, elements]) => [
+        nameSpace,
+        Object.fromEntries(
+          Object.entries(elements as Record<string, unknown>).map(([elementIdentifier, value]) => [
+            elementIdentifier,
+            nameSpaces[nameSpace] && Object.hasOwn(nameSpaces[nameSpace], elementIdentifier)
+              ? nameSpaces[nameSpace][elementIdentifier]
+              : value,
+          ])
+        ),
+      ])
+    ) as Output
+  }
+
+  /**
+   * The presentation result, with the element values of the presented mdocs in the output of their claim sets, as
+   * {@link getMdocClaimSetOutput} does.
+   */
+  private withMdocPresentationClaimSetOutputs(
+    presentationResult: DcqlPresentationResult,
+    dcqlPresentation: DcqlPresentation
+  ): DcqlPresentationResult {
+    const withMdocOutputs = <Credential extends { input_credential_index: number; claims: { success: boolean } }>(
+      credentialQueryId: string,
+      credential: Credential
+    ): Credential => {
+      const presentation = asArray(dcqlPresentation[credentialQueryId] ?? [])[credential.input_credential_index]
+      const claims = credential.claims as { success: boolean; valid_claim_sets?: Array<{ output: unknown }> }
+      if (!(presentation instanceof MdocDeviceResponse) || !claims.success || !claims.valid_claim_sets) {
+        return credential
+      }
+
+      const nameSpaces = this.getMdocPresentationNameSpaces(presentation)
+      return {
+        ...credential,
+        claims: {
+          ...claims,
+          valid_claim_sets: claims.valid_claim_sets.map((claimSet) => ({
+            ...claimSet,
+            output: this.getMdocClaimSetOutput(claimSet.output, nameSpaces),
+          })),
+        },
+      }
+    }
+
+    return {
+      ...presentationResult,
+      credential_matches: Object.fromEntries(
+        Object.entries(presentationResult.credential_matches).map(([credentialQueryId, match]) => [
+          credentialQueryId,
+          {
+            ...match,
+            ...(match.valid_credentials && {
+              valid_credentials: match.valid_credentials.map((credential) =>
+                withMdocOutputs(credentialQueryId, credential)
+              ),
+            }),
+            ...(match.failed_credentials && {
+              failed_credentials: match.failed_credentials.map((credential) =>
+                withMdocOutputs(credentialQueryId, credential)
+              ),
+            }),
+          },
+        ])
+      ),
+    } as DcqlPresentationResult
   }
 
   public async assertValidDcqlPresentation(
@@ -611,7 +702,10 @@ export class DcqlService {
       )
     )
 
-    const presentationResult = DcqlPresentationResult.fromDcqlPresentation(internalDcqlPresentation, { dcqlQuery })
+    const presentationResult = this.withMdocPresentationClaimSetOutputs(
+      DcqlPresentationResult.fromDcqlPresentation(internalDcqlPresentation, { dcqlQuery }),
+      dcqlPresentation
+    )
 
     if (!presentationResult.can_be_satisfied) {
       throw new DcqlError('Presentations do not satisfy the DCQL query.', {

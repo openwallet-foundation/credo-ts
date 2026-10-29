@@ -1,5 +1,3 @@
-import { Optionality } from '@sphereon/pex-models'
-
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { PublicJwk } from '../../kms'
@@ -75,7 +73,7 @@ describe('mdoc device-response test', () => {
           },
         },
         constraints: {
-          limit_disclosure: Optionality.Required,
+          limit_disclosure: 'required',
           fields: [
             {
               path: ["$['hello']['world']"],

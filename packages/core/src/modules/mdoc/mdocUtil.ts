@@ -1,4 +1,4 @@
-import { DeviceNamespaces, DeviceSignedItems } from '@owf/mdoc'
+import { DateOnly, DeviceNamespaces, DeviceSignedItems } from '@owf/mdoc'
 import type { PublicJwk } from '../kms'
 import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
 import { X509Certificate } from '../x509/X509Certificate'
@@ -136,4 +136,81 @@ export function namespacesMapToRecord<NamespaceValue, NameSpaces extends Map<str
   return Object.fromEntries(
     Array.from(nameSpaces.entries()).map(([key, value]) => [key, Object.fromEntries(Array.from(value.entries()))])
   )
+}
+
+/**
+ * An mdoc element value as a query language like DCQL or DIF Presentation Exchange compares it with JSON values.
+ *
+ * The CBOR values that have a JSON primitive equivalent are converted: a full-date to its `YYYY-MM-DD` string, a
+ * tdate to its RFC 3339 string, and an integer decoded as a bigint to a number. Any other value, such as a byte string
+ * or an invalid date, is kept as it is: a query can ask for the element, but can't match a value or type against it.
+ *
+ * With `nested`, arrays are converted element by element, and maps to objects, for a query language whose paths go
+ * into an element. A map only keeps its string keys, as a path addresses a member by its name, and two keys such as
+ * `1` and `'1'` would otherwise become the same name.
+ */
+export function mdocElementValueForQuery(value: unknown, { nested = false }: { nested?: boolean } = {}): unknown {
+  // An invalid date (from a malformed CBOR date string) has no string, so it is kept as it is
+  if (value instanceof DateOnly) return toFullDateString(value) ?? value
+  if (value instanceof Date) return isValidDate(value) ? toTdateString(value) : value
+  if (typeof value === 'bigint') return Number.isSafeInteger(Number(value)) ? Number(value) : value
+  if (!nested) return value
+
+  if (Array.isArray(value)) return value.map((item) => mdocElementValueForQuery(item, { nested }))
+
+  let entries: Array<[string, unknown]>
+  if (value instanceof Map) {
+    entries = Array.from(value.entries()).filter((entry): entry is [string, unknown] => typeof entry[0] === 'string')
+  } else if (isPlainObject(value)) {
+    entries = Object.entries(value)
+  } else {
+    return value
+  }
+
+  // `Object.fromEntries` defines own properties, so a `__proto__` key doesn't change the prototype
+  return Object.fromEntries(entries.map(([key, item]) => [key, mdocElementValueForQuery(item, { nested })]))
+}
+
+/**
+ * The mdoc name spaces as a query language compares them with JSON values, see {@link mdocElementValueForQuery}.
+ */
+export function mdocNameSpacesForQuery(nameSpaces: MdocNameSpaces, options: { nested?: boolean } = {}): MdocNameSpaces {
+  return Object.fromEntries(
+    Object.entries(nameSpaces).map(([nameSpace, elements]) => [
+      nameSpace,
+      Object.fromEntries(
+        Object.entries(elements).map(([elementIdentifier, value]) => [
+          elementIdentifier,
+          mdocElementValueForQuery(value, options),
+        ])
+      ),
+    ])
+  )
+}
+
+function toFullDateString(date: DateOnly) {
+  try {
+    return date.toISOString()
+  } catch {
+    // `toISOString` throws a RangeError for an invalid date
+    return undefined
+  }
+}
+
+function isValidDate(date: Date) {
+  return !Number.isNaN(date.getTime())
+}
+
+/**
+ * A tdate as ISO 18013-5 encodes it: in UTC, without fractional seconds unless the date has them.
+ */
+function toTdateString(date: Date) {
+  const isoString = date.toISOString()
+  return date.getUTCMilliseconds() === 0 ? isoString.replace('.000Z', 'Z') : isoString
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
 }

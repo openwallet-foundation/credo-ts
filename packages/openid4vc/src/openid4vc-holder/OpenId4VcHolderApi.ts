@@ -3,7 +3,7 @@ import {
   type DcqlQueryResult,
   type DcqlSelectCredentialsForRequestOptions,
   DcqlService,
-  type DifPexCredentialsForRequest,
+  type DifPexQueryResult,
   DifPresentationExchangeService,
   injectable,
 } from '@credo-ts/core'
@@ -83,8 +83,8 @@ export class OpenId4VcHolderApi {
    * Automatically select credentials from available credentials for a presentation exchange request. Can be called after calling
    * @see resolveOpenId4VpAuthorizationRequest.
    */
-  public selectCredentialsForPresentationExchangeRequest(credentialsForRequest: DifPexCredentialsForRequest) {
-    return this.difPresentationExchangeService.selectCredentialsForRequest(credentialsForRequest)
+  public selectCredentialsForPresentationExchangeRequest(queryResult: DifPexQueryResult) {
+    return this.difPresentationExchangeService.selectCredentialsForRequest(queryResult)
   }
 
   /**
