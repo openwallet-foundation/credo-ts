@@ -42,6 +42,7 @@ import {
 } from '../sd-jwt-vc/disclosureFrame'
 import {
   ClaimFormat,
+  CREDENTIALS_CONTEXT_V2_URL,
   SignatureSuiteRegistry,
   W3cCredentialRecord,
   W3cCredentialRepository,
@@ -989,6 +990,7 @@ export class DcqlService {
 
           const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
           const w3cV2Presentation = new W3cV2Presentation({
+            context: [CREDENTIALS_CONTEXT_V2_URL, 'https://www.w3.org/ns/credentials/undefined-terms/v2'],
             holder: presentationToCreate.credentialRecord.firstCredential.resolvedCredential.credentialSubjectIds[0],
             verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(sdJwtVc)],
           })
