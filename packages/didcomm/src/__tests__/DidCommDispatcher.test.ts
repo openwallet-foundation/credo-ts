@@ -5,6 +5,7 @@ import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { JsonTransformer } from '../../../core/src/utils/JsonTransformer'
 import { getAgentConfig, getAgentContext, getMockConnection } from '../../../core/tests/helpers'
 import { DidCommDispatcher } from '../DidCommDispatcher'
+import type { DidCommAckReceivedEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
 import { DidCommMessage } from '../DidCommMessage'
 import { DidCommMessageHandlerRegistry } from '../DidCommMessageHandlerRegistry'
@@ -538,6 +539,54 @@ describe('DidCommDispatcher', () => {
       expect(vi.mocked(messageSenderMock.sendMessage).mock.invocationCallOrder[0]).toBeLessThan(
         listener.mock.invocationCallOrder[0]
       )
+    })
+
+    it('emits the ack received event for a message with an ack header before the handler runs', async () => {
+      const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
+      const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
+      const dispatcher = new DidCommDispatcher(
+        new MessageSenderMock(),
+        eventEmitter,
+        messageHandlerRegistry,
+        agentConfig.logger
+      )
+      const handle = vi.fn()
+      messageHandlerRegistry.registerMessageHandler({ supportedMessages: [CustomProtocolMessage], handle })
+
+      const listener = vi.fn()
+      eventEmitter.on<DidCommAckReceivedEvent>(DidCommEventTypes.DidCommAckReceived, listener)
+
+      const message = new CustomProtocolMessage({})
+      message.ack = ['acked-1', 'acked-2']
+      const connection = vi.fn() as unknown as DidCommConnectionRecord
+      await dispatcher.dispatch(new DidCommInboundMessageContext(message, { agentContext, connection }))
+
+      expect(listener).toHaveBeenCalledTimes(1)
+      expect(listener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: { message, acknowledgedMessageIds: ['acked-1', 'acked-2'], connection },
+        })
+      )
+      expect(listener.mock.invocationCallOrder[0]).toBeLessThan(handle.mock.invocationCallOrder[0])
+    })
+
+    it('does not emit the ack received event for a message without an ack header', async () => {
+      const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
+      const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
+      const dispatcher = new DidCommDispatcher(
+        new MessageSenderMock(),
+        eventEmitter,
+        messageHandlerRegistry,
+        agentConfig.logger
+      )
+      messageHandlerRegistry.registerMessageHandler({ supportedMessages: [CustomProtocolMessage], handle: vi.fn() })
+
+      const listener = vi.fn()
+      eventEmitter.on(DidCommEventTypes.DidCommAckReceived, listener)
+
+      await dispatcher.dispatch(new DidCommInboundMessageContext(new CustomProtocolMessage({}), { agentContext }))
+
+      expect(listener).not.toHaveBeenCalled()
     })
   })
 })

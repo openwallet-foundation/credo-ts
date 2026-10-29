@@ -61,10 +61,6 @@ export class DidCommProblemReportV2Message extends DidCommMessage {
   public readonly type = DidCommProblemReportV2Message.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/report-problem/2.0/problem-report')
 
-  @IsOptional()
-  @IsString({ each: true })
-  public ack?: string[]
-
   @IsString()
   public code!: string
 

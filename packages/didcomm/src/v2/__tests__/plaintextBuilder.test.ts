@@ -1,5 +1,7 @@
-import { JsonTransformer } from '@credo-ts/core'
-
+import { JsonTransformer, utils } from '@credo-ts/core'
+import { Expose } from 'class-transformer'
+import { IsString } from 'class-validator'
+import { DidCommMessage } from '../../DidCommMessage'
 import { DidCommAttachment, DidCommAttachmentData } from '../../decorators/attachment/DidCommAttachment'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { DidCommProblemReportV2Message } from '../../messages/problem-reports/DidCommProblemReportV2Message'
@@ -10,8 +12,56 @@ import { DidCommOfferCredentialV2Message } from '../../modules/credentials/proto
 import { DidCommBatchMessage } from '../../modules/message-pickup/protocol/v1/messages/DidCommBatchMessage'
 import { DidCommProofFormatSpec } from '../../modules/proofs/models/DidCommProofFormatSpec'
 import { DidCommProposePresentationV2Message } from '../../modules/proofs/protocol/v2/messages/DidCommProposePresentationV2Message'
+import { IsValidMessageType, parseMessageType } from '../../util/messageType'
 import { normalizeV2PlaintextToV1 } from '../normalize'
-import { buildV2PlaintextFromMessage } from '../plaintextBuilder'
+import { buildDefaultV2PlaintextFromMessage, buildV2PlaintextFromMessage } from '../plaintextBuilder'
+import type { DidCommV2PlaintextMessage } from '../types'
+
+// A protocol that keeps a body field named like a v2 header, as shorten-url/1.0 does with expires_time
+class ExpiringMessage extends DidCommMessage {
+  public constructor(options?: { expiresAt: string }) {
+    super()
+    if (options) {
+      this.id = this.generateId()
+      this.expiresAt = options.expiresAt
+    }
+  }
+
+  @Expose({ name: 'expires_time' })
+  @IsString()
+  public expiresAt!: string
+
+  @IsValidMessageType(ExpiringMessage.type)
+  public readonly type = ExpiringMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.0/expiring')
+}
+
+// A protocol whose v2 variant moves a body field into a header, as media-sharing/1.0 does with sent_time
+class SentMessage extends DidCommMessage {
+  public constructor(options?: { sentTime: Date }) {
+    super()
+    if (options) {
+      this.id = this.generateId()
+      this.sentTime = options.sentTime
+    }
+  }
+
+  @Expose({ name: 'sent_time' })
+  public sentTime!: Date
+
+  @IsValidMessageType(SentMessage.type)
+  public readonly type = SentMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.0/sent')
+
+  public toV2Plaintext(): DidCommV2PlaintextMessage {
+    const { sent_time, ...body } = buildDefaultV2PlaintextFromMessage(this).body ?? {}
+    return {
+      ...buildDefaultV2PlaintextFromMessage(this),
+      body,
+      created_time: utils.dateToSeconds(this.sentTime),
+    }
+  }
+}
 
 describe('buildV2PlaintextFromMessage', () => {
   it('maps @type to type and @id to id', () => {
@@ -110,7 +160,7 @@ describe('buildV2PlaintextFromMessage', () => {
     expect(v2.body).toEqual({ comment: 'hi', response_requested: true })
   })
 
-  it('keeps created_time and expires_time already on the message over ~timing', () => {
+  it('sends a received v2 message again with its created_time and expires_time headers', () => {
     const received = normalizeV2PlaintextToV1({
       id: 'received-msg-1',
       type: 'https://didcomm.org/trust_ping/1.0/ping',
@@ -119,14 +169,59 @@ describe('buildV2PlaintextFromMessage', () => {
       body: { comment: 'hi' },
     })
     const message = JsonTransformer.fromJSON(received, DidCommTrustPingMessage)
-    message.setTiming({
-      outTime: new Date('2020-01-01T00:00:00.000Z'),
-      expiresTime: new Date('2020-01-01T01:00:00.000Z'),
-    })
 
     const v2 = buildV2PlaintextFromMessage(message)
     expect(v2.created_time).toBe(100)
     expect(v2.expires_time).toBe(200)
+    expect(v2.body).toEqual({ comment: 'hi', response_requested: true })
+  })
+
+  it('does not put the from_prior header of a received message into the body', () => {
+    const received = normalizeV2PlaintextToV1({
+      id: 'received-msg-1',
+      type: 'https://didcomm.org/trust_ping/1.0/ping',
+      from_prior: 'eyJhbGciOiJFZERTQSJ9.e30.sig',
+      body: { comment: 'hi' },
+    })
+    const message = JsonTransformer.fromJSON(received, DidCommTrustPingMessage)
+
+    const v2 = buildV2PlaintextFromMessage(message, { fromPrior: 'eyJhbGciOiJFZERTQSJ9.e30.new' })
+    expect(v2.body).toEqual({ comment: 'hi', response_requested: true })
+    expect(v2.from_prior).toBe('eyJhbGciOiJFZERTQSJ9.e30.new')
+  })
+
+  it('keeps a body field named expires_time in the body', () => {
+    const message = new ExpiringMessage({ expiresAt: '2026-11-01T10:00:00.000Z' })
+
+    const v2 = buildV2PlaintextFromMessage(message)
+    expect(v2.body).toEqual({ expires_time: '2026-11-01T10:00:00.000Z' })
+    expect(v2.expires_time).toBeUndefined()
+    expect(v2.created_time).toBeUndefined()
+  })
+
+  it('lifts ack to a header', () => {
+    const message = new DidCommTrustPingMessage({ comment: 'hi' })
+    message.ack = ['msg-1']
+
+    const v2 = buildV2PlaintextFromMessage(message)
+    expect(v2.ack).toEqual(['msg-1'])
+    expect(v2.body).toEqual({ comment: 'hi', response_requested: true })
+  })
+
+  it('lets a message build its own v2 shape on the default mapping and still applies the send config', () => {
+    const message = new SentMessage({ sentTime: new Date('2020-01-01T00:00:00.000Z') })
+    message.setThread({ threadId: 'thread-1' })
+
+    const v2 = buildV2PlaintextFromMessage(message, { from: 'did:example:alice', to: ['did:example:bob'] })
+    expect(v2).toEqual({
+      id: message.id,
+      type: 'https://didcomm.org/fake-protocol/1.0/sent',
+      body: {},
+      thid: 'thread-1',
+      created_time: 1577836800,
+      from: 'did:example:alice',
+      to: ['did:example:bob'],
+    })
   })
 
   it('keeps lang and please_ack as headers when a received v2 message is sent again', () => {

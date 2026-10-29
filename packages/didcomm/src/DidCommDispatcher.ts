@@ -1,5 +1,5 @@
 import { CredoError, EventEmitter, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
-import type { DidCommMessageProcessedEvent } from './DidCommEvents'
+import type { DidCommAckReceivedEvent, DidCommMessageProcessedEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import type { DidCommMessage } from './DidCommMessage'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
@@ -76,6 +76,14 @@ export class DidCommDispatcher {
     const messageHandler = this.messageHandlerRegistry.getHandlerForMessageType(message.type)
     if (messageHandler) {
       messageContext.setMessageHandler(messageHandler)
+    }
+
+    // The ack header is independent of the message body, so it is surfaced before the handler runs
+    if (Array.isArray(message.ack) && message.ack.length > 0) {
+      this.eventEmitter.emit<DidCommAckReceivedEvent>(agentContext, {
+        type: DidCommEventTypes.DidCommAckReceived,
+        payload: { message, acknowledgedMessageIds: message.ack, connection },
+      })
     }
 
     let outboundMessage: DidCommOutboundMessageContext<DidCommMessage> | undefined

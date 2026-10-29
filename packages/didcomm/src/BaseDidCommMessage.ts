@@ -1,7 +1,7 @@
 import type { Constructor } from '@credo-ts/core'
 import { utils } from '@credo-ts/core'
 import { Expose } from 'class-transformer'
-import { Matches } from 'class-validator'
+import { IsOptional, IsString, Matches } from 'class-validator'
 import type { ParsedMessageType } from './util/messageType'
 
 // First branch stays unanchored: anchoring it would reject ids that only partly match today, like urn:uuid:<uuid>
@@ -27,6 +27,12 @@ export class BaseDidCommMessage {
   /** Recipient DID(s) (DIDComm v2 plaintext). Set when normalized from v2 envelope. */
   @Expose()
   public to?: string | string[]
+
+  /** Ids of the messages this message acknowledges (DIDComm v2 `ack` header). Set when normalized from v2 envelope. */
+  @Expose()
+  @IsOptional()
+  @IsString({ each: true })
+  public ack?: string[]
 
   public generateId() {
     return utils.uuid()

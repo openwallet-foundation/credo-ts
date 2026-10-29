@@ -8,6 +8,8 @@ import type { DidCommV2PlaintextMessage } from '../../v2/types'
 export interface DidCommEmptyMessageOptions {
   id?: string
   fromPrior?: string
+  /** Ids of the messages this empty message acknowledges, sent as the `ack` header. */
+  ack?: string[]
 }
 
 /**
@@ -18,6 +20,7 @@ export class DidCommEmptyMessage extends DidCommMessage {
     super()
     this.id = options?.id ?? this.generateId()
     if (options?.fromPrior !== undefined) this.fromPrior = options.fromPrior
+    if (options?.ack !== undefined) this.ack = options.ack
   }
 
   @IsValidMessageType(DidCommEmptyMessage.type)
@@ -36,6 +39,7 @@ export class DidCommEmptyMessage extends DidCommMessage {
       body: {},
     }
     if (this.fromPrior !== undefined) v2.from_prior = this.fromPrior
+    if (this.ack !== undefined && this.ack.length > 0) v2.ack = this.ack
     return v2
   }
 }

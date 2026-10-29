@@ -1,5 +1,6 @@
+import { utils } from '@credo-ts/core'
 import { Expose } from 'class-transformer'
-import { IsInt, IsOptional, IsString } from 'class-validator'
+import { IsOptional, IsString } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
@@ -11,6 +12,7 @@ import type { DidCommV2PlaintextMessage } from '../../../../../v2/types'
  *
  * Works over both DIDComm v1 and v2 envelopes.
  * V2 format: id, type, lang, created_time (Unix epoch), body: { content }
+ * The created_time header is the ~timing out_time of the message, so a v1 envelope carries it in the ~timing decorator.
  */
 export class DidCommBasicMessageV2 extends DidCommMessage {
   public readonly allowDidSovPrefix = false
@@ -32,7 +34,7 @@ export class DidCommBasicMessageV2 extends DidCommMessage {
     if (options) {
       this.id = options.id || this.generateId()
       this.content = options.content
-      this.createdTime = options.createdTime ?? Math.floor(Date.now() / 1000)
+      this.setTiming({ outTime: new Date((options.createdTime ?? utils.dateToSeconds(new Date())) * 1000) })
       if (options.lang) this.lang = options.lang
       if (options.parentThreadId) this.setThread({ parentThreadId: options.parentThreadId })
     }
@@ -46,9 +48,10 @@ export class DidCommBasicMessageV2 extends DidCommMessage {
   @IsString()
   public content!: string
 
-  @Expose({ name: 'created_time' })
-  @IsInt()
-  public createdTime!: number
+  /** The created_time header in seconds since the Unix epoch, taken from the ~timing out_time. */
+  public get createdTime(): number | undefined {
+    return this.timing?.outTime ? utils.dateToSeconds(this.timing.outTime) : undefined
+  }
 
   @Expose({ name: 'lang' })
   @IsString()
@@ -63,9 +66,9 @@ export class DidCommBasicMessageV2 extends DidCommMessage {
     const v2: DidCommV2PlaintextMessage = {
       id: this.id,
       type: DidCommBasicMessageV2.type.messageTypeUri,
-      created_time: this.createdTime,
       body: { content: this.content },
     }
+    if (this.createdTime !== undefined) v2.created_time = this.createdTime
     if (this.lang !== undefined) v2.lang = this.lang
     if (this.threadId) v2.thid = this.threadId
     if (this.thread?.parentThreadId) v2.pthid = this.thread.parentThreadId
