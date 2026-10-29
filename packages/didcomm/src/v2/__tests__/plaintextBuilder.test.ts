@@ -5,6 +5,7 @@ import { DidCommMessage } from '../../DidCommMessage'
 import { DidCommAttachment, DidCommAttachmentData } from '../../decorators/attachment/DidCommAttachment'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { DidCommProblemReportV2Message } from '../../messages/problem-reports/DidCommProblemReportV2Message'
+import { DidCommBasicMessageV2 } from '../../modules/basic-messages/protocol/v2/messages/DidCommBasicMessageV2'
 import { DidCommTrustPingMessage } from '../../modules/connections/messages/DidCommTrustPingMessage'
 import { DidCommCredentialFormatSpec } from '../../modules/credentials/models'
 import { DidCommCredentialV2Preview } from '../../modules/credentials/protocol/v2/messages/DidCommCredentialV2Preview'
@@ -206,6 +207,14 @@ describe('buildV2PlaintextFromMessage', () => {
     const v2 = buildV2PlaintextFromMessage(message)
     expect(v2.ack).toEqual(['msg-1'])
     expect(v2.body).toEqual({ comment: 'hi', response_requested: true })
+  })
+
+  it('adds the ack header to a message class that builds its own v2 plaintext', () => {
+    const message = new DidCommBasicMessageV2({ content: 'hi', createdTime: 1700000000 })
+    message.ack = ['msg-1']
+
+    expect(message.toV2Plaintext().ack).toBeUndefined()
+    expect(buildV2PlaintextFromMessage(message).ack).toEqual(['msg-1'])
   })
 
   it('lets a message build its own v2 shape on the default mapping and still applies the send config', () => {

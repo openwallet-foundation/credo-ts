@@ -8,7 +8,7 @@ import type { DidCommV2PlaintextMessage } from '../../v2/types'
 export interface DidCommEmptyMessageOptions {
   id?: string
   fromPrior?: string
-  /** Ids of the messages this empty message acknowledges, sent as the `ack` header. */
+  /** Ids of the messages this empty message acknowledges. Sent as the `ack` header by the plaintext builder. */
   ack?: string[]
 }
 
@@ -39,7 +39,6 @@ export class DidCommEmptyMessage extends DidCommMessage {
       body: {},
     }
     if (this.fromPrior !== undefined) v2.from_prior = this.fromPrior
-    if (this.ack !== undefined && this.ack.length > 0) v2.ack = this.ack
     return v2
   }
 }

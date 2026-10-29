@@ -125,7 +125,7 @@ export function mapV2AttachmentToV1(v2: DidCommV2Attachment): Record<string, unk
 /**
  * Build a DIDComm v2 plaintext message from a DidCommMessage with the default mapping.
  *
- * Maps v1 shape: @type→type, @id→id, ~thread→thid/pthid, lang or ~l10n→lang, ~please_ack→please_ack, ack→ack,
+ * Maps v1 shape: @type→type, @id→id, ~thread→thid/pthid, lang or ~l10n→lang, ~please_ack→please_ack,
  * ~attach and the formats + named *~attach array→attachments, ~timing→created_time/expires_time,
  * remaining non-decorator fields→body.
  *
@@ -153,9 +153,10 @@ export function buildDefaultV2PlaintextFromMessage(
     '~transport': transport,
     '~please_ack': pleaseAck,
     lang,
-    ack,
     from,
     to,
+    // The ack header is set by buildV2PlaintextFromMessage for every message class
+    ack: _ack,
     // A rotation proof is never replayed from a received message. The sender sets it through the config.
     from_prior: _fromPrior,
     ...rest
@@ -184,7 +185,6 @@ export function buildDefaultV2PlaintextFromMessage(
     | undefined
   if (langVal !== undefined) v2.lang = langVal
   if (pleaseAck !== undefined) v2.please_ack = ['']
-  if (Array.isArray(ack) && ack.length > 0) v2.ack = ack as string[]
 
   // DIDComm v2 carries return_route as a top-level header, not the v1 ~transport decorator.
   if (transport && typeof transport === 'object') {
@@ -212,6 +212,7 @@ export function buildDefaultV2PlaintextFromMessage(
  * Build a DIDComm v2 plaintext message from a DidCommMessage.
  * For messages that implement toV2Plaintext() (e.g. DidCommBasicMessageV2), uses that directly.
  * Otherwise uses {@link buildDefaultV2PlaintextFromMessage}.
+ * Then adds the from, to, from_prior, ack and pthid headers that the class did not set.
  *
  * @param message - The DidCommMessage to convert
  * @param config - Optional config (e.g. useDidSovPrefixWhereAllowed, from/to override for connection-based sends)
@@ -244,6 +245,8 @@ export function buildV2PlaintextFromMessage(
   if (plaintext.from_prior === undefined && config?.fromPrior !== undefined) {
     plaintext.from_prior = config.fromPrior
   }
+  // The ack header applies to every message class, so a class does not copy it in its own toV2Plaintext()
+  if (plaintext.ack === undefined && Array.isArray(message.ack) && message.ack.length > 0) plaintext.ack = message.ack
   // thid stays with each class because a problem report carries the reported thread as pthid only
   if (plaintext.pthid === undefined && message.thread?.parentThreadId) plaintext.pthid = message.thread.parentThreadId
   return plaintext

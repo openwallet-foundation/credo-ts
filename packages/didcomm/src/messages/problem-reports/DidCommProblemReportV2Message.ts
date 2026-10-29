@@ -87,7 +87,6 @@ export class DidCommProblemReportV2Message extends DidCommMessage {
       type: DidCommProblemReportV2Message.type.messageTypeUri,
       body,
     }
-    if (this.ack !== undefined) v2.ack = this.ack
     const lang = this.getLocale()
     if (lang !== undefined) v2.lang = lang
     if (this.transport?.returnRoute !== undefined) v2.return_route = this.transport.returnRoute
