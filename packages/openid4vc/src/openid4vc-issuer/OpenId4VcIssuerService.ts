@@ -1449,7 +1449,7 @@ export class OpenId4VcIssuerService {
             batch_size: issuerRecord.batchCredentialIssuance.batchSize,
           }
         : undefined,
-      credential_response_encryption: getCredentialResponseEncryptionMetadata(issuerRecord),
+      credential_response_encryption: getCredentialResponseEncryptionMetadata(agentContext, issuerRecord),
       credential_request_encryption: getCredentialRequestEncryptionMetadata(issuerRecord),
     } satisfies CredentialIssuerMetadata
 
@@ -2313,9 +2313,15 @@ export class OpenId4VcIssuerService {
   }
 }
 
-function getCredentialResponseEncryptionMetadata(issuerRecord: OpenId4VcIssuerRecord) {
-  // OID4VCI §8.2 requires an encrypted credential request when response encryption is requested
-  if (!issuerRecord.credentialRequestEncryption) return undefined
+function getCredentialResponseEncryptionMetadata(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord) {
+  if (!issuerRecord.credentialRequestEncryption) {
+    if (issuerRecord.credentialResponseEncryption) {
+      agentContext.config.logger.warn(
+        `Issuer '${issuerRecord.issuerId}' has 'credentialResponseEncryption' configured without 'credentialRequestEncryption'. Credential response encryption is not advertised, as OID4VCI requires an encrypted credential request when response encryption is used.`
+      )
+    }
+    return undefined
+  }
 
   return {
     alg_values_supported: issuerRecord.credentialResponseEncryption?.algValuesSupported ?? [
@@ -2351,6 +2357,15 @@ export function assertCredentialEncryptionConfiguration(
   if (options.credentialResponseEncryption && !options.credentialRequestEncryption) {
     throw new CredoError(
       `'credentialResponseEncryption' requires 'credentialRequestEncryption' to be configured, as OID4VCI requires an encrypted credential request when response encryption is used.`
+    )
+  }
+
+  const unsupportedKey = options.credentialRequestEncryption?.jwks.find(
+    (jwk) => jwk.kty === 'oct' || !Kms.supportedKeyDerivationAlgsForKey(jwk).includes('ECDH-ES')
+  )
+  if (unsupportedKey) {
+    throw new CredoError(
+      `Credential request encryption key '${unsupportedKey.kid}' does not support 'ECDH-ES' key agreement.`
     )
   }
 }

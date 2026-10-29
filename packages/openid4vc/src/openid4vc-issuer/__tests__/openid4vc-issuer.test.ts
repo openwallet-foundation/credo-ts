@@ -52,7 +52,7 @@ import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
 import type { OpenId4VcIssuerRecord } from '../repository'
-import { OpenId4VcIssuanceSessionRepository } from '../repository'
+import { OpenId4VcIssuanceSessionRepository, OpenId4VcIssuerRepository } from '../repository'
 
 const openBadgeCredential = {
   id: 'openBadgeCredential',
@@ -1648,6 +1648,44 @@ describe('OpenId4VcIssuer', () => {
       await expect(
         parse(issuerRecord, await encryptRequest(otherKey.publicJwk, credentialRequest))
       ).rejects.toMatchObject({ errorResponse: { error: 'invalid_encryption_parameters' } })
+    })
+
+    it('decrypts a credential request encrypted to any of the advertised keys', async () => {
+      const firstKey = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const secondKey = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-384' } })
+      await issuer.openid4vc.issuer.updateIssuerMetadata({
+        issuerId: openId4VcIssuer.issuerId,
+        credentialConfigurationsSupported: openId4VcIssuer.credentialConfigurationsSupported,
+        credentialRequestEncryption: { jwks: [firstKey.publicJwk, secondKey.publicJwk] },
+      })
+      const issuerRecord = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+
+      await expect(
+        parse(issuerRecord, await encryptRequest(secondKey.publicJwk, credentialRequest))
+      ).resolves.toMatchObject({ credentialRequest })
+    })
+
+    it('rejects a credential request encryption key that does not support ECDH-ES', async () => {
+      const key = await issuer.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+
+      await expect(
+        issuer.openid4vc.issuer.updateIssuerMetadata({
+          issuerId: openId4VcIssuer.issuerId,
+          credentialConfigurationsSupported: openId4VcIssuer.credentialConfigurationsSupported,
+          credentialRequestEncryption: { jwks: [key.publicJwk] },
+        })
+      ).rejects.toThrow(`Credential request encryption key '${key.keyId}' does not support 'ECDH-ES' key agreement.`)
+    })
+
+    it('does not advertise response encryption for a stored issuer without request encryption', async () => {
+      const issuerRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuerRepository)
+      const issuerRecord = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+      issuerRecord.credentialResponseEncryption = { required: true }
+      await issuerRepository.update(issuer.context, issuerRecord)
+
+      const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+      expect(issuerMetadata.credentialIssuer.credential_response_encryption).toBeUndefined()
+      expect(issuerMetadata.credentialIssuer.credential_request_encryption).toBeUndefined()
     })
 
     it('rejects an issuer with response encryption but without request encryption', async () => {
