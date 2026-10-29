@@ -16,9 +16,13 @@ import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
+  OpenId4VciIssuerInfo,
   OpenId4VcJwtIssuerEncoded,
 } from '../../shared'
-import type { OpenId4VciBatchCredentialIssuanceOptions } from '../OpenId4VcIssuerServiceOptions'
+import type {
+  OpenId4VciBatchCredentialIssuanceOptions,
+  OpenId4VciCredentialResponseEncryptionOptions,
+} from '../OpenId4VcIssuerServiceOptions'
 
 export type OpenId4VcIssuerRecordTags = RecordTags<OpenId4VcIssuerRecord>
 
@@ -67,6 +71,9 @@ export type OpenId4VcIssuerRecordProps = {
   clientAttestationPopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
 
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
+
+  // Issuer attestations published as `issuer_info` in the credential issuer metadata.
+  issuerInfo?: OpenId4VciIssuerInfo
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
@@ -75,6 +82,8 @@ export type OpenId4VcIssuerRecordProps = {
    * Indicate support for batch issuance of credentials
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
+
+  credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
 
   /**
    * When signed metadata is supported, this stores the
@@ -114,6 +123,7 @@ const openId4VcIssuerRecordEncodingSchema = createRecordEncodingSchema(
         }
       })
     }).nullish(),
+    issuerInfo: z.array(zTypedObject<OpenId4VciIssuerInfo[number]>()).nullish(),
     // Adds the type field if missing (for older records)
     authorizationServerConfigs: zWithUpgrade(z.array(zTypedObject<OpenId4VciAuthorizationServerConfig>()), (value) => {
       if (!Array.isArray(value)) return value
@@ -133,6 +143,7 @@ const openId4VcIssuerRecordEncodingSchema = createRecordEncodingSchema(
     clientAttestationSigningAlgValuesSupported: z.array(z.string()).nullish(),
     clientAttestationPopSigningAlgValuesSupported: z.array(z.string()).nullish(),
     batchCredentialIssuance: zTypedObject<OpenId4VciBatchCredentialIssuanceOptions>().nullish(),
+    credentialResponseEncryption: zTypedObject<OpenId4VciCredentialResponseEncryptionOptions>().nullish(),
     signedMetadata: zTypedObject<OpenId4VcIssuerRecordSignedMetadata>().nullish(),
   },
   {
@@ -173,6 +184,8 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
 
   public display?: OpenId4VciCredentialIssuerMetadataDisplay[]
 
+  public issuerInfo?: OpenId4VciIssuerInfo
+
   public authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 
   public dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
@@ -185,6 +198,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
     ...Kms.KnownJwaSignatureAlgorithm[],
   ]
   public batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
+  public credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
 
   public signedMetadata?: OpenId4VcIssuerRecordSignedMetadata
 
@@ -229,8 +243,10 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       this.clientAttestationSigningAlgValuesSupported = props.clientAttestationSigningAlgValuesSupported
       this.clientAttestationPopSigningAlgValuesSupported = props.clientAttestationPopSigningAlgValuesSupported
       this.display = props.display
+      this.issuerInfo = props.issuerInfo
       this.authorizationServerConfigs = props.authorizationServerConfigs
       this.batchCredentialIssuance = props.batchCredentialIssuance
+      this.credentialResponseEncryption = props.credentialResponseEncryption
       this.signedMetadata = props.signedMetadata
     }
   }

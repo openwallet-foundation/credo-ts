@@ -16,7 +16,7 @@ import { getResolvedDidcommServiceWithSigningKeyId } from './modules/connections
 import { DidCommOutOfBandRole } from './modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandRepository } from './modules/oob/repository/DidCommOutOfBandRepository'
 import { DidCommOutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
-import { DidCommForwardMessage } from './modules/routing/messages/DidCommForwardMessage'
+import { DidCommForwardMessage } from './modules/routing/protocol/v1/messages/DidCommForwardMessage'
 import { DidCommMediatorRoutingRepository } from './modules/routing/repository/DidCommMediatorRoutingRepository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
@@ -217,7 +217,7 @@ export class DidCommEnvelopeService {
           keyId: recipientKey.keyId,
 
           // Optionally we have a sender
-          externalPublicJwk: senderPublicJwk?.convertTo(Kms.X25519PublicJwk).toJson(),
+          senderPublicJwk: senderPublicJwk?.convertTo(Kms.X25519PublicJwk).toJson(),
         },
       },
     })

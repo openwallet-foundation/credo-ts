@@ -2,11 +2,6 @@ import type { TagsBase } from '@credo-ts/core'
 import { BaseRecord, createRecordEncodingSchema, utils, zTypedObject } from '@credo-ts/core'
 import { z } from 'zod'
 import type { AnonCredsCredentialDefinition } from '../models'
-import {
-  getUnqualifiedCredentialDefinitionId,
-  isDidIndyCredentialDefinitionId,
-  parseIndyCredentialDefinitionId,
-} from '../utils/indyIdentifiers'
 import type { AnonCredsCredentialDefinitionRecordMetadata } from './anonCredsCredentialDefinitionRecordMetadataTypes'
 
 export interface AnonCredsCredentialDefinitionRecordProps {
@@ -23,11 +18,6 @@ export type DefaultAnonCredsCredentialDefinitionTags = {
   issuerId: string
   tag: string
   methodName: string
-
-  // Stores the unqualified variant of the credential definition id, which allows issuing credentials using the legacy
-  // credential definition id, even though the credential definition id is stored in the wallet as a qualified id.
-  // This is only added when the credential definition id is an did:indy identifier.
-  unqualifiedCredentialDefinitionId?: string
 }
 
 const anonCredsCredentialDefinitionRecordEncodingSchema = createRecordEncodingSchema({
@@ -70,13 +60,6 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
   }
 
   public getTags() {
-    let unqualifiedCredentialDefinitionId: string | undefined
-    if (isDidIndyCredentialDefinitionId(this.credentialDefinitionId)) {
-      const { namespaceIdentifier, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(this.credentialDefinitionId)
-
-      unqualifiedCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(namespaceIdentifier, schemaSeqNo, tag)
-    }
-
     return {
       ...this._tags,
       credentialDefinitionId: this.credentialDefinitionId,
@@ -84,7 +67,6 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
       issuerId: this.credentialDefinition.issuerId,
       tag: this.credentialDefinition.tag,
       methodName: this.methodName,
-      unqualifiedCredentialDefinitionId,
     }
   }
 }

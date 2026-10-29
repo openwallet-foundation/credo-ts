@@ -186,9 +186,8 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
       }
 
       try {
-        const { deferredCredentialResponse } = await openId4VcIssuerService.createDeferredCredentialResponse(
-          agentContext,
-          {
+        const { deferredCredentialResponse, deferredCredentialResponseJwt } =
+          await openId4VcIssuerService.createDeferredCredentialResponse(agentContext, {
             issuanceSession,
             deferredCredentialRequest: parsedCredentialRequest.deferredCredentialRequest,
             authorization: {
@@ -198,8 +197,15 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
                 value: accessToken,
               },
             },
-          }
-        )
+          })
+
+        if (deferredCredentialResponseJwt) {
+          response
+            .type('application/jwt')
+            .status(deferredCredentialResponse.interval ? 202 : 200)
+            .send(deferredCredentialResponseJwt)
+          return next()
+        }
 
         return sendJsonResponse(
           response,

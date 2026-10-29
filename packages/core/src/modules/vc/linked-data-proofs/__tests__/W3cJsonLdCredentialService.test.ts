@@ -34,6 +34,7 @@ import { CredentialIssuancePurpose } from '../proof-purposes/CredentialIssuanceP
 import { SignatureSuiteRegistry } from '../SignatureSuiteRegistry'
 import { Ed25519Signature2018, Ed25519Signature2020 } from '../signature-suites'
 import { W3cJsonLdCredentialService } from '../W3cJsonLdCredentialService'
+import { W3cJsonLdCredentialSigningNotSupportedError } from '../W3cJsonLdCredentialSigningNotSupportedError'
 import { customDocumentLoader, DOCUMENTS } from './documentLoader'
 import { Ed25519Signature2018Fixtures, Ed25519Signature2020Fixtures } from './fixtures'
 
@@ -336,21 +337,47 @@ describe('W3cJsonLdCredentialsService', () => {
         expect(asArray(vc.proof)[0].verificationMethod).toEqual(verificationMethod)
       })
 
-      it('should throw because of verificationMethod does not belong to this wallet', async () => {
+      it('should sign a credential constructed without optional fields', async () => {
+        const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT
+        const credential = new W3cCredential({
+          context: credentialJson['@context'],
+          type: credentialJson.type,
+          issuer: credentialJson.issuer,
+          issuanceDate: credentialJson.issuanceDate,
+          credentialSubject: { claims: credentialJson.credentialSubject },
+        })
+
+        const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential,
+          proofType: 'Ed25519Signature2018',
+          verificationMethod: verificationMethod,
+        })
+
+        expect(vc).toBeInstanceOf(W3cJsonLdVerifiableCredential)
+      })
+
+      it('throws a typed error when the verification method is not controlled by this wallet', async () => {
         const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT
         credentialJson.issuer = issuerDidKey.did
 
         const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
-        await expect(async () => {
-          await w3cJsonLdCredentialService.signCredential(agentContext, {
-            format: ClaimFormat.LdpVc,
-            credential,
-            proofType: 'Ed25519Signature2018',
-            verificationMethod:
-              'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV#z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV',
-          })
-        }).rejects.toThrow(`Created did 'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV' not found`)
+        const signing = w3cJsonLdCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential,
+          proofType: 'Ed25519Signature2018',
+          verificationMethod:
+            'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV#z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV',
+        })
+
+        await expect(signing).rejects.toMatchObject({
+          name: W3cJsonLdCredentialSigningNotSupportedError.name,
+          reason: 'verification-method-not-controlled',
+          message: expect.stringContaining(
+            `Created did 'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV' not found`
+          ),
+        })
       })
 
       it('calls resolveVerificationMethodFromCreatedDidRecord with assertionMethod purpose', async () => {
@@ -434,7 +461,14 @@ describe('W3cJsonLdCredentialsService', () => {
             proofType: 'Ed25519Signature2018',
             verificationMethod: authOnlyVmId,
           })
-        ).rejects.toThrow(`Unable to locate verification method with id '${authOnlyVmId}' in purposes assertionMethod`)
+        ).rejects.toMatchObject({
+          name: W3cJsonLdCredentialSigningNotSupportedError.name,
+          reason: 'verification-method-not-found',
+          message: `Unable to locate verification method with id '${authOnlyVmId}' in purposes assertionMethod`,
+          cause: {
+            message: `Unable to locate verification method with id '${authOnlyVmId}' in purposes assertionMethod`,
+          },
+        })
       })
 
       it('should fail to sign credential when proofType is Ed25519Signature2020 but verificationMethod is Ed25519VerificationKey2018', async () => {
@@ -633,6 +667,33 @@ describe('W3cJsonLdCredentialsService', () => {
           format: ClaimFormat.LdpVp,
           presentation: presentation,
           proofPurpose: purpose,
+          proofType: 'Ed25519Signature2018',
+          challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
+          domain: 'issuer.example.com',
+          verificationMethod: verificationMethod,
+        })
+
+        expect(verifiablePresentation).toBeInstanceOf(W3cJsonLdVerifiablePresentation)
+      })
+
+      it('should sign a presentation constructed without an id', async () => {
+        const vpJson = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_VP_DOCUMENT, W3cPresentation)
+        const presentation = new W3cPresentation({
+          context: vpJson.context,
+          type: vpJson.type,
+          holder: vpJson.holder,
+          verifiableCredential: vpJson.verifiableCredential,
+        })
+
+        const verifiablePresentation = await w3cJsonLdCredentialService.signPresentation(agentContext, {
+          format: ClaimFormat.LdpVp,
+          presentation,
+          proofPurpose: new CredentialIssuancePurpose({
+            controller: {
+              id: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+            },
+            date: new Date().toISOString(),
+          }),
           proofType: 'Ed25519Signature2018',
           challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
           domain: 'issuer.example.com',
@@ -869,6 +930,41 @@ describe('W3cJsonLdCredentialsService', () => {
   })
 
   describe('Ed25519Signature2020', () => {
+    it('should reject a credential signed with a key whose controller is another DID', async () => {
+      const issuer = await create2020Identity(
+        agentContext,
+        'did:example:issuer-2020-other-controller',
+        'did:example:issuer-2020-other-controller#key-1'
+      )
+      const controllerDid = 'did:example:controller-2020'
+
+      const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
+        format: ClaimFormat.LdpVc,
+        credential: JsonTransformer.fromJSON(
+          { ...Ed25519Signature2020Fixtures.TEST_LD_DOCUMENT, issuer: issuer.did },
+          W3cCredential
+        ),
+        proofType: 'Ed25519Signature2020',
+        verificationMethod: issuer.verificationMethod,
+      })
+
+      // The issuer's DID document names another DID as the controller of its key, which lists the key
+      const issuerDocument = documents[issuer.did] as { verificationMethod: Array<{ controller: string }> }
+      issuerDocument.verificationMethod[0].controller = controllerDid
+      documents[controllerDid] = {
+        '@context': ['https://www.w3.org/ns/did/v1'],
+        id: controllerDid,
+        assertionMethod: [issuer.verificationMethod],
+      }
+
+      const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain(
+        `is controlled by '${controllerDid}', not by the DID document '${issuer.did}'`
+      )
+    })
+
     it('should dynamically sign and verify a credential', async () => {
       const issuer = await create2020Identity(
         agentContext,

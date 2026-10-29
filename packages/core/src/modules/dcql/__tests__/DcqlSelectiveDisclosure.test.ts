@@ -9,6 +9,7 @@ import { type SdJwtVc, SdJwtVcRecord, SdJwtVcService } from '../../sd-jwt-vc'
 import { type ClaimPath, getClaimPathsForDcqlClaimSet } from '../../sd-jwt-vc/disclosureFrame'
 import { W3cV2CredentialRecord } from '../../vc'
 import { W3cV2SdJwtVerifiablePresentation } from '../../vc/sd-jwt-vc'
+import { DcqlNotDisclosed } from '..'
 import { DcqlService } from '../DcqlService'
 import type { DcqlQueryResult } from '../models'
 
@@ -833,6 +834,45 @@ describe('DCQL selective disclosure', () => {
         degrees: [{ name: 'MSc' }],
       })
     })
+
+    test('presents a W3C VC SD-JWT as its subject, not its schema', async () => {
+      const holderDidKey = new DidKey(holderKey)
+      await agent.dids.import({
+        did: holderDidKey.did,
+        didDocument: holderDidKey.didDocument,
+        keys: [{ didDocumentRelativeKeyId: `#${holderKey.fingerprint}`, kmsKeyId: holderKey.keyId }],
+      })
+
+      const type = `urn:type:${randomUUID()}`
+      const compact = await signSdJwt(
+        {
+          '@context': ['https://www.w3.org/ns/credentials/v2'],
+          type: ['VerifiableCredential', type],
+          issuer: issuerDid,
+          credentialSchema: { id: 'https://example.com/schema.json', type: 'JsonSchema' },
+          credentialSubject: { id: holderDidKey.did, given_name: sd('Erika') },
+        },
+        'vc+sd-jwt'
+      )
+      await agent.w3cV2Credentials.store({
+        record: new W3cV2CredentialRecord({ credentialInstances: [{ credential: compact }] }),
+      })
+
+      const dcqlQuery = {
+        credentials: [{ id: 'credential', format: 'vc+sd-jwt', meta: { type_values: [[type]] } }],
+      } as unknown as DcqlQuery
+      const queryResult = await dcqlService.getCredentialsForRequest(agent.context, dcqlQuery)
+
+      const { dcqlPresentation } = await dcqlService.createPresentation(agent.context, {
+        credentialQueryToCredential: dcqlService.selectCredentialsForRequest(queryResult),
+        challenge,
+        domain,
+      })
+      await dcqlService.assertValidDcqlPresentation(agent.context, dcqlPresentation, dcqlQuery)
+
+      const presentation = dcqlPresentation.credential[0] as W3cV2SdJwtVerifiablePresentation
+      expect(presentation.resolvedPresentation.holderId).toBe(holderDidKey.did)
+    })
   })
 })
 
@@ -841,13 +881,19 @@ describe('getClaimPathsForDcqlClaimSet', () => {
     expect(
       getClaimPathsForDcqlClaimSet([['address']], { address: { street: 'Main St', country: { code: 'DE' } } })
     ).toStrictEqual([['address']])
+    expect(getClaimPathsForDcqlClaimSet([['value'], ['list', null]], { value: null, list: [null] })).toStrictEqual([
+      ['value'],
+      ['list', 0],
+    ])
   })
 
-  test('selects the elements DCQL did not leave null, undefined or nothing for', () => {
-    // `null`, as in the output of a claims query
-    expect(getClaimPathsForDcqlClaimSet([['list', 2]], { list: [null, null, 'c'] })).toStrictEqual([['list', 2]])
-    // `undefined` and holes, as in the output of a claim set
-    expect(getClaimPathsForDcqlClaimSet([['list', null]], { list: [undefined, 'b', undefined, 'd'] })).toStrictEqual([
+  test('skips undisclosed and missing array elements while preserving their positions', () => {
+    expect(
+      getClaimPathsForDcqlClaimSet([['list', 2]], { list: [DcqlNotDisclosed, DcqlNotDisclosed, 'c'] })
+    ).toStrictEqual([['list', 2]])
+    expect(
+      getClaimPathsForDcqlClaimSet([['list', null]], { list: [DcqlNotDisclosed, 'b', undefined, 'd'] })
+    ).toStrictEqual([
       ['list', 1],
       ['list', 3],
     ])
@@ -859,7 +905,7 @@ describe('getClaimPathsForDcqlClaimSet', () => {
       ['list', 3],
     ])
     expect(
-      getClaimPathsForDcqlClaimSet([['list', null, 'name']], { list: [{ name: 'a' }, null, { name: 'c' }] })
+      getClaimPathsForDcqlClaimSet([['list', null, 'name']], { list: [{ name: 'a' }, DcqlNotDisclosed, { name: 'c' }] })
     ).toStrictEqual([
       ['list', 0, 'name'],
       ['list', 2, 'name'],

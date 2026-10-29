@@ -1,4 +1,4 @@
-FROM alpine:3.21 AS cheqd-binary
+FROM alpine:3.24 AS cheqd-binary
 
 RUN apk add --no-cache ca-certificates curl
 

@@ -13,6 +13,8 @@ export const NON_DISCLOSEABLE_FIELDS = [
   'credentialStatus',
   'credentialSchema',
   'relatedResource',
+  // A verifier can't tell an omitted `cnf` disclosure from a credential without holder binding
+  'cnf',
 ] as const
 
 /**

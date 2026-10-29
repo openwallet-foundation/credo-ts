@@ -6,3 +6,7 @@ All should be run from the root of the repository unless specified otherwise
 - For linting and formatting run `pnpm style:fix`
 - For creating a changeset (changelog entry) run `pnpm changeset`
 - To build all packages run `pnpm build`. To build a specific package run `pnpm build` from the package directory.
+
+## Records
+
+- When adding or changing properties on a `Record` class, also update its drizzle storage: the postgres and sqlite tables and the record adapter in `packages/drizzle-storage/src`, then generate migrations with `pnpm cli:local:generate` from `packages/drizzle-storage`.

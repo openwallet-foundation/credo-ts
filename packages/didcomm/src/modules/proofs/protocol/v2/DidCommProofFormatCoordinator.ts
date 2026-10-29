@@ -199,6 +199,7 @@ export class DidCommProofFormatCoordinator<PFs extends DidCommProofFormatService
       goal,
       presentMultiple,
       willConfirm,
+      expiresTime,
     }: {
       formatServices: DidCommProofFormatService[]
       proofFormats: DidCommProofFormatPayload<ExtractProofFormats<PFs>, 'createRequest'>
@@ -208,6 +209,7 @@ export class DidCommProofFormatCoordinator<PFs extends DidCommProofFormatService
       goal?: string
       presentMultiple?: boolean
       willConfirm?: boolean
+      expiresTime?: Date
     }
   ): Promise<DidCommRequestPresentationV2Message> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -237,6 +239,7 @@ export class DidCommProofFormatCoordinator<PFs extends DidCommProofFormatService
     })
 
     message.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
+    if (expiresTime) message.setTiming({ expiresTime })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,

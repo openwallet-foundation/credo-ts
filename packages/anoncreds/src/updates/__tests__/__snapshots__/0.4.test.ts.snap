@@ -16,11 +16,6 @@ exports[`UpdateAssistant | AnonCreds | v0.4 - v0.5 > should correctly update the
       "anonCredsSchemaIssuerId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx",
       "anonCredsSchemaName": "test0.1599221872308001",
       "anonCredsSchemaVersion": "1.0",
-      "anonCredsUnqualifiedCredentialDefinitionId": "6LHqdUeWDWsL94zRc1ULEx:3:CL:400832:test",
-      "anonCredsUnqualifiedIssuerId": "6LHqdUeWDWsL94zRc1ULEx",
-      "anonCredsUnqualifiedRevocationRegistryId": undefined,
-      "anonCredsUnqualifiedSchemaId": "6LHqdUeWDWsL94zRc1ULEx:2:test0.1599221872308001:1.0",
-      "anonCredsUnqualifiedSchemaIssuerId": "6LHqdUeWDWsL94zRc1ULEx",
       "claimFormat": "ldp_vc",
       "contexts": [
         "https://www.w3.org/2018/credentials/v1",
@@ -58,11 +53,6 @@ exports[`UpdateAssistant | AnonCreds | v0.4 - v0.5 > should correctly update the
         "anonCredsSchemaIssuerId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx",
         "anonCredsSchemaName": "test0.1599221872308001",
         "anonCredsSchemaVersion": "1.0",
-        "anonCredsUnqualifiedCredentialDefinitionId": "6LHqdUeWDWsL94zRc1ULEx:3:CL:400832:test",
-        "anonCredsUnqualifiedIssuerId": "6LHqdUeWDWsL94zRc1ULEx",
-        "anonCredsUnqualifiedRevocationRegistryId": undefined,
-        "anonCredsUnqualifiedSchemaId": "6LHqdUeWDWsL94zRc1ULEx:2:test0.1599221872308001:1.0",
-        "anonCredsUnqualifiedSchemaIssuerId": "6LHqdUeWDWsL94zRc1ULEx",
         "expandedTypes": [
           "https://www.w3.org/2018/credentials#VerifiableCredential",
         ],
