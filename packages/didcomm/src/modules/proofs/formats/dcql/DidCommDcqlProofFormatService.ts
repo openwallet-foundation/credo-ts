@@ -24,13 +24,19 @@ import {
   SdJwtVcApi,
   TrustedIssuerContext,
   TypedArrayEncoder,
+  tryParseDid,
   W3cV2CredentialService,
   W3cV2EnvelopedVerifiableCredential,
   W3cV2SdJwtVerifiableCredential,
   W3cV2SdJwtVerifiablePresentation,
 } from '@credo-ts/core'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../../decorators/attachment/DidCommAttachment'
+import { DidCommDocumentService } from '../../../../services'
+import type { DidCommConnectionRecord } from '../../../connections'
 import { DidCommConnectionService } from '../../../connections'
+import { DidCommOutOfBandRole } from '../../../oob/domain/DidCommOutOfBandRole'
+import type { OutOfBandDidCommService } from '../../../oob/domain/OutOfBandDidCommService'
+import { DidCommOutOfBandRepository } from '../../../oob/repository'
 import { DidCommProofFormatSpec } from '../../models'
 import type { DidCommProofExchangeRecord } from '../../repository'
 import type { DidCommProofFormatService } from '../DidCommProofFormatService'
@@ -147,7 +153,13 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
       throw new CredoError('Missing DCQL format in create request attachment format')
     }
 
-    return this.createRequestAttachment(agentContext, proofRecord, dcqlFormat.dcqlQuery, attachmentId)
+    return this.createRequestAttachment(
+      agentContext,
+      proofRecord,
+      dcqlFormat.dcqlQuery,
+      attachmentId,
+      dcqlFormat.audienceDid
+    )
   }
 
   public async processRequest(
@@ -167,7 +179,7 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     }: DidCommProofFormatAcceptRequestOptions<DidCommDcqlProofFormat>
   ): Promise<DidCommProofFormatCreateReturn> {
     const request = this.parseRequest(agentContext, requestAttachment)
-    await this.assertAudienceIsConnectionDid(agentContext, proofRecord, request.audience)
+    await this.assertAudience(agentContext, proofRecord, request.audience)
 
     const dcqlService = agentContext.resolve(DcqlService)
     const credentials =
@@ -306,27 +318,18 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     agentContext: AgentContext,
     proofRecord: DidCommProofExchangeRecord,
     dcqlQuery: DcqlQuery,
-    attachmentId?: string
+    attachmentId?: string,
+    audienceDid?: string
   ): Promise<DidCommProofFormatCreateReturn> {
     this.validateDcqlQuery(agentContext, dcqlQuery)
-
-    if (!proofRecord.connectionId) {
-      throw new CredoError('DCQL requests are only supported over a connection')
-    }
-
-    const connection = await agentContext
-      .resolve(DidCommConnectionService)
-      .getById(agentContext, proofRecord.connectionId)
-    if (!connection.did) {
-      throw new CredoError(`Connection '${connection.id}' has no DID to use as the audience`)
-    }
+    const verifierDid = await this.getVerifierDid(agentContext, proofRecord, audienceDid)
 
     const kms = agentContext.resolve(Kms.KeyManagementApi)
     const format = new DidCommProofFormatSpec({ format: DCQL_REQUEST, attachmentId })
     const request: DcqlRequestAttachment = {
       dcql_query: dcqlQuery,
       nonce: TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 })),
-      audience: `${AUDIENCE_PREFIX}${connection.did}`,
+      audience: `${AUDIENCE_PREFIX}${verifierDid}`,
     }
 
     return { format, attachment: this.getFormatData(request, format.attachmentId) }
@@ -382,23 +385,101 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     return parsed
   }
 
-  private async assertAudienceIsConnectionDid(
+  private async getVerifierDid(
     agentContext: AgentContext,
     proofRecord: DidCommProofExchangeRecord,
-    audience: string
-  ): Promise<void> {
+    audienceDid?: string
+  ): Promise<string> {
     if (!proofRecord.connectionId) {
-      throw new CredoError('DCQL requests are only supported over a connection')
+      if (!audienceDid || tryParseDid(audienceDid)?.did !== audienceDid) {
+        throw new CredoError(
+          'DCQL requests without a connection need proofFormats.dcql.audienceDid, a DID without a path, query or fragment for the service of the out-of-band invitation'
+        )
+      }
+      return audienceDid
     }
 
     const connection = await agentContext
       .resolve(DidCommConnectionService)
       .getById(agentContext, proofRecord.connectionId)
-    if (!connection.theirDid || audience !== `${AUDIENCE_PREFIX}${connection.theirDid}`) {
-      throw new CredoError(
-        `DCQL request audience '${audience}' does not match the DID of connection '${connection.id}' (${connection.theirDid})`
-      )
+    if (!connection.did) {
+      throw new CredoError(`Connection '${connection.id}' has no DID to use as the audience`)
     }
+    if (audienceDid !== undefined && audienceDid !== connection.did) {
+      throw new CredoError(`DCQL audienceDid '${audienceDid}' is not the DID of connection '${connection.id}'`)
+    }
+
+    return connection.did
+  }
+
+  private async assertAudience(
+    agentContext: AgentContext,
+    proofRecord: DidCommProofExchangeRecord,
+    audience: string
+  ): Promise<void> {
+    const connection = proofRecord.connectionId
+      ? await agentContext.resolve(DidCommConnectionService).getById(agentContext, proofRecord.connectionId)
+      : undefined
+
+    const outOfBandRecords = await agentContext.resolve(DidCommOutOfBandRepository).findByQuery(agentContext, {
+      role: DidCommOutOfBandRole.Receiver,
+      invitationRequestsThreadIds: [proofRecord.threadId],
+    })
+    const outOfBandRecord =
+      outOfBandRecords.length > 1
+        ? outOfBandRecords.find(({ id }) => id === connection?.outOfBandId)
+        : outOfBandRecords[0]
+    if (outOfBandRecords.length > 1 && !outOfBandRecord) {
+      throw new CredoError('DCQL request was attached to more than one out-of-band invitation')
+    }
+
+    if (outOfBandRecord) {
+      if (connection?.outOfBandId === outOfBandRecord.id) {
+        throw new CredoError(
+          'DCQL request was attached to the invitation that created the connection. Send the request after the connection exists'
+        )
+      }
+      if (!connection) {
+        await this.assertAudienceIsServiceDid(agentContext, outOfBandRecord.outOfBandInvitation.getServices(), audience)
+        return
+      }
+    }
+
+    this.assertAudienceIsConnectionDid(connection, audience)
+  }
+
+  private assertAudienceIsConnectionDid(connection: DidCommConnectionRecord | undefined, audience: string): void {
+    if (!connection) {
+      throw new CredoError('DCQL request has no connection or out-of-band invitation to check the audience against')
+    }
+
+    const audienceDid = audience.slice(AUDIENCE_PREFIX.length)
+    if (connection.theirDid !== audienceDid) {
+      throw new CredoError(`DCQL request audience '${audience}' is not the verifier DID of the connection`)
+    }
+  }
+
+  // Picks the service the way DidCommOutOfBandService.getResolvedServiceForOutOfBandServices does
+  private async assertAudienceIsServiceDid(
+    agentContext: AgentContext,
+    services: Array<string | OutOfBandDidCommService>,
+    audience: string
+  ): Promise<void> {
+    const audienceDid = audience.slice(AUDIENCE_PREFIX.length)
+    for (const service of services) {
+      if (typeof service === 'string') {
+        const didServices = await agentContext
+          .resolve(DidCommDocumentService)
+          .resolveServicesFromDid(agentContext, service)
+        if (didServices.length === 0) continue
+        if (parseDid(service).did === audienceDid) return
+      } else if (service.recipientKeys.length === 1 && parseDid(service.recipientKeys[0]).did === audienceDid) {
+        return
+      }
+      break
+    }
+
+    throw new CredoError(`DCQL request audience '${audience}' is not the DID of the service the presentation goes to`)
   }
 
   private decodeNonceAndAudience(credentialQuery: DcqlCredentialQuery, presentation: unknown): JsonObject {
