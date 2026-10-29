@@ -168,6 +168,10 @@ export interface OpenId4VcIssuanceSessionChainedAuthorizationServerDpop {
   alg: Kms.KnownJwaSignatureAlgorithm
   jwkThumbprint: string
   nonce?: string
+  /**
+   * True only when this issuance session caused the key to be generated.
+   */
+  keyGeneratedForSession?: boolean
 }
 
 export type DefaultOpenId4VcIssuanceSessionRecordTags = {

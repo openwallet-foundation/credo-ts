@@ -1281,6 +1281,25 @@ export class OpenId4VcIssuerService {
   }
 
   public async deleteIssuanceSessionById(agentContext: AgentContext, issuanceSessionId: string) {
+    const issuanceSession = await this.openId4VcIssuanceSessionRepository.getById(agentContext, issuanceSessionId)
+    const chainedDpop = issuanceSession?.chainedIdentity?.chainedAuthorizationServerDpop
+
+    if (chainedDpop?.keyGeneratedForSession) {
+      const sessions = await this.openId4VcIssuanceSessionRepository.findByQuery(agentContext, {})
+      const keyIsShared = sessions.some(
+        (session) =>
+          session.id !== issuanceSessionId &&
+          session.chainedIdentity?.chainedAuthorizationServerDpop?.keyId === chainedDpop.keyId
+      )
+      if (keyIsShared) {
+        agentContext.config.logger.debug(
+          `Not deleting generated chained authorization DPoP key '${chainedDpop.keyId}' because another issuance session references it.`
+        )
+      } else {
+        await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: chainedDpop.keyId })
+      }
+    }
+
     await this.openId4VcIssuanceSessionRepository.deleteById(agentContext, issuanceSessionId)
   }
 
@@ -1861,9 +1880,6 @@ export class OpenId4VcIssuerService {
   ): Promise<{
     dpop?: RequestDpopOptions
     required: boolean
-    jwkThumbprint?: string
-    keyId?: string
-    alg?: Kms.KnownJwaSignatureAlgorithm
     session?: OpenId4VcIssuanceSessionChainedAuthorizationServerDpop
   }> {
     const required = options.chainedAuthorizationServerConfig.dpop?.required ?? false
@@ -1874,7 +1890,7 @@ export class OpenId4VcIssuerService {
         throw new CredoError(`Authorization server does not support DPoP.`)
       }
 
-      agentContext.config.logger.warn(`Authorization server does not support DPoP. Continuing without DPoP.`)
+      agentContext.config.logger.debug(`Authorization server does not support DPoP. Continuing without DPoP.`)
       return { required }
     }
 
@@ -1891,20 +1907,18 @@ export class OpenId4VcIssuerService {
       return {
         dpop: dpop.options,
         required,
-        jwkThumbprint: dpop.jwkThumbprint,
-        keyId: dpop.keyId,
-        alg: dpop.alg as Kms.KnownJwaSignatureAlgorithm,
         session: {
           keyId: dpop.keyId,
           alg: dpop.alg as Kms.KnownJwaSignatureAlgorithm,
           jwkThumbprint: dpop.jwkThumbprint,
           nonce: dpop.options.nonce,
+          keyGeneratedForSession: persisted?.keyGeneratedForSession ?? !keyId,
         },
       }
     } catch (error) {
       if (required) throw error
 
-      agentContext.config.logger.warn('Unable to use DPoP for chained authorization. Continuing without DPoP.', error)
+      agentContext.config.logger.debug('Unable to use DPoP for chained authorization. Continuing without DPoP.', error)
       return { required }
     }
   }

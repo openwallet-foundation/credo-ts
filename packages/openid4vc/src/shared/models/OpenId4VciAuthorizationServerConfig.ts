@@ -71,7 +71,11 @@ export interface OpenId4VciChainedAuthorizationServerConfig {
     /** Whether DPoP is required for upstream authorization and token requests. */
     required: boolean
 
-    /** Existing KMS key id to use for DPoP signing. */
+    /**
+     * Existing KMS key id to use for new DPoP sessions. Existing issuance sessions retain their
+     * persisted key id, allowing the configured key to be rotated without breaking active sessions.
+     * Keep old configured keys available until no active sessions need them.
+     */
     keyId?: string
 
     /** Allow-list for DPoP signing algorithms. */
