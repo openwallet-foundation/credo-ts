@@ -1,7 +1,10 @@
-import { Jwt, joinUriParts, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { joinUriParts, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import {
+  createDpopHeadersForRequest,
+  decodeJwt,
   Oauth2ClientErrorResponseError,
   Oauth2ErrorCodes,
+  Oauth2JwtParseError,
   Oauth2ServerErrorResponseError,
   verifyIdTokenJwt,
 } from '@openid4vc/oauth2'
@@ -187,51 +190,107 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
         }
 
         if (chainedAuthorizationServerDpop.required) {
-          if (!upstreamDpop.jwkThumbprint) {
+          if (accessTokenResponse.token_type.toLowerCase() !== 'dpop') {
             throw new Oauth2ServerErrorResponseError(
               {
                 error: Oauth2ErrorCodes.ServerError,
-                error_description: 'Unable to verify upstream DPoP binding.',
+                error_description: 'Upstream authorization server did not return a DPoP-bound access token.',
               },
               {
-                internalMessage: `No expected upstream DPoP key thumbprint available for strict DPoP mode on '${authorizationServerMetadata.issuer}'.`,
+                internalMessage: `Strict chained DPoP mode is enabled for '${authorizationServerMetadata.issuer}', but the token response type was '${accessTokenResponse.token_type}' instead of 'DPoP'.`,
               }
             )
           }
 
-          let cnfJkt: string | undefined
+          const accessToken = accessTokenResponse.access_token
+          let isJwtAccessToken = false
+          let resourceServer = authorizationServerConfig.clientAuthentication.clientId
           try {
-            const cnf = Jwt.fromSerializedJwt(accessTokenResponse.access_token).payload.additionalClaims.cnf
-            cnfJkt =
-              typeof cnf === 'object' && cnf !== null && 'jkt' in cnf && typeof cnf.jkt === 'string'
-                ? cnf.jkt
-                : undefined
-          } catch {
-            cnfJkt = undefined
+            const { payload } = decodeJwt({ jwt: accessToken })
+            isJwtAccessToken = true
+            const audience = payload.aud
+            if (typeof audience === 'string') {
+              resourceServer = audience
+            } else if (Array.isArray(audience)) {
+              resourceServer = audience.find((value): value is string => typeof value === 'string') ?? resourceServer
+            }
+          } catch (error) {
+            if (!(error instanceof Oauth2JwtParseError)) throw error
           }
 
-          if (!cnfJkt) {
+          if (!isJwtAccessToken && !authorizationServerMetadata.introspection_endpoint) {
             throw new Oauth2ServerErrorResponseError(
               {
                 error: Oauth2ErrorCodes.ServerError,
-                error_description: 'Missing required upstream DPoP token binding (cnf.jkt).',
+                error_description: 'Unable to verify upstream DPoP-bound access token.',
               },
               {
-                internalMessage: `Strict upstream DPoP mode is enabled for '${authorizationServerMetadata.issuer}', but access token binding claim 'cnf.jkt' could not be verified.`,
+                internalMessage: `Cannot verify the DPoP binding of an opaque access token from '${authorizationServerMetadata.issuer}' because no introspection endpoint is available.`,
               }
             )
-          }
+          } else {
+            if (!chainedAuthorizationServerDpop.dpop) {
+              throw new Oauth2ServerErrorResponseError(
+                {
+                  error: Oauth2ErrorCodes.ServerError,
+                  error_description: 'Unable to verify upstream DPoP-bound access token.',
+                },
+                {
+                  internalMessage: `Strict chained DPoP mode has no DPoP signer for '${authorizationServerMetadata.issuer}'.`,
+                }
+              )
+            }
 
-          if (cnfJkt !== upstreamDpop.jwkThumbprint) {
-            throw new Oauth2ServerErrorResponseError(
-              {
-                error: Oauth2ErrorCodes.ServerError,
-                error_description: 'Upstream DPoP token binding mismatch.',
-              },
-              {
-                internalMessage: `Strict upstream DPoP mode is enabled for '${authorizationServerMetadata.issuer}', but received 'cnf.jkt' value '${cnfJkt}' does not match expected key thumbprint '${upstreamDpop.jwkThumbprint}'.`,
+            const verificationRequest = {
+              method: 'GET' as const,
+              url: authorizationServerMetadata.issuer,
+              headers: new Headers(),
+            }
+            const dpopHeaders = await createDpopHeadersForRequest({
+              request: verificationRequest,
+              signer: chainedAuthorizationServerDpop.dpop.signer,
+              accessToken,
+              callbacks: getOid4vcCallbacks(agentContext),
+            })
+
+            try {
+              const { tokenPayload } = await openId4VcIssuerService
+                .getResourceServer(agentContext, issuer, issuerMetadata)
+                .verifyResourceRequest({
+                  request: {
+                    ...verificationRequest,
+                    headers: new Headers({
+                      Authorization: `DPoP ${accessToken}`,
+                      DPoP: dpopHeaders.DPoP,
+                    }),
+                  },
+                  resourceServer,
+                  authorizationServers: [authorizationServerMetadata],
+                })
+
+              if (!isJwtAccessToken && tokenPayload.active !== true) {
+                throw new Oauth2ServerErrorResponseError(
+                  {
+                    error: Oauth2ErrorCodes.ServerError,
+                    error_description: 'Unable to verify upstream DPoP-bound access token.',
+                  },
+                  {
+                    internalMessage: `Introspection did not confirm that the opaque access token from '${authorizationServerMetadata.issuer}' is active.`,
+                  }
+                )
               }
-            )
+            } catch (error) {
+              throw new Oauth2ServerErrorResponseError(
+                {
+                  error: Oauth2ErrorCodes.ServerError,
+                  error_description: 'Unable to verify upstream DPoP-bound access token.',
+                },
+                {
+                  internalMessage: `Unable to verify the DPoP binding of an access token from '${authorizationServerMetadata.issuer}'.`,
+                  cause: error,
+                }
+              )
+            }
           }
         }
 

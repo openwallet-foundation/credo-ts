@@ -20,7 +20,7 @@ import { OpenId4VcIssuanceSessionState, OpenId4VcModule } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import { OpenId4VcIssuerService } from '../src/openid4vc-issuer/OpenId4VcIssuerService'
 import type { OpenId4VcIssuanceSessionChainedIdentity } from '../src/openid4vc-issuer/repository'
-import { OpenId4VcIssuanceSessionRecord } from '../src/openid4vc-issuer/repository'
+import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../src/openid4vc-issuer/repository'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { OpenId4VciChainedAuthorizationServerConfig } from '../src/shared/models/OpenId4VciAuthorizationServerConfig'
 import type { AgentType, TenantType } from './utils'
@@ -1504,16 +1504,75 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     })
 
     it.each([
-      { mode: 'strict', required: true },
-      { mode: 'tolerant', required: false },
+      {
+        mode: 'strict with a JWT access token',
+        required: true,
+        tokenType: 'dpop',
+        opaqueAccessToken: false,
+        introspectionAvailable: false,
+        introspectionHasJkt: false,
+      },
+      {
+        mode: 'strict with a JWT access token bound to another key',
+        required: true,
+        tokenType: 'DPoP',
+        opaqueAccessToken: false,
+        introspectionAvailable: false,
+        introspectionHasJkt: false,
+        mismatchedJkt: true,
+      },
+      {
+        mode: 'strict with an opaque introspected access token',
+        required: true,
+        tokenType: 'DPoP',
+        opaqueAccessToken: true,
+        introspectionAvailable: true,
+        introspectionHasJkt: true,
+      },
+      {
+        mode: 'strict with an opaque token and no introspection endpoint',
+        required: true,
+        tokenType: 'DPoP',
+        opaqueAccessToken: true,
+        introspectionAvailable: false,
+        introspectionHasJkt: false,
+      },
+      {
+        mode: 'strict with an opaque token without an introspected jkt',
+        required: true,
+        tokenType: 'DPoP',
+        opaqueAccessToken: true,
+        introspectionAvailable: true,
+        introspectionHasJkt: false,
+      },
+      {
+        mode: 'strict with an inactive opaque token',
+        required: true,
+        tokenType: 'DPoP',
+        opaqueAccessToken: true,
+        introspectionAvailable: true,
+        introspectionHasJkt: true,
+        introspectionActive: false,
+      },
+      { mode: 'strict with a non-DPoP token type', required: true, tokenType: 'Bearer', opaqueAccessToken: true },
+      { mode: 'tolerant with a non-DPoP token type', required: false, tokenType: 'Bearer', opaqueAccessToken: true },
     ])(
       'preserves upstream nonce from authorization initiation through token exchange in $mode mode',
-      async ({ required }) => {
+      async ({
+        required,
+        tokenType,
+        opaqueAccessToken,
+        introspectionAvailable,
+        introspectionHasJkt,
+        introspectionActive = true,
+        mismatchedJkt,
+      }) => {
         const issuerId = `chained-dpop-${utils.uuid()}`
         const upstreamIssuer = 'http://localhost:4748'
         const nonce = 'authorization-challenge-nonce'
         const redirectUri = 'http://localhost:5757/redirect'
         const tokenProofs: string[] = []
+        let upstreamDpopJkt: string | undefined
         let authorizationChallengeState: string | undefined
         let authorizationChallengeRedirectUri: string | undefined
 
@@ -1532,8 +1591,24 @@ describe('OpenId4Vc (Chained Authorization)', () => {
             authorization_endpoint: `${upstreamIssuer}/authorize`,
             authorization_challenge_endpoint: `${upstreamIssuer}/authorization-challenge`,
             token_endpoint: `${upstreamIssuer}/token`,
+            jwks_uri: `${upstreamIssuer}/jwks`,
+            ...(introspectionAvailable ? { introspection_endpoint: `${upstreamIssuer}/introspect` } : {}),
           } satisfies AuthorizationServerMetadata)
         )
+        upstreamApp.get('/jwks', (_req, res) =>
+          res.json({
+            keys: [{ ...Kms.PublicJwk.fromPublicJwk(upstreamKey.publicJwk).toJson(), kid: upstreamKey.keyId }],
+          })
+        )
+        if (introspectionAvailable) {
+          upstreamApp.post('/introspect', (_req, res) =>
+            res.json({
+              active: introspectionActive,
+              token_type: 'DPoP',
+              ...(introspectionHasJkt && upstreamDpopJkt ? { cnf: { jkt: upstreamDpopJkt } } : {}),
+            })
+          )
+        }
         upstreamApp.post('/authorization-challenge', async (req, res) => {
           authorizationChallengeState = req.body.state
           authorizationChallengeRedirectUri = req.body.redirect_uri
@@ -1568,7 +1643,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           tokenProofs.push(proof)
 
           try {
-            await upstreamServer.verifyDpopJwt({
+            const verified = await upstreamServer.verifyDpopJwt({
               dpopJwt: proof,
               request: {
                 headers: new Headers(),
@@ -1577,6 +1652,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
               },
               expectedNonce: nonce,
             })
+            upstreamDpopJkt = verified.jwkThumbprint
           } catch (error) {
             return res
               .status(400)
@@ -1587,28 +1663,29 @@ describe('OpenId4Vc (Chained Authorization)', () => {
               })
           }
 
-          const accessToken = await dpopAgent.agent.dependencyManager
-            .resolve(JwsService)
-            .createJwsCompact(dpopAgent.agent.context, {
-              keyId: upstreamKey.keyId,
-              payload: JwtPayload.fromJson({
-                iss: upstreamIssuer,
-                aud: 'upstream-client',
-                sub: 'upstream-user',
-                exp: Math.floor(Date.now() / 1000) + 300,
-                iat: Math.floor(Date.now() / 1000),
-                cnf: { jkt: 'not-the-dpop-thumbprint' },
-              }),
-              protectedHeaderOptions: {
-                typ: 'at+jwt',
-                alg: 'ES256',
-                kid: 'upstream',
-              },
-            })
+          const accessToken = opaqueAccessToken
+            ? 'opaque-upstream-access-token'
+            : await dpopAgent.agent.dependencyManager.resolve(JwsService).createJwsCompact(dpopAgent.agent.context, {
+                keyId: upstreamKey.keyId,
+                payload: JwtPayload.fromJson({
+                  iss: upstreamIssuer,
+                  aud: 'upstream-client',
+                  sub: 'upstream-user',
+                  jti: utils.uuid(),
+                  cnf: { jkt: mismatchedJkt ? 'another-key-thumbprint' : upstreamDpopJkt },
+                  exp: Math.floor(Date.now() / 1000) + 300,
+                  iat: Math.floor(Date.now() / 1000),
+                }),
+                protectedHeaderOptions: {
+                  typ: 'at+jwt',
+                  alg: 'ES256',
+                  kid: upstreamKey.keyId,
+                },
+              })
 
           return res.json({
             access_token: accessToken,
-            token_type: 'DPoP',
+            token_type: tokenType,
             expires_in: 300,
             scope: 'MappedUniversityDegreeCredential',
           })
@@ -1658,6 +1735,10 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           }),
         })
         expect(pushedAuthorizationResponse.status).toBe(201)
+        const sessionAfterAuthorization = await dpopAgent.agent.modules.openid4vc.issuer.getIssuanceSessionById(
+          issuanceSession.id
+        )
+        expect(sessionAfterAuthorization.chainedIdentity?.chainedAuthorizationServerDpop?.nonce).toBe(nonce)
         if (!authorizationChallengeState || !authorizationChallengeRedirectUri) {
           throw new Error('Expected the upstream authorization challenge request to be sent')
         }
@@ -1667,17 +1748,37 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         upstreamRedirect.searchParams.set('code', 'upstream-authorization-code')
         const tokenExchangeResponse = await fetch(upstreamRedirect, { redirect: 'manual' })
 
-        expect(tokenExchangeResponse.status).toBe(302)
+        expect(tokenExchangeResponse.status, await tokenExchangeResponse.clone().text()).toBe(302)
         expect(tokenProofs).toHaveLength(1)
         const issuerRedirectLocation = tokenExchangeResponse.headers.get('location')
         if (!issuerRedirectLocation) throw new Error('Expected the issuer to redirect the authorization response')
         const issuerRedirect = new URL(issuerRedirectLocation)
-        if (required) {
+        const dpopTokenResponse = tokenType.toLowerCase() === 'dpop'
+        const shouldReject =
+          required &&
+          (!dpopTokenResponse ||
+            mismatchedJkt ||
+            (opaqueAccessToken && (!introspectionAvailable || !introspectionHasJkt || !introspectionActive)))
+        if (required && !dpopTokenResponse) {
           expect(issuerRedirect.searchParams.get('error')).toBe('server_error')
-          expect(issuerRedirect.searchParams.get('error_description')).toBe('Upstream DPoP token binding mismatch.')
+          expect(issuerRedirect.searchParams.get('error_description')).toBe(
+            'Upstream authorization server did not return a DPoP-bound access token.'
+          )
+        } else if (shouldReject) {
+          expect(issuerRedirect.searchParams.get('error')).toBe('server_error')
+          expect(issuerRedirect.searchParams.get('error_description')).toBe(
+            'Unable to verify upstream DPoP-bound access token.'
+          )
         } else {
           expect(issuerRedirect.searchParams.get('code')).toEqual(expect.any(String))
         }
+
+        const sessionAfterTokenExchange = await dpopAgent.agent.modules.openid4vc.issuer.getIssuanceSessionById(
+          issuanceSession.id
+        )
+        expect(sessionAfterTokenExchange.chainedIdentity?.chainedAuthorizationServerDpop?.nonce).toBe(
+          shouldReject ? nonce : undefined
+        )
       }
     )
 
@@ -1689,7 +1790,8 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       })
 
       expect(result.dpop).toBeDefined()
-      expect(result.session?.jwkThumbprint).toBe(result.jwkThumbprint)
+      const jwkThumbprint = result.session?.jwkThumbprint
+      expect(jwkThumbprint).toBeDefined()
       expect(result.session?.keyGeneratedForSession).toBe(true)
       if (!result.dpop) throw new Error('Expected DPoP options')
 
@@ -1707,7 +1809,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         allowedSigningAlgs: [Kms.KnownJwaSignatureAlgorithms.ES256],
       })
 
-      expect(verified.jwkThumbprint).toBe(result.jwkThumbprint)
+      expect(verified.jwkThumbprint).toBe(jwkThumbprint)
       expect(verified.payload.htm).toBe('POST')
       expect(verified.payload.htu).toBe('https://upstream.example.com/token')
     })
@@ -1724,7 +1826,6 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         authorizationServerMetadata: upstreamAuthorizationServerMetadata,
       })
 
-      expect(result.keyId).toBe(key.keyId)
       expect(result.session?.keyId).toBe(key.keyId)
       expect(result.session?.keyGeneratedForSession).toBe(false)
     })
@@ -1778,9 +1879,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       const repository = dpopAgent.agent.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
       await repository.save(dpopAgent.agent.context, issuanceSession)
 
-      await issuerService.deleteIssuanceSessionById(dpopAgent.agent.context, issuanceSession.id, {
-        deleteGeneratedDpopKey: true,
-      })
+      await issuerService.deleteIssuanceSessionById(dpopAgent.agent.context, issuanceSession.id)
 
       await expect(dpopAgent.agent.kms.getPublicKey({ keyId: dpop.session.keyId })).rejects.toThrow()
     })
@@ -1806,9 +1905,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       await repository.save(dpopAgent.agent.context, issuanceSession)
       await repository.save(dpopAgent.agent.context, referencingSession)
 
-      await issuerService.deleteIssuanceSessionById(dpopAgent.agent.context, issuanceSession.id, {
-        deleteGeneratedDpopKey: true,
-      })
+      await issuerService.deleteIssuanceSessionById(dpopAgent.agent.context, issuanceSession.id)
 
       await expect(dpopAgent.agent.kms.getPublicKey({ keyId: dpop.session.keyId })).resolves.toBeDefined()
     })
@@ -1857,7 +1954,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         algorithm: Kms.KnownJwaSignatureAlgorithms.ES256,
       })
       const chainedAuthorizationServerDpop = session.chainedIdentity?.chainedAuthorizationServerDpop
-      if (!upstreamDpop) throw new Error('Expected persisted upstream DPoP metadata')
+      if (!chainedAuthorizationServerDpop) throw new Error('Expected persisted chained DPoP metadata')
       chainedAuthorizationServerDpop.keyId = key.keyId
 
       const result = await issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {

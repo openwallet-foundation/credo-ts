@@ -68,7 +68,13 @@ export interface OpenId4VciChainedAuthorizationServerConfig {
   clientAuthentication: OpenId4VciAuthorizationServerClientAuthenticationClientSecret
 
   dpop?: {
-    /** Whether DPoP is required for upstream authorization and token requests. */
+    /**
+     * Whether DPoP is required for chained authorization and token requests. When required, the
+     * token response must identify the access token as DPoP-bound with `token_type: "DPoP"`.
+     * JWT access tokens are verified, and opaque tokens are introspected, to confirm their
+     * `cnf.jkt` matches the DPoP key. Opaque tokens are rejected if introspection is unavailable,
+     * reports the token inactive, or omits `cnf.jkt`.
+     */
     required: boolean
 
     /**
