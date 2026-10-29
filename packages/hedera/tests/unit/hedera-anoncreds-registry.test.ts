@@ -391,22 +391,24 @@ describe('HederaAnonCredsRegistry', () => {
       },
     }
 
-    it('should call ledgerService.registerRevocationStatusList and return result on success', async () => {
-      const expected: RegisterRevocationStatusListReturn = {
-        revocationStatusListMetadata: {},
-        registrationMetadata: {},
+    it('should call ledgerService.registerRevocationStatusList and return the status list timestamp in seconds', async () => {
+      const serviceResult: RegisterRevocationStatusListReturn = {
+        jobId: 'job-1',
+        revocationStatusListMetadata: { metadataKey: 'metadata' },
+        registrationMetadata: { registrationKey: 'registration' },
         revocationStatusListState: {
           state: 'finished',
           revocationStatusList: {
-            revRegDefId: '',
-            issuerId: '',
-            revocationList: [],
-            timestamp: 0,
-            currentAccumulator: '',
+            revRegDefId: 'regDef1',
+            issuerId: 'did:hedera:issuer',
+            revocationList: [0, 1, 0],
+            timestamp: 1700000000123,
+            currentAccumulator: 'accumulator',
           },
         },
       }
-      mockFunction(mockAnonCredsService.registerRevocationStatusList).mockResolvedValue(expected)
+      const serviceResultSnapshot = structuredClone(serviceResult)
+      mockFunction(mockAnonCredsService.registerRevocationStatusList).mockResolvedValue(serviceResult)
 
       const result = await registry.registerRevocationStatusList(mockAgentContext, options)
 
@@ -414,7 +416,47 @@ describe('HederaAnonCredsRegistry', () => {
         `Registering revocation status list for '${options.revocationStatusList.revRegDefId}' on Hedera ledger`
       )
       expect(mockAnonCredsService.registerRevocationStatusList).toHaveBeenCalledWith(mockAgentContext, options)
-      expect(result).toEqual(expected)
+      expect(result).toEqual({
+        jobId: 'job-1',
+        revocationStatusListMetadata: { metadataKey: 'metadata' },
+        registrationMetadata: { registrationKey: 'registration' },
+        revocationStatusListState: {
+          state: 'finished',
+          revocationStatusList: {
+            revRegDefId: 'regDef1',
+            issuerId: 'did:hedera:issuer',
+            revocationList: [0, 1, 0],
+            timestamp: 1700000000,
+            currentAccumulator: 'accumulator',
+          },
+        },
+      })
+      expect(serviceResult).toEqual(serviceResultSnapshot)
+    })
+
+    it('should return a failed result from the service unchanged', async () => {
+      const serviceResult: RegisterRevocationStatusListReturn = {
+        revocationStatusListMetadata: {},
+        registrationMetadata: {},
+        revocationStatusListState: {
+          state: 'failed',
+          reason: 'ledger rejected the status list',
+          revocationStatusList: {
+            revRegDefId: 'regDef1',
+            issuerId: 'did:hedera:issuer',
+            revocationList: [],
+            timestamp: 1700000000123,
+            currentAccumulator: '',
+          },
+        },
+      }
+      const serviceResultSnapshot = structuredClone(serviceResult)
+      mockFunction(mockAnonCredsService.registerRevocationStatusList).mockResolvedValue(serviceResult)
+
+      const result = await registry.registerRevocationStatusList(mockAgentContext, options)
+
+      expect(result).toBe(serviceResult)
+      expect(result).toEqual(serviceResultSnapshot)
     })
 
     it('should catch error and return failed state', async () => {
@@ -437,12 +479,22 @@ describe('HederaAnonCredsRegistry', () => {
     const mockRevocationRegistryId = 'mock-rev-reg-def-id'
     const timestamp = 1234567890
 
-    it('should call ledgerService.getRevocationStatusList and return result on success', async () => {
-      const expected: GetRevocationStatusListReturn = {
-        resolutionMetadata: {},
-        revocationStatusListMetadata: {},
-      }
-      mockFunction(mockAnonCredsService.getRevocationStatusList).mockResolvedValue(expected)
+    const serviceResultFor = (requestedTimestampMs: number): GetRevocationStatusListReturn => ({
+      resolutionMetadata: { resolutionKey: 'resolution' },
+      revocationStatusListMetadata: { metadataKey: 'metadata' },
+      revocationStatusList: {
+        revRegDefId: mockRevocationRegistryId,
+        issuerId: 'did:hedera:issuer',
+        revocationList: [0, 1, 0],
+        currentAccumulator: 'accumulator',
+        timestamp: requestedTimestampMs,
+      },
+    })
+
+    it('should call ledgerService.getRevocationStatusList in milliseconds and return the timestamp in seconds', async () => {
+      const serviceResult = serviceResultFor(timestamp * 1000 + 999)
+      const serviceResultSnapshot = structuredClone(serviceResult)
+      mockFunction(mockAnonCredsService.getRevocationStatusList).mockResolvedValue(serviceResult)
 
       const result = await registry.getRevocationStatusList(mockAgentContext, mockRevocationRegistryId, timestamp)
 
@@ -454,7 +506,56 @@ describe('HederaAnonCredsRegistry', () => {
         mockRevocationRegistryId,
         timestamp * 1000 + 999
       )
-      expect(result).toEqual(expected)
+      expect(result).toEqual({
+        resolutionMetadata: { resolutionKey: 'resolution' },
+        revocationStatusListMetadata: { metadataKey: 'metadata' },
+        revocationStatusList: {
+          revRegDefId: mockRevocationRegistryId,
+          issuerId: 'did:hedera:issuer',
+          revocationList: [0, 1, 0],
+          currentAccumulator: 'accumulator',
+          timestamp,
+        },
+      })
+      expect(serviceResult).toEqual(serviceResultSnapshot)
+    })
+
+    it('should request the same millisecond timestamp when resolving again with the returned timestamp', async () => {
+      const getRevocationStatusList = mockFunction(mockAnonCredsService.getRevocationStatusList)
+      getRevocationStatusList.mockReset()
+      getRevocationStatusList.mockImplementation(async (_agentContext, _revocationRegistryId, requestedTimestampMs) =>
+        serviceResultFor(requestedTimestampMs)
+      )
+
+      const first = await registry.getRevocationStatusList(mockAgentContext, mockRevocationRegistryId, timestamp)
+      const returnedTimestamp = first.revocationStatusList?.timestamp
+      expect(returnedTimestamp).toBe(timestamp)
+
+      const second = await registry.getRevocationStatusList(
+        mockAgentContext,
+        mockRevocationRegistryId,
+        returnedTimestamp as number
+      )
+
+      expect(getRevocationStatusList).toHaveBeenCalledTimes(2)
+      expect(getRevocationStatusList.mock.calls[1][2]).toBe(getRevocationStatusList.mock.calls[0][2])
+      expect(second.revocationStatusList?.timestamp).toBe(timestamp)
+    })
+
+    it('should return a result without a status list unchanged', async () => {
+      const serviceResult: GetRevocationStatusListReturn = {
+        resolutionMetadata: { error: 'notFound', message: 'status list not found' },
+        revocationStatusListMetadata: {},
+      }
+      mockFunction(mockAnonCredsService.getRevocationStatusList).mockResolvedValue(serviceResult)
+
+      const result = await registry.getRevocationStatusList(mockAgentContext, mockRevocationRegistryId, timestamp)
+
+      expect(result).toBe(serviceResult)
+      expect(result).toEqual({
+        resolutionMetadata: { error: 'notFound', message: 'status list not found' },
+        revocationStatusListMetadata: {},
+      })
     })
 
     it('should catch error and return notFound error state', async () => {
