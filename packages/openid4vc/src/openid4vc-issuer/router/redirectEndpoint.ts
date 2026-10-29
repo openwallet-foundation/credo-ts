@@ -126,11 +126,14 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
           )
         }
 
-        const upstreamDpop = await openId4VcIssuerService.getChainedUpstreamDpopRequestOptions(agentContext, {
-          issuanceSession,
-          chainedAuthorizationServerConfig: authorizationServerConfig,
-          authorizationServerMetadata,
-        })
+        const chainedAuthorizationServerDpop = await openId4VcIssuerService.getChainedAuthorizationServerDpopOptions(
+          agentContext,
+          {
+            issuanceSession,
+            chainedAuthorizationServerConfig: authorizationServerConfig,
+            authorizationServerMetadata,
+          }
+        )
 
         // Retrieve access token
         const { accessTokenResponse, dpop } = await oauth2Client
@@ -139,7 +142,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
             authorizationServerMetadata,
             pkceCodeVerifier: issuanceSession.chainedIdentity.pkceCodeVerifier,
             redirectUri: joinUriParts(config.baseUrl, [issuer.issuerId, 'redirect']),
-            dpop: upstreamDpop.dpop,
+            dpop: chainedAuthorizationServerDpop.dpop,
           })
           .catch((error) => {
             if (error instanceof Oauth2ClientErrorResponseError) {
@@ -179,9 +182,11 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
             )
           })
 
-        if (upstreamDpop.session) upstreamDpop.session.nonce = dpop?.nonce
+        if (chainedAuthorizationServerDpop.session) {
+          chainedAuthorizationServerDpop.session.nonce = dpop?.nonce
+        }
 
-        if (upstreamDpop.required) {
+        if (chainedAuthorizationServerDpop.required) {
           if (!upstreamDpop.jwkThumbprint) {
             throw new Oauth2ServerErrorResponseError(
               {
@@ -279,7 +284,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
         issuanceSession.chainedIdentity = {
           ...issuanceSession.chainedIdentity,
           externalAccessTokenResponse: accessTokenResponse,
-          upstreamDpop: upstreamDpop.session,
+          chainedAuthorizationServerDpop: chainedAuthorizationServerDpop.session,
         }
 
         // TODO: we need to start using locks so we can't get corrupted state

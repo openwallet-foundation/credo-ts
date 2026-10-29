@@ -103,9 +103,9 @@ import type {
   OpenId4VcUpdateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import {
+  type OpenId4VcIssuanceSessionChainedAuthorizationServerDpop,
   OpenId4VcIssuanceSessionRecord,
   OpenId4VcIssuanceSessionRepository,
-  type OpenId4VcIssuanceSessionUpstreamDpop,
   OpenId4VcIssuerRecord,
   OpenId4VcIssuerRepository,
 } from './repository'
@@ -1851,7 +1851,7 @@ export class OpenId4VcIssuerService {
     })
   }
 
-  public async getChainedUpstreamDpopRequestOptions(
+  public async getChainedAuthorizationServerDpopOptions(
     agentContext: AgentContext,
     options: {
       issuanceSession: OpenId4VcIssuanceSessionRecord
@@ -1864,7 +1864,7 @@ export class OpenId4VcIssuerService {
     jwkThumbprint?: string
     keyId?: string
     alg?: Kms.KnownJwaSignatureAlgorithm
-    session?: OpenId4VcIssuanceSessionUpstreamDpop
+    session?: OpenId4VcIssuanceSessionChainedAuthorizationServerDpop
   }> {
     const required = options.chainedAuthorizationServerConfig.dpop?.required ?? false
     const supportedByUpstream = options.authorizationServerMetadata.dpop_signing_alg_values_supported
@@ -1878,7 +1878,7 @@ export class OpenId4VcIssuerService {
       return { required }
     }
 
-    const persisted = options.issuanceSession.chainedIdentity?.upstreamDpop
+    const persisted = options.issuanceSession.chainedIdentity?.chainedAuthorizationServerDpop
     const keyId = persisted?.keyId ?? options.chainedAuthorizationServerConfig.dpop?.keyId
     const allowedAlgorithms = options.chainedAuthorizationServerConfig.dpop?.allowedAlgorithms
     try {

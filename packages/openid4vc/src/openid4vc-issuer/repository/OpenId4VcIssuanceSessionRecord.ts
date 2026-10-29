@@ -152,7 +152,7 @@ export interface OpenId4VcIssuanceSessionChainedIdentity {
    */
   externalAuthorizationServerMetadata?: AuthorizationServerMetadata
 
-  upstreamDpop?: OpenId4VcIssuanceSessionUpstreamDpop
+  chainedAuthorizationServerDpop?: OpenId4VcIssuanceSessionChainedAuthorizationServerDpop
 
   /**
    * The access token response received from the external identity provider.
@@ -163,7 +163,7 @@ export interface OpenId4VcIssuanceSessionChainedIdentity {
   externalAccessTokenResponse?: AccessTokenResponse
 }
 
-export interface OpenId4VcIssuanceSessionUpstreamDpop {
+export interface OpenId4VcIssuanceSessionChainedAuthorizationServerDpop {
   keyId: string
   alg: Kms.KnownJwaSignatureAlgorithm
   jwkThumbprint: string
