@@ -3,7 +3,7 @@ import { AgentContext } from '../../agent'
 import type { HashName } from '../../crypto'
 import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'
-import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
+import { type DidPurpose, DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { isKnownJwaSignatureAlgorithm, type Jwk, KeyManagementApi, PublicJwk } from '../kms'
 import { X509Certificate } from '../x509/X509Certificate'
 import { SdJwtVcError } from './SdJwtVcError'
@@ -16,12 +16,16 @@ export async function resolveSigningPublicJwkFromDidUrl(agentContext: AgentConte
   return publicJwk
 }
 
-export async function resolveDidUrl(agentContext: AgentContext, didUrl: string) {
+export async function resolveDidUrl(
+  agentContext: AgentContext,
+  didUrl: string,
+  purposes: DidPurpose[] = ['assertionMethod']
+) {
   const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
   const didDocument = await didResolver.resolveDidDocument(agentContext, didUrl)
 
   return {
-    verificationMethod: didDocument.dereferenceKey(didUrl, ['assertionMethod']),
+    verificationMethod: didDocument.dereferenceKey(didUrl, purposes),
     didDocument,
   }
 }
@@ -29,7 +33,11 @@ export async function resolveDidUrl(agentContext: AgentContext, didUrl: string) 
 export async function extractKeyFromHolderBinding(
   agentContext: AgentContext,
   holder: SdJwtVcHolderBinding,
-  { forSigning = false, jwkKeyId }: { forSigning?: boolean; jwkKeyId?: string } = {}
+  {
+    forSigning = false,
+    jwkKeyId,
+    didPurposes,
+  }: { forSigning?: boolean; jwkKeyId?: string; didPurposes?: DidPurpose[] } = {}
 ) {
   if (holder.method === 'did') {
     const parsedDid = parseDid(holder.didUrl)
@@ -41,7 +49,7 @@ export async function extractKeyFromHolderBinding(
     if (forSigning) {
       publicJwk = await resolveSigningPublicJwkFromDidUrl(agentContext, holder.didUrl)
     } else {
-      const { verificationMethod } = await resolveDidUrl(agentContext, holder.didUrl)
+      const { verificationMethod } = await resolveDidUrl(agentContext, holder.didUrl, didPurposes)
       publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
     }
 

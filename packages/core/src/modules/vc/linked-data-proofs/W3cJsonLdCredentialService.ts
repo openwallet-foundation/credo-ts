@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../agent/context'
 import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
-import type { TrustedIssuerDid } from '../../../agent/TrustedIssuersForVerification'
+import type { GetTrustedIssuersForCredential, TrustedIssuerDid } from '../../../agent/TrustedIssuersForVerification'
 import { createKmsKeyPairClass } from '../../../crypto/KmsKeyPair'
 import { CredoError, RecordNotFoundError } from '../../../error'
 import { injectable } from '../../../plugins'
@@ -12,6 +12,7 @@ import { JsonLdModuleConfig } from '../jsonld'
 import jsonld from '../jsonld/jsonld'
 import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
+import { assertControlledByDid } from '../resolveSigner'
 import { validateCredentialSubjectAuthentication, w3cDate } from '../util'
 import type {
   W3cJsonLdSignCredentialOptions,
@@ -266,15 +267,14 @@ export class W3cJsonLdCredentialService {
       // own key and have it accepted. Enforce the binding here, mirroring the jwt_vp and sd-jwt paths
       // (see validateCredentialSubjectAuthentication).
       //
-      // The holder identity is derived from the verificationMethod of the presentation's
-      // authentication proof(s), which vc-js has already cryptographically verified and authorized
-      // for the authentication purpose. validateCredentialSubjectAuthentication normalizes the DID
-      // URL to its bare DID before comparison; for the DID methods used with linked-data proofs the
-      // verificationMethod's DID equals its controller.
+      // The holders are the signers of the presentation proofs, which vc-js has already verified
+      // for their proof purpose.
       const holderProofPurpose = options.purpose?.term ?? 'authentication'
-      const holderVerificationMethods = asArray(options.presentation.proof)
-        .filter((proof) => proof.proofPurpose === holderProofPurpose)
-        .map((proof) => proof.verificationMethod)
+      const holders = await Promise.all(
+        asArray(options.presentation.proof)
+          .filter((proof) => proof.proofPurpose === holderProofPurpose)
+          .map((proof) => this.resolveSigner(agentContext, proof.verificationMethod))
+      )
 
       // Surfaced per credential under `credentials[]` to mirror the jwt_vp result shape. The
       // library-level signature/status validations remain lumped in `vcJs`, so each entry here
@@ -286,10 +286,7 @@ export class W3cJsonLdCredentialService {
         // so there is no subject to authenticate.
         const isAuthenticated =
           credentialSubjectIds.length === 0 ||
-          holderVerificationMethods.some(
-            (verificationMethod) =>
-              validateCredentialSubjectAuthentication(credentialSubjectIds, verificationMethod).isValid
-          )
+          holders.some((holder) => validateCredentialSubjectAuthentication(credentialSubjectIds, holder).isValid)
 
         const credentialSubjectAuthentication: SingleValidationResult = isAuthenticated
           ? { isValid: true }
@@ -351,7 +348,7 @@ export class W3cJsonLdCredentialService {
   private async ensureCredentialIssuerTrusted(
     agentContext: AgentContext,
     credential: W3cJsonLdVerifiableCredential,
-    trustedIssuers?: TrustedIssuerDid[]
+    trustedIssuers?: TrustedIssuerDid[] | GetTrustedIssuersForCredential
   ): Promise<void> {
     const issuerId = credential.issuerId
 
@@ -362,13 +359,16 @@ export class W3cJsonLdCredentialService {
 
     for (const proof of asArray(credential.proof)) {
       const verificationMethod = proof.verificationMethod
-      if (!verificationMethod.startsWith('did:') || parseDid(verificationMethod).did !== issuerDid) {
+      if (
+        !verificationMethod.startsWith('did:') ||
+        (await this.resolveSigner(agentContext, verificationMethod)) !== issuerDid
+      ) {
         throw new CredoError(
           `The proof verification method '${verificationMethod}' does not match the credential issuer did '${issuerDid}'.`
         )
       }
 
-      await TrustedIssuerContext.ensureTrustedSigner(
+      await TrustedIssuerContext.ensureTrustedCredentialSigner(
         agentContext,
         {
           signer: { method: 'did', didUrl: verificationMethod },
@@ -377,6 +377,18 @@ export class W3cJsonLdCredentialService {
         trustedIssuers
       )
     }
+  }
+
+  /**
+   * Resolves the DID that signed with a verification method, loading it through the configured
+   * document loader like vc-js does. vc-js has already validated its proof purpose.
+   */
+  private async resolveSigner(agentContext: AgentContext, verificationMethodId: string) {
+    const did = parseDid(verificationMethodId).did
+    const { document } = await this.jsonLdModuleConfig.documentLoader(agentContext)(verificationMethodId)
+    assertControlledByDid({ id: verificationMethodId, controller: document.controller }, did)
+
+    return did
   }
 
   private getSigningSuiteInfo(proofType: string) {

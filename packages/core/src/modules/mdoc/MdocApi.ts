@@ -9,6 +9,8 @@ import type {
   MdocDcApiResolveRequestOptions,
   MdocDcApiVerifyResponseOptions,
   MdocDeleteVerificationSessionOptions,
+  MdocResolvedRequest,
+  MdocSelectCredentialsForRequestOptions,
   MdocSignOptions,
   MdocStoreOptions,
   MdocVerifyOptions,
@@ -128,6 +130,18 @@ export class MdocApi {
    */
   public async resolveDcApiRequest(options: MdocDcApiResolveRequestOptions) {
     return await this.mdocDcApiService.resolveRequest(this.agentContext, options)
+  }
+
+  /**
+   * Automatically select the credentials to answer a resolved request with, taking into account its
+   * use cases and the alternatives of the requested elements. For a request resolved with
+   * {@link MdocApi.resolveDcApiRequest} the result can be passed to {@link MdocApi.createDcApiResponse}.
+   */
+  public selectCredentialsForRequest<ResolvedRequest extends MdocResolvedRequest>(
+    resolvedRequest: ResolvedRequest,
+    options?: MdocSelectCredentialsForRequestOptions
+  ) {
+    return this.mdocService.selectCredentialsForRequest(resolvedRequest, options)
   }
 
   /**

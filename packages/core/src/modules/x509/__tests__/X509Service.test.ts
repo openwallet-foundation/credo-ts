@@ -21,6 +21,7 @@ import { X509Certificate } from '../X509Certificate'
 import { X509Error } from '../X509Error'
 import { X509ModuleConfig } from '../X509ModuleConfig'
 import { X509Service } from '../X509Service'
+import { X509RevocationCheckMode } from '../X509ValidationOptions'
 
 /**
  *
@@ -64,8 +65,8 @@ const kmsApi = new KeyManagementApi(
 )
 agentContext.dependencyManager.registerInstance(KeyManagementApi, kmsApi)
 
-// Register X509ModuleConfig
-const x509ModuleConfig = new X509ModuleConfig({})
+// Revocation is tested in X509Service.revocation.test.ts, and the test vectors reference live CRLs
+const x509ModuleConfig = new X509ModuleConfig({ revocationCheck: { mode: X509RevocationCheckMode.Disabled } })
 agentContext.dependencyManager.registerInstance(X509ModuleConfig, x509ModuleConfig)
 
 describe('X509Service', () => {

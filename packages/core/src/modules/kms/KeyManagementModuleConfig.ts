@@ -1,11 +1,13 @@
 import { KeyManagementError } from './error/KeyManagementError'
 import type { KeyManagementService } from './KeyManagementService'
+import type { KmsBackendName } from './options/backend'
 
-export interface KeyManagementModuleConfigOptions {
+export interface KeyManagementModuleConfigOptions<Backends extends KeyManagementService[] = KeyManagementService[]> {
   /**
-   * The backends to use for key management and cryptographic operations.
+   * The backends to use for key management and cryptographic operations. Their names and the options they accept
+   * when creating a key type the key management api of the agent.
    */
-  backends?: KeyManagementService[]
+  backends?: Backends
 
   /**
    * The default backend to use, indicated by the `backend` property
@@ -16,7 +18,7 @@ export interface KeyManagementModuleConfigOptions {
    *
    * If not provided, the first backend from the `backends` array will be used.
    */
-  defaultBackend?: string
+  defaultBackend?: KmsBackendName<Backends>
 }
 
 export class KeyManagementModuleConfig {
