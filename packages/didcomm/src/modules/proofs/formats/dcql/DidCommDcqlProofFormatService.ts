@@ -1,6 +1,7 @@
 import type {
   AgentContext,
   DcqlCredentialsForRequest,
+  DcqlMatchWithRecord,
   DcqlPresentation,
   DcqlQuery,
   DcqlQueryResult,
@@ -87,6 +88,31 @@ const NON_SELECTIVELY_DISCLOSABLE_PRESENTATION_CLAIMS = ['nonce', 'aud', 'iat']
 type ParsedDcqlQuery = ReturnType<DcqlService['validateDcqlQuery']>
 type DcqlCredentialQuery = ParsedDcqlQuery['credentials'][number]
 type ParsedDcqlRequest = Omit<DcqlRequestAttachment, 'dcql_query'> & { dcql_query: ParsedDcqlQuery }
+
+// Same credential_sets rule as runDcqlQuery in the dcql library, applied after unmatching unsupported formats
+export function withUnsupportedFormatsUnmatched(result: DcqlQueryResult): DcqlQueryResult {
+  const credential_matches = Object.fromEntries(
+    result.credentials.map(({ id, format }): [string, DcqlMatchWithRecord] => [
+      id,
+      SUPPORTED_CREDENTIAL_FORMATS.includes(format)
+        ? result.credential_matches[id]
+        : { success: false, credential_query_id: id },
+    ])
+  )
+  const credential_sets = result.credential_sets?.map((set) => {
+    const matchingOptions = set.options.filter((option) => option.every((id) => credential_matches[id]?.success))
+    return { ...set, matching_options: isNonEmptyArray(matchingOptions) ? matchingOptions : undefined }
+  })
+
+  return {
+    ...result,
+    credential_matches,
+    credential_sets: credential_sets as DcqlQueryResult['credential_sets'],
+    can_be_satisfied: credential_sets
+      ? credential_sets.every((set) => !set.required || set.matching_options !== undefined)
+      : result.credentials.every(({ id }) => credential_matches[id].success),
+  }
+}
 
 export class DidCommDcqlProofFormatService implements DidCommProofFormatService<DidCommDcqlProofFormat> {
   public readonly formatKey = 'dcql' as const
@@ -187,9 +213,7 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     const dcqlService = agentContext.resolve(DcqlService)
     const credentials =
       proofFormats?.dcql?.credentials ??
-      dcqlService.selectCredentialsForRequest(
-        await dcqlService.getCredentialsForRequest(agentContext, request.dcql_query)
-      )
+      dcqlService.selectCredentialsForRequest(await this.getQueryResult(agentContext, request.dcql_query))
 
     for (const credentialQueryId of Object.keys(credentials)) {
       const credentialQuery = request.dcql_query.credentials.find(({ id }) => id === credentialQueryId)
@@ -276,18 +300,17 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
   ): Promise<DcqlQueryResult> {
     const request = this.parseRequest(agentContext, requestAttachment)
 
-    return agentContext.resolve(DcqlService).getCredentialsForRequest(agentContext, request.dcql_query)
+    return this.getQueryResult(agentContext, request.dcql_query)
   }
 
   public async selectCredentialsForRequest(
     agentContext: AgentContext,
     { requestAttachment }: DidCommProofFormatSelectCredentialsForRequestOptions<DidCommDcqlProofFormat>
   ): Promise<{ credentials: DcqlCredentialsForRequest }> {
-    const dcqlService = agentContext.resolve(DcqlService)
     const request = this.parseRequest(agentContext, requestAttachment)
-    const queryResult = await dcqlService.getCredentialsForRequest(agentContext, request.dcql_query)
+    const queryResult = await this.getQueryResult(agentContext, request.dcql_query)
 
-    return { credentials: dcqlService.selectCredentialsForRequest(queryResult) }
+    return { credentials: agentContext.resolve(DcqlService).selectCredentialsForRequest(queryResult) }
   }
 
   public async shouldAutoRespondToProposal(
@@ -315,6 +338,12 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     _options: DidCommProofFormatAutoRespondPresentationOptions
   ): Promise<boolean> {
     return true
+  }
+
+  private async getQueryResult(agentContext: AgentContext, dcqlQuery: ParsedDcqlQuery): Promise<DcqlQueryResult> {
+    const result = await agentContext.resolve(DcqlService).getCredentialsForRequest(agentContext, dcqlQuery)
+
+    return withUnsupportedFormatsUnmatched(result)
   }
 
   private async createRequestAttachment(
@@ -382,6 +411,14 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
       }
       if (format === 'mso_mdoc' && typeof meta.doctype_value !== 'string') {
         throw new CredoError(`Credential Query '${id}' with format 'mso_mdoc' must have 'meta.doctype_value'`)
+      }
+    }
+
+    for (const { id, format, meta } of parsed.credentials) {
+      if (format === 'vc+sd-jwt' && !(meta && 'type_values' in meta)) {
+        throw new CredoError(
+          `Credential Query '${id}' with format 'vc+sd-jwt' must have 'meta.type_values' as an array of string arrays`
+        )
       }
     }
 
