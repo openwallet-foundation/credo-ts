@@ -31,7 +31,9 @@ import {
   DidCommDcqlProofFormatService,
   DidCommEnvelopeService,
   DidCommHandshakeProtocol,
+  DidCommMessageSender,
   DidCommModule,
+  DidCommOutboundMessageContext,
   DidCommProofEventTypes,
   DidCommProofState,
   DidCommProofV2Protocol,
@@ -874,6 +876,35 @@ describe('DCQL proof format out of band', () => {
     )
     await expect(processRequest).rejects.toThrow(
       `DCQL request audience 'didcomm:${new DidKey(routing.recipientKey).did}' is not the DID of the service the presentation goes to`
+    )
+    expect(await holderAgent.didcomm.proofs.findAllByQuery({ threadId: proofRecord.threadId })).toEqual([])
+  })
+
+  test('invitation without a handshake: a request with its thread id over another connection is checked against that connection', async () => {
+    const [verifierConnection] = await makeConnection(verifierAgent, holderAgent)
+    const routing = await getRouting()
+    const audienceDid = new DidKey(routing.recipientKey).did
+    const { message, proofRecord } = await createRequest(audienceDid)
+    const { outOfBandInvitation } = await verifierAgent.didcomm.oob.createInvitation({
+      messages: [message],
+      handshake: false,
+      routing,
+    })
+    await holderAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, {
+      label: 'holder',
+      autoAcceptInvitation: false,
+    })
+
+    const { processRequest } = await processRequestResult(() =>
+      verifierAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(
+        new DidCommOutboundMessageContext(message, {
+          agentContext: verifierAgent.context,
+          connection: verifierConnection,
+        })
+      )
+    )
+    await expect(processRequest).rejects.toThrow(
+      `DCQL request audience 'didcomm:${audienceDid}' is not the verifier DID of the connection`
     )
     expect(await holderAgent.didcomm.proofs.findAllByQuery({ threadId: proofRecord.threadId })).toEqual([])
   })
