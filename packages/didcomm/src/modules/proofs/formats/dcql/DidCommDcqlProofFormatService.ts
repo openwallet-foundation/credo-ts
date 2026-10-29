@@ -37,7 +37,9 @@ import { DidCommConnectionService } from '../../../connections'
 import { DidCommOutOfBandRole } from '../../../oob/domain/DidCommOutOfBandRole'
 import type { OutOfBandDidCommService } from '../../../oob/domain/OutOfBandDidCommService'
 import { DidCommOutOfBandRepository } from '../../../oob/repository'
+import { DidCommPresentationProblemReportReason } from '../../errors'
 import { DidCommProofFormatSpec } from '../../models'
+import { V2PresentationProblemReportError } from '../../protocol/v2/errors'
 import type { DidCommProofExchangeRecord } from '../../repository'
 import type { DidCommProofFormatService } from '../DidCommProofFormatService'
 import type {
@@ -164,22 +166,23 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
 
   public async processRequest(
     agentContext: AgentContext,
-    { attachment }: DidCommProofFormatProcessOptions
+    { attachment, proofRecord }: DidCommProofFormatProcessOptions
   ): Promise<void> {
-    this.parseRequest(agentContext, attachment)
+    try {
+      const request = this.parseRequest(agentContext, attachment)
+      await this.assertAudience(agentContext, proofRecord, request.audience)
+    } catch (error) {
+      throw new V2PresentationProblemReportError(error.message, {
+        problemCode: DidCommPresentationProblemReportReason.Abandoned,
+      })
+    }
   }
 
   public async acceptRequest(
     agentContext: AgentContext,
-    {
-      proofRecord,
-      proofFormats,
-      requestAttachment,
-      attachmentId,
-    }: DidCommProofFormatAcceptRequestOptions<DidCommDcqlProofFormat>
+    { proofFormats, requestAttachment, attachmentId }: DidCommProofFormatAcceptRequestOptions<DidCommDcqlProofFormat>
   ): Promise<DidCommProofFormatCreateReturn> {
     const request = this.parseRequest(agentContext, requestAttachment)
-    await this.assertAudience(agentContext, proofRecord, request.audience)
 
     const dcqlService = agentContext.resolve(DcqlService)
     const credentials =
@@ -191,7 +194,7 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     for (const credentialQueryId of Object.keys(credentials)) {
       const credentialQuery = request.dcql_query.credentials.find(({ id }) => id === credentialQueryId)
       if (!credentialQuery || !SUPPORTED_CREDENTIAL_FORMATS.includes(credentialQuery.format)) {
-        throw new CredoError(`Presenting for Credential Query '${credentialQueryId}' is not supported`)
+        throw new CredoError("DCQL requests can only be presented with 'dc+sd-jwt' or 'vc+sd-jwt' credentials")
       }
     }
 

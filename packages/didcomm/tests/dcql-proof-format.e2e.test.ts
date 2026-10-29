@@ -29,6 +29,7 @@ import {
   DidCommCredentialV2Protocol,
   DidCommDcqlProofFormatService,
   DidCommEnvelopeService,
+  DidCommHandshakeProtocol,
   DidCommModule,
   DidCommProofEventTypes,
   DidCommProofState,
@@ -283,13 +284,13 @@ describe('DCQL proof format over a DIDComm connection', () => {
     expect(disclosures.map(([, name, value]) => [name, value])).toEqual([['name', 'John']])
   })
 
-  test('prover rejects a request whose audience is not the connection DID', async () => {
+  const requestRejectedAtReceipt = async (tamper: (request: Record<string, unknown>) => void): Promise<string> => {
     const originalCreateRequest = DidCommDcqlProofFormatService.prototype.createRequest
     const createRequestSpy = vi
       .spyOn(DidCommDcqlProofFormatService.prototype, 'createRequest')
       .mockImplementationOnce(async function (this: DidCommDcqlProofFormatService, ...args) {
         const result = await originalCreateRequest.apply(this, args)
-        ;(result.attachment.data.json as Record<string, unknown>).audience = 'didcomm:did:example:other-verifier'
+        tamper(result.attachment.data.json as Record<string, unknown>)
         return result
       })
 
@@ -307,20 +308,30 @@ describe('DCQL proof format over a DIDComm connection', () => {
     createRequestSpy.mockRestore()
     const threadId = verifierRecord.threadId
 
-    const holderRecord = await waitForProofExchangeRecordSubject(holderReplay, {
+    const abandonedRecord = await waitForProofExchangeRecordSubject(verifierReplay, {
       threadId,
-      state: DidCommProofState.RequestReceived,
+      state: DidCommProofState.Abandoned,
     })
-    await expect(holderAgent.didcomm.proofs.acceptRequest({ proofExchangeRecordId: holderRecord.id })).rejects.toThrow(
-      "audience 'didcomm:did:example:other-verifier' is not the verifier DID of the connection"
-    )
-
-    await holderAgent.didcomm.proofs.sendProblemReport({
-      proofExchangeRecordId: holderRecord.id,
-      description: 'audience does not match the connection',
-    })
-    await waitForProofExchangeRecordSubject(verifierReplay, { threadId, state: DidCommProofState.Abandoned })
+    expect(await holderAgent.didcomm.proofs.findAllByQuery({ threadId })).toEqual([])
     expect(await verifierAgent.didcomm.proofs.findPresentationMessage(verifierRecord.id)).toBeNull()
+
+    return abandonedRecord.errorMessage as string
+  }
+
+  test('prover rejects a request whose audience is not the connection DID', async () => {
+    const errorMessage = await requestRejectedAtReceipt((request) => {
+      request.audience = 'didcomm:did:example:other-verifier'
+    })
+    expect(errorMessage).toBe(
+      "abandoned: DCQL request audience 'didcomm:did:example:other-verifier' is not the verifier DID of the connection"
+    )
+  })
+
+  test('prover rejects a request with transaction_data', async () => {
+    const errorMessage = await requestRejectedAtReceipt((request) => {
+      request.transaction_data = []
+    })
+    expect(errorMessage).toBe("abandoned: DCQL request attachment must not have 'transaction_data'")
   })
 
   test('verifier rejects an audienceDid that is not the connection DID', async () => {
@@ -516,6 +527,47 @@ describe('DCQL proof format out of band', () => {
     const { audience, kbJwtAudience } = await present(proofRecord.threadId)
     expect(audience).toBe(`didcomm:${new DidKey(routing.recipientKey).did}`)
     expect(kbJwtAudience).toBe(audience)
+  })
+
+  test('invitation without a handshake: an audience that is not the service DID is rejected', async () => {
+    const processRequestSpy = vi.spyOn(DidCommDcqlProofFormatService.prototype, 'processRequest')
+    const { message, proofRecord } = await createRequest('did:example:other-verifier')
+    const { outOfBandInvitation } = await verifierAgent.didcomm.oob.createInvitation({
+      messages: [message],
+      handshake: false,
+      routing: await getRouting(),
+    })
+    await holderAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, { label: 'holder' })
+
+    await vi.waitFor(() => expect(processRequestSpy).toHaveBeenCalledOnce(), { timeout: 10000 })
+    const [{ value: processRequest }] = processRequestSpy.mock.results
+    processRequestSpy.mockRestore()
+    await expect(processRequest).rejects.toThrow(
+      "DCQL request audience 'didcomm:did:example:other-verifier' is not the DID of the service the presentation goes to"
+    )
+    expect(await holderAgent.didcomm.proofs.findAllByQuery({ threadId: proofRecord.threadId })).toEqual([])
+  })
+
+  // The verifier stays in RequestSent: the dispatcher sends the problem report without the invitation pthid
+  test('v1 invitation with a handshake: an attached request is rejected', async () => {
+    const processRequestSpy = vi.spyOn(DidCommDcqlProofFormatService.prototype, 'processRequest')
+    const routing = await getRouting()
+    const { message, proofRecord } = await createRequest(new DidKey(routing.recipientKey).did)
+    const { outOfBandInvitation } = await verifierAgent.didcomm.oob.createInvitation({
+      messages: [message],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+      routing,
+    })
+    await holderAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, { label: 'holder' })
+
+    await vi.waitFor(() => expect(processRequestSpy).toHaveBeenCalledOnce(), { timeout: 10000 })
+    const [{ value: processRequest }] = processRequestSpy.mock.results
+    processRequestSpy.mockRestore()
+    await expect(processRequest).rejects.toThrow(
+      'DCQL request was attached to the invitation that created the connection. Send the request after the connection exists'
+    )
+    expect(await holderAgent.didcomm.proofs.findAllByQuery({ threadId: proofRecord.threadId })).toEqual([])
+    expect(await verifierAgent.didcomm.proofs.findPresentationMessage(proofRecord.id)).toBeNull()
   })
 
   test('legacy connectionless: the audience is the did:key of the service recipient key', async () => {
