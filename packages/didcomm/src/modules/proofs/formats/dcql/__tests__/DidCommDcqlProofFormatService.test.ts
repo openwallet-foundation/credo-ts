@@ -3,6 +3,7 @@ import { DcqlService } from '@credo-ts/core'
 import { getAgentContext } from '../../../../../../../core/tests'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../../../decorators/attachment/DidCommAttachment'
 import { DidCommProofRole, DidCommProofState } from '../../../models'
+import { DidCommRequestPresentationV2Message } from '../../../protocol/v2/messages'
 import { DidCommProofExchangeRecord } from '../../../repository'
 import { DidCommDcqlProofFormatService, withUnsupportedFormatsUnmatched } from '../DidCommDcqlProofFormatService'
 
@@ -49,7 +50,11 @@ const request = (overrides: Record<string, unknown> = {}) => ({
 })
 
 const processRequest = (json: unknown) =>
-  dcqlFormatService.processRequest(agentContext, { attachment: attachment(json), proofRecord: proofRecord() })
+  dcqlFormatService.processRequest(agentContext, {
+    attachment: attachment(json),
+    proofRecord: proofRecord(),
+    requestMessage: new DidCommRequestPresentationV2Message({ formats: [], requestAttachments: [] }),
+  })
 
 describe('DidCommDcqlProofFormatService', () => {
   afterEach(() => {

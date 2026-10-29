@@ -31,7 +31,9 @@ export interface DidCommDcqlProofFormat extends DidCommProofFormat {
       dcqlQuery: DcqlQuery
       /**
        * The verifier DID for the `audience`. Required without a connection, where it must be the DID of the
-       * service of the out-of-band invitation carrying the request.
+       * service of the out-of-band invitation carrying the request (an invitation without a handshake). With a
+       * connection, send the request after the connection exists rather than attaching it to the invitation that
+       * sets the connection up.
        */
       audienceDid?: string
     }

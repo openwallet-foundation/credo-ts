@@ -1,3 +1,4 @@
+import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommAttachment } from '../../../decorators/attachment/DidCommAttachment'
 import type { DidCommProofFormatSpec } from '../models/DidCommProofFormatSpec'
 import type { DidCommProofExchangeRecord } from '../repository/DidCommProofExchangeRecord'
@@ -52,6 +53,10 @@ export interface DidCommProofFormatCreateReturn {
 export interface DidCommProofFormatProcessOptions {
   attachment: DidCommAttachment
   proofRecord: DidCommProofExchangeRecord
+}
+
+export interface DidCommProofFormatProcessRequestOptions extends DidCommProofFormatProcessOptions {
+  requestMessage: DidCommMessage
 }
 
 export interface DidCommProofFormatProcessPresentationOptions extends DidCommProofFormatProcessOptions {
