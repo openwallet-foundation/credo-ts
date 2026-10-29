@@ -74,3 +74,4 @@ minimumReleaseAgeExclude:
   - '@sd-jwt/sd-jwt-vc@0.22.0 || 0.23.0 || 0.23.1'
   - '@peculiar/x509@2.2.0'
   - nock@15.0.2
+  - '@animo-id/expo-secure-environment@0.3.0'
