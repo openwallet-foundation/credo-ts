@@ -146,6 +146,11 @@ export class OpenId4VpHolderService {
     })
     const { params } = openid4vpClient.parseOpenid4vpAuthorizationRequest({ authorizationRequest })
 
+    // Aries RFC 0882 (Audience): reject before any fetch, also when it would fall back to a pre-registered client
+    if (typeof params.client_id === 'string' && params.client_id.startsWith('didcomm:')) {
+      throw new CredoError(`Client id '${params.client_id}' is a DIDComm audience and is not allowed in OpenID4VP`)
+    }
+
     const verifiedAuthorizationRequest = await openid4vpClient.resolveOpenId4vpAuthorizationRequest({
       authorizationRequestPayload: params,
       responseMode: options?.origin
