@@ -1,4 +1,4 @@
-import type { DcqlQuery, JsonObject } from '@credo-ts/core'
+import type { DcqlQuery, JsonObject, JwkDidCreateOptions, W3cV2SdJwtVerifiableCredential } from '@credo-ts/core'
 import {
   Agent,
   ClaimFormat,
@@ -23,7 +23,7 @@ import {
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
 } from '../../core/tests'
-import type { DcqlPresentationAttachment, DcqlRequestAttachment } from '../src'
+import type { DcqlPresentationAttachment, DcqlRequestAttachment, DidCommProofExchangeRecord } from '../src'
 import {
   DidCommCredentialEventTypes,
   DidCommCredentialState,
@@ -299,11 +299,14 @@ describe('DCQL proof format over a DIDComm connection', () => {
       holder: holderKdv.did,
       nonce: request.nonce,
       aud: request.audience,
+      iat: expect.any(Number),
     })
 
-    const [, ...credentialDisclosures] = vp.payload.verifiableCredential[0].id
+    const [credentialJwt, ...credentialDisclosures] = vp.payload.verifiableCredential[0].id
       .slice('data:application/vc+sd-jwt,'.length)
       .split('~')
+    const credentialPayload = decodeJwt(credentialJwt).payload as { cnf: { kid: string } }
+    expect(vp.header.kid).toBe(credentialPayload.cnf.kid)
     const disclosures = decodeDisclosures(credentialDisclosures)
     expect(disclosures.map(([, name, value]) => [name, value])).toEqual([['name', 'John']])
   })
@@ -496,26 +499,31 @@ describe('DCQL proof format over a DIDComm connection', () => {
     ).rejects.toThrow("DCQL audienceDid 'did:example:other-verifier' is not the DID of connection")
   })
 
-  test("verifier rejects a vp+sd-jwt that is not signed with the credential's cnf key", async () => {
-    const otherKdv = await createDidKidVerificationMethod(holderAgent.context)
-
+  const storeW3cV2SdJwt = async (
+    type: string,
+    credentialSubject: JsonObject,
+    holderBinding = true
+  ): Promise<W3cV2SdJwtVerifiableCredential> => {
     const credential = await verifierAgent.w3cV2Credentials.signCredential<ClaimFormat.SdJwtW3cVc>({
       format: ClaimFormat.SdJwtW3cVc,
       alg: 'EdDSA',
       verificationMethod: issuerKdv.kid,
-      holder: { method: 'did', didUrl: holderKdv.kid },
+      holder: holderBinding ? { method: 'did', didUrl: holderKdv.kid } : undefined,
       disclosureFrame: { credentialSubject: { _sd: ['name'] } },
       credential: new W3cV2Credential({
         context: ['https://www.w3.org/ns/credentials/v2'],
-        type: ['VerifiableCredential', 'ExampleCnfCredential'],
+        type: ['VerifiableCredential', type],
         issuer: issuerKdv.did,
         validFrom: new Date().toISOString(),
-        credentialSubject: { id: otherKdv.did, name: 'John' },
+        credentialSubject: { ...credentialSubject, name: 'John' },
       }),
     })
     await holderAgent.w3cV2Credentials.store({ record: W3cV2CredentialRecord.fromCredential(credential) })
+    return credential
+  }
 
-    const verifierRecord = await verifierAgent.didcomm.proofs.requestProof({
+  const requestName = async (type: string): Promise<DidCommProofExchangeRecord> => {
+    const { threadId } = await verifierAgent.didcomm.proofs.requestProof({
       connectionId: verifierConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
@@ -525,7 +533,7 @@ describe('DCQL proof format over a DIDComm connection', () => {
               {
                 id: 'name',
                 format: 'vc+sd-jwt',
-                meta: { type_values: [['ExampleCnfCredential']] },
+                meta: { type_values: [[type]] },
                 claims: [{ path: ['credentialSubject', 'name'] }],
               },
             ],
@@ -533,12 +541,17 @@ describe('DCQL proof format over a DIDComm connection', () => {
         },
       },
     })
-    const threadId = verifierRecord.threadId
 
-    const holderRecord = await waitForProofExchangeRecordSubject(holderReplay, {
-      threadId,
-      state: DidCommProofState.RequestReceived,
-    })
+    return waitForProofExchangeRecordSubject(holderReplay, { threadId, state: DidCommProofState.RequestReceived })
+  }
+
+  const handSignedPresentationRejected = async (
+    type: string,
+    credentialSubject: JsonObject,
+    holder: string
+  ): Promise<{ kid?: string; errorMessage: string }> => {
+    const credential = await storeW3cV2SdJwt(type, credentialSubject)
+    const holderRecord = await requestName(type)
     const request = (await holderAgent.didcomm.proofs.getFormatData(holderRecord.id)).request
       ?.dcql as DcqlRequestAttachment
 
@@ -548,13 +561,12 @@ describe('DCQL proof format over a DIDComm connection', () => {
     const presentation = await holderAgent.w3cV2Credentials.signPresentation<ClaimFormat.SdJwtW3cVp>({
       format: ClaimFormat.SdJwtW3cVp,
       presentation: new W3cV2Presentation({
-        holder: otherKdv.did,
+        holder,
         verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(disclosed)],
       }),
       challenge: request.nonce,
       domain: request.audience,
     })
-    expect(presentation.sdJwt.header.kid).toBe(otherKdv.kid)
 
     const createPresentationSpy = vi
       .spyOn(DcqlService.prototype, 'createPresentation')
@@ -563,11 +575,50 @@ describe('DCQL proof format over a DIDComm connection', () => {
     createPresentationSpy.mockRestore()
 
     const abandonedRecord = await waitForProofExchangeRecordSubject(verifierReplay, {
-      threadId,
+      threadId: holderRecord.threadId,
       state: DidCommProofState.Abandoned,
     })
-    expect(abandonedRecord.errorMessage).toContain("vp+sd-jwt is not signed with the credential 'cnf' key")
-    await waitForProofExchangeRecordSubject(holderReplay, { threadId, state: DidCommProofState.Abandoned })
+    await waitForProofExchangeRecordSubject(holderReplay, {
+      threadId: holderRecord.threadId,
+      state: DidCommProofState.Abandoned,
+    })
+
+    return { kid: presentation.sdJwt.header.kid, errorMessage: abandonedRecord.errorMessage as string }
+  }
+
+  test("verifier rejects a vp+sd-jwt that is not signed with the credential's cnf key", async () => {
+    const otherKdv = await createDidKidVerificationMethod(holderAgent.context)
+
+    const { kid, errorMessage } = await handSignedPresentationRejected(
+      'ExampleCnfCredential',
+      { id: otherKdv.did },
+      otherKdv.did
+    )
+    expect(kid).toBe(otherKdv.kid)
+    expect(errorMessage).toContain("vp+sd-jwt header 'kid' must be the credential 'cnf.kid'")
+  })
+
+  test("verifier rejects a vp+sd-jwt whose header 'kid' names the cnf key with another DID URL", async () => {
+    const { keys } = await holderAgent.dids.resolveCreatedDidDocumentWithKeys(holderKdv.did)
+    const { didState } = await holderAgent.dids.create<JwkDidCreateOptions>({
+      method: 'jwk',
+      options: { keyId: keys?.[0].kmsKeyId as string },
+    })
+    const didJwk = didState.did as string
+
+    const { kid, errorMessage } = await handSignedPresentationRejected('ExampleCnfDidJwkCredential', {}, didJwk)
+    expect(kid).toBe(`${didJwk}#0`)
+    expect(errorMessage).toContain("vp+sd-jwt header 'kid' must be the credential 'cnf.kid'")
+  })
+
+  test("prover refuses a vc+sd-jwt query that requires holder binding for a credential without 'cnf'", async () => {
+    await storeW3cV2SdJwt('ExampleNoCnfCredential', { id: holderKdv.did }, false)
+    const holderRecord = await requestName('ExampleNoCnfCredential')
+
+    await expect(holderAgent.didcomm.proofs.acceptRequest({ proofExchangeRecordId: holderRecord.id })).rejects.toThrow(
+      "Credential Query 'name' requires holder binding, but the selected vc+sd-jwt credential has no 'cnf'"
+    )
+    expect((await holderAgent.didcomm.proofs.getById(holderRecord.id)).state).toBe(DidCommProofState.RequestReceived)
   })
 })
 

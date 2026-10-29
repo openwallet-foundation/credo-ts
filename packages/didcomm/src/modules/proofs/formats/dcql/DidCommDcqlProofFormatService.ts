@@ -215,10 +215,23 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
       proofFormats?.dcql?.credentials ??
       dcqlService.selectCredentialsForRequest(await this.getQueryResult(agentContext, request.dcql_query))
 
-    for (const credentialQueryId of Object.keys(credentials)) {
+    for (const [credentialQueryId, entries] of Object.entries(credentials)) {
       const credentialQuery = request.dcql_query.credentials.find(({ id }) => id === credentialQueryId)
       if (!credentialQuery || !SUPPORTED_CREDENTIAL_FORMATS.includes(credentialQuery.format)) {
         throw new CredoError("DCQL requests can only be presented with 'dc+sd-jwt' or 'vc+sd-jwt' credentials")
+      }
+      if (
+        credentialQuery.format === 'vc+sd-jwt' &&
+        credentialQuery.require_cryptographic_holder_binding !== false &&
+        entries.some(
+          ({ credentialRecord }) =>
+            !(credentialRecord.firstCredential instanceof W3cV2SdJwtVerifiableCredential) ||
+            !isJsonObject(credentialRecord.firstCredential.sdJwt.payload.cnf)
+        )
+      ) {
+        throw new CredoError(
+          `Credential Query '${credentialQueryId}' requires holder binding, but the selected vc+sd-jwt credential has no 'cnf'`
+        )
       }
     }
 
@@ -672,7 +685,7 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
       verification: { type: 'credential', credential },
     })
 
-    await this.assertSignedWithCnfKey(agentContext, verifiablePresentation, credential)
+    this.assertHolderBindingKid(verifiablePresentation, credential)
 
     const result = await agentContext.resolve(W3cV2CredentialService).verifyPresentation(agentContext, {
       presentation: verifiablePresentation,
@@ -697,45 +710,18 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     return verifiablePresentation
   }
 
-  private async assertSignedWithCnfKey(
-    agentContext: AgentContext,
+  // verifyPresentation checks the cnf key signed it (under `authentication`) and the holder, but accepts any kid for that key
+  private assertHolderBindingKid(
     presentation: W3cV2SdJwtVerifiablePresentation,
     credential: W3cV2SdJwtVerifiableCredential
-  ): Promise<void> {
+  ): void {
     const cnf = credential.sdJwt.payload.cnf
-    const cnfKey = await this.resolveCnfKey(agentContext, cnf)
-
-    const { alg, kid } = presentation.sdJwt.header
-    if (!Kms.isKnownJwaSignatureAlgorithm(alg) || !cnfKey.supportedSignatureAlgorithms.includes(alg)) {
-      throw new CredoError(`vp+sd-jwt 'alg' '${alg}' is not supported by the credential 'cnf' key`)
+    if (isJsonObject(cnf) && isJsonObject(cnf.jwk)) return
+    if (!isJsonObject(cnf) || typeof cnf.kid !== 'string' || !cnf.kid.startsWith('did:') || !cnf.kid.includes('#')) {
+      throw new CredoError("Credential must have a 'cnf' with a 'jwk' or an absolute DID URL 'kid'")
     }
-
-    const [protectedHeader, jwtPayload, signature] = presentation.encoded.split('~')[0].split('.')
-    const { verified } = await agentContext.resolve(Kms.KeyManagementApi).verify({
-      key: { publicJwk: cnfKey.toJson() },
-      algorithm: alg,
-      data: TypedArrayEncoder.fromUtf8String(`${protectedHeader}.${jwtPayload}`),
-      signature: TypedArrayEncoder.fromBase64Url(signature),
-    })
-    if (!verified) {
-      throw new CredoError("vp+sd-jwt is not signed with the credential 'cnf' key")
-    }
-
-    if (isJsonObject(cnf) && typeof cnf.kid === 'string' && !kid) {
-      throw new CredoError("vp+sd-jwt must have a header 'kid' for a credential with 'cnf.kid'")
-    }
-
-    const holder = presentation.resolvedPresentation.holderId
-    if (kid) {
-      const signer = holder ?? presentation.sdJwt.payload.iss
-      const kidKey = await this.resolveDidUrlKey(agentContext, kid.startsWith('#') && signer ? `${signer}${kid}` : kid)
-      if (!kidKey.equals(cnfKey)) {
-        throw new CredoError("vp+sd-jwt 'kid' does not identify the credential 'cnf' key")
-      }
-    }
-
-    if (holder && isJsonObject(cnf) && typeof cnf.kid === 'string' && parseDid(cnf.kid).did !== holder) {
-      throw new CredoError("vp+sd-jwt 'holder' is not the DID of the credential 'cnf.kid'")
+    if (presentation.sdJwt.header.kid !== cnf.kid) {
+      throw new CredoError("vp+sd-jwt header 'kid' must be the credential 'cnf.kid'")
     }
   }
 
