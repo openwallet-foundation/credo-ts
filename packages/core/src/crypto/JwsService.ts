@@ -265,9 +265,9 @@ export class JwsService {
     }
   ) {
     const { jwsSigner } = options
-    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
     if (jwsSigner.method === 'x5c') {
+      const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
       const trustedCertificatesFromConfig = x509ModuleConfig.trustedCertificates ?? []
       const trustedCertificates = options.trustedCertificates ?? trustedCertificatesFromConfig
       if (trustedCertificates.length === 0) {

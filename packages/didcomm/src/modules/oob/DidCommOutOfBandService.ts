@@ -1,5 +1,6 @@
-import type { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
-import { CredoError, DidsApi, EventEmitter, injectable, parseDid } from '@credo-ts/core'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import { CredoError, DidsApi, EventEmitter, injectable, Kms, parseDid } from '@credo-ts/core'
+import type { DidCommMessage } from '../../DidCommMessage'
 import type { DidCommInboundMessageContext } from '../../models'
 import { DidCommDocumentService } from '../../services'
 import type { DidCommConnectionRecord, DidCommHandshakeProtocol } from '../connections'
@@ -126,6 +127,35 @@ export class DidCommOutOfBandService {
     return reuseAcceptedMessage
   }
 
+  /**
+   * DIDComm v2 has no handshake-reuse message: a message on an existing connection reuses it for the invitation its pthid names.
+   */
+  public async processHandshakeReuseV2(
+    agentContext: AgentContext,
+    connectionRecord: DidCommConnectionRecord,
+    message: DidCommMessage,
+    recipientDid: string
+  ): Promise<void> {
+    const parentThreadId = message.thread?.parentThreadId
+    if (!parentThreadId || !connectionRecord.did) return
+
+    const outOfBandRecord = await this.findCreatedByRecipientDid(
+      agentContext,
+      [recipientDid, connectionRecord.did, ...connectionRecord.previousDids],
+      parentThreadId
+    )
+    // Also reached by the first message of a connection opened through a reusable invitation, which is no reuse
+    if (!outOfBandRecord || outOfBandRecord.id === connectionRecord.outOfBandId) return
+
+    if (!outOfBandRecord.reusable) {
+      await this.updateState(agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
+    }
+    this.eventEmitter.emit<DidCommHandshakeReusedEvent>(agentContext, {
+      type: DidCommOutOfBandEventTypes.HandshakeReused,
+      payload: { reuseThreadId: message.id, connectionRecord, outOfBandRecord },
+    })
+  }
+
   public async processHandshakeReuseAccepted(
     messageContext: DidCommInboundMessageContext<DidCommHandshakeReuseAcceptedMessage>
   ) {
@@ -239,12 +269,33 @@ export class DidCommOutOfBandService {
 
   public async findCreatedByRecipientKey(
     agentContext: AgentContext,
-    recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+    recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk | Kms.X25519PublicJwk>
   ) {
     return this.outOfBandRepository.findSingleByQuery(agentContext, {
       recipientKeyFingerprints: [recipientKey.fingerprint],
       role: DidCommOutOfBandRole.Sender,
     })
+  }
+
+  /**
+   * Find v2 OOB record (Sender role) awaiting a response by recipient DID. Used when inviter receives first
+   * DIDComm v2 message (to=[our DID]). Duplicates can exist when invitations reuse a public
+   * ourDid; prefer the most recent reusable record, unless `invitationId` names the one to take.
+   */
+  public async findCreatedByRecipientDid(
+    agentContext: AgentContext,
+    recipientDids: string[],
+    invitationId?: string
+  ): Promise<DidCommOutOfBandRecord | null> {
+    const records = await this.outOfBandRepository.findByQuery(agentContext, {
+      $or: recipientDids.map((recipientDid) => ({ recipientDid })),
+      role: DidCommOutOfBandRole.Sender,
+      state: DidCommOutOfBandState.AwaitResponse,
+      invitationId,
+    })
+    if (records.length === 0) return null
+    const byNewest = [...records].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    return byNewest.find((r) => r.reusable) ?? byNewest[0]
   }
 
   public async getAll(agentContext: AgentContext) {
@@ -265,21 +316,23 @@ export class DidCommOutOfBandService {
   }
 
   /**
-   * Extract a resolved didcomm service from an out of band invitation.
-   *
-   * Currently the first service that can be resolved is returned.
+   * Extract a resolved didcomm service from an out of band invitation. The first resolvable service is returned;
+   * when `preferDidcommV2` is set, X25519-keyAgreement services are preferred so v2 packing emits a spec-compliant kid.
    */
   public async getResolvedServiceForOutOfBandServices(
     agentContext: AgentContext,
     services: Array<string | OutOfBandDidCommService>,
-    /**
-     * Optional keys for the inline services
-     */
-    inlineServiceKeys?: DidCommOutOfBandInlineServiceKey[]
+    inlineServiceKeys?: DidCommOutOfBandInlineServiceKey[],
+    preferDidcommV2?: boolean
   ) {
     for (const service of services) {
       if (typeof service === 'string') {
-        const [didService] = await this.didCommDocumentService.resolveServicesFromDid(agentContext, service)
+        const allServices = await this.didCommDocumentService.resolveServicesFromDid(agentContext, service)
+        const didService = preferDidcommV2
+          ? (allServices.find((s) =>
+              s.recipientKeys.some((k) => k.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk))
+            ) ?? allServices[0])
+          : allServices[0]
 
         if (didService) return didService
       } else {
