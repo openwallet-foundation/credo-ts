@@ -61,7 +61,7 @@ export class W3cV2JwtCredentialService {
     // Add iat and cnf to the payload
     jwtPayload.iat = nowInSeconds()
     jwtPayload.additionalClaims.cnf = options.holder
-      ? (await extractKeyFromHolderBinding(agentContext, options.holder)).cnf
+      ? (await extractKeyFromHolderBinding(agentContext, options.holder, { didPurposes: ['authentication'] })).cnf
       : undefined
 
     // Validate and resolve the verification method

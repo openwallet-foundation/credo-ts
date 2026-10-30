@@ -17,6 +17,12 @@ import type { AgentContext } from '@credo-ts/core'
 import { HederaModuleConfig } from '../HederaModuleConfig'
 import { HederaAnonCredsService } from './HederaAnonCredsService'
 
+// The Hedera SDK uses millisecond timestamps, while AnonCreds uses seconds. Flooring maps any
+// millisecond within a second (including the `* 1000 + 999` status list query) back to that second
+function millisecondsToSeconds(milliseconds: number): number {
+  return Math.floor(milliseconds / 1000)
+}
+
 export class HederaAnonCredsRegistry implements AnonCredsRegistry {
   public readonly methodName = 'hedera'
   public readonly supportedIdentifier = /^did:hedera:.*$/
@@ -195,7 +201,20 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
         `Registering revocation status list for '${options.revocationStatusList.revRegDefId}' on Hedera ledger`
       )
       const anonCredsService = this.getAnonCredsService(agentContext)
-      return await anonCredsService.registerRevocationStatusList(agentContext, options)
+      const result = await anonCredsService.registerRevocationStatusList(agentContext, options)
+      if (result.revocationStatusListState.state !== 'finished') return result
+
+      const { revocationStatusList } = result.revocationStatusListState
+      return {
+        ...result,
+        revocationStatusListState: {
+          ...result.revocationStatusListState,
+          revocationStatusList: {
+            ...revocationStatusList,
+            timestamp: millisecondsToSeconds(revocationStatusList.timestamp),
+          },
+        },
+      }
     } catch (error) {
       agentContext.config.logger.error(
         `Error registering revocation status list for did '${options.revocationStatusList.issuerId}'`,
@@ -227,7 +246,22 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
         `Resolving revocation status for for '${revocationRegistryId}' from Hedera ledger`
       )
       const anonCredsService = this.getAnonCredsService(agentContext)
-      return await anonCredsService.getRevocationStatusList(agentContext, revocationRegistryId, timestamp * 1000)
+      // The timestamp is in seconds and Hedera consensus timestamps in ms, so include the whole second
+      const result = await anonCredsService.getRevocationStatusList(
+        agentContext,
+        revocationRegistryId,
+        timestamp * 1000 + 999
+      )
+      if (!result.revocationStatusList) return result
+
+      const { revocationStatusList } = result
+      return {
+        ...result,
+        revocationStatusList: {
+          ...revocationStatusList,
+          timestamp: millisecondsToSeconds(revocationStatusList.timestamp),
+        },
+      }
     } catch (error) {
       agentContext.config.logger.error(`Error retrieving revocation registry status list '${revocationRegistryId}'`, {
         error,

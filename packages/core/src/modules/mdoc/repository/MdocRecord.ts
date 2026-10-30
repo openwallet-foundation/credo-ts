@@ -1,10 +1,11 @@
+import { z } from 'zod'
 import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
+import { createRecordEncodingSchema } from '../../../storage/recordEncodingSchema'
 import type { NonEmptyArray } from '../../../types'
-import { JsonTransformer } from '../../../utils'
 import { CredentialMultiInstanceState } from '../../../utils/credentialUseTypes'
-import type { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'
+import { zNonEmptyArray } from '../../../utils/zod'
 import type { KnownJwaSignatureAlgorithm } from '../../kms'
 import { Mdoc } from '../Mdoc'
 
@@ -47,7 +48,28 @@ export type MdocRecordInstances = NonEmptyArray<{
   kmsKeyId?: string
 }>
 
+const mdocRecordEncodingSchema = createRecordEncodingSchema(
+  {
+    credentialInstances: zNonEmptyArray(
+      z.object({
+        issuerSignedBase64Url: z.string(),
+        kmsKeyId: z.string().nullish(),
+      })
+    ).nullish(),
+    multiInstanceState: z.string().nullish(),
+  },
+  {
+    // Records stored before 0.6 have a single base64Url instead of credentialInstances
+    upgrade: ({ base64Url, ...encoded }) =>
+      base64Url !== undefined ? { ...encoded, credentialInstances: [{ issuerSignedBase64Url: base64Url }] } : encoded,
+  }
+)
+
 export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
+  public static get encodingSchema(): z.ZodType {
+    return mdocRecordEncodingSchema
+  }
+
   public static readonly type = 'MdocRecord'
   public readonly type = MdocRecord.type
 
@@ -60,18 +82,6 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
    * don't have a value set from before 0.6. We assume the credential has already been used.
    */
   public multiInstanceState = CredentialMultiInstanceState.SingleInstanceUsed
-
-  /**
-   * Only here for class transformation. If base64Url is set we transform
-   * it to the new mdocs array format
-   */
-  private set base64Url(base64Url: string) {
-    this.credentialInstances = [
-      {
-        issuerSignedBase64Url: base64Url,
-      },
-    ]
-  }
 
   public constructor(props: MdocRecordStorageProps) {
     super()
@@ -122,10 +132,6 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
       alg,
       multiInstanceState: this.multiInstanceState,
     }
-  }
-
-  public clone(): this {
-    return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
   }
 
   /**

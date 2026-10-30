@@ -129,7 +129,15 @@ export interface W3cV2JwtVerifyCredentialOptions
   extends W3cV2VerifyCredentialOptionsBase<W3cV2JwtVerifiableCredential | string> {}
 
 export interface W3cV2SdJwtVerifyCredentialOptions
-  extends W3cV2VerifyCredentialOptionsBase<W3cV2SdJwtVerifiableCredential | string> {}
+  extends W3cV2VerifyCredentialOptionsBase<W3cV2SdJwtVerifiableCredential | string> {
+  /**
+   * Requires a KB-JWT with this `nonce`, and with this `aud` when `audience` is set.
+   */
+  keyBinding?: {
+    nonce: string
+    audience: string | string[]
+  }
+}
 
 interface W3cV2SignPresentationOptionsBase<Format extends ClaimFormat = ClaimFormat> {
   /**

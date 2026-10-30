@@ -38,6 +38,7 @@ import {
   W3cV2Presentation,
 } from '../../models'
 import { W3cV2CredentialService } from '../../W3cV2CredentialService'
+import type { W3cV2JwtSignCredentialOptions } from '../../W3cV2CredentialServiceOptions'
 import { W3cV2JwtCredentialService } from '../W3cV2JwtCredentialService'
 import { W3cV2JwtVerifiableCredential } from '../W3cV2JwtVerifiableCredential'
 import { W3cV2JwtVerifiablePresentation } from '../W3cV2JwtVerifiablePresentation'
@@ -646,6 +647,122 @@ describe('W3cV2JwtCredentialService', () => {
   })
 
   describe('verifyPresentation', () => {
+    describe('holder binding', () => {
+      type Party = 'holder' | 'other'
+
+      // signCredential only writes a cnf it recognizes, so this signs the credential like it with a cnf it doesn't
+      async function signWithUnrecognizedCnf(_: unknown, options: W3cV2JwtSignCredentialOptions) {
+        const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(options.verificationMethod)
+        const jwt = await jwsService.createJwsCompact(agentContext, {
+          payload: new JwtPayload({
+            iat: 1698151532,
+            additionalClaims: {
+              ...JsonTransformer.toJSON(options.credential),
+              cnf: { jku: 'https://issuer.example/jwks.json' },
+            },
+          }),
+          keyId: publicJwk.keyId,
+          protectedHeaderOptions: { typ: 'vc+jwt', alg: options.alg, kid: options.verificationMethod },
+        })
+        return W3cV2JwtVerifiableCredential.fromCompact(jwt)
+      }
+
+      /**
+       * Issues a credential bound to `subject` (credentialSubject.id) and/or `cnf`, and presents it
+       * signed by `presenter`.
+       */
+      async function presentCredential(options: { subject?: Party; cnf?: Party | 'unrecognized'; presenter: Party }) {
+        const parties = { holder: holderDidKey, other: secondHolderDidKey }
+        const { id: _id, ...credentialSubject } = Ed256DidJwkJwtVcUnsigned.credentialSubject
+        const cnfParty = options.cnf && options.cnf !== 'unrecognized' ? parties[options.cnf] : undefined
+
+        vi.spyOn(Date, 'now').mockReturnValue(1698151532000)
+        const credential = await (options.cnf === 'unrecognized'
+          ? signWithUnrecognizedCnf
+          : w3cV2JwtCredentialService.signCredential.bind(w3cV2JwtCredentialService))(agentContext, {
+          alg: KnownJwaSignatureAlgorithms.ES256,
+          format: ClaimFormat.JwtW3cVc,
+          verificationMethod: issuerDidJwk.verificationMethodId,
+          credential: JsonTransformer.fromJSON(
+            {
+              ...Ed256DidJwkJwtVcUnsigned,
+              credentialSubject: options.subject
+                ? { ...credentialSubject, id: parties[options.subject].did }
+                : credentialSubject,
+            },
+            W3cV2Credential
+          ),
+          holder: cnfParty ? { method: 'did', didUrl: `${cnfParty.did}#${cnfParty.publicJwk.fingerprint}` } : undefined,
+        })
+
+        const presentation = await w3cV2JwtCredentialService.signPresentation(agentContext, {
+          presentation: new W3cV2Presentation({
+            context: [CREDENTIALS_CONTEXT_V2_URL],
+            type: ['VerifiablePresentation'],
+            verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credential)],
+            holder: parties[options.presenter].did,
+          }),
+          challenge: 'challenge',
+          domain: 'example.com',
+          format: ClaimFormat.JwtW3cVp,
+        })
+        vi.mocked(Date.now).mockRestore()
+
+        return new W3cV2CredentialService(
+          {} as never,
+          {} as never,
+          w3cV2JwtCredentialService,
+          {} as never
+        ).verifyPresentation(agentContext, {
+          presentation,
+          challenge: 'challenge',
+          domain: 'example.com',
+        })
+      }
+
+      test.each([
+        ['accepts a credential without holder binding', { presenter: 'holder' }, true],
+        [
+          'accepts a credential bound to its subject, presented by the subject',
+          { subject: 'holder', presenter: 'holder' },
+          true,
+        ],
+        [
+          'rejects a credential bound to its subject, presented by someone else',
+          { subject: 'holder', presenter: 'other' },
+          false,
+        ],
+        ['accepts a credential bound to a key, presented with that key', { cnf: 'holder', presenter: 'holder' }, true],
+        [
+          'rejects a credential bound to a key, presented with another key',
+          { cnf: 'holder', presenter: 'other' },
+          false,
+        ],
+        ['rejects a credential with an unrecognized cnf', { cnf: 'unrecognized', presenter: 'holder' }, false],
+        [
+          'accepts a credential bound to its subject and a key, presented by both',
+          { subject: 'holder', cnf: 'holder', presenter: 'holder' },
+          true,
+        ],
+        [
+          'rejects a credential bound to its subject and a key, presented by the subject only',
+          { subject: 'holder', cnf: 'other', presenter: 'holder' },
+          false,
+        ],
+        [
+          'rejects a credential bound to its subject and a key, presented with the key only',
+          { subject: 'other', cnf: 'holder', presenter: 'holder' },
+          false,
+        ],
+      ] as const)('%s', async (_, options, isValid) => {
+        const result = await presentCredential(options)
+
+        expect(result.presentation.isValid).toBe(true)
+        expect(result.credentialEntries[0]?.isValid).toBe(isValid)
+        expect(result.isValid).toBe(isValid)
+      })
+    })
+
     test('rejects a presentation without holder signed with a key that names the holder as its controller', async () => {
       const signerDid = 'did:web:signer.example'
       const signerKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
@@ -697,6 +814,9 @@ describe('W3cV2JwtCredentialService', () => {
       })
 
       expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain(
+        `Verification method '${verificationMethod.id}' is controlled by '${holderDidKey.did}', not by the DID document '${signerDid}' it is listed in`
+      )
     })
 
     test('verifies an ES256 JWT vp signed by Credo', async () => {

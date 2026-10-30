@@ -1,12 +1,13 @@
 import { decodeSdJwtSync } from '@sd-jwt/core'
+import { z } from 'zod'
 import { Hasher } from '../../../crypto'
 import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
+import { createRecordEncodingSchema } from '../../../storage/recordEncodingSchema'
 import type { NonEmptyArray } from '../../../types'
-import { JsonTransformer } from '../../../utils'
 import { CredentialMultiInstanceState } from '../../../utils/credentialUseTypes'
-import type { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'
+import { zNonEmptyArray, zTypedObject } from '../../../utils/zod'
 import type { KnownJwaSignatureAlgorithm } from '../../kms'
 import { decodeSdJwtVc } from '../decodeSdJwtVc'
 import type { SdJwtVc } from '../SdJwtVcService'
@@ -74,7 +75,30 @@ export type SdJwtVcRecordInstances = NonEmptyArray<{
   kmsKeyId?: string
 }>
 
+const sdJwtVcRecordEncodingSchema = createRecordEncodingSchema(
+  {
+    credentialInstances: zNonEmptyArray(
+      z.object({
+        compactSdJwtVc: z.string(),
+        kmsKeyId: z.string().nullish(),
+      })
+    ).nullish(),
+    multiInstanceState: z.string().nullish(),
+    typeMetadata: zTypedObject<SdJwtVcTypeMetadata>().nullish(),
+    typeMetadataChain: zNonEmptyArray(zTypedObject<SdJwtVcTypeMetadata>()).nullish(),
+  },
+  {
+    // Records stored before 0.6 have a single compactSdJwtVc instead of credentialInstances
+    upgrade: ({ compactSdJwtVc, ...encoded }) =>
+      compactSdJwtVc !== undefined ? { ...encoded, credentialInstances: [{ compactSdJwtVc }] } : encoded,
+  }
+)
+
 export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
+  public static get encodingSchema(): z.ZodType {
+    return sdJwtVcRecordEncodingSchema
+  }
+
   public static readonly type = 'SdJwtVcRecord'
   public readonly type = SdJwtVcRecord.type
 
@@ -87,18 +111,6 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
    * don't have a value set from before 0.6. We assume the credential has already been used.
    */
   public multiInstanceState = CredentialMultiInstanceState.SingleInstanceUsed
-
-  /**
-   * Only here for class transformation. If compactSdJwtVc is set we transform
-   * it to the new sdJwtVcs array format
-   */
-  private set compactSdJwtVc(compactSdJwtVc: string) {
-    this.credentialInstances = [
-      {
-        compactSdJwtVc,
-      },
-    ]
-  }
 
   public typeMetadata?: SdJwtVcTypeMetadata
 
@@ -173,10 +185,6 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
       alg,
       multiInstanceState: this.multiInstanceState,
     }
-  }
-
-  public clone(): this {
-    return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
   }
 
   /**

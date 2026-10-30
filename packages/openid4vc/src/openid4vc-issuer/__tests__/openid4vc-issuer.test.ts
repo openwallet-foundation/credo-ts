@@ -257,7 +257,7 @@ describe('OpenId4VcIssuer', () => {
     const deleteKey = issuer.kms.deleteKey.bind(issuer.kms)
     const createKeySpy = vi
       .spyOn(issuer.kms, 'createKey')
-      .mockImplementation(({ backend: _backend, ...options }) => createKey(options))
+      .mockImplementation(({ backend: _backend, backendOptions: _backendOptions, ...options }) => createKey(options))
     const deleteKeySpy = vi
       .spyOn(issuer.kms, 'deleteKey')
       .mockImplementation(({ backend: _backend, ...options }) => deleteKey(options))

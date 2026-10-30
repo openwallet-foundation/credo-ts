@@ -1,0 +1,204 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "authorization": {
+    "code": "authorization-code",
+    "codeExpiresAt": "2026-01-01T00:10:00.000Z",
+    "issuerState": "issuer-state",
+    "scopes": ["openid", "pid"],
+    "subject": "authorization-subject"
+  },
+  "chainedIdentity": {
+    "externalAccessTokenResponse": {
+      "access_token": "external-access-token",
+      "expires_in": 3600,
+      "id_token": "eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.c2lnbmF0dXJl",
+      "refresh_token": "external-refresh-token",
+      "scope": "openid profile",
+      "token_type": "Bearer"
+    },
+    "externalAuthorizationRequestUrl": "https://idp.example.com/authorize?client_id=issuer&state=external-state",
+    "externalAuthorizationServerMetadata": {
+      "authorization_endpoint": "https://idp.example.com/authorize",
+      "code_challenge_methods_supported": ["S256"],
+      "dpop_signing_alg_values_supported": ["ES256"],
+      "issuer": "https://idp.example.com",
+      "jwks_uri": "https://idp.example.com/jwks",
+      "pushed_authorization_request_endpoint": "https://idp.example.com/par",
+      "require_pushed_authorization_requests": true,
+      "token_endpoint": "https://idp.example.com/token"
+    },
+    "externalAuthorizationServerUrl": "https://idp.example.com",
+    "externalState": "external-state",
+    "pkceCodeVerifier": "pkce-code-verifier",
+    "redirectUri": "https://wallet.example.com/redirect",
+    "requestUriExpiresAt": "2026-01-01T00:20:00.000Z",
+    "requestUriReferenceValue": "request-uri-reference-value",
+    "state": "wallet-state"
+  },
+  "clientId": "wallet-client-id",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "credentialOfferId": "credential-offer-id",
+  "credentialOfferPayload": {
+    "credential_configuration_ids": ["pid-sd-jwt", "diploma-jwt-vc"],
+    "credential_issuer": "https://issuer.example.com/oid4vci/issuer-id",
+    "grants": {
+      "authorization_code": {
+        "authorization_server": "https://issuer.example.com/oid4vci/issuer-id",
+        "issuer_state": "issuer-state"
+      },
+      "urn:ietf:params:oauth:grant-type:pre-authorized_code": {
+        "authorization_server": "https://issuer.example.com/oid4vci/issuer-id",
+        "pre-authorized_code": "pre-authorized-code",
+        "tx_code": {
+          "description": "Enter the code sent by email",
+          "input_mode": "numeric",
+          "length": 6
+        }
+      }
+    }
+  },
+  "credentialOfferUri": "https://issuer.example.com/oid4vci/issuer-id/offers/credential-offer-id",
+  "dpop": {
+    "dpopJkt": "dpop-jkt",
+    "required": true
+  },
+  "errorMessage": "Partial issuance error",
+  "expiresAt": "2026-01-03T00:00:00.000Z",
+  "generateRefreshTokens": true,
+  "id": "issuance-session-id",
+  "issuanceMetadata": {
+    "claims": {
+      "age": 42,
+      "given_name": "Erika",
+      "verified": true
+    },
+    "userId": "user-id"
+  },
+  "issuedCredentials": ["issued-credential-1", "issued-credential-2"],
+  "issuerId": "issuer-id",
+  "metadata": {
+    "meta": {
+      "key": "value"
+    }
+  },
+  "openId4VciVersion": "v1",
+  "pkce": {
+    "codeChallenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+    "codeChallengeMethod": "S256",
+    "required": true
+  },
+  "preAuthorizedCode": "pre-authorized-code",
+  "presentation": {
+    "authSession": "presentation-auth-session",
+    "openId4VcVerificationSessionId": "verification-session-id",
+    "required": true
+  },
+  "state": "CredentialsPartiallyIssued",
+  "transactions": [
+    {
+      "credentialConfigurationId": "pid-sd-jwt",
+      "deferredUntil": "2026-01-01T01:00:00.000Z",
+      "holderBinding": {
+        "bindingMethod": "jwk",
+        "keyAttestation": {
+          "header": {
+            "alg": "ES256",
+            "typ": "key-attestation+jwt",
+            "x5c": [
+              "MIIBEzCBu6ADAgECAhBwnaR5jboQ4R7Ne/k+sfhCMAoGCCqGSM49BAMCMA0xCzAJBgNVBAYTAk5MMB4XDTcwMDEwMTAwMDAwMFoXDTI1MTEyMjA4MjIxMlowDTELMAkGA1UEBhMCTkwwOTATBgcqhkjOPQIBBggqhkjOPQMBBwMiAALcD1XzKepFxWMAOqV+ln1fybBt7DRO5CV0f9A6mRp2xaMdMBswGQYDVR0RBBIwEIIOZnVua2UuYW5pbW8uaWQwCgYIKoZIzj0EAwIDRwAwRAIgPM5ITfUD6VWLgRm8Eu1gw53Of+SUdjS+yRClR68m//4CIDxnng7NnJyGnpsKDuUqSIl/A0rRQCwTLBZw9Hx3MZnZ"
+            ]
+          },
+          "payload": {
+            "attested_keys": [
+              {
+                "crv": "P-256",
+                "kty": "EC",
+                "x": "969Qi28BrTJYhiiuY62UwNwd-FlBDUv6aw-WjqrISmY",
+                "y": "X1loO6-u-U3PAjA4FCN9ut8SyPU5mT8nbGyuiFL-SOg"
+              },
+              {
+                "crv": "P-256",
+                "kid": "attested-key-id",
+                "kty": "EC",
+                "x": "tWziK1jXpAf9hu7fcytC8CY-ewM-7SsycSXggfss2-0",
+                "y": "t-urZOcA8zNUcxidySW01ieQ0mUysLdDMnZrbJGNaY4"
+              }
+            ],
+            "exp": 1767229200,
+            "iat": 1767225600,
+            "key_storage": ["iso_18045_high"],
+            "nonce": "c-nonce",
+            "user_authentication": ["iso_18045_moderate"]
+          },
+          "signer": {
+            "alg": "ES256",
+            "method": "x5c",
+            "publicJwk": {
+              "crv": "P-256",
+              "kid": "attested-key-id",
+              "kty": "EC",
+              "x": "tWziK1jXpAf9hu7fcytC8CY-ewM-7SsycSXggfss2-0",
+              "y": "t-urZOcA8zNUcxidySW01ieQ0mUysLdDMnZrbJGNaY4"
+            },
+            "x5c": [
+              "MIIBEzCBu6ADAgECAhBwnaR5jboQ4R7Ne/k+sfhCMAoGCCqGSM49BAMCMA0xCzAJBgNVBAYTAk5MMB4XDTcwMDEwMTAwMDAwMFoXDTI1MTEyMjA4MjIxMlowDTELMAkGA1UEBhMCTkwwOTATBgcqhkjOPQIBBggqhkjOPQMBBwMiAALcD1XzKepFxWMAOqV+ln1fybBt7DRO5CV0f9A6mRp2xaMdMBswGQYDVR0RBBIwEIIOZnVua2UuYW5pbW8uaWQwCgYIKoZIzj0EAwIDRwAwRAIgPM5ITfUD6VWLgRm8Eu1gw53Of+SUdjS+yRClR68m//4CIDxnng7NnJyGnpsKDuUqSIl/A0rRQCwTLBZw9Hx3MZnZ"
+            ]
+          }
+        },
+        "keys": [
+          {
+            "jwk": {
+              "crv": "P-256",
+              "kty": "EC",
+              "x": "969Qi28BrTJYhiiuY62UwNwd-FlBDUv6aw-WjqrISmY",
+              "y": "X1loO6-u-U3PAjA4FCN9ut8SyPU5mT8nbGyuiFL-SOg"
+            },
+            "method": "jwk"
+          },
+          {
+            "jwk": {
+              "crv": "P-256",
+              "kid": "attested-key-id",
+              "kty": "EC",
+              "x": "tWziK1jXpAf9hu7fcytC8CY-ewM-7SsycSXggfss2-0",
+              "y": "t-urZOcA8zNUcxidySW01ieQ0mUysLdDMnZrbJGNaY4"
+            },
+            "method": "jwk"
+          }
+        ],
+        "proofType": "attestation"
+      },
+      "numberOfCredentials": 2,
+      "transactionId": "transaction-jwk"
+    },
+    {
+      "credentialConfigurationId": "diploma-jwt-vc",
+      "deferredUntil": "2026-01-01T02:00:00.000Z",
+      "holderBinding": {
+        "bindingMethod": "did",
+        "keys": [
+          {
+            "didUrl": "did:key:z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv#z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv",
+            "jwk": {
+              "crv": "Ed25519",
+              "kty": "OKP",
+              "x": "a2MV1EhywNkwJAStsNWmpa7IRKjaCpu7niIKJQ3xTRI"
+            },
+            "method": "did"
+          }
+        ],
+        "proofType": "jwt"
+      },
+      "numberOfCredentials": 1,
+      "transactionId": "transaction-did"
+    }
+  ],
+  "updatedAt": "2026-01-02T00:00:00.000Z",
+  "userPin": "493536",
+  "walletAttestation": {
+    "confirmationJwkThumbprint": "wallet-attestation-jkt",
+    "required": true
+  }
+}
