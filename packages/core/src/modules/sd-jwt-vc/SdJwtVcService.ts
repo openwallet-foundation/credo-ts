@@ -11,9 +11,9 @@ import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
 import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArrayEncoder } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
-import { fetchWithTimeout } from '../../utils/fetch'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
+import { TokenStatusListModuleConfig } from '../token-status-list/TokenStatusListModuleConfig'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig, X509Service } from '../x509'
 import { legacyTrustedCertificatesToTrustedIssuers } from '../x509/utils/convertLegacyTrustedCertificates'
@@ -674,10 +674,11 @@ export class SdJwtVcService {
   }
 
   private async fetchStatusListJwt(agentContext: AgentContext, uri: string): Promise<string> {
-    const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri, {
+    const response = await agentContext.config.fetch(uri, {
       headers: {
         Accept: 'application/statuslist+jwt',
       },
+      maxResponseBytes: agentContext.resolve(TokenStatusListModuleConfig).maxStatusListBytes,
     })
 
     if (!response.ok) {
@@ -870,11 +871,12 @@ export class SdJwtVcService {
       )
     }
     let firstError: Error | undefined
+    const maxResponseBytes = agentContext.resolve(SdJwtVcModuleConfig).maxTypeMetadataBytes
 
     // Fist try the new type metadata URL
     // We add a catch, so that if e.g. the request fails due to CORS (which throws an error
     // we will still continue trying the legacy url)
-    const firstResponse = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, vct).catch((error) => {
+    const firstResponse = await agentContext.config.fetch(vct, { maxResponseBytes }).catch((error) => {
       firstError = error
       return undefined
     })
@@ -887,9 +889,7 @@ export class SdJwtVcService {
       vctElements.splice(3, 0, '.well-known/vct')
       const legacyVctUrl = vctElements.join('/')
 
-      response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, legacyVctUrl).catch(
-        () => undefined
-      )
+      response = await agentContext.config.fetch(legacyVctUrl, { maxResponseBytes }).catch(() => undefined)
     }
 
     if (!response?.ok) {

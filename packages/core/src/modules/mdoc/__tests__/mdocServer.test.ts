@@ -3,7 +3,7 @@ import { MediaTypes, StatusType } from '@owf/token-status-list'
 import nock from 'nock'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, P256PublicJwk, PublicJwk } from '../../kms'
-import { TokenStatusListApi } from '../../token-status-list'
+import { TokenStatusListApi, TokenStatusListModuleConfig } from '../../token-status-list'
 import { X509ModuleConfig } from '../../x509/X509ModuleConfig'
 import { X509Service } from '../../x509/X509Service'
 import { Mdoc } from '../Mdoc'
@@ -11,7 +11,13 @@ import { MdocDeviceResponse } from '../MdocDeviceResponse'
 import { sprindFunkeTestVectorBase64Url, sprindFunkeX509TrustedCertificate } from './mdoc.fixtures'
 
 const agentConfig = getAgentConfig('mdoc')
-const agentContext = getAgentContext({ registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]], agentConfig })
+const agentContext = getAgentContext({
+  registerInstances: [
+    [X509ModuleConfig, new X509ModuleConfig()],
+    [TokenStatusListModuleConfig, new TokenStatusListModuleConfig()],
+  ],
+  agentConfig,
+})
 
 const getNextMonth = () => {
   const now = new Date()

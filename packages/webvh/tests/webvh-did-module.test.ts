@@ -103,7 +103,7 @@ describe('WebVH DID module', () => {
   })
 
   it('should resolve a webvh resource through WebVhApi', async () => {
-    const mockFetch = vi.spyOn(agent.config.agentDependencies, 'fetch').mockResolvedValue({
+    const mockFetch = vi.spyOn(agent.config, 'fetch').mockResolvedValue({
       ok: true,
       headers: {
         get: (header: string) => (header.toLowerCase() === 'content-type' ? 'application/json' : null),
@@ -116,7 +116,7 @@ describe('WebVH DID module', () => {
       'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:localhost/resources/1234'
     )
 
-    expect(mockFetch).toHaveBeenCalledWith('http://localhost/resources/1234')
+    expect(mockFetch).toHaveBeenCalledWith('http://localhost/resources/1234', expect.anything())
     expect(result).toMatchObject({
       content: { resourceType: 'schema', id: '1234' },
       contentMetadata: { contentType: 'application/json' },

@@ -1,5 +1,5 @@
 export { WebVhDidCrypto } from './WebVhDidCrypto'
 export { WebVhDidCryptoSigner } from './WebVhDidCryptoSigner'
 export { type WebVhDidCreateOptions, WebVhDidRegistrar, type WebVhDidUpdateOptions } from './WebVhDidRegistrar'
-export { WebVhDidResolver } from './WebVhDidResolver'
+export { WebVhDidResolver, type WebVhDidResolverOptions } from './WebVhDidResolver'
 export { type WebVhDidRecordMetadata, WebVhDidRecordMetadataKeys } from './webVhDidRecordMetadataTypes'

@@ -1,5 +1,4 @@
 import type { AgentContext } from '../../../agent'
-import { fetchWithTimeout } from '../../../utils/fetch'
 import { CacheModuleConfig } from '../../cache'
 import { X509Error } from '../X509Error'
 import { isX509CrlSummary, type X509CrlSummary } from './crlSummary'
@@ -39,7 +38,7 @@ export async function fetchCrl(options: CrlFetchOptions): Promise<Uint8Array> {
   const { url, timeoutMs, agentContext, maxSizeBytes } = options
 
   try {
-    const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, url, {
+    const response = await agentContext.config.fetch(url, {
       timeoutMs,
       maxResponseBytes: maxSizeBytes,
     })

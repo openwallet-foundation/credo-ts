@@ -1,3 +1,4 @@
+import { AgentConfig } from '@credo-ts/core'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { WebVhDidResolver } from '../WebVhDidResolver'
 
@@ -111,12 +112,8 @@ describe('WebVhDidResolver Integration Tests', () => {
     // Create a real resolver instance (no mocks in this file!)
     resolver = new WebVhDidResolver()
 
-    // Create a fresh agent context
-    const agentConfig = getAgentConfig('WebVhDidResolverIntegrationTest')
-    agentContext = getAgentContext({ agentConfig })
-
-    // Mock the agentContext's fetch method
-    agentContext.config.agentDependencies.fetch = vi.fn(async (input: string | URL | Request): Promise<Response> => {
+    // Mock the agent's fetch method
+    const fetch = vi.fn(async (input: string | URL | Request): Promise<Response> => {
       const url = typeof input === 'string' ? input : String(input)
       const stub = createStubContent(url)
 
@@ -144,6 +141,12 @@ describe('WebVhDidResolver Integration Tests', () => {
         json: async () => stub,
         text: async () => JSON.stringify(stub),
       } as Response
+    })
+
+    // Create a fresh agent context
+    const { agentDependencies } = getAgentConfig('WebVhDidResolverIntegrationTest')
+    agentContext = getAgentContext({
+      agentConfig: new AgentConfig({}, { ...agentDependencies, fetch: fetch as typeof globalThis.fetch }),
     })
   })
 

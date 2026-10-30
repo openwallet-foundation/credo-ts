@@ -16,6 +16,7 @@ import { injectable } from '../../plugins'
 import { dateToSeconds } from '../../utils'
 import { DidsApi, parseDid } from '../dids'
 import { KeyManagementApi } from '../kms'
+import { TokenStatusListModuleConfig } from './TokenStatusListModuleConfig'
 import type {
   CreateTokenStatusListOptions,
   FetchTokenStatusListOptions,
@@ -294,7 +295,11 @@ export class TokenStatusListService {
     const token = await fetchStatusList({
       uri: options.uri,
       acceptedFormats: options.acceptedFormats,
-      customFetcher: agentContext.config.agentDependencies.fetch,
+      customFetcher: (url, init) =>
+        agentContext.config.fetch(url, {
+          ...init,
+          maxResponseBytes: agentContext.resolve(TokenStatusListModuleConfig).maxStatusListBytes,
+        }),
     })
 
     if (token instanceof Uint8Array) {

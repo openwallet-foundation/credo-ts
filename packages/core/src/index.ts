@@ -111,6 +111,7 @@ export type {
 export { canUseInstanceFromCredentialRecord, useInstanceFromCredentialRecord } from './utils/credentialUse'
 export { CredentialMultiInstanceState, CredentialMultiInstanceUseMode } from './utils/credentialUseTypes'
 export { getDomainFromUrl } from './utils/domain'
+export type { FetchLimits } from './utils/fetch'
 export type { Constructable, Constructor, UnionToIntersection } from './utils/mixins'
 export { getDirFromFilePath, joinUriParts } from './utils/path'
 export type { VersionString } from './utils/version'

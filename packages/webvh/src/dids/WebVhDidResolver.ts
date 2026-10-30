@@ -5,10 +5,25 @@ import { resolveDID } from 'didwebvh-ts'
 
 import { WebVhDidCrypto } from './WebVhDidCrypto'
 
+export interface WebVhDidResolverOptions {
+  /**
+   * Maximum size in bytes of a fetched resource.
+   *
+   * @default the `maxResponseBytes` of the agent's `fetchLimits`
+   */
+  maxResourceBytes?: number
+}
+
 export class WebVhDidResolver implements DidResolver {
   public readonly supportedMethods = ['webvh']
   public readonly allowsCaching = true
   public readonly allowsLocalDidRecord = true
+
+  private options: WebVhDidResolverOptions
+
+  public constructor(options: WebVhDidResolverOptions = {}) {
+    this.options = options
+  }
 
   public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
@@ -80,7 +95,7 @@ export class WebVhDidResolver implements DidResolver {
       agentContext.config.logger.debug(`Fetching resource from: ${httpsUrl}`)
 
       // Fetch the resource using agent dependencies fetch
-      const response = await agentContext.config.agentDependencies.fetch(httpsUrl)
+      const response = await agentContext.config.fetch(httpsUrl, { maxResponseBytes: this.options.maxResourceBytes })
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
