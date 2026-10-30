@@ -1,5 +1,167 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 798c401: Remove deprecated AnonCreds Data Integrity compatibility aliases. Use the canonical AnonCreds W3C credential APIs and `DidCommDataIntegrityCredentialFormatService` from `@credo-ts/didcomm` instead.
+- 1c18cf8: Expose the canonical AnonCreds W3C proof APIs from `@credo-ts/anoncreds`, as established by the v0.7.x API migration. Remove the deprecated AnonCreds DIDComm formats and protocols from the package root and expose them through `@credo-ts/anoncreds/didcomm`, while keeping DIDComm as a required AnonCreds dependency. Make AnonCreds an optional peer dependency of Cheqd and WebVH and expose their registries only through their `/anoncreds` subpaths. Consumers using those registries must install `@credo-ts/anoncreds` explicitly.
+- dbde0f1: Remove the deprecated DIDComm v1 protocols: Connection (RFC 0160), Issue Credential v1 (RFC 0036) and Present Proof v1 (RFC 0037).
+  
+  `@credo-ts/didcomm`:
+  
+  - The agent does not register or advertise the `https://didcomm.org/connections/1.0` protocol anymore. Use the DID Exchange protocol (`DidCommHandshakeProtocol.DidExchange`) to create connections.
+  - The `DidCommConnectionInvitationMessage`, `DidCommConnectionRequestMessage`, `DidCommConnectionResponseMessage` and `DidCommConnectionProblemReportMessage` classes, their handlers, the `DidCommConnectionRole` and `DidCommConnectionState` enums, `DidCommHandshakeProtocol.Connections` and `DidCommInvitationType.Connection` are removed.
+  - The `createLegacyInvitation` method is removed from the out of band API. `receiveInvitation` only accepts a `DidCommOutOfBandInvitation`. The agent does not parse invitation URLs with a `c_i` query parameter anymore. Legacy connectionless invitations (`d_m` query parameter) are still supported.
+  - The `imageUrl` option is removed from the receive and accept invitation methods of the out of band API. Only the connection protocol used this value.
+  - The `rfc0160State` getter is removed from `DidCommConnectionRecord`.
+  - The `DidCommConnectionService` does not contain the `createRequest`, `processRequest`, `createResponse`, `processResponse`, `processAck` and `processProblemReport` methods anymore.
+  - The storage migration from version 0.1 to 0.2 still migrates connection records that were created with the connection protocol.
+  
+  `@credo-ts/anoncreds`:
+  
+  - The `DidCommCredentialV1Protocol` and `DidCommProofV1Protocol` classes and their messages are removed from `@credo-ts/anoncreds/didcomm`. Use `DidCommCredentialV2Protocol` and `DidCommProofV2Protocol` from `@credo-ts/didcomm` instead. The `LegacyIndyDidCommCredentialFormatService` and `LegacyIndyDidCommProofFormatService` can still be used with the v2 protocols.
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- 144ca38: Fix issuance of revocable AnonCreds credentials with Indy VDR, including registries created before this fix, and report causes when revocation status list resolution fails.
+- 3678fb3: Remove support for unqualified (legacy) AnonCreds identifiers. All AnonCreds identifiers must be fully qualified. Use `did:indy` identifiers for objects on an indy ledger.
+  
+  `@credo-ts/anoncreds`:
+  
+  - The `LegacyIndyDidCommCredentialFormatService` and `LegacyIndyDidCommProofFormatService` classes are removed, together with the `LegacyIndyCredentialFormat` and `LegacyIndyDidCommProofFormat` types. The `hlindy/*` DIDComm formats only work with unqualified identifiers. Use the `AnonCredsDidCommCredentialFormatService` and `AnonCredsDidCommProofFormatService` classes instead.
+  - The `useLegacyProverDid` option of `createCredentialRequest` is removed from the holder service. A credential request always contains an `entropy` value.
+  - The `useUnqualifiedIdentifiers` option of `createProof` and the `useUnqualifiedIdentifiersIfPresent` option of `getCredential` are removed from the holder service.
+  - The unqualified identifier helpers are removed: `unqualifiedSchemaIdRegex`, `unqualifiedSchemaVersionRegex`, `unqualifiedIndyDidRegex`, `unqualifiedCredentialDefinitionIdRegex`, `unqualifiedRevocationRegistryIdRegex`, `getUnqualifiedSchemaId`, `getUnqualifiedCredentialDefinitionId`, `getUnqualifiedRevocationRegistryDefinitionId`, `isUnqualifiedIndyDid`, `isUnqualifiedSchemaId`, `isUnqualifiedCredentialDefinitionId`, `isUnqualifiedRevocationRegistryId`, `getQualifiedDidIndyDid`, `getUnQualifiedDidIndyDid`, the `(get|is)(Qualified|Unqualified)DidIndy(Schema|CredentialDefinition|RevocationRegistryDefinition)` helpers and `generateLegacyProverDidLikeString`.
+  - The `parseIndySchemaId`, `parseIndyCredentialDefinitionId` and `parseIndyRevocationRegistryId` functions only accept `did:indy` identifiers. The `namespace` property of the parsed result is always present.
+  - The `AnonCredsSchemaRecord` and `AnonCredsCredentialDefinitionRecord` classes do not have the `unqualifiedSchemaId` and `unqualifiedCredentialDefinitionId` tags anymore. The repositories only query by the qualified identifier.
+  - The W3C credential records of AnonCreds credentials do not get the `anonCredsUnqualifiedIssuerId`, `anonCredsUnqualifiedSchemaId`, `anonCredsUnqualifiedSchemaIssuerId`, `anonCredsUnqualifiedCredentialDefinitionId` and `anonCredsUnqualifiedRevocationRegistryId` tags anymore. Proof request restrictions only match the qualified identifiers.
+  - The storage migration from version 0.4 to 0.5 still migrates credentials that use unqualified identifiers. When the indy namespace of the issuer is not in the cache, the migration resolves the `did:sov` DID of the issuer to find the namespace. This requires the `IndyVdrSovDidResolver` and an `IndyVdrModule` that is configured with the ledger of the issuer.
+  
+  `@credo-ts/indy-vdr`:
+  
+  - The `IndyVdrAnonCredsRegistry` only resolves `did:indy` schema, credential definition and revocation registry identifiers. Unqualified identifiers are not supported anymore.
+  
+  `@credo-ts/didcomm`:
+  
+  - The revocation notification service only finds credential exchange records by the qualified revocation registry id. A revocation notification that contains an unqualified revocation registry id does not match a record anymore.
+  
+  `@credo-ts/drizzle-storage`:
+  
+  - The `unqualified_schema_id` column of the `AnonCredsSchema` table and the `unqualified_credential_definition_id` column of the `AnonCredsCredentialDefinition` table are removed. Run the database migrations to apply this change.
+
+### Patch Changes
+
+- d490104: Fixed native memory leaks in the AnonCreds module. Creating a schema now frees the schema object. Issuing a revocable credential frees the revocation registry definition, its private part and the status list it loads. Creating a proof frees the revocation status list. Converting, processing and storing W3C credentials, and creating and verifying W3C presentations, now free the native credentials, proof details and revocation objects they create, also when a step fails. Verifying a W3C presentation no longer creates a revocation state for each credential, which it didn't use.
+- 61d7d0f: The `anoncreds` option of the `AnonCredsModule` now also accepts the `NativeAnoncreds` class exported by `@hyperledger/anoncreds-shared` (and the platform packages) in addition to an `Anoncreds` instance. When `NativeAnoncreds` is passed the registered native binding is resolved on each access, so it no longer matters whether the platform package (`anoncreds-nodejs` / `anoncreds-react-native`) was imported before Credo. The `AnonCredsRsHolderService` also no longer uses the deprecated global `anoncreds` export, and uses the instance configured on the module instead.
+  
+  Passing the (deprecated) `anoncreds` export keeps working.
+  
+  ```ts
+  import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
+  
+  new AnonCredsModule({
+    anoncreds: NativeAnoncreds,
+    registries: [/* ... */],
+  })
+  ```
+- 82a6efd: Update the TypeScript development dependency to TypeScript 7 (`typescript@^7.0.2`, installed as `@typescript/native`) for type checking. The `typescript` package is now an alias of `@typescript/typescript6@^6.0.2`, so tools that use the TypeScript compiler API, such as `tsdown` when generating declaration files, keep working.
+  
+  This has no effect on runtime behaviour. `getPublicJwkFromDid` in `@credo-ts/openid4vc` now declares its `Promise<PublicJwk>` return type, which is the type it already returned.
+- 526a989: feat: support node 26
+- 3d4b386: fix: store the proposal and offer messages in the Issue Credential V1 protocol before emitting the state changed event, so event handlers can find them.
+- 81265f5: All records in Credo are now encoded, decoded and validated with a zod schema instead of class-transformer and class-validator. This is the first step of moving Credo away from class-transformer and class-validator. The stored format of records doesn't change, so no storage migration is needed.
+  
+  A class opts in by defining a static `encodingSchema` (a zod codec). `JsonTransformer` and `MessageValidator` use it when present, and fall back to class-transformer and class-validator otherwise, so custom records and other classes keep working without changes. Records can define their schema with `createRecordEncodingSchema`:
+  
+  ```ts
+  import { BaseRecord, createRecordEncodingSchema, zIsoDate } from '@credo-ts/core'
+  import { z } from 'zod'
+  
+  const myRecordEncodingSchema = createRecordEncodingSchema({
+    name: z.string(),
+    expiresAt: zIsoDate.optional(),
+  })
+  
+  export class MyRecord extends BaseRecord {
+    public static get encodingSchema() {
+      return myRecordEncodingSchema
+    }
+  
+    // ...
+  }
+  ```
+  
+  Some things behave differently:
+  
+  - A stored record that fails to decode now throws a `RecordDecodingError` with the `recordType` and `recordId`, caused by a `ZodValidationError`. Before, this was a `ClassValidationError`. `ZodValidationError` and `ClassValidationError` now both extend `CredoValidationError`.
+  - Drizzle storage encodes a record before it stores it, so an invalid record is never stored. Askar already did.
+  - A subclass of a Credo record inherits the record's `encodingSchema`. Properties the subclass adds with class-transformer decorators are still stored, but no longer transformed (for example a `Date` is decoded as a string). Define an `encodingSchema` on the subclass to transform them.
+- Updated dependencies [c2bb4d5]
+- Updated dependencies [0b9531a]
+- Updated dependencies [2c4e3a2]
+- Updated dependencies [798c401]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [8abea64]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [33d3f53]
+- Updated dependencies [93907de]
+- Updated dependencies [f3d537a]
+- Updated dependencies [de1c035]
+- Updated dependencies [9eadcb8]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [14e84ce]
+- Updated dependencies [218237d]
+- Updated dependencies [fac9757]
+- Updated dependencies [95b0dd5]
+- Updated dependencies [81265f5]
+- Updated dependencies [3d4b386]
+- Updated dependencies [b51f8b5]
+- Updated dependencies [dbde0f1]
+- Updated dependencies [526a989]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [4dd128a]
+- Updated dependencies [82a6efd]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [4c2f93b]
+- Updated dependencies [dde35e0]
+- Updated dependencies [1de1ead]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [716cb84]
+- Updated dependencies [82a6efd]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [1bbcdc3]
+- Updated dependencies [e851280]
+- Updated dependencies [3c27483]
+- Updated dependencies [cf46149]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [0814729]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [fb99743]
+- Updated dependencies [526a989]
+- Updated dependencies [25199e8]
+- Updated dependencies [3678fb3]
+- Updated dependencies [2f20e2e]
+- Updated dependencies [b1090de]
+- Updated dependencies [78d5cfb]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [56ae9a6]
+- Updated dependencies [93907de]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [dbafd1e]
+- Updated dependencies [c05145a]
+- Updated dependencies [808e873]
+- Updated dependencies [81265f5]
+  - @credo-ts/core@0.8.0
+  - @credo-ts/didcomm@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes
