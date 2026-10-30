@@ -1,5 +1,6 @@
 import { IsString } from 'class-validator'
 import { z } from 'zod'
+import * as zm from 'zod/mini'
 import { ClassValidationError, ZodValidationError } from '../../error'
 import { GenericRecord } from '../../modules/generic-records/repository/GenericRecord'
 import { JsonTransformer, zJsonTransformerClass } from '../../utils/JsonTransformer'
@@ -200,5 +201,17 @@ describe('createRecordEncodingSchema', () => {
 
     // Records without an encoding schema
     expect(getRecordPropertyNames(TestRecord)).toBeUndefined()
+  })
+
+  test('returns the property names of a record with a schema from a different zod instance', () => {
+    // zod/mini schemas are not instances of the zod classes
+    const encodingSchema = zm.codec(zm.looseObject({}), zm.object({ foo: zm.string() }), {
+      decode: (encoded) => encoded as { foo: string },
+      encode: (decoded) => decoded,
+    })
+
+    const MiniRecord = Object.assign(() => {}, { encodingSchema })
+
+    expect(getRecordPropertyNames(MiniRecord)).toEqual(['foo'])
   })
 })

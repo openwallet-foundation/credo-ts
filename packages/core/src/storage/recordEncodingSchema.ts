@@ -75,10 +75,13 @@ export function createRecordEncodingSchema<Shape extends z.core.$ZodLooseShape>(
  */
 export function getRecordPropertyNames(recordClass: unknown): string[] | undefined {
   const encodingSchema = getEncodingSchema(recordClass)
+  if (!encodingSchema) return undefined
 
-  // When the schema is a codec, the decoded properties are described by its output schema
-  const decodedSchema = encodingSchema instanceof z.ZodPipe ? encodingSchema.out : encodingSchema
-  if (!(decodedSchema instanceof z.ZodObject)) return undefined
+  // Like getEncodingSchema, this reads the schema definition instead of using instanceof, so schemas
+  // from a different zod instance also work. For a codec, its output schema describes the decoded properties.
+  const definition = encodingSchema._zod.def
+  const decodedDefinition = definition.type === 'pipe' ? (definition as z.core.$ZodPipeDef).out._zod.def : definition
+  if (decodedDefinition.type !== 'object') return undefined
 
-  return Object.keys(decodedSchema.shape)
+  return Object.keys((decodedDefinition as z.core.$ZodObjectDef).shape)
 }
