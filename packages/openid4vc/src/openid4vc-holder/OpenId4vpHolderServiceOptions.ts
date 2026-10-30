@@ -6,7 +6,7 @@ import type {
   DifPresentationExchangeDefinition,
   EncodedX509Certificate,
 } from '@credo-ts/core'
-import type { ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
+import type { Openid4vpAuthorizationRequestError, ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
 
 // TODO: export from oid4vp
@@ -136,3 +136,58 @@ export interface OpenId4VpAcceptAuthorizationRequestOptions {
    */
   origin?: string
 }
+
+/**
+ * The error codes a wallet can return in an OpenID4VP Authorization Error Response ([OpenID4VP 1.0] Section 8.5).
+ */
+export type OpenId4VpAuthorizationErrorCode =
+  | 'access_denied'
+  | 'invalid_request'
+  | 'invalid_client'
+  | 'invalid_scope'
+  | 'vp_formats_not_supported'
+  | 'invalid_request_uri_method'
+  | 'invalid_transaction_data'
+  | 'wallet_unavailable'
+
+export type OpenId4VpDeclineAuthorizationRequestOptions =
+  | {
+      /**
+       * The payload of the resolved authorization request.
+       */
+      authorizationRequestPayload: OpenId4VpAuthorizationRequestPayload
+
+      /**
+       * The origin of the verifier that is making the request.
+       * Required in combination with the DC Api
+       */
+      origin?: string
+
+      /**
+       * The error to return. `access_denied` covers both a user that declines and a wallet that doesn't
+       * have the requested credentials, so the verifier can't tell those apart.
+       *
+       * @default 'access_denied'
+       */
+      error?: OpenId4VpAuthorizationErrorCode
+
+      /**
+       * Leave out anything that tells the verifier about the user or their credentials ([OpenID4VP 1.0] Section 15.9).
+       * Not included in a DC API response.
+       */
+      errorDescription?: string
+    }
+  | {
+      /**
+       * The error thrown when resolving the authorization request. Its `errorResponse` is sent to the
+       * `response_uri` of the request. When the client is not authenticated (`isClientAuthenticated`), the
+       * `redirectUri` the verifier returns is left out of the result.
+       */
+      authorizationRequestError: Openid4vpAuthorizationRequestError
+
+      /**
+       * The origin of the verifier that is making the request.
+       * Required in combination with the DC Api
+       */
+      origin?: string
+    }

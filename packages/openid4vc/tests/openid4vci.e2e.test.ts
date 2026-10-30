@@ -24,6 +24,7 @@ import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
+import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessionCoordinator'
 import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciIssuerInfo, OpenId4VciSignMdocCredentials } from '../src'
 import { OpenId4VcIssuanceSessionState, OpenId4VciCredentialFormatProfile, OpenId4VcModule } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
@@ -253,6 +254,63 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
     const resolved = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
     expect(resolved.metadata.credentialIssuer.issuer_info).toEqual(issuerInfo)
+  })
+
+  it('returns 404 for unknown issuers and 413 when the request body exceeds the limit', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const { issuerId } = await issuerTenant.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: { universityDegree: universityDegreeCredentialConfigurationSupported },
+    })
+    await issuerTenant.endSession()
+
+    const postLargeBody = (url: string) =>
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: 'a'.repeat(1024 * 1024) }),
+      })
+
+    const warnSpy = vi.spyOn(issuer.agent.config.logger, 'warn')
+    expect((await postLargeBody(issuanceBaseUrl)).status).toBe(404)
+    expect((await postLargeBody(`${issuanceBaseUrl}/unknown-issuer/token`)).status).toBe(404)
+
+    const response = await postLargeBody(`${issuanceBaseUrl}/${issuerId}/token`)
+    expect(response.status).toBe(413)
+    expect(await response.json()).toEqual({
+      error: 'invalid_request',
+      message: 'The request body exceeds the maximum allowed limit.',
+    })
+
+    const sessionCoordinator = issuer.agent.dependencyManager.resolve(TenantSessionCoordinator)
+    await vi.waitFor(() => expect(sessionCoordinator.getSessionCountForTenant(issuer1.tenantId)).toBe(0))
+    // The router must end the session itself, not the fallback after the response
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('was not ended by the router'))
+    warnSpy.mockRestore()
+  })
+
+  it('ends the tenant session after serving signed issuer metadata', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const key = await issuerTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const certificate = await issuerTenant.x509.createCertificate({
+      authorityKey: Kms.PublicJwk.fromPublicJwk(key.publicJwk),
+      issuer: 'CN=Credential Issuer',
+    })
+    certificate.keyId = key.keyId
+
+    const { issuerId } = await issuerTenant.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: { universityDegree: universityDegreeCredentialConfigurationSupported },
+      metadataSigner: { method: 'x5c', x5c: [certificate] },
+    })
+    await issuerTenant.endSession()
+
+    const metadataUrl = `${baseUrl}/.well-known/openid-credential-issuer/oid4vci/${issuerId}`
+    for (let i = 0; i < 3; i++) {
+      const response = await fetch(metadataUrl, { headers: { Accept: 'application/jwt' } })
+      expect(response.status).toBe(200)
+    }
+
+    const sessionCoordinator = issuer.agent.dependencyManager.resolve(TenantSessionCoordinator)
+    await vi.waitFor(() => expect(sessionCoordinator.getSessionCountForTenant(issuer1.tenantId)).toBe(0))
   })
 
   it('e2e flow with tenants, issuer endpoints requesting a sd-jwt-vc using authorization code flow', async () => {

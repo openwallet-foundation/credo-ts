@@ -1,6 +1,6 @@
 import type { TagsBase } from '@credo-ts/core'
-import { BaseRecord, CredoError, utils } from '@credo-ts/core'
-import { Type } from 'class-transformer'
+import { BaseRecord, CredoError, createRecordEncodingSchema, utils, zJsonTransformerClass } from '@credo-ts/core'
+import { z } from 'zod'
 import type { ActionMenuRole } from '../ActionMenuRole'
 import type { ActionMenuState } from '../ActionMenuState'
 
@@ -35,6 +35,15 @@ export type DefaultActionMenuTags = {
   threadId: string
 }
 
+const actionMenuRecordEncodingSchema = createRecordEncodingSchema({
+  state: z.string().nullish(),
+  role: z.string().nullish(),
+  connectionId: z.string().nullish(),
+  threadId: z.string().nullish(),
+  menu: zJsonTransformerClass(() => ActionMenu, { validate: false }).nullish(),
+  performedAction: zJsonTransformerClass(() => ActionMenuSelection, { validate: false }).nullish(),
+})
+
 /**
  * @public
  */
@@ -42,15 +51,17 @@ export class ActionMenuRecord
   extends BaseRecord<DefaultActionMenuTags, CustomActionMenuTags>
   implements ActionMenuRecordProps
 {
+  public static get encodingSchema(): z.ZodType {
+    return actionMenuRecordEncodingSchema
+  }
+
   public state!: ActionMenuState
   public role!: ActionMenuRole
   public connectionId!: string
   public threadId!: string
 
-  @Type(() => ActionMenu)
   public menu?: ActionMenu
 
-  @Type(() => ActionMenuSelection)
   public performedAction?: ActionMenuSelection
 
   public static readonly type = 'ActionMenuRecord'

@@ -1,7 +1,16 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
-import { BaseRecord, CredoError, DateTransformer, isJsonObject, Kms, utils } from '@credo-ts/core'
+import {
+  BaseRecord,
+  CredoError,
+  createRecordEncodingSchema,
+  Kms,
+  utils,
+  zIsoDate,
+  zTypedObject,
+  zWithUpgrade,
+} from '@credo-ts/core'
 import { type AccessTokenResponse, type AuthorizationServerMetadata, PkceCodeChallengeMethod } from '@openid4vc/oauth2'
-import { Transform, TransformationType } from 'class-transformer'
+import { z } from 'zod'
 import type { OpenId4VciCredentialOfferPayload, VerifiedOpenId4VcCredentialHolderBinding } from '../../shared'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import type { OpenId4VciVersion } from '../OpenId4VcIssuerServiceOptions'
@@ -274,7 +283,69 @@ export interface OpenId4VcIssuanceSessionRecordProps {
   openId4VciVersion: OpenId4VciVersion
 }
 
+const zPublicJwk = z.codec(
+  z.unknown(),
+  z.custom<Kms.PublicJwk>((value) => value instanceof Kms.PublicJwk, 'Must be an instance of PublicJwk'),
+  {
+    decode: (jwk, payload) => {
+      try {
+        return Kms.PublicJwk.fromUnknown(jwk)
+      } catch (error) {
+        payload.issues.push({
+          code: 'custom',
+          message: error instanceof Error ? error.message : String(error),
+          input: jwk,
+        })
+        return z.NEVER
+      }
+    },
+    encode: (publicJwk) => publicJwk.toJson(),
+  }
+)
+
+const openId4VcIssuanceSessionRecordEncodingSchema = createRecordEncodingSchema({
+  expiresAt: zIsoDate.nullish(),
+  issuerId: z.string().nullish(),
+  state: zWithUpgrade(z.string(), (value) =>
+    // CredentialIssued is an old state that is no longer used. It should be mapped to Error.
+    value === 'CredentialIssued' ? OpenId4VcIssuanceSessionState.Error : value
+  ).nullish(),
+  issuedCredentials: z.array(z.string()).nullish(),
+  transactions: z
+    .array(
+      z.looseObject({
+        deferredUntil: zIsoDate.nullish(),
+        holderBinding: z
+          .looseObject({
+            keys: z.array(z.looseObject({ jwk: zPublicJwk })).nullish(),
+          })
+          .nullish(),
+      })
+    )
+    .nullish(),
+  preAuthorizedCode: z.string().nullish(),
+  userPin: z.string().nullish(),
+  clientId: z.string().nullish(),
+  pkce: zTypedObject<OpenId4VcIssuanceSessionPkce>().nullish(),
+  walletAttestation: zTypedObject<OpenId4VcIssuanceSessionWalletAttestation>().nullish(),
+  dpop: zTypedObject<OpenId4VcIssuanceSessionDpop>().nullish(),
+  authorization: z.looseObject({ codeExpiresAt: zIsoDate.nullish() }).nullish(),
+  presentation: zTypedObject<OpenId4VcIssuanceSessionPresentation>().nullish(),
+  chainedIdentity: z.looseObject({ requestUriExpiresAt: zIsoDate.nullish() }).nullish(),
+  issuanceMetadata: zTypedObject<Record<string, unknown>>().nullish(),
+  credentialOfferPayload: zTypedObject<OpenId4VciCredentialOfferPayload>().nullish(),
+  credentialOfferUri: z.string().nullish(),
+  credentialOfferId: z.string().nullish(),
+  generateRefreshTokens: z.boolean().nullish(),
+  openId4VciVersion: z.string().nullish(),
+  errorMessage: z.string().nullish(),
+})
+
 export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcIssuanceSessionRecordTags> {
+  public static get encodingSchema(): z.ZodType {
+    return openId4VcIssuanceSessionRecordEncodingSchema
+  }
+
   public static readonly type = 'OpenId4VcIssuanceSessionRecord'
   public readonly type = OpenId4VcIssuanceSessionRecord.type
 
@@ -284,7 +355,6 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
    *
    * @since 0.6
    */
-  @DateTransformer()
   public expiresAt?: Date
 
   /**
@@ -295,14 +365,6 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   /**
    * The state of the issuance session.
    */
-  @Transform(({ value }) => {
-    // CredentialIssued is an old state that is no longer used. It should be mapped to Error.
-    if (value === 'CredentialIssued') {
-      return OpenId4VcIssuanceSessionState.Error
-    }
-
-    return value
-  })
   public state!: OpenId4VcIssuanceSessionState
 
   /**
@@ -313,72 +375,6 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   /**
    * The credential transactions for deferred credentials.
    */
-  @Transform(({ type, value }) => {
-    if (!Array.isArray(value)) {
-      return value
-    }
-
-    return value.map((transaction) => {
-      if (
-        type === TransformationType.PLAIN_TO_CLASS &&
-        isJsonObject(transaction) &&
-        isJsonObject(transaction.holderBinding) &&
-        Array.isArray(transaction.holderBinding.keys)
-      ) {
-        return {
-          ...transaction,
-          ...(typeof transaction.deferredUntil === 'string'
-            ? { deferredUntil: new Date(transaction.deferredUntil) }
-            : {}),
-          holderBinding: {
-            ...transaction.holderBinding,
-            keys: transaction.holderBinding.keys.map((key) => {
-              if (!isJsonObject(key)) {
-                throw new CredoError('Key is not json object.')
-              }
-
-              return {
-                ...key,
-                jwk: Kms.PublicJwk.fromUnknown(key.jwk),
-              }
-            }),
-          },
-        }
-      }
-      if (
-        type === TransformationType.CLASS_TO_PLAIN &&
-        isJsonObject(transaction) &&
-        isJsonObject(transaction.holderBinding) &&
-        Array.isArray(transaction.holderBinding.keys)
-      ) {
-        return {
-          ...transaction,
-          ...(transaction.deferredUntil instanceof Date
-            ? { deferredUntil: transaction.deferredUntil.toISOString() }
-            : {}),
-          holderBinding: {
-            ...transaction.holderBinding,
-            keys: transaction.holderBinding.keys.map((key) => {
-              if (!isJsonObject(key)) {
-                throw new CredoError('Key is not json object.')
-              }
-
-              if (!(key.jwk instanceof Kms.PublicJwk)) {
-                throw new CredoError('JWK is not instance of PublicKey')
-              }
-
-              return {
-                ...key,
-                jwk: key.jwk.toJson(),
-              }
-            }),
-          },
-        }
-      }
-
-      return transaction
-    })
-  })
   public transactions: OpenId4VcIssuanceSessionRecordTransaction[] = []
 
   /**
@@ -408,28 +404,6 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   /**
    * Authorization code flow specific metadata values
    */
-  @Transform(({ type, value }) => {
-    if (type === TransformationType.PLAIN_TO_CLASS && isJsonObject(value) && typeof value.codeExpiresAt === 'string') {
-      return {
-        ...value,
-        codeExpiresAt: new Date(value.codeExpiresAt),
-      }
-    }
-    if (type === TransformationType.CLASS_TO_CLASS && isJsonObject(value) && value.codeExpiresAt instanceof Date) {
-      return {
-        ...value,
-        codeExpiresAt: new Date(value.codeExpiresAt.getTime()),
-      }
-    }
-    if (type === TransformationType.CLASS_TO_PLAIN && isJsonObject(value) && value.codeExpiresAt instanceof Date) {
-      return {
-        ...value,
-        codeExpiresAt: value.codeExpiresAt.toISOString(),
-      }
-    }
-
-    return value
-  })
   public authorization?: OpenId4VcIssuanceSessionAuthorization
 
   /**
@@ -440,40 +414,6 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   /**
    * Chained identity specific metadata values
    */
-  @Transform(({ type, value }) => {
-    if (
-      type === TransformationType.PLAIN_TO_CLASS &&
-      isJsonObject(value) &&
-      typeof value.requestUriExpiresAt === 'string'
-    ) {
-      return {
-        ...value,
-        requestUriExpiresAt: new Date(value.requestUriExpiresAt),
-      }
-    }
-    if (
-      type === TransformationType.CLASS_TO_CLASS &&
-      isJsonObject(value) &&
-      value.requestUriExpiresAt instanceof Date
-    ) {
-      return {
-        ...value,
-        requestUriExpiresAt: new Date(value.requestUriExpiresAt.getTime()),
-      }
-    }
-    if (
-      type === TransformationType.CLASS_TO_PLAIN &&
-      isJsonObject(value) &&
-      value.requestUriExpiresAt instanceof Date
-    ) {
-      return {
-        ...value,
-        requestUriExpiresAt: value.requestUriExpiresAt.toISOString(),
-      }
-    }
-
-    return value
-  })
   public chainedIdentity?: OpenId4VcIssuanceSessionChainedIdentity
 
   /**

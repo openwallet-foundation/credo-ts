@@ -1,5 +1,6 @@
 import type { RecordTags, TagsBase, VersionString } from '@credo-ts/core'
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils, zTypedObject } from '@credo-ts/core'
+import { z } from 'zod'
 import type { TenantConfig } from '../models/TenantConfig'
 
 export type TenantRecordTags = RecordTags<TenantRecord>
@@ -24,7 +25,17 @@ export type DefaultTenantRecordTags = {
   status: TenantStatus
 }
 
+const tenantRecordEncodingSchema = createRecordEncodingSchema({
+  config: zTypedObject<TenantConfig>().nullish(),
+  storageVersion: z.string().nullish(),
+  status: z.string().nullish(),
+})
+
 export class TenantRecord extends BaseRecord<DefaultTenantRecordTags> {
+  public static get encodingSchema(): z.ZodType {
+    return tenantRecordEncodingSchema
+  }
+
   public static readonly type = 'TenantRecord'
   public readonly type = TenantRecord.type
 

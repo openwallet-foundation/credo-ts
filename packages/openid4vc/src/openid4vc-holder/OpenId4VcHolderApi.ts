@@ -25,6 +25,7 @@ import type {
 import { OpenId4VpHolderService } from './OpenId4vpHolderService'
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
+  OpenId4VpDeclineAuthorizationRequestOptions,
   ResolveOpenId4VpAuthorizationRequestOptions,
 } from './OpenId4vpHolderServiceOptions'
 
@@ -58,6 +59,9 @@ export class OpenId4VcHolderApi {
    * - URI containing request or request_uri param
    * - Request payload
    * @returns the resolved and verified authentication request.
+   * @throws {Openid4vpAuthorizationRequestError} when the request is invalid and its payload is known. Pass it to
+   * {@link declineOpenId4VpAuthorizationRequest} as `authorizationRequestError` to send the error to the verifier.
+   * Other errors happen before the payload is known, so there is nowhere to send them to.
    */
   public async resolveOpenId4VpAuthorizationRequest(
     request: string | Record<string, unknown>,
@@ -78,6 +82,16 @@ export class OpenId4VcHolderApi {
    */
   public async acceptOpenId4VpAuthorizationRequest(options: OpenId4VpAcceptAuthorizationRequestOptions) {
     return await this.openId4VpHolderService.acceptAuthorizationRequest(this.agentContext, options)
+  }
+
+  /**
+   * Declines an authorization request by sending an error response to the verifier. Pass either the resolved
+   * request, or the `Openid4vpAuthorizationRequestError` thrown by {@link resolveOpenId4VpAuthorizationRequest}.
+   *
+   * For `dc_api` and `dc_api.jwt` the response is returned without a `serverResponse`, to return to the platform yourself.
+   */
+  public async declineOpenId4VpAuthorizationRequest(options: OpenId4VpDeclineAuthorizationRequestOptions) {
+    return await this.openId4VpHolderService.declineAuthorizationRequest(this.agentContext, options)
   }
 
   /**

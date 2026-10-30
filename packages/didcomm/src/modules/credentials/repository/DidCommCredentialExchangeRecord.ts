@@ -1,6 +1,6 @@
 import type { TagsBase } from '@credo-ts/core'
-import { BaseRecord, CredoError, utils } from '@credo-ts/core'
-import { Type } from 'class-transformer'
+import { BaseRecord, CredoError, createRecordEncodingSchema, utils, zJsonTransformerClass } from '@credo-ts/core'
+import { z } from 'zod'
 import type { DidCommCredentialRole } from '../models'
 import type { DidCommAutoAcceptCredential } from '../models/DidCommCredentialAutoAcceptType'
 import { DidCommCredentialPreviewAttribute } from '../models/DidCommCredentialPreviewAttribute'
@@ -40,10 +40,37 @@ export interface CredentialRecordBinding {
   credentialRecordId: string
 }
 
+const didCommCredentialExchangeRecordEncodingSchema = createRecordEncodingSchema({
+  connectionId: z.string().nullish(),
+  threadId: z.string().nullish(),
+  parentThreadId: z.string().nullish(),
+  state: z.string().nullish(),
+  role: z.string().nullish(),
+  autoAcceptCredential: z.string().nullish(),
+  revocationNotification: zJsonTransformerClass(() => DidCommRevocationNotification, { validate: false }).nullish(),
+  errorMessage: z.string().nullish(),
+  protocolVersion: z.string().nullish(),
+  credentials: z
+    .array(
+      z.object({
+        credentialRecordType: z.string(),
+        credentialRecordId: z.string(),
+      })
+    )
+    .nullish(),
+  credentialAttributes: z
+    .array(zJsonTransformerClass(() => DidCommCredentialPreviewAttribute, { validate: false }))
+    .nullish(),
+})
+
 export class DidCommCredentialExchangeRecord extends BaseRecord<
   DefaultDidCommCredentialExchangeTags,
   CustomDidCommCredentialExchangeTags
 > {
+  public static get encodingSchema(): z.ZodType {
+    return didCommCredentialExchangeRecordEncodingSchema
+  }
+
   public connectionId?: string
   public threadId!: string
   public parentThreadId?: string
@@ -51,13 +78,11 @@ export class DidCommCredentialExchangeRecord extends BaseRecord<
   public role!: DidCommCredentialRole
   public autoAcceptCredential?: DidCommAutoAcceptCredential
 
-  @Type(() => DidCommRevocationNotification)
   public revocationNotification?: DidCommRevocationNotification
   public errorMessage?: string
   public protocolVersion!: string
   public credentials: CredentialRecordBinding[] = []
 
-  @Type(() => DidCommCredentialPreviewAttribute)
   public credentialAttributes?: DidCommCredentialPreviewAttribute[]
 
   // Type is CredentialRecord on purpose (without Exchange) as this is how the record was initially called.

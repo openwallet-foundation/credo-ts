@@ -544,6 +544,9 @@ importers:
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       reflect-metadata:
         specifier: 'catalog:'
@@ -575,6 +578,9 @@ importers:
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@credo-ts/node':
         specifier: workspace:*
@@ -865,6 +871,9 @@ importers:
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@animo-id/pex':
         specifier: 'catalog:'
@@ -960,6 +969,9 @@ importers:
       class-validator:
         specifier: 'catalog:'
         version: 0.14.3
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@credo-ts/node':
         specifier: workspace:*
@@ -1142,6 +1154,9 @@ importers:
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@credo-ts/node':
         specifier: workspace:*
@@ -1208,6 +1223,9 @@ importers:
       async-mutex:
         specifier: ^0.5.0
         version: 0.5.0
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@credo-ts/node':
         specifier: workspace:*

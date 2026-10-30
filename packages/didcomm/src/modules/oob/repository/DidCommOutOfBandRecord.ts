@@ -1,6 +1,6 @@
 import type { TagsBase } from '@credo-ts/core'
-import { BaseRecord, CredoError, utils } from '@credo-ts/core'
-import { Type } from 'class-transformer'
+import { BaseRecord, CredoError, createRecordEncodingSchema, utils, zJsonTransformerClass } from '@credo-ts/core'
+import { z } from 'zod'
 import { getThreadIdFromPlainTextMessage } from '../../../util/thread'
 import type { DidCommOutOfBandRole } from '../domain/DidCommOutOfBandRole'
 import type { DidCommOutOfBandState } from '../domain/DidCommOutOfBandState'
@@ -61,12 +61,34 @@ export interface DidCommOutOfBandRecordProps {
   invitationInlineServiceKeys?: DidCommOutOfBandInlineServiceKey[]
 }
 
+const didCommOutOfBandRecordEncodingSchema = createRecordEncodingSchema({
+  outOfBandInvitation: zJsonTransformerClass(() => DidCommOutOfBandInvitation, { validate: false }).nullish(),
+  role: z.string().nullish(),
+  state: z.string().nullish(),
+  alias: z.string().nullish(),
+  reusable: z.boolean().nullish(),
+  autoAcceptConnection: z.boolean().nullish(),
+  mediatorId: z.string().nullish(),
+  reuseConnectionId: z.string().nullish(),
+  invitationInlineServiceKeys: z
+    .array(
+      z.object({
+        recipientKeyFingerprint: z.string(),
+        kmsKeyId: z.string(),
+      })
+    )
+    .nullish(),
+})
+
 export class DidCommOutOfBandRecord extends BaseRecord<
   DefaultDidCommOutOfBandRecordTags,
   CustomDidCommOutOfBandRecordTags,
   DidCommOutOfBandRecordMetadata
 > {
-  @Type(() => DidCommOutOfBandInvitation)
+  public static get encodingSchema(): z.ZodType {
+    return didCommOutOfBandRecordEncodingSchema
+  }
+
   public outOfBandInvitation!: DidCommOutOfBandInvitation
   public role!: DidCommOutOfBandRole
   public state!: DidCommOutOfBandState

@@ -1,8 +1,10 @@
-import { Type } from 'class-transformer'
-import { IsEnum, ValidateNested } from 'class-validator'
+import { z } from 'zod'
 import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
+import { createRecordEncodingSchema } from '../../../storage/recordEncodingSchema'
+import { zJsonTransformerClass } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
+import { zTypedObject } from '../../../utils/zod'
 import type { DidDocumentKey } from '../DidsApiOptions'
 import { DidDocument } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
@@ -46,14 +48,23 @@ type DefaultDidTags = {
   did: string
 }
 
+const didRecordEncodingSchema = createRecordEncodingSchema({
+  didDocument: zJsonTransformerClass(() => DidDocument).nullish(),
+  // Records stored before 0.3.1 don't have a did property
+  did: z.string().nullish(),
+  role: z.enum(DidDocumentRole),
+  keys: z.array(zTypedObject<DidDocumentKey>()).nullish(),
+})
+
 export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidRecordMetadata> implements DidRecordProps {
-  @Type(() => DidDocument)
-  @ValidateNested()
+  public static get encodingSchema(): z.ZodType {
+    return didRecordEncodingSchema
+  }
+
   public didDocument?: DidDocument
 
   public did!: string
 
-  @IsEnum(DidDocumentRole)
   public role!: DidDocumentRole
 
   public static readonly type = 'DidRecord'

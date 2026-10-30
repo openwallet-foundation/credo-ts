@@ -1,0 +1,19 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "connectionId": "connection-id",
+  "content": "Hello, world!",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "id": "basic-message-record-id",
+  "metadata": {
+    "meta": {
+      "key": "value"
+    }
+  },
+  "parentThreadId": "parent-thread-id",
+  "role": "receiver",
+  "sentTime": "2026-01-01T00:00:00.000Z",
+  "threadId": "thread-id",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}
