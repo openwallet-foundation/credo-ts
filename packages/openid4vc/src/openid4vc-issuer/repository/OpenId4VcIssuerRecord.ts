@@ -141,6 +141,7 @@ const openId4VcIssuerRecordEncodingSchema = createRecordEncodingSchema(
     clientAttestationPopSigningAlgValuesSupported: z.array(z.string()).nullish(),
     batchCredentialIssuance: zTypedObject<OpenId4VciBatchCredentialIssuanceOptions>().nullish(),
     credentialResponseEncryption: zTypedObject<OpenId4VciCredentialResponseEncryptionOptions>().nullish(),
+    credentialRequestEncryption: zTypedObject<OpenId4VciCredentialRequestEncryptionOptions>().nullish(),
     signedMetadata: zTypedObject<OpenId4VcIssuerRecordSignedMetadata>().nullish(),
   },
   {
