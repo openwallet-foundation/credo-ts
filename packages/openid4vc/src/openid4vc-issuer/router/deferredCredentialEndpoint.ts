@@ -2,6 +2,7 @@ import { joinUriParts, utils } from '@credo-ts/core'
 import type { HttpMethod } from '@openid4vc/oauth2'
 import { Oauth2ErrorCodes, Oauth2ResourceUnauthorizedError, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import type { Response, Router } from 'express'
+import type { OpenId4VciParsedDeferredCredentialRequest } from '../../shared'
 import {
   getRequestContext,
   sendJsonResponse,
@@ -51,13 +52,13 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
       if (!resourceRequestResult) return
       const { tokenPayload, accessToken, scheme, authorizationServer } = resourceRequestResult
 
-      const deferredCredentialRequest = request.body
       const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
 
-      let parsedCredentialRequest: ReturnType<typeof vcIssuer.parseDeferredCredentialRequest>
+      let parsedCredentialRequest: OpenId4VciParsedDeferredCredentialRequest
       try {
-        parsedCredentialRequest = vcIssuer.parseDeferredCredentialRequest({
-          deferredCredentialRequest,
+        parsedCredentialRequest = await vcIssuer.parseDeferredCredentialRequest({
+          deferredCredentialRequest: request.body,
+          contentType: request.headers['content-type'],
           issuerMetadata,
         })
       } catch (error) {

@@ -106,6 +106,7 @@ import {
   OpenId4VcIssuerRecord,
   OpenId4VcIssuerRepository,
 } from './repository'
+import { offerUsesInternalAuthorizationServer } from './util/authorizationServer'
 import { generateTxCode } from './util/txCode'
 
 /**
@@ -199,6 +200,21 @@ export class OpenId4VcIssuerService {
 
     const vcIssuer = this.getIssuer(agentContext)
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+
+    // Refresh tokens are only issued by Credo, so they don't apply when all grants use an external authorization server
+    if (
+      offerUsesInternalAuthorizationServer({
+        issuer,
+        credentialIssuer: issuerMetadata.credentialIssuer.credential_issuer,
+        preAuthorizedCodeFlowConfig,
+        authorizationCodeFlowConfig,
+      })
+    ) {
+      this.assertRefreshTokensRequireDpop({
+        generateRefreshTokens: options.generateRefreshTokens,
+        requireDpop: authorization?.requireDpop,
+      })
+    }
 
     const uniqueOfferedCredentials = Array.from(new Set(options.credentialConfigurationIds))
     if (uniqueOfferedCredentials.length !== credentialConfigurationIds.length) {
@@ -555,9 +571,14 @@ export class OpenId4VcIssuerService {
             requireDpop: options.requireDpop,
             requireWalletAttestation: undefined,
             requirePkce: undefined,
-            generateRefreshTokens: undefined,
+            generateRefreshTokens: false,
           }
         : sessionOptions
+
+    this.assertRefreshTokensRequireDpop({
+      generateRefreshTokens: internalOptions.generateRefreshTokens,
+      requireDpop: internalOptions.requireDpop,
+    })
 
     const issuanceSession = new OpenId4VcIssuanceSessionRecord({
       // Optional: allows the `getDynamicIssuanceSession` callback to bind the session to an id it
@@ -614,10 +635,7 @@ export class OpenId4VcIssuerService {
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
-    const parsedCredentialRequest = vcIssuer.parseCredentialRequest({
-      issuerMetadata,
-      credentialRequest: options.credentialRequest,
-    })
+    const { parsedCredentialRequest } = options
     const { credentialRequest, credentialIdentifier, format } = parsedCredentialRequest
 
     if (credentialIdentifier) {
@@ -704,7 +722,7 @@ export class OpenId4VcIssuerService {
 
       verification,
 
-      credentialRequest: options.credentialRequest,
+      credentialRequest,
       credentialRequestFormat: format,
 
       // Matching credential configuration
@@ -1294,6 +1312,8 @@ export class OpenId4VcIssuerService {
     issuer: OpenId4VcIssuerRecord,
     options?: OpenId4VcUpdateIssuerOptions
   ) {
+    assertCredentialEncryptionConfiguration(issuer)
+
     // An explicitly provided signer takes precedence (including `null` to remove it). Otherwise the
     // previously configured signer is reused, so the signed metadata stays in sync with the updated
     // issuer metadata.
@@ -1319,6 +1339,8 @@ export class OpenId4VcIssuerService {
   }
 
   public async createIssuer(agentContext: AgentContext, options: OpenId4VciCreateIssuerOptions) {
+    assertCredentialEncryptionConfiguration(options)
+
     const kms = agentContext.resolve(Kms.KeyManagementApi)
 
     // TODO: ideally we can store additional data with a key, such as:
@@ -1342,6 +1364,7 @@ export class OpenId4VcIssuerService {
       credentialConfigurationsSupported: options.credentialConfigurationsSupported,
       batchCredentialIssuance: options.batchCredentialIssuance,
       credentialResponseEncryption: options.credentialResponseEncryption,
+      credentialRequestEncryption: options.credentialRequestEncryption,
     })
 
     if (options.metadataSigner) {
@@ -1449,7 +1472,8 @@ export class OpenId4VcIssuerService {
             batch_size: issuerRecord.batchCredentialIssuance.batchSize,
           }
         : undefined,
-      credential_response_encryption: getCredentialResponseEncryptionMetadata(issuerRecord),
+      credential_response_encryption: getCredentialResponseEncryptionMetadata(agentContext, issuerRecord),
+      credential_request_encryption: getCredentialRequestEncryptionMetadata(issuerRecord),
     } satisfies CredentialIssuerMetadata
 
     const clientAttestationAuthMethods = [
@@ -1459,7 +1483,7 @@ export class OpenId4VcIssuerService {
         ? [SupportedClientAuthenticationMethod.ClientAttestationJwt]
         : []),
       // DPoP-bound method (§5.2): Client Attestation JWT + DPoP proof.
-      ...(issuerRecord.clientAttestationSigningAlgValuesSupported && issuerRecord.dpopSigningAlgValuesSupported
+      ...(issuerRecord.clientAttestationSigningAlgValuesSupported
         ? [SupportedClientAuthenticationMethod.ClientAttestationJwtDpop]
         : []),
     ]
@@ -1500,7 +1524,10 @@ export class OpenId4VcIssuerService {
       require_pushed_authorization_requests: true,
 
       code_challenge_methods_supported: [PkceCodeChallengeMethod.S256],
-      dpop_signing_alg_values_supported: issuerRecord.dpopSigningAlgValuesSupported,
+      dpop_signing_alg_values_supported:
+        issuerRecord.dpopSigningAlgValuesSupported ??
+        config.dpopSigningAlgValuesSupported ??
+        agentContext.resolve(Kms.KeyManagementApi).supportedJwaSignatureAlgorithms(),
       authorization_response_iss_parameter_supported: true,
     } satisfies AuthorizationServerMetadata
 
@@ -2299,9 +2326,30 @@ export class OpenId4VcIssuerService {
       proofType: proofType,
     })
   }
+
+  // Refresh tokens are only issued bound to a DPoP key, as a wallet is a public client (RFC 9700 §2.2.2)
+  private assertRefreshTokensRequireDpop(options: { generateRefreshTokens?: boolean; requireDpop?: boolean }) {
+    const generateRefreshTokens = options.generateRefreshTokens ?? this.openId4VcIssuerConfig.generateRefreshTokens
+    const requireDpop = options.requireDpop ?? this.openId4VcIssuerConfig.dpopRequired
+
+    if (generateRefreshTokens && !requireDpop) {
+      throw new CredoError(
+        `Refresh tokens can only be generated when DPoP is required. Either require DPoP, or disable 'generateRefreshTokens'.`
+      )
+    }
+  }
 }
 
-function getCredentialResponseEncryptionMetadata(issuerRecord: OpenId4VcIssuerRecord) {
+function getCredentialResponseEncryptionMetadata(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord) {
+  if (!issuerRecord.credentialRequestEncryption) {
+    if (issuerRecord.credentialResponseEncryption) {
+      agentContext.config.logger.warn(
+        `Issuer '${issuerRecord.issuerId}' has 'credentialResponseEncryption' configured without 'credentialRequestEncryption'. Credential response encryption is not advertised, as OID4VCI requires an encrypted credential request when response encryption is used.`
+      )
+    }
+    return undefined
+  }
+
   return {
     alg_values_supported: issuerRecord.credentialResponseEncryption?.algValuesSupported ?? [
       ...supportedResponseEncryptionKeyAgreementAlgorithms,
@@ -2310,5 +2358,41 @@ function getCredentialResponseEncryptionMetadata(issuerRecord: OpenId4VcIssuerRe
       ...supportedResponseEncryptionContentAlgorithms,
     ],
     encryption_required: issuerRecord.credentialResponseEncryption?.required ?? false,
+  }
+}
+
+function getCredentialRequestEncryptionMetadata(issuerRecord: OpenId4VcIssuerRecord) {
+  if (!issuerRecord.credentialRequestEncryption) return undefined
+
+  return {
+    jwks: {
+      keys: issuerRecord.credentialRequestEncryption.jwks.map((jwk) => ({
+        ...Kms.PublicJwk.fromUnknown(jwk).toJson(),
+        kid: jwk.kid,
+        use: 'enc',
+        alg: 'ECDH-ES',
+      })),
+    },
+    enc_values_supported: [...supportedResponseEncryptionContentAlgorithms],
+    encryption_required: issuerRecord.credentialRequestEncryption.required ?? false,
+  }
+}
+
+export function assertCredentialEncryptionConfiguration(
+  options: Pick<OpenId4VcIssuerRecord, 'credentialRequestEncryption' | 'credentialResponseEncryption'>
+) {
+  if (options.credentialResponseEncryption && !options.credentialRequestEncryption) {
+    throw new CredoError(
+      `'credentialResponseEncryption' requires 'credentialRequestEncryption' to be configured, as OID4VCI requires an encrypted credential request when response encryption is used.`
+    )
+  }
+
+  const unsupportedKey = options.credentialRequestEncryption?.jwks.find(
+    (jwk) => jwk.kty === 'oct' || !Kms.allowedKeyDerivationAlgsForKey(jwk).includes('ECDH-ES')
+  )
+  if (unsupportedKey) {
+    throw new CredoError(
+      `Credential request encryption key '${unsupportedKey.kid}' does not support 'ECDH-ES' key agreement.`
+    )
   }
 }
