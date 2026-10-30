@@ -1767,6 +1767,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
             issuer_state: issuanceSession.authorization?.issuerState,
             code_challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
             code_challenge_method: 'S256',
+            dpop_jkt: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
           }),
         })
         expect(pushedAuthorizationResponse.status).toBe(201)
@@ -1932,6 +1933,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
             issuer_state: issuanceSession.authorization?.issuerState,
             code_challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
             code_challenge_method: 'S256',
+            dpop_jkt: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
           }),
         })
         expect(response.status, await response.clone().text()).toBe(201)
