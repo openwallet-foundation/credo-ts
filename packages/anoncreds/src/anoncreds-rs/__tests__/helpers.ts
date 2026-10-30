@@ -99,7 +99,6 @@ export async function createCredentialForHolder(options: {
   attributes: Record<string, string>
   linkSecret: string
   linkSecretId: string
-  revocationRegistryDefinitionId: string
 }) {
   const {
     credentialDefinition,
@@ -110,7 +109,6 @@ export async function createCredentialForHolder(options: {
     attributes,
     linkSecret,
     linkSecretId,
-    revocationRegistryDefinitionId,
   } = options
 
   const credentialOffer = CredentialOffer.create({
@@ -152,8 +150,6 @@ export async function createCredentialForHolder(options: {
     credentialOffer,
     credentialRequest,
     attributeRawValues: attributes,
-    revocationRegistryId: revocationRegistryDefinitionId,
-    revocationStatusList,
     revocationConfiguration: new CredentialRevocationConfig({
       statusList: revocationStatusList,
       registryDefinition: new RevocationRegistryDefinition(revocationRegistryDefinition.handle),
