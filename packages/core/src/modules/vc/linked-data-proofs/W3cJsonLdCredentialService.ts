@@ -378,8 +378,9 @@ export class W3cJsonLdCredentialService {
   ): Promise<void> {
     const issuerId = credential.issuerId
 
-    // Only enforced for did-based issuers
-    if (!issuerId.startsWith('did:')) return
+    if (!issuerId.startsWith('did:')) {
+      throw new CredoError(`Credential issuer '${issuerId}' is not a did. Only did issuers are supported.`)
+    }
 
     const issuerDid = parseDid(issuerId).did
 
