@@ -1,4 +1,4 @@
-import type { TrustedIssuerDid } from '../../agent/TrustedIssuersForVerification'
+import type { GetTrustedIssuersForCredential, TrustedIssuerDid } from '../../agent/TrustedIssuersForVerification'
 import type { SingleOrArray } from '../../types'
 import type { KnownJwaSignatureAlgorithm } from '../kms'
 import type { W3cJwtVerifiableCredential } from './jwt-vc/W3cJwtVerifiableCredential'
@@ -88,9 +88,9 @@ interface W3cVerifyCredentialOptionsBase {
   verifyCredentialStatus?: boolean
 
   /**
-   * Trusted issuers for the verification.
+   * Trusted issuers for the verification, or a callback that resolves them for each credential.
    */
-  trustedIssuers?: TrustedIssuerDid[]
+  trustedIssuers?: TrustedIssuerDid[] | GetTrustedIssuersForCredential
 }
 
 export interface W3cJwtVerifyCredentialOptions extends W3cVerifyCredentialOptionsBase {
@@ -185,9 +185,9 @@ interface W3cVerifyPresentationOptionsBase {
   verifyCredentialStatus?: boolean
 
   /**
-   * Trusted issuers for the verification.
+   * Trusted issuers for the verification, or a callback that resolves them for each credential.
    */
-  trustedIssuers?: TrustedIssuerDid[]
+  trustedIssuers?: TrustedIssuerDid[] | GetTrustedIssuersForCredential
 }
 
 export interface W3cJwtVerifyPresentationOptions extends W3cVerifyPresentationOptionsBase {

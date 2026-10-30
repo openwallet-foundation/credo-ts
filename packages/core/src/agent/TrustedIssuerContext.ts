@@ -4,11 +4,14 @@ import { X509Certificate } from '../modules/x509/X509Certificate'
 import { X509Service } from '../modules/x509/X509Service'
 import type { AgentContext } from './context'
 import type {
+  GetTrustedIssuersForCredential,
   TrustedIssuer,
   TrustedIssuerDid,
   TrustedIssuersForVerificationContext,
   TrustedIssuersForVerificationResult,
   VerificationSigner,
+  VerificationSignerDid,
+  VerificationTypeCredential,
 } from './TrustedIssuersForVerification'
 
 type TrustedIssuerForSigner<SignerMethod extends VerificationSigner['method']> = Extract<
@@ -106,5 +109,21 @@ export class TrustedIssuerContext {
     }
 
     throw new CredoError('Unknown trusted entity signer method')
+  }
+
+  /**
+   * Ensures the DID signer of a credential is trusted, where `trustedIssuers` can also resolve the
+   * trusted issuers for each credential.
+   */
+  public static async ensureTrustedCredentialSigner(
+    agentContext: AgentContext,
+    context: { signer: VerificationSignerDid; verification: VerificationTypeCredential },
+    trustedIssuers?: TrustedIssuerDid[] | GetTrustedIssuersForCredential
+  ) {
+    return TrustedIssuerContext.ensureTrustedSigner(
+      agentContext,
+      context,
+      typeof trustedIssuers === 'function' ? await trustedIssuers(context) : trustedIssuers
+    )
   }
 }

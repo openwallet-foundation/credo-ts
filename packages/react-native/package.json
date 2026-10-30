@@ -40,7 +40,7 @@
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@animo-id/expo-secure-environment": "^0.1.1",
+    "@animo-id/expo-secure-environment": "^0.3.0",
     "expo-crypto": "^15.0.7",
     "react-native": ">=0.71.4",
     "@dr.pogodin/react-native-fs": ">= 2.37.0",
