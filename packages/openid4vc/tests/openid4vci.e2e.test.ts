@@ -719,6 +719,66 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     await holderTenant.endSession()
   })
+
+  it('keeps the issuance session retryable after an invalid_proof or invalid_nonce error', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    const missingProofResponse = await fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/credential`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenResponse.accessToken}` },
+      body: JSON.stringify({ credential_configuration_id: 'universityDegree' }),
+    })
+    expect(missingProofResponse.status).toBe(400)
+    expect(await missingProofResponse.json()).toMatchObject({ error: 'invalid_proof' })
+
+    await expect(
+      holderTenant.modules.openid4vc.holder.requestCredentials({
+        resolvedCredentialOffer,
+        ...tokenResponse,
+        cNonce: 'expired-nonce',
+        credentialBindingResolver,
+      })
+    ).rejects.toThrow('invalid_nonce')
+
+    const issuanceSessionAfterErrors = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
+      issuanceSession.id
+    )
+    expect(issuanceSessionAfterErrors.state).not.toBe(OpenId4VcIssuanceSessionState.Error)
+
+    const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponse,
+      cNonce: undefined,
+      credentialBindingResolver,
+    })
+    expect(credentialResponse.credentials).toHaveLength(1)
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.Completed,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
+    })
+
+    await holderTenant.endSession()
+  })
+
   it('credential endpoint responds with a server error instead of 401 when the resource server is misconfigured', async () => {
     const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
     const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
