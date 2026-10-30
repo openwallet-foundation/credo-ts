@@ -1,5 +1,12 @@
 # @credo-ts/didcomm
 
+## 0.7.5
+
+### Patch Changes
+
+- Updated dependencies [493480f]
+  - @credo-ts/core@0.7.5
+
 ## 0.7.4
 
 ### Patch Changes
