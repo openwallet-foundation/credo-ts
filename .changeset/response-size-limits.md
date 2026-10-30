@@ -16,4 +16,6 @@ These options override `maxResponseBytes` for specific requests:
 - `maxResponseBytes` on `DidCommHttpOutboundTransport`.
 - `maxInvitationBytes` on `DidCommModule` for short URL invitations.
 
-`DidCommWsInboundTransport` now limits received messages to 5 MiB, configurable with `maxPayloadBytes`.
+The download stops at the limit when the `fetch` in the agent dependencies exposes the response body as a stream. On React Native, recent Expo versions use `expo/fetch` as the global fetch, which supports this. React Native's built-in fetch doesn't: it only returns a response after the whole body is downloaded. A response over the limit then still fails, but it doesn't protect memory. We recommend `expo/fetch`, or another fetch implementation that supports streaming.
+
+When `DidCommWsInboundTransport` creates the server from `port`, it now limits received messages to 5 MiB, the same as `DidCommHttpInboundTransport`. Before, the limit was 100 MiB, the default of `ws`. A larger message now closes the socket. Agents that receive larger messages, for example a mediator receiving `forward` messages with large attachments, can raise the limit with the new `maxPayloadBytes` option. When you pass your own `server`, set `maxPayload` on it yourself.

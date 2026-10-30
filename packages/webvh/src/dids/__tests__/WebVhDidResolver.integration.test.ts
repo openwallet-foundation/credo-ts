@@ -119,28 +119,18 @@ describe('WebVhDidResolver Integration Tests', () => {
 
       if (!stub) {
         // Simulate a 404 for unknown resources
-        return {
-          ok: false,
+        return new Response(JSON.stringify({ error: 'notFound' }), {
           status: 404,
           statusText: 'Not Found',
-          headers: new Headers({
-            'Content-Type': 'application/json',
-          }),
-          json: async () => ({ error: 'notFound' }),
-          text: async () => JSON.stringify({ error: 'notFound' }),
-        } as Response
+          headers: { 'Content-Type': 'application/json' },
+        })
       }
 
-      return {
-        ok: true,
+      return new Response(JSON.stringify(stub), {
         status: 200,
         statusText: 'OK',
-        headers: new Headers({
-          'Content-Type': 'application/json',
-        }),
-        json: async () => stub,
-        text: async () => JSON.stringify(stub),
-      } as Response
+        headers: { 'Content-Type': 'application/json' },
+      })
     })
 
     // Create a fresh agent context

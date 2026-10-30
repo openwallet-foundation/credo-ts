@@ -46,6 +46,10 @@ export interface InitConfig {
    * Limits for the HTTP requests made through `agentDependencies.fetch`, so a remote server can't exhaust memory
    * with a large response or keep a request open. Some modules can override these for their own requests.
    *
+   * The download stops at the limit when the fetch in the agent dependencies exposes the response body as a stream.
+   * With a fetch that doesn't, such as React Native's built-in fetch, the whole response is downloaded first and the
+   * limit is checked afterwards. Use a fetch that supports streaming, such as `expo/fetch`, to protect memory.
+   *
    * @default { maxResponseBytes: 10485760, timeoutMs: 30000 }
    */
   fetchLimits?: FetchLimits
