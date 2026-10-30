@@ -85,6 +85,7 @@ export class DrizzleOpenId4VcIssuanceSessionRecordAdapter extends BaseDrizzleRec
       pkce: record.pkce,
       presentation: record.presentation,
       userPin: record.userPin,
+      failedTxCodeAttempts: record.failedTxCodeAttempts,
       walletAttestation: record.walletAttestation,
       customTags,
     }
