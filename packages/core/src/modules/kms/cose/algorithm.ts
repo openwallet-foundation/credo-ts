@@ -12,6 +12,8 @@ export const KnownCoseSignatureAlgorithms = {
 
   // Deprecated polymorphic ES
   ES256: -7,
+  ES384: -35,
+  ES512: -36,
 
   // ECDSA algorithms - RFC 9864 Section 2.1
   // JOSE ES256/ES384/ES512 map to fully-specified COSE ESP256/ESP384/ESP512
@@ -60,8 +62,11 @@ const coseToJwaSignatureAlgorithmMap: Partial<Record<KnownCoseSignatureAlgorithm
   // NOTE: we map the deprecated EdDSA COSE algorithm (-8) to JWA algorithm Ed25519, as Credo has never supported other EdDSA variants
   [KnownCoseSignatureAlgorithms.EdDSA]: KnownJwaSignatureAlgorithms.Ed25519,
 
-  // NOTE: we map the deprecated ES256 COSE algorithm (-7) to JWA algorithm ES256, as Credo has never supported other ES256 variants besides P-256
+  // NOTE: we map the deprecated polymorphic ES COSE algorithms (-7, -35, -36) to their JWA equivalents. Credo has
+  // never supported other variants besides the P-256/P-384/P-521 curves matching ES256/ES384/ES512.
   [KnownCoseSignatureAlgorithms.ES256]: KnownJwaSignatureAlgorithms.ES256,
+  [KnownCoseSignatureAlgorithms.ES384]: KnownJwaSignatureAlgorithms.ES384,
+  [KnownCoseSignatureAlgorithms.ES512]: KnownJwaSignatureAlgorithms.ES512,
 } as const
 
 export function knownJwaFromCoseSignatureAlgorithm(coseAlg: KnownCoseSignatureAlgorithm): KnownJwaSignatureAlgorithm {
