@@ -8,6 +8,13 @@ export interface JsonLdModuleConfigOptions {
    * @default {@link defaultDocumentLoader}
    */
   documentLoader?: DocumentLoaderWithContext
+
+  /**
+   * Maximum size in bytes of a JSON-LD document fetched by the default document loader.
+   *
+   * @default the `maxResponseBytes` of the agent's `fetchLimits`
+   */
+  maxDocumentBytes?: number
 }
 
 export class JsonLdModuleConfig {
@@ -19,5 +26,9 @@ export class JsonLdModuleConfig {
 
   public get documentLoader() {
     return this.options.documentLoader ?? defaultDocumentLoader
+  }
+
+  public get maxDocumentBytes() {
+    return this.options.maxDocumentBytes
   }
 }

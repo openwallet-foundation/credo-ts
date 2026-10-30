@@ -2287,6 +2287,28 @@ describe('SdJwtVcService', () => {
       expect(verificationResult.isValid).toBe(true)
     })
 
+    test('rejects an http status list uri when insecure http urls are not allowed', async () => {
+      const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
+      const fetchSpy = vi.spyOn(agent.context.config, 'fetch')
+      const signed = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          vct: 'IdentityCredential',
+          status: { status_list: { idx: 12, uri: 'http://example.com/status-list' } },
+        } as SdJwtVcPayload,
+        issuer: { method: 'did', didUrl: issuerDidUrl },
+      })
+
+      const verificationResult = await verify(
+        await sdJwtVcService.present(agent.context, { sdJwtVc: signed, presentationFrame: {} })
+      )
+
+      expect(verificationResult.isValid).toBe(false)
+      if (!verificationResult.isValid) {
+        expect(verificationResult.error?.message).toContain('Only https urls are supported')
+      }
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
     test("rejects a status list JWT whose 'sub' is not the uri of the status claim", async () => {
       const otherUri = 'https://example.com/other-status-list'
       mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [], { sub: otherUri }))
