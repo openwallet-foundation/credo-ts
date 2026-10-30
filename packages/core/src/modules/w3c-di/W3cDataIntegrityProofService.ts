@@ -10,6 +10,7 @@ import {
   assertCreatedProofPostconditions,
   validateProofFieldFormats,
   validateProofRequiredMembers,
+  validateProofTimestamps,
 } from './proof-processing/proofValidation'
 
 import { W3cDataIntegrityCryptosuiteRegistry } from './W3cDataIntegrityCryptosuiteRegistry'
@@ -58,6 +59,11 @@ export interface W3cDataIntegrityVerifyProofOptions {
   expectedProofPurpose?: string
   domain?: W3cDataIntegrityDomain
   challenge?: string
+
+  /**
+   * The time to check the proof `created` and `expires` against. Defaults to the current time.
+   */
+  now?: Date
 }
 
 export interface W3cDataIntegrityVerifyProofDocumentOptions extends W3cDataIntegrityVerifyProofOptions {
@@ -348,7 +354,7 @@ export class W3cDataIntegrityProofService {
 
   /**
    * Implements VC Data Integrity v1.0 §4.4 steps 5-8 for a single-proof input.
-   * Runs proof checks, field-format checks, relationship validation, and cryptosuite verification.
+   * Runs proof checks, field-format checks, created/expires times, relationship validation, and cryptosuite verification.
    */
   private async verifySingleProofCore(
     agentContext: AgentContext,
@@ -369,6 +375,14 @@ export class W3cDataIntegrityProofService {
     const proofFieldFormatError = validateProofFieldFormats(proof)
     if (proofFieldFormatError) {
       return proofFieldFormatError
+    }
+
+    const proofTimestampError = validateProofTimestamps(proof, {
+      skewSeconds: agentContext.config.validitySkewSeconds,
+      now: options.now,
+    })
+    if (proofTimestampError) {
+      return proofTimestampError
     }
 
     const proofPurposeValidationError = await validateProofPurposeVerificationRelationship(agentContext, proof)

@@ -1,4 +1,4 @@
-import { asArray, equalsIgnoreOrder } from '../../../utils'
+import { asArray, dateToSeconds, equalsIgnoreOrder } from '../../../utils'
 import { MultiBaseEncoder } from '../../../utils/MultiBaseEncoder'
 import type { W3cDataIntegrityVerifyFailure } from '../W3cDataIntegrityError'
 import {
@@ -79,7 +79,7 @@ export function validateProofFieldFormats(
     }
   }
 
-  if (typeof proof.created === 'string' && !isXsdDateTimeStamp(proof.created)) {
+  if (proof.created !== undefined && (typeof proof.created !== 'string' || !isXsdDateTimeStamp(proof.created))) {
     return createInvalidResult(
       createIssue(
         W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
@@ -89,7 +89,7 @@ export function validateProofFieldFormats(
     )
   }
 
-  if (typeof proof.expires === 'string' && !isXsdDateTimeStamp(proof.expires)) {
+  if (proof.expires !== undefined && (typeof proof.expires !== 'string' || !isXsdDateTimeStamp(proof.expires))) {
     return createInvalidResult(
       createIssue(
         W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
@@ -105,6 +105,40 @@ export function validateProofFieldFormats(
       createIssue(
         W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
         'Proof proofValue must be a valid multibase-encoded value'
+      )
+    )
+  }
+
+  return undefined
+}
+
+/**
+ * Rejects a proof created in the future or whose `expires` time has passed, allowing for clock skew.
+ *
+ * Prerequisite: validateProofFieldFormats() has already passed for this proof.
+ */
+export function validateProofTimestamps(
+  proof: W3cDataIntegrityCryptosuiteProof,
+  options: { skewSeconds: number; now?: Date }
+): W3cDataIntegrityVerifyFailure | undefined {
+  const now = dateToSeconds(options.now)
+
+  if (proof.created !== undefined && dateToSeconds(new Date(proof.created)) - options.skewSeconds > now) {
+    return createInvalidResult(
+      createIssue(
+        W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
+        'Proof is created in the future',
+        `Proof created at '${proof.created}'`
+      )
+    )
+  }
+
+  if (proof.expires !== undefined && dateToSeconds(new Date(proof.expires)) + options.skewSeconds < now) {
+    return createInvalidResult(
+      createIssue(
+        W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
+        'Proof has expired',
+        `Proof expired at '${proof.expires}'`
       )
     )
   }

@@ -5,7 +5,14 @@ import { JwtPayload } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import type { JsonObject } from '../../../types'
-import { asArray, JsonTransformer, MessageValidator, nowInSeconds, TypedArrayEncoder } from '../../../utils'
+import {
+  asArray,
+  dateToSeconds,
+  JsonTransformer,
+  MessageValidator,
+  nowInSeconds,
+  TypedArrayEncoder,
+} from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi } from '../../kms'
 import type { IDisclosureFrame } from '../../sd-jwt-vc'
@@ -140,6 +147,7 @@ export class W3cV2SdJwtCredentialService {
 
         // Validate JWT payload
         JwtPayload.fromJson(credential.sdJwt.payload).validate({
+          now: dateToSeconds(options.now),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
@@ -158,6 +166,7 @@ export class W3cV2SdJwtCredentialService {
           validFrom: credential.resolvedCredential.validFrom,
           validUntil: credential.resolvedCredential.validUntil,
           skewSeconds: agentContext.config.validitySkewSeconds,
+          now: options.now,
         })
 
         validationResults.validations.credentialStatus = validateVc2CredentialStatus({
@@ -207,6 +216,7 @@ export class W3cV2SdJwtCredentialService {
 
       try {
         await sdJwt.verify(credential.encoded, {
+          currentDate: dateToSeconds(options.now),
           skewSeconds: agentContext.config.validitySkewSeconds,
           keyBindingNonce: options.keyBinding?.nonce,
           expectedKeyBindingAudience: options.keyBinding?.audience,
@@ -323,6 +333,7 @@ export class W3cV2SdJwtCredentialService {
 
         // Validate JWT payload
         JwtPayload.fromJson(presentation.sdJwt.payload).validate({
+          now: dateToSeconds(options.now),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
@@ -373,6 +384,7 @@ export class W3cV2SdJwtCredentialService {
 
       try {
         await sdjwt.verify(presentation.encoded, {
+          currentDate: dateToSeconds(options.now),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
