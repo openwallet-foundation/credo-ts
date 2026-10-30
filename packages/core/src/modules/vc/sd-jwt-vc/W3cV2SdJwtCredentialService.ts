@@ -29,6 +29,7 @@ import {
   extractHolderFromPresentationCredentials,
   getSignerForJwt,
   validateAndResolveVerificationMethod,
+  withUndefinedTermsContext,
 } from '../v2-jwt-utils'
 import {
   validateVc2ContextBaseline,
@@ -258,6 +259,7 @@ export class W3cV2SdJwtCredentialService {
     payload.nonce = options.challenge
     payload.aud = options.domain
     payload.iat = nowInSeconds()
+    payload['@context'] = withUndefinedTermsContext(payload['@context'])
 
     const holder = await extractHolderFromPresentationCredentials(agentContext, options.presentation)
 
