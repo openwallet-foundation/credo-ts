@@ -35,6 +35,7 @@ import type {
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 import {
   extractKeyFromHolderBinding,
+  getDidUrlFromIssAndKid,
   getSdJwtHashingAlgorithm,
   getSdJwtSigner,
   getSdJwtVerifier,
@@ -780,8 +781,8 @@ export class SdJwtVcService {
       }
 
       // did: require the status list signer did to equal the trusted issuer did. The signer did is the
-      // `iss` of the status list payload; the `kid` header is typically a relative reference (e.g.
-      // `#key-1`) that has to be resolved against that did.
+      // `iss` of the status list payload. The `kid` header is resolved against that did, and an
+      // absolute `kid` must belong to it.
       let statusListIssuerDid: unknown
       try {
         statusListIssuerDid = JsonEncoder.fromBase64Url(data.split('.')[1]).iss
@@ -800,10 +801,10 @@ export class SdJwtVcService {
         )
       }
 
-      const didUrl = header.kid?.startsWith('#') ? `${statusListIssuerDid}${header.kid}` : header.kid
-      if (!didUrl) {
+      if (!header.kid) {
         throw new SdJwtVcError('Unable to resolve the status list signer: the status list JWT has no `kid` header.')
       }
+      const didUrl = getDidUrlFromIssAndKid(statusListIssuerDid, header.kid)
 
       const { verificationMethod } = await resolveDidUrl(agentContext, didUrl)
       const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
