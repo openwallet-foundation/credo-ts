@@ -63,13 +63,14 @@ export class OpenId4VcVerifierModule implements Module {
     const verifierEndpointRouter = Router()
     const verifierContextRouter = Router()
 
-    // parse application/x-www-form-urlencoded
-    verifierContextRouter.use(urlencoded({ extended: false, limit: '5mb' }))
-    // parse application/json
-    verifierContextRouter.use(json({ limit: '5mb' }))
-
     verifierContextRouter.param('verifierId', this.getVerifierIdParamHandler(rootAgentContext))
     verifierContextRouter.use('/:verifierId', verifierEndpointRouter)
+
+    // Bodies are only parsed for known verifiers, so other paths return a 404
+    // parse application/x-www-form-urlencoded
+    verifierEndpointRouter.use(urlencoded({ extended: false, limit: '5mb' }))
+    // parse application/json
+    verifierEndpointRouter.use(json({ limit: '5mb' }))
 
     // Configure endpoints
     configureAuthorizationEndpoint(verifierEndpointRouter, this.config)

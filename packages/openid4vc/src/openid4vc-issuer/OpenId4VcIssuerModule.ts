@@ -182,14 +182,15 @@ export class OpenId4VcIssuerModule implements Module {
 
     const basePath = new URL(this.config.baseUrl).pathname
 
-    // parse application/x-www-form-urlencoded
-    issuerContextRouter.use(urlencoded({ extended: false, limit: '1mb' }))
-    // parse application/json
-    issuerContextRouter.use(json({ limit: '1mb' }))
-
     // Register the issuer endpoints under /:issuerId
     issuerContextRouter.param('issuerId', issuerIdParamHandler)
     issuerContextRouter.use('/:issuerId', issuerEndpointsRouter)
+
+    // Bodies are only parsed for known issuers, so other paths return a 404
+    // parse application/x-www-form-urlencoded
+    issuerEndpointsRouter.use(urlencoded({ extended: false, limit: '1mb' }))
+    // parse application/json
+    issuerEndpointsRouter.use(json({ limit: '1mb' }))
 
     // NOTE: these are here for backwards compat, at some point we should remove them for the root well-known counterpart
     configureIssuerMetadataEndpoint(issuerEndpointsRouter, '/.well-known/openid-credential-issuer')

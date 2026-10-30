@@ -2,4 +2,4 @@
 '@credo-ts/openid4vc': patch
 ---
 
-Return a 413 instead of a 500 when a request body that is too large is sent to the issuer or verifier base path without an issuer or verifier id.
+Request bodies for the OpenID4VC issuer and verifier endpoints are now only parsed once the issuer or verifier is found. Requests to the base path or to an unknown issuer or verifier return a 404, where an oversized body used to return a 500.

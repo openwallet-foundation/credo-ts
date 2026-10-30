@@ -238,12 +238,21 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(resolved.metadata.credentialIssuer.issuer_info).toEqual(issuerInfo)
   })
 
-  it('returns 413 when the request body exceeds the limit on the base path', async () => {
-    const response = await fetch(issuanceBaseUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: 'a'.repeat(1024 * 1024) }),
+  it('returns 404 for unknown issuers and 413 when the request body exceeds the limit', async () => {
+    const { issuerId } = await issuer.agent.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: { universityDegree: universityDegreeCredentialConfigurationSupported },
     })
+    const postLargeBody = (url: string) =>
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: 'a'.repeat(1024 * 1024) }),
+      })
+
+    expect((await postLargeBody(issuanceBaseUrl)).status).toBe(404)
+    expect((await postLargeBody(`${issuanceBaseUrl}/unknown-issuer/token`)).status).toBe(404)
+
+    const response = await postLargeBody(`${issuanceBaseUrl}/${issuerId}/token`)
     expect(response.status).toBe(413)
     expect(await response.json()).toEqual({
       error: 'invalid_request',

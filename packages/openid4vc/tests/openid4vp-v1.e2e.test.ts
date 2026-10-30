@@ -727,12 +727,19 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
   })
 
-  it('returns 413 when the request body exceeds the limit on the base path', async () => {
-    const response = await fetch(verificationBaseUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: 'a'.repeat(5 * 1024 * 1024) }),
-    })
+  it('returns 404 for unknown verifiers and 413 when the request body exceeds the limit', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+    const postLargeBody = (url: string) =>
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: 'a'.repeat(5 * 1024 * 1024) }),
+      })
+
+    expect((await postLargeBody(verificationBaseUrl)).status).toBe(404)
+    expect((await postLargeBody(`${verificationBaseUrl}/unknown-verifier/authorize`)).status).toBe(404)
+
+    const response = await postLargeBody(`${verificationBaseUrl}/${openIdVerifier.verifierId}/authorize`)
     expect(response.status).toBe(413)
     expect(await response.json()).toEqual({
       error: 'invalid_request',
