@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "458083ca-5455-4388-a5aa-a95c9dd531b4",
+  "id": "edb518f2-3d80-44cd-8810-23b10aac71c8",
   "prevId": "d9011547-5b01-410d-8bc3-de8f5c0f2d05",
   "tables": {
     "OpenId4VcIssuanceSession": {
@@ -178,13 +178,6 @@
         "generate_refresh_tokens": {
           "name": "generate_refresh_tokens",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "openid4vci_version": {
-          "name": "openid4vci_version",
-          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -369,6 +362,13 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "credential_request_encryption": {
+          "name": "credential_request_encryption",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -515,13 +515,6 @@
         },
         "presentation_during_issuance_session": {
           "name": "presentation_during_issuance_session",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "openid4vp_version": {
-          "name": "openid4vp_version",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

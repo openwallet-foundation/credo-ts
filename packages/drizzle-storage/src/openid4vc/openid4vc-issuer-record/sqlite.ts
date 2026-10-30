@@ -5,6 +5,7 @@ import type {
   OpenId4VciBatchCredentialIssuanceOptions,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
+  OpenId4VciCredentialRequestEncryptionOptions,
   OpenId4VciCredentialResponseEncryptionOptions,
   OpenId4VciIssuerInfo,
 } from '@credo-ts/openid4vc'
@@ -51,6 +52,9 @@ export const openid4vcIssuer = sqliteTable(
     credentialResponseEncryption: text('credential_response_encryption', {
       mode: 'json',
     }).$type<OpenId4VciCredentialResponseEncryptionOptions>(),
+    credentialRequestEncryption: text('credential_request_encryption', {
+      mode: 'json',
+    }).$type<OpenId4VciCredentialRequestEncryptionOptions>(),
   },
   (table) => sqliteBaseRecordIndexes(table, 'openid4vcIssuer')
 )

@@ -1,6 +1,7 @@
 export { Openid4vpAuthorizationRequestError } from '@openid4vc/openid4vp'
 export * from './OpenId4VcHolderApi'
 export * from './OpenId4VcHolderModule'
+export * from './OpenId4VcHolderModuleConfig'
 export * from './OpenId4VciHolderService'
 export * from './OpenId4VciHolderServiceOptions'
 export * from './OpenId4vpHolderService'

@@ -1,5 +1,5 @@
 {
-  "id": "03d1f62b-8222-4050-9bda-84326530769c",
+  "id": "d58a1b13-c8dc-492c-9b68-5c27e6feb87b",
   "prevId": "47ee3eb5-f0a4-4264-bda0-4f9f5f416447",
   "version": "7",
   "dialect": "postgresql",
@@ -156,12 +156,6 @@
         "generate_refresh_tokens": {
           "name": "generate_refresh_tokens",
           "type": "boolean",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "openid4vci_version": {
-          "name": "openid4vci_version",
-          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -327,6 +321,12 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
+        },
+        "credential_request_encryption": {
+          "name": "credential_request_encryption",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -461,12 +461,6 @@
         },
         "presentation_during_issuance_session": {
           "name": "presentation_during_issuance_session",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "openid4vp_version": {
-          "name": "openid4vp_version",
           "type": "text",
           "primaryKey": false,
           "notNull": false

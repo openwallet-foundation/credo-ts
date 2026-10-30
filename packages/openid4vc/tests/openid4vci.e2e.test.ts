@@ -19,7 +19,7 @@ import {
   Oauth2ResourceServer,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
-import { AuthorizationFlow } from '@openid4vc/openid4vci'
+import { AuthorizationFlow, Openid4vciClient } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
@@ -225,7 +225,25 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(signedMetadata.header.x5c).toEqual([certificate.toString('base64')])
     expect(signedMetadata.payload.additionalClaims.issuer_info).toEqual(issuerInfo)
 
-    const metadata = await holder.agent.openid4vc.holder.resolveIssuerMetadata(`${issuanceBaseUrl}/${created.issuerId}`)
+    const issuerUrl = `${issuanceBaseUrl}/${created.issuerId}`
+    await expect(holder.agent.openid4vc.holder.resolveIssuerMetadata(issuerUrl)).rejects.toThrow(
+      'No trusted certificate was found'
+    )
+    await expect(
+      holder.agent.openid4vc.holder.resolveIssuerMetadata(issuerUrl, { signedMetadata: 'required' })
+    ).rejects.toThrow('No trusted certificate was found')
+    const unsignedMetadata = await holder.agent.openid4vc.holder.resolveIssuerMetadata(issuerUrl, {
+      signedMetadata: 'disallowed',
+    })
+    expect(unsignedMetadata.credentialIssuer.issuer_info).toEqual(issuerInfo)
+
+    holder.agent.x509.config.addTrustedCertificate(certificate)
+    const metadata = await holder.agent.openid4vc.holder.resolveIssuerMetadata(
+      `${issuanceBaseUrl}/${created.issuerId}`,
+      {
+        signedMetadata: 'required',
+      }
+    )
     expect(metadata.credentialIssuer.issuer_info).toEqual(issuerInfo)
 
     const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
@@ -680,6 +698,98 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(firstMdoc.docType).toEqual('UniversityDegreeCredential')
 
     await holderTenant1.endSession()
+  })
+
+  it('credential and deferred credential endpoints decrypt encrypted requests', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const requestEncryptionKey = await issuerTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+      credentialRequestEncryption: { jwks: [requestEncryptionKey.publicJwk] },
+    })
+    const issuerUrl = `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}`
+
+    const { credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    expect(resolvedCredentialOffer.metadata.credentialIssuer.credential_request_encryption).toMatchObject({
+      jwks: { keys: [{ kid: requestEncryptionKey.keyId, alg: 'ECDH-ES', use: 'enc' }] },
+      encryption_required: false,
+    })
+    const { accessToken } = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    const encrypt = async (publicJwk: Jwk, payload: object) =>
+      (
+        await getOid4vcCallbacks(holderTenant.context).encryptJwe(
+          { method: 'jwk', publicJwk, alg: 'ECDH-ES', enc: 'A256GCM' },
+          JSON.stringify(payload)
+        )
+      ).jwe
+    const post = (path: string, body: string) =>
+      fetch(`${issuerUrl}/${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/jwt', Authorization: `Bearer ${accessToken}` },
+        body,
+      })
+
+    const decryptedResponse = await post(
+      'credential',
+      await encrypt(requestEncryptionKey.publicJwk as Jwk, {
+        credential_identifier: 'never-granted',
+        proofs: { jwt: ['ey.ey.S'] },
+      })
+    )
+    expect(decryptedResponse.status).toBe(400)
+    expect(await decryptedResponse.json()).toMatchObject({ error: 'unknown_credential_identifier' })
+
+    const otherKey = await holderTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    for (const path of ['credential', 'deferred-credential']) {
+      const response = await post(path, await encrypt(otherKey.publicJwk as Jwk, { transaction_id: 'a' }))
+      expect(response.status).toBe(400)
+      expect(await response.json()).toMatchObject({ error: 'invalid_encryption_parameters' })
+    }
+
+    const { c_nonce } = (await (await fetch(`${issuerUrl}/nonce`, { method: 'POST' })).json()) as { c_nonce: string }
+    const holderKey = await holderTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const { jwt } = await new Openid4vciClient({
+      callbacks: getOid4vcCallbacks(holderTenant.context),
+    }).createCredentialRequestJwtProof({
+      issuerMetadata: resolvedCredentialOffer.metadata,
+      credentialConfigurationId: 'universityDegree',
+      nonce: c_nonce,
+      signer: { method: 'jwk', alg: 'ES256', publicJwk: holderKey.publicJwk as Jwk },
+    })
+    const responseEncryptionKey = await holderTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const credentialResponse = await post(
+      'credential',
+      await encrypt(requestEncryptionKey.publicJwk as Jwk, {
+        credential_configuration_id: 'universityDegree',
+        proofs: { jwt: [jwt] },
+        credential_response_encryption: {
+          jwk: { ...responseEncryptionKey.publicJwk, alg: 'ECDH-ES' },
+          enc: 'A256GCM',
+        },
+      })
+    )
+    expect(credentialResponse.status).toBe(200)
+    expect(credentialResponse.headers.get('Content-Type')).toContain('application/jwt')
+    const decryptedCredentialResponse = await getOid4vcCallbacks(holderTenant.context).decryptJwe(
+      await credentialResponse.text(),
+      { jwk: responseEncryptionKey.publicJwk as Jwk }
+    )
+    if (!decryptedCredentialResponse.decrypted) throw new Error('Unable to decrypt the credential response')
+    expect(JSON.parse(decryptedCredentialResponse.payload).credentials).toHaveLength(1)
+
+    await holderTenant.endSession()
   })
 
   it('credential endpoint responds with unknown_credential_identifier for a credential_identifier that was never granted', async () => {
