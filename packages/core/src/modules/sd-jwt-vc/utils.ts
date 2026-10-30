@@ -198,6 +198,28 @@ export function parseHolderBindingFromCredential(payload?: Record<string, unknow
   throw new CredoError("Unsupported credential holder binding. Only 'did' and 'jwk' are supported at the moment.")
 }
 
+/**
+ * An absolute `kid` must belong to the `iss` did, otherwise a JWT could claim a trusted `iss` while being signed by another did.
+ */
+export function getDidUrlFromIssAndKid(iss: string, kid: string): string {
+  if (kid.startsWith('#')) return `${iss}${kid}`
+
+  if (kid.startsWith('did:')) {
+    const didFromKid = parseDid(kid)
+    if (didFromKid.did !== iss) {
+      throw new SdJwtVcError(
+        `kid in header is an absolute DID URL, but the did (${didFromKid.did}) does not match with the 'iss' did (${iss})`
+      )
+    }
+
+    return kid
+  }
+
+  throw new SdJwtVcError(
+    'Invalid issuer kid for did. Only absolute or relative (starting with #) did urls are supported.'
+  )
+}
+
 export function parseIssuerFromCredential(
   header?: Record<string, unknown>,
   payload?: Record<string, unknown>
@@ -232,29 +254,9 @@ export function parseIssuerFromCredential(
       throw new SdJwtVcError('Credential does not contain a kid in the header')
     }
 
-    const issuerKid = header.kid as string
-
-    let didUrl: string
-    if (issuerKid.startsWith('#')) {
-      didUrl = `${iss}${issuerKid}`
-    } else if (issuerKid.startsWith('did:')) {
-      const didFromKid = parseDid(issuerKid)
-      if (didFromKid.did !== iss) {
-        throw new SdJwtVcError(
-          `kid in header is an absolute DID URL, but the did (${didFromKid.did}) does not match with the 'iss' did (${iss})`
-        )
-      }
-
-      didUrl = issuerKid
-    } else {
-      throw new SdJwtVcError(
-        'Invalid issuer kid for did. Only absolute or relative (starting with #) did urls are supported.'
-      )
-    }
-
     return {
       method: 'did',
-      didUrl,
+      didUrl: getDidUrlFromIssAndKid(iss, header.kid as string),
     }
   }
 
