@@ -727,6 +727,19 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
   })
 
+  it('returns 413 when the request body exceeds the limit on the base path', async () => {
+    const response = await fetch(verificationBaseUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: 'a'.repeat(5 * 1024 * 1024) }),
+    })
+    expect(response.status).toBe(413)
+    expect(await response.json()).toEqual({
+      error: 'invalid_request',
+      message: 'The request body exceeds the maximum allowed limit.',
+    })
+  })
+
   it('Invalid verifier attestation in combination with dcql', async () => {
     const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 

@@ -122,6 +122,39 @@ export function sendJsonResponse(
   next()
 }
 
+const requestSessions = new WeakMap<Request, () => Promise<void>>()
+
+/**
+ * Ends the agent context session for the request once: when the router calls {@link endRequestSession},
+ * or when the response finishes, so a handler that sends a response without calling `next()` can't leak it.
+ */
+export function registerRequestSession(request: Request, response: Response, agentContext: AgentContext) {
+  let endSessionPromise: Promise<void> | undefined
+  const endSession = () => {
+    endSessionPromise ??= agentContext.endSession()
+    return endSessionPromise
+  }
+
+  requestSessions.set(request, endSession)
+  response.once('finish', () => {
+    // Leaving a nested router defers `next()` by a `setImmediate`, so the router can still end the session after 'finish'
+    setImmediate(() => {
+      if (endSessionPromise) return
+
+      agentContext.config.logger.warn(
+        `[OID4VC] Agent context session for ${request.method} ${request.originalUrl} was not ended by the router, a handler probably did not call next(). Ending it after the response.`
+      )
+      endSession().catch((error) => {
+        agentContext.config.logger.error('[OID4VC] Failed to end agent context session after response', { error })
+      })
+    })
+  })
+}
+
+export async function endRequestSession(request: Request) {
+  await requestSessions.get(request)?.()
+}
+
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 export function getRequestContext<T extends OpenId4VcRequest<any>>(request: T): NonNullable<T['requestContext']> {
   const requestContext = request.requestContext

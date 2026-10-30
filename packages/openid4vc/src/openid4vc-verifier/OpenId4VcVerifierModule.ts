@@ -1,6 +1,6 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { NextFunction, Response } from 'express'
-import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
+import { endRequestSession, getAgentContextForActorId, importExpress, registerRequestSession } from '../shared/router'
 import { OpenId4VcVerifierApi } from './OpenId4VcVerifierApi'
 import type { InternalOpenId4VcVerifierModuleConfigOptions } from './OpenId4VcVerifierModuleConfig'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
@@ -77,15 +77,15 @@ export class OpenId4VcVerifierModule implements Module {
 
     // First one will be called for all requests (when next is called)
     verifierContextRouter.use(async (req: OpenId4VcVerificationRequest, _res: unknown, next) => {
-      const { agentContext } = getRequestContext(req)
-      await agentContext.endSession()
+      await endRequestSession(req)
       next()
     })
 
     // This one will be called for all errors that are thrown
     verifierContextRouter.use(
       async (error: unknown, req: OpenId4VcVerificationRequest, res: Response, next: NextFunction) => {
-        const { agentContext } = getRequestContext(req)
+        // Requests that don't match a verifier id (e.g. the base path) have no request context, so fall back to the root logger
+        const logger = req.requestContext?.agentContext.config.logger ?? rootAgentContext.config.logger
 
         // Check if the error is specifically a payload limit issue
         if (error instanceof Error && error.name === 'PayloadTooLargeError') {
@@ -96,7 +96,7 @@ export class OpenId4VcVerifierModule implements Module {
         }
 
         if (!res.headersSent) {
-          agentContext.config.logger.warn(
+          logger.warn(
             'Error was thrown but openid4vp endpoint did not send a response. Sending generic server_error.',
             { error }
           )
@@ -107,7 +107,7 @@ export class OpenId4VcVerifierModule implements Module {
           })
         }
 
-        await agentContext.endSession()
+        await endRequestSession(req)
         next()
       }
     )
@@ -136,6 +136,7 @@ export class OpenId4VcVerifierModule implements Module {
           agentContext,
           verifier,
         }
+        registerRequestSession(req, res, agentContext)
       } catch (error) {
         agentContext?.config.logger.error(
           'Failed to correlate incoming openid request to existing tenant and verifier',

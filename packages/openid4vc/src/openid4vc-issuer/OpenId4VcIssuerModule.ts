@@ -1,6 +1,12 @@
 import { type AgentContext, type DependencyManager, joinUriParts, type Module } from '@credo-ts/core'
 import type { NextFunction, Response } from 'express'
-import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
+import {
+  endRequestSession,
+  getAgentContextForActorId,
+  getRequestContext,
+  importExpress,
+  registerRequestSession,
+} from '../shared/router'
 import { OpenId4VcIssuerApi } from './OpenId4VcIssuerApi'
 import type { InternalOpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
@@ -91,6 +97,7 @@ export class OpenId4VcIssuerModule implements Module {
           agentContext,
           issuer,
         }
+        registerRequestSession(req, res, agentContext)
       } catch (error) {
         agentContext?.config.logger.error(
           'Failed to correlate incoming oid4vci request to existing tenant and issuer',
@@ -125,8 +132,7 @@ export class OpenId4VcIssuerModule implements Module {
     configureOAuthAuthorizationServerMetadataEndpoint(wellKnownEndpointsRouter, oauthAuthorizationServerPath)
 
     wellKnownEndpointsRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
-      const { agentContext } = getRequestContext(req)
-      await agentContext.endSession()
+      await endRequestSession(req)
 
       next()
     })
@@ -156,7 +162,7 @@ export class OpenId4VcIssuerModule implements Module {
           })
         }
 
-        await agentContext.endSession()
+        await endRequestSession(req)
         next()
       }
     )
@@ -203,8 +209,7 @@ export class OpenId4VcIssuerModule implements Module {
 
     // First one will be called for all requests (when next is called)
     issuerContextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
-      const { agentContext } = getRequestContext(req)
-      await agentContext.endSession()
+      await endRequestSession(req)
 
       next()
     })
@@ -212,7 +217,8 @@ export class OpenId4VcIssuerModule implements Module {
     // This one will be called for all errors that are thrown
     issuerContextRouter.use(
       async (error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
-        const { agentContext } = getRequestContext(req)
+        // Requests that don't match an issuer id (e.g. the base path) have no request context, so fall back to the root logger
+        const logger = req.requestContext?.agentContext.config.logger ?? rootAgentContext.config.logger
 
         // Check if the error is specifically a payload limit issue
         if (error instanceof Error && error.name === 'PayloadTooLargeError') {
@@ -223,7 +229,7 @@ export class OpenId4VcIssuerModule implements Module {
         }
 
         if (!res.headersSent) {
-          agentContext.config.logger.warn(
+          logger.warn(
             'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.',
             { error }
           )
@@ -234,7 +240,7 @@ export class OpenId4VcIssuerModule implements Module {
           })
         }
 
-        await agentContext.endSession()
+        await endRequestSession(req)
         next()
       }
     )
