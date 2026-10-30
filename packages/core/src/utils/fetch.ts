@@ -1,28 +1,33 @@
 import type { AgentDependencies } from '../agent/AgentDependencies'
 
+export interface FetchLimits {
+  /**
+   * Maximum response size in bytes. If exceeded, the download is aborted.
+   */
+  maxResponseBytes?: number
+
+  /**
+   * Timeout in milliseconds for the request, including reading a response that has a size limit.
+   */
+  timeoutMs?: number
+}
+
 export async function fetchWithTimeout(
   fetch: AgentDependencies['fetch'],
-  url: string,
-  init?: Omit<RequestInit, 'signal'> & {
-    /**
-     * @default 5000
-     */
-    timeoutMs?: number
-    /**
-     * Maximum response size in bytes. If exceeded, the download is aborted.
-     */
-    maxResponseBytes?: number
-  }
+  url: string | URL | Request,
+  init?: RequestInit & FetchLimits
 ): Promise<Response> {
   const abortController = new AbortController()
-  const timeoutMs = init?.timeoutMs ?? 5000
-  const maxResponseBytes = init?.maxResponseBytes
+  const { timeoutMs = 5000, maxResponseBytes, signal, ...requestInit } = init ?? {}
 
   const timeout = setTimeout(() => abortController.abort(), timeoutMs)
+  const abortFromSignal = () => abortController.abort()
+  if (signal?.aborted) abortController.abort()
+  signal?.addEventListener('abort', abortFromSignal)
 
   try {
     const response = await fetch(url, {
-      ...init,
+      ...requestInit,
       signal: abortController.signal as NonNullable<RequestInit['signal']>,
     })
 
@@ -62,12 +67,19 @@ export async function fetchWithTimeout(
 
     // Reconstruct the response with the buffered body
     const body = new Blob(chunks)
-    return new Response(body, {
+    const bufferedResponse = new Response(body, {
       status: response.status,
       statusText: response.statusText,
       headers: response.headers,
     })
+    // The Response constructor can't set these, and callers read them to follow redirects
+    Object.defineProperties(bufferedResponse, {
+      url: { value: response.url },
+      redirected: { value: response.redirected },
+    })
+    return bufferedResponse
   } finally {
     clearTimeout(timeout)
+    signal?.removeEventListener('abort', abortFromSignal)
   }
 }

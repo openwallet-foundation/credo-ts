@@ -9,6 +9,21 @@ import type {
 import { DidCommEventTypes, DidCommModuleConfig, DidCommTransportService } from '@credo-ts/didcomm'
 import WebSocket, { WebSocketServer } from 'ws'
 
+// Matches the request size limit of the HTTP inbound transport
+const defaultMaxPayloadBytes = 5 * 1024 * 1024
+
+export type DidCommWsInboundTransportOptions = (
+  | { server: WebSocketServer; port?: undefined }
+  | { server?: undefined; port: number }
+) & {
+  /**
+   * Maximum size in bytes of a received message. Only applies when the transport creates the server from `port`.
+   *
+   * @default 5242880 (5 MiB)
+   */
+  maxPayloadBytes?: number
+}
+
 export class DidCommWsInboundTransport implements DidCommInboundTransport {
   private socketServer: WebSocketServer
   private logger!: Logger
@@ -16,11 +31,8 @@ export class DidCommWsInboundTransport implements DidCommInboundTransport {
   // We're using a `socketId` just for the prevention of calling the connection handler twice.
   private socketIds: Record<string, WebSocket> = {}
 
-  public constructor({
-    server,
-    port,
-  }: { server: WebSocketServer; port?: undefined } | { server?: undefined; port: number }) {
-    this.socketServer = server ?? new WebSocketServer({ port })
+  public constructor({ server, port, maxPayloadBytes = defaultMaxPayloadBytes }: DidCommWsInboundTransportOptions) {
+    this.socketServer = server ?? new WebSocketServer({ port, maxPayload: maxPayloadBytes })
   }
 
   public async start(agentContext: AgentContext) {

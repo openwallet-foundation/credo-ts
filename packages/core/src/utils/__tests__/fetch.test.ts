@@ -54,6 +54,23 @@ describe('fetchWithTimeout', () => {
     expect(Array.from(new Uint8Array(await result.arrayBuffer()))).toEqual(Array.from(bytes))
   })
 
+  it('keeps the url and redirected flag of the original response', async () => {
+    const response = bytesResponse(5)
+    Object.defineProperties(response, {
+      url: { value: 'https://example.com/redirected' },
+      redirected: { value: true },
+    })
+    const fetch = vi.fn(async () => response)
+
+    const result = await fetchWithTimeout(fetch as unknown as typeof globalThis.fetch, 'https://example.com', {
+      maxResponseBytes: 100,
+    })
+
+    expect(result).not.toBe(response)
+    expect(result.url).toBe('https://example.com/redirected')
+    expect(result.redirected).toBe(true)
+  })
+
   it('aborts the request when it exceeds the timeout', async () => {
     const fetch = vi.fn(
       (_url: string, init?: RequestInit) =>
@@ -65,5 +82,22 @@ describe('fetchWithTimeout', () => {
     await expect(
       fetchWithTimeout(fetch as unknown as typeof globalThis.fetch, 'https://example.com', { timeoutMs: 10 })
     ).rejects.toThrow()
+  })
+
+  it('aborts the request when the signal of the caller aborts', async () => {
+    const fetch = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+        })
+    )
+    const abortController = new AbortController()
+
+    const result = fetchWithTimeout(fetch as unknown as typeof globalThis.fetch, 'https://example.com', {
+      signal: abortController.signal as NonNullable<RequestInit['signal']>,
+    })
+    abortController.abort()
+
+    await expect(result).rejects.toThrow('aborted')
   })
 })
