@@ -3,17 +3,16 @@ import { CredoError, injectable, JsonTransformer } from '@credo-ts/core'
 import type {
   JsonObject,
   NonRevokedIntervalOverride,
-  RevocationRegistryDefinition,
   VerifyW3cPresentationOptions as VerifyAnonCredsW3cPresentationOptions,
 } from '@hyperledger/anoncreds-shared'
-import { W3cCredential as AnonCredsW3cCredential, Presentation, W3cPresentation } from '@hyperledger/anoncreds-shared'
+import { Presentation, W3cPresentation } from '@hyperledger/anoncreds-shared'
 import type { AnonCredsNonRevokedInterval, AnonCredsProof, AnonCredsProofRequest } from '../models'
 import type { CredentialWithRevocationMetadata } from '../models/utils'
 import type { AnonCredsVerifierService, VerifyProofOptions, VerifyW3cPresentationOptions } from '../services'
 
 import { fetchRevocationStatusList } from '../utils'
 
-import { getRevocationMetadata } from './utils'
+import { getRevocationMetadata, getW3cAnonCredsCredentialProofDetails } from './utils'
 
 @injectable()
 export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
@@ -153,18 +152,17 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
       .filter((cwm) => cwm.nonRevoked)
       .map(async (credentialWithMetadata) => {
         const w3cJsonLdVerifiableCredential = JsonTransformer.toJSON(credentialWithMetadata.credential)
-        const { revocationRegistryIndex, revocationRegistryId, timestamp } =
-          AnonCredsW3cCredential.fromJson(w3cJsonLdVerifiableCredential)
+        const { revocationRegistryId, timestamp } = getW3cAnonCredsCredentialProofDetails(w3cJsonLdVerifiableCredential)
 
         if (!revocationRegistryId) {
           throw new CredoError('Missing revocationRegistryId in revocable W3C AnonCreds credential')
         }
 
+        // Without the revocation registry index, as verifying doesn't need the revocation state of the credential
         return await getRevocationMetadata(agentContext, {
           nonRevokedInterval: credentialWithMetadata.nonRevoked as AnonCredsNonRevokedInterval,
           timestamp: timestamp,
           revocationRegistryId,
-          revocationRegistryIndex,
         })
       })
 
@@ -177,7 +175,7 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
       options.credentialsWithRevocationMetadata
     )
 
-    const revocationRegistryDefinitions: Record<string, RevocationRegistryDefinition> = {}
+    const revocationRegistryDefinitions: Record<string, JsonObject> = {}
     for (const rm of revocationMetadata) {
       revocationRegistryDefinitions[rm.revocationRegistryId] = rm.revocationRegistryDefinition
     }

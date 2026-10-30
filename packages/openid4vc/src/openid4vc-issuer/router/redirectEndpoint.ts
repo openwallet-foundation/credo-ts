@@ -231,7 +231,8 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
           OpenId4VcIssuanceSessionState.AuthorizationGranted
         )
 
-        return response.redirect(redirectUri.toString())
+        response.redirect(redirectUri.toString())
+        return next()
       } catch (error) {
         if (error instanceof Oauth2ServerErrorResponseError) {
           // Redirect to the redirect URI if available.
@@ -253,7 +254,8 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
               }
             )
 
-            return response.redirect(redirectUri.toString())
+            response.redirect(redirectUri.toString())
+            return next()
           }
 
           return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
