@@ -1804,12 +1804,7 @@ export class OpenId4VcIssuerService {
   public async verifyRefreshToken(
     agentContext: AgentContext,
     issuer: OpenId4VcIssuerRecord,
-    parsedRefreshToken: ReturnType<OpenId4VcIssuerService['parseRefreshToken']>,
-    options: {
-      dpop?: {
-        jwkThumbprint?: string
-      }
-    } = {}
+    parsedRefreshToken: ReturnType<OpenId4VcIssuerService['parseRefreshToken']>
   ) {
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
@@ -1833,12 +1828,6 @@ export class OpenId4VcIssuerService {
 
     if (!verification.isValid) {
       throw new CredoError('Invalid refresh token')
-    }
-
-    if (options.dpop?.jwkThumbprint) {
-      if (parsedRefreshToken.dpop?.jwkThumbprint !== options.dpop.jwkThumbprint) {
-        throw new CredoError(`Invalid 'cnf.jkt' claim in refresh token jwt payload`)
-      }
     }
   }
 

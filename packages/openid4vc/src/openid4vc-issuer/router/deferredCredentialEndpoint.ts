@@ -171,8 +171,6 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
         utils.addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
 
       if (Date.now() > expiresAt.getTime()) {
-        issuanceSession.errorMessage = 'Credential offer has expired'
-        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
         return sendOauth2ErrorResponse(
           response,
           next,
