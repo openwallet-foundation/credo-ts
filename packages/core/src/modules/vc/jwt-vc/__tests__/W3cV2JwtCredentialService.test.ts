@@ -29,7 +29,7 @@ import {
 } from '../../../dids'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
 import { X509ModuleConfig } from '../../../x509/X509ModuleConfig'
-import { CREDENTIALS_CONTEXT_V2_URL } from '../../constants'
+import { CREDENTIALS_CONTEXT_V2_URL, CREDENTIALS_UNDEFINED_TERMS_V2_URL } from '../../constants'
 import {
   ClaimFormat,
   W3cV2Credential,
@@ -541,6 +541,32 @@ describe('W3cV2JwtCredentialService', () => {
         : [signedJwtVp.resolvedPresentation.verifiableCredential]
 
       expect(decodedCredentials).toHaveLength(2)
+    })
+
+    test.each([
+      ['adds', [CREDENTIALS_CONTEXT_V2_URL]],
+      ['does not duplicate', [CREDENTIALS_CONTEXT_V2_URL, CREDENTIALS_UNDEFINED_TERMS_V2_URL]],
+    ])('%s the undefined terms context in the vp payload', async (_, context) => {
+      const parsedJwtVc = W3cV2JwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
+
+      const presentation = new W3cV2Presentation({
+        context,
+        type: ['VerifiablePresentation'],
+        verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(parsedJwtVc)],
+        holder: holderDidKey.did,
+      })
+
+      const signedJwtVp = await w3cV2JwtCredentialService.signPresentation(agentContext, {
+        presentation,
+        challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
+        domain: 'example.com',
+        format: ClaimFormat.JwtW3cVp,
+      })
+
+      expect(signedJwtVp.jwt.payload.additionalClaims['@context']).toEqual([
+        CREDENTIALS_CONTEXT_V2_URL,
+        CREDENTIALS_UNDEFINED_TERMS_V2_URL,
+      ])
     })
 
     test('signs a holder-driven JWT vp without enclosed credentials', async () => {
