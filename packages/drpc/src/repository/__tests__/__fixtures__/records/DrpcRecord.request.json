@@ -1,0 +1,23 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "connectionId": "connection-id",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "id": "drpc-record-id",
+  "metadata": {
+    "meta": {
+      "key": "value"
+    }
+  },
+  "request": {
+    "id": 1,
+    "jsonrpc": "2.0",
+    "method": "add",
+    "params": [1, 2]
+  },
+  "role": "client",
+  "state": "request-sent",
+  "threadId": "thread-id",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

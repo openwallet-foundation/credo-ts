@@ -1,0 +1,16 @@
+{
+  "_tags": {},
+  "accessTokenPublicKeyFingerprint": "z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "credentialConfigurationsSupported": {
+    "diploma-jwt-vc": {
+      "credential_definition": {
+        "type": ["VerifiableCredential", "UniversityDegreeCredential"]
+      },
+      "format": "jwt_vc_json"
+    }
+  },
+  "id": "legacy-issuer-record-id",
+  "issuerId": "legacy-issuer-id",
+  "metadata": {}
+}

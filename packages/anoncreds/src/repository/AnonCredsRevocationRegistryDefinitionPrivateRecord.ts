@@ -1,6 +1,7 @@
 import type { TagsBase } from '@credo-ts/core'
 
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils, zTypedObject } from '@credo-ts/core'
+import { z } from 'zod'
 
 export enum AnonCredsRevocationRegistryState {
   Created = 'created',
@@ -22,10 +23,21 @@ export type DefaultAnonCredsRevocationRegistryPrivateTags = {
   state: AnonCredsRevocationRegistryState
 }
 
+const anonCredsRevocationRegistryDefinitionPrivateRecordEncodingSchema = createRecordEncodingSchema({
+  revocationRegistryDefinitionId: z.string().nullish(),
+  credentialDefinitionId: z.string().nullish(),
+  value: zTypedObject<Record<string, unknown>>().nullish(),
+  state: z.string().nullish(),
+})
+
 export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseRecord<
   DefaultAnonCredsRevocationRegistryPrivateTags,
   TagsBase
 > {
+  public static get encodingSchema(): z.ZodType {
+    return anonCredsRevocationRegistryDefinitionPrivateRecordEncodingSchema
+  }
+
   public static readonly type = 'AnonCredsRevocationRegistryDefinitionPrivateRecord'
   public readonly type = AnonCredsRevocationRegistryDefinitionPrivateRecord.type
 
