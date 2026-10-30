@@ -3,6 +3,7 @@ import {
   BaseRecord,
   CredoError,
   createRecordEncodingSchema,
+  isJsonObject,
   Kms,
   utils,
   zIsoDate,
@@ -283,13 +284,23 @@ export interface OpenId4VcIssuanceSessionRecordProps {
   openId4VciVersion: OpenId4VciVersion
 }
 
+/**
+ * The drizzle storage stored `PublicJwk` instances as is, which serializes to `{ jwk: { jwk: { kty, ... } } }`.
+ * Returns the JWK for this format, so these records can be loaded.
+ */
+function unwrapSerializedPublicJwk(jwk: unknown): unknown {
+  if (isJsonObject(jwk) && isJsonObject(jwk.jwk) && isJsonObject(jwk.jwk.jwk)) return jwk.jwk.jwk
+
+  return jwk
+}
+
 const zPublicJwk = z.codec(
   z.unknown(),
   z.custom<Kms.PublicJwk>((value) => value instanceof Kms.PublicJwk, 'Must be an instance of PublicJwk'),
   {
     decode: (jwk, payload) => {
       try {
-        return Kms.PublicJwk.fromUnknown(jwk)
+        return Kms.PublicJwk.fromUnknown(unwrapSerializedPublicJwk(jwk))
       } catch (error) {
         payload.issues.push({
           code: 'custom',

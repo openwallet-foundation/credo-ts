@@ -262,9 +262,9 @@ When a record is loaded, the tag columns are not restored, as the record compute
 public customTagColumns = ["alternativeDids"];
 ```
 
-The `DrizzleStorageModule` validates every adapter when it's created: the table must have a column for every record property, and every column in `customTagColumns` must exist. A missing column throws a `CredoDrizzleStorageError` before any record is stored, so when you add a property to a record, also add the column and generate a migration for it (`drizzle-storage --bundle <your-bundle> generate --name <migration-name>`).
+The `DrizzleStorageModule` validates adapters that use the default mapping when it's created: the record must define an `encodingSchema`, the sqlite and postgres tables must have the same columns, every record property must have a column, and every column in `customTagColumns` must exist. A mismatch throws a `CredoDrizzleStorageError` before any record is stored, so when you add a property to a record, also add the column and generate a migration for it (`drizzle-storage --bundle <your-bundle> generate --name <migration-name>`).
 
-If the table is structured differently from the record, override `getValues` and `toRecord` and call `super` with the transformed values. The AnonCreds schema adapter does this to store some fields of the schema in separate columns. If your columns have different names than the record properties, also override `validateRecordMapping`.
+If the table is structured differently from the record, override `getValues` and `toRecord`. Adapters that do this are not validated. If your overrides only transform some values and call `super` (the AnonCreds schema adapter does this to store some fields of the schema in separate columns), call `validateDefaultMapping()` from `validateRecordMapping()` to keep the validation.
 
 Records that don't define an `encodingSchema` (and still use class-transformer) must implement `getValues` and `toRecord` themselves.
 

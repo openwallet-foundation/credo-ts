@@ -31,4 +31,9 @@ export class DrizzleAnonCredsSchemaRecordAdapter extends BaseDrizzleRecordAdapte
       schema: { ...schema, issuerId, name: schemaName, version: schemaVersion } as typeof schema,
     })
   }
+
+  // Only some fields are stored differently, so the rest of the mapping is validated as well
+  public validateRecordMapping() {
+    this.validateDefaultMapping()
+  }
 }

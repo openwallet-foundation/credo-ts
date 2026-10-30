@@ -37,4 +37,9 @@ export class DrizzleAnonCredsCredentialDefinitionRecordAdapter extends BaseDrizz
       credentialDefinition: { ...credentialDefinition, issuerId, schemaId, tag } as typeof credentialDefinition,
     })
   }
+
+  // Only some fields are stored differently, so the rest of the mapping is validated as well
+  public validateRecordMapping() {
+    this.validateDefaultMapping()
+  }
 }

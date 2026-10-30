@@ -117,6 +117,7 @@ export abstract class BaseDrizzleRecordAdapter<
     const customTags = { ...tags }
 
     const values: Record<string, unknown> = {}
+    // The sqlite and postgres tables are validated to have the same columns
     for (const [columnName, column] of Object.entries(this.columns)) {
       if (baseColumnNames.includes(columnName)) continue
 
@@ -199,37 +200,59 @@ export abstract class BaseDrizzleRecordAdapter<
    * Validates that the table can store the record, so a mismatch is found when the adapter is registered
    * rather than when a record is stored. Called by the {@link DrizzleStorageModuleConfig}.
    *
-   * Every property of the record must have a column with the same name, and every column in
-   * {@link customTagColumns} must exist. Records without an `encodingSchema` are not validated, as the
-   * adapter must implement {@link getValues} and {@link toRecord}. Override this method if the adapter maps
-   * properties to columns with a different name.
+   * Only adapters that use the default {@link getValues} and {@link toRecord} are validated, see
+   * {@link validateDefaultMapping}. Adapters that override these methods and call `super` can call
+   * {@link validateDefaultMapping} from this method to be validated as well.
    *
    * @throws {CredoDrizzleStorageError} if the table can't store the record
    */
   public validateRecordMapping() {
-    const recordPropertyNames = getRecordPropertyNames(this.recordClass)
-    if (!recordPropertyNames) return
+    const usesDefaultMapping =
+      this.getValues === BaseDrizzleRecordAdapter.prototype.getValues &&
+      this.toRecord === BaseDrizzleRecordAdapter.prototype.toRecord
 
-    const sqliteColumnNames = Object.keys(getTableColumns(this.table.sqlite))
+    if (usesDefaultMapping) this.validateDefaultMapping()
+  }
+
+  /**
+   * Validates that the table can store the record with the default mapping: the record defines an `encodingSchema`,
+   * the sqlite and postgres tables have the same columns, every property of the record has a column with the same
+   * name, and every column in {@link customTagColumns} exists.
+   *
+   * @throws {CredoDrizzleStorageError} if the table can't store the record
+   */
+  protected validateDefaultMapping() {
+    const recordPropertyNames = getRecordPropertyNames(this.recordClass)
+    if (!recordPropertyNames) {
+      throw new CredoDrizzleStorageError(
+        `Record ${this.recordClass.name} does not define an encodingSchema using createRecordEncodingSchema. Implement getValues and toRecord in the drizzle adapter for this record.`
+      )
+    }
+
+    const columnNames = Object.keys(getTableColumns(this.table.sqlite))
     const postgresColumnNames = Object.keys(getTableColumns(this.table.postgres))
 
     const errors: string[] = []
-    for (const [dialect, columnNames] of [
-      ['sqlite', sqliteColumnNames],
-      ['postgres', postgresColumnNames],
-    ] as const) {
-      // The tags are stored in the tag columns and customTags
-      const propertiesWithoutColumn = recordPropertyNames.filter(
-        (propertyName) => propertyName !== '_tags' && !columnNames.includes(propertyName)
-      )
-      const missingCustomTagColumns = this.customTagColumns.filter((columnName) => !columnNames.includes(columnName))
 
-      if (propertiesWithoutColumn.length > 0) {
-        errors.push(`${dialect} table has no column for record properties ${propertiesWithoutColumn.join(', ')}`)
-      }
-      if (missingCustomTagColumns.length > 0) {
-        errors.push(`${dialect} table has no column for custom tag columns ${missingCustomTagColumns.join(', ')}`)
-      }
+    const onlyInSqlite = columnNames.filter((columnName) => !postgresColumnNames.includes(columnName))
+    const onlyInPostgres = postgresColumnNames.filter((columnName) => !columnNames.includes(columnName))
+    if (onlyInSqlite.length > 0 || onlyInPostgres.length > 0) {
+      errors.push(
+        `the sqlite and postgres tables have different columns (only in sqlite: ${onlyInSqlite.join(', ') || '-'}, only in postgres: ${onlyInPostgres.join(', ') || '-'})`
+      )
+    }
+
+    // The tags are stored in the tag columns and customTags
+    const propertiesWithoutColumn = recordPropertyNames.filter(
+      (propertyName) => propertyName !== '_tags' && !columnNames.includes(propertyName)
+    )
+    if (propertiesWithoutColumn.length > 0) {
+      errors.push(`the table has no column for record properties ${propertiesWithoutColumn.join(', ')}`)
+    }
+
+    const missingCustomTagColumns = this.customTagColumns.filter((columnName) => !columnNames.includes(columnName))
+    if (missingCustomTagColumns.length > 0) {
+      errors.push(`the table has no column for custom tag columns ${missingCustomTagColumns.join(', ')}`)
     }
 
     if (errors.length > 0) {

@@ -781,7 +781,7 @@ describe('validateRecordMapping', () => {
     } as never
 
     expect(() => adapter.validateRecordMapping()).toThrow(
-      "Drizzle adapter for record DidCommBasicMessageRecord can't store the record: sqlite table has no column for record properties content, sentTime, connectionId, role, threadId, parentThreadId"
+      "Drizzle adapter for record DidCommBasicMessageRecord can't store the record: the table has no column for record properties content, sentTime, connectionId, role, threadId, parentThreadId"
     )
   })
 
@@ -790,7 +790,45 @@ describe('validateRecordMapping', () => {
     adapter.customTagColumns = ['alternativeDidz']
 
     expect(() => adapter.validateRecordMapping()).toThrow(
-      'sqlite table has no column for custom tag columns alternativeDidz; postgres table has no column for custom tag columns alternativeDidz'
+      'the table has no column for custom tag columns alternativeDidz'
     )
+  })
+
+  test('throws when the sqlite and postgres tables have different columns', () => {
+    const adapter = new storageVersionDrizzleRecord.adapter({} as never)
+    adapter.table = {
+      postgres: storageVersionDrizzleRecord.postgres.storageVersion,
+      sqlite: genericRecordDrizzleRecord.sqlite.genericRecord,
+    } as never
+
+    expect(() => adapter.validateRecordMapping()).toThrow(
+      'the sqlite and postgres tables have different columns (only in sqlite: content, only in postgres: storageVersion)'
+    )
+  })
+
+  test('throws when the record has no encodingSchema and the adapter uses the default mapping', () => {
+    const adapter = new storageVersionDrizzleRecord.adapter({} as never)
+    adapter.recordClass = class LegacyRecord {} as never
+
+    expect(() => adapter.validateRecordMapping()).toThrow(
+      'Record LegacyRecord does not define an encodingSchema using createRecordEncodingSchema'
+    )
+  })
+
+  test('does not validate adapters that implement getValues and toRecord', () => {
+    class CustomAdapter extends storageVersionDrizzleRecord.adapter {
+      public getValues(): never {
+        throw new Error('not used')
+      }
+
+      public toRecord(): never {
+        throw new Error('not used')
+      }
+    }
+
+    const adapter = new CustomAdapter({} as never)
+    adapter.recordClass = class LegacyRecord {} as never
+
+    expect(() => adapter.validateRecordMapping()).not.toThrow()
   })
 })
