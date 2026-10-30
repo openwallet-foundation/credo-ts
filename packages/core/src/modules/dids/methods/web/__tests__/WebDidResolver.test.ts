@@ -79,11 +79,12 @@ describe('WebDidResolver', () => {
           )
         })
       }
-      const pendingResolution = resolve(createAgentContext(fetch), did)
+      const agentContext = createAgentContext(fetch)
+      const pendingResolution = resolve(agentContext, did)
 
       await fetchStarted
       expect(receivedSignal).toBe(true)
-      await vi.advanceTimersByTimeAsync(4999)
+      await vi.advanceTimersByTimeAsync(agentContext.config.fetchLimits.timeoutMs - 1)
       expect(signalAborted).toBe(false)
       await vi.advanceTimersByTimeAsync(1)
 
