@@ -1,3 +1,4 @@
+import type { Kms } from '@credo-ts/core'
 import type { Express } from 'express'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
@@ -75,6 +76,18 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   refreshTokenExpiresInSeconds?: number
 
   /**
+   * Whether refresh tokens are generated for all issuance sessions. Refresh tokens are bound to the DPoP key of
+   * the wallet, so this can't be enabled when DPoP isn't required (`dpopRequired`, or `requireDpop` for the
+   * session). Creating an issuance session with that combination throws an error.
+   *
+   * This value can be overridden per issuance session when creating a credential offer (`generateRefreshTokens`)
+   * or in the `getDynamicIssuanceSession` callback (`generateRefreshTokens`).
+   *
+   * @default false
+   */
+  generateRefreshTokens?: boolean
+
+  /**
    * The time after which a pushed authorization request URI will expire.
    *
    * @default 60 (1 minute)
@@ -88,9 +101,17 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
    * This value can be overridden per issuance session when creating a credential offer (`authorization.requireDpop`)
    * or in the `getDynamicIssuanceSession` callback (`requireDpop`).
    *
-   * @default false
+   * @default true
    */
   dpopRequired?: boolean
+
+  /**
+   * The DPoP signing algorithms supported by all issuers. Can be overridden per issuer with
+   * `dpopSigningAlgValuesSupported` on the issuer record.
+   *
+   * If not provided, all signature algorithms supported by the agent's KMS are used.
+   */
+  dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
 
   /**
    * Whether PKCE is required for authorization requests (pushed authorization requests and authorization
@@ -402,6 +423,20 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
+   * Whether refresh tokens are generated for all issuance sessions. Refresh tokens are bound to the DPoP key of
+   * the wallet, so this can't be enabled when DPoP isn't required (`dpopRequired`, or `requireDpop` for the
+   * session). Creating an issuance session with that combination throws an error.
+   *
+   * This value can be overridden per issuance session when creating a credential offer (`generateRefreshTokens`)
+   * or in the `getDynamicIssuanceSession` callback (`generateRefreshTokens`).
+   *
+   * @default false
+   */
+  public get generateRefreshTokens(): boolean {
+    return this.options.generateRefreshTokens ?? false
+  }
+
+  /**
    * The time after which a pushed authorization request URI will expire.
    *
    * @default 60 (1 minute)
@@ -417,10 +452,20 @@ export class OpenId4VcIssuerModuleConfig {
    * This value can be overridden per issuance session when creating a credential offer (`authorization.requireDpop`)
    * or in the `getDynamicIssuanceSession` callback (`requireDpop`).
    *
-   * @default false
+   * @default true
    */
   public get dpopRequired(): boolean {
-    return this.options.dpopRequired ?? false
+    return this.options.dpopRequired ?? true
+  }
+
+  /**
+   * The DPoP signing algorithms supported by all issuers. Can be overridden per issuer with
+   * `dpopSigningAlgValuesSupported` on the issuer record.
+   *
+   * If not provided, all signature algorithms supported by the agent's KMS are used.
+   */
+  public get dpopSigningAlgValuesSupported() {
+    return this.options.dpopSigningAlgValuesSupported
   }
 
   /**

@@ -106,6 +106,7 @@ import {
   OpenId4VcIssuerRecord,
   OpenId4VcIssuerRepository,
 } from './repository'
+import { offerUsesInternalAuthorizationServer } from './util/authorizationServer'
 import { generateTxCode } from './util/txCode'
 
 /**
@@ -199,6 +200,21 @@ export class OpenId4VcIssuerService {
 
     const vcIssuer = this.getIssuer(agentContext)
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+
+    // Refresh tokens are only issued by Credo, so they don't apply when all grants use an external authorization server
+    if (
+      offerUsesInternalAuthorizationServer({
+        issuer,
+        credentialIssuer: issuerMetadata.credentialIssuer.credential_issuer,
+        preAuthorizedCodeFlowConfig,
+        authorizationCodeFlowConfig,
+      })
+    ) {
+      this.assertRefreshTokensRequireDpop({
+        generateRefreshTokens: options.generateRefreshTokens,
+        requireDpop: authorization?.requireDpop,
+      })
+    }
 
     const uniqueOfferedCredentials = Array.from(new Set(options.credentialConfigurationIds))
     if (uniqueOfferedCredentials.length !== credentialConfigurationIds.length) {
@@ -555,9 +571,14 @@ export class OpenId4VcIssuerService {
             requireDpop: options.requireDpop,
             requireWalletAttestation: undefined,
             requirePkce: undefined,
-            generateRefreshTokens: undefined,
+            generateRefreshTokens: false,
           }
         : sessionOptions
+
+    this.assertRefreshTokensRequireDpop({
+      generateRefreshTokens: internalOptions.generateRefreshTokens,
+      requireDpop: internalOptions.requireDpop,
+    })
 
     const issuanceSession = new OpenId4VcIssuanceSessionRecord({
       // Optional: allows the `getDynamicIssuanceSession` callback to bind the session to an id it
@@ -1462,7 +1483,7 @@ export class OpenId4VcIssuerService {
         ? [SupportedClientAuthenticationMethod.ClientAttestationJwt]
         : []),
       // DPoP-bound method (§5.2): Client Attestation JWT + DPoP proof.
-      ...(issuerRecord.clientAttestationSigningAlgValuesSupported && issuerRecord.dpopSigningAlgValuesSupported
+      ...(issuerRecord.clientAttestationSigningAlgValuesSupported
         ? [SupportedClientAuthenticationMethod.ClientAttestationJwtDpop]
         : []),
     ]
@@ -1503,7 +1524,10 @@ export class OpenId4VcIssuerService {
       require_pushed_authorization_requests: true,
 
       code_challenge_methods_supported: [PkceCodeChallengeMethod.S256],
-      dpop_signing_alg_values_supported: issuerRecord.dpopSigningAlgValuesSupported,
+      dpop_signing_alg_values_supported:
+        issuerRecord.dpopSigningAlgValuesSupported ??
+        config.dpopSigningAlgValuesSupported ??
+        agentContext.resolve(Kms.KeyManagementApi).supportedJwaSignatureAlgorithms(),
       authorization_response_iss_parameter_supported: true,
     } satisfies AuthorizationServerMetadata
 
@@ -2312,6 +2336,18 @@ export class OpenId4VcIssuerService {
       verificationMethod: options.verificationMethod,
       proofType: proofType,
     })
+  }
+
+  // Refresh tokens are only issued bound to a DPoP key, as a wallet is a public client (RFC 9700 §2.2.2)
+  private assertRefreshTokensRequireDpop(options: { generateRefreshTokens?: boolean; requireDpop?: boolean }) {
+    const generateRefreshTokens = options.generateRefreshTokens ?? this.openId4VcIssuerConfig.generateRefreshTokens
+    const requireDpop = options.requireDpop ?? this.openId4VcIssuerConfig.dpopRequired
+
+    if (generateRefreshTokens && !requireDpop) {
+      throw new CredoError(
+        `Refresh tokens can only be generated when DPoP is required. Either require DPoP, or disable 'generateRefreshTokens'.`
+      )
+    }
   }
 }
 
