@@ -2,6 +2,7 @@ import type { DcqlQuery, X509Certificate } from '@credo-ts/core'
 import {
   ClaimFormat,
   DateOnly,
+  Jwt,
   Kms,
   MdocDeviceResponse,
   MdocRecord,
@@ -690,5 +691,60 @@ describe('OpenId4VP DC API', () => {
         transactionDataIndex: 0,
       },
     ])
+  })
+
+  it('Digital Credentials API v1.draft24 ignores the client_id of an unsigned request', async () => {
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        responseMode: 'dc_api',
+        expectedOrigins: ['https://example.com'],
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: {
+          method: 'none',
+        },
+        dcql: {
+          query: { credentials: [dcqlQuery.credentials[1]] },
+        },
+        version: 'v1.draft24',
+      })
+
+    // Another web page relays the request, with the verifier's origin as client_id
+    const { expected_origins: _expectedOrigins, ...relayedRequest } = authorizationRequestObject
+    const resolvedAuthorizationRequest = await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
+      { ...relayedRequest, client_id: 'web-origin:https://example.com' },
+      {
+        origin: 'https://attacker.example',
+      }
+    )
+
+    expect(resolvedAuthorizationRequest.authorizationRequestPayload.client_id).toBeUndefined()
+    expect(resolvedAuthorizationRequest.verifier).toEqual({
+      clientIdPrefix: 'origin',
+      effectiveClientId: 'origin:https://attacker.example',
+    })
+    if (!resolvedAuthorizationRequest.dcql) throw new Error('Dcql not defined')
+
+    const result = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
+      dcql: {
+        credentials: holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
+          resolvedAuthorizationRequest.dcql.queryResult
+        ),
+      },
+      origin: resolvedAuthorizationRequest.origin,
+    })
+
+    const sdJwtVc = (result.authorizationResponsePayload.vp_token as Record<string, string>)
+      .OpenBadgeCredentialDescriptor
+    const kbJwt = Jwt.fromSerializedJwt(sdJwtVc.slice(sdJwtVc.lastIndexOf('~') + 1))
+    expect(kbJwt.payload.aud).toEqual('web-origin:https://attacker.example')
+
+    await expect(
+      verifier.agent.openid4vc.verifier.verifyAuthorizationResponse({
+        verificationSessionId: verificationSession.id,
+        origin: 'https://example.com',
+        authorizationResponse: result.authorizationResponse,
+      })
+    ).rejects.toThrow('The key binding JWT does not contain the expected audience')
   })
 })
