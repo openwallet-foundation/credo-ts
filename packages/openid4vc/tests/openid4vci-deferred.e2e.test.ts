@@ -26,7 +26,9 @@ import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
 import {
+  OpenId4VcIssuanceSessionRepository,
   OpenId4VcIssuanceSessionState,
+  OpenId4VcIssuerModuleConfig,
   type OpenId4VcIssuerModuleConfigOptions,
   type OpenId4VciSignMdocCredentials,
   OpenId4VcModule,
@@ -600,5 +602,111 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(firstMdoc.docType).toEqual('UniversityDegreeCredential')
 
     await holderTenant.endSession()
+  })
+
+  it('refresh tokens are only issued with DPoP', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+    })
+
+    await expect(
+      issuerTenant.openid4vc.issuer.createCredentialOffer({
+        issuerId: openIdIssuerTenant.issuerId,
+        credentialConfigurationIds: ['universityDegree'],
+        preAuthorizedCodeFlowConfig: {},
+        generateRefreshTokens: true,
+        authorization: { requireDpop: false },
+      })
+    ).rejects.toThrow('Refresh tokens can only be generated when DPoP is required')
+
+    const { issuanceSession } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1.draft15',
+      generateRefreshTokens: true,
+    })
+
+    // Simulate a session created before refresh tokens required DPoP
+    const issuanceSessionRepository = issuerTenant.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    const issuanceSessionRecord = await issuanceSessionRepository.getById(issuerTenant.context, issuanceSession.id)
+    issuanceSessionRecord.dpop = { required: false }
+    await issuanceSessionRepository.update(issuerTenant.context, issuanceSessionRecord)
+
+    const tokenResponse = await fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: preAuthorizedCodeGrantIdentifier,
+        'pre-authorized_code': issuanceSession.preAuthorizedCode as string,
+      }).toString(),
+    })
+    expect(tokenResponse.status).toBe(200)
+
+    const tokenResponseBody = (await tokenResponse.json()) as Record<string, unknown>
+    expect(tokenResponseBody).toMatchObject({ access_token: expect.any(String), token_type: 'Bearer' })
+    expect(tokenResponseBody.refresh_token).toBeUndefined()
+
+    await issuerTenant.endSession()
+  })
+
+  it('refresh tokens can be enabled in the module config and disabled per session', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+    })
+
+    const issuerConfig = issuer.agent.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+    vi.spyOn(issuerConfig, 'generateRefreshTokens', 'get').mockReturnValue(true)
+
+    const requestToken = async (generateRefreshTokens?: boolean) => {
+      const { credentialOffer } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
+        issuerId: openIdIssuerTenant.issuerId,
+        credentialConfigurationIds: ['universityDegree'],
+        preAuthorizedCodeFlowConfig: {},
+        generateRefreshTokens,
+      })
+      const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+      return holderTenant.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+    }
+
+    expect((await requestToken()).refreshToken).toEqual(expect.any(String))
+    expect((await requestToken(false)).refreshToken).toBeUndefined()
+
+    await expect(
+      issuerTenant.openid4vc.issuer.createCredentialOffer({
+        issuerId: openIdIssuerTenant.issuerId,
+        credentialConfigurationIds: ['universityDegree'],
+        preAuthorizedCodeFlowConfig: {},
+        authorization: { requireDpop: false },
+      })
+    ).rejects.toThrow('Refresh tokens can only be generated when DPoP is required')
+
+    // An external authorization server issues the tokens, so refresh tokens don't apply
+    const externalAuthorizationServerIssuer = await issuerTenant.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+      authorizationServerConfigs: [{ type: 'direct', issuer: 'http://localhost:4747' }],
+    })
+    await expect(
+      issuerTenant.openid4vc.issuer.createCredentialOffer({
+        issuerId: externalAuthorizationServerIssuer.issuerId,
+        credentialConfigurationIds: ['universityDegree'],
+        authorizationCodeFlowConfig: { authorizationServerUrl: 'http://localhost:4747' },
+        authorization: { requireDpop: false },
+      })
+    ).resolves.toBeDefined()
+
+    await holderTenant.endSession()
+    await issuerTenant.endSession()
   })
 })

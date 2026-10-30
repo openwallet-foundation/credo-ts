@@ -1,5 +1,6 @@
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2, SdJwtVc, SdJwtVcIssuer } from '@credo-ts/core'
 import { ClaimFormat, SdJwtVcRecord } from '@credo-ts/core'
+import { createDpopHeadersForRequest, type Jwk } from '@openid4vc/oauth2'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
@@ -15,6 +16,7 @@ import {
   type OpenId4VcVerifierModuleConfigOptions,
 } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
+import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType } from './utils'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupported } from './utilsVci'
@@ -307,6 +309,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     // Request authorization code
     const { authorizationCode } = await holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+      dpop: resolvedAuthorization.dpop,
       authSession: resolvedAuthorization.authSession,
       resolvedCredentialOffer,
       presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
@@ -316,6 +319,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     expect(resolvedAuthorization.codeVerifier).toEqual(expect.any(String))
     await expect(
       holder.agent.openid4vc.holder.requestToken({
+        dpop: resolvedAuthorization.dpop,
         resolvedCredentialOffer,
         code: authorizationCode,
         clientId: 'foo',
@@ -325,6 +329,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     // Request access token
     const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
+      dpop: resolvedAuthorization.dpop,
       resolvedCredentialOffer,
       code: authorizationCode,
       codeVerifier: resolvedAuthorization.codeVerifier,
@@ -439,6 +444,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     // Request authorization code
     const { authorizationCode } = await holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+      dpop: resolvedAuthorization.dpop,
       authSession: resolvedAuthorization.authSession,
       resolvedCredentialOffer,
       presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
@@ -446,6 +452,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     // Request access token
     const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
+      dpop: resolvedAuthorization.dpop,
       resolvedCredentialOffer,
       code: authorizationCode,
       codeVerifier: resolvedAuthorization.codeVerifier,
@@ -543,6 +550,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     // Requesting authorization code should fail
     await expect(
       holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+        dpop: resolvedAuthorization.dpop,
         authSession: resolvedAuthorization.authSession,
         resolvedCredentialOffer,
       })
@@ -628,6 +636,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     }
 
     const { authorizationCode } = await holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+      dpop: resolvedAuthorization.dpop,
       authSession: resolvedAuthorization.authSession,
       resolvedCredentialOffer,
       presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
@@ -642,10 +651,19 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     // biome-ignore lint/style/noNonNullAssertion: credo is the authorization server for this flow
     const tokenEndpoint = resolvedCredentialOffer.metadata.authorizationServers[0].token_endpoint!
-    const requestAccessToken = (additionalPayload: Record<string, string>) =>
+    const dpop = resolvedAuthorization.dpop
+    if (!dpop) throw new Error('Expected dpop')
+    const requestAccessToken = async (additionalPayload: Record<string, string>) =>
       fetch(tokenEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          ...(await createDpopHeadersForRequest({
+            request: { method: 'POST', url: tokenEndpoint },
+            callbacks: getOid4vcCallbacks(holder.agent.context),
+            signer: { method: 'jwk', alg: dpop.alg, publicJwk: dpop.jwk.toJson() as Jwk },
+          })),
+        },
         body: new URLSearchParams({
           grant_type: 'authorization_code',
           code: authorizationCode,
