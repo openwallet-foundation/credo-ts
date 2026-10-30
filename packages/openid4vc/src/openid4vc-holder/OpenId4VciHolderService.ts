@@ -65,6 +65,7 @@ import type { OpenId4VciCredentialConfigurationSupportedWithFormats, OpenId4VciM
 import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
+import { OpenId4VcHolderModuleConfig } from './OpenId4VcHolderModuleConfig'
 import type {
   OpenId4VciAcceptCredentialOfferOptions,
   OpenId4VciAuthCodeFlowOptions,
@@ -76,6 +77,7 @@ import type {
   OpenId4VciProofOfPossessionRequirements,
   OpenId4VciResolvedAuthorizationRequest,
   OpenId4VciResolvedCredentialOffer,
+  OpenId4VciResolveIssuerMetadataOptions,
   OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
   OpenId4VciSendNotificationOptions,
   OpenId4VciSupportedCredentialFormats,
@@ -90,12 +92,15 @@ export class OpenId4VciHolderService {
   private logger: Logger
   private w3cCredentialService: W3cCredentialService
   private w3cV2CredentialService: W3cV2CredentialService
+  private config: OpenId4VcHolderModuleConfig
 
   public constructor(
     @inject(InjectionSymbols.Logger) logger: Logger,
     w3cCredentialService: W3cCredentialService,
-    w3cV2CredentialService: W3cV2CredentialService
+    w3cV2CredentialService: W3cV2CredentialService,
+    config: OpenId4VcHolderModuleConfig
   ) {
+    this.config = config
     this.w3cCredentialService = w3cCredentialService
     this.w3cV2CredentialService = w3cV2CredentialService
     this.logger = logger
@@ -103,11 +108,14 @@ export class OpenId4VciHolderService {
 
   public async resolveIssuerMetadata(
     agentContext: AgentContext,
-    credentialIssuer: string
+    credentialIssuer: string,
+    options?: OpenId4VciResolveIssuerMetadataOptions
   ): Promise<OpenId4VciMetadata> {
     const client = this.getClient(agentContext)
 
-    const metadata = await client.resolveIssuerMetadata(credentialIssuer)
+    const metadata = await client.resolveIssuerMetadata(credentialIssuer, {
+      signedMetadata: options?.signedMetadata ?? this.config.signedMetadata,
+    })
     this.logger.debug('fetched credential issuer metadata', { metadata })
 
     return metadata
@@ -115,12 +123,15 @@ export class OpenId4VciHolderService {
 
   public async resolveCredentialOffer(
     agentContext: AgentContext,
-    credentialOffer: string
+    credentialOffer: string,
+    options?: OpenId4VciResolveIssuerMetadataOptions
   ): Promise<OpenId4VciResolvedCredentialOffer> {
     const client = this.getClient(agentContext)
 
     const credentialOfferObject = await client.resolveCredentialOffer(credentialOffer)
-    const metadata = await client.resolveIssuerMetadata(credentialOfferObject.credential_issuer)
+    const metadata = await client.resolveIssuerMetadata(credentialOfferObject.credential_issuer, {
+      signedMetadata: options?.signedMetadata ?? this.config.signedMetadata,
+    })
     this.logger.debug('fetched credential offer and issuer metadata', { metadata, credentialOfferObject })
 
     const credentialConfigurationsSupported = getOfferedCredentials(
