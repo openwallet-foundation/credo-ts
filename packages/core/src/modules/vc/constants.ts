@@ -10,6 +10,7 @@ export const CREDENTIALS_CONTEXT_V1_URL = 'https://www.w3.org/2018/credentials/v
 export const CREDENTIALS_CONTEXT_V2_URL = 'https://www.w3.org/ns/credentials/v2'
 export const CREDENTIALS_UNDEFINED_TERMS_V2_URL = 'https://www.w3.org/ns/credentials/undefined-terms/v2'
 export const CREDENTIALS_ISSUER_URL = 'https://www.w3.org/2018/credentials#issuer'
+export const CREDENTIALS_CREDENTIAL_SUBJECT_URL = 'https://www.w3.org/2018/credentials#credentialSubject'
 export const SECURITY_PROOF_URL = 'https://w3id.org/security#proof'
 export const SECURITY_SIGNATURE_URL = 'https://w3id.org/security#signature'
 export const VERIFIABLE_CREDENTIAL_TYPE = 'VerifiableCredential'

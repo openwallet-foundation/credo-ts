@@ -57,6 +57,13 @@
       "when": 1792675897114,
       "tag": "0007_add_credential_request_encryption",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793386202668,
+      "tag": "0008_add_failed_tx_code_attempts",
+      "breakpoints": true
     }
   ]
 }
