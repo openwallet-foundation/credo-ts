@@ -270,17 +270,22 @@ export class W3cJsonLdCredentialService {
       //
       // The holders are the signers of the presentation proofs that vc-js verified for their proof
       // purpose. A proof set passes when one proof verifies, so the other proofs don't count.
-      const holders = await Promise.all(
-        (result.presentationResult.results ?? [])
-          .filter((proofResult) => proofResult.verified === true)
-          .map((proofResult) => this.resolveSigner(agentContext, proofResult.proof.verificationMethod))
+      const holderVerificationMethods = new Set(
+        (result.presentationResult?.results ?? []).flatMap((proofResult) =>
+          proofResult.verified === true ? [proofResult.proof.verificationMethod] : []
+        )
       )
 
       // The subject ids come from the expanded credential, as the signed data is the same for `id`,
       // `@id` or another alias of `@id`.
-      const credentialsSubjectIds = await Promise.all(
-        credentials.map((credential) => this.getExpandedCredentialSubjectIds(agentContext, credential))
-      )
+      const [holders, credentialsSubjectIds] = await Promise.all([
+        Promise.all(
+          Array.from(holderVerificationMethods, (verificationMethod) =>
+            this.resolveSigner(agentContext, verificationMethod)
+          )
+        ),
+        Promise.all(credentials.map((credential) => this.getExpandedCredentialSubjectIds(agentContext, credential))),
+      ])
 
       // Surfaced per credential under `credentials[]` to mirror the jwt_vp result shape. The
       // library-level signature/status validations remain lumped in `vcJs`, so each entry here

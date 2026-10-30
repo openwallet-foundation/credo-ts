@@ -36,7 +36,8 @@ export interface W3cVerifyPresentationResult {
   verified: boolean
   error?: Error
 
-  presentationResult: {
+  // Not set for an unsigned presentation
+  presentationResult?: {
     verified: boolean
     error?: Error
     results?: W3cVerificationResult[]
