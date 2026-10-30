@@ -105,10 +105,17 @@ export class X509Service {
         .map((c) => X509Certificate.fromRawCertificate(new Uint8Array(c.rawData), effectiveParseOptions))
         .reverse()
 
-      // We allow longer parsed chain, in case the root cert was not part of the chain, but in the
-      // list of trusted certificates
-      if (parsedChain.length < certificateChain.length) {
-        throw new X509Error('Could not parse the full chain. Likely due to incorrect ordering')
+      // The built chain must start with the presented chain, so [leaf, intermediate] can't build [leaf, root].
+      // It may continue with trusted certificates that weren't presented, such as the root.
+      const providedChainMatchesBuiltChain =
+        certificateChain.length <= chain.length &&
+        certificatesToBuildChain
+          .slice(0, certificateChain.length)
+          .every((providedCertificate, index) => providedCertificate.equal(chain[index]))
+      if (!providedChainMatchesBuiltChain) {
+        throw new X509Error(
+          'The certificate chain is not ordered leaf first, or contains certificates that are not part of the chain'
+        )
       }
 
       let previousCertificate: X509Certificate | undefined

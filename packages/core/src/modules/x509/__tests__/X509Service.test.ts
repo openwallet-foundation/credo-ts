@@ -692,6 +692,72 @@ gTqhM3BGMuf+
     ).rejects.toThrow(X509Error)
   })
 
+  describe('provided chain must match the built chain', () => {
+    async function createCa(commonName: string) {
+      const key = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+      const certificate = await X509Service.createCertificate(agentContext, {
+        authorityKey: key,
+        issuer: { commonName },
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: { basicConstraints: { ca: true }, subjectKeyIdentifier: { include: true } },
+      })
+      return { key, certificate }
+    }
+
+    async function createIssued(commonName: string, issuer: { key: PublicJwk; certificate: X509Certificate }) {
+      const key = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+      const certificate = await X509Service.createCertificate(agentContext, {
+        authorityKey: issuer.key,
+        subjectPublicKey: key,
+        issuer: issuer.certificate.subject,
+        subject: { commonName },
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: { basicConstraints: { ca: true }, authorityKeyIdentifier: { include: true } },
+      })
+      return { key, certificate }
+    }
+
+    it('accepts a chain without the trusted root', async () => {
+      const root = await createCa('Root')
+      const intermediate = await createIssued('Intermediate', root)
+      const leaf = await createIssued('Leaf', intermediate)
+
+      const validatedChain = await X509Service.validateCertificateChain(agentContext, {
+        certificateChain: [leaf.certificate, intermediate.certificate].map((c) => c.toString('base64')),
+        trustedCertificates: [root.certificate.toString('base64')],
+      })
+      expect(validatedChain.length).toBe(3)
+    })
+
+    it('rejects a chain with an appended certificate that is not part of the chain', async () => {
+      const root = await createCa('Root')
+      const leaf = await createIssued('Leaf', root)
+      const unrelatedIntermediate = await createIssued('Unrelated Intermediate', await createCa('Unrelated Root'))
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain: [leaf.certificate, unrelatedIntermediate.certificate].map((c) => c.toString('base64')),
+          trustedCertificates: [root.certificate.toString('base64')],
+        })
+      ).rejects.toThrow('contains certificates that are not part of the chain')
+    })
+
+    it('rejects a chain that is not ordered leaf first', async () => {
+      const root = await createCa('Root')
+      const intermediate = await createIssued('Intermediate', root)
+      const leaf = await createIssued('Leaf', intermediate)
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain: [leaf.certificate, root.certificate, intermediate.certificate].map((c) =>
+            c.toString('base64')
+          ),
+          trustedCertificates: [root.certificate.toString('base64')],
+        })
+      ).rejects.toThrow('not ordered leaf first')
+    })
+  })
+
   it('should correctly parse test vector from verifier.eudiw.dev', async () => {
     const x5c = [
       'MIIDDDCCArKgAwIBAgIUG8SguUrbgpJUvd6v+07Sp8utLfQwCgYIKoZIzj0EAwIwXDEeMBwGA1UEAwwVUElEIElzc3VlciBDQSAtIFVUIDAyMS0wKwYDVQQKDCRFVURJIFdhbGxldCBSZWZlcmVuY2UgSW1wbGVtZW50YXRpb24xCzAJBgNVBAYTAlVUMB4XDTI1MDQxMDA2NDU1OFoXDTI3MDQxMDA2NDU1N1owVzEdMBsGA1UEAwwURVVESSBSZW1vdGUgVmVyaWZpZXIxCjAIBgNVBAUTATExHTAbBgNVBAoMFEVVREkgUmVtb3RlIFZlcmlmaWVyMQswCQYDVQQGEwJVVDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABOciV42mIT8nQMAN8kW9CHNUTYwkieem5hl1QsLf62kEbbZh6wul5iL28g/A3ZqcTX9XoLnw/nvJ8/HRp3+95eKjggFVMIIBUTAMBgNVHRMBAf8EAjAAMB8GA1UdIwQYMBaAFGLHlEcovQ+iFiCnmsJJlETxAdPHMDkGA1UdEQQyMDCBEm5vLXJlcGx5QGV1ZGl3LmRldoIadmVyaWZpZXItYmFja2VuZC5ldWRpdy5kZXYwEgYDVR0lBAswCQYHKIGMXQUBBjBDBgNVHR8EPDA6MDigNqA0hjJodHRwczovL3ByZXByb2QucGtpLmV1ZGl3LmRldi9jcmwvcGlkX0NBX1VUXzAyLmNybDAdBgNVHQ4EFgQUgAh9KsoYXYK8jndUbFQEtfDsHjYwDgYDVR0PAQH/BAQDAgeAMF0GA1UdEgRWMFSGUmh0dHBzOi8vZ2l0aHViLmNvbS9ldS1kaWdpdGFsLWlkZW50aXR5LXdhbGxldC9hcmNoaXRlY3R1cmUtYW5kLXJlZmVyZW5jZS1mcmFtZXdvcmswCgYIKoZIzj0EAwIDSAAwRQIgDFCgyEjGnJS25n/FfdP7HX0elz7C2q4uUQ/7Zcrl0QYCIQC/rrJpQ5sF1O4aiHejIPPLuO3JjdrLJPZSA+FQH+eIrA==',
