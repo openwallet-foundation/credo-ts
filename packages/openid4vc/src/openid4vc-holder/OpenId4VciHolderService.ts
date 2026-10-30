@@ -44,6 +44,7 @@ import {
   Oauth2Client,
   Oauth2ServerErrorResponseError,
   preAuthorizedCodeGrantIdentifier,
+  type RetrieveAccessTokenReturn,
   refreshTokenGrantIdentifier,
   requestClientAttestationChallenge,
   SupportedClientAuthenticationMethod,
@@ -225,11 +226,11 @@ export class OpenId4VciHolderService {
         authSession: authorizationResult.authSession,
         // Only used if the authorization server supports pkce
         codeVerifier: authorizationServerMetadata.code_challenge_methods_supported ? pkceCodeVerifier : undefined,
-        // FIXME: return dpop result from this endpoint (dpop nonce)
         dpop: dpop
           ? {
               alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
               jwk: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk),
+              nonce: authorizationResult.dpop?.nonce,
             }
           : undefined,
       }
@@ -240,11 +241,11 @@ export class OpenId4VciHolderService {
       authorizationFlow: AuthorizationFlow.Oauth2Redirect,
       codeVerifier: authorizationResult.pkce?.codeVerifier,
       authorizationRequestUrl: authorizationResult.authorizationRequestUrl,
-      // FIXME: return dpop result from this endpoint (dpop nonce)
       dpop: dpop
         ? {
             alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
             jwk: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk),
+            nonce: authorizationResult.dpop?.nonce,
           }
         : undefined,
     }
@@ -302,9 +303,9 @@ export class OpenId4VciHolderService {
       authorizationCode: authorizationChallengeResponse.authorization_code,
       dpop: dpop
         ? {
-            ...dpopResult,
             alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
             jwk: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk),
+            nonce: dpopResult?.nonce,
           }
         : undefined,
     }
@@ -440,9 +441,9 @@ export class OpenId4VciHolderService {
           }
         : dpop
           ? {
-              ...result.dpop,
               alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
               jwk: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk),
+              nonce: result.dpop?.nonce,
             }
           : undefined,
     }
@@ -452,8 +453,7 @@ export class OpenId4VciHolderService {
     agentContext: AgentContext,
     options: OpenId4VciTokenRefreshOptions
   ): Promise<
-    // FIXME: export type in oid4vc library
-    Omit<Awaited<ReturnType<Oauth2Client['retrieveRefreshTokenAccessToken']>>, 'dpop'> & {
+    Omit<RetrieveAccessTokenReturn, 'dpop'> & {
       dpop?: OpenId4VciDpopRequestOptions
     }
   > {
@@ -487,9 +487,9 @@ export class OpenId4VciHolderService {
       ...result,
       dpop: dpop
         ? {
-            ...result.dpop,
             alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
             jwk: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk),
+            nonce: result.dpop?.nonce,
           }
         : undefined,
     }
