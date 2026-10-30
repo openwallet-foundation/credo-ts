@@ -84,15 +84,10 @@ export class OpenId4VcHolderApi {
   }
 
   /**
-   * Declines an authorization request by sending an OpenID4VP Authorization Error Response ([OpenID4VP 1.0] Section 8.5).
-   * Use it when the user declines the request, when the wallet doesn't have the requested credentials, or with the
-   * `Openid4vpAuthorizationRequestError` thrown by {@link resolveOpenId4VpAuthorizationRequest}. When that error's
-   * client is not authenticated, the `redirectUri` is left out of the result, as it could send the user anywhere.
+   * Declines an authorization request by sending an error response to the verifier. Pass either the resolved
+   * request, or the `Openid4vpAuthorizationRequestError` thrown by {@link resolveOpenId4VpAuthorizationRequest}.
    *
-   * For response mode of `direct_post` or `direct_post.jwt` the response will be submitted directly to the
-   * response url, and the `redirectUri` the verifier may return should be opened to send the user back. For
-   * `dc_api` and `dc_api.jwt` the response will be returned but without a `serverResponse`, and you have to
-   * return it to the platform yourself.
+   * For `dc_api` and `dc_api.jwt` the response is returned without a `serverResponse`, to return to the platform yourself.
    */
   public async declineOpenId4VpAuthorizationRequest(options: OpenId4VpDeclineAuthorizationRequestOptions) {
     return await this.openId4VpHolderService.declineAuthorizationRequest(this.agentContext, options)

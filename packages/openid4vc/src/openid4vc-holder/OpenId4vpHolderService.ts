@@ -213,16 +213,8 @@ export class OpenId4VpHolderService {
         : undefined,
     }
 
-    let pexResult: Awaited<ReturnType<OpenId4VpHolderService['handlePresentationExchangeRequest']>> | undefined
-    let dcqlResult: Awaited<ReturnType<OpenId4VpHolderService['handleDcqlRequest']>> | undefined
-    try {
-      pexResult = pex?.presentation_definition
-        ? await this.handlePresentationExchangeRequest(agentContext, pex.presentation_definition, transactionData)
-        : undefined
-
-      dcqlResult = dcql?.query ? await this.handleDcqlRequest(agentContext, dcql.query, transactionData) : undefined
-    } catch (error) {
-      // The client is authenticated at this point, so the wallet can send the error to the verifier
+    // The client is authenticated at this point, so the wallet can send the error to the verifier
+    const throwAuthorizationRequestError = (error: unknown): never => {
       if (error instanceof Oauth2ServerErrorResponseError) {
         throw new Openid4vpAuthorizationRequestError(error, {
           authorizationRequestPayload: verifiedAuthorizationRequest.authorizationRequestPayload,
@@ -232,6 +224,16 @@ export class OpenId4VpHolderService {
       }
       throw error
     }
+
+    const pexResult = pex?.presentation_definition
+      ? await this.handlePresentationExchangeRequest(agentContext, pex.presentation_definition, transactionData).catch(
+          throwAuthorizationRequestError
+        )
+      : undefined
+
+    const dcqlResult = dcql?.query
+      ? await this.handleDcqlRequest(agentContext, dcql.query, transactionData).catch(throwAuthorizationRequestError)
+      : undefined
 
     agentContext.config.logger.debug('verified Authorization Request')
     agentContext.config.logger.debug(`request '${JSON.stringify(authorizationRequest)}'`)
@@ -643,32 +645,34 @@ export class OpenId4VpHolderService {
     }
 
     const openid4vpClient = this.getOpenid4vpClient(agentContext)
-    const createResponse = (jarm?: ReturnType<OpenId4VpHolderService['getJarmOptions']>) =>
+    const createResponse = async ({ encrypt }: { encrypt: boolean }) =>
       openid4vpClient.createOpenid4vpAuthorizationResponse<Openid4vpAuthorizationErrorResponse>({
         authorizationRequestPayload,
         origin,
         authorizationResponsePayload: { error, error_description: errorDescription },
-        jarm,
+        jarm: encrypt
+          ? this.getJarmOptions(
+              TypedArrayEncoder.toBase64Url(agentContext.resolve(Kms.KeyManagementApi).randomBytes({ length: 32 })),
+              this.getResponseEncryptionJwk(agentContext, authorizationRequestPayload)
+            )
+          : undefined,
       })
 
-    let response: Awaited<ReturnType<typeof createResponse>> | undefined
-    if (authorizationRequestPayload.response_mode && isJarmResponseMode(authorizationRequestPayload.response_mode)) {
-      try {
-        const kms = agentContext.resolve(Kms.KeyManagementApi)
-        const encryptionJwk = this.getResponseEncryptionJwk(agentContext, authorizationRequestPayload)
-        response = await createResponse(
-          this.getJarmOptions(TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 })), encryptionJwk)
-        )
-      } catch (encryptionError) {
-        // [OpenID4VP 1.0] Section 8.3.1: "If a Wallet is unable to generate an encrypted response, it MAY
-        // send an error response without encryption as per Section 8.2." This covers no usable key in the
-        // client metadata, unsupported encryption parameters and a failing encryption.
-        agentContext.config.logger.warn('Unable to encrypt the authorization error response, sending it unencrypted', {
-          error: encryptionError,
+    const shouldEncryptResponse = authorizationRequestPayload.response_mode
+      ? isJarmResponseMode(authorizationRequestPayload.response_mode)
+      : false
+    const response = shouldEncryptResponse
+      ? await createResponse({ encrypt: true }).catch((encryptionError) => {
+          // [OpenID4VP 1.0] Section 8.3.1: "If a Wallet is unable to generate an encrypted response, it MAY
+          // send an error response without encryption as per Section 8.2." This covers no usable key in the
+          // client metadata, unsupported encryption parameters and a failing encryption.
+          agentContext.config.logger.warn(
+            'Unable to encrypt the authorization error response, sending it unencrypted',
+            { error: encryptionError }
+          )
+          return createResponse({ encrypt: false })
         })
-      }
-    }
-    response ??= await createResponse()
+      : await createResponse({ encrypt: false })
 
     const authorizationResponsePayload = response.authorizationResponsePayload
     const authorizationResponse = response.jarm?.responseJwt
