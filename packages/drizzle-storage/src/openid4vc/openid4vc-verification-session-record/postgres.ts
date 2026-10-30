@@ -2,6 +2,7 @@ import type {
   OpenId4VcVerificationSessionState,
   OpenId4VpAuthorizationRequestPayload,
   OpenId4VpAuthorizationResponsePayload,
+  OpenId4VpVersion,
 } from '@credo-ts/openid4vc'
 import { jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
@@ -43,6 +44,7 @@ export const openId4VcVerificationSession = pgTable(
       'authorization_response_payload'
     ).$type<OpenId4VpAuthorizationResponsePayload>(),
     presentationDuringIssuanceSession: text('presentation_during_issuance_session'),
+    openId4VpVersion: text('openid4vp_version').$type<OpenId4VpVersion>(),
 
     // These tags may be encoded in a JWT, so we need to duplicate them
     nonce: text().notNull(),

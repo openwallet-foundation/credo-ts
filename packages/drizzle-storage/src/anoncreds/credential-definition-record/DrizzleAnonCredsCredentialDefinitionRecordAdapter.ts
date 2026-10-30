@@ -1,5 +1,4 @@
 import { AnonCredsCredentialDefinitionRecord } from '@credo-ts/anoncreds'
-import { JsonTransformer, type TagsBase } from '@credo-ts/core'
 import { BaseDrizzleRecordAdapter, type DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
 import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
@@ -23,43 +22,24 @@ export class DrizzleAnonCredsCredentialDefinitionRecordAdapter extends BaseDrizz
     )
   }
 
+  // The issuer id, schema id and tag of the credential definition are stored in separate columns
   public getValues(record: AnonCredsCredentialDefinitionRecord) {
-    const {
-      schemaId: schemaIdTag,
-      credentialDefinitionId,
-      issuerId: issuerIdTag,
-      tag: tagTag,
-      methodName,
-      ...customTags
-    } = record.getTags()
+    const { issuerId: _, schemaId: __, tag: ___, ...credentialDefinition } = record.credentialDefinition
 
-    const { issuerId, schemaId, tag, ...credentialDefinitionRest } = record.credentialDefinition
-
-    return {
-      credentialDefinitionId,
-      methodName,
-
-      schemaId,
-      issuerId,
-      tag,
-      credentialDefinition: credentialDefinitionRest,
-
-      customTags,
-    }
+    return { ...super.getValues(record), credentialDefinition }
   }
 
   public toRecord(values: DrizzleAnonCredsCredentialDefinitionAdapterValues): AnonCredsCredentialDefinitionRecord {
-    const { customTags, issuerId, schemaId, tag, ...remainingValues } = values
+    const { credentialDefinition, issuerId, schemaId, tag } = values
 
-    const record = JsonTransformer.fromJSON(
-      {
-        ...remainingValues,
-        credentialDefinition: { ...remainingValues.credentialDefinition, issuerId, schemaId, tag },
-      },
-      AnonCredsCredentialDefinitionRecord
-    )
-    record.setTags({ ...customTags } as TagsBase)
+    return super.toRecord({
+      ...values,
+      credentialDefinition: { ...credentialDefinition, issuerId, schemaId, tag } as typeof credentialDefinition,
+    })
+  }
 
-    return record
+  // Only some fields are stored differently, so the rest of the mapping is validated as well
+  public validateRecordMapping() {
+    this.validateDefaultMapping()
   }
 }

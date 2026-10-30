@@ -64,6 +64,13 @@
       "when": 1793386202995,
       "tag": "0008_add_failed_tx_code_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1793390855460,
+      "tag": "0009_add_openid4vc_versions",
+      "breakpoints": true
     }
   ]
 }

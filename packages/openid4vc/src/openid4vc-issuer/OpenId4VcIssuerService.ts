@@ -778,10 +778,15 @@ export class OpenId4VcIssuerService {
         expectedLength: verifiedCredentialRequestProofs.keys.length,
       })
 
+      // Older sessions have no version. Requests use credential_configuration_id from draft 15 on
+      const openId4VciVersion =
+        issuanceSession.openId4VciVersion ??
+        (parsedCredentialRequest.credentialConfigurationId ? 'v1' : 'v1.draft11-14')
+
       const immediateResult = await vcIssuer.createCredentialResponse({
         credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
         credentials: credentialRequest.proofs
-          ? issuanceSession.openId4VciVersion === 'v1' || issuanceSession.openId4VciVersion === 'v1.draft15'
+          ? openId4VciVersion === 'v1' || openId4VciVersion === 'v1.draft15'
             ? credentials.credentials.map((c) => ({ credential: c }))
             : credentials.credentials
           : undefined,
