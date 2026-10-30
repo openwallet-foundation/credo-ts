@@ -43,6 +43,8 @@ export async function handlePushedAuthorizationRequest(
 
   const { issuanceSession, parsedAuthorizationRequest, issuer, request } = options
   const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
+  // The first authorization server in the issuer metadata is the internal (Credo) authorization server
+  const internalAuthorizationServerMetadata = issuerMetadata.authorizationServers[0]
 
   if (!parsedAuthorizationRequest.authorizationRequest.scope) {
     throw new Oauth2ServerErrorResponseError({
@@ -98,8 +100,7 @@ export async function handlePushedAuthorizationRequest(
 
   const { clientAttestation, dpop } = await authorizationServer.verifyPushedAuthorizationRequest({
     authorizationRequest: parsedAuthorizationRequest.authorizationRequest,
-    // First authorization server is the internal authorization server
-    authorizationServerMetadata: issuerMetadata.authorizationServers[0],
+    authorizationServerMetadata: internalAuthorizationServerMetadata,
     request,
     clientAttestation: {
       ...getClientAttestationToVerify(config, parsedAuthorizationRequest.clientAttestation, walletAttestationRequired),
@@ -110,6 +111,7 @@ export async function handlePushedAuthorizationRequest(
     },
     dpop: {
       ...parsedAuthorizationRequest.dpop,
+      allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
       // First session config, fall back to global config
       required: issuanceSession.dpop?.required ?? config.dpopRequired,
     },

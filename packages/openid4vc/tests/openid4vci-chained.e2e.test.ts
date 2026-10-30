@@ -429,6 +429,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     for (const codeVerifier of [undefined, 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA']) {
       await expect(
         holderTenant.openid4vc.holder.requestToken({
+          dpop: resolvedAuthorization.dpop,
           resolvedCredentialOffer,
           clientId: walletClientId,
           codeVerifier,
@@ -439,6 +440,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     }
 
     const tokenResponseTenant = await holderTenant.openid4vc.holder.requestToken({
+      dpop: resolvedAuthorization.dpop,
       resolvedCredentialOffer,
       clientId: walletClientId,
       codeVerifier: resolvedAuthorization.codeVerifier,
@@ -711,6 +713,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     expect(code).toBeDefined()
 
     const tokenResponseTenant = await holderTenant.openid4vc.holder.requestToken({
+      dpop: resolvedAuthorization.dpop,
       resolvedCredentialOffer,
       clientId: walletClientId,
       codeVerifier: resolvedAuthorization.codeVerifier,
@@ -1153,6 +1156,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         issuer_state: issuanceSession.authorization?.issuerState,
         code_challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         code_challenge_method: 'S256',
+        dpop_jkt: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       }),
     })
 
@@ -1336,6 +1340,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         issuer_state: issuanceSession.authorization?.issuerState,
         code_challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         code_challenge_method: 'S256',
+        dpop_jkt: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       }),
     })
 
@@ -1419,6 +1424,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
             redirect_uri: 'http://localhost:5757/redirect',
             scope: 'UniversityDegreeCredential',
             issuer_state: issuerState,
+            dpop_jkt: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
             ...pkce,
           }),
         })

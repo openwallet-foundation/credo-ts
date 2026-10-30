@@ -59,7 +59,8 @@ export type OpenId4VcIssuerRecordProps = {
 
   /**
    * The DPoP signing algorithms supported by this issuer.
-   * If not provided, dPoP is considered unsupported.
+   * If not provided, `dpopSigningAlgValuesSupported` from the issuer module config is used, or else all
+   * signature algorithms supported by the agent's KMS.
    */
   dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
 
