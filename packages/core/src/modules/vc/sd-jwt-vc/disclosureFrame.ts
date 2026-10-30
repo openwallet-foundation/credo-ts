@@ -6,6 +6,7 @@ import type { IDisclosureFrame } from '../../sd-jwt-vc'
  *
  * @see https://www.w3.org/TR/vc-jose-cose/#securing-with-sd-jwt
  * @see https://www.w3.org/TR/vc-jose-cose/#securing-vps-sd-jwt
+ * @see https://www.w3.org/TR/vc-jose-cose/#iss
  * @see https://www.rfc-editor.org/rfc/rfc9901.html#section-9.7
  */
 export const NON_DISCLOSEABLE_FIELDS = [

@@ -231,9 +231,10 @@ export class W3cV2JwtCredentialService {
       additionalClaims: JsonTransformer.toJSON(options.presentation),
     })
 
-    // Add the nonce and aud to the payload
+    // Add the nonce, aud and iat to the payload
     jwtPayload.additionalClaims.nonce = options.challenge
     jwtPayload.aud = options.domain
+    jwtPayload.iat = nowInSeconds()
     jwtPayload.additionalClaims['@context'] = withUndefinedTermsContext(
       jwtPayload.additionalClaims['@context'] as W3cV2JsonPresentation['@context']
     )
