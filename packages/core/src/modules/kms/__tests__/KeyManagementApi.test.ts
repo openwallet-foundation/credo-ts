@@ -184,6 +184,23 @@ describe('KeyManagementApi', () => {
     })
   })
 
+  test('getPublicKey returns the key from the provided backend', async () => {
+    const otherBackend = Object.assign(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), {
+      backend: 'other',
+    })
+    const kms = new KeyManagementApi(
+      new KeyManagementModuleConfig({
+        backends: [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), otherBackend],
+      }),
+      agent.context
+    )
+
+    await kms.createKey({ keyId: 'same-id', type: { kty: 'EC', crv: 'P-256' } })
+    const otherKey = await kms.createKey({ keyId: 'same-id', backend: 'other', type: { kty: 'EC', crv: 'P-256' } })
+
+    expect(await kms.getPublicKey({ keyId: 'same-id', backend: 'other' })).toEqual(otherKey.publicJwk)
+  })
+
   test('encrypts, decrypts and verifies with keys that only exist in a backend that is not the default', async () => {
     const otherBackend = Object.assign(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), {
       backend: 'other',

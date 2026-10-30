@@ -35,6 +35,10 @@ describe('CredoWebCrypto', () => {
     expect(webCrypto.getRandomValues(null)).toBeNull()
     expect(webCrypto.getRandomValues(new Uint8Array(100)).length).not.toStrictEqual(0)
     expect(webCrypto.getRandomValues(new Uint8Array(100)).every((v) => v === 0)).toBeFalsy()
+
+    const array = new Uint8Array(100)
+    expect(webCrypto.getRandomValues(array)).toBe(array)
+    expect(array.every((v) => v === 0)).toBeFalsy()
   })
 
   describe('key creation', () => {
