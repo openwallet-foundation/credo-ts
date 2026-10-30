@@ -11,7 +11,7 @@ The drizzle record adapters now map records to columns using the record's `encod
 This fixes several issues with records stored using drizzle:
 
 - OpenID4VC issuance sessions with holder binding keys in `transactions` could not be loaded, as the keys were not stored as JWKs. Sessions that were stored this way can be loaded again.
-- The `openId4VciVersion` of issuance sessions and the `openId4VpVersion` of verification sessions were not stored. The new `0008_add_openid4vc_versions` migration of the `openid4vc` bundle adds the columns, and restores the `openId4VpVersion` of existing verification sessions from their tags. Run the migrations after upgrading. Issuance sessions without a version now return a batch credential response in the format of the credential request: the v1 format for a request with `credential_configuration_id`, the draft 11-14 format otherwise.
+- The `openId4VciVersion` of issuance sessions and the `openId4VpVersion` of verification sessions were not stored. The new `0009_add_openid4vc_versions` migration of the `openid4vc` bundle adds the columns, and restores the `openId4VpVersion` of existing verification sessions from their tags. Run the migrations after upgrading. Issuance sessions without a version now return a batch credential response in the format of the credential request: the v1 format for a request with `credential_configuration_id`, the draft 11-14 format otherwise.
 - AnonCreds credential definition private, key correctness proof and revocation registry definition records lost their `credentialDefinitionId` when loaded.
 - Custom tags of SD-JWT VC records were not restored when loaded.
 - Clearing an optional property (for example `errorMessage`) was not persisted on update.

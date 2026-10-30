@@ -258,12 +258,14 @@ describe('OpenId4Vc (Wallet Initiated Presentation During Issuance)', () => {
     }
 
     const { authorizationCode } = await holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+      dpop: resolvedAuthorization.dpop,
       authSession: resolvedAuthorization.authSession,
       resolvedCredentialOffer,
       presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
     })
 
     const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
+      dpop: resolvedAuthorization.dpop,
       resolvedCredentialOffer,
       code: authorizationCode,
       codeVerifier: resolvedAuthorization.codeVerifier,

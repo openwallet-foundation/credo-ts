@@ -31,6 +31,7 @@ export const openId4VcIssuanceSession = sqliteTable(
     // Pre-authorized flow
     preAuthorizedCode: text('pre_authorized_code'),
     userPin: text('user_pin'),
+    failedTxCodeAttempts: integer('failed_tx_code_attempts'),
 
     // Client and authentication
     clientId: text('client_id'),

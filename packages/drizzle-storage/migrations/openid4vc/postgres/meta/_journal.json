@@ -61,8 +61,15 @@
     {
       "idx": 8,
       "version": "7",
-      "when": 1793386665223,
-      "tag": "0008_add_openid4vc_versions",
+      "when": 1793386202668,
+      "tag": "0008_add_failed_tx_code_attempts",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793390855118,
+      "tag": "0009_add_openid4vc_versions",
       "breakpoints": true
     }
   ]

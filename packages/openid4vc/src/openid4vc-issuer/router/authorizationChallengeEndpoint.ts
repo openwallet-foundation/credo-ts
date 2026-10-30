@@ -103,6 +103,8 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
   const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
   const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
   const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
+  // The first authorization server in the issuer metadata is the internal (Credo) authorization server
+  const internalAuthorizationServerMetadata = issuerMetadata.authorizationServers[0]
 
   if (!authorizationChallengeRequest.scope) {
     throw new Oauth2ServerErrorResponseError({
@@ -254,7 +256,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
 
   const { clientAttestation, dpop } = await authorizationServer.verifyAuthorizationChallengeRequest({
     authorizationChallengeRequest,
-    authorizationServerMetadata: issuerMetadata.authorizationServers[0],
+    authorizationServerMetadata: internalAuthorizationServerMetadata,
     request,
     clientAttestation: {
       ...getClientAttestationToVerify(config, parseResult.clientAttestation, walletAttestationRequired),
@@ -265,6 +267,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     },
     dpop: {
       ...parseResult.dpop,
+      allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
       // First session config, fall back to global config
       required: issuanceSession.dpop?.required ?? config.dpopRequired,
     },
@@ -384,6 +387,8 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
   const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
   const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
   const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
+  // The first authorization server in the issuer metadata is the internal (Credo) authorization server
+  const internalAuthorizationServerMetadata = issuerMetadata.authorizationServers[0]
 
   const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
 
@@ -420,7 +425,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
   const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, { issuanceSession })
   const { clientAttestation, dpop } = await authorizationServer.verifyAuthorizationChallengeRequest({
     authorizationChallengeRequest,
-    authorizationServerMetadata: issuerMetadata.authorizationServers[0],
+    authorizationServerMetadata: internalAuthorizationServerMetadata,
     request,
     clientAttestation: {
       ...getClientAttestationToVerify(
@@ -437,6 +442,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
     },
     dpop: {
       ...parseResult.dpop,
+      allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
       // We only look at the issuance session here. If it is required
       // it will be defined on the issuance session now.
       required: issuanceSession.dpop?.required,

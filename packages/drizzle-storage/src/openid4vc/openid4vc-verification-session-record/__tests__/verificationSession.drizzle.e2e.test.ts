@@ -79,11 +79,11 @@ describe.each(['postgres', 'sqlite'] as const)('OpenId4VcVerificationSessionReco
     await postgresDatabase?.teardown()
   })
 
-  test('restores the openId4VpVersion of sessions stored before the 0008 migration', async () => {
+  test('restores the openId4VpVersion of sessions stored before the 0009 migration', async () => {
     await migrate(database, coreBundle)
-    await migrate(database, openid4vcBundle, { untilTag: '0007_add_credential_request_encryption' })
+    await migrate(database, openid4vcBundle, { untilTag: '0008_add_failed_tx_code_attempts' })
 
-    // Before 0008 the version had no column, so it was stored in the custom tags
+    // Before 0009 the version had no column, so it was stored in the custom tags
     const date = type === 'postgres' ? new Date('2026-01-01T00:00:00.000Z') : Date.parse('2026-01-01T00:00:00.000Z')
     const json = (value: unknown) => JSON.stringify(value)
     await insertRow(database, 'Context', { context_correlation_id: 'default' })

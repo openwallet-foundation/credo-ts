@@ -8,6 +8,7 @@ import type { SingleOrArray } from '../../../types'
 import { asArray, JsonTransformer } from '../../../utils'
 import { type DidPurpose, DidsApi, parseDid } from '../../dids'
 import { ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE } from '../anoncreds-w3c-credential'
+import { CREDENTIALS_CREDENTIAL_SUBJECT_URL } from '../constants'
 import { JsonLdModuleConfig } from '../jsonld'
 import jsonld from '../jsonld/jsonld'
 import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
@@ -267,21 +268,29 @@ export class W3cJsonLdCredentialService {
       // own key and have it accepted. Enforce the binding here, mirroring the jwt_vp and sd-jwt paths
       // (see validateCredentialSubjectAuthentication).
       //
-      // The holders are the signers of the presentation proofs, which vc-js has already verified
-      // for their proof purpose.
-      const holderProofPurpose = options.purpose?.term ?? 'authentication'
-      const holders = await Promise.all(
-        asArray(options.presentation.proof)
-          .filter((proof) => proof.proofPurpose === holderProofPurpose)
-          .map((proof) => this.resolveSigner(agentContext, proof.verificationMethod))
+      // The holders are the signers of the presentation proofs that vc-js verified for their proof
+      // purpose. A proof set passes when one proof verifies, so the other proofs don't count.
+      const holderVerificationMethods = new Set(
+        (result.presentationResult?.results ?? []).flatMap((proofResult) =>
+          proofResult.verified === true ? [proofResult.proof.verificationMethod] : []
+        )
       )
+
+      // The subject ids come from the expanded credential, as the signed data is the same for `id`,
+      // `@id` or another alias of `@id`.
+      const [holders, credentialsSubjectIds] = await Promise.all([
+        Promise.all(
+          Array.from(holderVerificationMethods, (verificationMethod) =>
+            this.resolveSigner(agentContext, verificationMethod)
+          )
+        ),
+        Promise.all(credentials.map((credential) => this.getExpandedCredentialSubjectIds(agentContext, credential))),
+      ])
 
       // Surfaced per credential under `credentials[]` to mirror the jwt_vp result shape. The
       // library-level signature/status validations remain lumped in `vcJs`, so each entry here
       // only carries the credentialSubjectAuthentication check.
-      const credentialValidations = credentials.map((credential) => {
-        const credentialSubjectIds = credential.credentialSubjectIds
-
+      const credentialValidations = credentialsSubjectIds.map((credentialSubjectIds) => {
         // A credential without subject identifiers is treated as a bearer credential,
         // so there is no subject to authenticate.
         const isAuthenticated =
@@ -335,14 +344,31 @@ export class W3cJsonLdCredentialService {
   }
 
   public async getExpandedTypesForCredential(agentContext: AgentContext, credential: W3cJsonLdVerifiableCredential) {
-    // Get the expanded types
-    const expandedTypes: SingleOrArray<string> = (
-      await jsonld.expand(JsonTransformer.toJSON(credential), {
-        documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
-      })
-    )[0]['@type']
+    const expandedTypes: SingleOrArray<string> = (await this.expandCredential(agentContext, credential))['@type']
 
     return asArray(expandedTypes)
+  }
+
+  /**
+   * Returns the credential subject ids from the expanded credential. This includes ids under `@id` or
+   * another alias of `@id`, which `credentialSubjectIds` doesn't read.
+   */
+  private async getExpandedCredentialSubjectIds(
+    agentContext: AgentContext,
+    credential: W3cJsonLdVerifiableCredential
+  ): Promise<string[]> {
+    const expandedSubjects: Array<{ '@id'?: string }> =
+      (await this.expandCredential(agentContext, credential))[CREDENTIALS_CREDENTIAL_SUBJECT_URL] ?? []
+
+    return expandedSubjects.flatMap((subject) => (typeof subject['@id'] === 'string' ? [subject['@id']] : []))
+  }
+
+  private async expandCredential(agentContext: AgentContext, credential: W3cJsonLdVerifiableCredential) {
+    const [expandedCredential] = await jsonld.expand(JsonTransformer.toJSON(credential), {
+      documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
+    })
+
+    return expandedCredential
   }
 
   private async ensureCredentialIssuerTrusted(

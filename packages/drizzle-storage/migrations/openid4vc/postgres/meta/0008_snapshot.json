@@ -1,5 +1,5 @@
 {
-  "id": "49dd93d3-b0c7-4ddf-aa46-5b5cb61ec1c1",
+  "id": "d9c36897-58b5-4d03-90ba-2209f5357b4d",
   "prevId": "d58a1b13-c8dc-492c-9b68-5c27e6feb87b",
   "version": "7",
   "dialect": "postgresql",
@@ -81,6 +81,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "failed_tx_code_attempts": {
+          "name": "failed_tx_code_attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "client_id": {
           "name": "client_id",
           "type": "text",
@@ -156,12 +162,6 @@
         "generate_refresh_tokens": {
           "name": "generate_refresh_tokens",
           "type": "boolean",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "openid4vci_version": {
-          "name": "openid4vci_version",
-          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -467,12 +467,6 @@
         },
         "presentation_during_issuance_session": {
           "name": "presentation_during_issuance_session",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "openid4vp_version": {
-          "name": "openid4vp_version",
           "type": "text",
           "primaryKey": false,
           "notNull": false

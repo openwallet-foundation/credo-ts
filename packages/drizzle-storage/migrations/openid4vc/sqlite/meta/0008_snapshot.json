@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "d70c45f3-1047-4e0f-bbcf-4ee06b7eacc4",
+  "id": "55f23ca1-0caa-473d-9fbc-f17e1633bbac",
   "prevId": "edb518f2-3d80-44cd-8810-23b10aac71c8",
   "tables": {
     "OpenId4VcIssuanceSession": {
@@ -87,6 +87,13 @@
         "user_pin": {
           "name": "user_pin",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "failed_tx_code_attempts": {
+          "name": "failed_tx_code_attempts",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -178,13 +185,6 @@
         "generate_refresh_tokens": {
           "name": "generate_refresh_tokens",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "openid4vci_version": {
-          "name": "openid4vci_version",
-          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -522,13 +522,6 @@
         },
         "presentation_during_issuance_session": {
           "name": "presentation_during_issuance_session",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "openid4vp_version": {
-          "name": "openid4vp_version",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
