@@ -37,6 +37,15 @@ export const openId4VciSupportedCredentialFormats: OpenId4VciSupportedCredential
   OpenId4VciCredentialFormatProfile.MsoMdoc,
 ]
 
+export type OpenId4VciSignedMetadataPolicy = 'required' | 'preferred' | 'disallowed'
+
+export interface OpenId4VciResolveIssuerMetadataOptions {
+  /**
+   * Overrides the `signedMetadata` holder module config for this call.
+   */
+  signedMetadata?: OpenId4VciSignedMetadataPolicy
+}
+
 export interface OpenId4VciDpopRequestOptions {
   jwk: Kms.PublicJwk
   alg: Kms.KnownJwaSignatureAlgorithm
