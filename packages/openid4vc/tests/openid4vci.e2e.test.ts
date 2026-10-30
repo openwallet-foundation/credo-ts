@@ -889,6 +889,98 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     await holderTenant.endSession()
   })
 
+  it('accepts a valid tx_code after an invalid one', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: { txCode: {} },
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+    await expect(
+      holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer, txCode: 'invalid' })
+    ).rejects.toThrow("Invalid 'tx_code' provided")
+
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({
+      resolvedCredentialOffer,
+      txCode: issuanceSession.userPin,
+    })
+    expect(tokenResponse.accessToken).toEqual(expect.any(String))
+
+    const issuanceSessionAfterToken = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
+      issuanceSession.id
+    )
+    expect(issuanceSessionAfterToken.failedTxCodeAttempts).toBe(1)
+    expect(issuanceSessionAfterToken.state).toBe(OpenId4VcIssuanceSessionState.AccessTokenCreated)
+
+    await holderTenant.endSession()
+    await issuerTenant.endSession()
+  })
+
+  it('moves the issuance session to the error state after too many invalid tx_code attempts', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: { txCode: {} },
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+    for (let attempt = 1; attempt < 5; attempt++) {
+      await expect(
+        holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer, txCode: 'invalid' })
+      ).rejects.toThrow("Invalid 'tx_code' provided")
+    }
+
+    await expect(
+      holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer, txCode: 'invalid' })
+    ).rejects.toThrow('The maximum number of attempts has been reached')
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.Error,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
+    })
+
+    // The valid tx_code is rejected as well once the limit is reached
+    await expect(
+      holderTenant.modules.openid4vc.holder.requestToken({
+        resolvedCredentialOffer,
+        txCode: issuanceSession.userPin,
+      })
+    ).rejects.toThrow('Invalid authorization code')
+
+    const issuanceSessionAfterErrors = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
+      issuanceSession.id
+    )
+    expect(issuanceSessionAfterErrors.failedTxCodeAttempts).toBe(5)
+    expect(issuanceSessionAfterErrors.errorMessage).toBe('Maximum number of tx_code attempts reached')
+
+    await holderTenant.endSession()
+    await issuerTenant.endSession()
+  })
+
   it('credential endpoint responds with a server error instead of 401 when the resource server is misconfigured', async () => {
     const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
     const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({

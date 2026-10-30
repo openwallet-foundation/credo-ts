@@ -1,4 +1,4 @@
-import { CredoError, joinUriParts, type Query, utils } from '@credo-ts/core'
+import { type AgentContext, CredoError, joinUriParts, type Query, utils } from '@credo-ts/core'
 import type { HttpMethod, Jwk, VerifyAccessTokenRequestReturn } from '@openid4vc/oauth2'
 import {
   authorizationCodeGrantIdentifier,
@@ -89,7 +89,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           })
       }
 
-      const issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, query)
+      let issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, query)
       if (!issuanceSession || !allowedStates.includes(issuanceSession.state)) {
         throw new Oauth2ServerErrorResponseError({
           error: Oauth2ErrorCodes.InvalidGrant,
@@ -118,6 +118,10 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       const walletAttestationRequired = issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired
 
       if (grant.grantType === preAuthorizedCodeGrantIdentifier) {
+        if (issuanceSession.userPin && grant.txCode) {
+          issuanceSession = await verifyTxCode(agentContext, config, issuanceSession, grant.txCode, allowedStates)
+        }
+
         if (!issuanceSession.preAuthorizedCode) {
           throw new Oauth2ServerErrorResponseError(
             {
@@ -396,4 +400,58 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       return sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
     }
   }
+}
+
+/**
+ * Verifies the `tx_code` under a record lock and counts invalid values, so concurrent requests can't
+ * exceed `txCodeMaxAttempts`. Returns the issuance session as read under the lock.
+ */
+async function verifyTxCode(
+  agentContext: AgentContext,
+  config: OpenId4VcIssuerModuleConfig,
+  issuanceSession: OpenId4VcIssuanceSessionRecord,
+  txCode: string,
+  allowedStates: OpenId4VcIssuanceSessionState[]
+) {
+  const issuanceSessionRepository = agentContext.resolve(OpenId4VcIssuanceSessionRepository)
+
+  let previousState = issuanceSession.state
+  const lockedIssuanceSession = await issuanceSessionRepository.updateByIdWithLock(
+    agentContext,
+    issuanceSession.id,
+    async (record) => {
+      previousState = record.state
+      if (!allowedStates.includes(record.state) || record.userPin === txCode) return record
+
+      record.failedTxCodeAttempts = (record.failedTxCodeAttempts ?? 0) + 1
+      if (record.failedTxCodeAttempts >= config.txCodeMaxAttempts) {
+        record.state = OpenId4VcIssuanceSessionState.Error
+        record.errorMessage = 'Maximum number of tx_code attempts reached'
+      }
+      return record
+    }
+  )
+
+  if (!allowedStates.includes(previousState)) {
+    throw new Oauth2ServerErrorResponseError({
+      error: Oauth2ErrorCodes.InvalidGrant,
+      error_description: 'Invalid authorization code',
+    })
+  }
+
+  if (lockedIssuanceSession.userPin === txCode) return lockedIssuanceSession
+
+  const maxAttemptsReached = lockedIssuanceSession.state === OpenId4VcIssuanceSessionState.Error
+  if (maxAttemptsReached) {
+    agentContext
+      .resolve(OpenId4VcIssuerService)
+      .emitStateChangedEvent(agentContext, lockedIssuanceSession, previousState)
+  }
+
+  throw new Oauth2ServerErrorResponseError({
+    error: Oauth2ErrorCodes.InvalidGrant,
+    error_description: maxAttemptsReached
+      ? `Invalid 'tx_code' provided. The maximum number of attempts has been reached`
+      : `Invalid 'tx_code' provided`,
+  })
 }
