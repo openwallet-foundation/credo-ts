@@ -1,0 +1,55 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "connectionId": "connection-id",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "id": "action-menu-record-id",
+  "menu": {
+    "description": "Choose an option",
+    "options": [
+      {
+        "description": "Search the catalogue",
+        "disabled": false,
+        "form": {
+          "description": "Enter your search",
+          "params": [
+            {
+              "default": "credentials",
+              "description": "The search query",
+              "name": "query",
+              "required": true,
+              "title": "Query",
+              "type": "text"
+            }
+          ],
+          "submit-label": "Search now"
+        },
+        "name": "search",
+        "title": "Search"
+      },
+      {
+        "description": "Get help",
+        "disabled": true,
+        "name": "help",
+        "title": "Help"
+      }
+    ],
+    "title": "Welcome"
+  },
+  "metadata": {
+    "meta": {
+      "key": "value"
+    }
+  },
+  "performedAction": {
+    "name": "search",
+    "params": {
+      "query": "credentials"
+    }
+  },
+  "role": "requester",
+  "state": "done",
+  "threadId": "thread-id",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

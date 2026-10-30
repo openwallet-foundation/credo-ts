@@ -1,0 +1,18 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "clientMetadata": {
+    "client_name": "Example Verifier",
+    "logo_uri": "https://verifier.example.com/logo.png"
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "id": "verifier-record-id",
+  "metadata": {
+    "meta": {
+      "key": "value"
+    }
+  },
+  "updatedAt": "2026-01-02T00:00:00.000Z",
+  "verifierId": "verifier-id"
+}
