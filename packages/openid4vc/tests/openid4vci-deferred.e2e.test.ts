@@ -333,7 +333,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         authorizationServerUrl: 'http://localhost:4747',
         issuerState: 'dbf99eea-0131-48b0-9022-17f7ebe25ea7',
       },
-      version: 'v1.draft15',
+      version: 'v1',
       generateRefreshTokens: true,
     })
 
@@ -447,6 +447,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       issuerId: openIdIssuerTenant.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
+      // The other tests use v1
       version: 'v1.draft15',
       generateRefreshTokens: true,
     })
@@ -622,7 +623,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       issuerId: openIdIssuerTenant.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
-      version: 'v1.draft15',
+      version: 'v1',
       generateRefreshTokens: true,
     })
 
@@ -697,7 +698,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       issuerId: openIdIssuerTenant.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
-      version: 'v1.draft15',
+      version: 'v1',
       generateRefreshTokens: true,
     })
 
@@ -766,7 +767,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       issuerId: openIdIssuerTenant.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
-      version: 'v1.draft15',
+      version: 'v1',
     })
 
     const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
@@ -822,7 +823,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       issuerId: openIdIssuerTenant.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
-      version: 'v1.draft15',
+      version: 'v1',
       generateRefreshTokens: true,
     })
 
