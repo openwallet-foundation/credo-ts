@@ -9,10 +9,17 @@ import {
   Agent,
   ClaimFormat,
   DcqlService,
+  DidCommV1Service,
+  DidDocumentBuilder,
   DidKey,
+  DidsApi,
+  getEd25519VerificationKey2018,
+  IndyAgentService,
   JsonEncoder,
+  Kms,
   SdJwtVcModule,
   SdJwtVcRecord,
+  TypedArrayEncoder,
   W3cV2Credential,
   W3cV2CredentialRecord,
   W3cV2EnvelopedVerifiableCredential,
@@ -35,6 +42,7 @@ import {
   DidCommCredentialState,
   DidCommCredentialV2Protocol,
   DidCommDcqlProofFormatService,
+  DidCommDocumentService,
   DidCommEnvelopeService,
   DidCommHandshakeProtocol,
   DidCommMessageSender,
@@ -109,6 +117,8 @@ describe('DCQL proof format over a DIDComm connection', () => {
   let holderReplay: EventReplaySubject
   let verifierConnectionId: string
   let verifierDid: string
+  let recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  let recipientKeyDid: string
   let issuerKdv: CreateDidKidVerificationMethodReturn
   let holderKdv: CreateDidKidVerificationMethodReturn
   let statusListUri: string
@@ -133,6 +143,12 @@ describe('DCQL proof format over a DIDComm connection', () => {
     expect(holderConnection.theirDid).toBe(verifierConnection.did)
     verifierConnectionId = verifierConnection.id
     verifierDid = verifierConnection.did as string
+    const [verifierService] = await holderAgent.dependencyManager
+      .resolve(DidCommDocumentService)
+      .resolveServicesFromDid(holderAgent.context, verifierDid)
+    expect(verifierService.recipientKeys).toHaveLength(1)
+    recipientKey = verifierService.recipientKeys[0]
+    recipientKeyDid = new DidKey(recipientKey).did
 
     issuerKdv = await createDidKidVerificationMethod(verifierAgent.context)
     holderKdv = await createDidKidVerificationMethod(holderAgent.context)
@@ -478,7 +494,7 @@ describe('DCQL proof format over a DIDComm connection', () => {
     expect(vpToken.mdl).toEqual(['not-an-mdoc'])
   })
 
-  const requestRejectedAtReceipt = async (tamper: (request: Record<string, unknown>) => void): Promise<string> => {
+  const sendTamperedRequest = async (tamper: (request: Record<string, unknown>) => void): Promise<string> => {
     const originalCreateRequest = DidCommDcqlProofFormatService.prototype.createRequest
     const createRequestSpy = vi
       .spyOn(DidCommDcqlProofFormatService.prototype, 'createRequest')
@@ -500,14 +516,17 @@ describe('DCQL proof format over a DIDComm connection', () => {
       },
     })
     createRequestSpy.mockRestore()
-    const threadId = verifierRecord.threadId
+    return verifierRecord.threadId
+  }
 
+  const requestRejectedAtReceipt = async (tamper: (request: Record<string, unknown>) => void): Promise<string> => {
+    const threadId = await sendTamperedRequest(tamper)
     const abandonedRecord = await waitForProofExchangeRecordSubject(verifierReplay, {
       threadId,
       state: DidCommProofState.Abandoned,
     })
     expect(await holderAgent.didcomm.proofs.findAllByQuery({ threadId })).toEqual([])
-    expect(await verifierAgent.didcomm.proofs.findPresentationMessage(verifierRecord.id)).toBeNull()
+    expect(await verifierAgent.didcomm.proofs.findPresentationMessage(abandonedRecord.id)).toBeNull()
 
     return abandonedRecord.errorMessage as string
   }
@@ -519,6 +538,104 @@ describe('DCQL proof format over a DIDComm connection', () => {
     expect(errorMessage).toBe(
       "abandoned: DCQL request audience 'didcomm:did:example:other-verifier' is not the verifier DID of the connection"
     )
+  })
+
+  test.each([
+    ['the other form of the did:peer:4 connection DID', (did: string) => did.replace(/^(did:peer:4z\w+):z\w+$/, '$1')],
+    ['a did:key of the connection recipient key', () => recipientKeyDid],
+  ])('prover accepts an audience that is %s', async (_, toAudienceDid) => {
+    const audienceDid = toAudienceDid(verifierDid)
+    expect(audienceDid).not.toBe(verifierDid)
+
+    const threadId = await sendTamperedRequest((request) => {
+      request.audience = `didcomm:${audienceDid}`
+    })
+    await waitForProofExchangeRecordSubject(holderReplay, { threadId, state: DidCommProofState.RequestReceived })
+  })
+
+  test('prover rejects an audience whose DID document lacks the connection recipient keys', async () => {
+    const errorMessage = await requestRejectedAtReceipt((request) => {
+      request.audience = `didcomm:${issuerKdv.did}`
+    })
+    expect(errorMessage).toBe(
+      `abandoned: DCQL request audience 'didcomm:${issuerKdv.did}' is not the verifier DID of the connection`
+    )
+  })
+
+  test('prover rejects an audience that holds only one of the connection recipient keys', async () => {
+    const originalResolveServices = DidCommDocumentService.prototype.resolveServicesFromDid
+    let addedKey = false
+    const resolveServicesSpy = vi
+      .spyOn(DidCommDocumentService.prototype, 'resolveServicesFromDid')
+      .mockImplementation(async function (this: DidCommDocumentService, agentContext, did) {
+        const services = await originalResolveServices.call(this, agentContext, did)
+        if (addedKey || agentContext !== holderAgent.context || did !== verifierDid) return services
+        addedKey = true
+        return services.map((service) => ({
+          ...service,
+          recipientKeys: [...service.recipientKeys, issuerKdv.publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>],
+        }))
+      })
+
+    try {
+      const errorMessage = await requestRejectedAtReceipt((request) => {
+        request.audience = `didcomm:${recipientKeyDid}`
+      })
+      expect(addedKey).toBe(true)
+      expect(errorMessage).toBe(
+        `abandoned: DCQL request audience 'didcomm:${recipientKeyDid}' is not the verifier DID of the connection`
+      )
+    } finally {
+      resolveServicesSpy.mockRestore()
+    }
+  })
+
+  test.each([
+    [
+      'a DidCommV1Service',
+      (did: string, publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>) =>
+        new DidDocumentBuilder(did)
+          .addVerificationMethod(getEd25519VerificationKey2018({ id: `${did}#key-1`, controller: did, publicJwk }))
+          .addService(
+            new DidCommV1Service({
+              id: `${did}#did-communication`,
+              serviceEndpoint: 'rxjs:dcql-verifier',
+              recipientKeys: [`${did}#key-1`],
+            })
+          )
+          .build(),
+    ],
+    [
+      'an IndyAgentService',
+      (did: string, publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>) =>
+        new DidDocumentBuilder(did)
+          .addService(
+            new IndyAgentService({
+              id: `${did}#did-communication`,
+              serviceEndpoint: 'rxjs:dcql-verifier',
+              recipientKeys: [TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey)],
+            })
+          )
+          .build(),
+    ],
+  ])('prover accepts an audience that lists the connection recipient key only in %s', async (_, buildDocument) => {
+    const audienceDid = 'did:example:service-only-audience'
+    const originalResolve = DidsApi.prototype.resolveDidDocument
+    const resolveSpy = vi.spyOn(DidsApi.prototype, 'resolveDidDocument').mockImplementation(async function (
+      this: DidsApi,
+      didUrl
+    ) {
+      return didUrl === audienceDid ? buildDocument(audienceDid, recipientKey) : originalResolve.call(this, didUrl)
+    })
+
+    try {
+      const threadId = await sendTamperedRequest((request) => {
+        request.audience = `didcomm:${audienceDid}`
+      })
+      await waitForProofExchangeRecordSubject(holderReplay, { threadId, state: DidCommProofState.RequestReceived })
+    } finally {
+      resolveSpy.mockRestore()
+    }
   })
 
   test('prover rejects a request with transaction_data', async () => {

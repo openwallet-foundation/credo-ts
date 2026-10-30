@@ -5,6 +5,7 @@ import type {
   DcqlPresentation,
   DcqlQuery,
   DcqlQueryResult,
+  DidDocument,
   DidPurpose,
   JsonObject,
   JsonValue,
@@ -18,6 +19,7 @@ import {
   DidsApi,
   deepEquality,
   getPublicJwkFromVerificationMethod,
+  IndyAgentService,
   isJsonObject,
   isNonEmptyArray,
   JsonEncoder,
@@ -27,6 +29,7 @@ import {
   TrustedIssuerContext,
   TypedArrayEncoder,
   tryParseDid,
+  verkeyToPublicJwk,
   W3cV2CredentialService,
   W3cV2EnvelopedVerifiableCredential,
   W3cV2SdJwtVerifiableCredential,
@@ -529,18 +532,37 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
       }
     }
 
-    this.assertAudienceIsConnectionDid(connection, audience)
+    await this.assertAudienceIsConnectionDid(agentContext, connection, audience)
   }
 
-  private assertAudienceIsConnectionDid(connection: DidCommConnectionRecord | undefined, audience: string): void {
+  private async assertAudienceIsConnectionDid(
+    agentContext: AgentContext,
+    connection: DidCommConnectionRecord | undefined,
+    audience: string
+  ): Promise<void> {
     if (!connection) {
       throw new CredoError('DCQL request has no connection or out-of-band invitation to check the audience against')
     }
 
     const audienceDid = audience.slice(AUDIENCE_PREFIX.length)
-    if (connection.theirDid !== audienceDid) {
-      throw new CredoError(`DCQL request audience '${audience}' is not the verifier DID of the connection`)
+    if (connection.theirDid === audienceDid) return
+
+    const audienceError = `DCQL request audience '${audience}' is not the verifier DID of the connection`
+    if (!connection.theirDid) throw new CredoError(audienceError)
+
+    try {
+      const recipientKeys = (
+        await agentContext.resolve(DidCommDocumentService).resolveServicesFromDid(agentContext, connection.theirDid)
+      ).flatMap((service) => service.recipientKeys)
+      if (recipientKeys.length > 0) {
+        const audienceKeys = getAudienceKeys(await agentContext.resolve(DidsApi).resolveDidDocument(audienceDid))
+        if (recipientKeys.every((key) => audienceKeys.some((audienceKey) => audienceKey.equals(key)))) return
+      }
+    } catch (error) {
+      throw new CredoError(audienceError, { cause: error })
     }
+
+    throw new CredoError(audienceError)
   }
 
   // Picks the service the way DidCommOutOfBandService.getResolvedServiceForOutOfBandServices does
@@ -792,6 +814,35 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
       data: new DidCommAttachmentData({ json: data as JsonValue }),
     })
   }
+}
+
+// RFC 0882 Audience only needs the recipient keys to be present, so keys that do not convert are skipped
+function getAudienceKeys(didDocument: DidDocument): Kms.PublicJwk[] {
+  const keys: Kms.PublicJwk[] = []
+  const addKey = (getKey: () => Kms.PublicJwk): void => {
+    try {
+      keys.push(getKey())
+    } catch {}
+  }
+
+  for (const method of [...(didDocument.keyAgreement ?? []), ...(didDocument.authentication ?? [])]) {
+    addKey(() =>
+      getPublicJwkFromVerificationMethod(
+        typeof method === 'string' ? didDocument.dereferenceVerificationMethod(method) : method
+      )
+    )
+  }
+  for (const service of didDocument.didCommServices) {
+    for (const recipientKey of service.recipientKeys) {
+      addKey(() =>
+        service.type === IndyAgentService.type
+          ? verkeyToPublicJwk(recipientKey)
+          : getPublicJwkFromVerificationMethod(didDocument.dereferenceKey(recipientKey))
+      )
+    }
+  }
+
+  return keys
 }
 
 function hasSdDigests(value: unknown): boolean {
