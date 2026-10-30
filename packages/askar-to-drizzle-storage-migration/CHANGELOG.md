@@ -1,5 +1,37 @@
 # @credo-ts/askar-to-drizzle-storage-migration
 
+## 0.7.4
+
+### Patch Changes
+
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+  - @credo-ts/core@0.7.4
+  - @credo-ts/askar@0.7.4
+  - @credo-ts/drizzle-storage@0.7.4
+  - @credo-ts/tenants@0.7.4
+
+## 0.7.3
+
+### Patch Changes
+
+- 2694f16: The `@openwallet-foundation/askar-shared` peer dependency is now `^0.4.3 || ^0.5.0 || ^0.6.0`, the same range as `@credo-ts/askar`, instead of an exact version.
+- Updated dependencies [a705a44]
+- Updated dependencies [cce51fb]
+- Updated dependencies [790730c]
+- Updated dependencies [cfa27d3]
+- Updated dependencies [d9db392]
+- Updated dependencies [cb11314]
+  - @credo-ts/core@0.7.3
+  - @credo-ts/askar@0.7.3
+  - @credo-ts/drizzle-storage@0.7.3
+  - @credo-ts/tenants@0.7.3
+
 ## 0.7.2
 
 ### Patch Changes

@@ -12,7 +12,9 @@ export async function fetchSchema(agentContext: AgentContext, schemaId: string) 
     .getSchema(agentContext, schemaId)
 
   if (!result?.schema) {
-    throw new CredoError(`Schema not found for id ${schemaId}: ${result.resolutionMetadata.message}`)
+    throw new CredoError(
+      `Schema not found for id ${schemaId}: ${result.resolutionMetadata.message ?? result.resolutionMetadata.error ?? 'unknown error'}`
+    )
   }
 
   return {
@@ -31,7 +33,7 @@ export async function fetchCredentialDefinition(agentContext: AgentContext, cred
 
   if (!result?.credentialDefinition) {
     throw new CredoError(
-      `Credential definition not found for id ${credentialDefinitionId}: ${result.resolutionMetadata.message}`
+      `Credential definition not found for id ${credentialDefinitionId}: ${result.resolutionMetadata.message ?? result.resolutionMetadata.error ?? 'unknown error'}`
     )
   }
 
@@ -56,7 +58,7 @@ export async function fetchRevocationRegistryDefinition(
 
   if (!result?.revocationRegistryDefinition) {
     throw new CredoError(
-      `RevocationRegistryDefinition not found for id ${revocationRegistryDefinitionId}: ${result.resolutionMetadata.message}`
+      `RevocationRegistryDefinition not found for id ${revocationRegistryDefinitionId}: ${result.resolutionMetadata.message ?? result.resolutionMetadata.error ?? 'unknown error'}`
     )
   }
 
@@ -86,7 +88,7 @@ export async function fetchRevocationStatusList(
 
   if (!revocationStatusList) {
     throw new CredoError(
-      `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${resolutionMetadata.message}`
+      `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${resolutionMetadata.message ?? resolutionMetadata.error ?? 'unknown error'}`
     )
   }
 

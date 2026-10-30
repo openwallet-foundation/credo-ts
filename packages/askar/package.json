@@ -4,7 +4,7 @@
     "cli": "./build/index.mjs",
     "import": "./src/index.ts"
   },
-  "version": "0.7.2",
+  "version": "0.7.4",
   "files": [
     "build"
   ],
@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
+    "@noble/curves": "^2.0.1",
     "@panva/hpke-noble": "catalog:",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
@@ -40,11 +41,11 @@
   "devDependencies": {
     "@credo-ts/tenants": "workspace:*",
     "@openwallet-foundation/askar-nodejs": "catalog:",
-    "@openwallet-foundation/askar-shared": "catalog:",
+    "@openwallet-foundation/askar-shared": "catalog:dev",
     "reflect-metadata": "catalog:",
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@openwallet-foundation/askar-shared": "^0.4.3 || ^0.5.0 || ^0.6.0"
+    "@openwallet-foundation/askar-shared": "catalog:"
   }
 }

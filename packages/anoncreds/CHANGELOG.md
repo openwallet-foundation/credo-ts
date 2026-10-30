@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.7.4
+
+### Patch Changes
+
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+  - @credo-ts/core@0.7.4
+  - @credo-ts/didcomm@0.7.4
+
+## 0.7.3
+
+### Patch Changes
+
+- 37fb179: Fix issuance of revocable AnonCreds credentials with Indy VDR, including registries created before this fix, and report causes when revocation status list resolution fails.
+- Updated dependencies [a705a44]
+- Updated dependencies [4d82972]
+- Updated dependencies [cce51fb]
+- Updated dependencies [790730c]
+- Updated dependencies [cfa27d3]
+- Updated dependencies [cb11314]
+  - @credo-ts/core@0.7.3
+  - @credo-ts/didcomm@0.7.3
+
 ## 0.7.2
 
 ### Patch Changes

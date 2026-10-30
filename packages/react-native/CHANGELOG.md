@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.7.4
+
+### Patch Changes
+
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+  - @credo-ts/core@0.7.4
+
+## 0.7.3
+
+### Patch Changes
+
+- Updated dependencies [a705a44]
+- Updated dependencies [cce51fb]
+- Updated dependencies [790730c]
+- Updated dependencies [cfa27d3]
+  - @credo-ts/core@0.7.3
+
 ## 0.7.2
 
 ### Patch Changes

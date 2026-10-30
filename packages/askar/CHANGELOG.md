@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.7.4
+
+### Patch Changes
+
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+- Updated dependencies [84b55f2]
+  - @credo-ts/core@0.7.4
+
+## 0.7.3
+
+### Patch Changes
+
+- 790730c: Add P-521 ES512 signature verification to the Askar wrapper using @noble/curves and support P-521 ECDSA verification in CredoWalletWebCrypto.
+- d9db392: Remove unused ffi-napi-era type packages from development dependencies.
+- cb11314: Remove duplicate error-level logging at throw sites that already chain the original error as `cause`.
+- Updated dependencies [a705a44]
+- Updated dependencies [cce51fb]
+- Updated dependencies [790730c]
+- Updated dependencies [cfa27d3]
+  - @credo-ts/core@0.7.3
+
 ## 0.7.2
 
 ### Patch Changes

@@ -7,7 +7,13 @@ import { InjectionSymbols } from '../../../constants'
 import type { NonEmptyArray } from '../../../types'
 import { MdocApi } from '../../mdoc'
 import { type SdJwtVc, SdJwtVcApi, type SdJwtVcPayload } from '../../sd-jwt-vc'
-import { ClaimFormat, W3cCredentialRecord, W3cCredentialRepository } from '../../vc'
+import {
+  ClaimFormat,
+  W3cCredentialRecord,
+  W3cCredentialRepository,
+  W3cV2EnvelopedVerifiableCredential,
+  W3cV2SdJwtVerifiableCredential,
+} from '../../vc'
 import { CredoEs256DidJwkJwtVc } from '../../vc/jwt-vc/__tests__/fixtures/credo-jwt-vc'
 import { Ed25519Signature2018Fixtures } from '../../vc/linked-data-proofs/__tests__/fixtures'
 import { DcqlError } from '../DcqlError'
@@ -103,6 +109,7 @@ describe('DcqlService', () => {
                 vct: 'something',
                 age_over_21: true,
               },
+              kbJwt: { header: {}, payload: {} },
             } satisfies Partial<SdJwtVc> as unknown as SdJwtVc,
           ],
         },
@@ -140,5 +147,98 @@ describe('DcqlService', () => {
         ],
       })
     )
+  })
+
+  test('assertValidPresentation rejects a presentation without holder binding when the query requires it', async () => {
+    const presentation = {
+      claimFormat: ClaimFormat.SdJwtDc,
+      header: {},
+      payload: { vct: 'something' } as SdJwtVcPayload,
+      prettyClaims: { vct: 'something', age_over_18: true },
+    } satisfies Partial<SdJwtVc> as unknown as SdJwtVc
+    const query = (
+      requireCryptographicHolderBinding: boolean
+    ): Parameters<typeof dcqlService.assertValidDcqlPresentation>[2] => ({
+      credentials: [
+        {
+          format: 'dc+sd-jwt',
+          multiple: false,
+          require_cryptographic_holder_binding: requireCryptographicHolderBinding,
+          id: 'something',
+          claims: [{ path: ['age_over_18'] }],
+          meta: { vct_values: ['something'] },
+        },
+      ],
+    })
+
+    await expect(
+      dcqlService.assertValidDcqlPresentation({} as AgentContext, { something: [presentation] }, query(true))
+    ).rejects.toThrow(DcqlError)
+    await expect(
+      dcqlService.assertValidDcqlPresentation({} as AgentContext, { something: [presentation] }, query(false))
+    ).resolves.toBeDefined()
+  })
+
+  describe('cryptographic holder binding of a presentation', () => {
+    const subjectId = 'did:example:holder'
+    const cnf = { kid: 'did:example:holder#key-1' }
+    const agentContext = {
+      dependencyManager: { resolve: () => ({ getExpandedTypesForCredential: async () => [] }) },
+      resolve: () => ({ fetchTypeMetadata: async () => undefined }),
+    } as unknown as AgentContext
+
+    const sdJwtVc = (kbJwt?: object) =>
+      ({ claimFormat: ClaimFormat.SdJwtDc, header: {}, payload: { vct: 'vct' }, prettyClaims: {}, kbJwt }) as unknown
+
+    const w3cV1Presentation = (claimFormat: ClaimFormat.JwtVp | ClaimFormat.LdpVp, credentialSubjectIds: string[]) => ({
+      claimFormat,
+      verifiableCredential: [{ credentialSubjectIds, jsonCredential: {}, type: [] }],
+    })
+
+    const w3cV2SdJwtPresentation = (options: { cnf?: object; credentialSubjectIds: string[] }) => ({
+      claimFormat: ClaimFormat.SdJwtW3cVp,
+      resolvedPresentation: {
+        verifiableCredential: Object.create(W3cV2EnvelopedVerifiableCredential.prototype, {
+          envelopedCredential: {
+            value: Object.create(W3cV2SdJwtVerifiableCredential.prototype, {
+              sdJwt: { value: { prettyClaims: { cnf: options.cnf } } },
+              resolvedCredential: { value: { credentialSubjectIds: options.credentialSubjectIds } },
+            }),
+          },
+          resolvedCredential: { value: { type: ['VerifiableCredential'], toJSON: () => ({}) } },
+        }),
+      },
+    })
+
+    test.each([
+      ['dc+sd-jwt with a KB-JWT', 'dc+sd-jwt', sdJwtVc({ header: {}, payload: {} }), true],
+      ['dc+sd-jwt without a KB-JWT', 'dc+sd-jwt', sdJwtVc(), false],
+      ['jwt_vc_json with a subject id', 'jwt_vc_json', w3cV1Presentation(ClaimFormat.JwtVp, [subjectId]), true],
+      ['jwt_vc_json without a subject id', 'jwt_vc_json', w3cV1Presentation(ClaimFormat.JwtVp, []), false],
+      ['ldp_vc with a subject id', 'ldp_vc', w3cV1Presentation(ClaimFormat.LdpVp, [subjectId]), true],
+      ['ldp_vc without a subject id', 'ldp_vc', w3cV1Presentation(ClaimFormat.LdpVp, []), false],
+      [
+        'vc+sd-jwt with cnf and a subject id',
+        'vc+sd-jwt',
+        w3cV2SdJwtPresentation({ cnf, credentialSubjectIds: [subjectId] }),
+        true,
+      ],
+      ['vc+sd-jwt with cnf', 'vc+sd-jwt', w3cV2SdJwtPresentation({ cnf, credentialSubjectIds: [] }), true],
+      ['vc+sd-jwt with a subject id', 'vc+sd-jwt', w3cV2SdJwtPresentation({ credentialSubjectIds: [subjectId] }), true],
+      [
+        'vc+sd-jwt without cnf and subject id',
+        'vc+sd-jwt',
+        w3cV2SdJwtPresentation({ credentialSubjectIds: [] }),
+        false,
+      ],
+    ])('%s', async (_, format, presentation, cryptographicHolderBinding) => {
+      const representation = await dcqlService.getDcqlCredentialRepresentation(
+        agentContext,
+        presentation as never,
+        { id: 'query', format, multiple: false, require_cryptographic_holder_binding: true } as never
+      )
+
+      expect(representation.cryptographic_holder_binding).toBe(cryptographicHolderBinding)
+    })
   })
 })
