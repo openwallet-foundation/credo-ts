@@ -277,7 +277,6 @@ export class OpenId4VcIssuerService {
       (config) => config.issuer === authorizationCodeFlowConfig?.authorizationServerUrl
     )
 
-    const issuanceSessionRepository = this.openId4VcIssuanceSessionRepository
     const issuanceSession = new OpenId4VcIssuanceSessionRecord({
       createdAt,
       expiresAt,
@@ -328,7 +327,7 @@ export class OpenId4VcIssuerService {
       issuanceMetadata: options.issuanceMetadata,
       openId4VciVersion: version,
     })
-    await issuanceSessionRepository.save(agentContext, issuanceSession)
+    await this.initializeAndSaveIssuanceSession(agentContext, issuer, issuanceSession)
     this.emitStateChangedEvent(agentContext, issuanceSession, null)
 
     return {
@@ -590,7 +589,7 @@ export class OpenId4VcIssuerService {
       openId4VciVersion: sessionOptions.version ?? 'v1',
     })
 
-    await this.openId4VcIssuanceSessionRepository.save(agentContext, issuanceSession)
+    await this.initializeAndSaveIssuanceSession(agentContext, issuer, issuanceSession)
     this.emitStateChangedEvent(agentContext, issuanceSession, null)
 
     return issuanceSession
@@ -1285,19 +1284,7 @@ export class OpenId4VcIssuerService {
     const chainedDpop = issuanceSession?.chainedIdentity?.chainedAuthorizationServerDpop
 
     if (chainedDpop?.keyGeneratedForSession) {
-      const sessions = await this.openId4VcIssuanceSessionRepository.findByQuery(agentContext, {})
-      const keyIsShared = sessions.some(
-        (session) =>
-          session.id !== issuanceSessionId &&
-          session.chainedIdentity?.chainedAuthorizationServerDpop?.keyId === chainedDpop.keyId
-      )
-      if (keyIsShared) {
-        agentContext.config.logger.debug(
-          `Not deleting generated chained authorization DPoP key '${chainedDpop.keyId}' because another issuance session references it.`
-        )
-      } else {
-        await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: chainedDpop.keyId })
-      }
+      await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: chainedDpop.keyId })
     }
 
     await this.openId4VcIssuanceSessionRepository.deleteById(agentContext, issuanceSessionId)
@@ -1870,6 +1857,54 @@ export class OpenId4VcIssuerService {
     })
   }
 
+  private async initializeAndSaveIssuanceSession(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    issuanceSession: OpenId4VcIssuanceSessionRecord
+  ) {
+    if (issuanceSession.chainedIdentity) {
+      const authorizationServerUrl = issuanceSession.chainedIdentity.externalAuthorizationServerUrl
+      const chainedAuthorizationServerConfig = issuer.chainedAuthorizationServerConfigs?.find(
+        (config) => config.issuer === authorizationServerUrl
+      )
+      if (!chainedAuthorizationServerConfig) {
+        throw new CredoError(`No chained authorization server config found for '${authorizationServerUrl}'.`)
+      }
+
+      const authorizationServerMetadata = await this.getOauth2Client(
+        agentContext,
+        issuer
+      ).fetchAuthorizationServerMetadata(authorizationServerUrl)
+      if (!authorizationServerMetadata) {
+        throw new CredoError(`Authorization server metadata not found for issuer '${authorizationServerUrl}'.`)
+      }
+
+      const { session } = await this.createChainedAuthorizationServerDpopOptions(agentContext, {
+        issuanceSession,
+        chainedAuthorizationServerConfig,
+        authorizationServerMetadata,
+      })
+      issuanceSession.chainedIdentity.chainedAuthorizationServerDpop = session
+    }
+
+    try {
+      await this.openId4VcIssuanceSessionRepository.save(agentContext, issuanceSession)
+    } catch (error) {
+      const dpop = issuanceSession.chainedIdentity?.chainedAuthorizationServerDpop
+      if (dpop?.keyGeneratedForSession) {
+        try {
+          await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: dpop.keyId })
+        } catch (cleanupError) {
+          agentContext.config.logger.error('Failed to delete DPoP key after issuance session creation failed', {
+            keyId: dpop.keyId,
+            error: cleanupError,
+          })
+        }
+      }
+      throw error
+    }
+  }
+
   public async getChainedAuthorizationServerDpopOptions(
     agentContext: AgentContext,
     options: {
@@ -1881,6 +1916,76 @@ export class OpenId4VcIssuerService {
     dpop?: RequestDpopOptions
     session?: OpenId4VcIssuanceSessionChainedAuthorizationServerDpop
   }> {
+    const persisted = options.issuanceSession.chainedIdentity?.chainedAuthorizationServerDpop
+    if (persisted && !options.authorizationServerMetadata.dpop_signing_alg_values_supported) {
+      throw new CredoError('Authorization server no longer advertises DPoP support for this issuance session.')
+    }
+
+    const supportedSigningAlgorithms = this.getChainedAuthorizationServerDpopSigningAlgorithms(agentContext, options)
+    if (!supportedSigningAlgorithms) return {}
+    if (!persisted) {
+      throw new CredoError('Chained DPoP key was not initialized during issuance session creation.')
+    }
+
+    const configuredAlgorithms = options.chainedAuthorizationServerConfig.dpop?.signingAlgValuesSupported
+    const dpop = await getDpopOptions(agentContext, {
+      dpopSigningAlgValuesSupported: supportedSigningAlgorithms,
+      signingAlgValuesSupported: [persisted.alg].filter(
+        (algorithm) => configuredAlgorithms?.includes(algorithm) ?? true
+      ),
+      keyId: persisted.keyId,
+      nonce: persisted.nonce,
+    })
+
+    return {
+      dpop: dpop.options,
+      session: { ...persisted },
+    }
+  }
+
+  public async createChainedAuthorizationServerDpopOptions(
+    agentContext: AgentContext,
+    options: {
+      issuanceSession: OpenId4VcIssuanceSessionRecord
+      chainedAuthorizationServerConfig: OpenId4VciChainedAuthorizationServerConfig
+      authorizationServerMetadata: AuthorizationServerMetadata
+    }
+  ): Promise<{
+    dpop?: RequestDpopOptions
+    session?: OpenId4VcIssuanceSessionChainedAuthorizationServerDpop
+  }> {
+    if (options.issuanceSession.chainedIdentity?.chainedAuthorizationServerDpop) {
+      return this.getChainedAuthorizationServerDpopOptions(agentContext, options)
+    }
+
+    const supportedSigningAlgorithms = this.getChainedAuthorizationServerDpopSigningAlgorithms(agentContext, options)
+    if (!supportedSigningAlgorithms) return {}
+
+    const keyId = options.chainedAuthorizationServerConfig.dpop?.keyId
+    const dpop = await getDpopOptions(agentContext, {
+      dpopSigningAlgValuesSupported: supportedSigningAlgorithms,
+      signingAlgValuesSupported: options.chainedAuthorizationServerConfig.dpop?.signingAlgValuesSupported,
+      keyId,
+    })
+
+    return {
+      dpop: dpop.options,
+      session: {
+        keyId: dpop.keyId,
+        alg: dpop.alg,
+        jwkThumbprint: dpop.jwkThumbprint,
+        keyGeneratedForSession: !keyId,
+      },
+    }
+  }
+
+  private getChainedAuthorizationServerDpopSigningAlgorithms(
+    agentContext: AgentContext,
+    options: {
+      chainedAuthorizationServerConfig: OpenId4VciChainedAuthorizationServerConfig
+      authorizationServerMetadata: AuthorizationServerMetadata
+    }
+  ) {
     const requireDpop = options.chainedAuthorizationServerConfig.requireDpop ?? false
     const supportedSigningAlgorithms = options.authorizationServerMetadata.dpop_signing_alg_values_supported
 
@@ -1890,31 +1995,13 @@ export class OpenId4VcIssuerService {
       }
 
       agentContext.config.logger.debug(`Authorization server does not support DPoP. Continuing without DPoP.`)
-      return {}
+      return undefined
     }
     if (supportedSigningAlgorithms.length === 0) {
       throw new CredoError(`Authorization server advertises DPoP support without any signing algorithms.`)
     }
 
-    const persisted = options.issuanceSession.chainedIdentity?.chainedAuthorizationServerDpop
-    const keyId = persisted?.keyId ?? options.chainedAuthorizationServerConfig.dpop?.keyId
-    const dpop = await getDpopOptions(agentContext, {
-      dpopSigningAlgValuesSupported: supportedSigningAlgorithms,
-      signingAlgValuesSupported: options.chainedAuthorizationServerConfig.dpop?.signingAlgValuesSupported,
-      keyId,
-      nonce: persisted?.nonce,
-    })
-
-    return {
-      dpop: dpop.options,
-      session: {
-        keyId: dpop.keyId,
-        alg: dpop.alg,
-        jwkThumbprint: dpop.jwkThumbprint,
-        nonce: dpop.options.nonce,
-        keyGeneratedForSession: persisted?.keyGeneratedForSession ?? !keyId,
-      },
-    }
+    return supportedSigningAlgorithms
   }
 
   public getOauth2Client(agentContext: AgentContext, issuerRecord?: OpenId4VcIssuerRecord) {
