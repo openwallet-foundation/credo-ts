@@ -91,7 +91,8 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
           )
         }
 
-        return response.redirect(issuanceSession.chainedIdentity.externalAuthorizationRequestUrl)
+        response.redirect(issuanceSession.chainedIdentity.externalAuthorizationRequestUrl)
+        return next()
       } catch (error) {
         if (error instanceof Oauth2ServerErrorResponseError) {
           return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
