@@ -157,7 +157,7 @@ export class DcqlService {
 
         // For LDP_VC we query the expanded types
         $or: dcqlQuery.credentials
-          .flatMap((c) => (c.format === 'jwt_vc_json' ? c.meta.type_values : []))
+          .flatMap((c) => (c.format === 'ldp_vc' ? c.meta.type_values : []))
           .map((typeValues) => ({
             expandedTypes: typeValues,
           })),
