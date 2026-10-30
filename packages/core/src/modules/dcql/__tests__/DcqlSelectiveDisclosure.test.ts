@@ -834,6 +834,45 @@ describe('DCQL selective disclosure', () => {
         degrees: [{ name: 'MSc' }],
       })
     })
+
+    test('presents a W3C VC SD-JWT as its subject, not its schema', async () => {
+      const holderDidKey = new DidKey(holderKey)
+      await agent.dids.import({
+        did: holderDidKey.did,
+        didDocument: holderDidKey.didDocument,
+        keys: [{ didDocumentRelativeKeyId: `#${holderKey.fingerprint}`, kmsKeyId: holderKey.keyId }],
+      })
+
+      const type = `urn:type:${randomUUID()}`
+      const compact = await signSdJwt(
+        {
+          '@context': ['https://www.w3.org/ns/credentials/v2'],
+          type: ['VerifiableCredential', type],
+          issuer: issuerDid,
+          credentialSchema: { id: 'https://example.com/schema.json', type: 'JsonSchema' },
+          credentialSubject: { id: holderDidKey.did, given_name: sd('Erika') },
+        },
+        'vc+sd-jwt'
+      )
+      await agent.w3cV2Credentials.store({
+        record: new W3cV2CredentialRecord({ credentialInstances: [{ credential: compact }] }),
+      })
+
+      const dcqlQuery = {
+        credentials: [{ id: 'credential', format: 'vc+sd-jwt', meta: { type_values: [[type]] } }],
+      } as unknown as DcqlQuery
+      const queryResult = await dcqlService.getCredentialsForRequest(agent.context, dcqlQuery)
+
+      const { dcqlPresentation } = await dcqlService.createPresentation(agent.context, {
+        credentialQueryToCredential: dcqlService.selectCredentialsForRequest(queryResult),
+        challenge,
+        domain,
+      })
+      await dcqlService.assertValidDcqlPresentation(agent.context, dcqlPresentation, dcqlQuery)
+
+      const presentation = dcqlPresentation.credential[0] as W3cV2SdJwtVerifiablePresentation
+      expect(presentation.resolvedPresentation.holderId).toBe(holderDidKey.did)
+    })
   })
 })
 

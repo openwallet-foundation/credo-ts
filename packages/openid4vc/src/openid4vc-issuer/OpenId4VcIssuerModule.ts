@@ -1,6 +1,13 @@
 import { type AgentContext, type DependencyManager, joinUriParts, type Module } from '@credo-ts/core'
 import type { NextFunction, Response } from 'express'
-import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
+import {
+  endRequestSession,
+  getAgentContextForActorId,
+  getRequestContext,
+  importExpress,
+  registerRequestSession,
+  sendPayloadTooLargeResponse,
+} from '../shared/router'
 import { OpenId4VcIssuerApi } from './OpenId4VcIssuerApi'
 import type { InternalOpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
@@ -91,6 +98,7 @@ export class OpenId4VcIssuerModule implements Module {
           agentContext,
           issuer,
         }
+        registerRequestSession(req, res, agentContext)
       } catch (error) {
         agentContext?.config.logger.error(
           'Failed to correlate incoming oid4vci request to existing tenant and issuer',
@@ -125,8 +133,7 @@ export class OpenId4VcIssuerModule implements Module {
     configureOAuthAuthorizationServerMetadataEndpoint(wellKnownEndpointsRouter, oauthAuthorizationServerPath)
 
     wellKnownEndpointsRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
-      const { agentContext } = getRequestContext(req)
-      await agentContext.endSession()
+      await endRequestSession(req)
 
       next()
     })
@@ -136,13 +143,10 @@ export class OpenId4VcIssuerModule implements Module {
       async (error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
         const { agentContext } = getRequestContext(req)
 
-        // Check if the error is specifically a payload limit issue
-        if (error instanceof Error && error.name === 'PayloadTooLargeError') {
-          return res.status(413).json({
-            error: 'invalid_request',
-            message: `The request body exceeds the maximum allowed limit.`,
-          })
-        }
+        // End the session first, so an early return below can't skip it
+        await endRequestSession(req)
+
+        if (sendPayloadTooLargeResponse(res, error)) return
 
         if (!res.headersSent) {
           agentContext.config.logger.warn(
@@ -156,7 +160,6 @@ export class OpenId4VcIssuerModule implements Module {
           })
         }
 
-        await agentContext.endSession()
         next()
       }
     )
@@ -176,14 +179,15 @@ export class OpenId4VcIssuerModule implements Module {
 
     const basePath = new URL(this.config.baseUrl).pathname
 
-    // parse application/x-www-form-urlencoded
-    issuerContextRouter.use(urlencoded({ extended: false, limit: '1mb' }))
-    // parse application/json
-    issuerContextRouter.use(json({ limit: '1mb' }))
-
     // Register the issuer endpoints under /:issuerId
     issuerContextRouter.param('issuerId', issuerIdParamHandler)
     issuerContextRouter.use('/:issuerId', issuerEndpointsRouter)
+
+    // Bodies are only parsed for known issuers, so other paths return a 404
+    // parse application/x-www-form-urlencoded
+    issuerEndpointsRouter.use(urlencoded({ extended: false, limit: '1mb' }))
+    // parse application/json
+    issuerEndpointsRouter.use(json({ limit: '1mb' }))
 
     // NOTE: these are here for backwards compat, at some point we should remove them for the root well-known counterpart
     configureIssuerMetadataEndpoint(issuerEndpointsRouter, '/.well-known/openid-credential-issuer')
@@ -203,8 +207,7 @@ export class OpenId4VcIssuerModule implements Module {
 
     // First one will be called for all requests (when next is called)
     issuerContextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
-      const { agentContext } = getRequestContext(req)
-      await agentContext.endSession()
+      await endRequestSession(req)
 
       next()
     })
@@ -212,18 +215,16 @@ export class OpenId4VcIssuerModule implements Module {
     // This one will be called for all errors that are thrown
     issuerContextRouter.use(
       async (error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
-        const { agentContext } = getRequestContext(req)
+        // Requests that don't match an issuer id (e.g. the base path) have no request context, so fall back to the root logger
+        const logger = req.requestContext?.agentContext.config.logger ?? rootAgentContext.config.logger
 
-        // Check if the error is specifically a payload limit issue
-        if (error instanceof Error && error.name === 'PayloadTooLargeError') {
-          return res.status(413).json({
-            error: 'invalid_request',
-            message: `The request body exceeds the maximum allowed limit.`,
-          })
-        }
+        // End the session first, so an early return below can't skip it
+        await endRequestSession(req)
+
+        if (sendPayloadTooLargeResponse(res, error)) return
 
         if (!res.headersSent) {
-          agentContext.config.logger.warn(
+          logger.warn(
             'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.',
             { error }
           )
@@ -234,7 +235,6 @@ export class OpenId4VcIssuerModule implements Module {
           })
         }
 
-        await agentContext.endSession()
         next()
       }
     )

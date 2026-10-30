@@ -22,13 +22,15 @@ import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { TypedArrayEncoder } from './../../utils'
 import { PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc'
-import type { Mdoc } from './Mdoc'
+import { X509Certificate } from '../x509'
+import { Mdoc } from './Mdoc'
 import { MdocError } from './MdocError'
 import type {
   MdocDeviceResponseDcqlQueryOptions,
   MdocDeviceResponseOptions,
   MdocDeviceResponsePresentationDefinitionOptions,
   MdocDeviceResponseVerifyOptions,
+  MdocDeviceResponseVerifyResult,
   MdocSessionTranscriptOptions,
 } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
@@ -296,7 +298,10 @@ export class MdocDeviceResponse {
     )
   }
 
-  public async verify(agentContext: AgentContext, options: Omit<MdocDeviceResponseVerifyOptions, 'deviceResponse'>) {
+  public async verify(
+    agentContext: AgentContext,
+    options: Omit<MdocDeviceResponseVerifyOptions, 'deviceResponse'>
+  ): Promise<MdocDeviceResponseVerifyResult> {
     const mdocContext = getMdocContext(agentContext)
 
     defaultVerificationCallback({
@@ -307,7 +312,7 @@ export class MdocDeviceResponse {
 
     const trustedCertificates = convertMdocTrustedCertificates(options.trustedCertificates ?? [])
 
-    const { documents: verificationResults } = await this.deviceResponse
+    const verificationResult = await this.deviceResponse
       .verify(
         {
           trustedCertificates: mdocTrustedCertificatesToRaw(trustedCertificates),
@@ -327,7 +332,11 @@ export class MdocDeviceResponse {
         })
       })
 
-    for (const { trustedIssuanceChain, trustedStatusListChain, trustedIdentifierListChain } of verificationResults) {
+    for (const {
+      trustedIssuanceChain,
+      trustedStatusListChain,
+      trustedIdentifierListChain,
+    } of verificationResult.documents) {
       if (!trustedIssuanceChain) continue
 
       assertMdocStatusListChainsMatchIssuanceChain(trustedCertificates, {
@@ -335,6 +344,17 @@ export class MdocDeviceResponse {
         trustedStatusListChain,
         trustedIdentifierListChain,
       })
+    }
+
+    return {
+      documents: verificationResult.documents.map(({ trustedIssuanceChain }, documentIndex) => ({
+        documentIndex,
+        // biome-ignore lint/style/noNonNullAssertion: the verification result has one entry per document
+        mdoc: new Mdoc(this.deviceResponse.documents![documentIndex].issuerSigned),
+        trustedIssuanceChain: trustedIssuanceChain?.map((certificate) =>
+          X509Certificate.fromRawCertificate(certificate)
+        ),
+      })),
     }
   }
 

@@ -31,6 +31,13 @@ const webResolverMock = {
   resolve: vi.fn(),
 } as DidResolver
 
+const peerResolverMock = {
+  allowsCaching: false,
+  allowsLocalDidRecord: false,
+  supportedMethods: ['peer'],
+  resolve: vi.fn(),
+} as DidResolver
+
 const didRepositoryMock = {
   getCreatedDids: vi.fn(),
 } as unknown as DidRepository
@@ -41,10 +48,14 @@ const agentContext = getAgentContext({
   registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache })]],
 })
 
+function createDidDocument(did: string) {
+  return JsonTransformer.fromJSON({ ...didKeyEd25519Fixture, id: did }, DidDocument)
+}
+
 describe('DidResolverService', () => {
   const didResolverService = new DidResolverService(
     agentConfig.logger,
-    new DidsModuleConfig({ resolvers: [didResolverMock, recordResolverMock, webResolverMock] }),
+    new DidsModuleConfig({ resolvers: [didResolverMock, recordResolverMock, webResolverMock, peerResolverMock] }),
     didRepositoryMock
   )
 
@@ -54,7 +65,7 @@ describe('DidResolverService', () => {
 
   it('should correctly find and call the correct resolver for a specified did', async () => {
     const returnValue = {
-      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
+      didDocument: createDidDocument('did:key:xxxx'),
       didDocumentMetadata: {},
       didResolutionMetadata: {
         contentType: 'application/did+ld+json',
@@ -80,7 +91,7 @@ describe('DidResolverService', () => {
 
   it('should return cached did document when resolved multiple times within caching duration', async () => {
     const returnValue = {
-      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
+      didDocument: createDidDocument('did:key:cached'),
       didDocumentMetadata: {},
       didResolutionMetadata: {
         contentType: 'application/did+ld+json',
@@ -131,7 +142,7 @@ describe('DidResolverService', () => {
 
   it('should not return cached did document when resolved from a different agent context sharing the cache', async () => {
     const returnValue = {
-      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
+      didDocument: createDidDocument('did:key:cross-context'),
       didDocumentMetadata: {},
       didResolutionMetadata: {
         contentType: 'application/did+ld+json',
@@ -153,7 +164,7 @@ describe('DidResolverService', () => {
 
   it('should return cached did document from a different agent context for a public did method', async () => {
     const returnValue = {
-      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
+      didDocument: createDidDocument('did:web:cross-context.example'),
       didDocumentMetadata: {},
       didResolutionMetadata: {
         contentType: 'application/did+ld+json',
@@ -175,7 +186,7 @@ describe('DidResolverService', () => {
 
   it('should share cached did documents across agent contexts for custom configured public did methods', async () => {
     const returnValue = {
-      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
+      didDocument: createDidDocument('did:key:custom-public'),
       didDocumentMetadata: {},
       didResolutionMetadata: {
         contentType: 'application/did+ld+json',
@@ -203,7 +214,7 @@ describe('DidResolverService', () => {
 
   it('should resolve again after cache invalidation for a public did method', async () => {
     const returnValue = {
-      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
+      didDocument: createDidDocument('did:web:invalidated.example'),
       didDocumentMetadata: {},
       didResolutionMetadata: {
         contentType: 'application/did+ld+json',
@@ -221,7 +232,7 @@ describe('DidResolverService', () => {
 
   it('should resolve again after the cache is invalidated for the did', async () => {
     const returnValue = {
-      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
+      didDocument: createDidDocument('did:key:invalidated'),
       didDocumentMetadata: {},
       didResolutionMetadata: {
         contentType: 'application/did+ld+json',
@@ -294,5 +305,41 @@ describe('DidResolverService', () => {
         message: 'No did resolver registered for did method example',
       },
     })
+  })
+
+  it("should return an error with 'invalidDidDocument' if the did document id does not match the did", async () => {
+    mockFunction(didResolverMock.resolve).mockResolvedValue({
+      didDocument: createDidDocument('did:key:other'),
+      didDocumentMetadata: {},
+      didResolutionMetadata: {},
+    })
+
+    const result = await didResolverService.resolve(agentContext, 'did:key:mismatch')
+
+    expect(result).toEqual({
+      didDocument: null,
+      didDocumentMetadata: {},
+      didResolutionMetadata: {
+        error: 'invalidDidDocument',
+        message: "DID document id 'did:key:other' does not match the resolved did 'did:key:mismatch'",
+        resolutionTime: expect.any(Number),
+        servedFromCache: false,
+      },
+    })
+    expect(await cache.get(agentContext, 'did:resolver:did:key:mismatch')).toBeNull()
+  })
+
+  it('should accept the long form did document when resolving a short form did:peer:4', async () => {
+    const shortFormDid = 'did:peer:4zQmUgFc9wpM9XnHRwUMoe7Q2JNR3ohxGi3X7kZSULHUoshW'
+    const longFormDid = `${shortFormDid}:zqnSoyMuJhPmvnGSRJyrk4V9ENoEdPsCM5bEUsbjb4eT1GHC57x9bT3AqddWsU`
+    mockFunction(peerResolverMock.resolve).mockResolvedValue({
+      didDocument: createDidDocument(longFormDid),
+      didDocumentMetadata: {},
+      didResolutionMetadata: {},
+    })
+
+    const result = await didResolverService.resolve(agentContext, shortFormDid)
+
+    expect(result.didDocument?.id).toBe(longFormDid)
   })
 })

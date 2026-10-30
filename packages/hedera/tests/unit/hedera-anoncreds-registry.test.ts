@@ -452,7 +452,7 @@ describe('HederaAnonCredsRegistry', () => {
       expect(mockAnonCredsService.getRevocationStatusList).toHaveBeenCalledWith(
         mockAgentContext,
         mockRevocationRegistryId,
-        timestamp * 1000
+        timestamp * 1000 + 999
       )
       expect(result).toEqual(expected)
     })

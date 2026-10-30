@@ -25,6 +25,10 @@ import {
   getOpenid4vpClientId,
   isJarmResponseMode,
   isOpenid4vpAuthorizationRequestDcApi,
+  isOpenid4vpAuthorizationRequestIae,
+  type Openid4vpAuthorizationErrorResponse,
+  type Openid4vpAuthorizationRequest,
+  Openid4vpAuthorizationRequestError,
   type Openid4vpAuthorizationResponse,
   Openid4vpClient,
   parseAuthorizationRequestVersion,
@@ -37,6 +41,7 @@ import { getOid4vcCallbacks } from '../shared/callbacks'
 import { getSupportedResponseEncryptionJwks } from '../shared/utils'
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
+  OpenId4VpDeclineAuthorizationRequestOptions,
   OpenId4VpResolvedAuthorizationRequest,
   ParsedTransactionDataEntry,
   ResolveOpenId4VpAuthorizationRequestOptions,
@@ -66,7 +71,14 @@ export class OpenId4VpHolderService {
     transactionData?: ParsedTransactionDataEntry[]
   ) {
     const presentationDefinition = _presentationDefinition as DifPresentationExchangeDefinition
-    this.presentationExchangeService.validatePresentationDefinition(presentationDefinition)
+    try {
+      this.presentationExchangeService.validatePresentationDefinition(presentationDefinition)
+    } catch (error) {
+      throw new Oauth2ServerErrorResponseError(
+        { error: Oauth2ErrorCodes.InvalidRequest, error_description: 'Invalid presentation definition.' },
+        { cause: error, internalMessage: error instanceof Error ? error.message : undefined }
+      )
+    }
 
     const presentationExchange = {
       definition: presentationDefinition,
@@ -96,7 +108,17 @@ export class OpenId4VpHolderService {
     dcql: unknown,
     transactionData?: ParsedTransactionDataEntry[]
   ) {
-    const dcqlQuery = this.dcqlService.validateDcqlQuery(dcql)
+    assertDcqlFormatsSupported(dcql)
+
+    let dcqlQuery: ReturnType<DcqlService['validateDcqlQuery']>
+    try {
+      dcqlQuery = this.dcqlService.validateDcqlQuery(dcql)
+    } catch (error) {
+      throw new Oauth2ServerErrorResponseError(
+        { error: Oauth2ErrorCodes.InvalidRequest, error_description: 'Invalid dcql query.' },
+        { cause: error, internalMessage: error instanceof Error ? error.message : undefined }
+      )
+    }
     const dcqlQueryResult = await this.dcqlService.getCredentialsForRequest(agentContext, dcqlQuery)
 
     // Each credential id in a transaction data entry MUST reference a credential query in the dcql query
@@ -166,7 +188,15 @@ export class OpenId4VpHolderService {
       client.prefix !== 'origin' &&
       client.prefix !== 'redirect_uri'
     ) {
-      throw new CredoError(`Client id prefix '${client.prefix}' is not supported`)
+      // [OpenID4VP 1.0] Section 8.5: invalid_request when the wallet does not support the client identifier
+      // prefix. Without `client`, as this agent did not authenticate the client.
+      throw new Openid4vpAuthorizationRequestError(
+        new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidRequest,
+          error_description: `Client id prefix '${client.prefix}' is not supported`,
+        }),
+        { authorizationRequestPayload: verifiedAuthorizationRequest.authorizationRequestPayload }
+      )
     }
 
     const returnValue = {
@@ -183,11 +213,27 @@ export class OpenId4VpHolderService {
         : undefined,
     }
 
+    // The client is authenticated at this point, so the wallet can send the error to the verifier
+    const throwAuthorizationRequestError = (error: unknown): never => {
+      if (error instanceof Oauth2ServerErrorResponseError) {
+        throw new Openid4vpAuthorizationRequestError(error, {
+          authorizationRequestPayload: verifiedAuthorizationRequest.authorizationRequestPayload,
+          client,
+          jar: verifiedAuthorizationRequest.jar,
+        })
+      }
+      throw error
+    }
+
     const pexResult = pex?.presentation_definition
-      ? await this.handlePresentationExchangeRequest(agentContext, pex.presentation_definition, transactionData)
+      ? await this.handlePresentationExchangeRequest(agentContext, pex.presentation_definition, transactionData).catch(
+          throwAuthorizationRequestError
+        )
       : undefined
 
-    const dcqlResult = dcql?.query ? await this.handleDcqlRequest(agentContext, dcql.query, transactionData) : undefined
+    const dcqlResult = dcql?.query
+      ? await this.handleDcqlRequest(agentContext, dcql.query, transactionData).catch(throwAuthorizationRequestError)
+      : undefined
 
     agentContext.config.logger.debug('verified Authorization Request')
     agentContext.config.logger.debug(`request '${JSON.stringify(authorizationRequest)}'`)
@@ -375,41 +421,9 @@ export class OpenId4VpHolderService {
     // NOTE: in v1 DC API request the audience is always origin: (not the client id)
     const audience = openid4vpVersion === 'v1' && isDcApiRequest ? `origin:${options.origin}` : clientId
 
-    let encryptionJwk: Jwk | undefined
-    if (shouldEncryptResponse) {
-      // NOTE: Once we add support for federation we need to require the clientMetadata as input to the accept method.
-      const clientMetadata = authorizationRequestPayload.client_metadata
-
-      if (!clientMetadata) {
-        throw new CredoError(
-          "Authorization request payload does not contain 'client_metadata' needed to extract response encryption JWK."
-        )
-      }
-      if (!clientMetadata.jwks) {
-        throw new CredoError(
-          "Authorization request payload 'client_metadata' does not contain 'jwks' needed to extract response encryption JWK."
-        )
-      }
-
-      // The verifier can include multiple keys (e.g. P-256, P-384 and P-521). We first filter the
-      // keys to the ones we can actually perform the key agreement with, so we don't pick a key
-      // that is not supported by the key management backends of this agent.
-      const supportedJwks = getSupportedResponseEncryptionJwks(agentContext, clientMetadata.jwks)
-
-      if (supportedJwks.keys.length === 0) {
-        throw new CredoError(
-          `Unable to extract encryption JWK from 'client_metadata' for supported alg 'ECDH-ES'. None of the ${clientMetadata.jwks.keys.length} JWK(s) in 'client_metadata.jwks' can be used for response encryption by this agent.`
-        )
-      }
-
-      encryptionJwk = extractEncryptionJwkFromJwks(supportedJwks, {
-        supportedAlgValues: ['ECDH-ES'],
-      })
-
-      if (!encryptionJwk) {
-        throw new CredoError("Unable to extract encryption JWK from 'client_metadata' for supported alg 'ECDH-ES'")
-      }
-    }
+    const encryptionJwk = shouldEncryptResponse
+      ? this.getResponseEncryptionJwk(agentContext, authorizationRequestPayload)
+      : undefined
 
     let mdocSessionTranscript: MdocSessionTranscriptOptions
     if (isOpenid4vpAuthorizationRequestDcApi(authorizationRequestPayload)) {
@@ -553,16 +567,7 @@ export class OpenId4VpHolderService {
         vp_token: vpToken,
         presentation_submission: presentationSubmission,
       },
-      jarm: encryptionJwk
-        ? {
-            encryption: { nonce: authorizationResponseNonce, jwk: encryptionJwk },
-            serverMetadata: {
-              authorization_signing_alg_values_supported: [],
-              authorization_encryption_alg_values_supported: ['ECDH-ES'],
-              authorization_encryption_enc_values_supported: ['A128GCM', 'A256GCM', 'A128CBC-HS256'],
-            },
-          }
-        : undefined,
+      jarm: encryptionJwk ? this.getJarmOptions(authorizationResponseNonce, encryptionJwk) : undefined,
     })
 
     const authorizationResponsePayload = response.authorizationResponsePayload as Openid4vpAuthorizationResponse & {
@@ -583,6 +588,178 @@ export class OpenId4VpHolderService {
       } as const
     }
 
+    const result = await this.submitAuthorizationResponse(openid4vpClient, authorizationRequestPayload, response)
+    if (!result.ok) {
+      return {
+        ok: false,
+        serverResponse: result.serverResponse,
+        authorizationResponse,
+        authorizationResponsePayload,
+        redirectUri: result.redirectUri,
+      } as const
+    }
+
+    return {
+      ok: true,
+      serverResponse: result.serverResponse,
+      authorizationResponse,
+      authorizationResponsePayload,
+      redirectUri: result.redirectUri,
+      presentationDuringIssuanceSession: result.presentationDuringIssuanceSession,
+    } as const
+  }
+
+  public async declineAuthorizationRequest(
+    agentContext: AgentContext,
+    options: OpenId4VpDeclineAuthorizationRequestOptions
+  ) {
+    const { origin } = options
+    const { authorizationRequestPayload, error, errorDescription, isClientAuthenticated } =
+      'authorizationRequestError' in options
+        ? {
+            authorizationRequestPayload: options.authorizationRequestError.authorizationRequestPayload,
+            error: options.authorizationRequestError.errorResponse.error,
+            errorDescription: options.authorizationRequestError.errorResponse.error_description,
+            isClientAuthenticated: options.authorizationRequestError.isClientAuthenticated,
+          }
+        : {
+            authorizationRequestPayload: options.authorizationRequestPayload,
+            error: options.error ?? Oauth2ErrorCodes.AccessDenied,
+            errorDescription: options.errorDescription,
+            isClientAuthenticated: true,
+          }
+
+    if (isOpenid4vpAuthorizationRequestIae(authorizationRequestPayload)) {
+      throw new CredoError('Authorization requests for presentation during issuance cannot be declined.')
+    }
+
+    // [OpenID4VP 1.0] Appendix A.4: the DC API error is an object with only the `error` property, which
+    // is returned to the platform as is
+    if (isOpenid4vpAuthorizationRequestDcApi(authorizationRequestPayload)) {
+      const authorizationResponsePayload: Openid4vpAuthorizationErrorResponse = { error }
+      return {
+        ok: true,
+        authorizationResponse: authorizationResponsePayload,
+        authorizationResponsePayload,
+      } as const
+    }
+
+    const openid4vpClient = this.getOpenid4vpClient(agentContext)
+    const createResponse = async ({ encrypt }: { encrypt: boolean }) =>
+      openid4vpClient.createOpenid4vpAuthorizationResponse<Openid4vpAuthorizationErrorResponse>({
+        authorizationRequestPayload,
+        origin,
+        authorizationResponsePayload: { error, error_description: errorDescription },
+        jarm: encrypt
+          ? this.getJarmOptions(
+              TypedArrayEncoder.toBase64Url(agentContext.resolve(Kms.KeyManagementApi).randomBytes({ length: 32 })),
+              this.getResponseEncryptionJwk(agentContext, authorizationRequestPayload)
+            )
+          : undefined,
+      })
+
+    const shouldEncryptResponse = authorizationRequestPayload.response_mode
+      ? isJarmResponseMode(authorizationRequestPayload.response_mode)
+      : false
+    const response = shouldEncryptResponse
+      ? await createResponse({ encrypt: true }).catch((encryptionError) => {
+          // [OpenID4VP 1.0] Section 8.3.1: "If a Wallet is unable to generate an encrypted response, it MAY
+          // send an error response without encryption as per Section 8.2." This covers no usable key in the
+          // client metadata, unsupported encryption parameters and a failing encryption.
+          agentContext.config.logger.warn(
+            'Unable to encrypt the authorization error response, sending it unencrypted',
+            { error: encryptionError }
+          )
+          return createResponse({ encrypt: false })
+        })
+      : await createResponse({ encrypt: false })
+
+    const authorizationResponsePayload = response.authorizationResponsePayload
+    const authorizationResponse = response.jarm?.responseJwt
+      ? { response: response.jarm.responseJwt }
+      : authorizationResponsePayload
+
+    // The redirect_uri of a client that is not authenticated is left out, as it could send the user anywhere, in
+    // the name of any verifier
+    const result = await this.submitAuthorizationResponse(openid4vpClient, authorizationRequestPayload, response)
+    if (!result.ok) {
+      return {
+        ok: false,
+        serverResponse: result.serverResponse,
+        authorizationResponse,
+        authorizationResponsePayload,
+        redirectUri: isClientAuthenticated ? result.redirectUri : undefined,
+      } as const
+    }
+
+    return {
+      ok: true,
+      serverResponse: result.serverResponse,
+      authorizationResponse,
+      authorizationResponsePayload,
+      redirectUri: isClientAuthenticated ? result.redirectUri : undefined,
+    } as const
+  }
+
+  private getResponseEncryptionJwk(
+    agentContext: AgentContext,
+    authorizationRequestPayload: OpenId4VpAuthorizationRequestPayload
+  ) {
+    // NOTE: Once we add support for federation we need to require the clientMetadata as input to the accept method.
+    const clientMetadata = authorizationRequestPayload.client_metadata
+
+    if (!clientMetadata) {
+      throw new CredoError(
+        "Authorization request payload does not contain 'client_metadata' needed to extract response encryption JWK."
+      )
+    }
+    if (!clientMetadata.jwks) {
+      throw new CredoError(
+        "Authorization request payload 'client_metadata' does not contain 'jwks' needed to extract response encryption JWK."
+      )
+    }
+
+    // The verifier can include multiple keys (e.g. P-256, P-384 and P-521). We first filter the
+    // keys to the ones we can actually perform the key agreement with, so we don't pick a key
+    // that is not supported by the key management backends of this agent.
+    const supportedJwks = getSupportedResponseEncryptionJwks(agentContext, clientMetadata.jwks)
+
+    if (supportedJwks.keys.length === 0) {
+      throw new CredoError(
+        `Unable to extract encryption JWK from 'client_metadata' for supported alg 'ECDH-ES'. None of the ${clientMetadata.jwks.keys.length} JWK(s) in 'client_metadata.jwks' can be used for response encryption by this agent.`
+      )
+    }
+
+    const encryptionJwk = extractEncryptionJwkFromJwks(supportedJwks, {
+      supportedAlgValues: ['ECDH-ES'],
+    })
+
+    if (!encryptionJwk) {
+      throw new CredoError("Unable to extract encryption JWK from 'client_metadata' for supported alg 'ECDH-ES'")
+    }
+
+    return encryptionJwk
+  }
+
+  private getJarmOptions(nonce: string, encryptionJwk: Jwk) {
+    return {
+      encryption: { nonce, jwk: encryptionJwk },
+      serverMetadata: {
+        authorization_signing_alg_values_supported: [],
+        authorization_encryption_alg_values_supported: ['ECDH-ES'],
+        authorization_encryption_enc_values_supported: ['A128GCM', 'A256GCM', 'A128CBC-HS256'],
+      },
+    }
+  }
+
+  private async submitAuthorizationResponse(
+    openid4vpClient: Openid4vpClient,
+    authorizationRequestPayload: Openid4vpAuthorizationRequest,
+    response: {
+      authorizationResponsePayload: Openid4vpAuthorizationResponse | Openid4vpAuthorizationErrorResponse
+      jarm?: { responseJwt: string }
+    }
+  ) {
     // TODO: parse response in openi4vp library so we can have typed error
     // as well as typed response (with redirect_uri/presentation_during_issuance_session)
     const result = await openid4vpClient.submitOpenid4vpAuthorizationResponse({
@@ -601,6 +778,9 @@ export class OpenId4VpHolderService {
       .json()
       .catch(() => null)) as null | Record<string, unknown>
 
+    // [OpenID4VP 1.0] Section 8.2: the verifier can also return a redirect_uri in an error response
+    const redirectUri = typeof responseJson?.redirect_uri === 'string' ? responseJson.redirect_uri : undefined
+
     if (!result.response.ok) {
       return {
         ok: false,
@@ -608,8 +788,7 @@ export class OpenId4VpHolderService {
           status: result.response.status,
           body: responseJson ?? responseText,
         },
-        authorizationResponse,
-        authorizationResponsePayload,
+        redirectUri,
       } as const
     }
 
@@ -619,10 +798,31 @@ export class OpenId4VpHolderService {
         status: result.response.status,
         body: responseJson ?? {},
       },
-      authorizationResponse,
-      authorizationResponsePayload,
-      redirectUri: responseJson?.redirect_uri as string | undefined,
+      redirectUri,
       presentationDuringIssuanceSession: responseJson?.presentation_during_issuance_session as string | undefined,
     } as const
+  }
+}
+
+// The DCQL formats this agent can present
+const supportedDcqlFormats = ['dc+sd-jwt', 'vc+sd-jwt', 'mso_mdoc', 'jwt_vc_json', 'ldp_vc']
+
+/**
+ * [OpenID4VP 1.0] Section 8.5: `vp_formats_not_supported` when none of the requested formats are supported.
+ * When some are, the request is handled as usual.
+ */
+function assertDcqlFormatsSupported(dcql: unknown) {
+  const credentials = (dcql as { credentials?: unknown } | undefined)?.credentials
+  if (!Array.isArray(credentials)) return
+
+  const requestedFormats = credentials
+    .map((credential) => (credential as { format?: unknown } | undefined)?.format)
+    .filter((format): format is string => typeof format === 'string')
+
+  if (requestedFormats.length > 0 && !requestedFormats.some((format) => supportedDcqlFormats.includes(format))) {
+    throw new Oauth2ServerErrorResponseError({
+      error: Oauth2ErrorCodes.VpFormatsNotSupported,
+      error_description: `None of the requested formats ${requestedFormats.join(', ')} are supported.`,
+    })
   }
 }
