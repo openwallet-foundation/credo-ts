@@ -1,6 +1,7 @@
 import type { TagsBase } from '@credo-ts/core'
 
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils, zTypedObject } from '@credo-ts/core'
+import { z } from 'zod'
 
 export interface AnonCredsKeyCorrectnessProofRecordProps {
   id?: string
@@ -13,10 +14,19 @@ export type DefaultAnonCredsKeyCorrectnessProofPrivateTags = {
   credentialDefinitionId: string
 }
 
+const anonCredsKeyCorrectnessProofRecordEncodingSchema = createRecordEncodingSchema({
+  credentialDefinitionId: z.string().nullish(),
+  value: zTypedObject<Record<string, unknown>>().nullish(),
+})
+
 export class AnonCredsKeyCorrectnessProofRecord extends BaseRecord<
   DefaultAnonCredsKeyCorrectnessProofPrivateTags,
   TagsBase
 > {
+  public static get encodingSchema(): z.ZodType {
+    return anonCredsKeyCorrectnessProofRecordEncodingSchema
+  }
+
   public static readonly type = 'AnonCredsKeyCorrectnessProofRecord'
   public readonly type = AnonCredsKeyCorrectnessProofRecord.type
 

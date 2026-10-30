@@ -1,0 +1,24 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "id": "anoncreds-schema-record-id",
+  "metadata": {
+    "_internal/anonCredsSchemaMetadata": {
+      "seqNo": 400831
+    },
+    "_internal/anonCredsSchemaRegistrationMetadata": {
+      "didIndyNamespace": "bcovrin:test"
+    }
+  },
+  "methodName": "indy",
+  "schema": {
+    "attrNames": ["name", "age"],
+    "issuerId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx",
+    "name": "Employee Credential",
+    "version": "1.0"
+  },
+  "schemaId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx/anoncreds/v0/SCHEMA/Employee Credential/1.0",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

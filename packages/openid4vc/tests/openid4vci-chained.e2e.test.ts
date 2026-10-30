@@ -15,6 +15,7 @@ import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
+import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessionCoordinator'
 import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciCredentialRequestToCredentialMapper } from '../src'
 import { OpenId4VcIssuanceSessionState, OpenId4VcModule } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
@@ -465,6 +466,10 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     await holderTenant.endSession()
 
+    // The authorization and redirect endpoints must not leave issuer tenant sessions open
+    const sessionCoordinator = issuer.agent.dependencyManager.resolve(TenantSessionCoordinator)
+    await vi.waitFor(() => expect(sessionCoordinator.getSessionCountForTenant(issuer1.tenantId)).toBe(0))
+
     clearIdpNock()
     clearHolderNock()
   })
@@ -733,6 +738,10 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     expect(firstSdJwtVcTenant1.payload.name).toEqual('John Doe')
 
     await holderTenant.endSession()
+
+    // The authorization and redirect endpoints must not leave issuer tenant sessions open
+    const sessionCoordinator = issuer.agent.dependencyManager.resolve(TenantSessionCoordinator)
+    await vi.waitFor(() => expect(sessionCoordinator.getSessionCountForTenant(issuer1.tenantId)).toBe(0))
 
     clearIdpNock()
     clearHolderNock()

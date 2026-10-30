@@ -100,13 +100,14 @@ export class Repository<T extends BaseRecord<any, any, any>> {
 
   /** @inheritDoc {StorageService#delete} */
   public async delete(agentContext: AgentContext, record: T): Promise<void> {
+    // Record in event should be static. Cloned before deleting, so an invalid record throws before it is deleted
+    const deletedRecord = record.clone()
     await this.getStorageService(agentContext).delete(agentContext, record)
 
     this.eventEmitter.emit<RecordDeletedEvent<T>>(agentContext, {
       type: RepositoryEventTypes.RecordDeleted,
       payload: {
-        // Record in event should be static
-        record: record.clone(),
+        record: deletedRecord,
       },
     })
   }

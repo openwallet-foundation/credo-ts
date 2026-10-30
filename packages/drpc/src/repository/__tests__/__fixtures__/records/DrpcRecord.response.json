@@ -1,0 +1,58 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "connectionId": "connection-id",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "id": "drpc-record-id",
+  "metadata": {
+    "meta": {
+      "key": "value"
+    }
+  },
+  "request": [
+    {
+      "id": "request-1",
+      "jsonrpc": "2.0",
+      "method": "add",
+      "params": {
+        "a": 1,
+        "b": 2
+      }
+    },
+    {
+      "id": "request-2",
+      "jsonrpc": "2.0",
+      "method": "unknown"
+    },
+    {
+      "id": null,
+      "jsonrpc": "2.0",
+      "method": "notify",
+      "params": []
+    }
+  ],
+  "response": [
+    {
+      "id": "request-1",
+      "jsonrpc": "2.0",
+      "result": 3
+    },
+    {
+      "error": {
+        "code": -32601,
+        "data": {
+          "method": "unknown"
+        },
+        "message": "Method not found"
+      },
+      "id": "request-2",
+      "jsonrpc": "2.0"
+    },
+    {}
+  ],
+  "role": "server",
+  "state": "completed",
+  "threadId": "thread-id",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

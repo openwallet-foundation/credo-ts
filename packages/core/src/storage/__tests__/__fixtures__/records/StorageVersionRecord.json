@@ -1,0 +1,14 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "id": "STORAGE_VERSION_RECORD_ID",
+  "metadata": {
+    "custom": {
+      "key": "value"
+    }
+  },
+  "storageVersion": "0.5",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

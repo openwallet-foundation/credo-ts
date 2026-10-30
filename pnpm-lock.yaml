@@ -544,6 +544,9 @@ importers:
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       reflect-metadata:
         specifier: 'catalog:'
@@ -575,6 +578,9 @@ importers:
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@credo-ts/node':
         specifier: workspace:*
@@ -865,6 +871,9 @@ importers:
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@animo-id/pex':
         specifier: 'catalog:'
@@ -960,6 +969,9 @@ importers:
       class-validator:
         specifier: 'catalog:'
         version: 0.14.3
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@credo-ts/node':
         specifier: workspace:*
@@ -1088,17 +1100,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.2
+        version: 0.8.2
       '@openid4vc/openid4vci':
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.2
+        version: 0.8.2
       '@openid4vc/openid4vp':
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.2
+        version: 0.8.2
       '@openid4vc/utils':
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.2
+        version: 0.8.2
       '@types/express':
         specifier: 'catalog:'
         version: 5.0.6
@@ -1142,6 +1154,9 @@ importers:
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@credo-ts/node':
         specifier: workspace:*
@@ -1208,6 +1223,9 @@ importers:
       async-mutex:
         specifier: ^0.5.0
         version: 0.5.0
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@credo-ts/node':
         specifier: workspace:*
@@ -3037,17 +3055,17 @@ packages:
   '@open-draft/until@3.0.1':
     resolution: {integrity: sha512-s7/9ELP4aP9YZtW7RJaa0Xf3RISaRH9+EFN18FtykJYRHGNrl8f9ymvoNXzjhrjmftFvkQudtuDU9RYhk0xs3A==}
 
-  '@openid4vc/oauth2@0.8.0':
-    resolution: {integrity: sha512-2S2/ykXKhP2mvoDxQE+pivrnBXwRqEN8GkWaG2KWA8Hc18jRY5wLJGSRdPZqdTI8mF+HF7Fyc6T7xPsR3QZWWg==}
+  '@openid4vc/oauth2@0.8.2':
+    resolution: {integrity: sha512-HFHm+nextkh6B5QUrHQFjCbbQMZL1wHo/mv3+g6zFB2CBnyJN+GkI5W6lQ206xBjGEk/DT5muxT3nF53PWWhxg==}
 
-  '@openid4vc/openid4vci@0.8.0':
-    resolution: {integrity: sha512-sx9U4hBjqFL4uYJkF+2oa+k8AO3TX9H7Usu6oh4YDWagBpZwY5dIEVq4Fud06PKqMc2KOMO7cIjgn9URYEAU8w==}
+  '@openid4vc/openid4vci@0.8.2':
+    resolution: {integrity: sha512-iu05PLSFE1Xx940mI/yt8dVUMlzGsrUu2eayStY3uYJN/2tPSrgsWVIbR7QM2wbKGf5oT0DP0wRI1xBwq9rVrw==}
 
-  '@openid4vc/openid4vp@0.8.0':
-    resolution: {integrity: sha512-quev85ex0qUZOM5bE6JtoegBAmi/5C4QV6FnAv6TFYFJlc8rupKA39IFmJt9SgBg2ahY/SyuhUjRMRIA7Ixiig==}
+  '@openid4vc/openid4vp@0.8.2':
+    resolution: {integrity: sha512-VcN3QBxN1toVb9i5lkfz2uVbChfU5QLTSaBBJwY/sPsCCTNvnDMWGqYLi7csEEOtGmvN6A7xPWaSBFdC55lepA==}
 
-  '@openid4vc/utils@0.8.0':
-    resolution: {integrity: sha512-qKeZLbfYty2s7f26RZAiR58N+24XCCzghc75hUUE+26Jc1mtKiLS1W0ZUf8Joi7iFrMSy502Iw4M6BNG4VTt1w==}
+  '@openid4vc/utils@0.8.2':
+    resolution: {integrity: sha512-yW53yZZlz3IfyDa4rwYVEMFiA2fHCxszJvcCsGbt7T4lHwX0SSADJsR5u5AhSzJ5A95AqMTHejixRFXlnuFQHA==}
 
   '@openwallet-foundation/askar-nodejs@0.6.1':
     resolution: {integrity: sha512-9cAXjAA9vHyUJ/wKZUCFpJZghcopR1DCEc98OdihY7X/RGSevuxA+twArLDgJSzasqINPNLMuGpp3FCJjVIlGg==}
@@ -9675,24 +9693,24 @@ snapshots:
 
   '@open-draft/until@3.0.1': {}
 
-  '@openid4vc/oauth2@0.8.0':
+  '@openid4vc/oauth2@0.8.2':
     dependencies:
-      '@openid4vc/utils': 0.8.0
+      '@openid4vc/utils': 0.8.2
       zod: 4.6.7
 
-  '@openid4vc/openid4vci@0.8.0':
+  '@openid4vc/openid4vci@0.8.2':
     dependencies:
-      '@openid4vc/oauth2': 0.8.0
-      '@openid4vc/utils': 0.8.0
+      '@openid4vc/oauth2': 0.8.2
+      '@openid4vc/utils': 0.8.2
       zod: 4.6.7
 
-  '@openid4vc/openid4vp@0.8.0':
+  '@openid4vc/openid4vp@0.8.2':
     dependencies:
-      '@openid4vc/oauth2': 0.8.0
-      '@openid4vc/utils': 0.8.0
+      '@openid4vc/oauth2': 0.8.2
+      '@openid4vc/utils': 0.8.2
       zod: 4.6.7
 
-  '@openid4vc/utils@0.8.0':
+  '@openid4vc/utils@0.8.2':
     dependencies:
       buffer: 6.0.3
       zod: 4.6.7

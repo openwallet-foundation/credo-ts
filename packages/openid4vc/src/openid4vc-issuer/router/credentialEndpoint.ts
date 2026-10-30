@@ -20,6 +20,8 @@ import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
+const recoverableCredentialErrorCodes: string[] = [Oauth2ErrorCodes.InvalidProof, Oauth2ErrorCodes.InvalidNonce]
+
 export function configureCredentialEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
   router.post(config.credentialEndpointPath, async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
     const { agentContext, issuer } = getRequestContext(request)
@@ -203,6 +205,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
       }
     }
 
+    const isExistingSession = issuanceSession !== null
     if (!issuanceSession) {
       // No session bound to the access token. This is a dynamic (wallet-initiated) issuance request
       // for an external authorization server. The credential configurations that can be issued are
@@ -313,7 +316,12 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         credentialResponse.transaction_id ? 202 : 200
       )
     } catch (error) {
-      if (issuanceSession) {
+      const canRetry =
+        isExistingSession &&
+        error instanceof Oauth2ServerErrorResponseError &&
+        recoverableCredentialErrorCodes.includes(error.errorResponse.error)
+
+      if (issuanceSession && !canRetry) {
         issuanceSession.errorMessage =
           typeof error.message === 'string' && error.message !== ''
             ? error.message
