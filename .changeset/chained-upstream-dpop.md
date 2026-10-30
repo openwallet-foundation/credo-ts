@@ -1,0 +1,7 @@
+---
+"@credo-ts/openid4vc": patch
+---
+
+Add configurable DPoP support for chained authorization servers. Credo uses DPoP whenever the authorization server advertises support; `dpop.keyId` can select the KMS key and `dpop.signingAlgValuesSupported` can restrict signing algorithms. In strict mode (`requireDpop: true`), authorization fails if the server does not advertise DPoP support. In tolerant mode (`requireDpop: false`, the default), authorization continues without DPoP when the server does not advertise support. If DPoP is advertised but Credo cannot create a compatible proof, the request fails rather than silently falling back. When DPoP is used, the token response must use `token_type: "DPoP"`; JWT access tokens are verified and opaque tokens are introspected to confirm they are active and their `cnf.jkt` matches Credo's DPoP key. This follows RFC 9449 Sections 5 and 5.1 (DPoP access-token requests and authorization-server metadata), 6.1-6.2 (JWK thumbprint confirmation, including introspection), and 8 (authorization-server-provided nonces).
+
+Chained authorization server metadata is resolved during issuance session creation. Each DPoP-enabled session is initialized with a stable key that subsequent authorization requests reuse. Generated keys are deleted with their session unless `deleteIssuanceSessionById` is called with `deleteChainedDpopKey: false`; caller-configured keys remain caller-owned. A session created without upstream DPoP support cannot start using DPoP later without creating a new session.

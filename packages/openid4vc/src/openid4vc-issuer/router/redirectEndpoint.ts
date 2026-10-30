@@ -1,7 +1,10 @@
 import { joinUriParts, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import {
+  createDpopHeadersForRequest,
+  decodeJwt,
   Oauth2ClientErrorResponseError,
   Oauth2ErrorCodes,
+  Oauth2JwtParseError,
   Oauth2ServerErrorResponseError,
   verifyIdTokenJwt,
 } from '@openid4vc/oauth2'
@@ -126,14 +129,23 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
           )
         }
 
+        const chainedAuthorizationServerDpop = await openId4VcIssuerService.getChainedAuthorizationServerDpopOptions(
+          agentContext,
+          {
+            issuanceSession,
+            chainedAuthorizationServerConfig: authorizationServerConfig,
+            authorizationServerMetadata,
+          }
+        )
+
         // Retrieve access token
-        // TODO: add support for DPoP
-        const { accessTokenResponse } = await oauth2Client
+        const { accessTokenResponse, dpop } = await oauth2Client
           .retrieveAuthorizationCodeAccessToken({
             authorizationCode: authorizationResponse.code,
             authorizationServerMetadata,
             pkceCodeVerifier: issuanceSession.chainedIdentity.pkceCodeVerifier,
             redirectUri: joinUriParts(config.baseUrl, [issuer.issuerId, 'redirect']),
+            dpop: chainedAuthorizationServerDpop.dpop,
           })
           .catch((error) => {
             if (error instanceof Oauth2ClientErrorResponseError) {
@@ -172,6 +184,120 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
               }
             )
           })
+
+        if (chainedAuthorizationServerDpop.session) {
+          chainedAuthorizationServerDpop.session.nonce = dpop?.nonce
+        }
+
+        const isDpopTokenResponse = accessTokenResponse.token_type.toLowerCase() === 'dpop'
+        if (chainedAuthorizationServerDpop.dpop || isDpopTokenResponse) {
+          if (!chainedAuthorizationServerDpop.dpop || !isDpopTokenResponse) {
+            throw new Oauth2ServerErrorResponseError(
+              {
+                error: Oauth2ErrorCodes.ServerError,
+                error_description: 'Upstream authorization server did not return a DPoP-bound access token.',
+              },
+              {
+                internalMessage: `Credo ${
+                  chainedAuthorizationServerDpop.dpop
+                    ? 'used DPoP but the token response type was'
+                    : 'did not use DPoP but the token response type was'
+                } '${accessTokenResponse.token_type}' for '${authorizationServerMetadata.issuer}'.`,
+              }
+            )
+          }
+
+          const accessToken = accessTokenResponse.access_token
+          let isJwtAccessToken = false
+          let resourceServer = authorizationServerConfig.clientAuthentication.clientId
+          try {
+            const { payload } = decodeJwt({ jwt: accessToken })
+            isJwtAccessToken = true
+            const audience = payload.aud
+            if (typeof audience === 'string') {
+              resourceServer = audience
+            } else if (Array.isArray(audience)) {
+              resourceServer = audience.find((value): value is string => typeof value === 'string') ?? resourceServer
+            }
+          } catch (error) {
+            if (!(error instanceof Oauth2JwtParseError)) throw error
+          }
+
+          if (!isJwtAccessToken && !authorizationServerMetadata.introspection_endpoint) {
+            throw new Oauth2ServerErrorResponseError(
+              {
+                error: Oauth2ErrorCodes.ServerError,
+                error_description: 'Unable to verify upstream DPoP-bound access token.',
+              },
+              {
+                internalMessage: `Cannot verify the DPoP binding of an opaque access token from '${authorizationServerMetadata.issuer}' because no introspection endpoint is available.`,
+              }
+            )
+          } else {
+            if (!chainedAuthorizationServerDpop.dpop) {
+              throw new Oauth2ServerErrorResponseError(
+                {
+                  error: Oauth2ErrorCodes.ServerError,
+                  error_description: 'Unable to verify upstream DPoP-bound access token.',
+                },
+                {
+                  internalMessage: `Strict chained DPoP mode has no DPoP signer for '${authorizationServerMetadata.issuer}'.`,
+                }
+              )
+            }
+
+            const verificationRequest = {
+              method: 'GET' as const,
+              url: authorizationServerMetadata.issuer,
+              headers: new Headers(),
+            }
+            const dpopHeaders = await createDpopHeadersForRequest({
+              request: verificationRequest,
+              signer: chainedAuthorizationServerDpop.dpop.signer,
+              accessToken,
+              callbacks: getOid4vcCallbacks(agentContext),
+            })
+
+            try {
+              const { tokenPayload } = await openId4VcIssuerService
+                .getResourceServer(agentContext, issuer, issuerMetadata)
+                .verifyResourceRequest({
+                  request: {
+                    ...verificationRequest,
+                    headers: new Headers({
+                      Authorization: `DPoP ${accessToken}`,
+                      DPoP: dpopHeaders.DPoP,
+                    }),
+                  },
+                  resourceServer,
+                  authorizationServers: [authorizationServerMetadata],
+                })
+
+              if (!isJwtAccessToken && tokenPayload.active !== true) {
+                throw new Oauth2ServerErrorResponseError(
+                  {
+                    error: Oauth2ErrorCodes.ServerError,
+                    error_description: 'Unable to verify upstream DPoP-bound access token.',
+                  },
+                  {
+                    internalMessage: `Introspection did not confirm that the opaque access token from '${authorizationServerMetadata.issuer}' is active.`,
+                  }
+                )
+              }
+            } catch (error) {
+              throw new Oauth2ServerErrorResponseError(
+                {
+                  error: Oauth2ErrorCodes.ServerError,
+                  error_description: 'Unable to verify upstream DPoP-bound access token.',
+                },
+                {
+                  internalMessage: `Unable to verify the DPoP binding of an access token from '${authorizationServerMetadata.issuer}'.`,
+                  cause: error,
+                }
+              )
+            }
+          }
+        }
 
         // Verify the ID Token if 'openid' scope was requested
         if (accessTokenResponse.scope?.split(' ').includes('openid')) {
@@ -222,6 +348,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
         issuanceSession.chainedIdentity = {
           ...issuanceSession.chainedIdentity,
           externalAccessTokenResponse: accessTokenResponse,
+          chainedAuthorizationServerDpop: chainedAuthorizationServerDpop.session,
         }
 
         // TODO: we need to start using locks so we can't get corrupted state

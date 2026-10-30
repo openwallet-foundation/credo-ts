@@ -62,12 +62,12 @@ catalogs:
     '@openwallet-foundation/askar-shared': 0.6.1
 
 minimumReleaseAgeExclude:
-  - '@openid4vc/oauth2@0.9.0'
-  - '@openid4vc/openid4vci@0.9.0'
-  - '@openid4vc/openid4vp@0.9.0'
-  - '@openid4vc/utils@0.9.0'
+  - '@openid4vc/oauth2@0.9.1'
+  - '@openid4vc/openid4vci@0.9.1'
+  - '@openid4vc/openid4vp@0.9.1'
+  - '@openid4vc/utils@0.9.1'
   - '@owf/cose@0.5.0'
-  - '@owf/identity-common@0.6.1'
+  - '@owf/identity-common@0.6.2'
   - '@owf/mdoc@0.8.3'
   - '@owf/token-status-list@0.5.0'
   - '@sd-jwt/core@0.23.0'

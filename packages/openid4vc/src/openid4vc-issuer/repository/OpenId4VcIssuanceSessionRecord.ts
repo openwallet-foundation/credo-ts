@@ -161,6 +161,8 @@ export interface OpenId4VcIssuanceSessionChainedIdentity {
    */
   externalAuthorizationServerMetadata?: AuthorizationServerMetadata
 
+  chainedAuthorizationServerDpop?: OpenId4VcIssuanceSessionChainedAuthorizationServerDpop
+
   /**
    * The access token response received from the external identity provider.
    *
@@ -168,6 +170,17 @@ export interface OpenId4VcIssuanceSessionChainedIdentity {
    * ID Token JWT is valid.
    */
   externalAccessTokenResponse?: AccessTokenResponse
+}
+
+export interface OpenId4VcIssuanceSessionChainedAuthorizationServerDpop {
+  keyId: string
+  alg: Kms.KnownJwaSignatureAlgorithm
+  jwkThumbprint: string
+  nonce?: string
+  /**
+   * True only when this issuance session caused the key to be generated.
+   */
+  keyGeneratedForSession?: boolean
 }
 
 export type DefaultOpenId4VcIssuanceSessionRecordTags = {

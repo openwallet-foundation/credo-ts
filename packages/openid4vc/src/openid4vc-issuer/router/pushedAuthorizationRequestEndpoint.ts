@@ -259,15 +259,32 @@ export async function handlePushedAuthorizationRequest(
     )
   }
 
-  // TODO: add support for DPoP
-  const { authorizationRequestUrl, pkce } = await oauth2Client.initiateAuthorization({
+  const chainedAuthorizationServerDpop = await openId4VcIssuerService.getChainedAuthorizationServerDpopOptions(
+    agentContext,
+    {
+      issuanceSession,
+      chainedAuthorizationServerConfig: authorizationServerConfig,
+      authorizationServerMetadata,
+    }
+  )
+
+  const {
+    authorizationRequestUrl,
+    pkce,
+    dpop: initiatedDpop,
+  } = await oauth2Client.initiateAuthorization({
     authorizationServerMetadata,
     clientId: authorizationServerConfig.clientAuthentication.clientId,
     redirectUri,
     state: chainedIdentityState,
     scope: scopes.join(' '),
     additionalRequestPayload,
+    dpop: chainedAuthorizationServerDpop.dpop,
   })
+
+  if (chainedAuthorizationServerDpop.session) {
+    chainedAuthorizationServerDpop.session.nonce = initiatedDpop?.nonce
+  }
 
   issuanceSession.chainedIdentity = {
     ...issuanceSession.chainedIdentity,
@@ -279,6 +296,7 @@ export async function handlePushedAuthorizationRequest(
     state: parsedAuthorizationRequest.authorizationRequest.state,
     redirectUri: parsedAuthorizationRequest.authorizationRequest.redirect_uri,
     externalAuthorizationServerMetadata: authorizationServerMetadata,
+    chainedAuthorizationServerDpop: chainedAuthorizationServerDpop.session,
   }
 
   const { pushedAuthorizationResponse } = authorizationServer.createPushedAuthorizationResponse({
