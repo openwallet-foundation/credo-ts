@@ -12,17 +12,30 @@ import WebSocket, { WebSocketServer } from 'ws'
 // Matches the request size limit of the HTTP inbound transport
 const defaultMaxPayloadBytes = 5 * 1024 * 1024
 
-export type DidCommWsInboundTransportOptions = (
-  | { server: WebSocketServer; port?: undefined }
-  | { server?: undefined; port: number }
-) & {
-  /**
-   * Maximum size in bytes of a received message. Only applies when the transport creates the server from `port`.
-   *
-   * @default 5242880 (5 MiB)
-   */
-  maxPayloadBytes?: number
-}
+export type DidCommWsInboundTransportOptions =
+  | {
+      /**
+       * Your own server. You're responsible for its configuration, including the maximum message size (`maxPayload`).
+       */
+      server: WebSocketServer
+      port?: undefined
+
+      /**
+       * Not supported with your own server. Set `maxPayload` on the server instead.
+       */
+      maxPayloadBytes?: never
+    }
+  | {
+      server?: undefined
+      port: number
+
+      /**
+       * Maximum size in bytes of a received message.
+       *
+       * @default 5242880 (5 MiB)
+       */
+      maxPayloadBytes?: number
+    }
 
 export class DidCommWsInboundTransport implements DidCommInboundTransport {
   private socketServer: WebSocketServer
@@ -53,6 +66,10 @@ export class DidCommWsInboundTransport implements DidCommInboundTransport {
       this.socketIds[socketId] = socket
       const session = new WebSocketTransportSession(socketId, socket, this.logger)
       this.listenOnWebSocketMessages(agentContext, socket, session)
+      // ws emits an error, and closes the socket, when a message exceeds `maxPayload` or is invalid
+      socket.on('error', (error) => {
+        this.logger.error(`Error on inbound WebSocket ${socketId}: ${error.message}`, { error })
+      })
       socket.on('close', () => {
         this.logger.debug('Socket closed.')
         delete this.socketIds[socketId]
