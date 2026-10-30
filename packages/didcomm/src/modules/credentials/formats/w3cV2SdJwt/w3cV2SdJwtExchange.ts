@@ -146,6 +146,6 @@ export interface W3cV2SdJwtCredentialRequest {
  */
 export interface W3cV2SdJwtCredential {
   // The SD-JWT in compact serialization format. The credential MUST conform to the VC Data Model 2.0
-  // and use the `application/w3c-vc-sd-jwt` media type as defined in W3C VC-JOSE-COSE.
+  // and use the `application/vc+sd-jwt` media type as defined in W3C VC-JOSE-COSE.
   credential: string
 }
