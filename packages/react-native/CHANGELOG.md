@@ -1,5 +1,92 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- 1de1ead: `createKey` and `createKeyForSignatureAlgorithm` of the KMS accept `backendOptions` together with `backend`, which are passed to that backend.
+  
+  The `secureEnvironment` backend now requires `@animo-id/expo-secure-environment` 0.3, and takes its `generateKeypair` options as `backendOptions`.
+  
+  `SecureEnvironmentKeyManagementService.withUserAuthentication(agentContext, callback, options)`: signatures of that agent context in the callback ask the user to authenticate at most once, for the first key that requires it (iOS). `keyIds` limits it to the given keys, other keys ask for every signature as before.
+  
+  ```ts
+  const secureEnvironment = new SecureEnvironmentKeyManagementService({
+    prompt: () => ({ title: t('Sign with your wallet') }),
+  })
+  // modules: { kms: new KeyManagementModule({ backends: [new AskarKeyManagementService(), secureEnvironment] }) }
+  
+  await agent.kms.createKey({
+    type: { kty: 'EC', crv: 'P-256' },
+    backend: 'secureEnvironment',
+    backendOptions: {
+      userAuthentication: { methods: ['biometric', 'deviceCredential'] },
+      minimumKeyStorage: 'trustedEnvironment',
+    },
+  })
+  
+  await secureEnvironment.withUserAuthentication(agent.context, () => presentCredentials(), {
+    keyIds: credentialKeyIds,
+    prompt: { title: t('Share 2 credentials') },
+  })
+  ```
+
+### Patch Changes
+
+- 82a6efd: Update the TypeScript development dependency to TypeScript 7 (`typescript@^7.0.2`, installed as `@typescript/native`) for type checking. The `typescript` package is now an alias of `@typescript/typescript6@^6.0.2`, so tools that use the TypeScript compiler API, such as `tsdown` when generating declaration files, keep working.
+  
+  This has no effect on runtime behaviour. `getPublicJwkFromDid` in `@credo-ts/openid4vc` now declares its `Promise<PublicJwk>` return type, which is the type it already returned.
+- 526a989: feat: support node 26
+- Updated dependencies [c2bb4d5]
+- Updated dependencies [0b9531a]
+- Updated dependencies [2c4e3a2]
+- Updated dependencies [798c401]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [8abea64]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [33d3f53]
+- Updated dependencies [93907de]
+- Updated dependencies [f3d537a]
+- Updated dependencies [de1c035]
+- Updated dependencies [9eadcb8]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [14e84ce]
+- Updated dependencies [526a989]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [4c2f93b]
+- Updated dependencies [1de1ead]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [716cb84]
+- Updated dependencies [82a6efd]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [1bbcdc3]
+- Updated dependencies [cf46149]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [0814729]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [fb99743]
+- Updated dependencies [526a989]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [56ae9a6]
+- Updated dependencies [93907de]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [dbafd1e]
+- Updated dependencies [c05145a]
+- Updated dependencies [808e873]
+- Updated dependencies [81265f5]
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes

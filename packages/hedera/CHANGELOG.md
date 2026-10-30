@@ -1,5 +1,74 @@
 # @credo-ts/hedera
 
+## 0.8.0
+
+### Minor Changes
+
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- c925bf8: Separate Hedera DID operations from the AnonCreds registry implementation by moving registry operations and issuer-key signing from `HederaLedgerService` into a dedicated `HederaAnonCredsService`. The AnonCreds methods formerly on `HederaLedgerService` are removed. Expose `HederaAnonCredsRegistry` only through the `@credo-ts/hedera/anoncreds` subpath and make `@credo-ts/anoncreds` and `@hiero-did-sdk/anoncreds` optional peer dependencies. Consumers using the Hedera AnonCreds registry must install both packages explicitly and register `HederaModule`; DID-only consumers no longer need AnonCreds installed.
+
+### Patch Changes
+
+- acfb0bf: The Hedera AnonCreds registry now returns revocation status list timestamps in seconds, as AnonCreds requires, instead of the milliseconds used by the Hedera SDK. This fixes creating and verifying proofs with non-revocation for Hedera credentials, which failed with `Revocation status list ... not found in revocation status lists`. This applies to `getRevocationStatusList` and to the results of `registerRevocationStatusList` / `updateRevocationStatusList`. If you converted these timestamps from milliseconds yourself, remove that conversion.
+- e4a81c1: Resolving a revocation status list on Hedera now includes entries from the whole requested second. Before, entries written later in that second were left out. Updating a status list right after an earlier update could then undo that update's revocations.
+- 526a989: feat: support node 26
+- Updated dependencies [d490104]
+- Updated dependencies [61d7d0f]
+- Updated dependencies [c2bb4d5]
+- Updated dependencies [0b9531a]
+- Updated dependencies [2c4e3a2]
+- Updated dependencies [798c401]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [8abea64]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [1c18cf8]
+- Updated dependencies [33d3f53]
+- Updated dependencies [93907de]
+- Updated dependencies [f3d537a]
+- Updated dependencies [de1c035]
+- Updated dependencies [9eadcb8]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [14e84ce]
+- Updated dependencies [dbde0f1]
+- Updated dependencies [526a989]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [4c2f93b]
+- Updated dependencies [1de1ead]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [716cb84]
+- Updated dependencies [82a6efd]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [1bbcdc3]
+- Updated dependencies [cf46149]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [0814729]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [fb99743]
+- Updated dependencies [526a989]
+- Updated dependencies [144ca38]
+- Updated dependencies [3678fb3]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+- Updated dependencies [3d4b386]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [56ae9a6]
+- Updated dependencies [93907de]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [dbafd1e]
+- Updated dependencies [c05145a]
+- Updated dependencies [808e873]
+- Updated dependencies [81265f5]
+  - @credo-ts/anoncreds@0.8.0
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes

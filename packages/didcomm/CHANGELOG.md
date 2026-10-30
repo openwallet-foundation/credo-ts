@@ -1,5 +1,189 @@
 # @credo-ts/didcomm
 
+## 0.8.0
+
+### Minor Changes
+
+- dbde0f1: Remove the deprecated DIDComm v1 protocols: Connection (RFC 0160), Issue Credential v1 (RFC 0036) and Present Proof v1 (RFC 0037).
+  
+  `@credo-ts/didcomm`:
+  
+  - The agent does not register or advertise the `https://didcomm.org/connections/1.0` protocol anymore. Use the DID Exchange protocol (`DidCommHandshakeProtocol.DidExchange`) to create connections.
+  - The `DidCommConnectionInvitationMessage`, `DidCommConnectionRequestMessage`, `DidCommConnectionResponseMessage` and `DidCommConnectionProblemReportMessage` classes, their handlers, the `DidCommConnectionRole` and `DidCommConnectionState` enums, `DidCommHandshakeProtocol.Connections` and `DidCommInvitationType.Connection` are removed.
+  - The `createLegacyInvitation` method is removed from the out of band API. `receiveInvitation` only accepts a `DidCommOutOfBandInvitation`. The agent does not parse invitation URLs with a `c_i` query parameter anymore. Legacy connectionless invitations (`d_m` query parameter) are still supported.
+  - The `imageUrl` option is removed from the receive and accept invitation methods of the out of band API. Only the connection protocol used this value.
+  - The `rfc0160State` getter is removed from `DidCommConnectionRecord`.
+  - The `DidCommConnectionService` does not contain the `createRequest`, `processRequest`, `createResponse`, `processResponse`, `processAck` and `processProblemReport` methods anymore.
+  - The storage migration from version 0.1 to 0.2 still migrates connection records that were created with the connection protocol.
+  
+  `@credo-ts/anoncreds`:
+  
+  - The `DidCommCredentialV1Protocol` and `DidCommProofV1Protocol` classes and their messages are removed from `@credo-ts/anoncreds/didcomm`. Use `DidCommCredentialV2Protocol` and `DidCommProofV2Protocol` from `@credo-ts/didcomm` instead. The `LegacyIndyDidCommCredentialFormatService` and `LegacyIndyDidCommProofFormatService` can still be used with the v2 protocols.
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- 4dd128a: Emit `DidCommMessageProcessingFailed` when an inbound message received through the DIDComm event path cannot be processed.
+  
+  ```ts
+  agent.events.on<DidCommMessageProcessingFailedEvent>(
+    DidCommEventTypes.DidCommMessageProcessingFailed,
+    ({ payload }) => {
+      // payload.error, payload.message, payload.connection, payload.contextCorrelationId, payload.receivedAt
+    }
+  )
+  ```
+- 3678fb3: Remove support for unqualified (legacy) AnonCreds identifiers. All AnonCreds identifiers must be fully qualified. Use `did:indy` identifiers for objects on an indy ledger.
+  
+  `@credo-ts/anoncreds`:
+  
+  - The `LegacyIndyDidCommCredentialFormatService` and `LegacyIndyDidCommProofFormatService` classes are removed, together with the `LegacyIndyCredentialFormat` and `LegacyIndyDidCommProofFormat` types. The `hlindy/*` DIDComm formats only work with unqualified identifiers. Use the `AnonCredsDidCommCredentialFormatService` and `AnonCredsDidCommProofFormatService` classes instead.
+  - The `useLegacyProverDid` option of `createCredentialRequest` is removed from the holder service. A credential request always contains an `entropy` value.
+  - The `useUnqualifiedIdentifiers` option of `createProof` and the `useUnqualifiedIdentifiersIfPresent` option of `getCredential` are removed from the holder service.
+  - The unqualified identifier helpers are removed: `unqualifiedSchemaIdRegex`, `unqualifiedSchemaVersionRegex`, `unqualifiedIndyDidRegex`, `unqualifiedCredentialDefinitionIdRegex`, `unqualifiedRevocationRegistryIdRegex`, `getUnqualifiedSchemaId`, `getUnqualifiedCredentialDefinitionId`, `getUnqualifiedRevocationRegistryDefinitionId`, `isUnqualifiedIndyDid`, `isUnqualifiedSchemaId`, `isUnqualifiedCredentialDefinitionId`, `isUnqualifiedRevocationRegistryId`, `getQualifiedDidIndyDid`, `getUnQualifiedDidIndyDid`, the `(get|is)(Qualified|Unqualified)DidIndy(Schema|CredentialDefinition|RevocationRegistryDefinition)` helpers and `generateLegacyProverDidLikeString`.
+  - The `parseIndySchemaId`, `parseIndyCredentialDefinitionId` and `parseIndyRevocationRegistryId` functions only accept `did:indy` identifiers. The `namespace` property of the parsed result is always present.
+  - The `AnonCredsSchemaRecord` and `AnonCredsCredentialDefinitionRecord` classes do not have the `unqualifiedSchemaId` and `unqualifiedCredentialDefinitionId` tags anymore. The repositories only query by the qualified identifier.
+  - The W3C credential records of AnonCreds credentials do not get the `anonCredsUnqualifiedIssuerId`, `anonCredsUnqualifiedSchemaId`, `anonCredsUnqualifiedSchemaIssuerId`, `anonCredsUnqualifiedCredentialDefinitionId` and `anonCredsUnqualifiedRevocationRegistryId` tags anymore. Proof request restrictions only match the qualified identifiers.
+  - The storage migration from version 0.4 to 0.5 still migrates credentials that use unqualified identifiers. When the indy namespace of the issuer is not in the cache, the migration resolves the `did:sov` DID of the issuer to find the namespace. This requires the `IndyVdrSovDidResolver` and an `IndyVdrModule` that is configured with the ledger of the issuer.
+  
+  `@credo-ts/indy-vdr`:
+  
+  - The `IndyVdrAnonCredsRegistry` only resolves `did:indy` schema, credential definition and revocation registry identifiers. Unqualified identifiers are not supported anymore.
+  
+  `@credo-ts/didcomm`:
+  
+  - The revocation notification service only finds credential exchange records by the qualified revocation registry id. A revocation notification that contains an unqualified revocation registry id does not match a record anymore.
+  
+  `@credo-ts/drizzle-storage`:
+  
+  - The `unqualified_schema_id` column of the `AnonCredsSchema` table and the `unqualified_credential_definition_id` column of the `AnonCredsCredentialDefinition` table are removed. Run the database migrations to apply this change.
+- b1090de: Remove duplicate error-level logging at throw sites that already chain the original error as `cause`.
+- 78d5cfb: Log key fingerprints instead of full `PublicJwk` objects.
+- 194cf1e: Make published TypeScript declarations resolvable without development dependencies. Move `@types/events` to dependencies in `@credo-ts/core`, and `@types/node` and `@types/ws` to dependencies in `@credo-ts/node`. Replace non-portable and self-referential imports in core, and use `AgentDependencies` for the WebSocket type in `@credo-ts/didcomm` instead of importing from undeclared `ws`.
+
+### Patch Changes
+
+- c2bb4d5: Validate JSON-LD credential signing readiness before accepting a proposal or creating a direct or negotiated offer. The preflight checks that the issuer verification method belongs to a DID created by the agent and is compatible with the requested proof type. This requires a created DID record and a resolvable issuer DID document earlier in the exchange, at offer creation or proposal acceptance, rather than waiting until request acceptance. For example, a `did:web` issuer is now resolved at offer time. Capability failures use the typed `W3cJsonLdCredentialSigningNotSupportedError`, allowing callers to choose a negotiation or rejection flow. Signing-time checks also use this error for the same capability failures. When a created DID or verification method cannot be found, the typed error wraps the original error as its cause.
+- 0b9531a: Added Aries RFC 881 (vc+sd-jwt) format handler
+  
+  `@credo-ts/core` now exports `validateW3cV2SdJwtDisclosureFrame` and `NON_DISCLOSEABLE_FIELDS`, so that
+  a disclosure frame can be validated before it is used to sign a credential.
+  
+  The `didcomm_signed_attachment` binding method is now implemented by a helper shared with the data
+  integrity format. As a result the data integrity format also accepts a binding proof whose attachment
+  payload is base64url encoded, in addition to base64. Signed attachments are still produced as base64,
+  so this only widens what is accepted from other agents.
+- 218237d: - `connections.deleteById` now removes the mediator routing of a connection that was hung up before. The hangup clears the `did` of the record, so the routing of its last did was never removed. `hangup({ deleteAfterHangup: true })` relies on this and no longer removes the routing itself.
+  - `DidCommDocumentService.resolveCreatedDidDocumentWithKeysByRecipientKey` no longer fails when the Ed25519 recipient key of an inbound message is not a valid Ed25519 point (for example X25519 bytes in a legacy `~service` decorator). The lookup continues with the out-of-band and mediator records instead.
+  - `DidCommConnectionService.returnWhenIsConnected` rejects an empty `connectionId` with a clear `CredoError` before it subscribes to connection events, instead of a `RecordNotFoundError` from the record lookup with a subscription that stays open until the timeout.
+- fac9757: Invitation URLs whose `oob`, `c_i` or `d_m` parameter is encoded as padded base64url or standard base64 are now accepted, instead of failing with `Could not decode data from base64url string`. The encoded value is decoded as base64url first (with padding stripped) and falls back to standard base64, matching how signed attachment data is decoded since #2761.
+- 95b0dd5: The `DidCommMessageProcessed` event payload now includes `handled`, which is `false` when no message handler ran, for example because a middleware dropped the message without calling `next`.
+- 81265f5: Fixed lost did services when cloning an out-of-band record. If the record was loaded from storage or the invitation was received, a clone had an empty string for every did service of the invitation. The records in record events and out-of-band state changed events are clones, so listeners got invitations without their did services. Stored records were not affected.
+- 3d4b386: fix: only close a transport session for the message that opened it. Previously a later message without return routing (e.g. the trust ping sent while connecting to a mediator) could close a WebSocket session that was still needed to return a response, causing intermittent mediation timeouts.
+  
+  `DidCommWsOutboundTransport` now also replaces sockets that are no longer open, instead of reusing them.
+- b51f8b5: The messages and handlers of the Routing 1.0 and Basic Message 1.0 protocols moved to `modules/routing/protocol/v1` and `modules/basic-messages/protocol/v1`, the layout that the credentials, proofs, discover-features and message-pickup modules already use. The exports of `@credo-ts/didcomm` are unchanged. A deep import of a moved file (for example `@credo-ts/didcomm/build/modules/routing/messages`) must point at the new path.
+- 82a6efd: Export the discover features, mediator and mediation recipient module config classes and options types, consistent with the other DIDComm modules.
+- dde35e0: Fixed concurrent keylist updates to the same mediator resolving each other. `keylistUpdateAndAwait` now waits for the `KeylistUpdateResponse` threaded to its own `KeylistUpdate`, so when several connections are created at once (for example through a multi-use invitation) none of them continues before the mediator has registered its key. Unthreaded responses are still accepted.
+  
+  The `DidCommRecipientKeylistUpdated` event payload now includes the `threadId` of the response.
+- 82a6efd: Update the TypeScript development dependency to TypeScript 7 (`typescript@^7.0.2`, installed as `@typescript/native`) for type checking. The `typescript` package is now an alias of `@typescript/typescript6@^6.0.2`, so tools that use the TypeScript compiler API, such as `tsdown` when generating declaration files, keep working.
+  
+  This has no effect on runtime behaviour. `getPublicJwkFromDid` in `@credo-ts/openid4vc` now declares its `Promise<PublicJwk>` return type, which is the type it already returned.
+- e851280: The mediator reconnect loop no longer gives up when live mode setup fails after a reconnect. It closes the mediator socket with the new optional `closeSocketByConnectionId` outbound transport method and tries again with a jittered backoff that resets once a setup succeeds. This also applies when the queued messages cannot be fully retrieved within the pickup timeout: the socket is closed and the next attempt continues with the remaining messages. `pickupMessages` with `awaitCompletion` now only completes on its own thread (its follow-up pickup messages carry `~thread`), so it will time out against a mediator that does not thread its `status` or `batch` replies. `setLiveDeliveryMode` has an opt-in `awaitConfirmation`, and mediators only report `live_delivery` as true for the socket that holds the live session.
+- 3c27483: With `QueueAndLiveModeDelivery`, a failed live delivery no longer fails the forward, because the message is already queued. When sending the delivery fails, the mediator ends that live mode session and closes its transport, so the recipient reconnects and picks the message up. `InMemoryQueueTransportRepository` now puts the messages it handed out for a connection back in the queue when that connection's live mode session ends, so the next pickup delivers them. `deliverMessagesFromQueue` no longer takes messages for a live mode session that ended while it loaded the connection. `DidCommQueueTransportRepository` has an optional `start` hook that `DidCommModule` calls on initialize.
+- cf46149: `Repository.updateByIdWithLock` now stores the record returned by the callback when the storage service has no lock, instead of the record it read. When two mediator instances create the routing record at the same time, the instance that loses now deletes the routing keys it created instead of leaving them in the KMS.
+- aadabc9: Add `supportedJwaSignatureAlgorithms` to the `KeyManagementApi`, which excludes symmetric (HMAC) algorithms unless `includeSymmetricAlgorithms` is set. OpenID4VC and DIDComm now use it, so symmetric algorithms are no longer advertised in metadata such as `vp_formats_supported`, `proof_signing_alg_values_supported` and `algsSupported`.
+- 526a989: feat: support node 26
+- 25199e8: `proofs.requestProof()` and `proofs.createRequest()` accept an optional `expiresTime`. When set, the request message carries the RFC 0032 `~timing.expires_time` decorator for present proof v2. It is set before the request is stored, so `findRequestMessage()` returns it too. The decorator is advisory: Credo does not act on it when receiving a request.
+  
+  ```ts
+  await agent.didcomm.proofs.requestProof({
+    connectionId,
+    protocolVersion: 'v2',
+    proofFormats: { presentationExchange: { presentationDefinition } },
+    expiresTime: new Date(Date.now() + 30 * 60 * 1000),
+  })
+  ```
+- 2f20e2e: Fix the 15 second timeout when resolving a shortened invitation URL. The abort signal was never passed to `fetch`, so a server that accepted the connection but never responded left `parseInvitation` pending indefinitely.
+- 7ba15bc: Fix JSON-LD credential exchanges failing or silently stalling when the issuer's signature suite adds its own `@context` to the credential.
+  
+  A signature suite must add its `@context` to the document it signs when the document does not already carry a compatible one. The holder compared the received credential to the credential request for exact equality, so this required addition was treated as a mismatch. In practice this affected `Ed25519Signature2020`, whose terms are not defined by the `credentials/v1` context, and it was not limited to a hard failure: the same check backs `shouldAutoRespondToCredential`, so with `AutoAcceptCredential.ContentApproved` the exchange stalled without an error.
+  
+  The holder now also accepts the requested credential with the agreed proof type's suite context appended. Any other difference is still rejected.
+- 81265f5: All records in Credo are now encoded, decoded and validated with a zod schema instead of class-transformer and class-validator. This is the first step of moving Credo away from class-transformer and class-validator. The stored format of records doesn't change, so no storage migration is needed.
+  
+  A class opts in by defining a static `encodingSchema` (a zod codec). `JsonTransformer` and `MessageValidator` use it when present, and fall back to class-transformer and class-validator otherwise, so custom records and other classes keep working without changes. Records can define their schema with `createRecordEncodingSchema`:
+  
+  ```ts
+  import { BaseRecord, createRecordEncodingSchema, zIsoDate } from '@credo-ts/core'
+  import { z } from 'zod'
+  
+  const myRecordEncodingSchema = createRecordEncodingSchema({
+    name: z.string(),
+    expiresAt: zIsoDate.optional(),
+  })
+  
+  export class MyRecord extends BaseRecord {
+    public static get encodingSchema() {
+      return myRecordEncodingSchema
+    }
+  
+    // ...
+  }
+  ```
+  
+  Some things behave differently:
+  
+  - A stored record that fails to decode now throws a `RecordDecodingError` with the `recordType` and `recordId`, caused by a `ZodValidationError`. Before, this was a `ClassValidationError`. `ZodValidationError` and `ClassValidationError` now both extend `CredoValidationError`.
+  - Drizzle storage encodes a record before it stores it, so an invalid record is never stored. Askar already did.
+  - A subclass of a Credo record inherits the record's `encodingSchema`. Properties the subclass adds with class-transformer decorators are still stored, but no longer transformed (for example a `Date` is decoded as a string). Define an `encodingSchema` on the subclass to transform them.
+- Updated dependencies [c2bb4d5]
+- Updated dependencies [0b9531a]
+- Updated dependencies [2c4e3a2]
+- Updated dependencies [798c401]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [8abea64]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [33d3f53]
+- Updated dependencies [93907de]
+- Updated dependencies [f3d537a]
+- Updated dependencies [de1c035]
+- Updated dependencies [9eadcb8]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [14e84ce]
+- Updated dependencies [526a989]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [4c2f93b]
+- Updated dependencies [1de1ead]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [716cb84]
+- Updated dependencies [82a6efd]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [1bbcdc3]
+- Updated dependencies [cf46149]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [0814729]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [fb99743]
+- Updated dependencies [526a989]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [56ae9a6]
+- Updated dependencies [93907de]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [dbafd1e]
+- Updated dependencies [c05145a]
+- Updated dependencies [808e873]
+- Updated dependencies [81265f5]
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes

@@ -1,5 +1,190 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- 6127175: The OpenID4VC issuer now requires DPoP by default. Set `dpopRequired: false` in the issuer module config, or `requireDpop: false` for a single issuance session, to keep the old behaviour.
+  
+  An issuer now supports DPoP with all signature algorithms of the agent's KMS when `dpopSigningAlgValuesSupported` isn't set. Before, DPoP was unsupported then. Set `dpopSigningAlgValuesSupported` in the issuer module config to limit the algorithms for all issuers, or on the issuer record for a single issuer. The token, pushed authorization request and authorization challenge endpoints now reject DPoP proofs signed with other algorithms.
+- b4143b7: Breaking: `createCredentialResponse` on the issuer takes the `parsedCredentialRequest` returned by the issuer's `parseCredentialRequest` instead of a raw `credentialRequest`, so the request is not parsed a second time without knowing whether it arrived encrypted.
+- 6127175: Refresh tokens are now always bound to the wallet's DPoP key, and creating an issuance session with `generateRefreshTokens` throws when DPoP isn't required.
+  
+  Refresh tokens can now be enabled for all issuance sessions with `generateRefreshTokens` in the issuer module config (default `false`).
+  
+  This follows RFC 9700 section 2.2.2, which requires refresh tokens for public clients such as wallets to be sender-constrained or rotated.
+- 28bc709: Setting `requireDpop` or `requireWalletAttestation` to `false` when creating a credential offer or in the `getDynamicIssuanceSession` callback now disables the requirement for the issuance session, even if it is required in the global config. Previously `false` fell back to the global config value. To keep using the global config value, omit the option (or set it to `undefined`).
+- b4143b7: The holder requests signed credential issuer metadata by default. Configure it with `holder.signedMetadata` (`required`, `preferred` or `disallowed`) on the `OpenId4VcModule`, or override it per call with the `signedMetadata` option of `resolveIssuerMetadata` and `resolveCredentialOffer`. It defaults to `preferred`.
+  
+  Breaking: with `preferred`, signed metadata is only accepted if the signer is trusted, so resolving metadata of an issuer that signs its metadata with an untrusted certificate now fails. Trust the certificate, or set `signedMetadata` to `disallowed` to keep fetching unsigned metadata.
+  
+  `OpenId4VciHolderService` now takes an `OpenId4VcHolderModuleConfig` as constructor argument, which is registered by the `OpenId4VcHolderModule`.
+- de1c035: Update `@openid4vc/*` to `^0.8.0` and bind an issuance session to the wallet attestation it is started with. The first request of a session with a wallet attestation stores the thumbprint of its `cnf` key as `walletAttestation.confirmationJwkThumbprint` and its `sub` as the session `clientId`, also in the pre-authorized code flow. Every later request of the session, including refresh token requests, must then include a wallet attestation for the same key and client id, as required for refresh tokens by draft-ietf-oauth-attestation-based-client-auth section 10.3. A wallet that renews its wallet attestation must keep the same key.
+  
+  As the client id is now also known in the pre-authorized code flow with a wallet attestation, the `iss` of a credential request proof must then be the client id. Only with anonymous access to the token endpoint is `iss` omitted. A wallet built on Credo must pass `clientId` to `requestCredentials` when it used a wallet attestation in the pre-authorized code flow.
+- 42f56a2: Credential offers now use OpenID4VCI 1.0 (`v1`) by default, instead of draft 15 (`v1.draft15`). Set `version: 'v1.draft15'` in `createCredentialOffer` to keep using draft 15.
+- 0bbfed8: Add `declineOpenId4VpAuthorizationRequest` to the OpenID4VC holder. It sends an OpenID4VP Authorization Error Response to the verifier.
+  
+  - The error is `access_denied` by default. Use it when the user declines or the wallet doesn't have the requested credentials.
+  - For `direct_post.jwt` the error is encrypted. It is sent unencrypted when encryption isn't possible.
+  - For the DC API the error is returned, to be passed to the platform.
+  - The result has the same shape as for `acceptOpenId4VpAuthorizationRequest`, including the `redirectUri` from the verifier.
+  - `resolveOpenId4VpAuthorizationRequest` throws an `Openid4vpAuthorizationRequestError` for an invalid request. Pass it to `declineOpenId4VpAuthorizationRequest` as `authorizationRequestError` to send the error to the verifier. When the client is not authenticated, the result has no `redirectUri`.
+  - `acceptOpenId4VpAuthorizationRequest` now also returns the `redirectUri` when the verifier responds with an error.
+  
+  ```ts
+  try {
+    const resolved = await agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(request)
+    // ... the user declines
+    const { redirectUri } = await agent.openid4vc.holder.declineOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolved.authorizationRequestPayload,
+    })
+  } catch (error) {
+    if (error instanceof Openid4vpAuthorizationRequestError) {
+      // No redirectUri when the client is not authenticated
+      const { redirectUri } = await agent.openid4vc.holder.declineOpenId4VpAuthorizationRequest({
+        authorizationRequestError: error,
+      })
+    }
+  }
+  ```
+- 28bc709: Change the default for `pkceRequired` to `true`. By default PKCE MUST be required unless it is overridden on `OpenId4VcIssuerModule` or on individual issuance sessions
+
+### Patch Changes
+
+- 4c2f93b: Added a `JweService` next to the `JwsService`. It creates compact and general JSON JWEs with `ECDH-ES`, `ECDH-ES+A128KW`/`A192KW`/`A256KW` and `ECDH-1PU+A256KW`, and sets `alg`, `enc`, `apu`, `apv` and `epk` in the protected header from the same values the KMS uses for key derivation. Decryption parses compact or general JSON JWEs, uses the received protected header as AAD and selects the recipient by `kid`.
+  
+  The OpenID4VC JWE encrypt and decrypt callbacks now use the `JweService`.
+- 82a6efd: Update the TypeScript development dependency to TypeScript 7 (`typescript@^7.0.2`, installed as `@typescript/native`) for type checking. The `typescript` package is now an alias of `@typescript/typescript6@^6.0.2`, so tools that use the TypeScript compiler API, such as `tsdown` when generating declaration files, keep working.
+  
+  This has no effect on runtime behaviour. `getPublicJwkFromDid` in `@credo-ts/openid4vc` now declares its `Promise<PublicJwk>` return type, which is the type it already returned.
+- 6eae20c: Request bodies for the OpenID4VC issuer and verifier endpoints are now only parsed once the issuer or verifier is found. Requests to the base path or to an unknown issuer or verifier return a 404, where an oversized body used to return a 500.
+- b4143b7: The issuer now supports credential request encryption (OID4VCI §10). Configure `credentialRequestEncryption` with one or more public JWKs from the agent's KMS that support `ECDH-ES` (EC P-256, P-384, P-521, secp256k1 or OKP X25519, depending on the KMS backend; the `kid` must be the KMS key id) when creating or updating an issuer. The issuer advertises them in `credential_request_encryption` and decrypts (deferred) credential requests sent as a compact JWE with `Content-Type: application/jwt`. Set `required: true` to reject unencrypted requests with `invalid_encryption_parameters`. Unencrypted requests that ask for response encryption are rejected too.
+  
+  As OID4VCI §8.2 only allows response encryption on an encrypted request, saving an issuer with `credentialResponseEncryption` but without `credentialRequestEncryption` throws. A stored issuer in that state does not advertise response encryption, and a warning is logged.
+- f87b6bb: The issuer now supports credential response encryption (OID4VCI §8.3). When a wallet includes `credential_response_encryption` in its credential or deferred credential request, the issuer encrypts the response body as a compact JWE and returns it with `Content-Type: application/jwt`. Requests without encryption continue to work unchanged.
+  
+  The issuer metadata advertises `credential_response_encryption` when credential request encryption is configured (see `credentialRequestEncryption`), as OID4VCI §8.2 requires an encrypted credential request when response encryption is used. By default encryption is optional and all algorithms supported by Credo are listed (`alg_values_supported: ["ECDH-ES"]`, `enc_values_supported: ["A128GCM", "A256GCM", "A128CBC-HS256"]`). Use the new `credentialResponseEncryption` option when creating or updating an issuer to require encryption or restrict the supported `alg` and `enc` values. Requests that omit required encryption or use an unsupported `alg` or `enc` are rejected with `invalid_encryption_parameters`.
+  
+  The drizzle storage stores the issuer's `credentialResponseEncryption` configuration in a new `credential_response_encryption` column; run the drizzle migrations when upgrading.
+- b473230: Credo now only decrypts an OpenID4VC JWE with the key bound to the session or request. Before, it used the `kid` from the JWE header when no key was bound, so the sender could choose any key in the KMS to decrypt with. A verifier now rejects an encrypted authorization response whose `kid` isn't in the request's `client_metadata.jwks`. The wallet now rejects encrypted request objects and encrypted credential responses, as it never provides an encryption key for either.
+- aadabc9: Add `supportedJwaSignatureAlgorithms` to the `KeyManagementApi`, which excludes symmetric (HMAC) algorithms unless `includeSymmetricAlgorithms` is set. OpenID4VC and DIDComm now use it, so symmetric algorithms are no longer advertised in metadata such as `vp_formats_supported`, `proof_signing_alg_values_supported` and `algsSupported`.
+- 8abea64: Use the agent's `validitySkewSeconds` configuration as the allowed clock skew of the OpenID4VC issuer's authorization server. It is applied when verifying the `nbf` and `exp` claims of wallet (client) attestations and Client Attestation PoP JWTs at the pushed authorization request, authorization challenge, and token endpoints, and as the allowed clock skew for DPoP proof verification. Previously a wallet whose clock was a few seconds ahead was rejected with `jwt 'nbf' is in the future`.
+  
+  `@openid4vc/*` dependencies are updated to `^0.7.0`. As a result, the `credential_response_encryption` of a deferred credential request is now checked against the issuer metadata, and an invalid value is rejected with an `invalid_encryption_parameters` error response.
+- 7c4ed20: Align OpenID4VCI issuer endpoint responses with the specs. A credential request that fails parsing (e.g. an unknown `credential_configuration_id`) now returns an OAuth2 error response instead of an unhandled `500`. Missing or invalid authentication now responds with `401` instead of `403` (RFC 9110, RFC 6750), a successful pushed authorization request responds with `201 Created` (RFC 9126), and the authorization server metadata now includes `response_types_supported: ["code"]` (RFC 8414).
+- a6f9a5a: The credential endpoint no longer moves the issuance session to `Error` when the request fails with `invalid_proof` or `invalid_nonce`, so the wallet can retry with a new proof.
+- 6b037bd: The credential and deferred credential endpoints now answer an error that is not a rejected access token or DPoP proof, such as a misconfigured resource server, with `500 server_error` instead of `401 Unauthorized`.
+- fb968ea: OpenID4VP response encryption no longer creates, stores and deletes a KMS key for every response. The `epk` in the JWE header no longer has a `kid`.
+- 6eae20c: Fix tenant sessions not being released for some OpenID4VC requests. Requests for signed issuer metadata, and requests to the authorization and redirect endpoints used for chained identity, left the tenant session open. Unauthenticated requests could use this to exhaust the tenant session limit and block all tenants. The session is now always ended once the response is sent.
+- d80bc49: The credential endpoint now responds with `unknown_credential_identifier` (OpenID4VCI 1.0 §8.3.1) instead of `invalid_credential_request` when a credential request contains a `credential_identifier`, since Credo never grants credential identifiers.
+- 42f56a2: A request to the token, credential or deferred credential endpoint for an expired issuance session is now rejected without moving the session to the `Error` state.
+- de1c035: Add `issuerInfo` to `createIssuer` and `updateIssuerMetadata`, published as `issuer_info` (ETSI TS 119 472-3) in the JSON and signed credential issuer metadata. The `Openid4vcIssuer` table gets an `issuer_info` column, so make sure to run the migrations for the `openid4vc` bundle.
+- 42f56a2: Refresh tokens can now be used before the first credential request. Before, the issuer rejected a refresh in the `AccessTokenCreated` state with `invalid_grant`.
+- 42f56a2: Refreshing an access token no longer emits an issuance session state changed event, as the session state doesn't change.
+- 42f56a2: The issuer now requires a DPoP proof for the same key when a DPoP-bound refresh token is used. Before, a refresh request without a DPoP proof was accepted when the issuance session didn't require DPoP, and returned an access token that was not bound to a key. This was the case in the pre-authorized code flow unless DPoP was required in the config or the credential offer. `OpenId4VcIssuerService.verifyRefreshToken` no longer takes a `dpop` option, as the DPoP proof is verified with the token request.
+- 42f56a2: The token endpoint now verifies a refresh token before it loads the issuance session. An invalid refresh token is rejected with `invalid_grant` instead of a server error.
+- 52d3782: The verifier's response endpoint now answers an OpenID4VP Authorization Error Response (e.g. `error=access_denied`, plain or encrypted) with HTTP 200 and the `redirect_uri` when one is set, as required by OpenID4VP 1.0 §8.2, instead of a 500. The verification session still moves to `Error`, with the wallet's `error` and `error_description` in `errorMessage`.
+- 52d3782: Creating an OpenID4VP `v1.draft21` authorization request with the `x509_hash` client id prefix now throws. Draft 21 signals the prefix through `client_id_scheme`, which has no `x509_hash` value (it was added in draft 25), so such a request was created but could not be parsed back and every response to it failed. Use `x509_san_dns`, or version `v1`.
+- ee69f9d: The `openId4VpCredential` verification passed to `getTrustedIssuersForVerification` now includes `dcql`: the DCQL query and the id of the credential query the credential was presented for. Decide trust on the query, not on the credential's `vct`. A query also matches an SD-JWT VC whose type metadata extends a requested `vct`, and any issuer can publish such type metadata. When the verifier resolved that type metadata, the SD-JWT VC has it as `typeMetadata` and `typeMetadataChain`.
+  
+  ```ts
+  const getTrustedIssuersForVerification: GetTrustedIssuersForVerification<VerificationSigner, OpenId4VcVerificationTypes> =
+    async (agentContext, { verification }) => {
+      if (verification.type === 'openId4VpCredential' && verification.dcql?.credentialQueryId === 'pid') {
+        return { trustedIssuers: [{ method: 'x509', issuance: [pidIssuerCertificate] }] }
+      }
+  
+      return undefined
+    }
+  ```
+- ee69f9d: The verification session state change event payload now has the new `state`, and on `ResponseVerified` includes the verified response as `verifiedAuthorizationResponse`. It has the type metadata resolved during verification, so you don't need to call `getVerifiedAuthorizationResponse`, which resolves it again. Narrow on `payload.state` to get it typed.
+- 705ddec: The issuer's pushed authorization request endpoint now answers a request without `redirect_uri` with `invalid_request` instead of `invalid_scope`, as required by RFC 6749 §4.1.2.1 and RFC 9126 §2.3. This matches the error already returned for a `redirect_uri` that is not allowed.
+- 526a989: feat: support node 26
+- 7e4863f: Avoid `await` inside an object literal in a conditional expression, which Hermes (React Native) can evaluate to the wrong value. This broke credential requests with multiple did urls on the holder side, and the `cnf.jkt` of DPoP-bound refresh tokens on the issuer side.
+  
+  Also expose the compact JWT of a signed authorization request as `signedAuthorizationRequest.compact` when resolving an OpenID4VP authorization request.
+- ef2502c: fix(openid4vc): when resolving an OpenID4VP authorization request with a DCQL query, the holder now rejects transaction data entries that reference credential ids not present in the DCQL query with an `invalid_transaction_data` error, instead of throwing a `TypeError`.
+- 4c379c8: Reject wallet attestations (`oauth-client-attestation+jwt`) and key attestations (`key-attestation+jwt`) signed with a `jwk` header. A `jwk` signer can't be checked against the trusted issuers, so a client could sign its own attestation and pass verification. For wallet attestations this meant an issuer that requires them accepted any client, and for key attestations any claimed `key_storage` and `user_authentication` level was accepted. Wallet and key attestations must be signed with `x5c` or `did`. The `typ` header is now matched case-insensitively and with or without the `application/` prefix, also when deciding which trusted issuers verification applies.
+- eaa2283: The issuer now limits the number of invalid `tx_code` values a wallet can send for an issuance session. After 5 invalid attempts the issuance session moves to the `Error` state and the credential offer can no longer be used. Configure the limit with the `txCodeMaxAttempts` issuer option. The attempts are stored in the new `failedTxCodeAttempts` property of the `OpenId4VcIssuanceSessionRecord`. The limit holds across concurrent requests only when the storage supports record locking, such as Postgres.
+- faaf1e0: The `trustedIssuers` option for verifying W3C credentials and presentations now also accepts a callback that resolves the trusted issuers for each credential. OpenID4VP verification uses it to apply the trust callback's result to that credential only. Before, the trusted issuers of all credentials in a W3C presentation were merged and applied to each credential.
+- 81265f5: All records in Credo are now encoded, decoded and validated with a zod schema instead of class-transformer and class-validator. This is the first step of moving Credo away from class-transformer and class-validator. The stored format of records doesn't change, so no storage migration is needed.
+  
+  A class opts in by defining a static `encodingSchema` (a zod codec). `JsonTransformer` and `MessageValidator` use it when present, and fall back to class-transformer and class-validator otherwise, so custom records and other classes keep working without changes. Records can define their schema with `createRecordEncodingSchema`:
+  
+  ```ts
+  import { BaseRecord, createRecordEncodingSchema, zIsoDate } from '@credo-ts/core'
+  import { z } from 'zod'
+  
+  const myRecordEncodingSchema = createRecordEncodingSchema({
+    name: z.string(),
+    expiresAt: zIsoDate.optional(),
+  })
+  
+  export class MyRecord extends BaseRecord {
+    public static get encodingSchema() {
+      return myRecordEncodingSchema
+    }
+  
+    // ...
+  }
+  ```
+  
+  Some things behave differently:
+  
+  - A stored record that fails to decode now throws a `RecordDecodingError` with the `recordType` and `recordId`, caused by a `ZodValidationError`. Before, this was a `ClassValidationError`. `ZodValidationError` and `ClassValidationError` now both extend `CredoValidationError`.
+  - Drizzle storage encodes a record before it stores it, so an invalid record is never stored. Askar already did.
+  - A subclass of a Credo record inherits the record's `encodingSchema`. Properties the subclass adds with class-transformer decorators are still stored, but no longer transformed (for example a `Date` is decoded as a string). Define an `encodingSchema` on the subclass to transform them.
+- Updated dependencies [c2bb4d5]
+- Updated dependencies [0b9531a]
+- Updated dependencies [2c4e3a2]
+- Updated dependencies [798c401]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [8abea64]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [33d3f53]
+- Updated dependencies [93907de]
+- Updated dependencies [f3d537a]
+- Updated dependencies [de1c035]
+- Updated dependencies [9eadcb8]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [14e84ce]
+- Updated dependencies [526a989]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [4c2f93b]
+- Updated dependencies [1de1ead]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [716cb84]
+- Updated dependencies [82a6efd]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [1bbcdc3]
+- Updated dependencies [cf46149]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [0814729]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [fb99743]
+- Updated dependencies [526a989]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [56ae9a6]
+- Updated dependencies [93907de]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [dbafd1e]
+- Updated dependencies [c05145a]
+- Updated dependencies [808e873]
+- Updated dependencies [81265f5]
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes
