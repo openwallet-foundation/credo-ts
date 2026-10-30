@@ -2189,6 +2189,29 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       await expect(dpopAgent.agent.kms.getPublicKey({ keyId: secondDpop.keyId })).resolves.toBeDefined()
     })
 
+    it('keeps a generated chained DPoP key when deleteChainedDpopKey is false', async () => {
+      const issuanceSession = createDpopIssuanceSession()
+      const dpop = await issuerService.createChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+        issuanceSession,
+        chainedAuthorizationServerConfig: createDpopConfig(),
+        authorizationServerMetadata: upstreamAuthorizationServerMetadata,
+      })
+      if (!dpop.session) throw new Error('Expected generated chained DPoP metadata')
+      expect(dpop.session.keyGeneratedForSession).toBe(true)
+
+      if (!issuanceSession.chainedIdentity) throw new Error('Expected chained identity metadata')
+      issuanceSession.chainedIdentity.chainedAuthorizationServerDpop = dpop.session
+      const repository = dpopAgent.agent.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+      await repository.save(dpopAgent.agent.context, issuanceSession)
+
+      await issuerService.deleteIssuanceSessionById(dpopAgent.agent.context, issuanceSession.id, {
+        deleteChainedDpopKey: false,
+      })
+
+      await expect(repository.findById(dpopAgent.agent.context, issuanceSession.id)).resolves.toBeNull()
+      await expect(dpopAgent.agent.kms.getPublicKey({ keyId: dpop.session.keyId })).resolves.toBeDefined()
+    })
+
     it('does not delete a configured chained DPoP key with its session', async () => {
       const key = await dpopAgent.agent.kms.createKeyForSignatureAlgorithm({
         algorithm: Kms.KnownJwaSignatureAlgorithms.ES256,

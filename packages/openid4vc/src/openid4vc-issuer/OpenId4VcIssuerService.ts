@@ -1279,11 +1279,15 @@ export class OpenId4VcIssuerService {
     return this.openId4VcIssuanceSessionRepository.getById(agentContext, issuanceSessionId)
   }
 
-  public async deleteIssuanceSessionById(agentContext: AgentContext, issuanceSessionId: string) {
+  public async deleteIssuanceSessionById(
+    agentContext: AgentContext,
+    issuanceSessionId: string,
+    options?: { deleteChainedDpopKey?: boolean }
+  ) {
     const issuanceSession = await this.openId4VcIssuanceSessionRepository.getById(agentContext, issuanceSessionId)
     const chainedDpop = issuanceSession?.chainedIdentity?.chainedAuthorizationServerDpop
 
-    if (chainedDpop?.keyGeneratedForSession) {
+    if ((options?.deleteChainedDpopKey ?? true) && chainedDpop?.keyGeneratedForSession) {
       await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: chainedDpop.keyId })
     }
 
