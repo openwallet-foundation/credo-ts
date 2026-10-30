@@ -40,6 +40,8 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
       const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
       const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
+      // The first authorization server in the issuer metadata is the internal (Credo) authorization server
+      const internalAuthorizationServerMetadata = issuerMetadata.authorizationServers[0]
       const accessTokenSigningKey = issuer.resolvedAccessTokenPublicJwk
       let oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext)
 
@@ -136,7 +138,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           expectedPreAuthorizedCode: issuanceSession.preAuthorizedCode,
           grant,
           request: requestLike,
-          authorizationServerMetadata: issuerMetadata.authorizationServers[0],
+          authorizationServerMetadata: internalAuthorizationServerMetadata,
           clientAttestation: {
             ...getClientAttestationToVerify(config, clientAttestation, walletAttestationRequired),
             required: walletAttestationRequired,
@@ -149,6 +151,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           },
           dpop: {
             ...dpop,
+            allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
             // First session config, fall back to global config
             required: issuanceSession.dpop?.required ?? config.dpopRequired,
           },
@@ -175,7 +178,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           expectedCode: issuanceSession.authorization.code,
           codeExpiresAt: issuanceSession.authorization.codeExpiresAt,
           grant,
-          authorizationServerMetadata: issuerMetadata.authorizationServers[0],
+          authorizationServerMetadata: internalAuthorizationServerMetadata,
           request: requestLike,
           clientAttestation: {
             ...getClientAttestationToVerify(config, clientAttestation, issuanceSession.walletAttestation?.required),
@@ -194,6 +197,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           },
           dpop: {
             ...dpop,
+            allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
             // NOTE: we don't look at the global config here. As we already checked and
             // set required to true previously if client attestations were provided or required.
             required: issuanceSession.dpop?.required,
@@ -221,7 +225,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           expectedRefreshToken: grant.refreshToken,
           grant,
           request: requestLike,
-          authorizationServerMetadata: issuerMetadata.authorizationServers[0],
+          authorizationServerMetadata: internalAuthorizationServerMetadata,
           clientAttestation: {
             ...getClientAttestationToVerify(config, clientAttestation, walletAttestationRequired),
             required: walletAttestationRequired,
@@ -234,6 +238,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           },
           dpop: {
             ...dpop,
+            allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
             // First session config, fall back to global config
             required: issuanceSession.dpop?.required ?? config.dpopRequired,
           },
@@ -332,9 +337,11 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           }
         : undefined
 
-      // Generate a refresh token if they're enabled in the config and the grant type is not refresh token
+      // Generate a refresh token if they're enabled in the config and the grant type is not refresh token. Only
+      // DPoP-bound refresh tokens are issued, as a wallet is a public client (RFC 9700 §2.2.2)
       let refreshToken: string | undefined
-      if (issuanceSession.generateRefreshTokens && grant.grantType !== refreshTokenGrantIdentifier) {
+      const generateRefreshTokens = issuanceSession.generateRefreshTokens ?? config.generateRefreshTokens
+      if (generateRefreshTokens && grant.grantType !== refreshTokenGrantIdentifier && tokenDpop) {
         refreshToken = await openId4VcIssuerService.createRefreshToken(agentContext, issuer, {
           preAuthorizedCode: grant.grantType === preAuthorizedCodeGrantIdentifier ? grant.preAuthorizedCode : undefined,
           issuerState: issuanceSession.authorization?.issuerState,

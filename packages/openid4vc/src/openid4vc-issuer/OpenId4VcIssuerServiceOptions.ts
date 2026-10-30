@@ -204,7 +204,8 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
   issuanceMetadata?: Record<string, unknown>
 
   /**
-   * Whether this issuance session allows to generate refresh tokens.
+   * Whether this issuance session allows to generate refresh tokens. If not provided, the global config value is
+   * used. Refresh tokens are bound to the DPoP key of the wallet, so this requires DPoP to be required for the session.
    */
   generateRefreshTokens?: boolean
 
@@ -370,7 +371,8 @@ interface OpenId4VciInternalDynamicIssuanceSessionOptionsBase extends OpenId4Vci
   requirePkce?: boolean
 
   /**
-   * Whether this issuance session allows to generate refresh tokens.
+   * Whether this issuance session allows to generate refresh tokens. If not provided, the global config value is
+   * used. Refresh tokens are bound to the DPoP key of the wallet, so this requires DPoP to be required for the session.
    */
   generateRefreshTokens?: boolean
 }
@@ -800,6 +802,12 @@ export type OpenId4VciCreateIssuerOptions = {
    */
   issuerInfo?: OpenId4VciIssuerInfo
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
+
+  /**
+   * The DPoP signing algorithms supported by this issuer.
+   * If not provided, `dpopSigningAlgValuesSupported` from the issuer module config is used, or else all
+   * signature algorithms supported by the agent's KMS.
+   */
   dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   clientAttestationSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   clientAttestationPopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
