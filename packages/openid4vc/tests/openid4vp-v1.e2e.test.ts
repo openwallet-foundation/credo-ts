@@ -37,6 +37,7 @@ import { TenantsModule } from '../../tenants/src'
 import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessionCoordinator'
 import {
   OpenId4VcModule,
+  OpenId4VcVerificationSessionRepository,
   OpenId4VcVerificationSessionState,
   type OpenId4VcVerificationSessionStateChangedEvent,
   type OpenId4VcVerificationTypes,
@@ -3839,6 +3840,95 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(updatedVerificationSession.errorMessage).toEqual(
       `The wallet returned an openid4vp authorization error response.\n${JSON.stringify(errorResponse, null, 2)}`
     )
+  })
+
+  it('returns redirect_uri for a failed verification, but not when the response is replayed', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post',
+        dcql: { query: openBadgeDcqlQuery },
+        authorizationResponseRedirectUri: 'https://example.com/redirect',
+        version: 'v1',
+      })
+
+    const postAuthorizationResponse = () =>
+      fetch(authorizationRequestObject.response_uri as string, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          vp_token: JSON.stringify({ UnknownCredentialQuery: ['invalid'] }),
+          state: authorizationRequestObject.state as string,
+        }).toString(),
+      })
+
+    const response = await postAuthorizationResponse()
+    expect(response.status).toEqual(400)
+    expect(await response.json()).toMatchObject({
+      error: 'invalid_request',
+      redirect_uri: 'https://example.com/redirect',
+    })
+
+    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.Error,
+      verificationSessionId: verificationSession.id,
+    })
+
+    const replayResponse = await postAuthorizationResponse()
+    expect(replayResponse.status).toEqual(400)
+    expect(await replayResponse.json()).toEqual({
+      error: 'invalid_request',
+      error_description: 'Invalid session',
+    })
+  })
+
+  it('returns redirect_uri for a response to an expired session, but not when the response is replayed', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post',
+        dcql: { query: openBadgeDcqlQuery },
+        authorizationResponseRedirectUri: 'https://example.com/redirect',
+        version: 'v1',
+      })
+
+    const verificationSessionRepository = verifier.agent.dependencyManager.resolve(
+      OpenId4VcVerificationSessionRepository
+    )
+    verificationSession.expiresAt = new Date(Date.now() - 1000)
+    await verificationSessionRepository.update(verifier.agent.context, verificationSession)
+
+    const postAuthorizationResponse = () =>
+      fetch(authorizationRequestObject.response_uri as string, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          error: 'access_denied',
+          state: authorizationRequestObject.state as string,
+        }).toString(),
+      })
+
+    const response = await postAuthorizationResponse()
+    expect(response.status).toEqual(400)
+    expect(await response.json()).toEqual({
+      error: 'invalid_request',
+      error_description: 'session expired',
+      redirect_uri: 'https://example.com/redirect',
+    })
+
+    const replayResponse = await postAuthorizationResponse()
+    expect(replayResponse.status).toEqual(400)
+    expect(await replayResponse.json()).toEqual({
+      error: 'invalid_request',
+      error_description: 'Invalid session',
+    })
   })
 
   it('responds with 200 to an encrypted authorization error response (direct_post.jwt)', async () => {
