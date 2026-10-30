@@ -10,10 +10,8 @@ const escapeNameValue = (value: string) => {
     throw new X509Error(`Name value '${value}' can't end with a backslash`)
   }
 
-  return value
-    .replace(/[\\,+"<>;=]/g, (character) => `\\${character}`)
-    .replace(/^[ #]/, (character) => `\\${character}`)
-    .replace(/ $/, '\\ ')
+  // A single pass, so a one-character value that is both leading and trailing is escaped once
+  return value.replace(/[\\,+"<>;]|^[ #]| $/g, (character) => `\\${character}`)
 }
 
 export const convertName = (name: string | X509CertificateIssuerAndSubjectOptions) => {

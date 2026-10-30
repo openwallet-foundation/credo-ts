@@ -20,9 +20,10 @@ describe('convertName', () => {
   })
 
   it('escapes special characters in values', () => {
-    expect(convertName({ commonName: 'a,b+c"d\\e<f>g;h=i' })).toStrictEqual('CN=a\\,b\\+c\\"d\\\\e\\<f\\>g\\;h\\=i')
+    expect(convertName({ commonName: 'a,b+c"d\\e<f>g;h=i' })).toStrictEqual('CN=a\\,b\\+c\\"d\\\\e\\<f\\>g\\;h=i')
     expect(convertName({ commonName: '#credo' })).toStrictEqual('CN=\\#credo')
     expect(convertName({ commonName: ' credo ' })).toStrictEqual('CN=\\ credo\\ ')
+    expect(convertName({ commonName: ' ' })).toStrictEqual('CN=\\ ')
   })
 
   it('throws when a value ends with a backslash', () => {
