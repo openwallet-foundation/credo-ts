@@ -92,11 +92,6 @@ export type OpenId4VcIssuerRecordProps = {
   signedMetadata?: OpenId4VcIssuerRecordSignedMetadata
 }
 
-/**
- * For OID4VC you need to expose metadata files. Each issuer needs to host this metadata. This is not the case for DIDComm where we can just have one /didcomm endpoint.
- * So we create a record per openid issuer/verifier that you want, and each tenant can create multiple issuers/verifiers which have different endpoints
- * and metadata files
- * */
 const openId4VcIssuerRecordEncodingSchema = createRecordEncodingSchema(
   {
     issuerId: z.string().nullish(),
@@ -162,6 +157,11 @@ const openId4VcIssuerRecordEncodingSchema = createRecordEncodingSchema(
   }
 )
 
+/**
+ * For OID4VC you need to expose metadata files. Each issuer needs to host this metadata. This is not the case for DIDComm where we can just have one /didcomm endpoint.
+ * So we create a record per openid issuer/verifier that you want, and each tenant can create multiple issuers/verifiers which have different endpoints
+ * and metadata files
+ * */
 export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerRecordTags> {
   public static get encodingSchema(): z.ZodType {
     return openId4VcIssuerRecordEncodingSchema

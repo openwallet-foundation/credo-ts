@@ -8,6 +8,7 @@
 '@credo-ts/question-answer': patch
 '@credo-ts/drpc': patch
 '@credo-ts/drizzle-storage': patch
+'@credo-ts/askar': patch
 ---
 
 All records in Credo are now encoded, decoded and validated with a zod schema instead of class-transformer and class-validator. This is the first step of moving Credo away from class-transformer and class-validator. The stored format of records doesn't change, so no storage migration is needed.
@@ -32,7 +33,8 @@ export class MyRecord extends BaseRecord {
 }
 ```
 
-Two things behave differently:
+Some things behave differently:
 
-- Records that fail to decode now throw a `ZodValidationError` instead of a `ClassValidationError`. Both extend `CredoError`.
+- A stored record that fails to decode now throws a `RecordDecodingError` with the `recordType` and `recordId`, caused by a `ZodValidationError`. Before, this was a `ClassValidationError`. `ZodValidationError` and `ClassValidationError` now both extend `CredoValidationError`.
+- Drizzle storage encodes a record before it stores it, so an invalid record is never stored. Askar already did.
 - A subclass of a Credo record inherits the record's `encodingSchema`. Properties the subclass adds with class-transformer decorators are still stored, but no longer transformed (for example a `Date` is decoded as a string). Define an `encodingSchema` on the subclass to transform them.

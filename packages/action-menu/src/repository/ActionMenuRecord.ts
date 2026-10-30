@@ -35,9 +35,6 @@ export type DefaultActionMenuTags = {
   threadId: string
 }
 
-/**
- * @public
- */
 const actionMenuRecordEncodingSchema = createRecordEncodingSchema({
   state: z.string().nullish(),
   role: z.string().nullish(),
@@ -47,6 +44,9 @@ const actionMenuRecordEncodingSchema = createRecordEncodingSchema({
   performedAction: zJsonTransformerClass(() => ActionMenuSelection, { validate: false }).nullish(),
 })
 
+/**
+ * @public
+ */
 export class ActionMenuRecord
   extends BaseRecord<DefaultActionMenuTags, CustomActionMenuTags>
   implements ActionMenuRecordProps

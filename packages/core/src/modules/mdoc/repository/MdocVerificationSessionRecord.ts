@@ -77,14 +77,6 @@ export interface MdocVerificationSessionRecordProps {
   expiresAt: Date
 }
 
-/**
- * A verification session for an mdoc presentation, currently the ISO/IEC TS 18013-7:2025 Annex C
- * (`org-iso-mdoc`) DC API.
- *
- * The device response is never persisted. It contains the disclosed claims, and the caller already
- * has it — for the DC API the exchange is synchronous, so the response is returned to the caller
- * rather than delivered out of band.
- */
 const mdocVerificationSessionRecordEncodingSchema = createRecordEncodingSchema({
   state: z.string().nullish(),
   errorMessage: z.string().nullish(),
@@ -95,6 +87,14 @@ const mdocVerificationSessionRecordEncodingSchema = createRecordEncodingSchema({
   expiresAt: zIsoDate.nullish(),
 })
 
+/**
+ * A verification session for an mdoc presentation, currently the ISO/IEC TS 18013-7:2025 Annex C
+ * (`org-iso-mdoc`) DC API.
+ *
+ * The device response is never persisted. It contains the disclosed claims, and the caller already
+ * has it — for the DC API the exchange is synchronous, so the response is returned to the caller
+ * rather than delivered out of band.
+ */
 export class MdocVerificationSessionRecord extends BaseRecord<DefaultMdocVerificationSessionRecordTags> {
   public static get encodingSchema(): z.ZodType {
     return mdocVerificationSessionRecordEncodingSchema
