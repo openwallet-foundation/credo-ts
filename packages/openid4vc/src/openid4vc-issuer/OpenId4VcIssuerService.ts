@@ -2319,8 +2319,7 @@ const issuersWarnedForResponseEncryption = new Set<string>()
 
 function getCredentialResponseEncryptionMetadata(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord) {
   if (!issuerRecord.credentialRequestEncryption) {
-    if (issuerRecord.credentialResponseEncryption && !issuersWarnedForResponseEncryption.has(issuerRecord.id)) {
-      issuersWarnedForResponseEncryption.add(issuerRecord.id)
+    if (issuerRecord.credentialResponseEncryption) {
       agentContext.config.logger.warn(
         `Issuer '${issuerRecord.issuerId}' has 'credentialResponseEncryption' configured without 'credentialRequestEncryption'. Credential response encryption is not advertised, as OID4VCI requires an encrypted credential request when response encryption is used.`
       )
