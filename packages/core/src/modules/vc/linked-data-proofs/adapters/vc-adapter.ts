@@ -17,12 +17,12 @@ export interface VC {
 }
 
 interface W3cVerificationResult {
-  isValid: boolean
+  verified: boolean
 
   error?: Error
 
   verificationMethod?: JsonObject
-  proof?: JsonObject
+  proof: JsonObject & { verificationMethod: string }
   purposeResult?: JsonObject
 }
 
@@ -36,7 +36,12 @@ export interface W3cVerifyPresentationResult {
   verified: boolean
   error?: Error
 
-  presentationResult: W3cVerificationResult
+  // Not set for an unsigned presentation
+  presentationResult?: {
+    verified: boolean
+    error?: Error
+    results?: W3cVerificationResult[]
+  }
   credentialResults: W3cVerifyCredentialResult[]
 }
 

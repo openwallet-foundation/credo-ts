@@ -1,4 +1,4 @@
-import type { MdocRecord, SdJwtVcRecord } from '@credo-ts/core'
+import type { AgentContext, MdocRecord, SdJwtVcRecord } from '@credo-ts/core'
 import {
   ClaimFormat,
   CredoError,
@@ -13,21 +13,27 @@ import {
 import type { AuthorizationServerMetadata, Jwk } from '@openid4vc/oauth2'
 import {
   calculateJwkThumbprint,
+  createDpopHeadersForRequest,
   HashAlgorithm,
   Oauth2AuthorizationServer,
   Oauth2Error,
   Oauth2ResourceServer,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
-import { AuthorizationFlow } from '@openid4vc/openid4vci'
+import { AuthorizationFlow, Openid4vciClient } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
 import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessionCoordinator'
 import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciIssuerInfo, OpenId4VciSignMdocCredentials } from '../src'
-import { OpenId4VcIssuanceSessionState, OpenId4VciCredentialFormatProfile, OpenId4VcModule } from '../src'
-import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
+import {
+  OpenId4VcIssuanceSessionState,
+  OpenId4VcIssuerModuleConfig,
+  OpenId4VciCredentialFormatProfile,
+  OpenId4VcModule,
+} from '../src'
+import type { OpenId4VciCredentialBindingResolver, OpenId4VciDpopRequestOptions } from '../src/openid4vc-holder'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForCredentialIssuanceSessionRecordSubject } from './utils'
@@ -42,6 +48,24 @@ const baseUrl = `http://localhost:${serverPort}`
 const issuanceBaseUrl = `${baseUrl}/oid4vci`
 
 // Create ISO 18013-5 compliant root and leaf certificates
+const getDpopAuthorizationHeaders = async (
+  agentContext: AgentContext,
+  url: string,
+  { accessToken, dpop }: { accessToken: string; dpop?: OpenId4VciDpopRequestOptions }
+) => {
+  if (!dpop) throw new Error('Expected a DPoP-bound access token')
+
+  return {
+    Authorization: `DPoP ${accessToken}`,
+    ...(await createDpopHeadersForRequest({
+      request: { method: 'POST', url },
+      accessToken,
+      callbacks: getOid4vcCallbacks(agentContext),
+      signer: { method: 'jwk', alg: dpop.alg, publicJwk: dpop.jwk.toJson() as Jwk },
+    })),
+  }
+}
+
 const getNextMonth = () => {
   const now = new Date()
   let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
@@ -225,7 +249,25 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(signedMetadata.header.x5c).toEqual([certificate.toString('base64')])
     expect(signedMetadata.payload.additionalClaims.issuer_info).toEqual(issuerInfo)
 
-    const metadata = await holder.agent.openid4vc.holder.resolveIssuerMetadata(`${issuanceBaseUrl}/${created.issuerId}`)
+    const issuerUrl = `${issuanceBaseUrl}/${created.issuerId}`
+    await expect(holder.agent.openid4vc.holder.resolveIssuerMetadata(issuerUrl)).rejects.toThrow(
+      'No trusted certificate was found'
+    )
+    await expect(
+      holder.agent.openid4vc.holder.resolveIssuerMetadata(issuerUrl, { signedMetadata: 'required' })
+    ).rejects.toThrow('No trusted certificate was found')
+    const unsignedMetadata = await holder.agent.openid4vc.holder.resolveIssuerMetadata(issuerUrl, {
+      signedMetadata: 'disallowed',
+    })
+    expect(unsignedMetadata.credentialIssuer.issuer_info).toEqual(issuerInfo)
+
+    holder.agent.x509.config.addTrustedCertificate(certificate)
+    const metadata = await holder.agent.openid4vc.holder.resolveIssuerMetadata(
+      `${issuanceBaseUrl}/${created.issuerId}`,
+      {
+        signedMetadata: 'required',
+      }
+    )
     expect(metadata.credentialIssuer.issuer_info).toEqual(issuerInfo)
 
     const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
@@ -519,12 +561,15 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       version: 'v1.draft15',
     })
     const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
-    const { accessToken, dpop } = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
-    expect(dpop).toBeUndefined()
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+    expect(tokenResponse.dpop).toBeDefined()
 
     const unknownConfigurationResponse = await fetch(`${issuerUrl}/credential`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await getDpopAuthorizationHeaders(holderTenant.context, `${issuerUrl}/credential`, tokenResponse)),
+      },
       body: JSON.stringify({
         credential_configuration_id: 'not-offered',
         proof: { proof_type: 'jwt', jwt: 'ey.ey.S' },
@@ -534,6 +579,85 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(await unknownConfigurationResponse.json()).toMatchObject({ error: expect.any(String) })
 
     clearNock()
+  })
+
+  it('requires dpop by default and only accepts the configured dpop signing algorithms', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+    const issuerUrl = `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}`
+    const tokenEndpoint = `${issuerUrl}/token`
+
+    const getDpopSigningAlgValuesSupported = async () =>
+      (
+        (await (
+          await fetch(`${issuerUrl}/.well-known/oauth-authorization-server`)
+        ).json()) as AuthorizationServerMetadata
+      ).dpop_signing_alg_values_supported
+
+    expect(await getDpopSigningAlgValuesSupported()).toEqual(issuerTenant.kms.supportedJwaSignatureAlgorithms())
+
+    const issuerConfig = issuer.agent.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+    vi.spyOn(issuerConfig, 'dpopSigningAlgValuesSupported', 'get').mockReturnValue([
+      Kms.KnownJwaSignatureAlgorithms.ES256,
+      Kms.KnownJwaSignatureAlgorithms.EdDSA,
+    ])
+    expect(await getDpopSigningAlgValuesSupported()).toEqual(['ES256', 'EdDSA'])
+
+    const { issuanceSession } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const requestAccessToken = async (signer?: { alg: string; publicJwk: Kms.KmsJwkPublic }) =>
+      fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          ...(signer
+            ? await createDpopHeadersForRequest({
+                request: { method: 'POST', url: tokenEndpoint },
+                callbacks: getOid4vcCallbacks(holderTenant.context),
+                signer: { method: 'jwk', alg: signer.alg, publicJwk: signer.publicJwk as Jwk },
+              })
+            : {}),
+        },
+        body: new URLSearchParams({
+          grant_type: preAuthorizedCodeGrantIdentifier,
+          'pre-authorized_code': issuanceSession.preAuthorizedCode as string,
+        }).toString(),
+      })
+
+    const missingDpopResponse = await requestAccessToken()
+    expect(missingDpopResponse.status).toBe(400)
+    expect(await missingDpopResponse.json()).toEqual({
+      error: 'invalid_dpop_proof',
+      error_description: 'Missing required DPoP proof',
+    })
+
+    openIdIssuerTenant.dpopSigningAlgValuesSupported = [Kms.KnownJwaSignatureAlgorithms.ES256]
+    await issuerTenant.modules.openid4vc.issuer.updateIssuer(openIdIssuerTenant)
+    expect(await getDpopSigningAlgValuesSupported()).toEqual(['ES256'])
+
+    const ed25519Key = await holderTenant.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+    const unsupportedAlgResponse = await requestAccessToken({ alg: 'EdDSA', publicJwk: ed25519Key.publicJwk })
+    expect(unsupportedAlgResponse.status).toBe(400)
+    expect(await unsupportedAlgResponse.json()).toMatchObject({ error: 'invalid_dpop_proof' })
+
+    const p256Key = await holderTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const accessTokenResponse = await requestAccessToken({ alg: 'ES256', publicJwk: p256Key.publicJwk })
+    expect(accessTokenResponse.status).toBe(200)
+    expect(await accessTokenResponse.json()).toMatchObject({ token_type: 'DPoP' })
+
+    await holderTenant.endSession()
+    await issuerTenant.endSession()
   })
 
   it('e2e flow with tenants, issuer endpoints requesting a mdoc', async () => {
@@ -682,6 +806,101 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     await holderTenant1.endSession()
   })
 
+  it('credential and deferred credential endpoints decrypt encrypted requests', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const requestEncryptionKey = await issuerTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+      credentialRequestEncryption: { jwks: [requestEncryptionKey.publicJwk] },
+    })
+    const issuerUrl = `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}`
+
+    const { credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    expect(resolvedCredentialOffer.metadata.credentialIssuer.credential_request_encryption).toMatchObject({
+      jwks: { keys: [{ kid: requestEncryptionKey.keyId, alg: 'ECDH-ES', use: 'enc' }] },
+      encryption_required: false,
+    })
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    const encrypt = async (publicJwk: Jwk, payload: object) =>
+      (
+        await getOid4vcCallbacks(holderTenant.context).encryptJwe(
+          { method: 'jwk', publicJwk, alg: 'ECDH-ES', enc: 'A256GCM' },
+          JSON.stringify(payload)
+        )
+      ).jwe
+    const post = async (path: string, body: string) =>
+      fetch(`${issuerUrl}/${path}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/jwt',
+          ...(await getDpopAuthorizationHeaders(holderTenant.context, `${issuerUrl}/${path}`, tokenResponse)),
+        },
+        body,
+      })
+
+    const decryptedResponse = await post(
+      'credential',
+      await encrypt(requestEncryptionKey.publicJwk as Jwk, {
+        credential_identifier: 'never-granted',
+        proofs: { jwt: ['ey.ey.S'] },
+      })
+    )
+    expect(decryptedResponse.status).toBe(400)
+    expect(await decryptedResponse.json()).toMatchObject({ error: 'unknown_credential_identifier' })
+
+    const otherKey = await holderTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    for (const path of ['credential', 'deferred-credential']) {
+      const response = await post(path, await encrypt(otherKey.publicJwk as Jwk, { transaction_id: 'a' }))
+      expect(response.status).toBe(400)
+      expect(await response.json()).toMatchObject({ error: 'invalid_encryption_parameters' })
+    }
+
+    const { c_nonce } = (await (await fetch(`${issuerUrl}/nonce`, { method: 'POST' })).json()) as { c_nonce: string }
+    const holderKey = await holderTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const { jwt } = await new Openid4vciClient({
+      callbacks: getOid4vcCallbacks(holderTenant.context),
+    }).createCredentialRequestJwtProof({
+      issuerMetadata: resolvedCredentialOffer.metadata,
+      credentialConfigurationId: 'universityDegree',
+      nonce: c_nonce,
+      signer: { method: 'jwk', alg: 'ES256', publicJwk: holderKey.publicJwk as Jwk },
+    })
+    const responseEncryptionKey = await holderTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const credentialResponse = await post(
+      'credential',
+      await encrypt(requestEncryptionKey.publicJwk as Jwk, {
+        credential_configuration_id: 'universityDegree',
+        proofs: { jwt: [jwt] },
+        credential_response_encryption: {
+          jwk: { ...responseEncryptionKey.publicJwk, alg: 'ECDH-ES' },
+          enc: 'A256GCM',
+        },
+      })
+    )
+    expect(credentialResponse.status).toBe(200)
+    expect(credentialResponse.headers.get('Content-Type')).toContain('application/jwt')
+    const decryptedCredentialResponse = await getOid4vcCallbacks(holderTenant.context).decryptJwe(
+      await credentialResponse.text(),
+      { jwk: responseEncryptionKey.publicJwk as Jwk }
+    )
+    if (!decryptedCredentialResponse.decrypted) throw new Error('Unable to decrypt the credential response')
+    expect(JSON.parse(decryptedCredentialResponse.payload).credentials).toHaveLength(1)
+
+    await holderTenant.endSession()
+  })
+
   it('credential endpoint responds with unknown_credential_identifier for a credential_identifier that was never granted', async () => {
     const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
     const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
@@ -700,11 +919,15 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       version: 'v1',
     })
     const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
-    const { accessToken } = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
 
-    const response = await fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/credential`, {
+    const credentialEndpoint = `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/credential`
+    const response = await fetch(credentialEndpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await getDpopAuthorizationHeaders(holderTenant.context, credentialEndpoint, tokenResponse)),
+      },
       body: JSON.stringify({
         credential_identifier: 'never-granted',
         proofs: { jwt: ['ey.ey.S'] },
@@ -740,9 +963,13 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
     const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
 
-    const missingProofResponse = await fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/credential`, {
+    const credentialEndpoint = `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/credential`
+    const missingProofResponse = await fetch(credentialEndpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenResponse.accessToken}` },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await getDpopAuthorizationHeaders(holderTenant.context, credentialEndpoint, tokenResponse)),
+      },
       body: JSON.stringify({ credential_configuration_id: 'universityDegree' }),
     })
     expect(missingProofResponse.status).toBe(400)
@@ -777,6 +1004,98 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     await holderTenant.endSession()
+  })
+
+  it('accepts a valid tx_code after an invalid one', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: { txCode: {} },
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+    await expect(
+      holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer, txCode: 'invalid' })
+    ).rejects.toThrow("Invalid 'tx_code' provided")
+
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({
+      resolvedCredentialOffer,
+      txCode: issuanceSession.userPin,
+    })
+    expect(tokenResponse.accessToken).toEqual(expect.any(String))
+
+    const issuanceSessionAfterToken = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
+      issuanceSession.id
+    )
+    expect(issuanceSessionAfterToken.failedTxCodeAttempts).toBe(1)
+    expect(issuanceSessionAfterToken.state).toBe(OpenId4VcIssuanceSessionState.AccessTokenCreated)
+
+    await holderTenant.endSession()
+    await issuerTenant.endSession()
+  })
+
+  it('moves the issuance session to the error state after too many invalid tx_code attempts', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: { txCode: {} },
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+    for (let attempt = 1; attempt < 5; attempt++) {
+      await expect(
+        holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer, txCode: 'invalid' })
+      ).rejects.toThrow("Invalid 'tx_code' provided")
+    }
+
+    await expect(
+      holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer, txCode: 'invalid' })
+    ).rejects.toThrow('The maximum number of attempts has been reached')
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.Error,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
+    })
+
+    // The valid tx_code is rejected as well once the limit is reached
+    await expect(
+      holderTenant.modules.openid4vc.holder.requestToken({
+        resolvedCredentialOffer,
+        txCode: issuanceSession.userPin,
+      })
+    ).rejects.toThrow('Invalid authorization code')
+
+    const issuanceSessionAfterErrors = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
+      issuanceSession.id
+    )
+    expect(issuanceSessionAfterErrors.failedTxCodeAttempts).toBe(5)
+    expect(issuanceSessionAfterErrors.errorMessage).toBe('Maximum number of tx_code attempts reached')
+
+    await holderTenant.endSession()
+    await issuerTenant.endSession()
   })
 
   it('credential endpoint responds with a server error instead of 401 when the resource server is misconfigured', async () => {

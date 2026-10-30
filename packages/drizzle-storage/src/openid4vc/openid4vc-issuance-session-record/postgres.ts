@@ -9,7 +9,7 @@ import type {
   OpenId4VcIssuanceSessionWalletAttestation,
   OpenId4VciCredentialOfferPayload,
 } from '@credo-ts/openid4vc'
-import { boolean, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { boolean, integer, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
 import { openid4vcIssuer } from '../openid4vc-issuer-record/postgres'
@@ -51,6 +51,7 @@ export const openId4VcIssuanceSession = pgTable(
     // Pre-authorized flow
     preAuthorizedCode: text('pre_authorized_code'),
     userPin: text('user_pin'),
+    failedTxCodeAttempts: integer('failed_tx_code_attempts'),
 
     // Client and authentication
     clientId: text('client_id'),

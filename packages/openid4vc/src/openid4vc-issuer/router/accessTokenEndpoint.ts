@@ -1,4 +1,4 @@
-import { CredoError, joinUriParts, type Query, utils } from '@credo-ts/core'
+import { type AgentContext, CredoError, joinUriParts, type Query, utils } from '@credo-ts/core'
 import type { HttpMethod, Jwk, VerifyAccessTokenRequestReturn } from '@openid4vc/oauth2'
 import {
   authorizationCodeGrantIdentifier,
@@ -40,6 +40,8 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
       const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
       const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
+      // The first authorization server in the issuer metadata is the internal (Credo) authorization server
+      const internalAuthorizationServerMetadata = issuerMetadata.authorizationServers[0]
       const accessTokenSigningKey = issuer.resolvedAccessTokenPublicJwk
       let oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext)
 
@@ -89,7 +91,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           })
       }
 
-      const issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, query)
+      let issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, query)
       if (!issuanceSession || !allowedStates.includes(issuanceSession.state)) {
         throw new Oauth2ServerErrorResponseError({
           error: Oauth2ErrorCodes.InvalidGrant,
@@ -118,6 +120,10 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       const walletAttestationRequired = issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired
 
       if (grant.grantType === preAuthorizedCodeGrantIdentifier) {
+        if (issuanceSession.userPin && grant.txCode) {
+          issuanceSession = await verifyTxCode(agentContext, config, issuanceSession, grant.txCode, allowedStates)
+        }
+
         if (!issuanceSession.preAuthorizedCode) {
           throw new Oauth2ServerErrorResponseError(
             {
@@ -136,7 +142,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           expectedPreAuthorizedCode: issuanceSession.preAuthorizedCode,
           grant,
           request: requestLike,
-          authorizationServerMetadata: issuerMetadata.authorizationServers[0],
+          authorizationServerMetadata: internalAuthorizationServerMetadata,
           clientAttestation: {
             ...getClientAttestationToVerify(config, clientAttestation, walletAttestationRequired),
             required: walletAttestationRequired,
@@ -149,6 +155,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           },
           dpop: {
             ...dpop,
+            allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
             // First session config, fall back to global config
             required: issuanceSession.dpop?.required ?? config.dpopRequired,
           },
@@ -175,7 +182,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           expectedCode: issuanceSession.authorization.code,
           codeExpiresAt: issuanceSession.authorization.codeExpiresAt,
           grant,
-          authorizationServerMetadata: issuerMetadata.authorizationServers[0],
+          authorizationServerMetadata: internalAuthorizationServerMetadata,
           request: requestLike,
           clientAttestation: {
             ...getClientAttestationToVerify(config, clientAttestation, issuanceSession.walletAttestation?.required),
@@ -194,6 +201,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           },
           dpop: {
             ...dpop,
+            allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
             // NOTE: we don't look at the global config here. As we already checked and
             // set required to true previously if client attestations were provided or required.
             required: issuanceSession.dpop?.required,
@@ -221,7 +229,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           expectedRefreshToken: grant.refreshToken,
           grant,
           request: requestLike,
-          authorizationServerMetadata: issuerMetadata.authorizationServers[0],
+          authorizationServerMetadata: internalAuthorizationServerMetadata,
           clientAttestation: {
             ...getClientAttestationToVerify(config, clientAttestation, walletAttestationRequired),
             required: walletAttestationRequired,
@@ -234,6 +242,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           },
           dpop: {
             ...dpop,
+            allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
             // First session config, fall back to global config
             required: issuanceSession.dpop?.required ?? config.dpopRequired,
           },
@@ -332,9 +341,11 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           }
         : undefined
 
-      // Generate a refresh token if they're enabled in the config and the grant type is not refresh token
+      // Generate a refresh token if they're enabled in the config and the grant type is not refresh token. Only
+      // DPoP-bound refresh tokens are issued, as a wallet is a public client (RFC 9700 §2.2.2)
       let refreshToken: string | undefined
-      if (issuanceSession.generateRefreshTokens && grant.grantType !== refreshTokenGrantIdentifier) {
+      const generateRefreshTokens = issuanceSession.generateRefreshTokens ?? config.generateRefreshTokens
+      if (generateRefreshTokens && grant.grantType !== refreshTokenGrantIdentifier && tokenDpop) {
         refreshToken = await openId4VcIssuerService.createRefreshToken(agentContext, issuer, {
           preAuthorizedCode: grant.grantType === preAuthorizedCodeGrantIdentifier ? grant.preAuthorizedCode : undefined,
           issuerState: issuanceSession.authorization?.issuerState,
@@ -396,4 +407,58 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       return sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
     }
   }
+}
+
+/**
+ * Verifies the `tx_code` under a record lock and counts invalid values, so concurrent requests can't
+ * exceed `txCodeMaxAttempts`. Returns the issuance session as read under the lock.
+ */
+async function verifyTxCode(
+  agentContext: AgentContext,
+  config: OpenId4VcIssuerModuleConfig,
+  issuanceSession: OpenId4VcIssuanceSessionRecord,
+  txCode: string,
+  allowedStates: OpenId4VcIssuanceSessionState[]
+) {
+  const issuanceSessionRepository = agentContext.resolve(OpenId4VcIssuanceSessionRepository)
+
+  let previousState = issuanceSession.state
+  const lockedIssuanceSession = await issuanceSessionRepository.updateByIdWithLock(
+    agentContext,
+    issuanceSession.id,
+    async (record) => {
+      previousState = record.state
+      if (!allowedStates.includes(record.state) || record.userPin === txCode) return record
+
+      record.failedTxCodeAttempts = (record.failedTxCodeAttempts ?? 0) + 1
+      if (record.failedTxCodeAttempts >= config.txCodeMaxAttempts) {
+        record.state = OpenId4VcIssuanceSessionState.Error
+        record.errorMessage = 'Maximum number of tx_code attempts reached'
+      }
+      return record
+    }
+  )
+
+  if (!allowedStates.includes(previousState)) {
+    throw new Oauth2ServerErrorResponseError({
+      error: Oauth2ErrorCodes.InvalidGrant,
+      error_description: 'Invalid authorization code',
+    })
+  }
+
+  if (lockedIssuanceSession.userPin === txCode) return lockedIssuanceSession
+
+  const maxAttemptsReached = lockedIssuanceSession.state === OpenId4VcIssuanceSessionState.Error
+  if (maxAttemptsReached) {
+    agentContext
+      .resolve(OpenId4VcIssuerService)
+      .emitStateChangedEvent(agentContext, lockedIssuanceSession, previousState)
+  }
+
+  throw new Oauth2ServerErrorResponseError({
+    error: Oauth2ErrorCodes.InvalidGrant,
+    error_description: maxAttemptsReached
+      ? `Invalid 'tx_code' provided. The maximum number of attempts has been reached`
+      : `Invalid 'tx_code' provided`,
+  })
 }

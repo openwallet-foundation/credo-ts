@@ -241,6 +241,7 @@ export interface OpenId4VcIssuanceSessionRecordProps {
   // Pre auth flow
   preAuthorizedCode?: string
   userPin?: string
+  failedTxCodeAttempts?: number
 
   // Auth flow (move to authorization?)
   pkce?: OpenId4VcIssuanceSessionPkce
@@ -325,6 +326,7 @@ const openId4VcIssuanceSessionRecordEncodingSchema = createRecordEncodingSchema(
     .nullish(),
   preAuthorizedCode: z.string().nullish(),
   userPin: z.string().nullish(),
+  failedTxCodeAttempts: z.number().nullish(),
   clientId: z.string().nullish(),
   pkce: zTypedObject<OpenId4VcIssuanceSessionPkce>().nullish(),
   walletAttestation: zTypedObject<OpenId4VcIssuanceSessionWalletAttestation>().nullish(),
@@ -385,8 +387,14 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
 
   /**
    * Optional user pin that needs to be provided by the user in the access token request.
+   * Called `tx_code` (transaction code) in newer drafts of OpenID4VCI.
    */
   public userPin?: string
+
+  /**
+   * The number of access token requests with an invalid `tx_code` for this issuance session.
+   */
+  public failedTxCodeAttempts?: number
 
   /**
    * Client id of the exchange
@@ -473,6 +481,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.issuerId = props.issuerId
       this.clientId = props.clientId
       this.userPin = props.userPin
+      this.failedTxCodeAttempts = props.failedTxCodeAttempts
       this.preAuthorizedCode = props.preAuthorizedCode
       this.pkce = props.pkce
       this.authorization = props.authorization
