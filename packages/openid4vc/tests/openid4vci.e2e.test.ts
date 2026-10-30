@@ -239,9 +239,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('returns 404 for unknown issuers and 413 when the request body exceeds the limit', async () => {
-    const { issuerId } = await issuer.agent.openid4vc.issuer.createIssuer({
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const { issuerId } = await issuerTenant.openid4vc.issuer.createIssuer({
       credentialConfigurationsSupported: { universityDegree: universityDegreeCredentialConfigurationSupported },
     })
+    await issuerTenant.endSession()
+
     const postLargeBody = (url: string) =>
       fetch(url, {
         method: 'POST',
@@ -249,6 +252,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         body: JSON.stringify({ data: 'a'.repeat(1024 * 1024) }),
       })
 
+    const warnSpy = vi.spyOn(issuer.agent.config.logger, 'warn')
     expect((await postLargeBody(issuanceBaseUrl)).status).toBe(404)
     expect((await postLargeBody(`${issuanceBaseUrl}/unknown-issuer/token`)).status).toBe(404)
 
@@ -258,6 +262,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       error: 'invalid_request',
       message: 'The request body exceeds the maximum allowed limit.',
     })
+
+    const sessionCoordinator = issuer.agent.dependencyManager.resolve(TenantSessionCoordinator)
+    await vi.waitFor(() => expect(sessionCoordinator.getSessionCountForTenant(issuer1.tenantId)).toBe(0))
+    // The router must end the session itself, not the fallback after the response
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('was not ended by the router'))
+    warnSpy.mockRestore()
   })
 
   it('ends the tenant session after serving signed issuer metadata', async () => {

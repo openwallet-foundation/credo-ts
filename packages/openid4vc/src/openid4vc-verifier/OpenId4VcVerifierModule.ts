@@ -1,6 +1,12 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { NextFunction, Response } from 'express'
-import { endRequestSession, getAgentContextForActorId, importExpress, registerRequestSession } from '../shared/router'
+import {
+  endRequestSession,
+  getAgentContextForActorId,
+  importExpress,
+  registerRequestSession,
+  sendPayloadTooLargeResponse,
+} from '../shared/router'
 import { OpenId4VcVerifierApi } from './OpenId4VcVerifierApi'
 import type { InternalOpenId4VcVerifierModuleConfigOptions } from './OpenId4VcVerifierModuleConfig'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
@@ -88,13 +94,10 @@ export class OpenId4VcVerifierModule implements Module {
         // Requests that don't match a verifier id (e.g. the base path) have no request context, so fall back to the root logger
         const logger = req.requestContext?.agentContext.config.logger ?? rootAgentContext.config.logger
 
-        // Check if the error is specifically a payload limit issue
-        if (error instanceof Error && error.name === 'PayloadTooLargeError') {
-          return res.status(413).json({
-            error: 'invalid_request',
-            message: `The request body exceeds the maximum allowed limit.`,
-          })
-        }
+        // End the session first, so an early return below can't skip it
+        await endRequestSession(req)
+
+        if (sendPayloadTooLargeResponse(res, error)) return
 
         if (!res.headersSent) {
           logger.warn(
@@ -108,7 +111,6 @@ export class OpenId4VcVerifierModule implements Module {
           })
         }
 
-        await endRequestSession(req)
         next()
       }
     )

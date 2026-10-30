@@ -34,6 +34,7 @@ import { filter, firstValueFrom } from 'rxjs'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
+import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessionCoordinator'
 import {
   OpenId4VcModule,
   OpenId4VcVerificationSessionState,
@@ -728,7 +729,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('returns 404 for unknown verifiers and 413 when the request body exceeds the limit', async () => {
-    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+    const verifierTenant = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
+    const openIdVerifier = await verifierTenant.openid4vc.verifier.createVerifier()
+    await verifierTenant.endSession()
+
     const postLargeBody = (url: string) =>
       fetch(url, {
         method: 'POST',
@@ -736,6 +740,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         body: JSON.stringify({ data: 'a'.repeat(5 * 1024 * 1024) }),
       })
 
+    const warnSpy = vi.spyOn(verifier.agent.config.logger, 'warn')
     expect((await postLargeBody(verificationBaseUrl)).status).toBe(404)
     expect((await postLargeBody(`${verificationBaseUrl}/unknown-verifier/authorize`)).status).toBe(404)
 
@@ -745,6 +750,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       error: 'invalid_request',
       message: 'The request body exceeds the maximum allowed limit.',
     })
+
+    const sessionCoordinator = verifier.agent.dependencyManager.resolve(TenantSessionCoordinator)
+    await vi.waitFor(() => expect(sessionCoordinator.getSessionCountForTenant(verifier1.tenantId)).toBe(0))
+    // The router must end the session itself, not the fallback after the response
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('was not ended by the router'))
+    warnSpy.mockRestore()
   })
 
   it('Invalid verifier attestation in combination with dcql', async () => {

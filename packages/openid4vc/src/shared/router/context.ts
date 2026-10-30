@@ -122,6 +122,19 @@ export function sendJsonResponse(
   next()
 }
 
+/**
+ * Sends a 413 response if the body parser rejected the request body as too large. Returns whether it did.
+ */
+export function sendPayloadTooLargeResponse(response: Response, error: unknown) {
+  if (!(error instanceof Error) || error.name !== 'PayloadTooLargeError') return false
+
+  response.status(413).json({
+    error: 'invalid_request',
+    message: 'The request body exceeds the maximum allowed limit.',
+  })
+  return true
+}
+
 const requestSessions = new WeakMap<Request, () => Promise<void>>()
 
 /**

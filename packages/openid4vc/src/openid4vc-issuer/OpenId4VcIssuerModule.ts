@@ -6,6 +6,7 @@ import {
   getRequestContext,
   importExpress,
   registerRequestSession,
+  sendPayloadTooLargeResponse,
 } from '../shared/router'
 import { OpenId4VcIssuerApi } from './OpenId4VcIssuerApi'
 import type { InternalOpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
@@ -142,13 +143,10 @@ export class OpenId4VcIssuerModule implements Module {
       async (error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
         const { agentContext } = getRequestContext(req)
 
-        // Check if the error is specifically a payload limit issue
-        if (error instanceof Error && error.name === 'PayloadTooLargeError') {
-          return res.status(413).json({
-            error: 'invalid_request',
-            message: `The request body exceeds the maximum allowed limit.`,
-          })
-        }
+        // End the session first, so an early return below can't skip it
+        await endRequestSession(req)
+
+        if (sendPayloadTooLargeResponse(res, error)) return
 
         if (!res.headersSent) {
           agentContext.config.logger.warn(
@@ -162,7 +160,6 @@ export class OpenId4VcIssuerModule implements Module {
           })
         }
 
-        await endRequestSession(req)
         next()
       }
     )
@@ -221,13 +218,10 @@ export class OpenId4VcIssuerModule implements Module {
         // Requests that don't match an issuer id (e.g. the base path) have no request context, so fall back to the root logger
         const logger = req.requestContext?.agentContext.config.logger ?? rootAgentContext.config.logger
 
-        // Check if the error is specifically a payload limit issue
-        if (error instanceof Error && error.name === 'PayloadTooLargeError') {
-          return res.status(413).json({
-            error: 'invalid_request',
-            message: `The request body exceeds the maximum allowed limit.`,
-          })
-        }
+        // End the session first, so an early return below can't skip it
+        await endRequestSession(req)
+
+        if (sendPayloadTooLargeResponse(res, error)) return
 
         if (!res.headersSent) {
           logger.warn(
@@ -241,7 +235,6 @@ export class OpenId4VcIssuerModule implements Module {
           })
         }
 
-        await endRequestSession(req)
         next()
       }
     )
