@@ -75,10 +75,23 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           break
         case refreshTokenGrantIdentifier:
           allowedStates = [
+            OpenId4VcIssuanceSessionState.AccessTokenCreated,
             OpenId4VcIssuanceSessionState.CredentialRequestReceived,
             OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
           ]
-          parsedRefreshToken = openId4VcIssuerService.parseRefreshToken(agentContext, grant.refreshToken)
+          // Verify before the session lookup, so an unverified token can't select or change a session
+          try {
+            parsedRefreshToken = openId4VcIssuerService.parseRefreshToken(agentContext, grant.refreshToken)
+            await openId4VcIssuerService.verifyRefreshToken(agentContext, issuer, parsedRefreshToken)
+          } catch (error) {
+            throw new Oauth2ServerErrorResponseError(
+              {
+                error: Oauth2ErrorCodes.InvalidGrant,
+                error_description: 'Invalid refresh token',
+              },
+              { cause: error }
+            )
+          }
           query = {
             preAuthorizedCode: parsedRefreshToken.preAuthorizedCode,
             issuerState: parsedRefreshToken.issuerState,
@@ -104,8 +117,6 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         utils.addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
 
       if (Date.now() > expiresAt.getTime()) {
-        issuanceSession.errorMessage = 'Credential offer has expired'
-        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
         throw new Oauth2ServerErrorResponseError({
           // What is the best error here?
           error: Oauth2ErrorCodes.InvalidGrant,
@@ -225,7 +236,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
 
         verificationResult = await oauth2AuthorizationServer.verifyRefreshTokenAccessTokenRequest({
           accessTokenRequest,
-          // Refresh token validity is already checked before
+          // The refresh token is verified before the session lookup
           expectedRefreshToken: grant.refreshToken,
           grant,
           request: requestLike,
@@ -243,14 +254,11 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           dpop: {
             ...dpop,
             allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
-            // First session config, fall back to global config
-            required: issuanceSession.dpop?.required ?? config.dpopRequired,
+            // A DPoP-bound refresh token can only be used with a proof for the same key (RFC 9449 §5)
+            required: parsedRefreshToken.dpop !== undefined || (issuanceSession.dpop?.required ?? config.dpopRequired),
+            expectedJwkThumbprint: parsedRefreshToken.dpop?.jwkThumbprint,
           },
           refreshTokenExpiresAt: parsedRefreshToken?.expiresAt,
-        })
-
-        await openId4VcIssuerService.verifyRefreshToken(agentContext, issuer, parsedRefreshToken, {
-          dpop: verificationResult.dpop,
         })
       } else {
         throw new Oauth2ServerErrorResponseError({
@@ -389,14 +397,16 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         subject,
       }
 
-      await openId4VcIssuerService.updateState(
-        agentContext,
-        issuanceSession,
-        // Retain the current session state when refreshing the access token.
-        grant.grantType === refreshTokenGrantIdentifier
-          ? issuanceSession.state
-          : OpenId4VcIssuanceSessionState.AccessTokenCreated
-      )
+      // A refresh keeps the session state, so it doesn't emit a state changed event
+      if (grant.grantType === refreshTokenGrantIdentifier) {
+        await issuanceSessionRepository.update(agentContext, issuanceSession)
+      } else {
+        await openId4VcIssuerService.updateState(
+          agentContext,
+          issuanceSession,
+          OpenId4VcIssuanceSessionState.AccessTokenCreated
+        )
+      }
 
       return sendJsonResponse(response, next, accessTokenResponse)
     } catch (error) {
