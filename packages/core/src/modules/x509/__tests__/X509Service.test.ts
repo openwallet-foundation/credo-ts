@@ -209,6 +209,49 @@ describe('X509Service', () => {
     )
   })
 
+  it('should create a certificate with organization attributes and subject alternative names', async () => {
+    const authorityKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const subjectKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+    const certificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(authorityKey.publicJwk),
+      subjectPublicKey: PublicJwk.fromPublicJwk(subjectKey.publicJwk),
+      issuer: { commonName: 'Example Root', organizationName: 'Example Org, Inc.' },
+      subject: {
+        commonName: 'Example Service',
+        countryName: 'NL',
+        organizationName: 'Example Org, Inc.',
+        organizationIdentifier: 'NTRNL-12345678',
+        organizationalUnit: 'R+D',
+      },
+      extensions: {
+        subjectAlternativeName: {
+          name: [
+            { type: 'dns', value: 'example.com' },
+            { type: 'email', value: 'info@example.com' },
+            { type: 'url', value: 'https://example.com' },
+          ],
+        },
+      },
+    })
+
+    expect(certificate.getSubjectNameField('CN')).toStrictEqual(['Example Service'])
+    expect(certificate.getSubjectNameField('C')).toStrictEqual(['NL'])
+    expect(certificate.getSubjectNameField('O')).toStrictEqual(['Example Org, Inc.'])
+    expect(certificate.getSubjectNameField('2.5.4.97')).toStrictEqual(['NTRNL-12345678'])
+    expect(certificate.getSubjectNameField('OU')).toStrictEqual(['R+D'])
+    expect(certificate.getIssuerNameField('O')).toStrictEqual(['Example Org, Inc.'])
+    expect(certificate.subject).toStrictEqual(
+      'CN=Example Service, C=NL, O=Example Org\\, Inc., 2.5.4.97=NTRNL-12345678, OU=R\\+D'
+    )
+
+    expect(certificate.subjectAlternativeNames).toEqual([
+      { type: 'dns', value: 'example.com' },
+      { type: 'email', value: 'info@example.com' },
+      { type: 'url', value: 'https://example.com' },
+    ])
+  })
+
   it('should create a valid self-signed certificate as IACA Root + DCS for mDoc', async () => {
     const authorityKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
     const documentSignerKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
