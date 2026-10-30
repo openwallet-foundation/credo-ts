@@ -50,6 +50,13 @@
       "when": 1792424958994,
       "tag": "0006_add_credential_response_encryption",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792675897114,
+      "tag": "0007_add_credential_request_encryption",
+      "breakpoints": true
     }
   ]
 }

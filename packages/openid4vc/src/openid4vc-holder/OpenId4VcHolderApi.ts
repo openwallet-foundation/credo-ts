@@ -16,6 +16,7 @@ import type {
   OpenId4VciTokenRequestOptions as OpenId4VciRequestTokenOptions,
   OpenId4VciRequestTokenResponse,
   OpenId4VciResolvedCredentialOffer,
+  OpenId4VciResolveIssuerMetadataOptions,
   OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
   OpenId4VciSendNotificationOptions,
   OpenId4VciTokenRefreshOptions,
@@ -112,8 +113,11 @@ export class OpenId4VcHolderApi {
     return this.dcqlService.selectCredentialsForRequest(dcqlQueryResult, options)
   }
 
-  public async resolveIssuerMetadata(credentialIssuer: string): Promise<OpenId4VciMetadata> {
-    return await this.openId4VciHolderService.resolveIssuerMetadata(this.agentContext, credentialIssuer)
+  public async resolveIssuerMetadata(
+    credentialIssuer: string,
+    options?: OpenId4VciResolveIssuerMetadataOptions
+  ): Promise<OpenId4VciMetadata> {
+    return await this.openId4VciHolderService.resolveIssuerMetadata(this.agentContext, credentialIssuer, options)
   }
 
   /**
@@ -123,8 +127,8 @@ export class OpenId4VcHolderApi {
    * @param credentialOffer the credential offer to resolve
    * @returns The uniform credential offer payload, the issuer metadata, protocol version, and the offered credentials with metadata.
    */
-  public async resolveCredentialOffer(credentialOffer: string) {
-    return await this.openId4VciHolderService.resolveCredentialOffer(this.agentContext, credentialOffer)
+  public async resolveCredentialOffer(credentialOffer: string, options?: OpenId4VciResolveIssuerMetadataOptions) {
+    return await this.openId4VciHolderService.resolveCredentialOffer(this.agentContext, credentialOffer, options)
   }
 
   /**
