@@ -2315,8 +2315,6 @@ export class OpenId4VcIssuerService {
   }
 }
 
-const issuersWarnedForResponseEncryption = new Set<string>()
-
 function getCredentialResponseEncryptionMetadata(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord) {
   if (!issuerRecord.credentialRequestEncryption) {
     if (issuerRecord.credentialResponseEncryption) {
