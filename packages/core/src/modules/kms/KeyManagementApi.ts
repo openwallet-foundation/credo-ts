@@ -283,9 +283,11 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
       if (!publicKey) {
         throw new KeyManagementKeyNotFoundError(keyId, [backend])
       }
+
+      return publicKey
     }
 
-    const { publicKey } = await this.getKmsForOperationAndKeyId(this.agentContext, options.keyId)
+    const { publicKey } = await this.getKmsForOperationAndKeyId(this.agentContext, keyId)
     return publicKey
   }
 
