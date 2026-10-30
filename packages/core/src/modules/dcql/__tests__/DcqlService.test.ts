@@ -56,7 +56,7 @@ describe('DcqlService', () => {
           id: 'ldp',
           format: 'ldp_vc',
           multiple: false,
-          require_cryptographic_holder_binding: true,
+          require_cryptographic_holder_binding: false,
           meta: { type_values: [expandedTypes, ['https://example.org/OtherCredential']] },
         },
       ]
