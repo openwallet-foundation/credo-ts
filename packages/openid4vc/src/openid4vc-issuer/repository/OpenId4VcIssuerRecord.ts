@@ -1,6 +1,17 @@
-import { BaseRecord, CredoError, isJsonObject, Kms, type RecordTags, type TagsBase, utils } from '@credo-ts/core'
+import {
+  BaseRecord,
+  CredoError,
+  createRecordEncodingSchema,
+  isJsonObject,
+  Kms,
+  type RecordTags,
+  type TagsBase,
+  utils,
+  zTypedObject,
+  zWithUpgrade,
+} from '@credo-ts/core'
 import { credentialsSupportedToCredentialConfigurationsSupported } from '@openid4vc/openid4vci'
-import { Transform, TransformationType } from 'class-transformer'
+import { z } from 'zod'
 import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
@@ -81,43 +92,17 @@ export type OpenId4VcIssuerRecordProps = {
   signedMetadata?: OpenId4VcIssuerRecordSignedMetadata
 }
 
-/**
- * For OID4VC you need to expose metadata files. Each issuer needs to host this metadata. This is not the case for DIDComm where we can just have one /didcomm endpoint.
- * So we create a record per openid issuer/verifier that you want, and each tenant can create multiple issuers/verifiers which have different endpoints
- * and metadata files
- * */
-export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerRecordTags> {
-  public static readonly type = 'OpenId4VcIssuerRecord'
-  public readonly type = OpenId4VcIssuerRecord.type
+const openId4VcIssuerRecordEncodingSchema = createRecordEncodingSchema(
+  {
+    issuerId: z.string().nullish(),
+    accessTokenPublicKeyFingerprint: z.string().nullish(),
+    accessTokenPublicJwk: zTypedObject<Kms.KmsJwkPublicAsymmetric>().nullish(),
+    accessTokenSignerKmsBackend: z.string().nullish(),
+    credentialConfigurationsSupported: zTypedObject<OpenId4VciCredentialConfigurationsSupportedWithFormats>().nullish(),
+    // Draft 11 to draft 13+ syntax
+    display: zWithUpgrade(z.array(zTypedObject<OpenId4VciCredentialIssuerMetadataDisplay>()), (value) => {
+      if (!Array.isArray(value)) return value
 
-  public issuerId!: string
-
-  /**
-   * @deprecated accessTokenPublicJwk should be used
-   * @todo remove in migration
-   */
-  public accessTokenPublicKeyFingerprint?: string
-  public accessTokenPublicJwk?: Kms.KmsJwkPublicAsymmetric
-  public accessTokenSignerKmsBackend?: string
-
-  /**
-   * Only here for class transformation. If credentialsSupported is set we transform
-   * it to the new credentialConfigurationsSupported format
-   */
-  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: see above
-  private set credentialsSupported(credentialsSupported: Array<unknown>) {
-    if (this.credentialConfigurationsSupported) return
-
-    this.credentialConfigurationsSupported =
-      // biome-ignore lint/suspicious/noExplicitAny: no explanation
-      credentialsSupportedToCredentialConfigurationsSupported(credentialsSupported as any) as any
-  }
-
-  public credentialConfigurationsSupported!: OpenId4VciCredentialConfigurationsSupportedWithFormats
-
-  // Draft 11 to draft 13+ syntax
-  @Transform(({ type, value }) => {
-    if (type === TransformationType.PLAIN_TO_CLASS && Array.isArray(value)) {
       return value.map((display) => {
         if (display.logo?.uri) return display
 
@@ -132,17 +117,12 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
             : undefined,
         }
       })
-    }
+    }).nullish(),
+    issuerInfo: z.array(zTypedObject<OpenId4VciIssuerInfo[number]>()).nullish(),
+    // Adds the type field if missing (for older records)
+    authorizationServerConfigs: zWithUpgrade(z.array(zTypedObject<OpenId4VciAuthorizationServerConfig>()), (value) => {
+      if (!Array.isArray(value)) return value
 
-    return value
-  })
-  public display?: OpenId4VciCredentialIssuerMetadataDisplay[]
-
-  public issuerInfo?: OpenId4VciIssuerInfo
-
-  // Adds the type field if missing (for older records)
-  @Transform(({ type, value }) => {
-    if (type === TransformationType.PLAIN_TO_CLASS && Array.isArray(value)) {
       return value.map((config) => {
         if (isJsonObject(config) && typeof config.type === 'undefined') {
           return {
@@ -153,10 +133,59 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
 
         return config
       })
-    }
+    }).nullish(),
+    dpopSigningAlgValuesSupported: z.array(z.string()).nullish(),
+    clientAttestationSigningAlgValuesSupported: z.array(z.string()).nullish(),
+    clientAttestationPopSigningAlgValuesSupported: z.array(z.string()).nullish(),
+    batchCredentialIssuance: zTypedObject<OpenId4VciBatchCredentialIssuanceOptions>().nullish(),
+    credentialResponseEncryption: zTypedObject<OpenId4VciCredentialResponseEncryptionOptions>().nullish(),
+    signedMetadata: zTypedObject<OpenId4VcIssuerRecordSignedMetadata>().nullish(),
+  },
+  {
+    // Records stored before draft 13 have credentialsSupported instead of credentialConfigurationsSupported
+    upgrade: ({ credentialsSupported, ...encoded }) => {
+      if (credentialsSupported === undefined || encoded.credentialConfigurationsSupported !== undefined) return encoded
 
-    return value
-  })
+      return {
+        ...encoded,
+        credentialConfigurationsSupported: credentialsSupportedToCredentialConfigurationsSupported(
+          // biome-ignore lint/suspicious/noExplicitAny: no explanation
+          credentialsSupported as any
+        ),
+      }
+    },
+  }
+)
+
+/**
+ * For OID4VC you need to expose metadata files. Each issuer needs to host this metadata. This is not the case for DIDComm where we can just have one /didcomm endpoint.
+ * So we create a record per openid issuer/verifier that you want, and each tenant can create multiple issuers/verifiers which have different endpoints
+ * and metadata files
+ * */
+export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerRecordTags> {
+  public static get encodingSchema(): z.ZodType {
+    return openId4VcIssuerRecordEncodingSchema
+  }
+
+  public static readonly type = 'OpenId4VcIssuerRecord'
+  public readonly type = OpenId4VcIssuerRecord.type
+
+  public issuerId!: string
+
+  /**
+   * @deprecated accessTokenPublicJwk should be used
+   * @todo remove in migration
+   */
+  public accessTokenPublicKeyFingerprint?: string
+  public accessTokenPublicJwk?: Kms.KmsJwkPublicAsymmetric
+  public accessTokenSignerKmsBackend?: string
+
+  public credentialConfigurationsSupported!: OpenId4VciCredentialConfigurationsSupportedWithFormats
+
+  public display?: OpenId4VciCredentialIssuerMetadataDisplay[]
+
+  public issuerInfo?: OpenId4VciIssuerInfo
+
   public authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 
   public dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]

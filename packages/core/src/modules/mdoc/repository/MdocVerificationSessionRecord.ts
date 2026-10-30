@@ -1,8 +1,9 @@
+import { z } from 'zod'
 import { CredoError } from '../../../error'
 import { BaseRecord, type TagsBase } from '../../../storage/BaseRecord'
-import { DateTransformer, JsonTransformer } from '../../../utils'
-import type { Constructable } from '../../../utils/mixins'
+import { createRecordEncodingSchema } from '../../../storage/recordEncodingSchema'
 import { uuid } from '../../../utils/uuid'
+import { zIsoDate, zTypedObject } from '../../../utils/zod'
 import type { MdocDeviceRequestDefinition } from '../MdocOptions'
 import type { MdocVerificationSessionState } from '../MdocVerificationSessionState'
 
@@ -76,6 +77,16 @@ export interface MdocVerificationSessionRecordProps {
   expiresAt: Date
 }
 
+const mdocVerificationSessionRecordEncodingSchema = createRecordEncodingSchema({
+  state: z.string().nullish(),
+  errorMessage: z.string().nullish(),
+  deviceRequestBase64Url: z.string().nullish(),
+  deviceRequestDefinition: zTypedObject<MdocDeviceRequestDefinition>().nullish(),
+  sessionTranscript: zTypedObject<MdocVerificationSessionTranscript>().nullish(),
+  sessionKeyId: z.string().nullish(),
+  expiresAt: zIsoDate.nullish(),
+})
+
 /**
  * A verification session for an mdoc presentation, currently the ISO/IEC TS 18013-7:2025 Annex C
  * (`org-iso-mdoc`) DC API.
@@ -85,6 +96,10 @@ export interface MdocVerificationSessionRecordProps {
  * rather than delivered out of band.
  */
 export class MdocVerificationSessionRecord extends BaseRecord<DefaultMdocVerificationSessionRecordTags> {
+  public static get encodingSchema(): z.ZodType {
+    return mdocVerificationSessionRecordEncodingSchema
+  }
+
   public static readonly type = 'MdocVerificationSessionRecord'
   public readonly type = MdocVerificationSessionRecord.type
 
@@ -128,7 +143,6 @@ export class MdocVerificationSessionRecord extends BaseRecord<DefaultMdocVerific
    */
   public sessionKeyId!: string
 
-  @DateTransformer()
   public expiresAt!: Date
 
   public constructor(props: MdocVerificationSessionRecordProps) {
@@ -185,9 +199,5 @@ export class MdocVerificationSessionRecord extends BaseRecord<DefaultMdocVerific
       sessionTranscriptType: this.sessionTranscript.type,
       nonce: this.sessionTranscript.nonce,
     }
-  }
-
-  public clone(): this {
-    return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
   }
 }

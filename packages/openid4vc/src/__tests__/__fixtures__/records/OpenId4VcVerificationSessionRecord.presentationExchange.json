@@ -1,0 +1,73 @@
+{
+  "_tags": {},
+  "authorizationRequestId": "pex-authorization-request-id",
+  "authorizationRequestPayload": {
+    "client_id": "redirect_uri:https://verifier.example.com/oid4vp/verifier-id/authorize",
+    "client_metadata": {
+      "client_name": "Example Verifier",
+      "vp_formats": {
+        "jwt_vc_json": {
+          "alg": ["EdDSA"]
+        }
+      }
+    },
+    "nonce": "pex-nonce",
+    "presentation_definition": {
+      "id": "presentation-definition-id",
+      "input_descriptors": [
+        {
+          "constraints": {
+            "fields": [
+              {
+                "filter": {
+                  "const": "UniversityDegreeCredential",
+                  "type": "string"
+                },
+                "path": ["$.vc.type.*"]
+              }
+            ]
+          },
+          "format": {
+            "jwt_vc_json": {
+              "alg": ["EdDSA"]
+            }
+          },
+          "id": "university-degree"
+        }
+      ]
+    },
+    "response_mode": "direct_post",
+    "response_type": "vp_token",
+    "response_uri": "https://verifier.example.com/oid4vp/verifier-id/authorize",
+    "state": "pex-state"
+  },
+  "authorizationRequestUri": "openid4vp://?request_uri=https%3A%2F%2Fverifier.example.com%2Frequest",
+  "authorizationResponsePayload": {
+    "presentation_submission": {
+      "definition_id": "presentation-definition-id",
+      "descriptor_map": [
+        {
+          "format": "jwt_vp_json",
+          "id": "university-degree",
+          "path": "$",
+          "path_nested": {
+            "format": "jwt_vc_json",
+            "id": "university-degree",
+            "path": "$.vp.verifiableCredential[0]"
+          }
+        }
+      ],
+      "id": "presentation-submission-id"
+    },
+    "state": "pex-state",
+    "vp_token": "eyJhbGciOiJFZERTQSJ9.eyJ2cCI6e319.c2lnbmF0dXJl"
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "expiresAt": "2026-01-03T00:00:00.000Z",
+  "id": "pex-verification-session-id",
+  "metadata": {},
+  "openId4VpVersion": "v1.draft24",
+  "state": "ResponseVerified",
+  "updatedAt": "2026-01-02T00:00:00.000Z",
+  "verifierId": "verifier-id"
+}

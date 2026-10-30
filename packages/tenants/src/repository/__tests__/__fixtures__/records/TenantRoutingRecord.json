@@ -1,0 +1,15 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "id": "tenant-routing-record-id",
+  "metadata": {
+    "meta": {
+      "key": "value"
+    }
+  },
+  "recipientKeyFingerprint": "z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc",
+  "tenantId": "tenant-record-id",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

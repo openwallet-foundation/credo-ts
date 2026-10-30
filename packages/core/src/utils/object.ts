@@ -24,3 +24,20 @@ export function mergeDeep(target: unknown, ...sources: Array<unknown>): unknown 
 
   return mergeDeep(target, ...sources)
 }
+
+/**
+ * Deep copies arrays, plain objects and dates. Other values, such as class instances, are not copied.
+ */
+export function deepCopy<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(deepCopy) as T
+  if (value instanceof Date) return new Date(value.getTime()) as T
+
+  if (isObject(value)) {
+    const prototype = Object.getPrototypeOf(value)
+    if (prototype !== Object.prototype && prototype !== null) return value
+
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, deepCopy(item)])) as T
+  }
+
+  return value
+}
