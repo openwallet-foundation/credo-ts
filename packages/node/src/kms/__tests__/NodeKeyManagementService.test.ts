@@ -1280,6 +1280,34 @@ describe('NodeKeyManagementService', () => {
       expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
     })
 
+    it('throws error when decrypting A256GCM with a truncated tag', async () => {
+      const { keyId } = await service.createKey(agentContext, {
+        type: { kty: 'oct', algorithm: 'aes', length: 256 },
+      })
+
+      const iv = randomBytes(12)
+      const { encrypted, tag } = await service.encrypt(agentContext, {
+        key: { keyId },
+        encryption: {
+          algorithm: 'A256GCM',
+          iv,
+        },
+        data: TypedArrayEncoder.fromUtf8String('heelllo'),
+      })
+
+      await expect(
+        service.decrypt(agentContext, {
+          key: { keyId },
+          decryption: {
+            algorithm: 'A256GCM',
+            iv,
+            tag: (tag as Uint8Array).subarray(0, 4),
+          },
+          encrypted,
+        })
+      ).rejects.toThrow()
+    })
+
     it('decrypts with A128CBC-HS256', async () => {
       const { keyId } = await service.createKey(agentContext, {
         type: { kty: 'oct', algorithm: 'aes', length: 256 },
