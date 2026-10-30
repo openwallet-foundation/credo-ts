@@ -11,3 +11,5 @@ A request received without a connection that fails these checks is rejected with
 `DidCommProofFormatService.processRequest` now takes `DidCommProofFormatProcessRequestOptions`, which adds a required `requestMessage`. Custom proof protocols that call `processRequest` on a format service must pass the request message.
 
 W3C v2 SD-JWT presentations created by `W3cV2SdJwtCredentialService` now include `iat`, and the ones created by the `DcqlService` include the `undefined-terms/v2` context. The OpenID4VP holder rejects authorization requests whose `client_id` starts with `didcomm:`.
+
+W3C v2 SD-JWT credentials can no longer make `issuer`, `validFrom` or `validUntil` selectively disclosable.
