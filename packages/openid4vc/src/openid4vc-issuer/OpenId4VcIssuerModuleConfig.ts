@@ -14,6 +14,7 @@ const DEFAULT_REFRESH_TOKEN_EXPIRES_IN = 90 * 24 * 60 * 60 // 90 days
 const DEFAULT_DEFERRAL_INTERVAL_GRACE_PERIOD = 7 * 24 * 60 * 60 // 7 days
 const DEFAULT_STATEFUL_CREDENTIAL_OFFER_EXPIRES_IN = 3 * 60 // 3 minutes
 const DEFAULT_REQUEST_URI_EXPIRES_IN = 1 * 60 // 1 minute
+const DEFAULT_TX_CODE_MAX_ATTEMPTS = 5
 
 export interface InternalOpenId4VcIssuerModuleConfigOptions {
   /**
@@ -104,6 +105,14 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
    * @default true
    */
   pkceRequired?: boolean
+
+  /**
+   * Invalid `tx_code` attempts before the issuance session moves to `Error`, enforced across concurrent
+   * requests only with storage that supports locking (e.g. Postgres).
+   *
+   * @default 5
+   */
+  txCodeMaxAttempts?: number
 
   /**
    * Whether wallet attestations are required for all issuance sessions. If wallet attestations are not required
@@ -422,6 +431,15 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get pkceRequired(): boolean {
     return this.options.pkceRequired ?? true
+  }
+
+  /**
+   * The number of invalid `tx_code` values a wallet can send for an issuance session.
+   *
+   * @default 5
+   */
+  public get txCodeMaxAttempts(): number {
+    return this.options.txCodeMaxAttempts ?? DEFAULT_TX_CODE_MAX_ATTEMPTS
   }
 
   /**
