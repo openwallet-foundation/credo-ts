@@ -117,6 +117,99 @@ describe('JsonLdModule', () => {
     })
   })
 
+  describe('defaultDocumentLoader remote documents', () => {
+    const remoteContext = { '@context': { name: 'https://schema.org/name' } }
+
+    const setup = (jsonLdModuleConfig = new JsonLdModuleConfig()) => {
+      const agentContext = getAgentContext({
+        agentConfig: getAgentConfig('JsonLdModuleTest'),
+        registerInstances: [
+          [DidResolverService, {}],
+          [JsonLdModuleConfig, jsonLdModuleConfig],
+        ],
+      })
+      const fetchSpy = vi.spyOn(agentContext.config, 'fetch')
+      return { agentContext, fetchSpy, documentLoader: defaultDocumentLoader(agentContext) }
+    }
+
+    const jsonResponse = (body: unknown, { url, headers }: { url?: string; headers?: Record<string, string> } = {}) => {
+      const response = new Response(JSON.stringify(body), { headers })
+      if (url) Object.defineProperty(response, 'url', { value: url })
+      return response
+    }
+
+    test('fetches with the agent fetch and the configured size limit', async () => {
+      const { documentLoader, fetchSpy } = setup(new JsonLdModuleConfig({ maxDocumentBytes: 1000 }))
+      fetchSpy.mockResolvedValue(jsonResponse(remoteContext))
+
+      await expect(documentLoader('https://example.com/context')).resolves.toEqual({
+        contextUrl: null,
+        documentUrl: 'https://example.com/context',
+        document: remoteContext,
+      })
+      expect(fetchSpy).toHaveBeenCalledWith('https://example.com/context', {
+        headers: { Accept: 'application/ld+json, application/json' },
+        maxResponseBytes: 1000,
+      })
+    })
+
+    test('rejects http urls unless insecure http urls are allowed', async () => {
+      const { documentLoader, fetchSpy } = setup()
+
+      await expect(documentLoader('http://example.com/context')).rejects.toThrow('Only https urls are supported')
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    test('uses the redirected url as document url and rejects a redirect to http', async () => {
+      const { documentLoader, fetchSpy } = setup()
+
+      fetchSpy.mockResolvedValueOnce(jsonResponse(remoteContext, { url: 'https://example.com/moved' }))
+      await expect(documentLoader('https://example.com/context')).resolves.toMatchObject({
+        documentUrl: 'https://example.com/moved',
+      })
+
+      fetchSpy.mockResolvedValueOnce(jsonResponse(remoteContext, { url: 'http://169.254.169.254/' }))
+      await expect(documentLoader('https://example.com/context')).rejects.toThrow('Only https urls are supported')
+    })
+
+    test('returns the context from a Link header of a json response', async () => {
+      const { documentLoader, fetchSpy } = setup()
+      fetchSpy.mockResolvedValue(
+        jsonResponse(remoteContext, {
+          headers: {
+            'content-type': 'application/json',
+            link: '<https://example.com/linked>; rel="http://www.w3.org/ns/json-ld#context"',
+          },
+        })
+      )
+
+      await expect(documentLoader('https://example.com/context')).resolves.toMatchObject({
+        contextUrl: 'https://example.com/linked',
+      })
+    })
+
+    test('follows an alternate Link header of a non-json response once', async () => {
+      const { documentLoader, fetchSpy } = setup()
+      const alternateResponse = () =>
+        new Response('<html></html>', {
+          headers: {
+            'content-type': 'text/html',
+            link: '<context.jsonld>; rel="alternate"; type="application/ld+json"',
+          },
+        })
+      fetchSpy.mockResolvedValueOnce(alternateResponse()).mockResolvedValueOnce(jsonResponse(remoteContext))
+
+      await expect(documentLoader('https://example.com/context')).resolves.toMatchObject({
+        documentUrl: 'https://example.com/context.jsonld',
+        document: remoteContext,
+      })
+
+      fetchSpy.mockResolvedValueOnce(alternateResponse()).mockResolvedValueOnce(alternateResponse())
+      await expect(documentLoader('https://example.com/context')).rejects.toThrow()
+      expect(fetchSpy).toHaveBeenCalledTimes(4)
+    })
+  })
+
   // TODO: remove once W3cCredentialsModuleConfig's documentLoader fallback is removed.
   describe('legacy W3cCredentialsModule documentLoader precedence (temporary, to be removed)', () => {
     test('prefers the standalone JsonLdModule document loader over W3cCredentialsModule when both are configured', () => {

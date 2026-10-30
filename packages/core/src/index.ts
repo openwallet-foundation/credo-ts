@@ -119,7 +119,7 @@ export type { VersionString } from './utils/version'
 import { indyDidFromPublicKeyBase58 } from './utils/did'
 import { areObjectsEqual } from './utils/objectEquality'
 import timestamp, { addSecondsToDate, dateToSeconds, nowInSeconds } from './utils/timestamp'
-import { getProtocolScheme } from './utils/uri'
+import { getProtocolScheme, isAllowedHttpUrl } from './utils/uri'
 import { isValidUuid, uuid } from './utils/uuid'
 
 const utils = {
@@ -127,6 +127,7 @@ const utils = {
   uuid,
   isValidUuid,
   getProtocolScheme,
+  isAllowedHttpUrl,
   timestamp,
   indyDidFromPublicKeyBase58,
   nowInSeconds,
