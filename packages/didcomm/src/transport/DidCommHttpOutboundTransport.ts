@@ -84,8 +84,7 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
           body: JSON.stringify(payload),
           headers: { 'Content-Type': didCommMimeType },
           signal: abortController.signal as NonNullable<RequestInit['signal']>,
-        })
-        clearTimeout(id)
+        }).finally(() => clearTimeout(id))
         responseMessage = await response.text()
       } catch (error) {
         // Request is aborted after 15 seconds, but that doesn't necessarily mean the request
