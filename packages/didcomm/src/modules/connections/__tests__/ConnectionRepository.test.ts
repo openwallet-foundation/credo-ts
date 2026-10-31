@@ -2,11 +2,16 @@ import {
   Agent,
   CachedStorageService,
   CacheModule,
+  CacheModuleConfig,
   InjectionSymbols,
+  RecordDuplicateError,
   SingleContextStorageLruCache,
   type StorageService,
 } from '@credo-ts/core'
-import { getAgentOptions } from '../../../../../core/tests'
+import { Subject } from 'rxjs'
+import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
+import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
+import { agentDependencies, getAgentContext, getAgentOptions } from '../../../../../core/tests'
 import { DidCommDidExchangeRole, DidCommDidExchangeState } from '../models'
 import { DidCommConnectionRecord, DidCommConnectionRepository } from '../repository'
 
@@ -29,6 +34,78 @@ describe('ConnectionRepository', () => {
 
   beforeAll(async () => {
     await agent.initialize()
+  })
+
+  describe('ConnectionRepository DID lookups', () => {
+    const context = getAgentContext({
+      registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache })]],
+    })
+    const dids = { ourDid: 'did:example:ours', theirDid: 'did:example:theirs' }
+    let repository: DidCommConnectionRepository
+
+    beforeEach(() => {
+      repository = new DidCommConnectionRepository(
+        new InMemoryStorageService<DidCommConnectionRecord>(),
+        new EventEmitter(agentDependencies, new Subject())
+      )
+    })
+
+    test.each([
+      { did: dids.ourDid, theirDid: dids.theirDid },
+      { did: dids.ourDid, previousTheirDids: [dids.theirDid] },
+      { previousDids: [dids.ourDid], theirDid: dids.theirDid },
+      {
+        did: dids.ourDid,
+        theirDid: dids.theirDid,
+        previousDids: [dids.ourDid],
+        previousTheirDids: [dids.theirDid],
+      },
+    ])('finds current and rotated DIDs and deduplicates overlapping clauses: %j', async (props) => {
+      const record = new DidCommConnectionRecord({
+        role: DidCommDidExchangeRole.Requester,
+        state: DidCommDidExchangeState.Start,
+        ...props,
+      })
+      await repository.save(context, record)
+      const query = vi.spyOn(repository, 'findByQuery')
+      expect(await repository.findByDids(context, dids)).toMatchObject({ id: record.id })
+      expect(query.mock.calls).toEqual([
+        [context, { did: dids.ourDid, theirDid: dids.theirDid }],
+        [context, { did: dids.ourDid, previousTheirDids: [dids.theirDid] }],
+        [context, { previousDids: [dids.ourDid], theirDid: dids.theirDid }],
+      ])
+    })
+
+    test('returns null when no connection matches', async () => {
+      expect(await repository.findByDids(context, dids)).toBeNull()
+    })
+
+    test('throws for distinct records matching different clauses', async () => {
+      for (const props of [
+        { did: dids.ourDid, theirDid: dids.theirDid },
+        { did: dids.ourDid, previousTheirDids: [dids.theirDid] },
+      ]) {
+        await repository.save(
+          context,
+          new DidCommConnectionRecord({
+            role: DidCommDidExchangeRole.Requester,
+            state: DidCommDidExchangeState.Start,
+            ...props,
+          })
+        )
+      }
+      await expect(repository.findByDids(context, dids)).rejects.toThrow(RecordDuplicateError)
+    })
+
+    test('runs queries sequentially and propagates storage errors', async () => {
+      const query = vi.spyOn(repository, 'findByQuery').mockImplementationOnce(async () => {
+        await Promise.resolve()
+        expect(query).toHaveBeenCalledTimes(1)
+        throw new Error('storage unavailable')
+      })
+      await expect(repository.findByDids(context, dids)).rejects.toThrow('storage unavailable')
+      expect(query).toHaveBeenCalledTimes(1)
+    })
   })
 
   test('check that caching is setup correctly', () => {
