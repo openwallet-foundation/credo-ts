@@ -111,6 +111,7 @@ export class W3cJsonLdCredentialService {
         credential: JsonTransformer.toJSON(options.credential),
         suite: suites,
         documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
+        maxClockSkew: agentContext.config.validitySkewSeconds,
         checkStatus: ({ credential }: { credential: W3cJsonCredential }) => {
           // Only throw error if credentialStatus is present
           if (verifyCredentialStatus && 'credentialStatus' in credential) {
@@ -250,6 +251,7 @@ export class W3cJsonLdCredentialService {
         challenge: options.challenge,
         domain: options.domain,
         documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
+        maxClockSkew: agentContext.config.validitySkewSeconds,
       }
 
       // this is a hack because vcjs throws if purpose is passed as undefined or null

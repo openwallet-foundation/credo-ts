@@ -41,8 +41,7 @@
   },
   "peerDependencies": {
     "@animo-id/expo-secure-environment": "^0.3.0",
-    "expo-crypto": "^15.0.7",
-    "react-native": ">=0.71.4",
+    "react-native": ">=0.74",
     "@dr.pogodin/react-native-fs": ">= 2.37.0",
     "react-native-fs": ">= 2",
     "react-native-get-random-values": ">=1.11.0 <3.0.0"

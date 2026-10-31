@@ -28,10 +28,10 @@ export interface InitConfig {
    * - OAuth client attestations and DPoP proofs in the OpenID4VC issuer module
    * - SD-JWT VC, including status verification
    * - W3C VCDM 1.1 and 2.0 with JWT/SD-JWT
+   * - W3C VCDM 1.1 JSON-LD
    * - mDOC device responses, including CWT status and identifier list checks
    *
    * It does not cover:
-   * - W3C VCDM 1.1 JSON-LD
    * - W3C VCDM 2.0 Data Integrity Proofs, as the credential `validFrom` / `validUntil` and the proof `created` /
    *   `expires` values are not checked against the current time
    * - AnonCreds, as AnonCreds credentials have no validity period and non-revocation intervals are checked against
