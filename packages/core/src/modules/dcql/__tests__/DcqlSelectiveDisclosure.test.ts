@@ -1,5 +1,5 @@
 import { generateKeyPairSync, randomUUID } from 'crypto'
-import { getAgentOptions } from '../../../../tests'
+import { getAgentOptions, trustDids } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { Hasher, JwsService, JwtPayload } from '../../../crypto'
 import { TypedArrayEncoder } from '../../../utils'
@@ -120,6 +120,7 @@ describe('DCQL selective disclosure', () => {
       didDocument: issuerDidDocument,
       keys: [{ didDocumentRelativeKeyId: `#${issuerDidUrl.split('#')[1]}`, kmsKeyId: issuerKeyId }],
     })
+    agent.config.setTrustedIssuersForVerification(trustDids(issuerDid))
 
     // With the key id Credo derives from a holder binding without a key id in the KMS, as W3C VCs have
     const holderPrivateJwk = generateKeyPairSync('ed25519').privateKey.export({ format: 'jwk' }) as {

@@ -11,6 +11,10 @@ export { DidCommModule } from './DidCommModule'
 export { DidCommModuleConfig, type DidCommModuleConfigOptions } from './DidCommModuleConfig'
 export type { DidCommTransportSession } from './DidCommTransportService'
 export { DidCommTransportService } from './DidCommTransportService'
+export type {
+  DidCommVerificationTypeProofCredential,
+  DidCommVerificationTypes,
+} from './DidCommTrustedIssuersVerificationTypes'
 export { AckDecorator } from './decorators/ack/AckDecorator'
 export { DidCommAttachment, DidCommAttachmentData } from './decorators/attachment/DidCommAttachment'
 export { ServiceDecorator, type ServiceDecoratorOptions } from './decorators/service/ServiceDecorator'

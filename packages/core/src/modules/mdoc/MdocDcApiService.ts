@@ -27,8 +27,7 @@ import {
   useInstanceFromCredentialRecord,
 } from '../../utils/credentialUse'
 import { KeyManagementApi } from '../kms'
-import { type EncodedX509Certificate, X509Certificate, X509ModuleConfig, X509Service } from '../x509'
-import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
+import { type EncodedX509Certificate, X509Certificate, X509Service } from '../x509'
 import { Mdoc } from './Mdoc'
 import { MdocDeviceResponse } from './MdocDeviceResponse'
 import { MdocDeviceRequestNotSatisfiedError, MdocError, MdocVerificationSessionExpiredError } from './MdocError'
@@ -220,32 +219,22 @@ export class MdocDcApiService {
       // Per document, the certificate chain it was verified with, which the issuers a doc request
       // accepts are matched against. The x5chain in the document itself is not signed.
       const issuerCertificateChains: Array<Uint8Array[] | undefined> = []
-      if (options.trustedCertificates) {
-        const { documents } = await deviceResponse.verify(agentContext, {
-          trustedCertificates: options.trustedCertificates,
+      // Trust is resolved per document, as each document can be issued by a different issuer and
+      // the trust callback is given the certificate chain of the document being verified.
+      for (const [documentIndex, documentResponse] of deviceResponse.splitIntoSingleDocumentResponses().entries()) {
+        // biome-ignore lint/style/noNonNullAssertion: splitIntoSingleDocumentResponses always returns responses with exactly one document
+        const mdoc = new Mdoc(documentResponse.deviceResponse.documents![0].issuerSigned)
+
+        const {
+          documents: [{ trustedIssuanceChain }],
+        } = await documentResponse.verify(agentContext, {
+          trustedCertificates:
+            options.trustedCertificates ??
+            (await this.getTrustedCertificatesForMdoc(agentContext, mdoc, verificationSession)),
           sessionTranscriptOptions,
           now: options.now,
         })
-
-        for (const { documentIndex, trustedIssuanceChain } of documents) {
-          issuerCertificateChains[documentIndex] = trustedIssuanceChain?.map(({ rawCertificate }) => rawCertificate)
-        }
-      } else {
-        // Trust is resolved per document, as each document can be issued by a different issuer and
-        // the trust callbacks are given the certificate chain of the document being verified.
-        for (const [documentIndex, documentResponse] of deviceResponse.splitIntoSingleDocumentResponses().entries()) {
-          // biome-ignore lint/style/noNonNullAssertion: splitIntoSingleDocumentResponses always returns responses with exactly one document
-          const mdoc = new Mdoc(documentResponse.deviceResponse.documents![0].issuerSigned)
-
-          const {
-            documents: [{ trustedIssuanceChain }],
-          } = await documentResponse.verify(agentContext, {
-            trustedCertificates: await this.getTrustedCertificatesForMdoc(agentContext, mdoc),
-            sessionTranscriptOptions,
-            now: options.now,
-          })
-          issuerCertificateChains[documentIndex] = trustedIssuanceChain?.map(({ rawCertificate }) => rawCertificate)
-        }
+        issuerCertificateChains[documentIndex] = trustedIssuanceChain?.map(({ rawCertificate }) => rawCertificate)
       }
 
       // Annex C has no query language such as DCQL, so the device request we sent is what the
@@ -287,51 +276,38 @@ export class MdocDcApiService {
   /**
    * Resolve the trusted certificates for a single mdoc in a device response.
    *
-   * Same resolution order as the other credential verification paths: the global
-   * `getTrustedIssuersForVerification` callback first, then the deprecated
-   * `getTrustedCertificatesForVerification` callback, and only if neither returns anything the
-   * statically configured trusted certificates. Both callbacks receive the certificate chain of
-   * the mdoc being verified, so trust can be decided per document.
+   * Resolved by {@link TrustedIssuerContext.getTrustedIssuersForVerification}, like the other credential
+   * verification paths. The callback receives the certificate chain of the mdoc being verified, so trust can be
+   * decided per document.
    */
-  private async getTrustedCertificatesForMdoc(agentContext: AgentContext, mdoc: Mdoc) {
-    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
+  private async getTrustedCertificatesForMdoc(
+    agentContext: AgentContext,
+    mdoc: Mdoc,
+    verificationSession: MdocVerificationSessionRecord
+  ) {
     const certificateChain = mdoc.issuerSignedCertificateChain.map((certificate) =>
       X509Certificate.fromRawCertificate(certificate)
     )
-
     const trustedIssuers = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
       signer: {
         method: 'x509',
         certificateChain,
       },
       verification: {
-        type: 'credential',
+        type: 'mdocDcApiCredential',
+        mdocVerificationSessionRecord: verificationSession,
         credential: mdoc,
       },
     })
 
-    return (
-      trustedIssuers?.trustedIssuers ??
-      (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
-        certificateChain,
-        verification: {
-          type: 'credential',
-          credential: mdoc,
-        },
-      })) ??
-      x509ModuleConfig.trustedCertificates ??
-      []
-    )
+    return trustedIssuers?.trustedIssuers ?? []
   }
 
   /**
    * Assert the reader certificate chain of a single doc request is trusted.
    *
-   * Same resolution order as the issuer trust in {@link MdocDcApiService.getTrustedCertificatesForMdoc}:
-   * the certificates passed to `resolveRequest` first, then the global
-   * `getTrustedIssuersForVerification` callback, then the deprecated
-   * `getTrustedCertificatesForVerification` callback, and only if none of these return anything
-   * the statically configured trusted certificates.
+   * Same resolution as the issuer trust in {@link MdocDcApiService.getTrustedCertificatesForMdoc}, with the
+   * certificates passed to `resolveRequest` taking precedence.
    *
    * As everywhere else x509 signers are verified, resolving nothing is not a reason to continue
    * without establishing trust: the reader certificate chain is signed by the reader itself, so
@@ -348,35 +324,19 @@ export class MdocDcApiService {
       now?: Date
     }
   ) {
-    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
-
-    let trustedCertificates = options.trustedReaderCertificates?.map((certificate) =>
-      typeof certificate === 'string' ? certificate : certificate.toString('pem')
-    )
-
-    if (!trustedCertificates) {
-      const trustedIssuers = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
-        signer: {
-          method: 'x509',
-          certificateChain: options.certificateChain,
-        },
-        verification: options.verification,
-      })
-
-      const legacyTrustedCertificates = trustedIssuers
-        ? undefined
-        : await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
+    const trustedCertificates =
+      options.trustedReaderCertificates?.map((certificate) =>
+        typeof certificate === 'string' ? certificate : certificate.toString('pem')
+      ) ??
+      (
+        await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+          signer: {
+            method: 'x509',
             certificateChain: options.certificateChain,
-            verification: options.verification,
-          })
-
-      trustedCertificates =
-        trustedIssuers?.trustedIssuers.flatMap(({ issuance }) => issuance) ??
-        (legacyTrustedCertificates
-          ? convertLegacyTrustedCertificates(legacyTrustedCertificates).flatMap(({ issuance }) => issuance)
-          : undefined) ??
-        x509ModuleConfig.trustedCertificates
-    }
+          },
+          verification: options.verification,
+        })
+      )?.trustedIssuers.flatMap(({ issuance }) => issuance)
 
     if (!trustedCertificates) {
       throw new MdocError('No trusted certificates found. Cannot verify reader authentication.')

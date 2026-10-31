@@ -5,6 +5,7 @@ import { CREDENTIALS_CONTEXT_V1_URL, TypedArrayEncoder } from '../../../../../..
 import type { EventReplaySubject, getJsonLdModules } from '../../../../../../../core/tests'
 import {
   setupJsonLdTests,
+  trustDids,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
 } from '../../../../../../../core/tests'
@@ -65,6 +66,8 @@ describe('Present Proof', () => {
       createConnections: true,
       autoAcceptCredentials: DidCommAutoAcceptCredential.Always,
     }))
+    proverAgent.config.setTrustedIssuersForVerification(trustDids(jsonld.credential.issuer))
+    verifierAgent.config.setTrustedIssuersForVerification(trustDids(jsonld.credential.issuer))
 
     const issuerKey = await issuerAgent.kms.importKey({
       privateJwk: transformPrivateKeyToPrivateJwk({
@@ -399,6 +402,9 @@ describe('Present Proof', () => {
   })
 
   test('Verifier accepts the presentation provided by the Prover', async () => {
+    const getTrustedIssuersForVerification = vi.fn(trustDids(jsonld.credential.issuer))
+    verifierAgent.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
+
     testLogger.test('Prover sends proof proposal to a Verifier')
 
     let proverProofExchangeRecord = await proverAgent.didcomm.proofs.proposeProof({
@@ -479,6 +485,15 @@ describe('Present Proof', () => {
       connectionId: expect.any(String),
       state: DidCommProofState.Done,
     })
+    expect(getTrustedIssuersForVerification).toHaveBeenCalledWith(
+      verifierAgent.context,
+      expect.objectContaining({
+        verification: expect.objectContaining({
+          type: 'didCommProofCredential',
+          didCommProofExchangeRecord: expect.objectContaining({ id: verifierProofExchangeRecord.id }),
+        }),
+      })
+    )
   })
 
   test('Verifier sends a proof request with an expiry time', async () => {

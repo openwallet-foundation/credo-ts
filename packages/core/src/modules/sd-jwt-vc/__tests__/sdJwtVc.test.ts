@@ -1,11 +1,15 @@
 import { Agent, DidKey, SdJwtVcRecord, TypedArrayEncoder } from '@credo-ts/core'
 import nock from 'nock'
 import { transformSeedToPrivateJwk } from '../../../../../askar/src'
-import { getAgentOptions } from '../../../../tests'
+import { getAgentOptions, trustDids } from '../../../../tests'
 import { PublicJwk } from '../../kms'
 
 const issuer = new Agent(getAgentOptions('sd-jwt-vc-issuer-agent'))
-const holder = new Agent(getAgentOptions('sd-jwt-vc-holder-agent'))
+// The issuer did:key is derived from a fixed seed in beforeAll
+const issuerDid = 'did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW'
+const holder = new Agent(
+  getAgentOptions('sd-jwt-vc-holder-agent', {}, { getTrustedIssuersForVerification: trustDids(issuerDid) })
+)
 
 describe('sd-jwt-vc end to end test', () => {
   let issuerKey: PublicJwk
@@ -13,7 +17,9 @@ describe('sd-jwt-vc end to end test', () => {
 
   let holderKey: PublicJwk
 
-  const verifier = new Agent(getAgentOptions('sd-jwt-vc-verifier-agent'))
+  const verifier = new Agent(
+    getAgentOptions('sd-jwt-vc-verifier-agent', {}, { getTrustedIssuersForVerification: trustDids(issuerDid) })
+  )
   const verifierDid = 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y'
 
   beforeAll(async () => {

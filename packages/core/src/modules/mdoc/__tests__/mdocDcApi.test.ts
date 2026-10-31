@@ -7,7 +7,7 @@ import type {
 } from '../../../agent/TrustedIssuersForVerification'
 import { CredentialMultiInstanceUseMode } from '../../../utils/credentialUseTypes'
 import { PublicJwk } from '../../kms'
-import { type X509Certificate, X509Service, type X509VerificationContext } from '../../x509'
+import { X509Certificate, X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceRequestNotSatisfiedError, MdocVerificationSessionExpiredError } from '../MdocError'
 import type {
@@ -1321,7 +1321,6 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
 
     afterEach(() => {
       agent.config.setTrustedIssuersForVerification(undefined)
-      agent.x509.config.setTrustedCertificatesForVerification(undefined)
       agent.x509.config.setTrustedCertificates(undefined)
     })
 
@@ -1360,58 +1359,6 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
         docType,
         nameSpaces: { [nameSpace]: { family_name: true } },
       })
-    })
-
-    test('calls the deprecated x509 callback when no trusted issuers are resolved', async () => {
-      const { request } = await createReaderAuthSession()
-
-      const contexts: X509VerificationContext[] = []
-      agent.x509.config.setTrustedCertificatesForVerification((_agentContext, context) => {
-        contexts.push(context)
-
-        return [{ issuance: [context.certificateChain[0].toString('pem')] }]
-      })
-
-      const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
-
-      expect(resolved.docRequests[0].readerAuth?.certificateChain).toHaveLength(1)
-      expect(contexts).toHaveLength(1)
-      expect(contexts[0].certificateChain.map((certificate) => certificate.toString('pem'))).toEqual([
-        readerCertificate.toString('pem'),
-      ])
-      expect(contexts[0].verification).toEqual({
-        type: 'mdocReaderAuth',
-        exchange: { type: 'dcApi', origin },
-        docType,
-        nameSpaces: { [nameSpace]: { family_name: true } },
-      })
-    })
-
-    test('calls getTrustedIssuersForVerification before the deprecated x509 callback', async () => {
-      const { request } = await createReaderAuthSession()
-
-      const x509Callback = vi.fn()
-      agent.x509.config.setTrustedCertificatesForVerification(x509Callback)
-      agent.config.setTrustedIssuersForVerification(async (_agentContext, { signer }) => {
-        if (signer.method !== 'x509') throw new Error(`Unexpected signer method ${signer.method}`)
-
-        return { trustedIssuers: [{ method: 'x509', issuance: [signer.certificateChain[0].toString('pem')] }] }
-      })
-
-      const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
-
-      expect(resolved.docRequests[0].readerAuth?.certificateChain).toHaveLength(1)
-      expect(x509Callback).not.toHaveBeenCalled()
-    })
-
-    test('a request from a reader the deprecated x509 callback does not trust does not resolve', async () => {
-      const { request } = await createReaderAuthSession()
-
-      agent.x509.config.setTrustedCertificatesForVerification(() => [])
-
-      await expect(agent.mdoc.resolveDcApiRequest({ request, origin })).rejects.toThrow(
-        'No trusted certificate was found while validating the X.509 chain'
-      )
     })
 
     test('falls back to the statically configured trusted certificates', async () => {
@@ -1484,45 +1431,23 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
 
     afterEach(() => {
       agent.config.setTrustedIssuersForVerification(undefined)
-      agent.x509.config.setTrustedCertificatesForVerification(undefined)
       agent.x509.config.setTrustedCertificates(undefined)
     })
 
-    test('calls getTrustedCertificatesForVerification with the certificate chain of the mdoc', async () => {
+    test('calls getTrustedIssuersForVerification with the certificate chain of the mdoc and the verification session', async () => {
       const { verificationSessionId, response } = await createResponse()
 
-      const contexts: X509VerificationContext[] = []
-      agent.x509.config.setTrustedCertificatesForVerification((_agentContext, context) => {
+      const contexts: TrustedIssuersForVerificationContext<VerificationSigner, { type: string }>[] = []
+      agent.config.setTrustedIssuersForVerification(async (_agentContext, context) => {
         contexts.push(context)
 
+        if (context.signer.method !== 'x509') throw new Error(`Unexpected signer method ${context.signer.method}`)
+        const { certificateChain } = context.signer
+
         // Trust whatever chain the document brings, like a demo verifier would
-        return [{ issuance: [context.certificateChain[context.certificateChain.length - 1].toString('pem')] }]
-      })
-
-      const result = await agent.mdoc.verifyDcApiResponse({ verificationSessionId, response, origin })
-
-      expect(result.verificationSession.state).toBe(MdocVerificationSessionState.ResponseVerified)
-      expect(contexts).toHaveLength(1)
-      expect(contexts[0].certificateChain.map((certificate) => certificate.toString('pem'))).toEqual([
-        issuerCertificatePem,
-      ])
-      expect(contexts[0].verification).toEqual({ type: 'credential', credential: expect.any(Mdoc) })
-    })
-
-    test('calls getTrustedIssuersForVerification before the deprecated x509 callback', async () => {
-      const { verificationSessionId, response } = await createResponse()
-
-      const x509Callback = vi.fn()
-      agent.x509.config.setTrustedCertificatesForVerification(x509Callback)
-      agent.config.setTrustedIssuersForVerification(async (_agentContext, { signer }) => {
-        if (signer.method !== 'x509') throw new Error(`Unexpected signer method ${signer.method}`)
-
         return {
           trustedIssuers: [
-            {
-              method: 'x509',
-              issuance: [signer.certificateChain[signer.certificateChain.length - 1].toString('pem')],
-            },
+            { method: 'x509', issuance: [certificateChain[certificateChain.length - 1].toString('pem')] },
           ],
         }
       })
@@ -1530,7 +1455,20 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
       const result = await agent.mdoc.verifyDcApiResponse({ verificationSessionId, response, origin })
 
       expect(result.verificationSession.state).toBe(MdocVerificationSessionState.ResponseVerified)
-      expect(x509Callback).not.toHaveBeenCalled()
+      expect(contexts).toHaveLength(1)
+      expect(contexts[0].signer).toEqual({
+        method: 'x509',
+        certificateChain: [
+          expect.objectContaining({
+            rawCertificate: X509Certificate.fromEncodedCertificate(issuerCertificatePem).rawCertificate,
+          }),
+        ],
+      })
+      expect(contexts[0].verification).toEqual({
+        type: 'mdocDcApiCredential',
+        mdocVerificationSessionRecord: expect.objectContaining({ id: verificationSessionId }),
+        credential: expect.any(Mdoc),
+      })
     })
 
     test('falls back to the statically configured trusted certificates', async () => {
@@ -1546,7 +1484,7 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
     test('a document signed by an untrusted issuer does not verify', async () => {
       const { verificationSessionId, response } = await createResponse()
 
-      agent.x509.config.setTrustedCertificatesForVerification(() => [])
+      agent.config.setTrustedIssuersForVerification(async () => ({ trustedIssuers: [] }))
 
       await expect(agent.mdoc.verifyDcApiResponse({ verificationSessionId, response, origin })).rejects.toThrow(
         `Mdoc with doctype ${docType} is not valid`

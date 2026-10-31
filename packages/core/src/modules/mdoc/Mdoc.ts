@@ -14,7 +14,6 @@ import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate } from '../x509'
-import { X509ModuleConfig } from '../x509/X509ModuleConfig'
 import { MdocError } from './MdocError'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
@@ -189,32 +188,21 @@ export class Mdoc {
     agentContext: AgentContext,
     options?: MdocVerifyOptions
   ): Promise<{ isValid: true } | { isValid: false; error: string }> {
-    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
     const certificateChain = this.issuerSigned.issuerAuth.certificateChain.map((certificate) =>
       X509Certificate.fromRawCertificate(certificate)
     )
 
-    let trustedCertificates = options?.trustedCertificates
-    if (!trustedCertificates) {
-      const trustedIssuers = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
-        verification: { type: 'credential', credential: this },
-        signer: {
-          certificateChain,
-          method: 'x509',
-        },
-      })
-
-      trustedCertificates =
-        trustedIssuers?.trustedIssuers ??
-        (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
-          verification: {
-            type: 'credential',
-            credential: this,
+    const trustedCertificates =
+      options?.trustedCertificates ??
+      (
+        await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+          verification: { type: 'credential', credential: this },
+          signer: {
+            certificateChain,
+            method: 'x509',
           },
-          certificateChain,
-        })) ??
-        x509ModuleConfig.trustedCertificates
-    }
+        })
+      )?.trustedIssuers
 
     if (!trustedCertificates) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')

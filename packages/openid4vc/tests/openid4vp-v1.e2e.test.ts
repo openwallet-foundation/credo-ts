@@ -33,6 +33,7 @@ import nock from 'nock'
 import { filter, firstValueFrom } from 'rxjs'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
+import { trustDids } from '../../core/tests'
 import { TenantsModule } from '../../tenants/src'
 import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessionCoordinator'
 import {
@@ -114,7 +115,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         }),
       },
       '96213c3d7fc8d4d6754c7a0fd969598e',
-      global.fetch
+      global.fetch,
+      {
+        // Trusts the dids the verifier tenants sign requests with, resolved lazily as they're created later
+        getTrustedIssuersForVerification: (agentContext, options) =>
+          trustDids(verifier1.did, verifier2.did)(agentContext, options),
+      }
     )) as unknown as typeof holder
     holder1 = await createTenantForAgent(holder.agent, 'hTenant1')
 
@@ -130,7 +136,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598f',
-      global.fetch
+      global.fetch,
+      {
+        // The verifier issues the credentials itself. Set in the init config so the verifier tenants inherit it.
+        getTrustedIssuersForVerification: (agentContext, options) => trustDids(verifier.did)(agentContext, options),
+      }
     )) as unknown as typeof verifier
     verifier1 = await createTenantForAgent(verifier.agent, 'vTenant1')
     verifier2 = await createTenantForAgent(verifier.agent, 'vTenant2')
@@ -1300,7 +1310,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         })
       }
 
-      return undefined
+      return { trustedIssuers: [{ method: 'did', issuance: verifier.did }] }
     }
     verifier.agent.context.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
 
@@ -3025,13 +3035,13 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const getTrustedIssuersForVerification: GetTrustedIssuersForVerification<
       VerificationSigner,
       OpenId4VcVerificationTypes
-    > = async (_agentContext, { verification }) => {
+    > = async (_agentContext, { signer, verification }) => {
       if (verification.type === 'openId4VpCredential') {
         trustedIssuersQueryIds.push(verification.dcql?.credentialQueryId)
       }
 
-      // Fall back to the trusted certificates configured above
-      return undefined
+      // Trust the did that issued the sd-jwt vc, and fall back to the trusted certificates configured above for the mdoc
+      return signer.method === 'did' ? { trustedIssuers: [{ method: 'did', issuance: verifier.did }] } : undefined
     }
     verifier.agent.context.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
 

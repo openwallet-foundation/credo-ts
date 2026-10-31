@@ -2,7 +2,7 @@ import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../../../../core/src/modules/vc/constants'
 import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
 import type { EventReplaySubject, JsonLdTestsAgent } from '../../../../../../../core/tests'
-import { setupJsonLdTests, waitForCredentialRecordSubject } from '../../../../../../../core/tests'
+import { setupJsonLdTests, trustDids, waitForCredentialRecordSubject } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommCredentialState } from '../../../models'
 import { DidCommCredentialExchangeRecord } from '../../../repository'
@@ -44,6 +44,7 @@ describe('credentials', () => {
       holderName: 'Alice LD connection-less Credentials V2',
       createConnections: false,
     }))
+    aliceAgent.config.setTrustedIssuersForVerification(trustDids(signCredentialOptions.credential.issuer))
 
     const key = await faberAgent.kms.importKey({
       privateJwk: transformPrivateKeyToPrivateJwk({
