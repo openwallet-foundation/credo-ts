@@ -16,14 +16,11 @@ import {
 } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
-import { DidCommTransportService } from '../../../DidCommTransportService'
-import { MessageSendingError } from '../../../errors'
 import type { DidCommInboundMessageContext } from '../../../models'
 import type { DidCommConnectionRecord } from '../../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../../connections/services'
-import { DidCommMessagePickupApi, DidCommMessagePickupSessionService } from '../../message-pickup'
-import { DidCommMessagePickupSessionRole } from '../../message-pickup/DidCommMessagePickupSession'
+import { DidCommMessagePickupApi } from '../../message-pickup'
 import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
 import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
 import type { DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
@@ -118,42 +115,10 @@ export class DidCommMediatorService {
           recipientDids: [verkeyToDidKey(message.to)],
           message: message.message,
         })
-        const session = await messagePickupApi.getLiveModeSession({
+        await messagePickupApi.deliverQueuedMessagesToLiveSession({
           connectionId: mediationRecord.connectionId,
-          role: DidCommMessagePickupSessionRole.MessageHolder,
+          recipientDid: verkeyToDidKey(message.to),
         })
-        if (session) {
-          try {
-            await messagePickupApi.deliverMessagesFromQueue({
-              pickupSessionId: session.id,
-              recipientDid: verkeyToDidKey(message.to),
-            })
-          } catch (error) {
-            const sessionService = agentContext.dependencyManager.resolve(DidCommMessagePickupSessionService)
-            const endSession =
-              error instanceof MessageSendingError &&
-              sessionService.getLiveSession(agentContext, session.id) !== undefined
-            this.logger.warn(
-              `Live mode delivery failed for connection '${mediationRecord.connectionId}'${endSession ? ', ending its live mode session' : ''}`,
-              { error: error.message }
-            )
-            if (endSession) {
-              sessionService.removeLiveSession(agentContext, { connectionId: mediationRecord.connectionId })
-              // a Credo recipient only restarts pickup when its socket closes
-              try {
-                await agentContext.dependencyManager
-                  .resolve(DidCommTransportService)
-                  .findSessionById(session.transportSessionId)
-                  ?.close()
-              } catch (closeError) {
-                this.logger.warn(
-                  `Unable to close the transport session of connection '${mediationRecord.connectionId}'`,
-                  { error: closeError.message }
-                )
-              }
-            }
-          }
-        }
         break
       }
       case DidCommMessageForwardingStrategy.DirectDelivery:
