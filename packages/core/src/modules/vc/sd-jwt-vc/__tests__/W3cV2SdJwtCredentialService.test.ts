@@ -11,6 +11,7 @@ import {
   getAgentContext,
   getAskarStoreConfig,
   testLogger,
+  trustDids,
 } from '../../../../../tests'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
@@ -109,6 +110,7 @@ describe('W3cV2SdJwtCredentialService', () => {
         },
       ],
     })
+    agentContext.config.setTrustedIssuersForVerification(trustDids(issuerDidJwk.did))
 
     const holderPrivateJwk = transformSeedToPrivateJwk({
       type: {
@@ -480,7 +482,7 @@ describe('W3cV2SdJwtCredentialService', () => {
 
   describe('verifyCredential with getTrustedIssuersForVerification', () => {
     afterEach(() => {
-      agentContext.config.setTrustedIssuersForVerification(undefined)
+      agentContext.config.setTrustedIssuersForVerification(trustDids(issuerDidJwk.did))
     })
 
     test('accepts a credential whose issuer did is trusted', async () => {

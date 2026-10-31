@@ -10,6 +10,7 @@ import {
   X509Service,
 } from '@credo-ts/core'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
+import { trustDids } from '../../core/tests'
 import { TenantsModule } from '../../tenants/src'
 import {
   OpenId4VcModule,
@@ -186,6 +187,8 @@ describe('OpenId4VP DC API', () => {
       },
       '96213c3d7fc8d4d6754c7a0fd969598f'
     )) as unknown as typeof verifier
+    // The verifier also issues the sd-jwt vc used in the tests
+    verifier.agent.config.setTrustedIssuersForVerification(trustDids(verifier.did))
 
     openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 

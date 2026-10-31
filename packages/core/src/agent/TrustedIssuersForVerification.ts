@@ -1,4 +1,6 @@
+import type { KmsJwkPublic, PublicJwk } from '../modules/kms'
 import type { Mdoc } from '../modules/mdoc/Mdoc'
+import type { MdocVerificationSessionRecord } from '../modules/mdoc/repository/MdocVerificationSessionRecord'
 import type { SdJwtVc } from '../modules/sd-jwt-vc'
 import type {
   W3cJsonLdVerifiableCredential,
@@ -28,7 +30,16 @@ export interface VerificationSignerX509 {
   certificateChain: X509Certificate[]
 }
 
-export type VerificationSigner = VerificationSignerDid | VerificationSignerX509
+export interface VerificationSignerJwk {
+  method: 'jwk'
+
+  /**
+   * The public jwk included in the signed object
+   */
+  publicJwk: PublicJwk
+}
+
+export type VerificationSigner = VerificationSignerDid | VerificationSignerX509 | VerificationSignerJwk
 
 export interface TrustedIssuerDid {
   method: 'did'
@@ -47,7 +58,14 @@ export interface TrustedIssuerX509 {
   status?: string[]
 }
 
-export type TrustedIssuer = TrustedIssuerDid | TrustedIssuerX509
+export interface TrustedIssuerJwk {
+  method: 'jwk'
+
+  /** A public jwk that is trusted as an issuer */
+  issuance: KmsJwkPublic
+}
+
+export type TrustedIssuer = TrustedIssuerDid | TrustedIssuerX509 | TrustedIssuerJwk
 
 export interface TrustedIssuersForVerificationResult<T extends TrustedIssuer = TrustedIssuer> {
   /**
@@ -122,6 +140,16 @@ export type VerificationTypeMdocReaderAuth = {
   nameSpaces: Record<string, Record<string, boolean>>
 }
 
+/**
+ * Mdoc verification bound to an mdoc verification session, for a response received over the DC API.
+ * Used instead of `VerificationTypeCredential`, so trust can depend on the verification session.
+ */
+export type VerificationTypeMdocDcApiCredential = {
+  type: 'mdocDcApiCredential'
+  mdocVerificationSessionRecord: MdocVerificationSessionRecord
+  credential: Mdoc
+}
+
 export interface TrustedIssuersForVerificationContext<
   Signer extends VerificationSigner = VerificationSigner,
   AdditionalVerificationTypes extends { type: string } = never,
@@ -134,7 +162,11 @@ export interface TrustedIssuersForVerificationContext<
   /**
    * The context of the verification object
    */
-  verification: VerificationTypeCredential | VerificationTypeMdocReaderAuth | AdditionalVerificationTypes
+  verification:
+    | VerificationTypeCredential
+    | VerificationTypeMdocReaderAuth
+    | VerificationTypeMdocDcApiCredential
+    | AdditionalVerificationTypes
 }
 
 /**

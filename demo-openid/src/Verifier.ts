@@ -4,7 +4,7 @@ import type { OpenId4VcVerifierModuleConfigOptions, OpenId4VcVerifierRecord } fr
 import { OpenId4VcModule } from '@credo-ts/openid4vc'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 
-import { BaseAgent } from './BaseAgent'
+import { BaseAgent, trustAllSigners } from './BaseAgent'
 import { Output } from './OutputClass'
 
 const VERIFIER_HOST = process.env.VERIFIER_HOST ?? 'http://localhost:4000'
@@ -138,6 +138,7 @@ export class Verifier extends BaseAgent<{
           },
         }),
       }),
+      getTrustedIssuersForVerification: trustAllSigners,
     })
   }
 

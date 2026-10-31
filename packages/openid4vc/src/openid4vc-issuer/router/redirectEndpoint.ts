@@ -192,7 +192,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
             idToken,
             authorizationServer: authorizationServerMetadata,
             clientId: authorizationServerConfig.clientAuthentication.clientId,
-            callbacks: getOid4vcCallbacks(agentContext),
+            callbacks: getOid4vcCallbacks(agentContext, { isVerifyIdToken: true }),
           })
         }
 

@@ -35,6 +35,7 @@ import {
   getAgentConfig,
   getAgentContext,
   testLogger,
+  trustDids,
 } from '../../core/tests'
 
 const agentConfig = getAgentConfig('data integrity format service (vcdm 2.0)')
@@ -121,6 +122,7 @@ describe('data integrity format service (vcdm 2.0)', () => {
 
   test('issuance flow for a data model 2.0 credential secured with a DataIntegrityProof', async () => {
     const { did, verificationMethod } = await createDidKidVerificationMethod(agentContext)
+    agentContext.config.setTrustedIssuersForVerification(trustDids(did))
 
     const credential = {
       '@context': ['https://www.w3.org/ns/credentials/v2'],
@@ -220,6 +222,7 @@ describe('data integrity format service (vcdm 2.0)', () => {
 
   test('accepts a received credential whose claims include zero, false and an empty string', async () => {
     const { did, verificationMethod } = await createDidKidVerificationMethod(agentContext)
+    agentContext.config.setTrustedIssuersForVerification(trustDids(did))
     const { offerAttachment, requestAttachment, credentialExchangeRecord } = await offerAndRequest(did, {
       name: 'John',
       minimumAge: 0,

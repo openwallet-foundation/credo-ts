@@ -23,7 +23,7 @@ import { randomUUID } from 'crypto'
 import nock from 'nock'
 import { type Mock, vi } from 'vitest'
 import { transformSeedToPrivateJwk } from '../../../../../askar/src'
-import { getAgentOptions, mockProperty } from '../../../../tests'
+import { getAgentOptions, mockProperty, trustDids } from '../../../../tests'
 import { PublicJwk } from '../../kms'
 import { applyDisclosuresForPaths, buildPresentationFrameForPaths } from '../disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from '../repository'
@@ -228,6 +228,7 @@ describe('SdJwtVcService', () => {
         },
       ],
     })
+    agent.config.setTrustedIssuersForVerification(trustDids(issuerDidDocument.id))
 
     simpleX509Certificate.keyId = issuerKey.keyId
 
@@ -1798,8 +1799,7 @@ describe('SdJwtVcService', () => {
 
     afterEach(() => {
       const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
-      agent.context.config.setTrustedIssuersForVerification(undefined)
-      x509ModuleConfig.setTrustedCertificatesForVerification(undefined)
+      agent.context.config.setTrustedIssuersForVerification(trustDids(issuerDidUrl.split('#')[0]))
       x509ModuleConfig.setTrustedCertificates(undefined)
     })
 
@@ -1882,14 +1882,10 @@ describe('SdJwtVcService', () => {
       expect(verificationResult.isValid).toBe(false)
     })
 
-    test('the generic callback takes precedence over the deprecated x509 callback', async () => {
+    test('the generic callback takes precedence over the trusted certificates of the x509 module', async () => {
       const presentation = await presentX509()
 
-      // Deprecated x509 callback would trust the correct certificate...
-      agent.context.dependencyManager
-        .resolve(X509ModuleConfig)
-        .setTrustedCertificatesForVerification(async () => [simpleX509.trustedCertificate])
-      // ...but the generic callback takes precedence and trusts a different certificate.
+      agent.context.dependencyManager.resolve(X509ModuleConfig).setTrustedCertificates([simpleX509.trustedCertificate])
       agent.context.config.setTrustedIssuersForVerification(async () => ({
         trustedIssuers: [{ method: 'x509', issuance: [funkeX509.trustedCertificate] }],
       }))
@@ -1903,28 +1899,9 @@ describe('SdJwtVcService', () => {
       expect(verificationResult.isValid).toBe(false)
     })
 
-    test('did issuer is allowed by default when no trusted issuers are configured', async () => {
+    test('did issuer is rejected when no trusted issuers are configured', async () => {
       const presentation = await presentDid()
-
-      // No `getTrustedIssuersForVerification` callback set: did issuers remain allowed by default,
-      // preserving the pre-existing (v0.7.0) behavior.
-      const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
-        keyBinding: { audience: verifierDid, nonce: 'salt' },
-        requiredClaimKeys: ['claim'],
-      })
-
-      expect(verificationResult.isValid).toBe(true)
-    })
-
-    test('falls back to the deprecated x509 callback when no generic callback is set', async () => {
-      const presentation = await presentX509()
-      const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
-      x509ModuleConfig.setTrustedCertificates(undefined)
-
-      // Only the deprecated x509 callback is configured (no generic callback): it must still gate
-      // verification, exactly as in v0.7.0.
-      x509ModuleConfig.setTrustedCertificatesForVerification(async () => [simpleX509.trustedCertificate])
+      agent.context.config.setTrustedIssuersForVerification(undefined)
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
@@ -1932,7 +1909,12 @@ describe('SdJwtVcService', () => {
         requiredClaimKeys: ['claim'],
       })
 
-      expect(verificationResult.isValid).toBe(true)
+      expect(verificationResult.isValid).toBe(false)
+      if (!verificationResult.isValid) {
+        expect(verificationResult.error?.message).toContain(
+          "No trusted issuers configured for signer method 'did'. Signer cannot be verified."
+        )
+      }
     })
 
     test('falls back to statically configured trusted certificates when no callback is set', async () => {
@@ -1981,8 +1963,7 @@ describe('SdJwtVcService', () => {
 
     afterEach(() => {
       const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
-      agent.context.config.setTrustedIssuersForVerification(undefined)
-      x509ModuleConfig.setTrustedCertificatesForVerification(undefined)
+      agent.context.config.setTrustedIssuersForVerification(trustDids(issuerDidUrl.split('#')[0]))
       x509ModuleConfig.setTrustedCertificates(undefined)
     })
 

@@ -1,12 +1,4 @@
-import {
-  AgentConfig,
-  AgentContext,
-  CredoError,
-  InjectionSymbols,
-  inject,
-  injectable,
-  type Logger,
-} from '@credo-ts/core'
+import { AgentContext, CredoError, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
 import type { MutexInterface } from 'async-mutex'
 import { Mutex, withTimeout } from 'async-mutex'
 import type { TenantRecord } from '../repository'
@@ -309,8 +301,8 @@ export class TenantSessionCoordinator {
   }
 
   private async createAgentContext(tenantRecord: TenantRecord, { provisionContext }: { provisionContext: boolean }) {
+    // The tenant shares the root agent config, which it resolves from the parent dependency manager.
     const tenantDependencyManager = this.rootAgentContext.dependencyManager.createChild()
-    const tenantConfig = this.rootAgentContext.config.extend({})
 
     const agentContext = new AgentContext({
       contextCorrelationId: this.getContextCorrelationIdForTenantId(tenantRecord.id),
@@ -319,7 +311,6 @@ export class TenantSessionCoordinator {
     })
 
     tenantDependencyManager.registerInstance(AgentContext, agentContext)
-    tenantDependencyManager.registerInstance(AgentConfig, tenantConfig)
 
     if (provisionContext) {
       await tenantDependencyManager.provisionAgentContext(agentContext)

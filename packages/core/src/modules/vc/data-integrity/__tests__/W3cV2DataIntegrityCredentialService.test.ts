@@ -1,4 +1,4 @@
-import { getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
+import { getAgentConfig, getAgentContext, trustDids } from '../../../../../tests/helpers'
 import type { AgentContext } from '../../../../agent/context'
 import { CredoError } from '../../../../error'
 import { DidDocument, DidResolverService, DidsApi, VerificationMethod } from '../../../dids'
@@ -255,7 +255,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     function createIssuerResolvingAgentContext() {
       return {
-        config: {},
+        config: { getTrustedIssuersForVerification: trustDids(testIssuerDid) },
         dependencyManager: {
           resolve: vi.fn().mockReturnValue({
             resolveDidDocument: vi.fn().mockResolvedValue({
@@ -709,7 +709,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
       }
 
       return {
-        config: {},
+        config: { getTrustedIssuersForVerification: trustDids(issuerDid) },
         dependencyManager: {
           resolve: vi.fn().mockReturnValue({
             resolveDidDocument: vi.fn(async (didUrl: string) => documents[didUrl.split('#')[0]]),
@@ -914,7 +914,11 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     } as const
 
     beforeAll(() => {
-      const agentConfig = getAgentConfig('W3cV2DataIntegrityCredentialServiceIntegration')
+      const agentConfig = getAgentConfig(
+        'W3cV2DataIntegrityCredentialServiceIntegration',
+        {},
+        { getTrustedIssuersForVerification: trustDids(verificationMethod.split('#')[0]) }
+      )
       agentContext = getAgentContext({
         agentConfig,
         registerInstances: [[DidResolverService, {}]],

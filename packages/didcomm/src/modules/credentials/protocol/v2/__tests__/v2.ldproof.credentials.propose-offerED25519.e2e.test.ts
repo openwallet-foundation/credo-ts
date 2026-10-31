@@ -16,6 +16,7 @@ import {
   setupEventReplaySubjects,
   setupSubjectTransports,
   testLogger,
+  trustDids,
   waitForCredentialRecordSubject,
 } from '../../../../../../../core/tests'
 import type { DidCommModuleConfigOptions } from '../../../../../DidCommModuleConfig'
@@ -99,7 +100,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
       getAgentOptions(
         'Alice Agent Indy/JsonLD',
         {},
-        {},
+        { getTrustedIssuersForVerification: trustDids(signCredentialOptions.credential.issuer) },
         getIndyJsonLdModules({
           endpoints: ['rxjs:alice'],
         }),

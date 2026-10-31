@@ -26,8 +26,8 @@ import {
 } from '@credo-ts/openid4vc'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import type { Express } from 'express'
-import { BaseAgent } from './BaseAgent'
-import { greenText, Output } from './OutputClass'
+import { BaseAgent, trustAllSigners } from './BaseAgent'
+import { Output } from './OutputClass'
 
 function getOpenIdHolderModules(askarStorageConfig: AskarModuleConfigStoreOptions) {
   return (app: Express) => ({
@@ -35,20 +35,7 @@ function getOpenIdHolderModules(askarStorageConfig: AskarModuleConfigStoreOption
     openid4vc: new OpenId4VcModule({
       app,
     }),
-    x509: new X509Module({
-      getTrustedCertificatesForVerification: (_agentContext, { certificateChain, verification }) => {
-        console.log(
-          greenText(
-            `dynamically trusting certificate ${certificateChain[0].getIssuerNameField('C')} for verification of ${
-              verification.type
-            }`,
-            true
-          )
-        )
-
-        return [certificateChain[0].toString('pem')]
-      },
-    }),
+    x509: new X509Module(),
   })
 }
 
@@ -66,6 +53,7 @@ export class Holder extends BaseAgent<ReturnType<ReturnType<typeof getOpenIdHold
         id: name,
         key: name,
       }),
+      getTrustedIssuersForVerification: trustAllSigners,
     })
   }
 

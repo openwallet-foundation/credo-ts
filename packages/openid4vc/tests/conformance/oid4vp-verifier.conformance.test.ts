@@ -275,14 +275,16 @@ describe('OIDF - oid4vp-1final-verifier-haip-test-plan', () => {
     // suite is the legitimate issuer in this conformance context, and this avoids
     // pinning an expiring OIDF cert. All other verifications fall back to the
     // globally-trusted certs (our CA) by returning `undefined`.
-    verifier.agent.x509.config.setTrustedCertificatesForVerification(
-      (_agentContext, { verification, certificateChain }) => {
-        if (verification.type === 'credential' && verification.credential instanceof Mdoc) {
-          return certificateChain.map((certificate) => certificate.toString('pem'))
+    verifier.agent.config.setTrustedIssuersForVerification(async (_agentContext, { verification, signer }) => {
+      if (signer.method === 'x509' && 'credential' in verification && verification.credential instanceof Mdoc) {
+        return {
+          trustedIssuers: [
+            { method: 'x509', issuance: signer.certificateChain.map((certificate) => certificate.toString('pem')) },
+          ],
         }
-        return undefined
       }
-    )
+      return undefined
+    })
 
     // Serve the verifier over real HTTPS. The suite reaches this on the host via
     // host.testcontainers.internal:9382.
