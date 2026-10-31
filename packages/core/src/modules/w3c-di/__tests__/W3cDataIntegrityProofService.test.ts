@@ -913,6 +913,205 @@ describe('W3cDataIntegrityProofService', () => {
     expect(mockCreateByCryptosuite).not.toHaveBeenCalled()
   })
 
+  test('verifyProof rejects an expired proof before cryptosuite verification', async () => {
+    const result = await service.verifyProof(agentContext, {
+      id: 'urn:example:test',
+      proof: {
+        type: 'DataIntegrityProof',
+        cryptosuite: 'eddsa-jcs-2022',
+        verificationMethod: 'did:example:123#key-1',
+        proofPurpose: 'assertionMethod',
+        expires: '2020-01-01T00:00:00Z',
+        proofValue: validProofValue,
+      },
+    })
+
+    expect(result).toMatchObject({
+      verified: false,
+      errors: [{ type: 'https://w3id.org/security#PROOF_VERIFICATION_ERROR', title: 'Proof has expired' }],
+    })
+    expect(mockCreateByCryptosuite).not.toHaveBeenCalled()
+  })
+
+  test('verifyProof rejects a proof created in the future before cryptosuite verification', async () => {
+    const result = await service.verifyProof(agentContext, {
+      id: 'urn:example:test',
+      proof: {
+        type: 'DataIntegrityProof',
+        cryptosuite: 'eddsa-jcs-2022',
+        verificationMethod: 'did:example:123#key-1',
+        proofPurpose: 'assertionMethod',
+        created: '2999-01-01T00:00:00Z',
+        proofValue: validProofValue,
+      },
+    })
+
+    expect(result).toMatchObject({
+      verified: false,
+      errors: [{ type: 'https://w3id.org/security#PROOF_VERIFICATION_ERROR', title: 'Proof is created in the future' }],
+    })
+    expect(mockCreateByCryptosuite).not.toHaveBeenCalled()
+  })
+
+  test('verifyProof accepts a proof created within the allowed clock skew', async () => {
+    mockCreateByCryptosuite.mockReturnValue({
+      verifyProof: vi.fn().mockResolvedValue({
+        verified: true,
+        verifiedDocument: { id: 'urn:example:test' },
+      }),
+    })
+
+    const result = await service.verifyProof(agentContext, {
+      id: 'urn:example:test',
+      proof: {
+        type: 'DataIntegrityProof',
+        cryptosuite: 'eddsa-jcs-2022',
+        verificationMethod: 'did:example:123#key-1',
+        proofPurpose: 'assertionMethod',
+        created: new Date(Date.now() + 10_000).toISOString(),
+        proofValue: validProofValue,
+      },
+    })
+
+    expect(result.verified).toBe(true)
+  })
+
+  test('verifyProof accepts a proof that expired within the allowed clock skew', async () => {
+    mockCreateByCryptosuite.mockReturnValue({
+      verifyProof: vi.fn().mockResolvedValue({
+        verified: true,
+        verifiedDocument: { id: 'urn:example:test' },
+      }),
+    })
+
+    const expires = new Date(Date.now() - 10_000).toISOString()
+    const result = await service.verifyProof(agentContext, {
+      id: 'urn:example:test',
+      proof: {
+        type: 'DataIntegrityProof',
+        cryptosuite: 'eddsa-jcs-2022',
+        verificationMethod: 'did:example:123#key-1',
+        proofPurpose: 'assertionMethod',
+        expires,
+        proofValue: validProofValue,
+      },
+    })
+
+    expect(result.verified).toBe(true)
+  })
+
+  test('verifyProof checks expires against the provided now', async () => {
+    mockCreateByCryptosuite.mockReturnValue({
+      verifyProof: vi.fn().mockResolvedValue({
+        verified: true,
+        verifiedDocument: { id: 'urn:example:test' },
+      }),
+    })
+
+    const result = await service.verifyProof(
+      agentContext,
+      {
+        id: 'urn:example:test',
+        proof: {
+          type: 'DataIntegrityProof',
+          cryptosuite: 'eddsa-jcs-2022',
+          verificationMethod: 'did:example:123#key-1',
+          proofPurpose: 'assertionMethod',
+          expires: '2020-01-01T00:00:00Z',
+          proofValue: validProofValue,
+        },
+      },
+      { now: new Date('2019-12-31T00:00:00Z') }
+    )
+
+    expect(result.verified).toBe(true)
+  })
+
+  test('verifyProof rejects a non-string proof created', async () => {
+    const result = await service.verifyProof(agentContext, {
+      id: 'urn:example:test',
+      proof: {
+        type: 'DataIntegrityProof',
+        cryptosuite: 'eddsa-jcs-2022',
+        verificationMethod: 'did:example:123#key-1',
+        proofPurpose: 'assertionMethod',
+        created: 1577836800 as unknown as string,
+        proofValue: validProofValue,
+      },
+    })
+
+    expect(result).toMatchObject({
+      verified: false,
+      errors: [
+        {
+          type: 'https://w3id.org/security#PROOF_VERIFICATION_ERROR',
+          title: 'Proof created must be a valid dateTimeStamp',
+        },
+      ],
+    })
+    expect(mockCreateByCryptosuite).not.toHaveBeenCalled()
+  })
+
+  test('verifyProof rejects a non-string proof expires', async () => {
+    const result = await service.verifyProof(agentContext, {
+      id: 'urn:example:test',
+      proof: {
+        type: 'DataIntegrityProof',
+        cryptosuite: 'eddsa-jcs-2022',
+        verificationMethod: 'did:example:123#key-1',
+        proofPurpose: 'assertionMethod',
+        expires: 1577836800 as unknown as string,
+        proofValue: validProofValue,
+      },
+    })
+
+    expect(result).toMatchObject({
+      verified: false,
+      errors: [
+        {
+          type: 'https://w3id.org/security#PROOF_VERIFICATION_ERROR',
+          title: 'Proof expires must be a valid dateTimeStamp',
+        },
+      ],
+    })
+    expect(mockCreateByCryptosuite).not.toHaveBeenCalled()
+  })
+
+  test('verifyProofSetAndChain rejects a proof set containing an expired proof', async () => {
+    mockCreateByCryptosuite.mockReturnValue({
+      verifyProof: vi.fn().mockResolvedValue({
+        verified: true,
+        verifiedDocument: { id: 'urn:example:test' },
+      }),
+    })
+
+    const result = await service.verifyProofSetAndChain(agentContext, {
+      id: 'urn:example:test',
+      proof: [
+        {
+          type: 'DataIntegrityProof',
+          cryptosuite: 'eddsa-jcs-2022',
+          verificationMethod: 'did:example:123#key-1',
+          proofPurpose: 'assertionMethod',
+          proofValue: validProofValue1,
+        },
+        {
+          type: 'DataIntegrityProof',
+          cryptosuite: 'eddsa-jcs-2022',
+          verificationMethod: 'did:example:123#key-1',
+          proofPurpose: 'assertionMethod',
+          expires: '2020-01-01T00:00:00Z',
+          proofValue: validProofValue2,
+        },
+      ],
+    })
+
+    expect(result).toMatchObject({
+      verified: false,
+      errors: [{ type: 'https://w3id.org/security#PROOF_VERIFICATION_ERROR', title: 'Proof has expired' }],
+    })
+  })
+
   test('verifyProof rejects malformed proofValue encoding before cryptosuite verification', async () => {
     const result = await service.verifyProof(agentContext, {
       id: 'urn:example:test',

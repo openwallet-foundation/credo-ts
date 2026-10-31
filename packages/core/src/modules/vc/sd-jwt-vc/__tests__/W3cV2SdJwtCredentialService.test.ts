@@ -77,9 +77,7 @@ const w3cV2JwtCredentialService = new W3cV2SdJwtCredentialService()
 kms.randomBytes = vi.fn(function () {
   return TypedArrayEncoder.fromUtf8String('salt')
 })
-Date.prototype.getTime = vi.fn(function () {
-  return 1698151532000
-})
+vi.setSystemTime(1698151532000)
 
 describe('W3cV2SdJwtCredentialService', () => {
   let issuerDidJwk: DidJwk
@@ -395,6 +393,19 @@ describe('W3cV2SdJwtCredentialService', () => {
       expect(result.validations.credentialStatus?.error?.message).toContain(
         'Verifying credential status is not supported'
       )
+    })
+
+    test('checks the validity period against the provided now', async () => {
+      const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
+
+      jwtVc.resolvedCredential.validFrom = '2999-01-01T00:00:00Z'
+
+      const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {
+        credential: jwtVc,
+        now: new Date('2999-06-01T00:00:00Z'),
+      })
+
+      expect(result.validations.validityPeriod).toEqual({ isValid: true })
     })
 
     test('returns invalid result when credential is not yet valid based on validFrom', async () => {

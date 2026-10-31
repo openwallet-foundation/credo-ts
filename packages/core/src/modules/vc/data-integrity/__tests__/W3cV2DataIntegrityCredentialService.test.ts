@@ -249,40 +249,43 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     expect((contextPolicyValidator.validate as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0)
   })
 
-  describe('credentialStatus', () => {
-    const testIssuerDid = 'did:key:z6MkhaXgBZDvotDkL5257faWxcERCqyLmqwK8PrMUA34yPv1'
-    const testIssuerVerificationMethod = `${testIssuerDid}#z6MkhaXgBZDvotDkL5257faWxcERCqyLmqwK8PrMUA34yPv1`
+  const testIssuerDid = 'did:key:z6MkhaXgBZDvotDkL5257faWxcERCqyLmqwK8PrMUA34yPv1'
+  const testIssuerVerificationMethod = `${testIssuerDid}#z6MkhaXgBZDvotDkL5257faWxcERCqyLmqwK8PrMUA34yPv1`
 
-    function createIssuerResolvingAgentContext() {
-      return {
-        config: {},
-        dependencyManager: {
-          resolve: vi.fn().mockReturnValue({
-            resolveDidDocument: vi.fn().mockResolvedValue({
-              id: testIssuerDid,
-              dereferenceKey: vi.fn().mockReturnValue({
-                id: testIssuerVerificationMethod,
-                controller: testIssuerDid,
-              }),
+  function createIssuerResolvingAgentContext() {
+    return {
+      config: { validitySkewSeconds: 30 },
+      dependencyManager: {
+        resolve: vi.fn().mockReturnValue({
+          resolveDidDocument: vi.fn().mockResolvedValue({
+            id: testIssuerDid,
+            dereferenceKey: vi.fn().mockReturnValue({
+              id: testIssuerVerificationMethod,
+              controller: testIssuerDid,
             }),
           }),
-        },
-      } as never
-    }
+        }),
+      },
+    } as never
+  }
 
-    function createCredentialWithIssuer(securedCredential: Record<string, unknown>) {
-      return {
-        securedCredential: {
-          ...securedCredential,
-          proof: {
-            type: 'DataIntegrityProof',
-            verificationMethod: testIssuerVerificationMethod,
-          },
+  function createCredentialWithIssuer(
+    securedCredential: Record<string, unknown>,
+    resolvedCredential: Record<string, unknown> = {}
+  ) {
+    return {
+      securedCredential: {
+        ...securedCredential,
+        proof: {
+          type: 'DataIntegrityProof',
+          verificationMethod: testIssuerVerificationMethod,
         },
-        resolvedCredential: { issuerId: testIssuerDid },
-      } as never
-    }
+      },
+      resolvedCredential: { issuerId: testIssuerDid, ...resolvedCredential },
+    } as never
+  }
 
+  describe('credentialStatus', () => {
     test('treats missing credentialStatus as valid in DI path', async () => {
       const proofService = {
         verifyProof: vi.fn().mockResolvedValue({
@@ -394,6 +397,85 @@ describe('W3cV2DataIntegrityCredentialService', () => {
       expect(result.validations.credentialStatus?.isValid).toBe(false)
       expect(result.validations.credentialStatus?.error?.message).toContain('not supported')
       expect(result.validations.credentialStatus?.error?.message).toContain('DI')
+    })
+  })
+
+  describe('validityPeriod', () => {
+    function createProofService() {
+      return {
+        verifyProof: vi.fn().mockResolvedValue({
+          verified: true,
+          verifiedDocument: { id: 'urn:example:test' },
+          mediaType: null,
+        }),
+        verifyProofSetAndChain: vi.fn(),
+        createProof: vi.fn(),
+      }
+    }
+
+    function createService(proofService = createProofService()) {
+      const contextPolicyValidator = {
+        validate: vi.fn().mockResolvedValue({
+          validated: true,
+          validatedDocument: null,
+          warnings: [],
+          errors: [],
+        } satisfies W3cV2DataIntegrityContextValidationResult),
+      }
+
+      return new W3cV2DataIntegrityCredentialService(
+        proofService as unknown as DataIntegrityProofService,
+        contextPolicyValidator as never
+      )
+    }
+
+    test('passes when the credential is within its validity period', async () => {
+      const result = await createService().verifyCredential(createIssuerResolvingAgentContext(), {
+        credential: createCredentialWithIssuer(
+          {},
+          { validFrom: '2020-01-01T00:00:00Z', validUntil: '2999-01-01T00:00:00Z' }
+        ),
+      } as unknown as W3cV2DiVerifyCredentialOptions)
+
+      expect(result.isValid).toBe(true)
+      expect(result.validations.validityPeriod).toEqual({ isValid: true })
+    })
+
+    test('fails when validUntil has passed', async () => {
+      const result = await createService().verifyCredential(createIssuerResolvingAgentContext(), {
+        credential: createCredentialWithIssuer({}, { validUntil: '2020-01-01T00:00:00Z' }),
+      } as unknown as W3cV2DiVerifyCredentialOptions)
+
+      expect(result.isValid).toBe(false)
+      expect(result.validations.validityPeriod?.isValid).toBe(false)
+      expect(result.validations.validityPeriod?.error?.message).toBe(
+        'Credential is no longer valid based on validUntil'
+      )
+    })
+
+    test('fails when validFrom is in the future', async () => {
+      const result = await createService().verifyCredential(createIssuerResolvingAgentContext(), {
+        credential: createCredentialWithIssuer({}, { validFrom: '2999-01-01T00:00:00Z' }),
+      } as unknown as W3cV2DiVerifyCredentialOptions)
+
+      expect(result.isValid).toBe(false)
+      expect(result.validations.validityPeriod?.error?.message).toBe('Credential is not valid yet based on validFrom')
+    })
+
+    test('checks the validity period and proof against the provided now', async () => {
+      const proofService = createProofService()
+      const now = new Date('2019-12-31T00:00:00Z')
+
+      const result = await createService(proofService).verifyCredential(createIssuerResolvingAgentContext(), {
+        now,
+        credential: createCredentialWithIssuer({}, { validUntil: '2020-01-01T00:00:00Z' }),
+      } as unknown as W3cV2DiVerifyCredentialOptions)
+
+      expect(result.isValid).toBe(true)
+      expect(proofService.verifyProof).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
+        expectedProofPurpose: 'assertionMethod',
+        now,
+      })
     })
   })
 
