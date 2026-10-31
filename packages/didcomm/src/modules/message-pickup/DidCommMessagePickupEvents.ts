@@ -6,6 +6,7 @@ export enum DidCommMessagePickupEventTypes {
   LiveSessionSaved = 'DidCommMessagePickupLiveSessionSaved',
   LiveSessionRemoved = 'DidCommMessagePickupLiveSessionRemoved',
   MessagePickupCompleted = 'DidCommMessagePickupCompleted',
+  MessageQueued = 'DidCommMessagePickupMessageQueued',
 }
 
 export interface DidCommMessagePickupLiveSessionSavedEvent extends BaseEvent {
@@ -27,5 +28,14 @@ export interface MessagePickupCompletedEvent extends BaseEvent {
   payload: {
     connection: DidCommConnectionRecord
     threadId?: string
+  }
+}
+
+export interface DidCommMessagePickupMessageQueuedEvent extends BaseEvent {
+  type: typeof DidCommMessagePickupEventTypes.MessageQueued
+  payload: {
+    connectionId: string
+    recipientDids: string[]
+    messageId: string
   }
 }

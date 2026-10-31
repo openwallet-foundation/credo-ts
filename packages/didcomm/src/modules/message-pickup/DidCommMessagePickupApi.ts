@@ -13,6 +13,8 @@ import { DidCommEventTypes } from '../../DidCommEvents'
 import type { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
+import { DidCommTransportService } from '../../DidCommTransportService'
+import { MessageSendingError } from '../../errors'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommConnectionService } from '../connections/services'
 import type {
@@ -20,6 +22,7 @@ import type {
   DeliverMessagesFromQueueReturnType,
   DeliverMessagesOptions,
   DeliverMessagesReturnType,
+  DeliverQueuedMessagesToLiveSessionOptions,
   PickupMessagesOptions,
   PickupMessagesReturnType,
   QueueMessageOptions,
@@ -27,10 +30,10 @@ import type {
   SetLiveDeliveryModeOptions,
   SetLiveDeliveryModeReturnType,
 } from './DidCommMessagePickupApiOptions'
-import type { MessagePickupCompletedEvent } from './DidCommMessagePickupEvents'
+import type { DidCommMessagePickupMessageQueuedEvent, MessagePickupCompletedEvent } from './DidCommMessagePickupEvents'
 import { DidCommMessagePickupEventTypes } from './DidCommMessagePickupEvents'
 import { DidCommMessagePickupModuleConfig } from './DidCommMessagePickupModuleConfig'
-import type { DidCommMessagePickupSession, DidCommMessagePickupSessionRole } from './DidCommMessagePickupSession'
+import { type DidCommMessagePickupSession, DidCommMessagePickupSessionRole } from './DidCommMessagePickupSession'
 import type { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol } from './protocol'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 import { DidCommStatusV2Message } from './protocol/v2/messages'
@@ -45,6 +48,7 @@ export interface DidCommMessagePickupApi<MPPs extends DidCommMessagePickupProtoc
   }): Promise<DidCommMessagePickupSession | undefined>
   deliverMessages(options: DeliverMessagesOptions): Promise<DeliverMessagesReturnType>
   deliverMessagesFromQueue(options: DeliverMessagesFromQueueOptions): Promise<DeliverMessagesFromQueueReturnType>
+  deliverQueuedMessagesToLiveSession(options: DeliverQueuedMessagesToLiveSessionOptions): Promise<boolean>
   setLiveDeliveryMode(options: SetLiveDeliveryModeOptions): Promise<SetLiveDeliveryModeReturnType>
 }
 
@@ -107,10 +111,15 @@ export class DidCommMessagePickupApi<
     const queueTransportRepository =
       this.agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
 
-    await queueTransportRepository.addMessage(this.agentContext, {
+    const messageId = await queueTransportRepository.addMessage(this.agentContext, {
       connectionId: connectionRecord.id,
       recipientDids,
       payload: message,
+    })
+
+    this.eventEmitter.emit<DidCommMessagePickupMessageQueuedEvent>(this.agentContext, {
+      type: DidCommMessagePickupEventTypes.MessageQueued,
+      payload: { connectionId: connectionRecord.id, recipientDids, messageId },
     })
   }
 
@@ -202,6 +211,39 @@ export class DidCommMessagePickupApi<
         }),
         { transportPriority: { schemes: ['wss', 'ws'] } }
       )
+    }
+  }
+
+  public async deliverQueuedMessagesToLiveSession(options: DeliverQueuedMessagesToLiveSessionOptions) {
+    const { connectionId, recipientDid } = options
+    const session = await this.getLiveModeSession({ connectionId, role: DidCommMessagePickupSessionRole.MessageHolder })
+    if (!session) return false
+
+    try {
+      await this.deliverMessagesFromQueue({ pickupSessionId: session.id, recipientDid })
+      return true
+    } catch (error) {
+      const endSession =
+        error instanceof MessageSendingError &&
+        this.messagePickupSessionService.getLiveSession(this.agentContext, session.id) !== undefined
+      this.logger.warn(
+        `Live mode delivery failed for connection '${connectionId}'${endSession ? ', ending its live mode session' : ''}`,
+        { error: error.message }
+      )
+      if (endSession) {
+        this.messagePickupSessionService.removeLiveSession(this.agentContext, { connectionId })
+        try {
+          await this.agentContext.dependencyManager
+            .resolve(DidCommTransportService)
+            .findSessionById(session.transportSessionId)
+            ?.close()
+        } catch (closeError) {
+          this.logger.warn(`Unable to close the transport session of connection '${connectionId}'`, {
+            error: closeError.message,
+          })
+        }
+      }
+      return false
     }
   }
 

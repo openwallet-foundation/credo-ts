@@ -16,6 +16,7 @@ import {
   mockFunction,
 } from '../../../core/tests/helpers'
 import { TestMessage } from '../../../core/tests/TestMessage'
+import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { DidCommEnvelopeService } from '../DidCommEnvelopeService'
 import type { DidCommMessageSentEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
@@ -26,6 +27,10 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { MessageSendingError } from '../errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../models'
 import type { DidCommConnectionRecord } from '../modules'
+import {
+  DidCommMessagePickupEventTypes,
+  type DidCommMessagePickupMessageQueuedEvent,
+} from '../modules/message-pickup/DidCommMessagePickupEvents'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 import { type DidCommOutboundTransport, InMemoryQueueTransportRepository } from '../transport'
 import type { DidCommEncryptedMessage } from '../types'
@@ -233,6 +238,34 @@ describe('DidCommMessageSender', () => {
           status: OutboundMessageSendStatus.Undeliverable,
         },
       })
+    })
+
+    test('queues the message and emits a message queued event when the connection only has a queue service', async () => {
+      const queueService = new DidCommV1Service({
+        id: '<did>;queue',
+        serviceEndpoint: DID_COMM_TRANSPORT_QUEUE,
+        recipientKeys: ['#authentication-1'],
+      })
+      resolveCreatedDidDocumentWithKeysMock.mockResolvedValue({
+        didDocument: getMockDidDocument({ service: [queueService] }),
+        keys: [],
+      })
+      didResolverServiceResolveDidServicesMock.mockResolvedValue([getMockResolvedDidService(queueService)])
+      const queuedListener = vi.fn()
+      eventEmitter.on<DidCommMessagePickupMessageQueuedEvent>(
+        DidCommMessagePickupEventTypes.MessageQueued,
+        queuedListener
+      )
+
+      await messageSender.sendMessage(outboundMessageContext)
+
+      expect(queuedListener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: DidCommMessagePickupEventTypes.MessageQueued,
+          payload: { connectionId: connection.id, recipientDids: [expect.any(String)], messageId: expect.any(String) },
+        })
+      )
+      eventEmitter.off(DidCommMessagePickupEventTypes.MessageQueued, queuedListener)
     })
 
     test('reports an undeliverable message when resolving services fails', async () => {
