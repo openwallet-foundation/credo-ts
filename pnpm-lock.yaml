@@ -717,15 +717,9 @@ importers:
       '@astronautlabs/jsonpath':
         specifier: 'catalog:'
         version: 1.1.2
-      '@digitalcredentials/jsonld':
-        specifier: ^9.0.0
-        version: 9.0.0
-      '@digitalcredentials/jsonld-signatures':
-        specifier: ^12.0.1
-        version: 12.0.1
-      '@digitalcredentials/vc':
-        specifier: ^10.0.2
-        version: 10.0.2
+      '@digitalbazaar/vc':
+        specifier: ^7.3.0
+        version: 7.3.0
       '@multiformats/base-x':
         specifier: ^4.0.1
         version: 4.0.1
@@ -804,6 +798,12 @@ importers:
       json-canonicalize:
         specifier: ^3.0.0
         version: 3.0.1
+      jsonld:
+        specifier: ^9.0.0
+        version: 9.0.0
+      jsonld-signatures:
+        specifier: ^11.6.0
+        version: 11.6.0
       lru_map:
         specifier: ^0.4.1
         version: 0.4.1
@@ -1179,9 +1179,6 @@ importers:
       events:
         specifier: ^3.3.0
         version: 3.3.0
-      expo-crypto:
-        specifier: ^15.0.7
-        version: 15.0.8(expo@57.0.26)
     devDependencies:
       '@dr.pogodin/react-native-fs':
         specifier: ^2.41.0
@@ -1898,30 +1895,18 @@ packages:
   '@cosmjs/utils@0.36.2':
     resolution: {integrity: sha512-OOr2HU/Ph+/GI1Fx2UCf3LOyX9YTCP51d2HitTOjjEJRYnkfKXP3lMBl1FZo5QaFWxnfuBc+Cj+cSoiQUJRyzQ==}
 
+  '@digitalbazaar/credentials-context@3.2.0':
+    resolution: {integrity: sha512-WruXZAF182pCYq/z2JPJ4N4mVDu6pd/hr7widdCqbKekA53BXHoX7XhL9tmRmQ8kfmkaStBfla67QHhkchWYBQ==}
+
+  '@digitalbazaar/http-client@4.4.0':
+    resolution: {integrity: sha512-ODhCGmElUPmR3IR+KZmBNkRAFyjJ01rxvk2E+/qQ2h2EGPJH5k6bz3N24ympGc5+i4YCGk/ipIpmkwc0+iSmRg==}
+    engines: {node: '>=18.0'}
+
   '@digitalbazaar/security-context@1.0.1':
     resolution: {integrity: sha512-0WZa6tPiTZZF8leBtQgYAfXQePFQp2z5ivpCEN/iZguYYZ0TB9qRmWtan5XH6mNFuusHtMcyIzAcReyE6rZPhA==}
 
-  '@digitalcredentials/credentials-v2-context@0.0.1-beta.0':
-    resolution: {integrity: sha512-i0AQXFnMeOqf2uKNBUcnN78mO8L9H91QKMdpDqsgDYzTIKGLnNCOOxbRbrJOimhR+soYO64xn54U8/R7Qx0nyA==}
-    engines: {node: '>=18'}
-
-  '@digitalcredentials/http-client@5.0.4':
-    resolution: {integrity: sha512-TbbfFauhd5fUAcZ/6TDenTuYqkzqdEhxYk1Rqicxcz33B9rzvJcmT+/81KF9DrUXmu6gpoqCranT2UkZftsxZA==}
-    engines: {node: '>=18.0'}
-
-  '@digitalcredentials/jsonld-signatures@12.0.1':
-    resolution: {integrity: sha512-KdyE7Bex+boqKRbvxofRyuI09BD6/8hQGSC5qbrXEmHd0oSLqePqKBM2pu9UZnzjxMZrN9sB3RqHxpijYEFh/w==}
-    engines: {node: '>=18'}
-
-  '@digitalcredentials/jsonld@9.0.0':
-    resolution: {integrity: sha512-lWVpg65xQbi4lvXWs3BezCwPrGDAllFjHwTBUWJCoKsfGzxtxTwbRNXpfhii5psQ2vvpjPXSI+y0uyRNOzr4cw==}
-    engines: {node: '>=14'}
-
-  '@digitalcredentials/open-badges-context@2.1.0':
-    resolution: {integrity: sha512-VK7X5u6OoBFxkyIFplNqUPVbo+8vFSAEoam8tSozpj05KPfcGw41Tp5p9fqMnY38oPfwtZR2yDNSctj/slrE0A==}
-
-  '@digitalcredentials/vc@10.0.2':
-    resolution: {integrity: sha512-Mmts8WtAQmgdrSurQv+SFZNozNgvPzsruWQNIBlmfrlJ7QSyCoO7jybSnq43EuLm3UcqyqSb2mLHwAza310mhw==}
+  '@digitalbazaar/vc@7.3.0':
+    resolution: {integrity: sha512-liPd4fCQYGXB3aTUY7XNt2A41EGwwdCJdqQvOjXp1ySwLptvifOYA/EvlViJfFgjDeU5DaSEeB+2V1/BY6oMHA==}
     engines: {node: '>=18'}
 
   '@dr.pogodin/react-native-fs@2.41.0':
@@ -4440,9 +4425,6 @@ packages:
   caniuse-lite@1.0.30001819:
     resolution: {integrity: sha512-LFUqIIAwpzsIuevnKnsR9qnStBcgzPShTX61lBwN9uFkkf8o8zLiebEjbW8AYtZiF+1YKDWfdt/pWDtMuG8Xwg==}
 
-  canonicalize@1.0.8:
-    resolution: {integrity: sha512-0CNTVCLZggSh7bc5VkX5WWPWO+cyZbNd07IHIsSXLia/eAq+r836hgk+8BKoEh7949Mda87VUOitx5OddVj64A==}
-
   canonicalize@2.1.0:
     resolution: {integrity: sha512-F705O3xrsUtgt98j7leetNhTWPe+5S72rlL5O4jA1pKqBVQ/dT1O1D6PFxmSXvc0SUOinWS57DKx0I3CHrXJHQ==}
     hasBin: true
@@ -4649,9 +4631,6 @@ packages:
   crc32-stream@6.0.0:
     resolution: {integrity: sha512-piICUB6ei4IlTv1+653yq5+KoqfBYmj9bw6LqXoOneTMDXk5nM1qt12mFW1caG3LlJXEKW1Bp0WggEmIfQB34g==}
     engines: {node: '>= 14'}
-
-  credentials-context@2.0.0:
-    resolution: {integrity: sha512-/mFKax6FK26KjgV2KW2D4YqKgoJ5DVJpNt87X2Jc9IxT2HBMy7nEIlc+n7pEi+YFFe721XqrvZPd+jbyyBjsvQ==}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -4924,9 +4903,6 @@ packages:
   ec-compression@2.0.0:
     resolution: {integrity: sha512-FxmFasfn5+aTZxwsODAYcuFQalrRkpphWSm56UW3XuT9wyo6z2mW8fjajHortO8xYxYzzoUHqfEf3JJb32zMgw==}
 
-  ed25519-signature-2018-context@1.1.0:
-    resolution: {integrity: sha512-ppDWYMNwwp9bploq0fS4l048vHIq41nWsAbPq6H4mNVx9G/GxW3fwg4Ln0mqctP13MoEpREK7Biz8TbVVdYXqA==}
-
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
@@ -5169,9 +5145,6 @@ packages:
 
   fast-string-width@3.0.2:
     resolution: {integrity: sha512-gX8LrtNEI5hq8DVUfRQMbr5lpaS4nMIWV+7XEbXk2b8kiQIizgnlr12B4dA3ZEx3308ze0O4Q1R+cHts8kyUJg==}
-
-  fast-text-encoding@1.0.6:
-    resolution: {integrity: sha512-VhXlQgj9ioXCqGstD37E/HBeqEGV/qOD/kmbVG8h5xKBYvM1L3lR1Zn4555cQ8GkYbJa8aJSipLPndE1k6zK2w==}
 
   fast-uri@3.1.9:
     resolution: {integrity: sha512-hS/0Wt3Ya043oKXs0sIxrMpKQITXhMLIrVAKKXi4gozGC9v7YRWVnXIZzjNPTO02M9BdxLCWqK1yRXgNziVyJQ==}
@@ -5612,6 +5585,14 @@ packages:
 
   jsonc-parser@3.3.1:
     resolution: {integrity: sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==}
+
+  jsonld-signatures@11.6.0:
+    resolution: {integrity: sha512-hzYNZXnfy4cUFf9aiFBtduUz+cknbfBLWtTKvoqVyP2ECPwqfsfkHWFlhccWfAKV/LJkPLyKZRwC1B4T5LO4ZQ==}
+    engines: {node: '>=18'}
+
+  jsonld@9.0.0:
+    resolution: {integrity: sha512-pjMIdkXfC1T2wrX9B9i2uXhGdyCmgec3qgMht+TDj+S0qX3bjWMQUfL7NeqEhuRTi8G5ESzmL9uGlST7nzSEWg==}
+    engines: {node: '>=18'}
 
   jwt-decode@3.1.2:
     resolution: {integrity: sha512-UfpWE/VZn0iP50d8cz9NrZLM9lSWhcJ+0Gt/nm4by88UL+J1SiKN8/5dkjMmbEzwL2CAe+67GsegCbIKtbp75A==}
@@ -6464,9 +6445,9 @@ packages:
     resolution: {integrity: sha512-y3bGgqKj3QBdxLbLkomlohkvsA8gdAiUQlSBJnBhfn+BPxg4bc62d8TcBW15wavDfgexCgccckhcZvywyQYPOw==}
     hasBin: true
 
-  rdf-canonize@3.4.0:
-    resolution: {integrity: sha512-fUeWjrkOO0t1rg7B2fdyDTvngj+9RlUyL92vOdiB7c0FPguWVsniIMjEtHH+meLBO9rzkUlUzBVXgWrjI8P9LA==}
-    engines: {node: '>=12'}
+  rdf-canonize@5.0.0:
+    resolution: {integrity: sha512-g8OUrgMXAR9ys/ZuJVfBr05sPPoMA7nHIVs8VEvg9QwM5W4GR2qSFEEHjsyHF1eWlBaf8Ev40WNjQFQ+nJTO3w==}
+    engines: {node: '>=18'}
 
   react-devtools-core@6.1.5:
     resolution: {integrity: sha512-ePrwPfxAnB+7hgnEr8vpKxL9cmnp7F322t8oqcPshbIQQhDKgFDW4tjhF2wjVbdXF9O/nyuy3sQWd9JGpiLPvA==}
@@ -8316,39 +8297,20 @@ snapshots:
 
   '@cosmjs/utils@0.36.2': {}
 
-  '@digitalbazaar/security-context@1.0.1': {}
+  '@digitalbazaar/credentials-context@3.2.0': {}
 
-  '@digitalcredentials/credentials-v2-context@0.0.1-beta.0': {}
-
-  '@digitalcredentials/http-client@5.0.4':
+  '@digitalbazaar/http-client@4.4.0':
     dependencies:
       ky: 1.14.3
       undici: 6.28.1
 
-  '@digitalcredentials/jsonld-signatures@12.0.1':
-    dependencies:
-      '@digitalbazaar/security-context': 1.0.1
-      '@digitalcredentials/jsonld': 9.0.0
-      fast-text-encoding: 1.0.6
-      serialize-error: 8.1.0
+  '@digitalbazaar/security-context@1.0.1': {}
 
-  '@digitalcredentials/jsonld@9.0.0':
+  '@digitalbazaar/vc@7.3.0':
     dependencies:
-      '@digitalcredentials/http-client': 5.0.4
-      canonicalize: 1.0.8
-      lru-cache: 6.0.0
-      rdf-canonize: 3.4.0
-
-  '@digitalcredentials/open-badges-context@2.1.0': {}
-
-  '@digitalcredentials/vc@10.0.2':
-    dependencies:
-      '@digitalcredentials/credentials-v2-context': 0.0.1-beta.0
-      '@digitalcredentials/jsonld': 9.0.0
-      '@digitalcredentials/jsonld-signatures': 12.0.1
-      '@digitalcredentials/open-badges-context': 2.1.0
-      credentials-context: 2.0.0
-      ed25519-signature-2018-context: 1.1.0
+      '@digitalbazaar/credentials-context': 3.2.0
+      jsonld: 9.0.0
+      jsonld-signatures: 11.6.0
 
   '@dr.pogodin/react-native-fs@2.41.0(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(react@19.3.1)':
     dependencies:
@@ -11100,8 +11062,6 @@ snapshots:
 
   caniuse-lite@1.0.30001819: {}
 
-  canonicalize@1.0.8: {}
-
   canonicalize@2.1.0: {}
 
   cbor-extract@2.2.2:
@@ -11323,8 +11283,6 @@ snapshots:
       crc-32: 1.2.2
       readable-stream: 4.7.0
 
-  credentials-context@2.0.0: {}
-
   cross-spawn@7.0.6:
     dependencies:
       path-key: 3.1.1
@@ -11506,8 +11464,6 @@ snapshots:
   eastasianwidth@0.2.0: {}
 
   ec-compression@2.0.0: {}
-
-  ed25519-signature-2018-context@1.1.0: {}
 
   ee-first@1.1.1: {}
 
@@ -11855,8 +11811,6 @@ snapshots:
   fast-string-width@3.0.2:
     dependencies:
       fast-string-truncated-width: 3.0.3
-
-  fast-text-encoding@1.0.6: {}
 
   fast-uri@3.1.9: {}
 
@@ -12295,6 +12249,20 @@ snapshots:
   json5@2.2.3: {}
 
   jsonc-parser@3.3.1: {}
+
+  jsonld-signatures@11.6.0:
+    dependencies:
+      '@digitalbazaar/security-context': 1.0.1
+      jsonld: 9.0.0
+      rdf-canonize: 5.0.0
+      serialize-error: 8.1.0
+
+  jsonld@9.0.0:
+    dependencies:
+      '@digitalbazaar/http-client': 4.4.0
+      canonicalize: 2.1.0
+      lru-cache: 6.0.0
+      rdf-canonize: 5.0.0
 
   jwt-decode@3.1.2: {}
 
@@ -13403,7 +13371,7 @@ snapshots:
       minimist: 1.2.8
       strip-json-comments: 2.0.1
 
-  rdf-canonize@3.4.0:
+  rdf-canonize@5.0.0:
     dependencies:
       setimmediate: 1.0.5
 

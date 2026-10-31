@@ -502,20 +502,6 @@ describe('W3cJsonLdCredentialsService', () => {
             vcJs: {
               isValid: true,
               results: expect.any(Array),
-              log: [
-                {
-                  id: 'valid_signature',
-                  valid: true,
-                },
-                {
-                  id: 'issuer_did_resolves',
-                  valid: true,
-                },
-                {
-                  id: 'expiration',
-                  valid: true,
-                },
-              ],
             },
           },
         })
@@ -649,6 +635,40 @@ describe('W3cJsonLdCredentialsService', () => {
 
         expect(result.isValid).toBe(false)
         expect(result.error?.message).toContain('is not trusted')
+      })
+    })
+
+    describe('verifyCredential with expirationDate', () => {
+      const signWithExpirationDate = async (expirationDate: Date) => {
+        const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT
+        const credential = JsonTransformer.fromJSON(
+          { ...credentialJson, expirationDate: expirationDate.toISOString().replace(/\.\d{3}Z$/, 'Z') },
+          W3cCredential
+        )
+
+        return w3cJsonLdCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential,
+          proofType: 'Ed25519Signature2018',
+          verificationMethod,
+        })
+      }
+
+      it('should accept a credential that expired within validitySkewSeconds', async () => {
+        const vc = await signWithExpirationDate(new Date(Date.now() - 10_000))
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+
+        expect(result.isValid).toBe(true)
+      })
+
+      it('should reject a credential that expired before validitySkewSeconds', async () => {
+        const vc = await signWithExpirationDate(new Date(Date.now() - 60_000))
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+
+        expect(result.isValid).toBe(false)
+        expect(result.error?.message).toEqual('Credential has expired.')
       })
     })
 
