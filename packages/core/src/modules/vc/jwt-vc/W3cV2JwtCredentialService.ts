@@ -7,12 +7,13 @@ import { injectable } from '../../../plugins'
 import { asArray, JsonTransformer, MessageValidator, nowInSeconds } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { extractKeyFromHolderBinding } from '../../sd-jwt-vc/utils'
-import type { W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models'
+import type { W3cV2JsonPresentation, W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models'
 import { validateSignerIsExpectedParty } from '../resolveSigner'
 import {
   extractHolderFromPresentationCredentials,
   getSignerForJwt,
   validateAndResolveVerificationMethod,
+  withUndefinedTermsContext,
 } from '../v2-jwt-utils'
 import {
   validateVc2ContextBaseline,
@@ -230,9 +231,13 @@ export class W3cV2JwtCredentialService {
       additionalClaims: JsonTransformer.toJSON(options.presentation),
     })
 
-    // Add the nonce and aud to the payload
+    // Add the nonce, aud and iat to the payload
     jwtPayload.additionalClaims.nonce = options.challenge
     jwtPayload.aud = options.domain
+    jwtPayload.iat = nowInSeconds()
+    jwtPayload.additionalClaims['@context'] = withUndefinedTermsContext(
+      jwtPayload.additionalClaims['@context'] as W3cV2JsonPresentation['@context']
+    )
 
     const holder = await extractHolderFromPresentationCredentials(agentContext, options.presentation)
 

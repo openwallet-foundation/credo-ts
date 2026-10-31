@@ -13,6 +13,7 @@ import type {
   DidCommProofFormatGetCredentialsForRequestReturn,
   DidCommProofFormatProcessOptions,
   DidCommProofFormatProcessPresentationOptions,
+  DidCommProofFormatProcessRequestOptions,
   DidCommProofFormatSelectCredentialsForRequestOptions,
   DidCommProofFormatSelectCredentialsForRequestReturn,
 } from './DidCommProofFormatServiceOptions'
@@ -36,7 +37,7 @@ export interface DidCommProofFormatService<PF extends DidCommProofFormat = DidCo
     agentContext: AgentContext,
     options: DidCommFormatCreateRequestOptions<PF>
   ): Promise<DidCommProofFormatCreateReturn>
-  processRequest(agentContext: AgentContext, options: DidCommProofFormatProcessOptions): Promise<void>
+  processRequest(agentContext: AgentContext, options: DidCommProofFormatProcessRequestOptions): Promise<void>
   acceptRequest(
     agentContext: AgentContext,
     options: DidCommProofFormatAcceptRequestOptions<PF>
