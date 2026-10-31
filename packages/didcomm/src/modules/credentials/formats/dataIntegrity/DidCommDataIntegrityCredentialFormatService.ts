@@ -644,6 +644,14 @@ export class DidCommDataIntegrityCredentialFormatService
     } else {
       const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
       const w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)
+
+      const result = await w3cCredentialService.verifyCredential(agentContext, {
+        credential: w3cJsonLdVerifiableCredential,
+      })
+      if (!result.isValid) {
+        throw new CredoError(`Failed to validate credential, error = ${result.error}`)
+      }
+
       const w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, {
         record: W3cCredentialRecord.fromCredential(w3cJsonLdVerifiableCredential),
       })

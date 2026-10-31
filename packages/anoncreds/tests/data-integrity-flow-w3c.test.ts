@@ -1,4 +1,4 @@
-import type { DidRepository, SuiteInfo } from '@credo-ts/core'
+import type { DidRepository, JsonObject, SuiteInfo } from '@credo-ts/core'
 import {
   AgentContext,
   DidResolverService,
@@ -41,6 +41,7 @@ import {
   getAskarStoreConfig,
   testLogger,
 } from '../../core/tests'
+import { getFormatDataAttachment } from '../../didcomm/src/modules/credentials/util/formatData'
 import {
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
@@ -218,6 +219,22 @@ describe('data integrity format service (w3c)', () => {
         },
       }
     )
+
+    // The issuance date is not compared against the offer, so only the proof catches this change
+    const { credential: issuedCredentialJson } = credentialAttachment.getDataAsJson<{ credential: JsonObject }>()
+    const tamperedCredentialAttachment = getFormatDataAttachment(
+      { credential: { ...issuedCredentialJson, issuanceDate: new Date(0).toISOString() } },
+      credentialAttachment.id
+    )
+    await expect(
+      dataIntegrityCredentialFormatService.processCredential(agentContext, {
+        offerAttachment,
+        credentialExchangeRecord: holderCredentialRecord,
+        attachment: tamperedCredentialAttachment,
+        requestAttachment,
+      })
+    ).rejects.toThrow('Failed to validate credential')
+    expect(holderCredentialRecord.credentials).toEqual([])
 
     // Holder processes and accepts credential
     await dataIntegrityCredentialFormatService.processCredential(agentContext, {
