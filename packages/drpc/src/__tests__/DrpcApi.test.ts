@@ -43,6 +43,7 @@ describe('DrpcApi', () => {
 
   it('clears the timeout when a request is received', async () => {
     const received = api.recvRequest(60_000)
+    expect(vi.getTimerCount()).toBe(1)
     requestListener?.({
       drpcMessageRecord: {
         request: { jsonrpc: '2.0', method: 'hello', id: 1 },
@@ -60,6 +61,7 @@ describe('DrpcApi', () => {
   it('clears the timeout when a response is received', async () => {
     const waitForResponse = await api.sendRequest('connection-id', { jsonrpc: '2.0', method: 'hello', id: 1 })
     const received = waitForResponse(60_000)
+    expect(vi.getTimerCount()).toBe(1)
     responseListener?.({
       drpcMessageRecord: {
         response: { jsonrpc: '2.0', result: 'world', id: 1 },
