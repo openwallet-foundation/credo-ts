@@ -11,18 +11,22 @@ type Listener = (event: { drpcMessageRecord: DrpcRecord; removeListener: () => v
 describe('DrpcApi', () => {
   let requestListener: Listener | undefined
   let responseListener: Listener | undefined
+  let cancelRequestListener: ReturnType<typeof vi.fn>
+  let cancelResponseListener: ReturnType<typeof vi.fn>
   let api: DrpcApi
 
   beforeEach(() => {
     vi.useFakeTimers()
+    cancelRequestListener = vi.fn()
+    cancelResponseListener = vi.fn()
     const drpcMessageService = {
       createRequestListener: (listener: Listener) => {
         requestListener = listener
-        return vi.fn()
+        return cancelRequestListener
       },
       createResponseListener: (listener: Listener) => {
         responseListener = listener
-        return vi.fn()
+        return cancelResponseListener
       },
       createRequestMessage: vi.fn().mockResolvedValue({
         requestMessage: { id: 'request-id' },
@@ -79,5 +83,23 @@ describe('DrpcApi', () => {
     await vi.advanceTimersByTimeAsync(1000)
 
     await expect(received).resolves.toBeUndefined()
+    expect(cancelRequestListener).toHaveBeenCalled()
+  })
+
+  it('resolves with undefined when no response arrives before the timeout', async () => {
+    const waitForResponse = await api.sendRequest('connection-id', { jsonrpc: '2.0', method: 'hello', id: 1 })
+    const received = waitForResponse(1000)
+    await vi.advanceTimersByTimeAsync(1000)
+
+    await expect(received).resolves.toBeUndefined()
+    expect(cancelResponseListener).toHaveBeenCalled()
+  })
+
+  it('does not set a timeout when none is given', async () => {
+    api.recvRequest()
+    const waitForResponse = await api.sendRequest('connection-id', { jsonrpc: '2.0', method: 'hello', id: 1 })
+    waitForResponse()
+
+    expect(vi.getTimerCount()).toBe(0)
   })
 })

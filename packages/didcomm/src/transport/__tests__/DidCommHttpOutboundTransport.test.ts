@@ -48,6 +48,13 @@ describe('DidCommHttpOutboundTransport', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
+  it('clears the request timeout when the request succeeds', async () => {
+    fetch.mockResolvedValue({ status: 200, text: async () => '' })
+
+    await expect(transport.sendMessage(outboundPackage(false))).resolves.toBeUndefined()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('still aborts a request that gets no response within the timeout', async () => {
     fetch.mockImplementation(
       (_endpoint: string, { signal }: { signal: AbortSignal }) =>
