@@ -301,9 +301,16 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
     // TODO: use custom header zod schema to limit which algorithms can be used
     const { header } = decodeJwtHeader({ jwt: jwe })
 
-    let kid = options?.jwk?.kid ?? header.kid
+    // The header kid is chosen by the sender, so only decrypt with the key the caller bound to the session or request
+    let kid = options?.jwk?.kid
     if (!kid) {
-      throw new CredoError('Uanbel to decrypt jwe. No kid or jwk found')
+      agentContext.config.logger.error('Unable to decrypt JWE. No jwk with kid was provided to decrypt with')
+      return {
+        decrypted: false,
+        encryptionJwk: options?.jwk,
+        payload: undefined,
+        header,
+      }
     }
 
     // Previously we used the fingerprint as the kid for JARM

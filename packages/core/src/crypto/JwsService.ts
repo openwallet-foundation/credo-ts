@@ -32,6 +32,7 @@ import { JwtPayload } from './jose/jwt'
 export class JwsService {
   private async createJwsBase(agentContext: AgentContext, options: CreateJwsBaseOptions) {
     const { jwk, alg, x5c } = options.protectedHeaderOptions
+    this.assertNoUnsupportedHeaderParameters(options.protectedHeaderOptions)
 
     const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
@@ -183,6 +184,8 @@ export class JwsService {
         throw new CredoError('Unable to verify JWS, protected header alg is not provided or not a string.')
       }
 
+      this.assertNoUnsupportedHeaderParameters(protectedJson)
+
       const jwsSigner =
         expectedJwsSigner ??
         (await this.jwsSignerFromJws(agentContext, {
@@ -246,6 +249,18 @@ export class JwsService {
     }
 
     return { isValid: true, jwsSigners, jws: jwsFlattened }
+  }
+
+  /**
+   * No JWS extensions are supported, so a JWS that marks any as critical must be rejected.
+   * `b64` (RFC 7797) changes the signing input, and must always be listed in `crit`.
+   *
+   * @see https://www.rfc-editor.org/rfc/rfc7515#section-4.1.11
+   */
+  private assertNoUnsupportedHeaderParameters(protectedHeader: Record<string, unknown>) {
+    if (protectedHeader.crit !== undefined || protectedHeader.b64 !== undefined) {
+      throw new CredoError("JWS protected header parameters 'crit' and 'b64' are not supported.")
+    }
   }
 
   private buildProtected(options: JwsProtectedHeaderOptions) {
