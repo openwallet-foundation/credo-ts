@@ -901,6 +901,94 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     await holderTenant.endSession()
   })
 
+  it('holder encrypts the credential request and response when the issuer requires it', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const requestEncryptionKey = await issuerTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+      credentialRequestEncryption: { required: true, jwks: [requestEncryptionKey.publicJwk] },
+      credentialResponseEncryption: { required: true },
+    })
+
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponse,
+      credentialBindingResolver,
+    })
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.Completed,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
+    })
+    expect(credentialResponse.credentials).toHaveLength(1)
+    expect((credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential.payload.vct).toEqual(
+      'UniversityDegreeCredential'
+    )
+
+    await holderTenant.endSession()
+  })
+
+  it('holder requests an encrypted credential response when asked to and deletes its key afterwards', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const requestEncryptionKey = await issuerTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+      credentialRequestEncryption: { jwks: [requestEncryptionKey.publicJwk] },
+    })
+
+    const { credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    const kms = holderTenant.context.resolve(Kms.KeyManagementApi)
+    const createKeySpy = vi.spyOn(kms, 'createKey')
+    const deleteKeySpy = vi.spyOn(kms, 'deleteKey')
+
+    const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponse,
+      credentialBindingResolver,
+      encryptCredentialResponse: true,
+    })
+
+    expect(credentialResponse.credentials).toHaveLength(1)
+    const responseKeyCreation = createKeySpy.mock.results.find(
+      (_result, index) => (createKeySpy.mock.calls[index][0].type as { crv?: string }).crv === 'P-256'
+    )
+    if (!responseKeyCreation) throw new Error('Expected the holder to create a response encryption key')
+    const { keyId } = await (responseKeyCreation.value as ReturnType<typeof kms.createKey>)
+    expect(deleteKeySpy).toHaveBeenCalledWith({ keyId })
+
+    createKeySpy.mockRestore()
+    deleteKeySpy.mockRestore()
+    await holderTenant.endSession()
+  })
+
   it('credential endpoint responds with unknown_credential_identifier for a credential_identifier that was never granted', async () => {
     const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
     const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
