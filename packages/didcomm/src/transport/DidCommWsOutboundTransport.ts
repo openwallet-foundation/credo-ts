@@ -15,6 +15,8 @@ import { DidCommTransportEventTypes } from './DidCommTransportEventTypes'
 
 export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
   private transportTable: Map<string, WebSocketLike> = new Map<string, WebSocketLike>()
+  // Kept so a deliberate close can detach the handler, as WebSocketLike has no onclose to clear
+  private closeHandlers = new WeakMap<WebSocketLike, () => void>()
   private agentContext!: AgentContext
   private logger!: Logger
   private WebSocketClass!: AgentDependencies['WebSocketClass']
@@ -95,7 +97,8 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
 
       this.transportTable.delete(socketId)
       socket.removeEventListener('message', this.handleMessageEvent)
-      socket.onclose = null
+      const closeHandler = this.closeHandlers.get(socket)
+      if (closeHandler) socket.removeEventListener('close', closeHandler)
       this.agentContext.dependencyManager
         .resolve(EventEmitter)
         .emit<DidCommOutboundWebSocketClosedEvent>(this.agentContext, {
@@ -236,6 +239,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
       socket.addEventListener('open', onOpen)
       socket.addEventListener('error', onError)
       socket.addEventListener('close', onClose)
+      this.closeHandlers.set(socket, onClose)
     })
   }
 }
