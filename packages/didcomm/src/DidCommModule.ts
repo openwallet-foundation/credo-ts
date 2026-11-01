@@ -125,6 +125,7 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
 
   public constructor(config?: Options) {
     this.config = new DidCommModuleConfig<Options>(config)
+
     this.modules = getDidcommModules(config ?? {})
   }
 

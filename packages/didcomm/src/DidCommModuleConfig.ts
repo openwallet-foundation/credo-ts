@@ -21,6 +21,7 @@ export interface DidCommModuleConfigOptions {
     inbound?: DidCommInboundTransport[]
     outbound?: DidCommOutboundTransport[]
   }
+
   useDidSovPrefixWhereAllowed?: boolean
   processDidCommMessagesConcurrently?: boolean
   didCommMimeType?: string

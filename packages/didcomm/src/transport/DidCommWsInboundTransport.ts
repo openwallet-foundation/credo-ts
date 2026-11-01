@@ -1,0 +1,132 @@
+import type { AgentContext, Logger } from '@credo-ts/core'
+import { CredoError, EventEmitter, utils } from '@credo-ts/core'
+import type { DidCommMessageReceivedEvent } from '../DidCommEvents'
+import { DidCommEventTypes } from '../DidCommEvents'
+import { DidCommModuleConfig } from '../DidCommModuleConfig'
+import type { DidCommTransportSession } from '../DidCommTransportService'
+import { DidCommTransportService } from '../DidCommTransportService'
+import type { DidCommEncryptedMessage } from '../types'
+import type { DidCommWebSocket, DidCommWebSocketAcceptor, DidCommWebSocketHost } from './DidCommInboundHosting'
+import type { DidCommInboundTransport } from './DidCommInboundTransport'
+
+// WebSocket.OPEN
+const WEB_SOCKET_OPEN = 1
+
+export interface DidCommWsInboundTransportOptions {
+  /**
+   * The host that accepts WebSocket connections, for example `webSocketHost()` from `@credo-ts/node`.
+   */
+  host: DidCommWebSocketHost
+}
+
+export class DidCommWsInboundTransport implements DidCommInboundTransport {
+  private host: DidCommWebSocketHost
+  private acceptor?: DidCommWebSocketAcceptor
+  private logger!: Logger
+
+  // We're using a `socketId` just for the prevention of calling the connection handler twice.
+  private socketIds: Record<string, DidCommWebSocket> = {}
+
+  public constructor({ host }: DidCommWsInboundTransportOptions) {
+    this.host = host
+  }
+
+  public async start(agentContext: AgentContext) {
+    const transportService = agentContext.dependencyManager.resolve(DidCommTransportService)
+
+    this.logger = agentContext.config.logger
+
+    const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
+    const wsEndpoint = didcommConfig.endpoints.find((e) => e.startsWith('ws'))
+    this.logger.debug('Starting WS inbound transport', {
+      endpoint: wsEndpoint,
+    })
+
+    const acceptor: DidCommWebSocketAcceptor = {
+      accept: (socket) => {
+        const socketId = utils.uuid()
+
+        this.logger.debug(`Saving new socket with id ${socketId}.`)
+        this.socketIds[socketId] = socket
+        const session = new WebSocketTransportSession(socketId, socket, this.logger)
+        this.listenOnWebSocketMessages(agentContext, socket, session)
+        socket.addEventListener('close', () => {
+          this.logger.debug('Socket closed.')
+          delete this.socketIds[socketId]
+          transportService.removeSession(session)
+        })
+      },
+    }
+    this.acceptor = acceptor
+    await this.host.attach(acceptor)
+  }
+
+  public async stop() {
+    this.logger.debug('Closing WebSocket Server')
+
+    for (const socket of Object.values(this.socketIds)) {
+      socket.terminate()
+    }
+
+    if (this.acceptor) {
+      await this.host.detach(this.acceptor)
+    }
+  }
+
+  private listenOnWebSocketMessages(
+    agentContext: AgentContext,
+    socket: DidCommWebSocket,
+    session: DidCommTransportSession
+  ) {
+    socket.addEventListener('message', async (event) => {
+      this.logger.debug('WebSocket message event received.')
+      try {
+        const encryptedMessage = JSON.parse(event.data as string) as DidCommEncryptedMessage
+
+        const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
+        eventEmitter.emit<DidCommMessageReceivedEvent>(agentContext, {
+          type: DidCommEventTypes.DidCommMessageReceived,
+          payload: {
+            message: encryptedMessage,
+            session: session,
+          },
+        })
+      } catch (error) {
+        this.logger.error(`Error processing message: ${error}`)
+      }
+    })
+  }
+}
+
+export class WebSocketTransportSession implements DidCommTransportSession {
+  public id: string
+  public readonly type = 'WebSocket'
+  public socket: DidCommWebSocket
+  private logger: Logger
+
+  public constructor(id: string, socket: DidCommWebSocket, logger: Logger) {
+    this.id = id
+    this.socket = socket
+    this.logger = logger
+  }
+
+  public async send(_agentContext: AgentContext, encryptedMessage: DidCommEncryptedMessage): Promise<void> {
+    if (this.socket.readyState !== WEB_SOCKET_OPEN) {
+      throw new CredoError(`${this.type} transport session has been closed.`)
+    }
+    this.socket.send(JSON.stringify(encryptedMessage), (error?) => {
+      // biome-ignore lint/suspicious/noDoubleEquals: If error check is added as '!==' it fails the check
+      if (error != undefined) {
+        this.logger.debug(`Error sending message: ${error}`)
+        throw new CredoError(`${this.type} send message failed.`, { cause: error })
+      }
+      this.logger.debug(`${this.type} sent message successfully.`)
+    })
+  }
+
+  public async close(): Promise<void> {
+    if (this.socket.readyState === WEB_SOCKET_OPEN) {
+      this.socket.close()
+    }
+  }
+}
