@@ -355,6 +355,7 @@ export class DidCommProofV2Protocol<PFs extends DidCommProofFormatService[] = Di
       goalCode,
       goal,
       willConfirm,
+      expiresTime,
     }: CreateProofRequestOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<DidCommRequestPresentationV2Message>> {
     const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
@@ -382,6 +383,7 @@ export class DidCommProofV2Protocol<PFs extends DidCommProofFormatService[] = Di
       goalCode,
       goal,
       willConfirm,
+      expiresTime,
     })
 
     agentContext.config.logger.debug(

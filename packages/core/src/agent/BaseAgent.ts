@@ -1,7 +1,7 @@
 import type { Logger } from '../logger'
 import { DidsApi } from '../modules/dids'
 import { GenericRecordsApi } from '../modules/generic-records'
-import { KeyManagementApi } from '../modules/kms'
+import { KeyManagementApi, type KeyManagementModule } from '../modules/kms'
 import { MdocApi } from '../modules/mdoc'
 import { SdJwtVcApi } from '../modules/sd-jwt-vc'
 import { TokenStatusListApi } from '../modules/token-status-list'
@@ -31,7 +31,12 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly w3cV2Credentials: W3cV2CredentialsApi
   public readonly sdJwtVc: SdJwtVcApi
   public readonly x509: X509Api
-  public readonly kms: KeyManagementApi
+  /**
+   * The key management api, typed for the backends of the registered `kms` module
+   */
+  public readonly kms: AgentModules['kms'] extends KeyManagementModule<infer Backends>
+    ? KeyManagementApi<Backends>
+    : KeyManagementApi
   public readonly tokenStatusList: TokenStatusListApi
 
   /**
@@ -72,7 +77,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.sdJwtVc = this.dependencyManager.resolve(SdJwtVcApi)
     this.x509 = this.dependencyManager.resolve(X509Api)
     this.mdoc = this.dependencyManager.resolve(MdocApi)
-    this.kms = this.dependencyManager.resolve(KeyManagementApi)
+    this.kms = this.dependencyManager.resolve(KeyManagementApi) as this['kms']
     this.tokenStatusList = this.dependencyManager.resolve(TokenStatusListApi)
 
     const defaultApis = [

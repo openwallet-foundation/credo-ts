@@ -1,50 +1,56 @@
 import type { AgentContext, BaseAgent } from '@credo-ts/core'
-import { CacheModuleConfig, CredoError, W3cCredentialRecord, W3cCredentialService } from '@credo-ts/core'
+import {
+  CacheModuleConfig,
+  CredoError,
+  DidResolverService,
+  W3cCredentialRecord,
+  W3cCredentialService,
+} from '@credo-ts/core'
 import { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
 import { type AnonCredsCredentialRecord, AnonCredsCredentialRepository } from '../../repository'
 import type { AnonCredsHolderService } from '../../services'
 import { AnonCredsHolderServiceSymbol } from '../../services'
-import { fetchCredentialDefinition } from '../../utils/anonCredsObjects'
-import {
-  getIndyNamespaceFromIndyDid,
-  getQualifiedDidIndyDid,
-  getUnqualifiedRevocationRegistryDefinitionId,
-  isIndyDid,
-  isUnqualifiedCredentialDefinitionId,
-  isUnqualifiedIndyDid,
-  parseIndyRevocationRegistryId,
-} from '../../utils/indyIdentifiers'
+import { getIndyNamespaceFromIndyDid, isIndyDid } from '../../utils/indyIdentifiers'
 import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
 import { getW3cRecordAnonCredsTags } from '../../utils/w3cAnonCredsUtils'
+import {
+  getQualifiedDidIndyDid,
+  getUnqualifiedIndyDidNamespaceIdentifier,
+  isUnqualifiedCredentialDefinitionId,
+  isUnqualifiedIndyDid,
+} from './unqualifiedIndyIdentifiers'
 
-async function getIndyNamespace(
-  agentContext: AgentContext,
-  legacyCredentialDefinitionId: string,
-  legacyIssuerId: string
-) {
+async function getIndyNamespace(agentContext: AgentContext, legacyIssuerId: string): Promise<string> {
   const cacheModuleConfig = agentContext.dependencyManager.resolve(CacheModuleConfig)
   const cache = cacheModuleConfig.cache
 
-  const indyCacheKey = `IndyVdrPoolService:${legacyIssuerId}`
-  const sovCacheKey = `IndySdkPoolService:${legacyIssuerId}`
+  const namespaceIdentifier = getUnqualifiedIndyDidNamespaceIdentifier(legacyIssuerId)
+  const indyCacheKey = `IndyVdrPoolService:${namespaceIdentifier}`
+  const sovCacheKey = `IndySdkPoolService:${namespaceIdentifier}`
 
-  const cachedNymResponse: Record<string, string> | null =
-    (await cache.get(agentContext, indyCacheKey, { scope: 'global' })) ?? (await cache.get(agentContext, sovCacheKey))
+  const getCachedIndyNamespace = async () => {
+    const cachedNymResponse: Record<string, unknown> | null =
+      (await cache.get(agentContext, indyCacheKey, { scope: 'global' })) ?? (await cache.get(agentContext, sovCacheKey))
 
-  if (!cachedNymResponse?.indyNamespace || typeof cachedNymResponse?.indyNamespace !== 'string') {
-    const credentialDefinitionReturn = await fetchCredentialDefinition(agentContext, legacyCredentialDefinitionId)
-    const namespace = credentialDefinitionReturn.indyNamespace
-
-    if (!namespace) {
-      throw new CredoError(
-        'Could not determine the indyNamespace required for storing anoncreds in the new w3c format.'
-      )
-    }
-
-    return namespace
+    const indyNamespace = cachedNymResponse?.indyNamespace
+    return typeof indyNamespace === 'string' ? indyNamespace : undefined
   }
-  return cachedNymResponse.indyNamespace
+
+  const cachedIndyNamespace = await getCachedIndyNamespace()
+  if (cachedIndyNamespace) return cachedIndyNamespace
+
+  // The indy-vdr pool service looks up the ledger of an unqualified did when it resolves the did:sov did,
+  // and it writes the indy namespace to the cache. We resolve the did and then read the cache again.
+  const didResolverService = agentContext.dependencyManager.resolve(DidResolverService)
+  await didResolverService.resolve(agentContext, `did:sov:${namespaceIdentifier}`)
+
+  const resolvedIndyNamespace = await getCachedIndyNamespace()
+  if (resolvedIndyNamespace) return resolvedIndyNamespace
+
+  throw new CredoError(
+    `Could not determine the indy namespace of issuer '${legacyIssuerId}'. The indy namespace is required to store the anoncreds credential in the new w3c format.`
+  )
 }
 
 async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRecord: AnonCredsCredentialRecord) {
@@ -65,7 +71,7 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
       indyNamespace = getIndyNamespaceFromIndyDid(legacyTags.issuerId)
     }
   } else {
-    indyNamespace = await getIndyNamespace(agentContext, legacyTags.credentialDefinitionId, legacyTags.issuerId)
+    indyNamespace = await getIndyNamespace(agentContext, legacyTags.issuerId)
   }
 
   if (indyNamespace) {
@@ -152,20 +158,10 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
         credentialRecordId: w3cCredentialRecord.id,
       }
 
-      // If using Indy dids, store both qualified/unqualified revRegId forms
-      // to allow retrieving it from revocation notification service
+      // Store the qualified revocation registry id, so the revocation notification service can find the record
       if (legacyTags.revocationRegistryId && indyNamespace) {
-        const { credentialDefinitionTag, namespaceIdentifier, revocationRegistryTag, schemaSeqNo } =
-          parseIndyRevocationRegistryId(legacyTags.revocationRegistryId)
-
         relatedCredentialExchangeRecord.setTags({
           anonCredsRevocationRegistryId: getQualifiedDidIndyDid(legacyTags.revocationRegistryId, indyNamespace),
-          anonCredsUnqualifiedRevocationRegistryId: getUnqualifiedRevocationRegistryDefinitionId(
-            namespaceIdentifier,
-            schemaSeqNo,
-            credentialDefinitionTag,
-            revocationRegistryTag
-          ),
         })
       }
 

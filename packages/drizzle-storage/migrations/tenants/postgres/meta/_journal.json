@@ -8,6 +8,13 @@
       "when": 1758141126943,
       "tag": "0000_initial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791378659491,
+      "tag": "0001_add-tenant-status",
+      "breakpoints": true
     }
   ]
 }

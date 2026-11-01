@@ -1,6 +1,3 @@
-export * from './DidCommConnection'
-export * from './DidCommConnectionRole'
-export * from './DidCommConnectionState'
 export * from './DidCommConnectionType'
 export * from './DidCommDidExchangeRole'
 export * from './DidCommDidExchangeState'

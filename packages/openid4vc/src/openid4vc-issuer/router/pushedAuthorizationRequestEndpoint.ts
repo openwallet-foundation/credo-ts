@@ -43,6 +43,8 @@ export async function handlePushedAuthorizationRequest(
 
   const { issuanceSession, parsedAuthorizationRequest, issuer, request } = options
   const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
+  // The first authorization server in the issuer metadata is the internal (Credo) authorization server
+  const internalAuthorizationServerMetadata = issuerMetadata.authorizationServers[0]
 
   if (!parsedAuthorizationRequest.authorizationRequest.scope) {
     throw new Oauth2ServerErrorResponseError({
@@ -53,7 +55,7 @@ export async function handlePushedAuthorizationRequest(
 
   if (!parsedAuthorizationRequest.authorizationRequest.redirect_uri) {
     throw new Oauth2ServerErrorResponseError({
-      error: Oauth2ErrorCodes.InvalidScope,
+      error: Oauth2ErrorCodes.InvalidRequest,
       error_description: `Missing required 'redirect_uri' parameter.`,
     })
   }
@@ -98,17 +100,18 @@ export async function handlePushedAuthorizationRequest(
 
   const { clientAttestation, dpop } = await authorizationServer.verifyPushedAuthorizationRequest({
     authorizationRequest: parsedAuthorizationRequest.authorizationRequest,
-    // First authorization server is the internal authorization server
-    authorizationServerMetadata: issuerMetadata.authorizationServers[0],
+    authorizationServerMetadata: internalAuthorizationServerMetadata,
     request,
     clientAttestation: {
       ...getClientAttestationToVerify(config, parsedAuthorizationRequest.clientAttestation, walletAttestationRequired),
       required: walletAttestationRequired,
+      expectedConfirmationJwkThumbprint: issuanceSession.walletAttestation?.confirmationJwkThumbprint,
       // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not set. Per draft §7.2/§7.3 the DPoP key
       // only has to match the attestation `cnf.jwk` in DPoP combined mode, which this endpoint doesn't support.
     },
     dpop: {
       ...parsedAuthorizationRequest.dpop,
+      allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
       // First session config, fall back to global config
       required: issuanceSession.dpop?.required ?? config.dpopRequired,
     },
@@ -132,6 +135,7 @@ export async function handlePushedAuthorizationRequest(
     issuanceSession.walletAttestation = {
       // If client attestation is provided at the start, it's required from now on.
       required: true,
+      confirmationJwkThumbprint: clientAttestation.clientAttestation.confirmationJwkThumbprint,
     }
   }
 

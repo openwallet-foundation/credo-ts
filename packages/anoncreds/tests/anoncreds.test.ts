@@ -6,19 +6,19 @@ import { NativeAnoncreds } from './helpers'
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 
 const existingSchemas = {
-  '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0': {
+  'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i/anoncreds/v0/SCHEMA/Test Schema/1.0.0': {
     attrNames: ['one', 'two'],
-    issuerId: '7Cd2Yj9yEZNcmNoH54tq9i',
+    issuerId: 'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i',
     name: 'Test Schema',
     version: '1.0.0',
   },
 }
 
 const existingCredentialDefinitions = {
-  'VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG': {
-    issuerId: 'VsKV7grR1BUE29mG2Fm2kX',
+  'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/10065/TAG': {
+    issuerId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX',
     tag: 'TAG',
-    schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
+    schemaId: 'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i/anoncreds/v0/SCHEMA/Test Schema/1.0.0',
     type: 'CL',
     value: {
       primary: {
@@ -39,9 +39,9 @@ const existingCredentialDefinitions = {
 } as const
 
 const existingRevocationRegistryDefinitions = {
-  'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG': {
-    credDefId: 'VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG',
-    issuerId: 'VsKV7grR1BUE29mG2Fm2kX',
+  'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/REV_REG_DEF/10065/TAG/TAG': {
+    credDefId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/10065/TAG',
+    issuerId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX',
     revocDefType: 'CL_ACCUM',
     value: {
       publicKeys: {
@@ -58,12 +58,12 @@ const existingRevocationRegistryDefinitions = {
 } as const
 
 const existingRevocationStatusLists = {
-  'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG': {
+  'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/REV_REG_DEF/10065/TAG/TAG': {
     10123: {
       currentAccumulator: 'ab81257c-be63-4051-9e21-c7d384412f64',
-      issuerId: 'VsKV7grR1BUE29mG2Fm2kX',
+      issuerId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX',
       revocationList: [1, 0, 1],
-      revRegDefId: 'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG',
+      revRegDefId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/REV_REG_DEF/10065/TAG/TAG',
       timestamp: 10123,
     },
   },
@@ -166,25 +166,28 @@ describe('AnonCreds API', () => {
       schemaName: 'Employee Credential',
       schemaVersion: '1.0.0',
       methodName: 'inMemory',
-      unqualifiedSchemaId: '6xDN7v3AiGgusRp4bqZACZ:2:Employee Credential:1.0.0',
     })
   })
 
   test('resolve a schema', async () => {
-    const schemaResult = await agent.modules.anoncreds.getSchema('7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0')
+    const schemaResult = await agent.modules.anoncreds.getSchema(
+      'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i/anoncreds/v0/SCHEMA/Test Schema/1.0.0'
+    )
 
     expect(schemaResult).toEqual({
       resolutionMetadata: {
         servedFromCache: false,
       },
-      schemaMetadata: {},
+      schemaMetadata: {
+        didIndyNamespace: 'pool:localhost',
+      },
       schema: {
         attrNames: ['one', 'two'],
-        issuerId: '7Cd2Yj9yEZNcmNoH54tq9i',
+        issuerId: 'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i',
         name: 'Test Schema',
         version: '1.0.0',
       },
-      schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
+      schemaId: 'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i/anoncreds/v0/SCHEMA/Test Schema/1.0.0',
     })
   })
 
@@ -204,7 +207,7 @@ describe('AnonCreds API', () => {
     const credentialDefinitionResult = await agent.modules.anoncreds.registerCredentialDefinition({
       credentialDefinition: {
         issuerId,
-        schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
+        schemaId: 'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i/anoncreds/v0/SCHEMA/Test Schema/1.0.0',
         tag: 'TAG',
       },
       options: {
@@ -220,7 +223,7 @@ describe('AnonCreds API', () => {
         credentialDefinition: {
           issuerId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX',
           tag: 'TAG',
-          schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
+          schemaId: 'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i/anoncreds/v0/SCHEMA/Test Schema/1.0.0',
           type: 'CL',
           value: {
             primary: {
@@ -236,20 +239,20 @@ describe('AnonCreds API', () => {
             },
           },
         },
-        credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/75206/TAG',
+        credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/10065/TAG',
       },
     })
 
     const [credentialDefinitionRecord] = await agent.modules.anoncreds.getCreatedCredentialDefinitions({
-      credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/75206/TAG',
+      credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/10065/TAG',
     })
     expect(credentialDefinitionRecord).toMatchObject({
-      credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/75206/TAG',
+      credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/10065/TAG',
       methodName: 'inMemory',
       credentialDefinition: {
         issuerId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX',
         tag: 'TAG',
-        schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
+        schemaId: 'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i/anoncreds/v0/SCHEMA/Test Schema/1.0.0',
         type: 'CL',
         value: {
           primary: {
@@ -269,17 +272,16 @@ describe('AnonCreds API', () => {
 
     expect(credentialDefinitionRecord.getTags()).toEqual({
       methodName: 'inMemory',
-      credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/75206/TAG',
-      schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
+      credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/10065/TAG',
+      schemaId: 'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i/anoncreds/v0/SCHEMA/Test Schema/1.0.0',
       issuerId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX',
       tag: 'TAG',
-      unqualifiedCredentialDefinitionId: 'VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG',
     })
   })
 
   test('resolve a credential definition', async () => {
     const credentialDefinitionResult = await agent.modules.anoncreds.getCredentialDefinition(
-      'VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG'
+      'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/10065/TAG'
     )
 
     expect(credentialDefinitionResult).toEqual({
@@ -289,39 +291,45 @@ describe('AnonCreds API', () => {
       credentialDefinitionMetadata: {
         didIndyNamespace: 'pool:localhost',
       },
-      credentialDefinition: existingCredentialDefinitions['VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG'],
-      credentialDefinitionId: 'VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG',
+      credentialDefinition:
+        existingCredentialDefinitions[
+          'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/10065/TAG'
+        ],
+      credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/10065/TAG',
     })
   })
 
   test('resolve a revocation regsitry definition', async () => {
     const revocationRegistryDefinition = await agent.modules.anoncreds.getRevocationRegistryDefinition(
-      'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG'
+      'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/REV_REG_DEF/10065/TAG/TAG'
     )
 
     expect(revocationRegistryDefinition).toEqual({
-      revocationRegistryDefinitionId: 'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG',
+      revocationRegistryDefinitionId:
+        'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/REV_REG_DEF/10065/TAG/TAG',
       revocationRegistryDefinition:
         existingRevocationRegistryDefinitions[
-          'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG'
+          'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/REV_REG_DEF/10065/TAG/TAG'
         ],
       resolutionMetadata: {
         servedFromCache: false,
       },
-      revocationRegistryDefinitionMetadata: {},
+      revocationRegistryDefinitionMetadata: {
+        didIndyNamespace: 'pool:localhost',
+      },
     })
   })
 
   test('resolve a revocation status list', async () => {
     const revocationStatusList = await agent.modules.anoncreds.getRevocationStatusList(
-      'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG',
+      'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/REV_REG_DEF/10065/TAG/TAG',
       10123
     )
 
     expect(revocationStatusList).toEqual({
       revocationStatusList:
         existingRevocationStatusLists[
-          'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG'
+          'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/REV_REG_DEF/10065/TAG/TAG'
         ][10123],
       resolutionMetadata: {
         servedFromCache: false,
@@ -333,7 +341,7 @@ describe('AnonCreds API', () => {
   describe('caching', () => {
     describe('schema', () => {
       test('should return cached schema when resolved multiple times', async () => {
-        const schemaId = '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0'
+        const schemaId = 'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i/anoncreds/v0/SCHEMA/Test Schema/1.0.0'
 
         // First resolution - should not be from cache
         const result1 = await agent.modules.anoncreds.getSchema(schemaId)
@@ -343,7 +351,7 @@ describe('AnonCreds API', () => {
         // Verify it was cached
         const cached = await cache.get(
           agent.context,
-          'anoncreds:resolver:schema:7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
+          'anoncreds:resolver:schema:did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i/anoncreds/v0/SCHEMA/Test Schema/1.0.0',
           { scope: 'global' }
         )
         expect(cached).toBeDefined()
@@ -392,7 +400,7 @@ describe('AnonCreds API', () => {
 
     describe('credential definition', () => {
       test('should return cached credential definition when resolved multiple times', async () => {
-        const credDefId = 'VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG'
+        const credDefId = 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/10065/TAG'
 
         // First resolution - should not be from cache
         const result1 = await agent.modules.anoncreds.getCredentialDefinition(credDefId)
@@ -402,7 +410,7 @@ describe('AnonCreds API', () => {
         // Verify it was cached
         const cached = await cache.get(
           agent.context,
-          'anoncreds:resolver:credentialDefinition:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG',
+          'anoncreds:resolver:credentialDefinition:did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/10065/TAG',
           { scope: 'global' }
         )
         expect(cached).toBeDefined()
@@ -425,7 +433,7 @@ describe('AnonCreds API', () => {
         const credentialDefinitionResult = await agent.modules.anoncreds.registerCredentialDefinition({
           credentialDefinition: {
             issuerId,
-            schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
+            schemaId: 'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i/anoncreds/v0/SCHEMA/Test Schema/1.0.0',
             tag: 'TAG',
           },
           options: {
@@ -446,7 +454,7 @@ describe('AnonCreds API', () => {
         expect(result.resolutionMetadata.servedFromRecord).toBe(true)
         expect(result.credentialDefinition).toMatchObject({
           issuerId,
-          schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
+          schemaId: 'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i/anoncreds/v0/SCHEMA/Test Schema/1.0.0',
           tag: 'TAG',
           type: 'CL',
         })
@@ -455,7 +463,7 @@ describe('AnonCreds API', () => {
 
     describe('revocation registry definition', () => {
       test('should return cached revocation registry definition when resolved multiple times', async () => {
-        const revRegDefId = 'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG'
+        const revRegDefId = 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/REV_REG_DEF/10065/TAG/TAG'
 
         // First resolution - should not be from cache
         const result1 = await agent.modules.anoncreds.getRevocationRegistryDefinition(revRegDefId)
@@ -465,7 +473,7 @@ describe('AnonCreds API', () => {
         // Verify it was cached
         const cached = await cache.get(
           agent.context,
-          'anoncreds:resolver:revocationRegistryDefinition:VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG',
+          'anoncreds:resolver:revocationRegistryDefinition:did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/REV_REG_DEF/10065/TAG/TAG',
           { scope: 'global' }
         )
         expect(cached).toBeDefined()
@@ -487,7 +495,7 @@ describe('AnonCreds API', () => {
         const credDefResult = await agent.modules.anoncreds.registerCredentialDefinition({
           credentialDefinition: {
             issuerId,
-            schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
+            schemaId: 'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i/anoncreds/v0/SCHEMA/Test Schema/1.0.0',
             tag: 'REVOC_TAG',
           },
           options: {
@@ -539,7 +547,7 @@ describe('AnonCreds API', () => {
 
     describe('revocation status list', () => {
       test('should return cached revocation status list when resolved multiple times', async () => {
-        const revRegDefId = 'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG'
+        const revRegDefId = 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/REV_REG_DEF/10065/TAG/TAG'
         const timestamp = 10123
 
         // First resolution - should not be from cache

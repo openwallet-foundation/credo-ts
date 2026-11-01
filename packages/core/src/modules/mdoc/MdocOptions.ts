@@ -5,6 +5,8 @@ import type {
   DeviceRequestMatchResult,
   IsoMdocDcApiRequest,
   IsoMdocDcApiResponse,
+  UseCaseMatch,
+  UseCasesSource,
   ValidityInfoOptions,
 } from '@owf/mdoc'
 import type { DcqlQuery } from 'dcql'
@@ -120,6 +122,29 @@ export type MdocDeviceResponseVerifyOptions = {
   now?: Date
 }
 
+export type MdocDeviceResponseVerifyResult = {
+  /**
+   * The verification result of each document in the device response, in response order.
+   */
+  documents: Array<{
+    /**
+     * Index into the documents of the device response of the document this result is about.
+     */
+    documentIndex: number
+
+    /**
+     * The verified document.
+     */
+    mdoc: Mdoc
+
+    /**
+     * The certificate chain the issuer signature of the document was verified with, leaf first and
+     * the trusted certificate last.
+     */
+    trustedIssuanceChain?: X509Certificate[]
+  }>
+}
+
 /**
  * Request payload for the ISO 18013-7 Annex C `org-iso-mdoc` DC API protocol. Both members are
  * base64url-no-pad encoded CBOR.
@@ -161,6 +186,76 @@ export type MdocRequestedElement = {
 }
 
 /**
+ * An element of a doc request, as namespace and element identifier.
+ */
+export type MdocElementReference = [nameSpace: string, elementIdentifier: string]
+
+/**
+ * The request information of a doc request (`DocRequestInfo` of ISO/IEC TS 23220-4 7.2.1.3.2, taken
+ * up by the second edition of ISO/IEC 18013-5). Sent to the wallet as part of the doc request.
+ */
+export type MdocDocRequestInfo = {
+  /**
+   * Elements that may be disclosed in place of a requested element. Each alternative set answers
+   * the requested element on its own, in order of preference. The requested element itself is still
+   * preferred over its alternatives.
+   */
+  alternativeDataElements?: Array<{
+    requestedElement: MdocElementReference
+    alternativeElementSets: Array<Array<MdocElementReference>>
+  }>
+
+  /**
+   * Hex encoded key identifiers of the issuers the doc request accepts, for instance the
+   * `subjectKeyIdentifier` of a trusted IACA certificate. An mdoc only satisfies the doc request when
+   * one of them is the authority key identifier of a certificate in its chain. The verifier matches
+   * them against the certificate chain it validated, never against the unprotected `x5chain`.
+   */
+  issuerIdentifiers?: string[]
+
+  /**
+   * Whether the doc request has to be answered by a single document.
+   */
+  uniqueDocSetRequired?: boolean
+
+  /**
+   * The largest unencrypted device response, in bytes, the wallet may send. The wallet applies it
+   * when it creates the response. The verifier does not check it.
+   */
+  maximumResponseSize?: number
+}
+
+/**
+ * A use case of a device request (`UseCase` of ISO/IEC TS 23220-4 7.2.1.3.4, taken up by the second
+ * edition of ISO/IEC 18013-5): which doc requests answer what the verifier asks for.
+ */
+export type MdocUseCase = {
+  /**
+   * Whether the use case has to be satisfied for the device request to be.
+   */
+  mandatory: boolean
+
+  /**
+   * The document sets that answer the use case, each a list of indexes into the doc requests. The
+   * response has to answer every doc request of exactly one of them.
+   */
+  documentSets: number[][]
+
+  /**
+   * Why the verifier asks, per purpose controller, as codes of a registry a profile defines.
+   */
+  purposeHints?: Record<string, number>
+}
+
+/**
+ * The request information of a device request (`DeviceRequestInfo` of ISO/IEC TS 23220-4 7.2.1.3.4,
+ * taken up by the second edition of ISO/IEC 18013-5).
+ */
+export type MdocDeviceRequestInfo = {
+  useCases?: MdocUseCase[]
+}
+
+/**
  * A doc request as the verifier defined it.
  */
 export type MdocDocRequestDefinition = {
@@ -173,12 +268,9 @@ export type MdocDocRequestDefinition = {
 }
 
 /**
- * The device request as the verifier defined it, including the options that only apply when matching
- * the response.
- *
- * Follows the structure of the `DeviceRequest`, so the request info of the second edition of ISO/IEC
- * 18013-5 (`DeviceRequestInfo` with its use cases, `DocRequestInfo` per doc request) can be added as
- * optional members without changing what is stored for existing verification sessions.
+ * The device request as the verifier defined it, with the options that only apply when matching the
+ * response. The request information and use cases are part of the device request itself, which is
+ * stored on the verification session as well.
  */
 export type MdocDeviceRequestDefinition = {
   /**
@@ -189,7 +281,8 @@ export type MdocDeviceRequestDefinition = {
 
   /**
    * Whether the doc requests are alternatives, of which the response only has to satisfy one. Not
-   * part of the device request itself, and only applied when matching the response.
+   * part of the device request itself, and only applied when matching the response. Does not apply
+   * when the device request has use cases.
    *
    * @default false
    */
@@ -209,12 +302,18 @@ export type MdocDcApiDocRequest = {
    * {@link MdocRequestedElement} instead to also set how the element is matched in the response.
    */
   nameSpaces: Record<string, Record<string, boolean | MdocRequestedElement>>
+
+  /**
+   * Alternative elements, accepted issuers and the other request information of the doc request.
+   * Sent in the doc request, and applied when the response is verified.
+   */
+  requestInfo?: MdocDocRequestInfo
 }
 
 export type MdocDcApiCreateVerificationSessionOptions = {
   /**
-   * The documents to request. The response has to satisfy every doc request, which by default means
-   * that each requested element must be disclosed and issuer signed. Pass an
+   * The documents to request. Without `deviceRequestInfo` the response has to satisfy every doc
+   * request, which by default means that each requested element must be disclosed and issuer signed. Pass an
    * {@link MdocRequestedElement} for elements that may be left out, or that may (or must) be device
    * signed instead.
    *
@@ -223,16 +322,39 @@ export type MdocDcApiCreateVerificationSessionOptions = {
   docRequests: MdocDcApiDocRequest[]
 
   /**
-   * A device request with more than one doc request does not say whether it asks for all of them, or
-   * for any one of them. By default the response has to satisfy every doc request. Set this to
-   * request the doc requests as alternatives instead, of which the response only has to satisfy one,
-   * which is a common interpretation. The second edition of ISO/IEC 18013-5 resolves the ambiguity
-   * with use cases in `DeviceRequestInfo`, which are not supported yet.
+   * The use cases of the device request, which say which doc requests the response has to answer:
+   * every mandatory use case, and at least one use case, with exactly one of its document sets.
    *
-   * As the ambiguity is not resolved in the request itself, a wallet may still answer every doc
-   * request. Nothing is added to the request; this only changes how the response is matched, and is
-   * stored on the verification session along with the doc requests.
+   * Sets the device request version to `1.1`. Wallets that do not support use cases ignore them, and
+   * read every doc request as requested.
    *
+   * @example
+   * Request a driving licence, or both a passport and a residence permit, and optionally a loyalty
+   * card:
+   *
+   * ```ts
+   * {
+   *   useCases: [
+   *     { mandatory: true, documentSets: [[0], [1, 2]] },
+   *     { mandatory: false, documentSets: [[3]] },
+   *   ],
+   * }
+   * ```
+   */
+  deviceRequestInfo?: MdocDeviceRequestInfo
+
+  /**
+   * A device request with more than one doc request and no use cases does not say whether it asks
+   * for all of them, or for any one of them. By default the response has to satisfy every doc
+   * request. Set this to accept the doc requests as alternatives instead, of which the response only
+   * has to satisfy one, which is how the iOS DC API presents such a request. Use `deviceRequestInfo`
+   * to state it in the request itself.
+   *
+   * Nothing is added to the request; this only changes how the response is matched, and is stored on
+   * the verification session along with the doc requests. A wallet may still answer every doc
+   * request.
+   *
+   * Ignored when `deviceRequestInfo` has use cases, as they already say how the doc requests relate.
    * Does not apply when only a single document is requested.
    *
    * @default false
@@ -328,18 +450,17 @@ export type MdocDcApiResolveRequestOptions = {
   useMode?: CredentialMultiInstanceUseMode
 
   /**
-   * A device request with more than one doc request does not say whether the verifier asks for all
-   * of them, or for any one of them. By default the resolved request only succeeds when the stored
-   * mdocs can satisfy every doc request. Set this to treat them as alternatives instead, of which
-   * at least one has to be satisfiable, which is a common interpretation. The second edition of
-   * ISO/IEC 18013-5 resolves the ambiguity with use cases in `DeviceRequestInfo`, which are not
-   * supported yet.
+   * A device request with more than one doc request and no use cases does not say whether the
+   * verifier asks for all of them, or for any one of them. By default the resolved request only
+   * succeeds when the stored mdocs can satisfy every doc request. Set this to treat them as
+   * alternatives instead, one optional use case per doc request, of which at least one has to be
+   * satisfiable. That is how the iOS DC API presents such a request.
    *
    * The per doc request matching does not change, so a resolved request that succeeds this way can
-   * still have failed doc requests. Check `docRequestsAsAlternatives` on the resolved request, and
-   * only create a response for the doc requests that succeeded.
+   * still have failed doc requests. Check `useCases` on the resolved request, and only create a
+   * response for the doc requests that succeeded.
    *
-   * Does not apply to a request with a single doc request.
+   * Does not apply to a request with a single doc request, or to a request with use cases.
    *
    * @default false
    */
@@ -358,11 +479,11 @@ export type MdocClaimMatch = ClaimMatch
  * as the match of a verifier.
  *
  * A valid claim with `source: 'deviceSigned'` is not issuer signed in the mdoc, but the device key is
- * authorized for it and its value was provided in the `deviceNameSpaces` passed to
- * `resolveDcApiRequest`: the same value has to be provided in the `deviceNameSpaces` of the
- * credential when creating the response.
+ * authorized for it and its value was provided in the `deviceNameSpaces` the request was resolved
+ * with: the same value has to be provided in the `deviceNameSpaces` of the credential when creating
+ * the response.
  */
-export type MdocDcApiValidCredential = Omit<CredentialMatchSuccess, 'credentialIndex'> & {
+export type MdocValidCredential = Omit<CredentialMatchSuccess, 'credentialIndex'> & {
   record: MdocRecord
 }
 
@@ -371,13 +492,13 @@ export type MdocDcApiValidCredential = Omit<CredentialMatchSuccess, 'credentialI
  * requested docType that is missing requested claims has a successful `docType` check and its
  * `claims.failedClaims`.
  */
-export type MdocDcApiFailedCredential = Omit<CredentialMatchFailure, 'credentialIndex'> & {
+export type MdocFailedCredential = Omit<CredentialMatchFailure, 'credentialIndex'> & {
   record: MdocRecord
 }
 
-export type MdocDcApiCredentialMatch = MdocDcApiValidCredential | MdocDcApiFailedCredential
+export type MdocCredentialMatch = MdocValidCredential | MdocFailedCredential
 
-type MdocDcApiResolvedDocRequestBase = {
+type MdocResolvedDocRequestBase = {
   docRequestIndex: number
   docType: string
 
@@ -387,9 +508,15 @@ type MdocDcApiResolvedDocRequestBase = {
   nameSpaces: Record<string, Record<string, boolean>>
 
   /**
+   * The request information of the doc request. Its alternative elements are listed per claim as
+   * `options`, and a credential of an issuer it does not accept fails the `issuer` check.
+   */
+  requestInfo?: MdocDocRequestInfo
+
+  /**
    * The reader authentication carried by the doc request, of which both the signature and the
-   * trust of the certificate chain were verified. Annex C makes reader auth optional, so an
-   * absent `readerAuth` means no signature was present — not that verification failed.
+   * trust of the certificate chain were verified. Reader auth is optional, so an absent
+   * `readerAuth` means no signature was present — not that verification failed.
    */
   readerAuth?: {
     /**
@@ -403,107 +530,172 @@ type MdocDcApiResolvedDocRequestBase = {
    * for are matched, so an mdoc of another doc request's docType is here with a failed `docType`
    * check.
    */
-  failedCredentials: MdocDcApiFailedCredential[]
+  failedCredentials: MdocFailedCredential[]
 }
 
 /**
  * At least one stored mdoc satisfies the doc request.
  */
-export type MdocDcApiResolvedDocRequestSuccess = MdocDcApiResolvedDocRequestBase & {
+export type MdocResolvedDocRequestSuccess = MdocResolvedDocRequestBase & {
   success: true
-  validCredentials: NonEmptyArray<MdocDcApiValidCredential>
+  validCredentials: NonEmptyArray<MdocValidCredential>
 }
 
 /**
  * No stored mdoc satisfies the doc request.
  */
-export type MdocDcApiResolvedDocRequestFailure = MdocDcApiResolvedDocRequestBase & {
+export type MdocResolvedDocRequestFailure = MdocResolvedDocRequestBase & {
   success: false
   validCredentials: []
 }
 
-export type MdocDcApiResolvedDocRequest = MdocDcApiResolvedDocRequestSuccess | MdocDcApiResolvedDocRequestFailure
+export type MdocResolvedDocRequest = MdocResolvedDocRequestSuccess | MdocResolvedDocRequestFailure
 
-type MdocDcApiResolvedRequestBase = {
+/** @deprecated use {@link MdocValidCredential} */
+export type MdocDcApiValidCredential = MdocValidCredential
+/** @deprecated use {@link MdocFailedCredential} */
+export type MdocDcApiFailedCredential = MdocFailedCredential
+/** @deprecated use {@link MdocCredentialMatch} */
+export type MdocDcApiCredentialMatch = MdocCredentialMatch
+/** @deprecated use {@link MdocResolvedDocRequestSuccess} */
+export type MdocDcApiResolvedDocRequestSuccess = MdocResolvedDocRequestSuccess
+/** @deprecated use {@link MdocResolvedDocRequestFailure} */
+export type MdocDcApiResolvedDocRequestFailure = MdocResolvedDocRequestFailure
+/** @deprecated use {@link MdocResolvedDocRequest} */
+export type MdocDcApiResolvedDocRequest = MdocResolvedDocRequest
+
+/**
+ * Whether the stored mdocs can satisfy a use case of the request, and with which document sets.
+ * A response answers every doc request of exactly one document set of a use case.
+ */
+export type MdocResolvedUseCase = Omit<UseCaseMatch, 'purposeHints'> & {
+  /**
+   * The purpose hints of the use case, per purpose controller. Only use cases of the request have
+   * them.
+   */
+  purposeHints?: Record<string, number>
+}
+
+/**
+ * A device request matched against the stored mdocs, independent of how the request was received.
+ *
+ * The doc requests are matched by use case. When the request has none, every doc request is one
+ * mandatory use case (`useCasesSource` is `'allDocRequests'`), or with
+ * `treatAmbiguousMultipleDocRequestsAsAlternatives` each doc request is an optional one
+ * (`'eachDocRequest'`).
+ *
+ * Checking `success` narrows the doc requests when `useCasesSource` is `'allDocRequests'`: every doc
+ * request then has at least one valid credential. Otherwise a successful request can have failed doc
+ * requests, and `matchingDocumentSets` of the use cases tells which doc requests to answer.
+ */
+export type MdocResolvedRequest = {
+  useCases: MdocResolvedUseCase[]
+} & (
+  | {
+      /**
+       * The stored mdocs can satisfy every doc request.
+       */
+      success: true
+      useCasesSource: 'allDocRequests'
+      docRequests: MdocResolvedDocRequestSuccess[]
+    }
+  | {
+      /**
+       * The stored mdocs can satisfy every mandatory use case, and at least one use case. The doc
+       * requests that cannot be answered are still in `docRequests`.
+       */
+      success: true
+      useCasesSource: 'deviceRequestInfo' | 'eachDocRequest'
+      docRequests: MdocResolvedDocRequest[]
+    }
+  | {
+      success: false
+      useCasesSource: UseCasesSource
+      docRequests: MdocResolvedDocRequest[]
+    }
+)
+
+/**
+ * A resolved `org-iso-mdoc` DC API request.
+ */
+export type MdocDcApiResolvedRequest = MdocResolvedRequest & {
   origin: string
 
   /**
-   * The parsed request, needed to create a response. Treat as opaque.
+   * The parsed DC API request, with the device request and the encryption info and session
+   * transcript the response is encrypted to. Needed to create a response. Treat as opaque.
    */
   parsedRequest: unknown
 }
 
 /**
- * Checking `success` narrows the doc requests, unless they were matched as alternatives: when
- * `success` is `true` and `docRequestsAsAlternatives` is `false`, every doc request has at least one
- * valid credential.
+ * A credential to answer a doc request of a resolved request with.
  */
-export type MdocDcApiResolvedRequest = MdocDcApiResolvedRequestBase &
-  (
-    | {
-        /**
-         * The stored mdocs can satisfy every doc request.
-         */
-        success: true
-        docRequestsAsAlternatives: false
-        docRequests: MdocDcApiResolvedDocRequestSuccess[]
-      }
-    | {
-        /**
-         * The doc requests were matched as alternatives and the stored mdocs can satisfy at least
-         * one of them. The ones that failed are still in `docRequests`; only create a response for
-         * the doc requests that succeeded.
-         */
-        success: true
-        docRequestsAsAlternatives: true
-        docRequests: MdocDcApiResolvedDocRequest[]
-      }
-    | {
-        success: false
-        /**
-         * Whether the doc requests were matched as alternatives, in which case none of them could
-         * be satisfied rather than not all of them.
-         */
-        docRequestsAsAlternatives: boolean
-        docRequests: MdocDcApiResolvedDocRequest[]
-      }
-  )
+export type MdocCredentialForRequest = {
+  /**
+   * The index of the doc request the credential answers, the `docRequestIndex` of the resolved doc
+   * request. Pass several indexes to answer several doc requests of the credential's docType with a
+   * single document, which discloses the elements all of them request.
+   */
+  docRequestIndex: number | number[]
+
+  /**
+   * The mdoc record to disclose, or its id.
+   */
+  record: MdocRecord | string
+
+  /**
+   * Which mode to use for usage of the credential instance of this credential.
+   *
+   * @default {@link CredentialMultiInstanceUseMode.NewOrFirst}
+   */
+  useMode?: CredentialMultiInstanceUseMode
+
+  /**
+   * The requested elements to disclose, per namespace. Defaults to every element the doc request
+   * asks for. Pass a subset to leave out elements, for instance the ones the user declined to share.
+   */
+  elements?: Record<string, string[]>
+
+  /**
+   * For a requested element with alternatives in the `requestInfo` of the doc request, the index
+   * of the alternative set to disclose in its place, per namespace and element. The claim `options`
+   * in the resolved request list the sets the mdoc can disclose. By default the element itself is
+   * disclosed, and an alternative set only when it is chosen here.
+   */
+  alternatives?: Record<string, Record<string, number>>
+
+  /**
+   * Values to disclose device signed. Every requested element the mdoc does not contain issuer
+   * signed, but that the device key is authorized for in the MSO, has to be provided here: the
+   * valid claims with `source: 'deviceSigned'` in the resolved request. Values that are not
+   * requested, or that the device key is not authorized for, are left out.
+   */
+  deviceNameSpaces?: MdocNameSpaces
+}
 
 export type MdocDcApiCreateResponseOptions = {
   resolvedRequest: MdocDcApiResolvedRequest
+  credentials: MdocCredentialForRequest[]
+}
 
-  credentials: Array<{
-    /**
-     * Index into `resolvedRequest.docRequests`.
-     */
-    docRequestIndex: number
+export type MdocSelectCredentialsForRequestOptions = {
+  /**
+   * Which mode to use for usage of the credential instances. Only credentials that can provide an
+   * instance for this mode are selected, and the mode is passed on to the response.
+   *
+   * @default {@link CredentialMultiInstanceUseMode.NewOrFirst}
+   */
+  useMode?: CredentialMultiInstanceUseMode
+}
 
-    /**
-     * The mdoc record to disclose, or its id.
-     */
-    record: MdocRecord | string
-
-    /**
-     * Which mode to use for usage of the credential instance of this credential.
-     *
-     * @default {@link CredentialMultiInstanceUseMode.NewOrFirst}
-     */
-    useMode?: CredentialMultiInstanceUseMode
-
-    /**
-     * The requested elements to disclose, per namespace. Defaults to every element the doc request
-     * asks for. Pass a subset to leave out elements, for instance the ones the user declined to share.
-     */
-    elements?: Record<string, string[]>
-
-    /**
-     * Values to disclose device signed. Every requested element the mdoc does not contain issuer
-     * signed, but that the device key is authorized for in the MSO, has to be provided here: the
-     * valid claims with `source: 'deviceSigned'` in the resolved request. Values that are not
-     * requested, or that the device key is not authorized for, are left out.
-     */
-    deviceNameSpaces?: MdocNameSpaces
-  }>
+/**
+ * The credentials selected to answer a resolved request, together with that request. For a resolved
+ * DC API request it can be passed to `createDcApiResponse` as is.
+ */
+export type MdocSelectedCredentials<ResolvedRequest extends MdocResolvedRequest = MdocResolvedRequest> = {
+  resolvedRequest: ResolvedRequest
+  credentials: Array<MdocCredentialForRequest & { record: MdocRecord; useMode: CredentialMultiInstanceUseMode }>
 }
 
 export type MdocSignOptions = {

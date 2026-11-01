@@ -1,21 +1,21 @@
-import { DidCommConnectionInvitationMessage } from '../../../../didcomm/src'
+import { DidCommTrustPingMessage } from '../../../../didcomm/src'
 import { DidDocument, VerificationMethod } from '../../modules/dids'
 import { JsonTransformer } from '../JsonTransformer'
 
 describe('JsonTransformer', () => {
   describe('toJSON', () => {
     it('transforms class instance to JSON object', () => {
-      const invitation = new DidCommConnectionInvitationMessage({
-        did: 'did:sov:test1234',
+      const invitation = new DidCommTrustPingMessage({
         id: 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
-        label: 'test-label',
+        comment: 'test-comment',
+        responseRequested: true,
       })
 
       const json = {
-        '@type': 'https://didcomm.org/connections/1.0/invitation',
+        '@type': 'https://didcomm.org/trust_ping/1.0/ping',
         '@id': 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
-        label: 'test-label',
-        did: 'did:sov:test1234',
+        comment: 'test-comment',
+        response_requested: true,
       }
 
       expect(JsonTransformer.toJSON(invitation)).toEqual(json)
@@ -25,49 +25,53 @@ describe('JsonTransformer', () => {
   describe('fromJSON', () => {
     it('transforms JSON object to class instance', () => {
       const json = {
-        '@type': 'https://didcomm.org/connections/1.0/invitation',
+        '@type': 'https://didcomm.org/trust_ping/1.0/ping',
         '@id': 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
-        label: 'test-label',
-        did: 'did:sov:test1234',
+        comment: 'test-comment',
+        response_requested: true,
       }
 
-      const invitation = new DidCommConnectionInvitationMessage({
-        did: 'did:sov:test1234',
+      const invitation = new DidCommTrustPingMessage({
         id: 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
-        label: 'test-label',
+        comment: 'test-comment',
+        responseRequested: true,
       })
 
-      expect(JsonTransformer.fromJSON(json, DidCommConnectionInvitationMessage)).toEqual(invitation)
+      expect(JsonTransformer.fromJSON(json, DidCommTrustPingMessage)).toEqual(invitation)
     })
   })
 
   describe('serialize', () => {
     it('transforms class instance to JSON string', () => {
-      const invitation = new DidCommConnectionInvitationMessage({
-        did: 'did:sov:test1234',
+      const invitation = new DidCommTrustPingMessage({
         id: 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
-        label: 'test-label',
+        comment: 'test-comment',
+        responseRequested: true,
       })
 
-      const jsonString =
-        '{"@type":"https://didcomm.org/connections/1.0/invitation","@id":"afe2867e-58c3-4a8d-85b2-23370dd9c9f0","label":"test-label","did":"did:sov:test1234"}'
+      const json = {
+        '@type': 'https://didcomm.org/trust_ping/1.0/ping',
+        '@id': 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
+        comment: 'test-comment',
+        response_requested: true,
+      }
 
-      expect(JsonTransformer.serialize(invitation)).toEqual(jsonString)
+      expect(JSON.parse(JsonTransformer.serialize(invitation))).toEqual(json)
     })
   })
 
   describe('deserialize', () => {
     it('transforms JSON string to class instance', () => {
       const jsonString =
-        '{"@type":"https://didcomm.org/connections/1.0/invitation","@id":"afe2867e-58c3-4a8d-85b2-23370dd9c9f0","label":"test-label","did":"did:sov:test1234"}'
+        '{"@type":"https://didcomm.org/trust_ping/1.0/ping","@id":"afe2867e-58c3-4a8d-85b2-23370dd9c9f0","comment":"test-comment","response_requested":true}'
 
-      const invitation = new DidCommConnectionInvitationMessage({
-        did: 'did:sov:test1234',
+      const invitation = new DidCommTrustPingMessage({
         id: 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
-        label: 'test-label',
+        comment: 'test-comment',
+        responseRequested: true,
       })
 
-      expect(JsonTransformer.deserialize(jsonString, DidCommConnectionInvitationMessage)).toEqual(invitation)
+      expect(JsonTransformer.deserialize(jsonString, DidCommTrustPingMessage)).toEqual(invitation)
     })
 
     it('transforms JSON string to nested class instance', () => {

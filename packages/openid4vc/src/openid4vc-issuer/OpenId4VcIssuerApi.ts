@@ -58,10 +58,13 @@ export class OpenId4VcIssuerApi {
       issuerId,
       credentialConfigurationsSupported,
       display,
+      issuerInfo,
       dpopSigningAlgValuesSupported,
       clientAttestationSigningAlgValuesSupported,
       clientAttestationPopSigningAlgValuesSupported,
       batchCredentialIssuance,
+      credentialResponseEncryption,
+      credentialRequestEncryption,
       authorizationServerConfigs,
       metadataSigner,
     } = options
@@ -70,10 +73,13 @@ export class OpenId4VcIssuerApi {
 
     issuer.credentialConfigurationsSupported = credentialConfigurationsSupported
     issuer.display = display
+    issuer.issuerInfo = issuerInfo
     issuer.dpopSigningAlgValuesSupported = dpopSigningAlgValuesSupported
     issuer.clientAttestationSigningAlgValuesSupported = clientAttestationSigningAlgValuesSupported
     issuer.clientAttestationPopSigningAlgValuesSupported = clientAttestationPopSigningAlgValuesSupported
     issuer.batchCredentialIssuance = batchCredentialIssuance
+    issuer.credentialResponseEncryption = credentialResponseEncryption
+    issuer.credentialRequestEncryption = credentialRequestEncryption
     issuer.authorizationServerConfigs = authorizationServerConfigs
 
     return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer, { metadataSigner })

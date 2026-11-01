@@ -76,6 +76,61 @@ describe('X509CertificateRevocationList', () => {
     await agent.shutdown()
   })
 
+  describe('parse options', () => {
+    it('applies the provided limits when parsing', () => {
+      expect(() => X509CertificateRevocationList.fromRaw(crlBytes)).not.toThrow()
+      expect(() => X509CertificateRevocationList.fromRaw(crlBytes, { maxDepth: 1 })).toThrow(X509Error)
+      expect(() => X509CertificateRevocationList.fromRaw(crlBytes, { maxNodes: 3 })).toThrow(X509Error)
+
+      const pem = X509CertificateRevocationList.fromRaw(crlBytes).toString('pem')
+      expect(() => X509CertificateRevocationList.fromEncoded(pem)).not.toThrow()
+      expect(() => X509CertificateRevocationList.fromEncoded(pem, { maxDepth: 1 })).toThrow(X509Error)
+    })
+
+    it('parses a CRL with far more entries than the parser allows by default', async () => {
+      // The parser allows 10.000 ASN.1 nodes by default, which is about 3.300 revoked entries.
+      // Credo raises that limit to match the CRL size the revocation checker will download.
+      const { rawCertificateRevocationList: raw } = await X509Service.createCertificateRevocationList(agentContext, {
+        authorityKey: issuerKey,
+        issuer: issuerCertificate.subject,
+        validity: { thisUpdate: lastMonth, nextUpdate: nextMonth },
+        entries: Array.from({ length: 5000 }, (_, i) => ({
+          serialNumber: (i + 1).toString(16).padStart(4, '0'),
+          revocationDate: lastMonth,
+        })),
+      })
+
+      expect(X509CertificateRevocationList.fromRaw(raw).revokedCount).toBe(5000)
+
+      // Passing options replaces the defaults entirely, so the parser's own node limit applies again.
+      expect(() => X509CertificateRevocationList.fromRaw(raw, {})).toThrow(X509Error)
+    })
+
+    it('does not apply its own limits to the CRL it is compared against', async () => {
+      // A CRL with many more entries than the one parsed under a restrictive node limit below.
+      const largeCrl = await X509Service.createCertificateRevocationList(agentContext, {
+        authorityKey: issuerKey,
+        issuer: issuerCertificate.subject,
+        validity: { thisUpdate: lastMonth, nextUpdate: nextMonth },
+        entries: Array.from({ length: 200 }, (_, i) => ({
+          serialNumber: (i + 1).toString(16).padStart(4, '0'),
+          revocationDate: lastMonth,
+        })),
+      })
+
+      // Restrictive enough to parse this two-entry CRL but not the 200-entry one.
+      const crl = X509CertificateRevocationList.fromRaw(crlBytes, { maxNodes: 60 })
+      expect(() =>
+        X509CertificateRevocationList.fromRaw(largeCrl.rawCertificateRevocationList, { maxNodes: 60 })
+      ).toThrow(X509Error)
+
+      // Both CRLs are already parsed, so comparing them must not parse either of them again under
+      // the limits of the one the comparison happens to start from.
+      expect(crl.equal(largeCrl)).toBe(false)
+      expect(crl.equal(X509CertificateRevocationList.fromRaw(crlBytes))).toBe(true)
+    })
+  })
+
   it('parses a CRL from raw DER bytes', () => {
     const crl = X509CertificateRevocationList.fromRaw(crlBytes)
     expect(crl.issuer).toContain('CRL Issuer')

@@ -4,19 +4,32 @@ import { isJwaHpkeAlgorithm, zKnownJwaHpkeAlgorithm } from '../jwk/jwa'
 import { zKmsJwkPublicOkp } from '../jwk/kty/okp/okpJwk'
 import { zKmsKeyId } from './common'
 import { zKmsEncryptedKey } from './KmsEncryptOptions'
-import { zKmsJwkPublicEcdh, zKmsKeyAgreementEcdhEs } from './KmsKeyAgreementEncryptOptions'
+import { zKmsJwkPublicEcdh } from './KmsKeyAgreementEncryptOptions'
+
+const zKmsKeyAgreementDecryptEcdhEs = z.object({
+  /**
+   * The key id of the recipient key. Its key type MUST match `ephemeralPublicJwk`.
+   */
+  keyId: zKmsKeyId,
+
+  algorithm: z.literal('ECDH-ES'),
+
+  ephemeralPublicJwk: zKmsJwkPublicEcdh,
+
+  apu: z.optional(zAnyUint8Array),
+  apv: z.optional(zAnyUint8Array),
+})
+export type KmsKeyAgreementDecryptEcdhEs = z.output<typeof zKmsKeyAgreementDecryptEcdhEs>
 
 const zKmsKeyAgreementDecryptEcdhEsKw = z.object({
   /**
-   * The key id pointing to the ephemeral public key.
-   *
-   * The key type MUST match with the externalPublicJwk
+   * The key id of the recipient key. Its key type MUST match `ephemeralPublicJwk`.
    */
   keyId: zKmsKeyId,
 
   algorithm: z.enum(['ECDH-ES+A128KW', 'ECDH-ES+A192KW', 'ECDH-ES+A256KW']),
 
-  externalPublicJwk: zKmsJwkPublicEcdh,
+  ephemeralPublicJwk: zKmsJwkPublicEcdh,
 
   /**
    * The encrypted content encryption key (cek)
@@ -27,6 +40,17 @@ const zKmsKeyAgreementDecryptEcdhEsKw = z.object({
   apv: z.optional(zAnyUint8Array),
 })
 export type KmsKeyAgreementDecryptEcdhEsKw = z.output<typeof zKmsKeyAgreementDecryptEcdhEsKw>
+
+const zKmsKeyAgreementDecryptEcdh1Pu = z.object({
+  keyId: zKmsKeyId,
+  algorithm: z.literal('ECDH-1PU+A256KW'),
+  ephemeralPublicJwk: zKmsJwkPublicEcdh,
+  senderPublicJwk: zKmsJwkPublicEcdh,
+  encryptedKey: zKmsEncryptedKey,
+  apu: z.optional(zAnyUint8Array),
+  apv: z.optional(zAnyUint8Array),
+})
+export type KmsKeyAgreementDecryptEcdh1Pu = z.output<typeof zKmsKeyAgreementDecryptEcdh1Pu>
 
 const zKmsKeyAgreementDecryptEcdhHsalsa20 = z.object({
   /**
@@ -44,7 +68,7 @@ const zKmsKeyAgreementDecryptEcdhHsalsa20 = z.object({
   /**
    * Can be undefined for anonymous encryption
    */
-  externalPublicJwk: zKmsJwkPublicOkp.extend({ crv: zKmsJwkPublicOkp.shape.crv.extract(['X25519']) }).optional(),
+  senderPublicJwk: zKmsJwkPublicOkp.extend({ crv: zKmsJwkPublicOkp.shape.crv.extract(['X25519']) }).optional(),
 })
 export type KmsKeyAgreementDecryptEcdhHsalsa20 = z.output<typeof zKmsKeyAgreementDecryptEcdhHsalsa20>
 
@@ -71,8 +95,9 @@ export type KmsKeyAgreementDecryptHpke = z.output<typeof zKmsKeyAgreementDecrypt
 
 export const zKmsKeyAgreementDecryptOptions = z
   .discriminatedUnion('algorithm', [
-    zKmsKeyAgreementEcdhEs,
+    zKmsKeyAgreementDecryptEcdhEs,
     zKmsKeyAgreementDecryptEcdhEsKw,
+    zKmsKeyAgreementDecryptEcdh1Pu,
     zKmsKeyAgreementDecryptEcdhHsalsa20,
     zKmsKeyAgreementDecryptHpke,
   ])

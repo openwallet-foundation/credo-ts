@@ -1,0 +1,20 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "id": "mediator-routing-record-id",
+  "metadata": {
+    "meta": {
+      "key": "value"
+    }
+  },
+  "routingKeys": [
+    {
+      "kmsKeyId": "kms-key-id",
+      "routingKeyFingerprint": "z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th"
+    },
+    "8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K"
+  ],
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

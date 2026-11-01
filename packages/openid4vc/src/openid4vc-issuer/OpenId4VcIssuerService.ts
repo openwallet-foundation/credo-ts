@@ -75,6 +75,8 @@ import {
   encodeJwtIssuer,
   getProofTypeFromPublicJwk,
   getPublicJwkFromDid,
+  supportedResponseEncryptionContentAlgorithms,
+  supportedResponseEncryptionKeyAgreementAlgorithms,
 } from '../shared/utils'
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import { type OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
@@ -104,6 +106,7 @@ import {
   OpenId4VcIssuerRecord,
   OpenId4VcIssuerRepository,
 } from './repository'
+import { offerUsesInternalAuthorizationServer } from './util/authorizationServer'
 import { generateTxCode } from './util/txCode'
 
 /**
@@ -184,7 +187,7 @@ export class OpenId4VcIssuerService {
       authorizationCodeFlowConfig,
       issuer,
       credentialConfigurationIds,
-      version = 'v1.draft15',
+      version = 'v1',
       authorization,
     } = options
     if (!preAuthorizedCodeFlowConfig && !authorizationCodeFlowConfig) {
@@ -197,6 +200,21 @@ export class OpenId4VcIssuerService {
 
     const vcIssuer = this.getIssuer(agentContext)
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+
+    // Refresh tokens are only issued by Credo, so they don't apply when all grants use an external authorization server
+    if (
+      offerUsesInternalAuthorizationServer({
+        issuer,
+        credentialIssuer: issuerMetadata.credentialIssuer.credential_issuer,
+        preAuthorizedCodeFlowConfig,
+        authorizationCodeFlowConfig,
+      })
+    ) {
+      this.assertRefreshTokensRequireDpop({
+        generateRefreshTokens: options.generateRefreshTokens,
+        requireDpop: authorization?.requireDpop,
+      })
+    }
 
     const uniqueOfferedCredentials = Array.from(new Set(options.credentialConfigurationIds))
     if (uniqueOfferedCredentials.length !== credentialConfigurationIds.length) {
@@ -553,9 +571,14 @@ export class OpenId4VcIssuerService {
             requireDpop: options.requireDpop,
             requireWalletAttestation: undefined,
             requirePkce: undefined,
-            generateRefreshTokens: undefined,
+            generateRefreshTokens: false,
           }
         : sessionOptions
+
+    this.assertRefreshTokensRequireDpop({
+      generateRefreshTokens: internalOptions.generateRefreshTokens,
+      requireDpop: internalOptions.requireDpop,
+    })
 
     const issuanceSession = new OpenId4VcIssuanceSessionRecord({
       // Optional: allows the `getDynamicIssuanceSession` callback to bind the session to an id it
@@ -594,7 +617,11 @@ export class OpenId4VcIssuerService {
   public async createCredentialResponse(
     agentContext: AgentContext,
     options: OpenId4VciCreateCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
-  ): Promise<{ issuanceSession: OpenId4VcIssuanceSessionRecord; credentialResponse: CredentialResponse }> {
+  ): Promise<{
+    issuanceSession: OpenId4VcIssuanceSessionRecord
+    credentialResponse: CredentialResponse
+    credentialResponseJwt?: string
+  }> {
     options.issuanceSession.assertState([
       // OfferUriRetrieved is valid when doing auth flow (we should add a check)
       OpenId4VcIssuanceSessionState.OfferUriRetrieved,
@@ -608,24 +635,13 @@ export class OpenId4VcIssuerService {
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
-    const parsedCredentialRequest = vcIssuer.parseCredentialRequest({
-      issuerMetadata,
-      credentialRequest: options.credentialRequest,
-    })
+    const { parsedCredentialRequest } = options
     const { credentialRequest, credentialIdentifier, format } = parsedCredentialRequest
 
     if (credentialIdentifier) {
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.InvalidCredentialRequest,
         error_description: `Using unsupported 'credential_identifier'`,
-      })
-    }
-
-    // TODO: support credential response encryption
-    if (parsedCredentialRequest.credentialResponseEncryption) {
-      throw new Oauth2ServerErrorResponseError({
-        error: Oauth2ErrorCodes.InvalidCredentialRequest,
-        error_description: `Credential response encryption is not supported.`,
       })
     }
 
@@ -706,7 +722,7 @@ export class OpenId4VcIssuerService {
 
       verification,
 
-      credentialRequest: options.credentialRequest,
+      credentialRequest,
       credentialRequestFormat: format,
 
       // Matching credential configuration
@@ -718,21 +734,22 @@ export class OpenId4VcIssuerService {
     })
 
     let credentialResponse: CredentialResponse
+    let credentialResponseJwt: string | undefined
 
     // NOTE: nonce in credential response is deprecated in newer drafts, but for now we keep it in
     const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
 
     if (signOptionsOrDeferral.type === 'deferral') {
-      // TODO: support credential response encryption
-      credentialResponse = (
-        await vcIssuer.createCredentialResponse({
-          transactionId: signOptionsOrDeferral.transactionId,
-          interval: signOptionsOrDeferral.interval,
-          cNonce,
-          cNonceExpiresInSeconds,
-          credentialRequest: parsedCredentialRequest,
-        })
-      ).credentialResponse
+      const deferralResult = await vcIssuer.createCredentialResponse({
+        transactionId: signOptionsOrDeferral.transactionId,
+        interval: signOptionsOrDeferral.interval,
+        cNonce,
+        cNonceExpiresInSeconds,
+        credentialRequest: parsedCredentialRequest,
+        credentialResponseEncryption: parsedCredentialRequest.credentialResponseEncryption,
+      })
+      credentialResponse = deferralResult.credentialResponse
+      credentialResponseJwt = deferralResult.credentialResponseJwt
 
       // Save transaction data for deferred issuance
       issuanceSession.transactions.push({
@@ -761,20 +778,20 @@ export class OpenId4VcIssuerService {
         expectedLength: verifiedCredentialRequestProofs.keys.length,
       })
 
-      // TODO: support credential response encryption
-      credentialResponse = (
-        await vcIssuer.createCredentialResponse({
-          credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
-          credentials: credentialRequest.proofs
-            ? issuanceSession.openId4VciVersion === 'v1' || issuanceSession.openId4VciVersion === 'v1.draft15'
-              ? credentials.credentials.map((c) => ({ credential: c }))
-              : credentials.credentials
-            : undefined,
-          cNonce,
-          cNonceExpiresInSeconds,
-          credentialRequest: parsedCredentialRequest,
-        })
-      ).credentialResponse
+      const immediateResult = await vcIssuer.createCredentialResponse({
+        credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
+        credentials: credentialRequest.proofs
+          ? issuanceSession.openId4VciVersion === 'v1' || issuanceSession.openId4VciVersion === 'v1.draft15'
+            ? credentials.credentials.map((c) => ({ credential: c }))
+            : credentials.credentials
+          : undefined,
+        cNonce,
+        cNonceExpiresInSeconds,
+        credentialRequest: parsedCredentialRequest,
+        credentialResponseEncryption: parsedCredentialRequest.credentialResponseEncryption,
+      })
+      credentialResponse = immediateResult.credentialResponse
+      credentialResponseJwt = immediateResult.credentialResponseJwt
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)
       const newState =
@@ -787,6 +804,7 @@ export class OpenId4VcIssuerService {
 
     return {
       credentialResponse,
+      credentialResponseJwt,
       issuanceSession,
     }
   }
@@ -797,6 +815,7 @@ export class OpenId4VcIssuerService {
   ): Promise<{
     issuanceSession: OpenId4VcIssuanceSessionRecord
     deferredCredentialResponse: DeferredCredentialResponse
+    deferredCredentialResponseJwt?: string
   }> {
     const { issuanceSession, deferredCredentialRequest, authorization, deferredCredentialRequestToCredentialMapper } =
       options
@@ -827,14 +846,14 @@ export class OpenId4VcIssuerService {
     const now = Date.now()
     const remainingInterval = deferredUntil ? Math.round((deferredUntil - now) / 1000) : undefined
     if (remainingInterval && remainingInterval > 0) {
+      const earlyDeferralResult = await vcIssuer.createDeferredCredentialResponse({
+        interval: remainingInterval,
+        transactionId: transaction.transactionId,
+        credentialResponseEncryption: deferredCredentialRequest.credential_response_encryption,
+      })
       return {
-        // TODO: support credential response encryption
-        deferredCredentialResponse: (
-          await vcIssuer.createDeferredCredentialResponse({
-            interval: remainingInterval,
-            transactionId: transaction.transactionId,
-          })
-        ).deferredCredentialResponse,
+        deferredCredentialResponse: earlyDeferralResult.deferredCredentialResponse,
+        deferredCredentialResponseJwt: earlyDeferralResult.deferredCredentialResponseJwt,
         issuanceSession,
       }
     }
@@ -865,14 +884,16 @@ export class OpenId4VcIssuerService {
     })
 
     let deferredCredentialResponse: DeferredCredentialResponse
+    let deferredCredentialResponseJwt: string | undefined
+
     if (signOptionsOrDeferral.type === 'deferral') {
-      // TODO: support credential response encryption
-      deferredCredentialResponse = (
-        await vcIssuer.createDeferredCredentialResponse({
-          interval: signOptionsOrDeferral.interval,
-          transactionId: signOptionsOrDeferral.transactionId,
-        })
-      ).deferredCredentialResponse
+      const deferralResult = await vcIssuer.createDeferredCredentialResponse({
+        interval: signOptionsOrDeferral.interval,
+        transactionId: signOptionsOrDeferral.transactionId,
+        credentialResponseEncryption: deferredCredentialRequest.credential_response_encryption,
+      })
+      deferredCredentialResponse = deferralResult.deferredCredentialResponse
+      deferredCredentialResponseJwt = deferralResult.deferredCredentialResponseJwt
 
       // Update transaction with the new deferredUntil value
       issuanceSession.transactions = issuanceSession.transactions.map((tx) => {
@@ -895,12 +916,12 @@ export class OpenId4VcIssuerService {
         expectedLength: transaction.numberOfCredentials,
       })
 
-      // TODO: support credential response encryption
-      deferredCredentialResponse = (
-        await vcIssuer.createDeferredCredentialResponse({
-          credentials: credentials.credentials.map((c) => ({ credential: c })),
-        })
-      ).deferredCredentialResponse
+      const immediateResult = await vcIssuer.createDeferredCredentialResponse({
+        credentials: credentials.credentials.map((c) => ({ credential: c })),
+        credentialResponseEncryption: deferredCredentialRequest.credential_response_encryption,
+      })
+      deferredCredentialResponse = immediateResult.deferredCredentialResponse
+      deferredCredentialResponseJwt = immediateResult.deferredCredentialResponseJwt
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)
 
@@ -921,6 +942,7 @@ export class OpenId4VcIssuerService {
 
     return {
       deferredCredentialResponse,
+      deferredCredentialResponseJwt,
       issuanceSession,
     }
   }
@@ -1074,7 +1096,9 @@ export class OpenId4VcIssuerService {
         const { signer, payload, header, keyAttestation } = await vcIssuer.verifyCredentialRequestJwtProof({
           issuerMetadata,
           jwt,
-          clientId: options.issuanceSession.clientId,
+          // The `iss` of the proof must be the client id of the session. It's only undefined, and so `iss` must be
+          // omitted, with anonymous access to the token endpoint in the pre-authorized code flow.
+          clientId: issuanceSession.clientId,
         })
 
         // TODO: we should probably do this check before signature verification, but we then we
@@ -1288,6 +1312,8 @@ export class OpenId4VcIssuerService {
     issuer: OpenId4VcIssuerRecord,
     options?: OpenId4VcUpdateIssuerOptions
   ) {
+    assertCredentialEncryptionConfiguration(issuer)
+
     // An explicitly provided signer takes precedence (including `null` to remove it). Otherwise the
     // previously configured signer is reused, so the signed metadata stays in sync with the updated
     // issuer metadata.
@@ -1313,6 +1339,8 @@ export class OpenId4VcIssuerService {
   }
 
   public async createIssuer(agentContext: AgentContext, options: OpenId4VciCreateIssuerOptions) {
+    assertCredentialEncryptionConfiguration(options)
+
     const kms = agentContext.resolve(Kms.KeyManagementApi)
 
     // TODO: ideally we can store additional data with a key, such as:
@@ -1326,6 +1354,7 @@ export class OpenId4VcIssuerService {
     const openId4VcIssuer = new OpenId4VcIssuerRecord({
       issuerId: options.issuerId ?? utils.uuid(),
       display: options.display,
+      issuerInfo: options.issuerInfo,
       dpopSigningAlgValuesSupported: options.dpopSigningAlgValuesSupported,
       clientAttestationSigningAlgValuesSupported: options.clientAttestationSigningAlgValuesSupported,
       clientAttestationPopSigningAlgValuesSupported: options.clientAttestationPopSigningAlgValuesSupported,
@@ -1334,6 +1363,8 @@ export class OpenId4VcIssuerService {
       authorizationServerConfigs: options.authorizationServerConfigs,
       credentialConfigurationsSupported: options.credentialConfigurationsSupported,
       batchCredentialIssuance: options.batchCredentialIssuance,
+      credentialResponseEncryption: options.credentialResponseEncryption,
+      credentialRequestEncryption: options.credentialRequestEncryption,
     })
 
     if (options.metadataSigner) {
@@ -1434,12 +1465,15 @@ export class OpenId4VcIssuerService {
       credential_configurations_supported: issuerRecord.credentialConfigurationsSupported ?? {},
       authorization_servers: authorizationServers,
       display: issuerRecord.display,
+      issuer_info: issuerRecord.issuerInfo,
       nonce_endpoint: joinUriParts(issuerUrl, [config.nonceEndpointPath]),
       batch_credential_issuance: issuerRecord.batchCredentialIssuance
         ? {
             batch_size: issuerRecord.batchCredentialIssuance.batchSize,
           }
         : undefined,
+      credential_response_encryption: getCredentialResponseEncryptionMetadata(agentContext, issuerRecord),
+      credential_request_encryption: getCredentialRequestEncryptionMetadata(issuerRecord),
     } satisfies CredentialIssuerMetadata
 
     const clientAttestationAuthMethods = [
@@ -1449,7 +1483,7 @@ export class OpenId4VcIssuerService {
         ? [SupportedClientAuthenticationMethod.ClientAttestationJwt]
         : []),
       // DPoP-bound method (§5.2): Client Attestation JWT + DPoP proof.
-      ...(issuerRecord.clientAttestationSigningAlgValuesSupported && issuerRecord.dpopSigningAlgValuesSupported
+      ...(issuerRecord.clientAttestationSigningAlgValuesSupported
         ? [SupportedClientAuthenticationMethod.ClientAttestationJwtDpop]
         : []),
     ]
@@ -1490,7 +1524,10 @@ export class OpenId4VcIssuerService {
       require_pushed_authorization_requests: true,
 
       code_challenge_methods_supported: [PkceCodeChallengeMethod.S256],
-      dpop_signing_alg_values_supported: issuerRecord.dpopSigningAlgValuesSupported,
+      dpop_signing_alg_values_supported:
+        issuerRecord.dpopSigningAlgValuesSupported ??
+        config.dpopSigningAlgValuesSupported ??
+        agentContext.resolve(Kms.KeyManagementApi).supportedJwaSignatureAlgorithms(),
       authorization_response_iss_parameter_supported: true,
     } satisfies AuthorizationServerMetadata
 
@@ -1713,6 +1750,14 @@ export class OpenId4VcIssuerService {
     const expiresInSeconds = this.openId4VcIssuerConfig.refreshTokenExpiresInSeconds
     const expiresAt = utils.addSecondsToDate(new Date(), expiresInSeconds)
 
+    const dpopJkt = options.dpop
+      ? await calculateJwkThumbprint({
+          hashAlgorithm: HashAlgorithm.Sha256,
+          hashCallback: getOid4vcCallbacks(agentContext).hash,
+          jwk: options.dpop.jwk,
+        })
+      : undefined
+
     const key = issuer.resolvedAccessTokenPublicJwk
     const refreshToken = await jwsService.createJwsCompact(agentContext, {
       keyId: key.keyId,
@@ -1722,15 +1767,7 @@ export class OpenId4VcIssuerService {
         exp: utils.dateToSeconds(expiresAt),
         issuer_state: options.issuerState,
         'pre-authorized_code': options.preAuthorizedCode,
-        cnf: options.dpop
-          ? {
-              jkt: await calculateJwkThumbprint({
-                hashAlgorithm: HashAlgorithm.Sha256,
-                hashCallback: getOid4vcCallbacks(agentContext).hash,
-                jwk: options.dpop.jwk,
-              }),
-            }
-          : undefined,
+        cnf: dpopJkt ? { jkt: dpopJkt } : undefined,
       }),
       protectedHeaderOptions: {
         typ: 'credo+refresh_token',
@@ -1794,12 +1831,7 @@ export class OpenId4VcIssuerService {
   public async verifyRefreshToken(
     agentContext: AgentContext,
     issuer: OpenId4VcIssuerRecord,
-    parsedRefreshToken: ReturnType<OpenId4VcIssuerService['parseRefreshToken']>,
-    options: {
-      dpop?: {
-        jwkThumbprint?: string
-      }
-    } = {}
+    parsedRefreshToken: ReturnType<OpenId4VcIssuerService['parseRefreshToken']>
   ) {
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
@@ -1823,12 +1855,6 @@ export class OpenId4VcIssuerService {
 
     if (!verification.isValid) {
       throw new CredoError('Invalid refresh token')
-    }
-
-    if (options.dpop?.jwkThumbprint) {
-      if (parsedRefreshToken.dpop?.jwkThumbprint !== options.dpop.jwkThumbprint) {
-        throw new CredoError(`Invalid 'cnf.jkt' claim in refresh token jwt payload`)
-      }
     }
   }
 
@@ -2299,5 +2325,74 @@ export class OpenId4VcIssuerService {
       verificationMethod: options.verificationMethod,
       proofType: proofType,
     })
+  }
+
+  // Refresh tokens are only issued bound to a DPoP key, as a wallet is a public client (RFC 9700 §2.2.2)
+  private assertRefreshTokensRequireDpop(options: { generateRefreshTokens?: boolean; requireDpop?: boolean }) {
+    const generateRefreshTokens = options.generateRefreshTokens ?? this.openId4VcIssuerConfig.generateRefreshTokens
+    const requireDpop = options.requireDpop ?? this.openId4VcIssuerConfig.dpopRequired
+
+    if (generateRefreshTokens && !requireDpop) {
+      throw new CredoError(
+        `Refresh tokens can only be generated when DPoP is required. Either require DPoP, or disable 'generateRefreshTokens'.`
+      )
+    }
+  }
+}
+
+function getCredentialResponseEncryptionMetadata(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord) {
+  if (!issuerRecord.credentialRequestEncryption) {
+    if (issuerRecord.credentialResponseEncryption) {
+      agentContext.config.logger.warn(
+        `Issuer '${issuerRecord.issuerId}' has 'credentialResponseEncryption' configured without 'credentialRequestEncryption'. Credential response encryption is not advertised, as OID4VCI requires an encrypted credential request when response encryption is used.`
+      )
+    }
+    return undefined
+  }
+
+  return {
+    alg_values_supported: issuerRecord.credentialResponseEncryption?.algValuesSupported ?? [
+      ...supportedResponseEncryptionKeyAgreementAlgorithms,
+    ],
+    enc_values_supported: issuerRecord.credentialResponseEncryption?.encValuesSupported ?? [
+      ...supportedResponseEncryptionContentAlgorithms,
+    ],
+    encryption_required: issuerRecord.credentialResponseEncryption?.required ?? false,
+  }
+}
+
+function getCredentialRequestEncryptionMetadata(issuerRecord: OpenId4VcIssuerRecord) {
+  if (!issuerRecord.credentialRequestEncryption) return undefined
+
+  return {
+    jwks: {
+      keys: issuerRecord.credentialRequestEncryption.jwks.map((jwk) => ({
+        ...Kms.PublicJwk.fromUnknown(jwk).toJson(),
+        kid: jwk.kid,
+        use: 'enc',
+        alg: 'ECDH-ES',
+      })),
+    },
+    enc_values_supported: [...supportedResponseEncryptionContentAlgorithms],
+    encryption_required: issuerRecord.credentialRequestEncryption.required ?? false,
+  }
+}
+
+export function assertCredentialEncryptionConfiguration(
+  options: Pick<OpenId4VcIssuerRecord, 'credentialRequestEncryption' | 'credentialResponseEncryption'>
+) {
+  if (options.credentialResponseEncryption && !options.credentialRequestEncryption) {
+    throw new CredoError(
+      `'credentialResponseEncryption' requires 'credentialRequestEncryption' to be configured, as OID4VCI requires an encrypted credential request when response encryption is used.`
+    )
+  }
+
+  const unsupportedKey = options.credentialRequestEncryption?.jwks.find(
+    (jwk) => jwk.kty === 'oct' || !Kms.allowedKeyDerivationAlgsForKey(jwk).includes('ECDH-ES')
+  )
+  if (unsupportedKey) {
+    throw new CredoError(
+      `Credential request encryption key '${unsupportedKey.kid}' does not support 'ECDH-ES' key agreement.`
+    )
   }
 }

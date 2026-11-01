@@ -33,7 +33,8 @@
     "@credo-ts/didcomm": "workspace:*",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
-    "rxjs": "catalog:"
+    "rxjs": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@credo-ts/node": "workspace:*",

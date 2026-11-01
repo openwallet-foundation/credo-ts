@@ -17,7 +17,6 @@ export const anonCredsCredentialDefinition = sqliteTable(
     schemaId: text('schema_id').notNull(),
     issuerId: text('issuer_id').notNull(),
     tag: text('tag').notNull(),
-    unqualifiedCredentialDefinitionId: text('unqualified_credential_definition_id'),
   },
   (table) => sqliteBaseRecordIndexes(table, 'anonCredsCredentialDefinition')
 )

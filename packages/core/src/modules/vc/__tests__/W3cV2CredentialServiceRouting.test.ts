@@ -1,4 +1,5 @@
 import { CredoError } from '../../../error'
+import { DidKey } from '../../dids'
 import {
   W3cV2DataIntegrityCredentialService,
   W3cV2DataIntegrityVerifiableCredential,
@@ -99,13 +100,10 @@ describe('W3cV2CredentialService routing', () => {
     verifyPresentation: vi.fn(),
   }
 
-  const agentContext = {} as never
-
+  // Resolves the DID that signs every fixture presentation and is the `cnf` of every fixture credential
   function createSignerResolvingAgentContext(signerId: string) {
-    const didDocument = {
-      id: signerId,
-      dereferenceKey: vi.fn().mockReturnValue({ controller: signerId }),
-    }
+    const didDocument = DidKey.fromDid(signerId).didDocument
+    vi.spyOn(didDocument, 'dereferenceKey')
 
     return {
       didDocument,
@@ -118,6 +116,8 @@ describe('W3cV2CredentialService routing', () => {
       },
     }
   }
+
+  const agentContext = createSignerResolvingAgentContext(diProofSigner).agentContext as never
 
   const service = new W3cV2CredentialService(
     repository as never,
@@ -265,6 +265,32 @@ describe('W3cV2CredentialService routing', () => {
     expect(result.credentialEntries[1]?.isValid).toBe(true)
     expect(result.credentialEntries[2]?.isValid).toBe(true)
     expect(result.isValid).toBe(true)
+  })
+
+  test('verifyPresentation passes the trusted issuers to every enclosed credential', async () => {
+    diService.verifyPresentation.mockResolvedValue({
+      isValid: true,
+      presentation: { isValid: true, validations: {} },
+      credentialEntries: [],
+    })
+    jwtService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
+    sdJwtService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
+    diService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
+    const trustedIssuers = [{ method: 'did' as const, issuance: 'did:example:issuer' }]
+
+    await service.verifyPresentation(agentContext, {
+      presentation: mixedDiOuterVpWithAllEntries,
+      challenge: 'challenge-123',
+      trustedIssuers,
+    } as never)
+
+    for (const verifyCredential of [
+      jwtService.verifyCredential,
+      sdJwtService.verifyCredential,
+      diService.verifyCredential,
+    ]) {
+      expect(verifyCredential).toHaveBeenCalledWith(agentContext, expect.objectContaining({ trustedIssuers }))
+    }
   })
 
   test('verifyPresentation short-circuits when DI outer presentation verification fails', async () => {
@@ -522,15 +548,18 @@ describe('W3cV2CredentialService routing', () => {
   })
 
   test('verifyPresentation marks credential invalid when presenter does not authenticate credential subject', async () => {
+    const credentialOfSomeoneElse = Object.create(mixedVpBaseResolvedPresentation.verifiableCredential[0] as object, {
+      resolvedCredential: { value: { credentialSubjectIds: ['did:example:someone-else'] } },
+    })
     const jwtOnlyResolvedPresentation = {
       ...mixedVpBaseResolvedPresentation,
-      holder: 'did:example:presenter',
-      verifiableCredential: [mixedVpBaseResolvedPresentation.verifiableCredential[0]],
+      verifiableCredential: [credentialOfSomeoneElse],
     }
     Object.setPrototypeOf(jwtOnlyResolvedPresentation, Object.getPrototypeOf(mixedVpBaseResolvedPresentation))
 
     const jwtOnlyVp = {
       __proto__: W3cV2JwtVerifiablePresentation.prototype,
+      jwt: mixedJwtVp.jwt,
       resolvedPresentation: jwtOnlyResolvedPresentation,
     }
 
@@ -564,6 +593,7 @@ describe('W3cV2CredentialService routing', () => {
 
     const jwtOnlyVp = {
       __proto__: W3cV2JwtVerifiablePresentation.prototype,
+      jwt: mixedJwtVp.jwt,
       resolvedPresentation: jwtOnlyResolvedPresentation,
     }
 
@@ -880,11 +910,7 @@ describe('W3cV2CredentialService routing', () => {
     expect(result.isValid).toBe(true)
   })
 
-  // The fixture's holder and proof signer are deliberately the same identity, since a presentation
-  // signed by anyone other than its declared holder now fails the holderIsSigner check. This test
-  // therefore asserts that the holder is used *without resolving the proof* — the observable
-  // difference between the two paths — rather than comparing the resulting signer values.
-  test('verifyPresentation uses an explicit DI holder without resolving the proof signer', async () => {
+  test('verifyPresentation uses the proof of an explicit DI holder as the signer', async () => {
     const credential = W3cV2DataIntegrityVerifiableCredential.fromObject(CredoDidKeyDiVc)
     const presentation = composePresentationWithEntries(validVcOnlyOuterPresentationsByName.outerDi_withDiVcOnly, [
       credential,
@@ -906,7 +932,7 @@ describe('W3cV2CredentialService routing', () => {
       } as never
     )
 
-    expect(didDocument.dereferenceKey).not.toHaveBeenCalled()
+    expect(didDocument.dereferenceKey).toHaveBeenCalledWith(diProofVerificationMethod, ['authentication'])
     expect(result.credentialEntries[0]?.validations.credentialSubjectAuthentication?.isValid).toBe(true)
     expect(result.isValid).toBe(true)
   })

@@ -60,6 +60,7 @@ import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifier
 import { AnonCredsLinkSecretBindingProvider } from '../src/formats/AnonCredsLinkSecretBindingProvider'
 import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
+import { trackNativeAnonCredsObjects } from './nativeAnonCredsObjects'
 
 const registry = new InMemoryAnonCredsRegistry()
 const tailsFileService = new InMemoryTailsFileService()
@@ -118,6 +119,13 @@ const anoncredsProofFormatService = new AnonCredsDidCommProofFormatService()
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
 describe('data integrity format service (anoncreds)', () => {
+  // Credo frees every native AnonCreds object it creates
+  const nativeAnonCredsObjects = trackNativeAnonCredsObjects()
+  afterEach(() => {
+    expect(nativeAnonCredsObjects.takeOpen()).toEqual([])
+  })
+  afterAll(() => nativeAnonCredsObjects.stop())
+
   afterEach(async () => {
     inMemoryStorageService.contextCorrelationIdToRecords = {}
   })

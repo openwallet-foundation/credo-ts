@@ -705,7 +705,7 @@ export async function makeConnection(
   agentB: Agent<{ didcomm: DidCommModule<any> }>
 ) {
   const agentAOutOfBand = await agentA.didcomm.oob.createInvitation({
-    handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+    handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
   })
 
   let { connectionRecord: agentBConnection } = await agentB.didcomm.oob.receiveInvitation(

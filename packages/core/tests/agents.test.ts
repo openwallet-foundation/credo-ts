@@ -49,7 +49,7 @@ describe('agents', () => {
     ;[bobReplay] = setupEventReplaySubjects([bobAgent], [DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged])
 
     const aliceBobOutOfBandRecord = await aliceAgent.didcomm.oob.createInvitation({
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.didcomm.oob.receiveInvitation(

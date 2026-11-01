@@ -208,6 +208,8 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
       )
       .subscribe()
 
+    await this.config.queueTransportRepository.start?.(agentContext)
+
     for (const transport of this.config.inboundTransports) {
       await transport.start(agentContext)
     }

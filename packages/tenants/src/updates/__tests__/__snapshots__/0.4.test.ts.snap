@@ -6,6 +6,7 @@ exports[`UpdateAssistant | Tenants | v0.4 - v0.5 > should correctly update the t
     "id": "1-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "label": "Tenant 1",
+      "status": "active",
       "storageVersion": "0.4",
     },
     "type": "TenantRecord",
@@ -21,6 +22,7 @@ exports[`UpdateAssistant | Tenants | v0.4 - v0.5 > should correctly update the t
       "createdAt": "2023-11-23T22:50:20.522Z",
       "id": "1-4e4f-41d9-94c4-f49351b811f1",
       "metadata": {},
+      "status": "active",
       "storageVersion": "0.4",
       "updatedAt": "2023-11-23T22:50:20.522Z",
     },
@@ -29,6 +31,7 @@ exports[`UpdateAssistant | Tenants | v0.4 - v0.5 > should correctly update the t
     "id": "2-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "label": "Tenant 2",
+      "status": "active",
       "storageVersion": "0.4",
     },
     "type": "TenantRecord",
@@ -44,6 +47,7 @@ exports[`UpdateAssistant | Tenants | v0.4 - v0.5 > should correctly update the t
       "createdAt": "2023-11-23T22:50:20.522Z",
       "id": "2-4e4f-41d9-94c4-f49351b811f1",
       "metadata": {},
+      "status": "active",
       "storageVersion": "0.4",
       "updatedAt": "2023-11-23T22:50:20.522Z",
     },

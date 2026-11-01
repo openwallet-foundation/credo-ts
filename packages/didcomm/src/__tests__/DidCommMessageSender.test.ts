@@ -373,7 +373,6 @@ describe('DidCommMessageSender', () => {
       transportServiceFindSessionByIdMock.mockReturnValue(session)
       didCommModuleConfig.outboundTransports = [outboundTransport]
       const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
-      // @ts-expect-error
       const sendMessageToServiceSpy = vi.spyOn(messageSender, 'sendMessageToService')
 
       const contextWithSessionId = new DidCommOutboundMessageContext(outboundMessageContext.message, {
@@ -405,12 +404,10 @@ describe('DidCommMessageSender', () => {
     test('call send message on session when there is a session for a given connection', async () => {
       didCommModuleConfig.outboundTransports = [outboundTransport]
       const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
-      //@ts-expect-error
       const sendToServiceSpy = vi.spyOn(messageSender, 'sendToService')
 
       await messageSender.sendMessage(outboundMessageContext)
 
-      //@ts-expect-error
       const [[sendMessage]] = sendToServiceSpy.mock.calls
 
       expect(eventListenerMock).toHaveBeenCalledWith({
@@ -453,7 +450,6 @@ describe('DidCommMessageSender', () => {
     test('calls sendToService with payload and endpoint from second DidComm service when the first fails', async () => {
       didCommModuleConfig.outboundTransports = [outboundTransport]
       const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
-      //@ts-expect-error
       const sendToServiceSpy = vi.spyOn(messageSender, 'sendToService')
 
       // Simulate the case when the first call fails
@@ -472,7 +468,6 @@ describe('DidCommMessageSender', () => {
         },
       })
 
-      //@ts-expect-error
       const [, [sendMessage]] = sendToServiceSpy.mock.calls
 
       expect(sendMessage).toMatchObject({

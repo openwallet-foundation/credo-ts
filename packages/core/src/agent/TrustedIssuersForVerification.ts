@@ -3,6 +3,7 @@ import type { SdJwtVc } from '../modules/sd-jwt-vc'
 import type {
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
+  W3cV2DataIntegrityVerifiableCredential,
   W3cV2JwtVerifiableCredential,
   W3cV2SdJwtVerifiableCredential,
 } from '../modules/vc'
@@ -67,7 +68,18 @@ export type VerificationTypeCredential = {
     | W3cJwtVerifiableCredential
     | W3cV2JwtVerifiableCredential
     | W3cV2SdJwtVerifiableCredential
+    | W3cV2DataIntegrityVerifiableCredential
 }
+
+/**
+ * Resolves the trusted issuers of a single credential when it is verified, for example to apply a
+ * different trust policy to each credential in a presentation. Return `undefined` to fall through
+ * to the `getTrustedIssuersForVerification` callback.
+ */
+export type GetTrustedIssuersForCredential = (context: {
+  signer: VerificationSignerDid
+  verification: VerificationTypeCredential
+}) => Promise<TrustedIssuerDid[] | undefined>
 
 /**
  * Reader authentication on an incoming mdoc request.

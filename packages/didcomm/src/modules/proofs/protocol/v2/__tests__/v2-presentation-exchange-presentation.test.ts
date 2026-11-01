@@ -45,6 +45,7 @@ describe('Present Proof', () => {
 
   let issuerProverConnectionId: string
   let proverVerifierConnectionId: string
+  let verifierProverConnectionId: string
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
@@ -56,6 +57,7 @@ describe('Present Proof', () => {
       verifierReplay,
       issuerHolderConnectionId: issuerProverConnectionId,
       holderVerifierConnectionId: proverVerifierConnectionId,
+      verifierHolderConnectionId: verifierProverConnectionId,
     } = await setupJsonLdTests({
       holderName: 'presentation exchange prover agent',
       issuerName: 'presentation exchange issuer agent',
@@ -477,5 +479,78 @@ describe('Present Proof', () => {
       connectionId: expect.any(String),
       state: DidCommProofState.Done,
     })
+  })
+
+  test('Verifier sends a proof request with an expiry time', async () => {
+    const expiresTime = new Date(Date.now() + 30 * 60 * 1000)
+
+    const verifierProofExchangeRecord = await verifierAgent.didcomm.proofs.requestProof({
+      connectionId: verifierProverConnectionId,
+      protocolVersion: 'v2',
+      proofFormats: {
+        presentationExchange: {
+          presentationDefinition: {
+            id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            input_descriptors: [TEST_INPUT_DESCRIPTORS_CITIZENSHIP],
+          },
+        },
+      },
+      expiresTime,
+    })
+
+    testLogger.test('Prover waits for proof request from the Verifier')
+    const proverProofExchangeRecord = await waitForProofExchangeRecordSubject(proverReplay, {
+      threadId: verifierProofExchangeRecord.threadId,
+      state: DidCommProofState.RequestReceived,
+    })
+
+    const receivedRequest = await proverAgent.didcomm.proofs.findRequestMessage(proverProofExchangeRecord.id)
+    expect(receivedRequest?.timing?.expiresTime).toEqual(expiresTime)
+
+    // The verifier's stored copy of the request carries the same expiry
+    const sentRequest = await verifierAgent.didcomm.proofs.findRequestMessage(verifierProofExchangeRecord.id)
+    expect(sentRequest?.timing?.expiresTime).toEqual(expiresTime)
+  })
+
+  test('Verifier creates a connectionless proof request with an expiry time', async () => {
+    const expiresTime = new Date(Date.now() + 30 * 60 * 1000)
+
+    const { message, proofRecord } = await verifierAgent.didcomm.proofs.createRequest({
+      protocolVersion: 'v2',
+      proofFormats: {
+        presentationExchange: {
+          presentationDefinition: {
+            id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            input_descriptors: [TEST_INPUT_DESCRIPTORS_CITIZENSHIP],
+          },
+        },
+      },
+      expiresTime,
+    })
+
+    // Serialised as the RFC 0032 ~timing decorator
+    expect(JSON.parse(JSON.stringify(message.toJSON()))).toMatchObject({
+      '~timing': { expires_time: expiresTime.toISOString() },
+    })
+
+    // Stored before it is returned, so later lookups see the expiry too
+    const storedRequest = await verifierAgent.didcomm.proofs.findRequestMessage(proofRecord.id)
+    expect(storedRequest?.timing?.expiresTime).toEqual(expiresTime)
+  })
+
+  test('A proof request without an expiry time has no timing decorator', async () => {
+    const { message } = await verifierAgent.didcomm.proofs.createRequest({
+      protocolVersion: 'v2',
+      proofFormats: {
+        presentationExchange: {
+          presentationDefinition: {
+            id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            input_descriptors: [TEST_INPUT_DESCRIPTORS_CITIZENSHIP],
+          },
+        },
+      },
+    })
+
+    expect(message.timing).toBeUndefined()
   })
 })

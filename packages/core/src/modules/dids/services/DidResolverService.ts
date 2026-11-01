@@ -9,6 +9,7 @@ import { DidsModuleConfig } from '../DidsModuleConfig'
 import { DidDocument } from '../domain'
 import type { DidResolver } from '../domain/DidResolver'
 import { parseDid } from '../domain/parse'
+import { getAlternativeDidsForNumAlgo4Did } from '../methods/peer/peerDidNumAlgo4'
 import { DidRepository } from '../repository'
 import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
 
@@ -80,14 +81,14 @@ export class DidResolverService {
       )
 
       if (cachedDidDocument) {
-        return {
+        return this.ensureDidDocumentIdMatchesDid(parsed, {
           ...cachedDidDocument,
           didDocument: JsonTransformer.fromJSON(cachedDidDocument.didDocument, DidDocument),
           didResolutionMetadata: {
             ...cachedDidDocument.didResolutionMetadata,
             servedFromCache: true,
           },
-        }
+        })
       }
     }
 
@@ -99,18 +100,21 @@ export class DidResolverService {
       })
 
       if (didRecord?.didDocument) {
-        return {
+        return this.ensureDidDocumentIdMatchesDid(parsed, {
           didDocument: didRecord.didDocument,
           didDocumentMetadata: {},
           didResolutionMetadata: {
             servedFromCache: false,
             servedFromDidRecord: true,
           },
-        }
+        })
       }
     }
 
-    let resolutionResult = await resolver.resolve(agentContext, parsed.did, parsed, options)
+    let resolutionResult = this.ensureDidDocumentIdMatchesDid(
+      parsed,
+      await resolver.resolve(agentContext, parsed.did, parsed, options)
+    )
     // Avoid overwriting existing document
     resolutionResult = {
       ...resolutionResult,
@@ -170,6 +174,23 @@ export class DidResolverService {
 
     const { cacheKey, cacheScope } = this.getCacheKeyAndScope(parsed)
     await cache.remove(agentContext, cacheKey, { scope: cacheScope })
+  }
+
+  /**
+   * A short form did:peer:4 resolves to the document of its long form, which is bound to it by hash.
+   */
+  private ensureDidDocumentIdMatchesDid(parsed: ParsedDid, result: DidResolutionResult): DidResolutionResult {
+    const id = result.didDocument?.id
+    if (!id || id === parsed.did || getAlternativeDidsForNumAlgo4Did(id)?.includes(parsed.did)) return result
+
+    return {
+      didDocument: null,
+      didDocumentMetadata: {},
+      didResolutionMetadata: {
+        error: 'invalidDidDocument',
+        message: `DID document id '${id}' does not match the resolved did '${parsed.did}'`,
+      },
+    }
   }
 
   private getCacheKeyAndScope(parsed: ParsedDid): { cacheKey: string; cacheScope: 'context' | 'global' } {

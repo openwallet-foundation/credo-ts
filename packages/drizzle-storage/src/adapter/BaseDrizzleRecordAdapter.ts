@@ -4,8 +4,10 @@ import {
   type BaseRecordConstructor,
   CredoError,
   decodeCursor,
+  JsonTransformer,
   type Query,
   type QueryOptions,
+  RecordDecodingError,
   RecordDuplicateError,
   RecordNotFoundError,
 } from '@credo-ts/core'
@@ -89,6 +91,9 @@ export abstract class BaseDrizzleRecordAdapter<
 
   public abstract getValues(record: CredoRecord): DrizzleAdapterValues<SQLiteTable>
   public getValuesWithBase(agentContext: AgentContext, record: CredoRecord) {
+    // Encoding validates the record, so an invalid record throws before it is stored
+    JsonTransformer.toJSON(record)
+
     return {
       ...this.getValues(record),
 
@@ -107,7 +112,15 @@ export abstract class BaseDrizzleRecordAdapter<
       Object.entries(values).filter(([_key, value]) => value !== null)
     ) as DrizzleAdapterRecordValues<SQLiteTable>
 
-    return this.toRecord(filteredValues)
+    try {
+      return this.toRecord(filteredValues)
+    } catch (error) {
+      throw new RecordDecodingError('Error decoding record', {
+        recordType: this.recordClass.type,
+        recordId: values.id,
+        cause: error,
+      })
+    }
   }
 
   public abstract toRecord(values: DrizzleAdapterRecordValues<SQLiteTable>): CredoRecord

@@ -25,15 +25,15 @@ import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidC
 import { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
 import type { DidCommKeylistUpdatedEvent, DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
-import type { DidCommMediationDenyMessage } from '../messages'
+import { DidCommMediationRole, DidCommMediationState } from '../models'
+import type { DidCommMediationDenyMessage } from '../protocol/v1/messages'
 import {
   DidCommKeylistUpdateAction,
   DidCommKeylistUpdateResponseMessage,
   DidCommMediationGrantMessage,
   DidCommMediationRequestMessage,
-} from '../messages'
-import { DidCommKeylistUpdate, DidCommKeylistUpdateMessage } from '../messages/DidCommKeylistUpdateMessage'
-import { DidCommMediationRole, DidCommMediationState } from '../models'
+} from '../protocol/v1/messages'
+import { DidCommKeylistUpdate, DidCommKeylistUpdateMessage } from '../protocol/v1/messages/DidCommKeylistUpdateMessage'
 import { DidCommMediationRecord } from '../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../repository/DidCommMediationRepository'
 import type { GetRoutingOptions, RemoveRoutingOptions } from './DidCommRoutingService'
@@ -145,6 +145,7 @@ export class DidCommMediationRecipientService {
       payload: {
         mediationRecord,
         keylist,
+        threadId: messageContext.message.thread?.threadId,
       },
     })
   }
@@ -194,6 +195,9 @@ export class DidCommMediationRecipientService {
         filterContextCorrelationId(agentContext.contextCorrelationId),
         // Only take event for current mediation record
         filter((event) => mediationRecord.id === event.payload.mediationRecord.id),
+        // Only take the response to this keylist update, as concurrent updates to the same mediator would
+        // otherwise resolve each other. Unthreaded responses from older mediators are still accepted.
+        filter((event) => !event.payload.threadId || event.payload.threadId === message.threadId),
         // Only wait for first event that matches the criteria
         first(),
         // Do not wait for longer than specified timeout

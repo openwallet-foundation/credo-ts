@@ -10,28 +10,14 @@ export interface CrlFetchOptions {
 
   /**
    * Maximum CRL fetch time after which request will be aborted
-   * @default 5000 (5 seconds)
    */
-  timeoutMs?: number
+  timeoutMs: number
 
   /**
    * Maximum size in bytes for CRL downloads
-   * @default 10485760 (10 MB)
    */
-  maxSizeBytes?: number
+  maxSizeBytes: number
 }
-
-/**
- * Default maximum CRL size in bytes (10 MB)
- * This is a reasonable limit as most CRLs are much smaller.
- * Very large CRLs (>10 MB) are uncommon and may indicate issues.
- */
-const DEFAULT_MAX_CRL_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
-
-/**
- * Default CRL fetch timeout in milliseconds (5 seconds)
- */
-const DEFAULT_TIMEOUT_MILLISECONDS = 5000
 
 // Versioned so future summary shape changes can bump the key. Distinct from the legacy
 // `x509:crl:${url}` raw-bytes key, which this version no longer reads or writes but which older
@@ -50,12 +36,7 @@ function crlSummaryCacheKey(url: string): string {
  * @throws {X509Error} If the fetch fails, returns a non-OK status, or exceeds the size limit
  */
 export async function fetchCrl(options: CrlFetchOptions): Promise<Uint8Array> {
-  const {
-    url,
-    timeoutMs = DEFAULT_TIMEOUT_MILLISECONDS,
-    agentContext,
-    maxSizeBytes = DEFAULT_MAX_CRL_SIZE_BYTES,
-  } = options
+  const { url, timeoutMs, agentContext, maxSizeBytes } = options
 
   try {
     const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, url, {

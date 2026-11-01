@@ -23,6 +23,8 @@ import type {
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialRequestFormatSpecific,
   OpenId4VciDeferredCredentialRequest,
+  OpenId4VciIssuerInfo,
+  OpenId4VciParsedCredentialRequest,
   OpenId4VciTxCode,
   OpenId4VcJwtIssuer,
   VerifiedOpenId4VcCredentialHolderBinding,
@@ -31,6 +33,10 @@ import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciChainedAuthorizationServerConfig,
 } from '../shared/models/OpenId4VciAuthorizationServerConfig'
+import type {
+  supportedResponseEncryptionContentAlgorithms,
+  supportedResponseEncryptionKeyAgreementAlgorithms,
+} from '../shared/utils'
 import {
   OpenId4VcIssuanceSessionRecord,
   type OpenId4VcIssuanceSessionRecordTransaction,
@@ -198,7 +204,8 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
   issuanceMetadata?: Record<string, unknown>
 
   /**
-   * Whether this issuance session allows to generate refresh tokens.
+   * Whether this issuance session allows to generate refresh tokens. If not provided, the global config value is
+   * used. Refresh tokens are bound to the DPoP key of the wallet, so this requires DPoP to be required for the session.
    */
   generateRefreshTokens?: boolean
 
@@ -213,7 +220,7 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {
-  credentialRequest: OpenId4VciCredentialRequest
+  parsedCredentialRequest: OpenId4VciParsedCredentialRequest
   authorization: OpenId4VciCredentialRequestAuthorization
 
   /**
@@ -364,7 +371,8 @@ interface OpenId4VciInternalDynamicIssuanceSessionOptionsBase extends OpenId4Vci
   requirePkce?: boolean
 
   /**
-   * Whether this issuance session allows to generate refresh tokens.
+   * Whether this issuance session allows to generate refresh tokens. If not provided, the global config value is
+   * used. Refresh tokens are bound to the DPoP key of the wallet, so this requires DPoP to be required for the session.
    */
   generateRefreshTokens?: boolean
 }
@@ -742,6 +750,27 @@ export interface OpenId4VciBatchCredentialIssuanceOptions {
   batchSize: number
 }
 
+export interface OpenId4VciCredentialResponseEncryptionOptions {
+  required?: boolean
+
+  algValuesSupported?: [
+    (typeof supportedResponseEncryptionKeyAgreementAlgorithms)[number],
+    ...(typeof supportedResponseEncryptionKeyAgreementAlgorithms)[number][],
+  ]
+
+  encValuesSupported?: [
+    (typeof supportedResponseEncryptionContentAlgorithms)[number],
+    ...(typeof supportedResponseEncryptionContentAlgorithms)[number][],
+  ]
+}
+
+export interface OpenId4VciCredentialRequestEncryptionOptions {
+  required?: boolean
+
+  // each `kid` must be the KMS key id, it's used to find the private key when decrypting
+  jwks: [Kms.KmsJwkPublic & { kid: string }, ...Array<Kms.KmsJwkPublic & { kid: string }>]
+}
+
 export type OpenId4VciCreateIssuerOptions = {
   /**
    * Id of the issuer, not the id of the issuer record. Will be exposed publicly
@@ -767,7 +796,18 @@ export type OpenId4VciCreateIssuerOptions = {
   accessTokenSignerKmsBackend?: string
 
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
+
+  /**
+   * Issuer attestations published as `issuer_info` in the credential issuer metadata.
+   */
+  issuerInfo?: OpenId4VciIssuerInfo
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
+
+  /**
+   * The DPoP signing algorithms supported by this issuer.
+   * If not provided, `dpopSigningAlgValuesSupported` from the issuer module config is used, or else all
+   * signature algorithms supported by the agent's KMS.
+   */
   dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   clientAttestationSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   clientAttestationPopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
@@ -778,6 +818,10 @@ export type OpenId4VciCreateIssuerOptions = {
    * Indicate support for batch issuance of credentials
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
+
+  credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
+
+  credentialRequestEncryption?: OpenId4VciCredentialRequestEncryptionOptions
 
   /**
    * When provided, allows wallets to fetch signed metadata.
@@ -808,11 +852,14 @@ export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   OpenId4VcIssuerRecordProps,
   | 'issuerId'
   | 'display'
+  | 'issuerInfo'
   | 'dpopSigningAlgValuesSupported'
   | 'clientAttestationSigningAlgValuesSupported'
   | 'clientAttestationPopSigningAlgValuesSupported'
   | 'credentialConfigurationsSupported'
   | 'batchCredentialIssuance'
+  | 'credentialResponseEncryption'
+  | 'credentialRequestEncryption'
   | 'authorizationServerConfigs'
 > &
   OpenId4VcUpdateIssuerOptions

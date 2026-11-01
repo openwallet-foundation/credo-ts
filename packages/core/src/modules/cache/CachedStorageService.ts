@@ -22,19 +22,19 @@ export class CachedStorageService<T extends BaseRecord<any, any, any>> implement
   }
 
   public async save(agentContext: AgentContext, record: T): Promise<void> {
+    await this.storageService.save(agentContext, record)
+
     if (record.allowCache) {
       await this.cache(agentContext).set(agentContext, this.getCacheKey(record), record.toJSON())
     }
-
-    return await this.storageService.save(agentContext, record)
   }
 
   public async update(agentContext: AgentContext, record: T): Promise<void> {
+    await this.storageService.update(agentContext, record)
+
     if (record.allowCache) {
       await this.cache(agentContext).set(agentContext, this.getCacheKey(record), record.toJSON())
     }
-
-    return await this.storageService.update(agentContext, record)
   }
 
   public async delete(agentContext: AgentContext, record: T): Promise<void> {

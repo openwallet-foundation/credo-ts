@@ -46,8 +46,6 @@ describe.each(['postgres', 'sqlite'] as const)('AnonCredsSchemaRecord with %s', 
     await anoncredsSchemaRepository.update(recordTest.agent.context, schema)
 
     const [schema3] = await anoncredsSchemaRepository.findByQuery(recordTest.agent.context, {
-      // TODO: we should allow null values in the query
-      // unqualifiedSchemaId: null,
       isMorning: false,
       schemaName: 'TestSchema',
       schemaVersion: '1.0.0',

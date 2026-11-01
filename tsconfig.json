@@ -1,7 +1,6 @@
 {
   "extends": "./tsconfig.build.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "types": ["node", "vitest/globals"],
     "allowJs": true
   },

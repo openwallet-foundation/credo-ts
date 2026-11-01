@@ -1,5 +1,6 @@
 import { Subject } from 'rxjs'
 import { InjectionSymbols } from '../constants'
+import { JweService } from '../crypto/JweService'
 import { JwsService } from '../crypto/JwsService'
 import { CredoError } from '../error'
 import { DependencyManager } from '../plugins'
@@ -29,6 +30,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     // Register internal dependencies
     dependencyManager.registerSingleton(EventEmitter)
     dependencyManager.registerSingleton(JwsService)
+    dependencyManager.registerSingleton(JweService)
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
 

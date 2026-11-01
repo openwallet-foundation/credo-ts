@@ -1,15 +1,18 @@
 import type { AgentContext } from '../../agent/context'
+import type { GetTrustedIssuersForCredential, TrustedIssuerDid } from '../../agent/TrustedIssuersForVerification'
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import { asArray } from '../../utils/array'
+import { getPublicJwkFromVerificationMethod } from '../dids'
+import { extractKeyFromHolderBinding, parseHolderBindingFromCredential } from '../sd-jwt-vc/utils'
 import {
   W3cV2DataIntegrityCredentialService,
   type W3cV2DataIntegrityResolvedPresentation,
   W3cV2DataIntegrityVerifiableCredential,
   W3cV2DataIntegrityVerifiablePresentation,
 } from './data-integrity'
-import { getSignerForDataIntegrityProof } from './data-integrity/v2-di-utils'
+import { resolveDataIntegritySigner } from './data-integrity/v2-di-utils'
 import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiablePresentation } from './jwt-vc'
 import { W3cV2JwtCredentialService } from './jwt-vc/W3cV2JwtCredentialService'
 import type {
@@ -28,13 +31,15 @@ import {
 } from './models'
 import { decodeW3cV2VerifiableCredential } from './models/credential/W3cV2VerifiableCredential'
 import type { W3cV2Presentation } from './models/presentation/W3cV2Presentation'
+import type { SingleValidationResult } from './models/W3cVerifyResult'
 import { W3cV2CredentialRecord, W3cV2CredentialRepository } from './repository'
+import { type ResolvedSigner } from './resolveSigner'
 import {
   W3cV2SdJwtCredentialService,
   W3cV2SdJwtVerifiableCredential,
   W3cV2SdJwtVerifiablePresentation,
 } from './sd-jwt-vc'
-import { getVerificationMethodForJwt } from './v2-jwt-utils'
+import { getSignerForJwt } from './v2-jwt-utils'
 import type {
   W3cV2DiSignCredentialOptions,
   W3cV2DiSignPresentationOptions,
@@ -210,7 +215,7 @@ export class W3cV2CredentialService {
     }
 
     let entries: W3cV2PresentationCredentialEntry[] = []
-    let signerId: string | undefined
+    let signer: ResolvedSigner
 
     // Phase 1: verify the outer secured VP envelope and derive the authenticated presenter.
     if (presentation instanceof W3cV2JwtVerifiablePresentation) {
@@ -222,21 +227,16 @@ export class W3cV2CredentialService {
 
       if (!presentationResult.presentation.isValid) {
         validationResults.isValid = false
+        validationResults.error = presentationResult.error
         return validationResults
       }
 
-      const holderId = presentation.resolvedPresentation.holderId
-      if (holderId) {
-        signerId = holderId
-      } else {
-        try {
-          const verificationMethod = await getVerificationMethodForJwt(agentContext, presentation, ['authentication'])
-          signerId = verificationMethod.controller
-        } catch (error) {
-          validationResults.isValid = false
-          validationResults.error = error
-          return validationResults
-        }
+      try {
+        signer = await getSignerForJwt(agentContext, presentation, ['authentication'])
+      } catch (error) {
+        validationResults.isValid = false
+        validationResults.error = error
+        return validationResults
       }
       entries = this.extractCredentialEntriesFromPresentation(presentation)
     } else if (presentation instanceof W3cV2SdJwtVerifiablePresentation) {
@@ -248,21 +248,16 @@ export class W3cV2CredentialService {
 
       if (!presentationResult.presentation.isValid) {
         validationResults.isValid = false
+        validationResults.error = presentationResult.error
         return validationResults
       }
 
-      const holderId = presentation.resolvedPresentation.holderId
-      if (holderId) {
-        signerId = holderId
-      } else {
-        try {
-          const verificationMethod = await getVerificationMethodForJwt(agentContext, presentation, ['authentication'])
-          signerId = verificationMethod.controller
-        } catch (error) {
-          validationResults.isValid = false
-          validationResults.error = error
-          return validationResults
-        }
+      try {
+        signer = await getSignerForJwt(agentContext, presentation, ['authentication'])
+      } catch (error) {
+        validationResults.isValid = false
+        validationResults.error = error
+        return validationResults
       }
       entries = this.extractCredentialEntriesFromPresentation(presentation)
     } else if (presentation instanceof W3cV2DataIntegrityVerifiablePresentation) {
@@ -274,26 +269,23 @@ export class W3cV2CredentialService {
 
       if (!presentationResult.presentation.isValid) {
         validationResults.isValid = false
+        validationResults.error = presentationResult.error
         return validationResults
       }
 
-      signerId = presentation.resolvedPresentation.holderId
-      if (!signerId) {
-        try {
-          // The holder is optional in VCDM 2.0, so fall back to the identity that authenticated the
-          // presentation, mirroring how the JWT and SD-JWT branches above derive their signer.
-          // No expected controller is passed: with no declared holder there is nothing to
-          // disambiguate against, so an ambiguous proof set is rejected rather than guessed at.
-          signerId = await getSignerForDataIntegrityProof(
-            agentContext,
-            presentation.securedPresentation,
-            'authentication'
-          )
-        } catch (error) {
-          validationResults.isValid = false
-          validationResults.error = error
-          return validationResults
-        }
+      try {
+        // Without a holder there is nothing to disambiguate a proof set against, so an ambiguous
+        // proof set is rejected rather than guessed at.
+        signer = await resolveDataIntegritySigner(
+          agentContext,
+          presentation.securedPresentation,
+          'authentication',
+          presentation.resolvedPresentation.holderId
+        )
+      } catch (error) {
+        validationResults.isValid = false
+        validationResults.error = error
+        return validationResults
       }
 
       entries = this.extractCredentialEntriesFromPresentation(presentation)
@@ -305,7 +297,14 @@ export class W3cV2CredentialService {
 
     // Phase 2: walk enclosed credential entries and verify recursively by entry format.
     validationResults.credentialEntries = (
-      await Promise.all(entries.map((entry) => this.verifyPresentationEntry(agentContext, entry, signerId)))
+      await Promise.all(
+        entries.map((entry) =>
+          this.verifyPresentationEntry(agentContext, entry, signer, options.trustedIssuers, {
+            nonce: options.challenge,
+            audience: options.domain,
+          })
+        )
+      )
     ).flat()
 
     validationResults.isValid =
@@ -317,7 +316,9 @@ export class W3cV2CredentialService {
   private async verifyPresentationEntry(
     agentContext: AgentContext,
     entry: W3cV2PresentationCredentialEntry,
-    signerId: string
+    signer: ResolvedSigner,
+    trustedIssuers: TrustedIssuerDid[] | GetTrustedIssuersForCredential | undefined,
+    presentationBinding: { nonce: string; audience?: string }
   ): Promise<W3cV2PresentationCredentialEntryResult[]> {
     if (entry instanceof W3cV2DataIntegrityVerifiablePresentation) {
       return [
@@ -330,14 +331,13 @@ export class W3cV2CredentialService {
     if (entry instanceof W3cV2DataIntegrityVerifiableCredential) {
       const credentialResult = await this.w3cV2DataIntegrityCredentialService.verifyCredential(agentContext, {
         credential: entry,
+        trustedIssuers,
       } as W3cV2DiVerifyCredentialOptions)
 
       return [
-        this.mergeCredentialSubjectAuthenticationValidation(
-          credentialResult,
-          signerId,
-          entry.resolvedCredential?.credentialSubjectIds ?? []
-        ),
+        this.mergeHolderValidations(credentialResult, signer, entry.resolvedCredential?.credentialSubjectIds ?? [], {
+          isValid: true,
+        }),
       ]
     }
 
@@ -357,15 +357,31 @@ export class W3cV2CredentialService {
 
     const enclosed = entry.envelopedCredential
     let credentialResult: W3cV2VerifyCredentialResult
+    let claims: Record<string, unknown>
 
     if (enclosed instanceof W3cV2JwtVerifiableCredential) {
       credentialResult = await this.w3cV2JwtCredentialService.verifyCredential(agentContext, {
         credential: enclosed,
+        trustedIssuers,
       } as W3cV2JwtVerifyCredentialOptions)
+      claims = enclosed.jwt.payload.toJson()
     } else if (enclosed instanceof W3cV2SdJwtVerifiableCredential) {
+      // The presentation proves possession of the key. A KB-JWT is optional, but must match the presentation.
+      const { nonce, audience } = presentationBinding
+      if (enclosed.sdJwt.kbJwt && !audience) {
+        return [
+          this.createInvalidCredentialEntryResult(
+            new CredoError('Credential has a KB-JWT, but no domain is provided to verify its audience')
+          ),
+        ]
+      }
+
       credentialResult = await this.w3cV2SdJwtCredentialService.verifyCredential(agentContext, {
         credential: enclosed,
+        trustedIssuers,
+        keyBinding: enclosed.sdJwt.kbJwt && audience ? { nonce, audience } : undefined,
       } as W3cV2SdJwtVerifyCredentialOptions)
+      claims = enclosed.sdJwt.prettyClaims
     } else {
       return [
         this.createInvalidCredentialEntryResult(
@@ -377,12 +393,42 @@ export class W3cV2CredentialService {
     }
 
     return [
-      this.mergeCredentialSubjectAuthenticationValidation(
+      this.mergeHolderValidations(
         credentialResult,
-        signerId,
-        entry.resolvedCredential.credentialSubjectIds
+        signer,
+        entry.resolvedCredential.credentialSubjectIds,
+        await this.verifyHolderBinding(agentContext, claims, signer)
       ),
     ]
+  }
+
+  /**
+   * A credential bound to a key with `cnf` must be presented with that key.
+   */
+  private async verifyHolderBinding(
+    agentContext: AgentContext,
+    claims: Record<string, unknown>,
+    signer: ResolvedSigner
+  ): Promise<SingleValidationResult> {
+    try {
+      const holderBinding = parseHolderBindingFromCredential(claims)
+      if (!holderBinding) return { isValid: true }
+
+      // The presentation signer is resolved under `authentication`, so the holder key must be too
+      const { publicJwk } = await extractKeyFromHolderBinding(agentContext, holderBinding, {
+        didPurposes: ['authentication'],
+      })
+      if (publicJwk.equals(getPublicJwkFromVerificationMethod(signer.verificationMethod))) return { isValid: true }
+
+      return {
+        isValid: false,
+        error: new CredoError(
+          `Credential is bound to a different key than verification method ${signer.verificationMethod.id} that signed the presentation`
+        ),
+      }
+    } catch (error) {
+      return { isValid: false, error }
+    }
   }
 
   private extractCredentialEntriesFromPresentation(
@@ -415,12 +461,15 @@ export class W3cV2CredentialService {
     return typeof candidate.claimFormat === 'string' ? candidate.claimFormat : undefined
   }
 
-  private mergeCredentialSubjectAuthenticationValidation(
+  private mergeHolderValidations(
     credentialResult: W3cV2VerifyCredentialResult,
-    signerId: string,
-    credentialSubjectIds: string[]
+    signer: ResolvedSigner,
+    credentialSubjectIds: string[],
+    holderBinding: SingleValidationResult
   ) {
-    const presentationAuthenticatesCredentialSubject = credentialSubjectIds.some((subjectId) => signerId === subjectId)
+    const presentationAuthenticatesCredentialSubject = credentialSubjectIds.some(
+      (subjectId) => signer.signer === subjectId
+    )
 
     const credentialSubjectAuthentication =
       credentialSubjectIds.length > 0 && !presentationAuthenticatesCredentialSubject
@@ -436,10 +485,11 @@ export class W3cV2CredentialService {
 
     return {
       ...credentialResult,
-      isValid: credentialResult.isValid && credentialSubjectAuthentication.isValid,
+      isValid: credentialResult.isValid && credentialSubjectAuthentication.isValid && holderBinding.isValid,
       validations: {
         ...credentialResult.validations,
         credentialSubjectAuthentication,
+        holderBinding,
       },
     }
   }

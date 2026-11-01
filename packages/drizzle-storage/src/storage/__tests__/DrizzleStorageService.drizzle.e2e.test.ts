@@ -1,4 +1,4 @@
-import { Agent, GenericRecord, RecordDuplicateError, RecordNotFoundError } from '@credo-ts/core'
+import { Agent, GenericRecord, RecordDecodingError, RecordDuplicateError, RecordNotFoundError } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 import { GenericRecordsRepository } from '../../../../core/src/modules/generic-records/repository/GenericRecordsRepository'
 import {
@@ -8,10 +8,14 @@ import {
   pushDrizzleSchema,
 } from '../../../tests/testDatabase'
 import { coreBundle } from '../../core/bundle'
+import { genericRecord as postgresGenericRecord } from '../../core/generic-record/postgres'
+import { genericRecord as sqliteGenericRecord } from '../../core/generic-record/sqlite'
+import { type DrizzleDatabase, isDrizzlePostgresDatabase } from '../../DrizzleDatabase'
 import { DrizzleStorageModule } from '../../DrizzleStorageModule'
 
 describe.each(['postgres', 'sqlite'] as const)('DrizzleStorageService with %s', (drizzleDialect) => {
   let postgresDatabase: DrizzlePostgresTestDatabase | undefined
+  let database: DrizzleDatabase
   let agent: Agent
 
   beforeAll(async () => {
@@ -19,8 +23,9 @@ describe.each(['postgres', 'sqlite'] as const)('DrizzleStorageService with %s', 
       postgresDatabase = await createDrizzlePostgresTestDatabase()
     }
 
+    database = postgresDatabase?.drizzle ?? (await inMemoryDrizzleSqliteDatabase())
     const drizzleModule = new DrizzleStorageModule({
-      database: postgresDatabase?.drizzle ?? (await inMemoryDrizzleSqliteDatabase()),
+      database,
       bundles: [coreBundle],
     })
 
@@ -71,6 +76,40 @@ describe.each(['postgres', 'sqlite'] as const)('DrizzleStorageService with %s', 
     await expect(
       genericRecordsRepository.update(agent.context, new GenericRecord({ id: 'not-existent', content: {} }))
     ).rejects.toThrow(RecordNotFoundError)
+  })
+
+  test('does not store a record that fails to encode', async () => {
+    const genericRecordsRepository = agent.context.resolve(GenericRecordsRepository)
+
+    await expect(
+      genericRecordsRepository.save(
+        agent.context,
+        new GenericRecord({ id: 'invalid-save', content: 'not-an-object' as unknown as Record<string, unknown> })
+      )
+    ).rejects.toThrow()
+    await expect(genericRecordsRepository.findById(agent.context, 'invalid-save')).resolves.toBeNull()
+  })
+
+  test('throws RecordDecodingError when a stored record fails to decode', async () => {
+    const genericRecordsRepository = agent.context.resolve(GenericRecordsRepository)
+
+    // Inserted directly, as the storage service doesn't store invalid records
+    const values = {
+      contextCorrelationId: agent.context.contextCorrelationId,
+      id: 'invalid',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      content: 'not-an-object' as unknown as Record<string, unknown>,
+    }
+    if (isDrizzlePostgresDatabase(database)) {
+      await database.insert(postgresGenericRecord).values(values)
+    } else {
+      await database.insert(sqliteGenericRecord).values(values)
+    }
+
+    const error = await genericRecordsRepository.getById(agent.context, 'invalid').catch((error) => error)
+    expect(error).toBeInstanceOf(RecordDecodingError)
+    expect(error).toMatchObject({ recordType: 'GenericRecord', recordId: 'invalid' })
   })
 
   describe('updateByIdWithLock', () => {

@@ -1,7 +1,7 @@
 import type { TagsBase } from '@credo-ts/core'
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils, zTypedObject } from '@credo-ts/core'
+import { z } from 'zod'
 import type { AnonCredsSchema } from '../models'
-import { getUnqualifiedSchemaId, isDidIndySchemaId, parseIndySchemaId } from '../utils/indyIdentifiers'
 import type { AnonCredsSchemaRecordMetadata } from './anonCredsSchemaRecordMetadataTypes'
 
 export interface AnonCredsSchemaRecordProps {
@@ -18,18 +18,23 @@ export type DefaultAnonCredsSchemaTags = {
   schemaName: string
   schemaVersion: string
   methodName: string
-
-  // Stores the unqualified variant of the schema id, which allows issuing credentials using the legacy
-  // schema id, even though the schema id is stored in the wallet as a qualified id.
-  // This is only added when the schema id is an did:indy identifier.
-  unqualifiedSchemaId?: string
 }
+
+const anonCredsSchemaRecordEncodingSchema = createRecordEncodingSchema({
+  schemaId: z.string().nullish(),
+  schema: zTypedObject<AnonCredsSchema>().nullish(),
+  methodName: z.string().nullish(),
+})
 
 export class AnonCredsSchemaRecord extends BaseRecord<
   DefaultAnonCredsSchemaTags,
   TagsBase,
   AnonCredsSchemaRecordMetadata
 > {
+  public static get encodingSchema(): z.ZodType {
+    return anonCredsSchemaRecordEncodingSchema
+  }
+
   public static readonly type = 'AnonCredsSchemaRecord'
   public readonly type = AnonCredsSchemaRecord.type
 
@@ -55,12 +60,6 @@ export class AnonCredsSchemaRecord extends BaseRecord<
   }
 
   public getTags() {
-    let unqualifiedSchemaId: string | undefined
-    if (isDidIndySchemaId(this.schemaId)) {
-      const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(this.schemaId)
-      unqualifiedSchemaId = getUnqualifiedSchemaId(namespaceIdentifier, schemaName, schemaVersion)
-    }
-
     return {
       ...this._tags,
       schemaId: this.schemaId,
@@ -68,7 +67,6 @@ export class AnonCredsSchemaRecord extends BaseRecord<
       schemaName: this.schema.name,
       schemaVersion: this.schema.version,
       methodName: this.methodName,
-      unqualifiedSchemaId,
     }
   }
 }

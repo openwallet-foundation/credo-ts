@@ -1,4 +1,9 @@
-import { AgentContext, injectable, utils } from '@credo-ts/core'
+import { AgentContext, EventEmitter, InjectionSymbols, injectable, utils } from '@credo-ts/core'
+import { type Subject, takeUntil } from 'rxjs'
+import {
+  DidCommMessagePickupEventTypes,
+  type MessagePickupLiveSessionRemovedEvent,
+} from '../../modules/message-pickup/DidCommMessagePickupEvents'
 import type { DidCommQueueTransportRepository } from './DidCommQueueTransportRepository'
 import type { QueuedDidCommMessage } from './QueuedDidCommMessage'
 import type {
@@ -20,6 +25,20 @@ export class InMemoryQueueTransportRepository implements DidCommQueueTransportRe
 
   public constructor() {
     this.messages = []
+  }
+
+  public start(agentContext: AgentContext): void {
+    const stop$ = agentContext.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
+    const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
+
+    eventEmitter
+      .observable<MessagePickupLiveSessionRemovedEvent>(DidCommMessagePickupEventTypes.LiveSessionRemoved)
+      .pipe(takeUntil(stop$))
+      .subscribe(({ payload: { session } }) => {
+        for (const msg of this.messages) {
+          if (msg.connectionId === session.connectionId && msg.state === 'sending') msg.state = 'pending'
+        }
+      })
   }
 
   public getAvailableMessageCount(

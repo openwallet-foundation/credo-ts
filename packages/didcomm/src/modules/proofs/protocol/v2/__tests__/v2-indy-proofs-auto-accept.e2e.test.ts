@@ -1,8 +1,8 @@
-import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import {
-  issueLegacyAnonCredsCredential,
+  issueIndyAnonCredsCredential,
   setupAnonCredsTests,
-} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+} from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import type { EventReplaySubject } from '../../../../../../../core/tests'
 import { testLogger, waitForProofExchangeRecordSubject } from '../../../../../../../core/tests'
 import { DidCommAutoAcceptProof, DidCommProofState } from '../../../models'
@@ -33,7 +33,7 @@ describe('Auto accept present proof', () => {
         autoAcceptProofs: DidCommAutoAcceptProof.Always,
       }))
 
-      await issueLegacyAnonCredsCredential({
+      await issueIndyAnonCredsCredential({
         issuerAgent: faberAgent,
         issuerReplay: faberReplay,
         holderAgent: aliceAgent,
@@ -67,7 +67,7 @@ describe('Auto accept present proof', () => {
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         proofFormats: {
-          indy: {
+          anoncreds: {
             name: 'abc',
             version: '1.0',
             attributes: [
@@ -104,7 +104,7 @@ describe('Auto accept present proof', () => {
         protocolVersion: 'v2',
         connectionId: faberConnectionId,
         proofFormats: {
-          indy: {
+          anoncreds: {
             name: 'proof-request',
             version: '1.0',
             requested_attributes: {
@@ -160,7 +160,7 @@ describe('Auto accept present proof', () => {
         autoAcceptProofs: DidCommAutoAcceptProof.ContentApproved,
       }))
 
-      await issueLegacyAnonCredsCredential({
+      await issueIndyAnonCredsCredential({
         issuerAgent: faberAgent,
         issuerReplay: faberReplay,
         holderAgent: aliceAgent,
@@ -195,7 +195,7 @@ describe('Auto accept present proof', () => {
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         proofFormats: {
-          indy: {
+          anoncreds: {
             name: 'abc',
             version: '1.0',
             attributes: [
@@ -238,7 +238,7 @@ describe('Auto accept present proof', () => {
         protocolVersion: 'v2',
         connectionId: faberConnectionId,
         proofFormats: {
-          indy: {
+          anoncreds: {
             name: 'proof-request',
             version: '1.0',
             requested_attributes: {

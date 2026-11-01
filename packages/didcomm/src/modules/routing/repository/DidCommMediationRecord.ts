@@ -1,5 +1,5 @@
-import { BaseRecord, CredoError, utils } from '@credo-ts/core'
-import { Transform } from 'class-transformer'
+import { BaseRecord, CredoError, createRecordEncodingSchema, utils, zWithUpgrade } from '@credo-ts/core'
+import { z } from 'zod'
 import { DidCommMediatorPickupStrategy } from '../DidCommMediatorPickupStrategy'
 import type { DidCommMediationRole } from '../models/DidCommMediationRole'
 import { DidCommMediationState } from '../models/DidCommMediationState'
@@ -30,10 +30,27 @@ export type DefaultDidCommMediationTags = {
   threadId: string
 }
 
+const didCommMediationRecordEncodingSchema = createRecordEncodingSchema({
+  state: z.string().nullish(),
+  role: z.string().nullish(),
+  connectionId: z.string().nullish(),
+  threadId: z.string().nullish(),
+  endpoint: z.string().nullish(),
+  recipientKeys: z.array(z.string()).nullish(),
+  routingKeys: z.array(z.string()).nullish(),
+  pickupStrategy: zWithUpgrade(z.string(), (value) =>
+    value === 'Explicit' ? DidCommMediatorPickupStrategy.PickUpV1 : value
+  ).nullish(),
+})
+
 export class DidCommMediationRecord
   extends BaseRecord<DefaultDidCommMediationTags, CustomDidCommMediationTags>
   implements DidCommMediationRecordProps
 {
+  public static get encodingSchema(): z.ZodType {
+    return didCommMediationRecordEncodingSchema
+  }
+
   public state!: DidCommMediationState
   public role!: DidCommMediationRole
   public connectionId!: string
@@ -50,12 +67,6 @@ export class DidCommMediationRecord
    */
   public routingKeys!: string[]
 
-  @Transform(({ value }) => {
-    if (value === 'Explicit') {
-      return DidCommMediatorPickupStrategy.PickUpV1
-    }
-    return value
-  })
   public pickupStrategy?: DidCommMediatorPickupStrategy
 
   public static readonly type = 'MediationRecord'

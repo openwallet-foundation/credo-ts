@@ -1,13 +1,18 @@
 import type { AgentContext, KeyDidCreateOptions } from '@credo-ts/core'
 import { Agent, DidKey, JwtPayload, Kms, utils, X509ModuleConfig } from '@credo-ts/core'
-import type { JwtSigner } from '@openid4vc/oauth2'
+import type { Jwk, JwtSigner } from '@openid4vc/oauth2'
 import { decodeJwt } from '@openid4vc/oauth2'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcModule } from '../../OpenId4VcModule'
 import { OpenId4VcIssuanceSessionState } from '../../openid4vc-issuer/OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuanceSessionRecord } from '../../openid4vc-issuer/repository'
-import { getOid4vcJwtSignCallback, getOid4vcJwtVerifyCallback } from '../callbacks'
+import {
+  getOid4vcDecryptJweCallback,
+  getOid4vcEncryptJweCallback,
+  getOid4vcJwtSignCallback,
+  getOid4vcJwtVerifyCallback,
+} from '../callbacks'
 
 const agent = new Agent({
   config: {},
@@ -42,6 +47,14 @@ const createJwt = async (agentContext: AgentContext, options: { typ: string; sig
   return { signer: options.signer, compact: jwt, header, payload }
 }
 
+beforeAll(async () => {
+  await agent.initialize()
+})
+
+afterAll(async () => {
+  await agent.shutdown()
+})
+
 describe('getOid4vcJwtVerifyCallback', () => {
   let didUrl: string
   let did: string
@@ -59,8 +72,6 @@ describe('getOid4vcJwtVerifyCallback', () => {
     })(options.signer, { compact: options.compact, header: options.header, payload: options.payload })
 
   beforeAll(async () => {
-    await agent.initialize()
-
     const { keyId } = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
 
     const didCreateResult = await agent.dids.create<KeyDidCreateOptions>({
@@ -96,10 +107,6 @@ describe('getOid4vcJwtVerifyCallback', () => {
       x5c: [certificate.toString('base64url')],
       kid: certificate.publicJwk.keyId,
     }
-  })
-
-  afterAll(async () => {
-    await agent.shutdown()
   })
 
   afterEach(() => {
@@ -147,6 +154,8 @@ describe('getOid4vcJwtVerifyCallback', () => {
       ['key-attestation+jwt', 'openId4VciKeyAttestation'],
       ['openidvci-issuer-metadata+jwt', 'openId4VciCredentialIssuerMetadata'],
       ['oauth-client-attestation+jwt', 'oauth2ClientAttestation'],
+      ['application/oauth-client-attestation+jwt', 'oauth2ClientAttestation'],
+      ['Application/Key-Attestation+JWT', 'openId4VciKeyAttestation'],
     ])('trusted issuers callback is called for typ %s', async (typ, verificationType) => {
       const getTrustedIssuersForVerification = vi.fn().mockResolvedValue(undefined)
       agent.context.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
@@ -191,12 +200,28 @@ describe('getOid4vcJwtVerifyCallback', () => {
 
   describe('jwk signer', () => {
     // There is no `jwk` variant of `VerificationSigner`/`TrustedIssuer`, so a bare jwk signed
-    // key attestation is not checked against a trust list.
+    // credential issuer metadata is not checked against a trust list.
     test('is not checked against the trusted issuers', async () => {
-      const jwt = await createJwt(agent.context, { typ: 'key-attestation+jwt', signer: jwkSigner })
+      const jwt = await createJwt(agent.context, { typ: 'openidvci-issuer-metadata+jwt', signer: jwkSigner })
       agent.context.config.setTrustedIssuersForVerification(async () => ({ trustedIssuers: [] }))
 
       await expect(verify(jwt)).resolves.toEqual(expect.objectContaining({ verified: true }))
+    })
+
+    test.each([
+      ['oauth-client-attestation+jwt', 'Wallet attestations', true],
+      ['oauth-client-attestation+jwt', 'Wallet attestations', false],
+      ['key-attestation+jwt', 'Key attestations', true],
+      ['key-attestation+jwt', 'Key attestations', false],
+      ['keyattestation+jwt', 'Key attestations', true],
+      ['application/oauth-client-attestation+jwt', 'Wallet attestations', true],
+      ['Application/Key-Attestation+JWT', 'Key attestations', false],
+    ])('is rejected for typ %s (with issuance session: %s)', async (typ, name, withIssuanceSession) => {
+      const jwt = await createJwt(agent.context, { typ, signer: jwkSigner })
+
+      await expect(verify(jwt, { issuanceSession: withIssuanceSession })).rejects.toThrow(
+        `${name} signed with a 'jwk' header are not supported.`
+      )
     })
   })
 
@@ -273,6 +298,51 @@ describe('getOid4vcJwtVerifyCallback', () => {
 
       expect(result).toEqual(expect.objectContaining({ verified: true }))
       expect(getTrustedIssuersForVerification).not.toHaveBeenCalled()
+    })
+  })
+})
+
+describe('getOid4vcDecryptJweCallback', () => {
+  const createEncryptionKey = async () =>
+    (await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk as Jwk
+
+  const encrypt = async (publicJwk: Jwk) =>
+    (
+      await getOid4vcEncryptJweCallback(agent.context)(
+        { method: 'jwk', publicJwk, alg: 'ECDH-ES', enc: 'A256GCM' },
+        'secret payload'
+      )
+    ).jwe
+
+  test('decrypts with the provided jwk', async () => {
+    const encryptionJwk = await createEncryptionKey()
+    const jwe = await encrypt(encryptionJwk)
+
+    await expect(getOid4vcDecryptJweCallback(agent.context)(jwe, { jwk: encryptionJwk })).resolves.toMatchObject({
+      decrypted: true,
+      payload: 'secret payload',
+      decryptionJwk: { kid: encryptionJwk.kid },
+    })
+  })
+
+  test('does not fall back to the kid from the jwe header when no jwk is provided', async () => {
+    const encryptionJwk = await createEncryptionKey()
+    const jwe = await encrypt(encryptionJwk)
+
+    await expect(getOid4vcDecryptJweCallback(agent.context)(jwe)).resolves.toMatchObject({
+      decrypted: false,
+      header: { kid: encryptionJwk.kid },
+    })
+  })
+
+  test('decrypts with the provided jwk instead of the kid from the jwe header', async () => {
+    const encryptionJwk = await createEncryptionKey()
+    const otherJwk = await createEncryptionKey()
+    const jwe = await encrypt(otherJwk)
+
+    await expect(getOid4vcDecryptJweCallback(agent.context)(jwe, { jwk: encryptionJwk })).resolves.toMatchObject({
+      decrypted: false,
+      header: { kid: otherJwk.kid },
     })
   })
 })

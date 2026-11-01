@@ -57,7 +57,7 @@ export class X509Api {
    * @param options X509ParseCertificateSigningRequestOptions
    */
   public parseCertificateSigningRequest(options: X509ParseCertificateSigningRequestOptions) {
-    return X509Service.parseCertificateSigningRequest(options)
+    return X509Service.parseCertificateSigningRequest(this.agentContext, options)
   }
 
   /**

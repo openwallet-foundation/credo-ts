@@ -33,14 +33,14 @@
     "events": "^3.3.0"
   },
   "devDependencies": {
-    "react-native": "^0.84.1",
+    "react-native": "^0.88.0",
     "react-native-fs": "^2.20.0",
-    "@dr.pogodin/react-native-fs": "^2.37.0",
+    "@dr.pogodin/react-native-fs": "^2.41.0",
     "react-native-get-random-values": "^2.0.0",
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@animo-id/expo-secure-environment": "^0.1.1",
+    "@animo-id/expo-secure-environment": "^0.3.0",
     "expo-crypto": "^15.0.7",
     "react-native": ">=0.71.4",
     "@dr.pogodin/react-native-fs": ">= 2.37.0",

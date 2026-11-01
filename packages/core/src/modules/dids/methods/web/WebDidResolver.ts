@@ -1,6 +1,7 @@
 import { Resolver } from 'did-resolver'
 import * as didWeb from 'web-did-resolver'
 import type { AgentContext } from '../../../../agent'
+import { fetchWithTimeout } from '../../../../utils/fetch'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { DidDocument } from '../../domain'
 import type { DidResolver } from '../../domain/DidResolver'
@@ -13,19 +14,23 @@ export class WebDidResolver implements DidResolver {
   public readonly allowsLocalDidRecord = true
 
   private resolver = didWeb.getResolver()
-  private didResolver = new Resolver(this.resolver)
 
   public constructor() {
     this.supportedMethods = Object.keys(this.resolver)
   }
 
   public async resolve(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     did: string,
     _parsed: ParsedDid,
     didResolutionOptions: DidResolutionOptions
   ): Promise<DidResolutionResult> {
-    const result = await this.didResolver.resolve(did, didResolutionOptions)
+    const didResolver = new Resolver(
+      didWeb.getResolver({
+        fetch: (url, init) => fetchWithTimeout(agentContext.config.agentDependencies.fetch, url, init),
+      })
+    )
+    const result = await didResolver.resolve(did, didResolutionOptions)
 
     let didDocument = null
 

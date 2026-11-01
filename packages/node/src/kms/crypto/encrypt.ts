@@ -19,7 +19,8 @@ export const nodeSupportedEncryptionAlgorithms = [
 export async function performEncrypt(
   key: Kms.KmsJwkPrivateOct,
   dataEncryption: Kms.KmsEncryptDataContentEncryption,
-  data: Uint8Array
+  data: Uint8Array,
+  aad?: Uint8Array
 ): Promise<{ encrypted: Uint8Array; tag?: Uint8Array; iv: Uint8Array }> {
   const secretKeyBytes = TypedArrayEncoder.fromBase64Url(key.k)
   const nodeKey = createSecretKey(secretKeyBytes)
@@ -64,13 +65,13 @@ export async function performEncrypt(
     // Calculate authentication tag
     // AL (Associated Length) is 64-bit big-endian length of AAD in bits
     const al = Buffer.alloc(8)
-    const aadLength = dataEncryption.aad ? dataEncryption.aad.length * 8 : 0
+    const aadLength = aad ? aad.length * 8 : 0
     al.writeBigUInt64BE(BigInt(aadLength))
 
     // Create concatenated buffer for MAC calculation
     const macData = Buffer.concat([
       // If AAD exists, include it first, otherwise empty buffer
-      dataEncryption.aad ?? Buffer.alloc(0),
+      aad ?? Buffer.alloc(0),
       iv, // Initial Vector
       encrypted, // Ciphertext
       al, // Associated Length (AL)
@@ -103,8 +104,8 @@ export async function performEncrypt(
     const cipher = createCipheriv(nodeAlgorithm, nodeKey, iv)
 
     // If AAD is provided, update the cipher with it before encryption
-    if (dataEncryption.aad) {
-      cipher.setAAD(dataEncryption.aad)
+    if (aad) {
+      cipher.setAAD(aad)
     }
 
     // Get encrypted data
@@ -128,8 +129,8 @@ export async function performEncrypt(
     })
 
     // If AAD is provided, update the cipher with it before encryption
-    if (dataEncryption.aad) {
-      cipher.setAAD(dataEncryption.aad)
+    if (aad) {
+      cipher.setAAD(aad)
     }
 
     // Get encrypted data

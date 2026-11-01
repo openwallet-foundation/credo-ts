@@ -31,7 +31,8 @@
   "dependencies": {
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
-    "async-mutex": "^0.5.0"
+    "async-mutex": "^0.5.0",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@credo-ts/node": "workspace:*",

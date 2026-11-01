@@ -99,6 +99,8 @@ describe('Hedera AnonCreds support', () => {
       logger.debug('registerRevocationStatusListResponse', [registerRevocationStatusListResponse])
       const revocationStatusList = registerRevocationStatusListResponse?.revocationStatusListState.revocationStatusList
       expect(revocationStatusList).toBeDefined()
+      // AnonCreds timestamps are in seconds
+      expect(Math.abs((revocationStatusList?.timestamp ?? 0) - Math.floor(Date.now() / 1000))).toBeLessThan(300)
 
       const revocationStatusListResponse = await agent.modules.anoncreds.getRevocationStatusList(
         revocationRegistryDefinitionId,
@@ -109,6 +111,9 @@ describe('Hedera AnonCreds support', () => {
       expect(revocationStatusListResponse?.revocationStatusList?.revRegDefId).toEqual(revocationRegistryDefinitionId)
       expect(revocationStatusListResponse?.revocationStatusList?.issuerId).toEqual(issuerId)
       expect(revocationStatusListResponse?.revocationStatusList?.revocationList).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+      expect(
+        Math.abs((revocationStatusListResponse?.revocationStatusList?.timestamp ?? 0) - Math.floor(Date.now() / 1000))
+      ).toBeLessThan(300)
 
       // Update revocation status list - Revoke indexes
       const revokeUpdateRevocationStatusListResponse = await agent.modules.anoncreds.updateRevocationStatusList({
@@ -123,6 +128,7 @@ describe('Hedera AnonCreds support', () => {
       const revokeRevocationStatusList =
         revokeUpdateRevocationStatusListResponse?.revocationStatusListState.revocationStatusList
       expect(revokeRevocationStatusList).toBeDefined()
+      expect(Math.abs((revokeRevocationStatusList?.timestamp ?? 0) - Math.floor(Date.now() / 1000))).toBeLessThan(300)
 
       const revokeRevocationStatusListResponse = await agent.modules.anoncreds.getRevocationStatusList(
         revocationRegistryDefinitionId,
@@ -150,6 +156,7 @@ describe('Hedera AnonCreds support', () => {
       const issueRevocationStatusList =
         issueUpdateRevocationStatusListResponse?.revocationStatusListState.revocationStatusList
       expect(issueRevocationStatusList).toBeDefined()
+      expect(Math.abs((issueRevocationStatusList?.timestamp ?? 0) - Math.floor(Date.now() / 1000))).toBeLessThan(300)
 
       const issueRevocationStatusListResponse = await agent.modules.anoncreds.getRevocationStatusList(
         revocationRegistryDefinitionId,

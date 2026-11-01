@@ -1,0 +1,21 @@
+{
+  "_tags": {
+    "default": true
+  },
+  "connectionId": "connection-id",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "endpoint": "https://mediator.example.com",
+  "id": "mediation-record-id",
+  "metadata": {
+    "meta": {
+      "key": "value"
+    }
+  },
+  "pickupStrategy": "PickUpV2LiveMode",
+  "recipientKeys": ["did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th"],
+  "role": "RECIPIENT",
+  "routingKeys": ["did:key:z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv"],
+  "state": "granted",
+  "threadId": "thread-id",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

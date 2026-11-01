@@ -1,0 +1,1 @@
+ALTER TABLE `Openid4vcIssuer` ADD `credential_response_encryption` text;

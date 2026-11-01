@@ -62,9 +62,7 @@ describe('RevocationNotificationService', () => {
 
       const date = new Date('2020-01-01T00:00:00.000Z')
 
-      const dateSpy = vi.spyOn(global, 'Date').mockImplementation(function () {
-        return date
-      })
+      vi.useFakeTimers({ toFake: ['Date'], now: date })
 
       const credentialRecord = new DidCommCredentialExchangeRecord({
         threadId: 'thread-id',
@@ -80,7 +78,7 @@ describe('RevocationNotificationService', () => {
       } satisfies AnonCredsCredentialMetadata
 
       // Set required tags
-      credentialRecord.setTag('anonCredsUnqualifiedRevocationRegistryId', metadata.revocationRegistryId)
+      credentialRecord.setTag('anonCredsRevocationRegistryId', metadata.revocationRegistryId)
       credentialRecord.setTag('anonCredsCredentialRevocationId', metadata.credentialRevocationId)
 
       mockFunction(credentialRepository.getSingleByQuery).mockResolvedValueOnce(credentialRecord)
@@ -115,7 +113,7 @@ describe('RevocationNotificationService', () => {
         },
       })
 
-      dateSpy.mockRestore()
+      vi.useRealTimers()
     })
 
     test('does not emit revocation notification event if no credential record exists for indy thread', async () => {
@@ -179,9 +177,7 @@ describe('RevocationNotificationService', () => {
 
       const date = new Date('2020-01-01T00:00:00.000Z')
 
-      const dateSpy = vi.spyOn(global, 'Date').mockImplementation(function () {
-        return date
-      })
+      vi.useFakeTimers({ toFake: ['Date'], now: date })
 
       const credentialRecord = new DidCommCredentialExchangeRecord({
         threadId: 'thread-id',
@@ -229,7 +225,7 @@ describe('RevocationNotificationService', () => {
         },
       })
 
-      dateSpy.mockRestore()
+      vi.useRealTimers()
     })
 
     test('does not emit revocation notification event if no credential record exists for indy thread', async () => {

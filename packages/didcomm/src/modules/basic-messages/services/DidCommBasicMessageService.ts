@@ -5,7 +5,7 @@ import { DidCommConnectionRecord } from '../../connections'
 import type { DidCommBasicMessageStateChangedEvent } from '../DidCommBasicMessageEvents'
 import { DidCommBasicMessageEventTypes } from '../DidCommBasicMessageEvents'
 import { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
-import { DidCommBasicMessage } from '../messages'
+import { DidCommBasicMessage } from '../protocol/v1/messages'
 import { DidCommBasicMessageRecord, DidCommBasicMessageRepository } from '../repository'
 
 @injectable()

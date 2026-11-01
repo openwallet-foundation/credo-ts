@@ -2,10 +2,6 @@ import { AnonCredsModule } from '@credo-ts/anoncreds'
 import {
   AnonCredsDidCommCredentialFormatService,
   AnonCredsDidCommProofFormatService,
-  DidCommCredentialV1Protocol,
-  DidCommProofV1Protocol,
-  LegacyIndyDidCommCredentialFormatService,
-  LegacyIndyDidCommProofFormatService,
 } from '@credo-ts/anoncreds/didcomm'
 import type { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
 import { AskarModule } from '@credo-ts/askar'
@@ -82,9 +78,6 @@ function getAskarAnonCredsIndyModules(
   didcommConfig: Omit<DidCommModuleConfigOptions, 'credentials' | 'proofs' | 'connections'>,
   askarStoreConfig: AskarModuleConfigStoreOptions
 ) {
-  const legacyIndyCredentialFormatService = new LegacyIndyDidCommCredentialFormatService()
-  const legacyIndyProofFormatService = new LegacyIndyDidCommProofFormatService()
-
   return {
     didcomm: new DidCommModule({
       ...didcommConfig,
@@ -94,22 +87,16 @@ function getAskarAnonCredsIndyModules(
       credentials: {
         autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
         credentialProtocols: [
-          new DidCommCredentialV1Protocol({
-            indyCredentialFormat: legacyIndyCredentialFormatService,
-          }),
           new DidCommCredentialV2Protocol({
-            credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsDidCommCredentialFormatService()],
+            credentialFormats: [new AnonCredsDidCommCredentialFormatService()],
           }),
         ],
       },
       proofs: {
         autoAcceptProofs: DidCommAutoAcceptProof.ContentApproved,
         proofProtocols: [
-          new DidCommProofV1Protocol({
-            indyProofFormat: legacyIndyProofFormatService,
-          }),
           new DidCommProofV2Protocol({
-            proofFormats: [legacyIndyProofFormatService, new AnonCredsDidCommProofFormatService()],
+            proofFormats: [new AnonCredsDidCommProofFormatService()],
           }),
         ],
       },

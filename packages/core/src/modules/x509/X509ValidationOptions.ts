@@ -61,8 +61,7 @@ export interface X509RevocationCheckOptions {
    * distribution point. After this period the CRL bytes are fetched again: when unchanged (same
    * SHA-256) the cached CRL is reused without re-parsing or re-verifying, otherwise it is fully
    * re-verified. Independently of this period, a cached CRL is never served past its own
-   * `nextUpdate`. When unset in per-call revocation options, the value configured on the X509
-   * module's `revocationCheck` applies.
+   * `nextUpdate`.
    *
    * @default 3600 (1 hour)
    */
@@ -90,4 +89,37 @@ export interface X509RevocationCheckOptions {
    * Set to a subset to only require coverage of specific reasons.
    */
   requiredReasons?: X509RevocationReason[]
+}
+
+/**
+ * Revocation check options where every option that has a default is set.
+ */
+export type X509RevocationCheckOptionsWithDefaults = X509RevocationCheckOptions &
+  Required<
+    Pick<
+      X509RevocationCheckOptions,
+      'mode' | 'checkFullChain' | 'timeoutMs' | 'maxCrlSizeBytes' | 'crlCacheExpirySeconds'
+    >
+  >
+
+/**
+ * The revocation check options used for any option that is not configured.
+ */
+export const defaultX509RevocationCheckOptions = {
+  mode: X509RevocationCheckMode.SoftFail,
+  checkFullChain: true,
+  timeoutMs: 5000,
+  maxCrlSizeBytes: 10 * 1024 * 1024,
+  crlCacheExpirySeconds: 3600,
+} as const satisfies X509RevocationCheckOptionsWithDefaults
+
+/**
+ * Takes the options that are not set in `options` from `base`.
+ */
+export function withX509RevocationCheckDefaults(
+  options: X509RevocationCheckOptions = {},
+  base: X509RevocationCheckOptionsWithDefaults = defaultX509RevocationCheckOptions
+): X509RevocationCheckOptionsWithDefaults {
+  const setOptions = Object.fromEntries(Object.entries(options).filter(([, value]) => value !== undefined))
+  return { ...base, ...setOptions }
 }

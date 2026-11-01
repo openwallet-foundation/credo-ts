@@ -1,0 +1,35 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "alias": "Faber",
+  "autoAcceptConnection": true,
+  "connectionTypes": ["mediator", "custom-type"],
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "did": "did:peer:1zQmZMygzYqNwU6Uhmewx5Xepf2VLp5S4HLSwwgf2aiKZuwa",
+  "errorMessage": "error message",
+  "id": "connection-record-id",
+  "imageUrl": "https://example.com/faber.png",
+  "invitationDid": "did:peer:2.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiJ9",
+  "mediatorId": "mediator-id",
+  "metadata": {
+    "_internal/didRotate": {
+      "did": "did:peer:1zQmRotatedDid",
+      "mediatorId": "mediator-id",
+      "threadId": "did-rotate-thread-id"
+    },
+    "_internal/useDidKeysForProtocol": {
+      "https://didcomm.org/coordinate-mediation/1.0": true
+    }
+  },
+  "outOfBandId": "out-of-band-id",
+  "previousDids": ["did:peer:1zQmPreviousDid"],
+  "previousTheirDids": ["did:peer:1zQmPreviousTheirDid"],
+  "protocol": "https://didcomm.org/didexchange/1.x",
+  "role": "requester",
+  "state": "completed",
+  "theirDid": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
+  "theirLabel": "Faber College",
+  "threadId": "thread-id",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

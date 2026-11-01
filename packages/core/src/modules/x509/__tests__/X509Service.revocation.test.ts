@@ -142,6 +142,54 @@ describe('X509Service revocation (end-to-end)', () => {
     expect(scope.isDone()).toBe(false)
   })
 
+  describe('without revocationCheck configured', () => {
+    const config = () => agentContext.dependencyManager.resolve(X509ModuleConfig)
+
+    afterEach(() => {
+      config().setRevocationCheck({ mode: X509RevocationCheckMode.Disabled })
+    })
+
+    it('rejects the chain when the leaf is revoked', async () => {
+      config().setRevocationCheck(undefined)
+      mockCrl(INTERMEDIATE_CRL_URL, await intermediateCrlBytes([]))
+      mockCrl(LEAF_CRL_URL, await leafCrlBytes([leafSerial]))
+
+      await expect(X509Service.validateCertificateChain(agentContext, { certificateChain })).rejects.toThrow(
+        X509ValidationError
+      )
+    })
+
+    it('rejects the chain when the intermediate is revoked', async () => {
+      config().setRevocationCheck(undefined)
+      mockCrl(INTERMEDIATE_CRL_URL, await intermediateCrlBytes([intermediateSerial]))
+      mockCrl(LEAF_CRL_URL, await leafCrlBytes([]))
+
+      await expect(X509Service.validateCertificateChain(agentContext, { certificateChain })).rejects.toThrow(
+        X509ValidationError
+      )
+    })
+
+    it('passes on network failure', async () => {
+      config().setRevocationCheck(undefined)
+      mockCrl(INTERMEDIATE_CRL_URL, await intermediateCrlBytes([]))
+      const scope = mockCrlNetworkError(LEAF_CRL_URL)
+
+      const chain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
+      expect(chain).toHaveLength(3)
+      expect(scope.isDone()).toBe(true)
+    })
+
+    it('rejects a revoked leaf when only other options are configured', async () => {
+      config().setRevocationCheck({ timeoutMs: 1000, mode: undefined })
+      mockCrl(INTERMEDIATE_CRL_URL, await intermediateCrlBytes([]))
+      mockCrl(LEAF_CRL_URL, await leafCrlBytes([leafSerial]))
+
+      await expect(X509Service.validateCertificateChain(agentContext, { certificateChain })).rejects.toThrow(
+        X509ValidationError
+      )
+    })
+  })
+
   it('validates the chain when the leaf is not revoked (SoftFail)', async () => {
     setMode(X509RevocationCheckMode.SoftFail)
     mockCrl(INTERMEDIATE_CRL_URL, await intermediateCrlBytes([]))

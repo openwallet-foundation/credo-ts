@@ -36,6 +36,34 @@
       "when": 1787652194628,
       "tag": "0004_add_access_token_signer_kms_backend",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792243249741,
+      "tag": "0005_add_issuer_info",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1792424959258,
+      "tag": "0006_add_credential_response_encryption",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1792675897447,
+      "tag": "0007_add_credential_request_encryption",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1793386202995,
+      "tag": "0008_add_failed_tx_code_attempts",
+      "breakpoints": true
     }
   ]
 }

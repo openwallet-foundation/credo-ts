@@ -41,12 +41,6 @@ import type {
   CreateSchemaOptions,
   UpdateRevocationStatusListOptions,
 } from '../services'
-import {
-  getUnqualifiedSchemaId,
-  isUnqualifiedCredentialDefinitionId,
-  parseIndyDid,
-  parseIndySchemaId,
-} from '../utils/indyIdentifiers'
 
 @injectable()
 export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
@@ -55,7 +49,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
 
     let schema: Schema | undefined
     try {
-      const schema = Schema.create({
+      schema = Schema.create({
         issuerId,
         name,
         version,
@@ -223,35 +217,22 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
 
     let credentialOffer: CredentialOffer | undefined
     try {
-      // The getByCredentialDefinitionId supports both qualified and unqualified identifiers, even though the
-      // record is always stored using the qualified identifier.
       const credentialDefinitionRecord = await agentContext.dependencyManager
         .resolve(AnonCredsCredentialDefinitionRepository)
-        .getByCredentialDefinitionId(agentContext, options.credentialDefinitionId)
+        .getByCredentialDefinitionId(agentContext, credentialDefinitionId)
 
-      // We fetch the keyCorrectnessProof based on the credential definition record id, as the
-      // credential definition id passed to this module could be unqualified, and the key correctness
-      // proof is only stored using the qualified identifier.
       const keyCorrectnessProofRecord = await agentContext.dependencyManager
         .resolve(AnonCredsKeyCorrectnessProofRepository)
-        .getByCredentialDefinitionId(agentContext, credentialDefinitionRecord.credentialDefinitionId)
+        .getByCredentialDefinitionId(agentContext, credentialDefinitionId)
 
       if (!credentialDefinitionRecord) {
         throw new AnonCredsRsError(`Credential Definition ${credentialDefinitionId} not found`)
       }
 
-      let schemaId = credentialDefinitionRecord.credentialDefinition.schemaId
-
-      // if the credentialDefinitionId is not qualified, we need to transform the schemaId to also be unqualified
-      if (isUnqualifiedCredentialDefinitionId(options.credentialDefinitionId)) {
-        const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(schemaId)
-        schemaId = getUnqualifiedSchemaId(namespaceIdentifier, schemaName, schemaVersion)
-      }
-
       credentialOffer = CredentialOffer.create({
         credentialDefinitionId,
         keyCorrectnessProof: keyCorrectnessProofRecord?.value,
-        schemaId,
+        schemaId: credentialDefinitionRecord.credentialDefinition.schemaId,
       })
 
       return credentialOffer.toJson() as unknown as AnonCredsCredentialOffer
@@ -285,6 +266,9 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
     }
 
     let credential: Credential | undefined
+    let revocationRegistryDefinitionObj: RevocationRegistryDefinition | undefined
+    let revocationRegistryDefinitionPrivateObj: RevocationRegistryDefinitionPrivate | undefined
+    let revocationStatusListObj: RevocationStatusList | undefined
     try {
       const attributeRawValues: Record<string, string> = {}
       const attributeEncodedValues: Record<string, string> = {}
@@ -298,24 +282,9 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         .resolve(AnonCredsCredentialDefinitionRepository)
         .getByCredentialDefinitionId(agentContext, options.credentialRequest.cred_def_id)
 
-      // We fetch the private record based on the cred def id from the cred def record, as the
-      // credential definition id passed to this module could be unqualified, and the private record
-      // is only stored using the qualified identifier.
       const credentialDefinitionPrivateRecord = await agentContext.dependencyManager
         .resolve(AnonCredsCredentialDefinitionPrivateRepository)
-        .getByCredentialDefinitionId(agentContext, credentialDefinitionRecord.credentialDefinitionId)
-
-      let credentialDefinition = credentialDefinitionRecord.credentialDefinition
-
-      if (isUnqualifiedCredentialDefinitionId(options.credentialRequest.cred_def_id)) {
-        const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(credentialDefinition.schemaId)
-        const { namespaceIdentifier: unqualifiedDid } = parseIndyDid(credentialDefinition.issuerId)
-        credentialDefinition = {
-          ...credentialDefinition,
-          schemaId: getUnqualifiedSchemaId(namespaceIdentifier, schemaName, schemaVersion),
-          issuerId: unqualifiedDid,
-        }
-      }
+        .getByCredentialDefinitionId(agentContext, options.credentialRequest.cred_def_id)
 
       let revocationConfiguration: CredentialRevocationConfig | undefined
       if (revocationRegistryDefinitionId && revocationStatusList && revocationRegistryIndex !== undefined) {
@@ -333,14 +302,17 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
           revocationRegistryDefinitionPrivateRecord.state = AnonCredsRevocationRegistryState.Full
         }
 
+        revocationRegistryDefinitionObj = RevocationRegistryDefinition.fromJson(
+          revocationRegistryDefinitionRecord.revocationRegistryDefinition as unknown as JsonObject
+        )
+        revocationRegistryDefinitionPrivateObj = RevocationRegistryDefinitionPrivate.fromJson(
+          revocationRegistryDefinitionPrivateRecord.value
+        )
+        revocationStatusListObj = RevocationStatusList.fromJson(revocationStatusList as unknown as JsonObject)
         revocationConfiguration = new CredentialRevocationConfig({
-          registryDefinition: RevocationRegistryDefinition.fromJson(
-            revocationRegistryDefinitionRecord.revocationRegistryDefinition as unknown as JsonObject
-          ),
-          registryDefinitionPrivate: RevocationRegistryDefinitionPrivate.fromJson(
-            revocationRegistryDefinitionPrivateRecord.value
-          ),
-          statusList: RevocationStatusList.fromJson(revocationStatusList as unknown as JsonObject),
+          registryDefinition: revocationRegistryDefinitionObj,
+          registryDefinitionPrivate: revocationRegistryDefinitionPrivateObj,
+          statusList: revocationStatusListObj,
           registryIndex: revocationRegistryIndex,
         })
       }
@@ -348,15 +320,10 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         credentialDefinition: credentialDefinitionRecord.credentialDefinition as unknown as JsonObject,
         credentialOffer: credentialOffer as unknown as JsonObject,
         credentialRequest: credentialRequest as unknown as JsonObject,
-        revocationRegistryId: revocationRegistryDefinitionId,
         attributeEncodedValues,
         attributeRawValues,
         credentialDefinitionPrivate: credentialDefinitionPrivateRecord.value,
         revocationConfiguration,
-        // FIXME: duplicated input parameter?
-        revocationStatusList: revocationStatusList
-          ? RevocationStatusList.fromJson(revocationStatusList as unknown as JsonObject)
-          : undefined,
       })
 
       return {
@@ -365,6 +332,9 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       }
     } finally {
       credential?.handle.clear()
+      revocationRegistryDefinitionObj?.handle.clear()
+      revocationRegistryDefinitionPrivateObj?.handle.clear()
+      revocationStatusListObj?.handle.clear()
     }
   }
 }

@@ -1,5 +1,6 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
-import { BaseRecord, CredoError, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, createRecordEncodingSchema, utils } from '@credo-ts/core'
+import { z } from 'zod'
 import type { DrpcRequest, DrpcResponse } from '../messages'
 import type { DrpcRole, DrpcState } from '../models'
 
@@ -22,7 +23,20 @@ export interface DrpcStorageProps {
   threadId: string
 }
 
+const drpcRecordEncodingSchema = createRecordEncodingSchema({
+  request: z.custom<DrpcRequest>().nullish(),
+  response: z.custom<DrpcResponse>().nullish(),
+  connectionId: z.string().nullish(),
+  role: z.string().nullish(),
+  state: z.string().nullish(),
+  threadId: z.string().nullish(),
+})
+
 export class DrpcRecord extends BaseRecord<DefaultDrpcMessageTags, CustomDrpcMessageTags> {
+  public static get encodingSchema(): z.ZodType {
+    return drpcRecordEncodingSchema
+  }
+
   public request?: DrpcRequest
   public response?: DrpcResponse
   public connectionId!: string

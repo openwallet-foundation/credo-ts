@@ -1,3 +1,4 @@
+export { DcqlNotDisclosed } from 'dcql'
 export * from './DcqlError'
 export * from './DcqlModule'
 export * from './DcqlService'

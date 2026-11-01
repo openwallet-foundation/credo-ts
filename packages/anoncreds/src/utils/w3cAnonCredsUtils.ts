@@ -1,24 +1,9 @@
 import type { DefaultW3cCredentialTags, W3cCredentialSubject } from '@credo-ts/core'
-import { CredoError, utils, W3cCredentialRecord } from '@credo-ts/core'
+import { CredoError, W3cCredentialRecord } from '@credo-ts/core'
 import type { AnonCredsCredentialInfo, AnonCredsSchema } from '../models'
 import type { AnonCredsCredentialRecord } from '../repository'
-import type { StoreCredentialOptions } from '../services'
 import type { AnonCredsClaimRecord } from './credential'
 import { mapAttributeRawValuesToAnonCredsCredentialValues } from './credential'
-import {
-  getQualifiedDidIndyCredentialDefinition,
-  getQualifiedDidIndyDid,
-  getQualifiedDidIndyRevocationRegistryDefinition,
-  getQualifiedDidIndySchema,
-  getUnQualifiedDidIndyDid,
-  isIndyDid,
-  isUnqualifiedCredentialDefinitionId,
-  isUnqualifiedDidIndyCredentialDefinition,
-  isUnqualifiedDidIndyRevocationRegistryDefinition,
-  isUnqualifiedDidIndySchema,
-  isUnqualifiedIndyDid,
-  isUnqualifiedRevocationRegistryId,
-} from './indyIdentifiers'
 import type { W3cAnonCredsCredentialMetadata } from './metadata'
 import { W3cAnonCredsCredentialMetadataKey } from './metadata'
 
@@ -38,18 +23,9 @@ export type AnonCredsCredentialTags = {
   anonCredsSchemaIssuerId: string
   anonCredsCredentialDefinitionId: string
   anonCredsRevocationRegistryId?: string
-
-  anonCredsUnqualifiedIssuerId?: string
-  anonCredsUnqualifiedSchemaId?: string
-  anonCredsUnqualifiedSchemaIssuerId?: string
-  anonCredsUnqualifiedCredentialDefinitionId?: string
-  anonCredsUnqualifiedRevocationRegistryId?: string
 }
 
-function anonCredsCredentialInfoFromW3cRecord(
-  w3cCredentialRecord: W3cCredentialRecord,
-  useUnqualifiedIdentifiers?: boolean
-): AnonCredsCredentialInfo {
+function anonCredsCredentialInfoFromW3cRecord(w3cCredentialRecord: W3cCredentialRecord): AnonCredsCredentialInfo {
   const firstCredential = w3cCredentialRecord.firstCredential
   if (Array.isArray(firstCredential.credentialSubject)) {
     throw new CredoError('Credential subject must be an object, not an array.')
@@ -63,27 +39,12 @@ function anonCredsCredentialInfoFromW3cRecord(
   )
   if (!anonCredsCredentialMetadata) throw new CredoError('AnonCreds metadata not found on credential record.')
 
-  const credentialDefinitionId =
-    useUnqualifiedIdentifiers && anonCredsTags.anonCredsUnqualifiedCredentialDefinitionId
-      ? anonCredsTags.anonCredsUnqualifiedCredentialDefinitionId
-      : anonCredsTags.anonCredsCredentialDefinitionId
-
-  const schemaId =
-    useUnqualifiedIdentifiers && anonCredsTags.anonCredsUnqualifiedSchemaId
-      ? anonCredsTags.anonCredsUnqualifiedSchemaId
-      : anonCredsTags.anonCredsSchemaId
-
-  const revocationRegistryId =
-    useUnqualifiedIdentifiers && anonCredsTags.anonCredsUnqualifiedRevocationRegistryId
-      ? anonCredsTags.anonCredsUnqualifiedRevocationRegistryId
-      : (anonCredsTags.anonCredsRevocationRegistryId ?? null)
-
   return {
     attributes: (firstCredential.credentialSubject.claims as AnonCredsClaimRecord) ?? {},
     credentialId: w3cCredentialRecord.id,
-    credentialDefinitionId,
-    schemaId,
-    revocationRegistryId,
+    credentialDefinitionId: anonCredsTags.anonCredsCredentialDefinitionId,
+    schemaId: anonCredsTags.anonCredsSchemaId,
+    revocationRegistryId: anonCredsTags.anonCredsRevocationRegistryId ?? null,
     credentialRevocationId: anonCredsCredentialMetadata.credentialRevocationId ?? null,
     methodName: anonCredsCredentialMetadata.methodName,
     linkSecretId: anonCredsCredentialMetadata.linkSecretId,
@@ -115,11 +76,10 @@ function anonCredsCredentialInfoFromAnonCredsRecord(
 }
 
 export function getAnoncredsCredentialInfoFromRecord(
-  credentialRecord: W3cCredentialRecord | AnonCredsCredentialRecord,
-  useUnqualifiedIdentifiersIfPresent?: boolean
+  credentialRecord: W3cCredentialRecord | AnonCredsCredentialRecord
 ): AnonCredsCredentialInfo {
   if (credentialRecord instanceof W3cCredentialRecord) {
-    return anonCredsCredentialInfoFromW3cRecord(credentialRecord, useUnqualifiedIdentifiersIfPresent)
+    return anonCredsCredentialInfoFromW3cRecord(credentialRecord)
   }
   return anonCredsCredentialInfoFromAnonCredsRecord(credentialRecord)
 }
@@ -145,45 +105,6 @@ export function getAnonCredsTagsFromRecord(record: W3cCredentialRecord) {
   ) as AnonCredsCredentialTags
 }
 
-export function getStoreCredentialOptions(
-  options: StoreCredentialOptions,
-  indyNamespace?: string
-): StoreCredentialOptions {
-  const {
-    credentialRequestMetadata,
-    credentialDefinitionId,
-    schema,
-    credential,
-    credentialDefinition,
-    revocationRegistry,
-  } = options
-
-  const storeCredentialOptions = {
-    credentialId: utils.uuid(),
-    credentialRequestMetadata,
-    credential,
-    credentialDefinitionId: isUnqualifiedCredentialDefinitionId(credentialDefinitionId)
-      ? getQualifiedDidIndyDid(credentialDefinitionId, indyNamespace as string)
-      : credentialDefinitionId,
-    credentialDefinition: isUnqualifiedDidIndyCredentialDefinition(credentialDefinition)
-      ? getQualifiedDidIndyCredentialDefinition(credentialDefinition, indyNamespace as string)
-      : credentialDefinition,
-    schema: isUnqualifiedDidIndySchema(schema) ? getQualifiedDidIndySchema(schema, indyNamespace as string) : schema,
-    revocationRegistry: revocationRegistry?.definition
-      ? {
-          definition: isUnqualifiedDidIndyRevocationRegistryDefinition(revocationRegistry.definition)
-            ? getQualifiedDidIndyRevocationRegistryDefinition(revocationRegistry.definition, indyNamespace as string)
-            : revocationRegistry.definition,
-          id: isUnqualifiedRevocationRegistryId(revocationRegistry.id)
-            ? getQualifiedDidIndyDid(revocationRegistry.id, indyNamespace as string)
-            : revocationRegistry.id,
-        }
-      : undefined,
-  }
-
-  return storeCredentialOptions
-}
-
 export function getW3cRecordAnonCredsTags(options: {
   credentialSubject: W3cCredentialSubject
   issuerId: string
@@ -197,7 +118,6 @@ export function getW3cRecordAnonCredsTags(options: {
 }) {
   const {
     credentialSubject,
-    issuerId,
     schema,
     schemaId,
     credentialDefinitionId,
@@ -217,15 +137,6 @@ export function getW3cRecordAnonCredsTags(options: {
     anonCredsMethodName: methodName,
     anonCredsRevocationRegistryId: revocationRegistryId,
     anonCredsCredentialRevocationId: credentialRevocationId,
-    ...((isIndyDid(issuerId) || isUnqualifiedIndyDid(issuerId)) && {
-      anonCredsUnqualifiedIssuerId: getUnQualifiedDidIndyDid(issuerId),
-      anonCredsUnqualifiedCredentialDefinitionId: getUnQualifiedDidIndyDid(credentialDefinitionId),
-      anonCredsUnqualifiedSchemaId: getUnQualifiedDidIndyDid(schemaId),
-      anonCredsUnqualifiedSchemaIssuerId: getUnQualifiedDidIndyDid(schema.issuerId),
-      anonCredsUnqualifiedRevocationRegistryId: revocationRegistryId
-        ? getUnQualifiedDidIndyDid(revocationRegistryId)
-        : undefined,
-    }),
   }
 
   const values = mapAttributeRawValuesToAnonCredsCredentialValues(

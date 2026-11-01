@@ -265,7 +265,9 @@ export class DidDocument {
       publicJwk: PublicJwk<Ed25519PublicJwk | X25519PublicJwk>
     }> = []
 
-    const seenVerificationMethodIds: string[] = []
+    // A key is one recipient key, no matter how many services reference it or how many
+    // verification methods carry it. The first verification method that carries it is kept.
+    const seenFingerprints: string[] = []
     for (const service of this.didCommServices) {
       if (service.type === IndyAgentService.type) {
         for (const publicKeyBase58 of service.recipientKeys) {
@@ -274,6 +276,8 @@ export class DidDocument {
             crv: 'Ed25519',
             publicKey: TypedArrayEncoder.fromBase58(publicKeyBase58),
           })
+          if (seenFingerprints.includes(publicJwk.fingerprint)) continue
+
           const verificationMethod = [...(this.verificationMethod ?? []), ...(this.authentication ?? [])]
             .map((v) => (typeof v === 'string' ? this.dereferenceVerificationMethod(v) : v))
             .find((v) => {
@@ -285,11 +289,7 @@ export class DidDocument {
             throw new CredoError('Could not find verification method for IndyAgentService recipient key')
           }
 
-          // Skip adding if already present
-          if (seenVerificationMethodIds.includes(verificationMethod.id)) {
-            continue
-          }
-
+          seenFingerprints.push(publicJwk.fingerprint)
           recipientKeys.push({
             publicJwk,
             verificationMethod,
@@ -298,11 +298,6 @@ export class DidDocument {
       } else if (service.type === DidCommV1Service.type) {
         for (const recipientKey of service.recipientKeys) {
           const verificationMethod = this.dereferenceKey(recipientKey, ['authentication', 'keyAgreement'])
-          if (seenVerificationMethodIds.includes(verificationMethod.id)) {
-            // Skip adding if already present
-            continue
-          }
-
           const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
 
           if (!publicJwk.is(Ed25519PublicJwk, X25519PublicJwk)) {
@@ -310,7 +305,9 @@ export class DidDocument {
               'Expected either Ed25519PublicJwk or X25519PublicJwk for DidcommV1Service recipient key'
             )
           }
+          if (seenFingerprints.includes(publicJwk.fingerprint)) continue
 
+          seenFingerprints.push(publicJwk.fingerprint)
           recipientKeys.push({
             publicJwk,
             verificationMethod,
@@ -326,20 +323,38 @@ export class DidDocument {
       }>
     }
 
-    return recipientKeys.map(({ publicJwk, verificationMethod }) => {
-      if (publicJwk.is(Ed25519PublicJwk)) return { publicJwk, verificationMethod }
+    // An X25519 key maps to the Ed25519 key it was derived from. When the document lists both,
+    // the mapped entry is the same key as the Ed25519 entry, so it is dropped as well.
+    const mappedFingerprints: string[] = []
+    const mappedRecipientKeys: Array<{
+      verificationMethod: VerificationMethod
+      publicJwk: PublicJwk<Ed25519PublicJwk>
+    }> = []
+    for (const { publicJwk, verificationMethod } of recipientKeys) {
+      let mapped: { verificationMethod: VerificationMethod; publicJwk: PublicJwk<Ed25519PublicJwk> }
+      if (publicJwk.is(Ed25519PublicJwk)) {
+        mapped = { publicJwk, verificationMethod }
+      } else {
+        const matchingEd25519Key = findMatchingEd25519Key(publicJwk as PublicJwk<X25519PublicJwk>, this)
 
-      const matchingEd25519Key = findMatchingEd25519Key(publicJwk as PublicJwk<X25519PublicJwk>, this)
-
-      // For DIDcomm v1 if you use X25519 you MUST also include the Ed25519 key
-      if (!matchingEd25519Key) {
-        throw new CredoError(
-          `Unable to find matching Ed25519 key for X25519 verification method with id ${verificationMethod.id}`
-        )
+        // For DIDcomm v1 if you use X25519 you MUST also include the Ed25519 key
+        if (!matchingEd25519Key) {
+          throw new CredoError(
+            `Unable to find matching Ed25519 key for X25519 verification method with id ${verificationMethod.id}`
+          )
+        }
+        mapped = matchingEd25519Key
       }
 
-      return matchingEd25519Key
-    })
+      if (mappedFingerprints.includes(mapped.publicJwk.fingerprint)) continue
+      mappedFingerprints.push(mapped.publicJwk.fingerprint)
+      mappedRecipientKeys.push(mapped)
+    }
+
+    return mappedRecipientKeys as Array<{
+      verificationMethod: VerificationMethod
+      publicJwk: PublicJwk<MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk>
+    }>
   }
 
   public toJSON() {

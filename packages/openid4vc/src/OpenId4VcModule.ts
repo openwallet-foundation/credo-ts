@@ -40,7 +40,7 @@ export class OpenId4VcModule<
     this.config = new OpenId4VcModuleConfig(options)
 
     this.issuer = (this.config.issuer ? new OpenId4VcIssuerModule(this.config.issuer) : undefined) as this['issuer']
-    this.holder = new OpenId4VcHolderModule()
+    this.holder = new OpenId4VcHolderModule(this.config.holder)
     this.verifier = (
       this.config.verifier ? new OpenId4VcVerifierModule(this.config.verifier) : undefined
     ) as this['verifier']

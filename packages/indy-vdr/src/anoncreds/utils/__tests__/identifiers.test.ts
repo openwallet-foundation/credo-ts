@@ -2,12 +2,15 @@ import {
   getDidIndyCredentialDefinitionId,
   getDidIndyRevocationRegistryDefinitionId,
   getDidIndySchemaId,
+  getIndyLedgerCredentialDefinitionId,
+  getIndyLedgerRevocationRegistryDefinitionId,
+  getIndyLedgerSchemaId,
   indyVdrAnonCredsRegistryIdentifierRegex,
 } from '../identifiers'
 
 describe('identifiers', () => {
   describe('indyVdrAnonCredsRegistryIdentifierRegex', () => {
-    test('matches against a legacy schema id, credential definition id and revocation registry id', () => {
+    test('does not match against an unqualified did, schema id, credential definition id and revocation registry id', () => {
       const did = '7Tqg6BwSSWapxgUDm9KKgg'
       const schemaId = 'BQ42WeE24jFHeyGg8x9XAz:2:Medical Bill:1.0'
       const credentialDefinitionId = 'N7baRMcyvPwWc8v85CtZ6e:3:CL:100669:SCH Employee ID'
@@ -16,12 +19,10 @@ describe('identifiers', () => {
 
       const anotherId = 'some:id'
 
-      // unqualified issuerId not in regex on purpose. See note in implementation.
       expect(indyVdrAnonCredsRegistryIdentifierRegex.test(did)).toEqual(false)
-
-      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(schemaId)).toEqual(true)
-      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(credentialDefinitionId)).toEqual(true)
-      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(revocationRegistryId)).toEqual(true)
+      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(schemaId)).toEqual(false)
+      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(credentialDefinitionId)).toEqual(false)
+      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(revocationRegistryId)).toEqual(false)
       expect(indyVdrAnonCredsRegistryIdentifierRegex.test(anotherId)).toEqual(false)
     })
 
@@ -74,6 +75,20 @@ describe('identifiers', () => {
 
     expect(getDidIndyRevocationRegistryDefinitionId(namespace, did, seqNo, credentialDefinitionTag, tag)).toEqual(
       'did:indy:sovrin:test:12345/anoncreds/v0/REV_REG_DEF/420/someTag/anotherTag'
+    )
+  })
+
+  test('getIndyLedgerSchemaId returns the ledger schema id given a did, name, and version', () => {
+    expect(getIndyLedgerSchemaId('12345', 'backbench', '420')).toEqual('12345:2:backbench:420')
+  })
+
+  test('getIndyLedgerCredentialDefinitionId returns the ledger credential definition id given a did, seqNo, and tag', () => {
+    expect(getIndyLedgerCredentialDefinitionId('12345', 420, 'someTag')).toEqual('12345:3:CL:420:someTag')
+  })
+
+  test('getIndyLedgerRevocationRegistryDefinitionId returns the ledger revocation registry id given a did, seqNo, and tags', () => {
+    expect(getIndyLedgerRevocationRegistryDefinitionId('12345', 420, 'someTag', 'anotherTag')).toEqual(
+      '12345:4:12345:3:CL:420:someTag:CL_ACCUM:anotherTag'
     )
   })
 })

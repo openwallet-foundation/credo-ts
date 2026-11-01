@@ -13,11 +13,15 @@ import {
 import type { Jwk, JwkSet, JwtSigner } from '@openid4vc/oauth2'
 import type { OpenId4VcJwtIssuer, OpenId4VcJwtIssuerEncoded } from './models'
 
+export const supportedResponseEncryptionKeyAgreementAlgorithms = [
+  'ECDH-ES',
+] satisfies Kms.KnownJwaKeyAgreementAlgorithm[]
+
 /**
- * The `enc` values supported for JARM response encryption. Keep in sync with the
+ * The `enc` values supported for response encryption. Keep in sync with the
  * encrypt/decrypt jwe callbacks.
  */
-export const supportedJarmContentEncryptionAlgorithms = [
+export const supportedResponseEncryptionContentAlgorithms = [
   'A128GCM',
   'A256GCM',
   'A128CBC-HS256',
@@ -50,7 +54,7 @@ export function getSupportedResponseEncryptionJwks(agentContext: AgentContext, j
           : undefined
       if (!externalPublicJwk) return false
 
-      return supportedJarmContentEncryptionAlgorithms.some(
+      return supportedResponseEncryptionContentAlgorithms.some(
         (algorithm) =>
           kms.supportedBackendsForOperation({
             operation: 'encrypt',
@@ -69,7 +73,7 @@ export async function getPublicJwkFromDid(
   agentContext: AgentContext,
   didUrl: string,
   allowedPurposes: DidPurpose[] = ['authentication']
-) {
+): Promise<Kms.PublicJwk> {
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
   const didDocument = await didsApi.resolveDidDocument(didUrl)
   const verificationMethod = didDocument.dereferenceKey(didUrl, allowedPurposes)

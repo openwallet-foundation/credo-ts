@@ -8,12 +8,12 @@ import { DidCommOutOfBandApi } from '../oob'
 import { DidCommMediationRecipientApi } from './DidCommMediationRecipientApi'
 import type { DidCommMediationRecipientModuleConfigOptions } from './DidCommMediationRecipientModuleConfig'
 import { DidCommMediationRecipientModuleConfig } from './DidCommMediationRecipientModuleConfig'
+import { DidCommMediationRole } from './models'
 import {
   DidCommKeylistUpdateResponseHandler,
   DidCommMediationDenyHandler,
   DidCommMediationGrantHandler,
-} from './handlers'
-import { DidCommMediationRole } from './models'
+} from './protocol/v1/handlers'
 import { DidCommMediationRepository } from './repository'
 import { DidCommMediationRecipientService, DidCommRoutingService } from './services'
 

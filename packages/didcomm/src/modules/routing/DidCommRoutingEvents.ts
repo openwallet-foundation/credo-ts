@@ -1,7 +1,7 @@
 import type { BaseEvent } from '@credo-ts/core'
 import type { DidCommRouting } from '../../models'
-import type { DidCommKeylistUpdate } from './messages/DidCommKeylistUpdateMessage'
 import type { DidCommMediationState } from './models/DidCommMediationState'
+import type { DidCommKeylistUpdate } from './protocol/v1/messages/DidCommKeylistUpdateMessage'
 import type { DidCommMediationRecord } from './repository/DidCommMediationRecord'
 
 export enum DidCommRoutingEventTypes {
@@ -30,5 +30,9 @@ export interface DidCommKeylistUpdatedEvent extends BaseEvent {
   payload: {
     mediationRecord: DidCommMediationRecord
     keylist: DidCommKeylistUpdate[]
+    /**
+     * Thread id of the keylist update this response belongs to. Undefined if the mediator did not thread the response.
+     */
+    threadId?: string
   }
 }

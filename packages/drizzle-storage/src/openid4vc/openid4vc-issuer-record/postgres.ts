@@ -5,6 +5,9 @@ import type {
   OpenId4VciBatchCredentialIssuanceOptions,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
+  OpenId4VciCredentialRequestEncryptionOptions,
+  OpenId4VciCredentialResponseEncryptionOptions,
+  OpenId4VciIssuerInfo,
 } from '@credo-ts/openid4vc'
 import { jsonb, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
@@ -24,6 +27,7 @@ export const openid4vcIssuer = pgTable(
       .$type<OpenId4VciCredentialConfigurationsSupportedWithFormats>()
       .notNull(),
     display: jsonb().$type<OpenId4VciCredentialIssuerMetadataDisplay[]>(),
+    issuerInfo: jsonb('issuer_info').$type<OpenId4VciIssuerInfo>(),
     authorizationServerConfigs: jsonb('authorization_server_configs').$type<OpenId4VciAuthorizationServerConfig[]>(),
     dpopSigningAlgValuesSupported: jsonb('dpop_signing_alg_values_supported').$type<
       [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
@@ -35,6 +39,12 @@ export const openid4vcIssuer = pgTable(
       [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
     >(),
     batchCredentialIssuance: text('batch_credential_issuance').$type<OpenId4VciBatchCredentialIssuanceOptions>(),
+    credentialResponseEncryption: jsonb(
+      'credential_response_encryption'
+    ).$type<OpenId4VciCredentialResponseEncryptionOptions>(),
+    credentialRequestEncryption: jsonb(
+      'credential_request_encryption'
+    ).$type<OpenId4VciCredentialRequestEncryptionOptions>(),
   },
   (table) => postgresBaseRecordIndexes(table, 'openid4vcIssuer')
 )

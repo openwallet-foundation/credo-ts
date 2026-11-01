@@ -16,17 +16,21 @@ import {
 } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
+import { DidCommTransportService } from '../../../DidCommTransportService'
+import { MessageSendingError } from '../../../errors'
 import type { DidCommInboundMessageContext } from '../../../models'
 import type { DidCommConnectionRecord } from '../../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../../connections/services'
-import { DidCommMessagePickupApi } from '../../message-pickup'
+import { DidCommMessagePickupApi, DidCommMessagePickupSessionService } from '../../message-pickup'
 import { DidCommMessagePickupSessionRole } from '../../message-pickup/DidCommMessagePickupSession'
 import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
 import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
 import type { DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
-import type { DidCommForwardMessage, DidCommMediationRequestMessage } from '../messages'
+import { DidCommMediationRole } from '../models/DidCommMediationRole'
+import { DidCommMediationState } from '../models/DidCommMediationState'
+import type { DidCommForwardMessage, DidCommMediationRequestMessage } from '../protocol/v1/messages'
 import {
   DidCommKeylistUpdateAction,
   DidCommKeylistUpdated,
@@ -34,9 +38,7 @@ import {
   DidCommKeylistUpdateResponseMessage,
   DidCommKeylistUpdateResult,
   DidCommMediationGrantMessage,
-} from '../messages'
-import { DidCommMediationRole } from '../models/DidCommMediationRole'
-import { DidCommMediationState } from '../models/DidCommMediationState'
+} from '../protocol/v1/messages'
 import { DidCommMediatorRoutingRecord } from '../repository'
 import { DidCommMediationRecord } from '../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../repository/DidCommMediationRepository'
@@ -121,10 +123,36 @@ export class DidCommMediatorService {
           role: DidCommMessagePickupSessionRole.MessageHolder,
         })
         if (session) {
-          await messagePickupApi.deliverMessagesFromQueue({
-            pickupSessionId: session.id,
-            recipientDid: verkeyToDidKey(message.to),
-          })
+          try {
+            await messagePickupApi.deliverMessagesFromQueue({
+              pickupSessionId: session.id,
+              recipientDid: verkeyToDidKey(message.to),
+            })
+          } catch (error) {
+            const sessionService = agentContext.dependencyManager.resolve(DidCommMessagePickupSessionService)
+            const endSession =
+              error instanceof MessageSendingError &&
+              sessionService.getLiveSession(agentContext, session.id) !== undefined
+            this.logger.warn(
+              `Live mode delivery failed for connection '${mediationRecord.connectionId}'${endSession ? ', ending its live mode session' : ''}`,
+              { error: error.message }
+            )
+            if (endSession) {
+              sessionService.removeLiveSession(agentContext, { connectionId: mediationRecord.connectionId })
+              // a Credo recipient only restarts pickup when its socket closes
+              try {
+                await agentContext.dependencyManager
+                  .resolve(DidCommTransportService)
+                  .findSessionById(session.transportSessionId)
+                  ?.close()
+              } catch (closeError) {
+                this.logger.warn(
+                  `Unable to close the transport session of connection '${mediationRecord.connectionId}'`,
+                  { error: closeError.message }
+                )
+              }
+            }
+          }
         }
         break
       }
@@ -291,6 +319,14 @@ export class DidCommMediatorService {
       if (error instanceof RecordDuplicateError) {
         // the record already exists, which is our intended end state
         // we can ignore this error and fetch the existing record
+        for (const { keyId } of routingRecord.routingKeysWithKeyId) {
+          try {
+            await kms.deleteKey({ keyId })
+          } catch (error) {
+            this.logger.warn(`Unable to delete unused mediator routing key '${keyId}'`, { error })
+          }
+        }
+
         return this.mediatorRoutingRepository.getById(
           agentContext,
           this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID

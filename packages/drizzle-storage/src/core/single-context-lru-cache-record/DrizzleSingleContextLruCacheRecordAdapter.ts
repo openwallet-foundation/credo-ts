@@ -32,10 +32,7 @@ export class DrizzleSingleContextLruCacheRecordAdapter extends BaseDrizzleRecord
   public toRecord(values: DrizzleSingleContextLruCacheAdapterValues): SingleContextLruCacheRecord {
     const { entries, customTags, ...remainingValues } = values
 
-    const record = JsonTransformer.fromJSON(
-      { entries: Object.entries(entries), ...remainingValues },
-      SingleContextLruCacheRecord
-    )
+    const record = JsonTransformer.fromJSON({ entries, ...remainingValues }, SingleContextLruCacheRecord)
     record.setTags(customTags as TagsBase)
 
     return record

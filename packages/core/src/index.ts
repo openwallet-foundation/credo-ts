@@ -51,6 +51,7 @@ export * from './storage/migration'
 export type { UpdateConfig, V0_1ToV0_2UpdateConfig } from './storage/migration/updates'
 export { Repository } from './storage/Repository'
 export * from './storage/RepositoryEvents'
+export { type CreateRecordEncodingSchemaOptions, createRecordEncodingSchema } from './storage/recordEncodingSchema'
 export type {
   BaseRecordConstructor,
   Query,
@@ -79,6 +80,7 @@ export {
   deepEquality,
   equalsIgnoreOrder,
   equalsWithOrder,
+  getEncodingSchema,
   IntegrityVerifier,
   IsStringOrInstance,
   IsStringOrInstanceOrArrayOfInstances,
@@ -91,6 +93,15 @@ export {
   MultiBaseEncoder,
   MultiHashEncoder,
   TypedArrayEncoder,
+  type ZodEncodedClass,
+  zDecodeWithErrorHandling,
+  zEncodeWithErrorHandling,
+  zIsoDate,
+  zJsonTransformerClass,
+  zMapFromObject,
+  zNonEmptyArray,
+  zTypedObject,
+  zWithUpgrade,
 } from './utils'
 export type {
   CredentialMultiInstanceUseUpdateMode,

@@ -89,6 +89,29 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     }
   }
 
+  public closeSocketByConnectionId(connectionId: string): boolean {
+    let closed = false
+    for (const [socketId, socket] of this.transportTable) {
+      if (!socketId.endsWith(`-${connectionId}`)) continue
+
+      this.transportTable.delete(socketId)
+      socket.removeEventListener('message', this.handleMessageEvent)
+      socket.onclose = null
+      this.agentContext.dependencyManager
+        .resolve(EventEmitter)
+        .emit<DidCommOutboundWebSocketClosedEvent>(this.agentContext, {
+          type: DidCommTransportEventTypes.DidCommOutboundWebSocketClosedEvent,
+          payload: { socketId, connectionId },
+        })
+
+      // A close handshake on a dead link only gives up after a timeout (30 s in Node ws)
+      if ('terminate' in socket && typeof socket.terminate === 'function') socket.terminate()
+      else socket.close()
+      closed = true
+    }
+    return closed
+  }
+
   private async resolveSocket({
     socketId,
     endpoint,

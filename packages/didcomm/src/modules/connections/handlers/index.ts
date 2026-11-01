@@ -1,7 +1,3 @@
-export * from './DidCommAckMessageHandler'
-export * from './DidCommConnectionProblemReportHandler'
-export * from './DidCommConnectionRequestHandler'
-export * from './DidCommConnectionResponseHandler'
 export * from './DidCommDidExchangeCompleteHandler'
 export * from './DidCommDidExchangeRequestHandler'
 export * from './DidCommDidExchangeResponseHandler'

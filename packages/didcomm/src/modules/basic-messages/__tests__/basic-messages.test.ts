@@ -10,7 +10,7 @@ import { DidCommModule } from '../../../DidCommModule'
 import { MessageSendingError } from '../../../errors'
 import type { DidCommConnectionRecord } from '../../connections'
 import { DidCommBasicMessageEventTypes } from '../DidCommBasicMessageEvents'
-import { DidCommBasicMessage } from '../messages'
+import { DidCommBasicMessage } from '../protocol/v1/messages'
 import { DidCommBasicMessageRecord } from '../repository'
 
 const faberConfig = getAgentOptions(

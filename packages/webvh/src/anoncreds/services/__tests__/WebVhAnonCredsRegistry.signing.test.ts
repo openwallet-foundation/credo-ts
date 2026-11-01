@@ -162,7 +162,7 @@ describe('WebVhAnonCredsRegistry assertionMethod signing', () => {
     await didRepository.update(agentContext, didRecord)
 
     await expect(registry.registerSchema(agentContext, { schema })).rejects.toThrow(
-      `No verification method authorized for 'assertionMethod' found in the did document of issuer ${issuerId}`
+      `No Ed25519 verification method authorized for 'assertionMethod' found in the did document of issuer ${issuerId}`
     )
   })
 
@@ -266,6 +266,56 @@ describe('WebVhAnonCredsRegistry assertionMethod signing', () => {
 
     expect(schemaResponse.resolutionMetadata.error).toBeUndefined()
     expect(schemaResponse.schema).toEqual(schema)
+  })
+
+  // eddsa-jcs-2022 can only sign with Ed25519, so a P-256 key in assertionMethod must never be used
+  async function addP256AssertionMethodKey() {
+    const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+    const didRecord = await didRepository.getSingleByQuery(agentContext, { did: issuerId })
+    const didDocument = didRecord.didDocument
+    if (!didDocument) throw new Error('did record has no did document')
+
+    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+    const p256Key = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const p256KeyMultibase = Kms.PublicJwk.fromPublicJwk(p256Key.publicJwk).fingerprint
+    const p256VerificationMethodId = `${issuerId}#${p256KeyMultibase.slice(-8)}`
+
+    didDocument.verificationMethod = [
+      ...(didDocument.verificationMethod ?? []),
+      new VerificationMethod({
+        id: p256VerificationMethodId,
+        type: 'Multikey',
+        controller: issuerId,
+        publicKeyMultibase: p256KeyMultibase,
+      }),
+    ]
+    didDocument.assertionMethod = [p256VerificationMethodId, assertionVerificationMethodId]
+    didRecord.keys = [
+      ...(didRecord.keys ?? []),
+      { kmsKeyId: p256Key.keyId, didDocumentRelativeKeyId: `#${p256KeyMultibase.slice(-8)}` },
+    ]
+    await didRepository.update(agentContext, didRecord)
+
+    return p256VerificationMethodId
+  }
+
+  it('skips a P-256 Multikey assertionMethod key listed before the Ed25519 one', async () => {
+    await addP256AssertionMethodKey()
+
+    const { registrationMetadata } = await registry.registerSchema(agentContext, { schema })
+
+    const attestedResource = JSON.parse(JSON.stringify(registrationMetadata.attestedResource))
+    expect(attestedResource.proof.verificationMethod).toBe(assertionVerificationMethodId)
+  })
+
+  it('rejects an explicit P-256 verification method', async () => {
+    const p256VerificationMethodId = await addP256AssertionMethodKey()
+
+    await expect(
+      registry.registerSchema(agentContext, { schema, options: { verificationMethod: p256VerificationMethodId } })
+    ).rejects.toThrow(
+      `Verification method '${p256VerificationMethodId}' is not an Ed25519 key, which 'eddsa-jcs-2022' requires`
+    )
   })
 
   it('prefers a Multikey assertionMethod key over an Ed25519VerificationKey2020 one', async () => {

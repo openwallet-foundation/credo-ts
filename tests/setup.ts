@@ -120,12 +120,3 @@ function toBeConnectedWith(actual: DidCommConnectionRecord, expected: DidCommCon
     pass: false,
   }
 }
-
-interface CustomMatchers<R = unknown> {
-  toBeConnectedWith(connection: DidCommConnectionRecord): R
-}
-
-declare module 'vitest' {
-  // biome-ignore lint/suspicious/noExplicitAny: no explanation
-  interface Matchers<T = any> extends CustomMatchers<T> {}
-}

@@ -8,6 +8,7 @@ import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
+import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessionCoordinator'
 import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciCredentialRequestToCredentialMapper } from '../src'
 import { OpenId4VcIssuanceSessionState, OpenId4VcModule } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
@@ -365,6 +366,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     for (const codeVerifier of [undefined, 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA']) {
       await expect(
         holderTenant.openid4vc.holder.requestToken({
+          dpop: resolvedAuthorization.dpop,
           resolvedCredentialOffer,
           clientId: walletClientId,
           codeVerifier,
@@ -375,6 +377,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     }
 
     const tokenResponseTenant = await holderTenant.openid4vc.holder.requestToken({
+      dpop: resolvedAuthorization.dpop,
       resolvedCredentialOffer,
       clientId: walletClientId,
       codeVerifier: resolvedAuthorization.codeVerifier,
@@ -401,6 +404,10 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     expect(firstSdJwtVcTenant1.payload.name).toEqual('John Doe')
 
     await holderTenant.endSession()
+
+    // The authorization and redirect endpoints must not leave issuer tenant sessions open
+    const sessionCoordinator = issuer.agent.dependencyManager.resolve(TenantSessionCoordinator)
+    await vi.waitFor(() => expect(sessionCoordinator.getSessionCountForTenant(issuer1.tenantId)).toBe(0))
 
     clearIdpNock()
     clearHolderNock()
@@ -643,6 +650,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     expect(code).toBeDefined()
 
     const tokenResponseTenant = await holderTenant.openid4vc.holder.requestToken({
+      dpop: resolvedAuthorization.dpop,
       resolvedCredentialOffer,
       clientId: walletClientId,
       codeVerifier: resolvedAuthorization.codeVerifier,
@@ -670,6 +678,10 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     expect(firstSdJwtVcTenant1.payload.name).toEqual('John Doe')
 
     await holderTenant.endSession()
+
+    // The authorization and redirect endpoints must not leave issuer tenant sessions open
+    const sessionCoordinator = issuer.agent.dependencyManager.resolve(TenantSessionCoordinator)
+    await vi.waitFor(() => expect(sessionCoordinator.getSessionCountForTenant(issuer1.tenantId)).toBe(0))
 
     clearIdpNock()
     clearHolderNock()
@@ -1081,6 +1093,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         issuer_state: issuanceSession.authorization?.issuerState,
         code_challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         code_challenge_method: 'S256',
+        dpop_jkt: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       }),
     })
 
@@ -1091,6 +1104,76 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     })
 
     clearIdpNock()
+
+    await issuerTenant.endSession()
+  })
+
+  it('returns invalid_request from PAR when redirect_uri is missing', async () => {
+    issuer = (await createAgentFromModules(
+      {
+        inMemory: new InMemoryWalletModule(),
+        openid4vc: new OpenId4VcModule({
+          app: expressApp,
+          issuer: {
+            baseUrl: issuanceBaseUrl,
+            credentialRequestToCredentialMapper,
+          },
+        }),
+        tenants: new TenantsModule(),
+      },
+      '96213c3d7fc8d4d6754c7a0fd969598g',
+      global.fetch
+    )) as unknown as typeof issuer
+    issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
+
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+      authorizationServerConfigs: [
+        {
+          type: 'chained',
+          issuer: 'http://localhost:4747',
+          clientAuthentication: {
+            type: 'clientSecret',
+            clientId: 'issuer-client',
+            clientSecret: 'issuer-secret',
+          },
+          scopesMapping: {
+            UniversityDegreeCredential: ['openid'],
+          },
+        },
+      ],
+    })
+
+    const { issuanceSession } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      authorizationCodeFlowConfig: {
+        authorizationServerUrl: 'http://localhost:4747',
+      },
+    })
+
+    const response = await fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/par`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: 'wallet',
+        response_type: 'code',
+        scope: 'UniversityDegreeCredential',
+        issuer_state: issuanceSession.authorization?.issuerState,
+        code_challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        code_challenge_method: 'S256',
+      }),
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({
+      error: 'invalid_request',
+      error_description: `Missing required 'redirect_uri' parameter.`,
+    })
 
     await issuerTenant.endSession()
   })
@@ -1183,6 +1266,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         issuer_state: issuanceSession.authorization?.issuerState,
         code_challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         code_challenge_method: 'S256',
+        dpop_jkt: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       }),
     })
 
@@ -1266,6 +1350,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
             redirect_uri: 'http://localhost:5757/redirect',
             scope: 'UniversityDegreeCredential',
             issuer_state: issuerState,
+            dpop_jkt: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
             ...pkce,
           }),
         })
