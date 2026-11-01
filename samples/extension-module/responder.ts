@@ -1,9 +1,8 @@
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
-import { DidCommModule } from '@credo-ts/didcomm'
-import { agentDependencies, DidCommHttpInboundTransport, DidCommWsInboundTransport } from '@credo-ts/node'
+import { DidCommHttpInboundTransport, DidCommModule, DidCommWsInboundTransport } from '@credo-ts/didcomm'
+import { agentDependencies, httpServerHost, webSocketHost } from '@credo-ts/node'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
-import express from 'express'
 import type { Socket } from 'net'
 import { WebSocketServer } from 'ws'
 import type { DummyStateChangedEvent } from './dummy'
@@ -14,11 +13,9 @@ const run = async () => {
   // Create transports
   const port = process.env.RESPONDER_PORT ? Number(process.env.RESPONDER_PORT) : 3002
   const autoAcceptRequests = true
-  const app = express()
   const socketServer = new WebSocketServer({ noServer: true })
-
-  const httpInboundTransport = new DidCommHttpInboundTransport({ app, port })
-  const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer })
+  const httpHost = httpServerHost({ port })
+  const app = httpHost.app
 
   // Setup the agent
   const agent = new Agent({
@@ -36,7 +33,10 @@ const run = async () => {
       didcomm: new DidCommModule({
         endpoints: [`http://localhost:${port}`],
         transports: {
-          inbound: [httpInboundTransport, wsInboundTransport],
+          inbound: [
+            new DidCommHttpInboundTransport({ host: httpHost }),
+            new DidCommWsInboundTransport({ host: webSocketHost({ server: socketServer }) }),
+          ],
         },
         connections: { autoAcceptConnections: true },
       }),
@@ -56,7 +56,7 @@ const run = async () => {
   //Initialize the agent
   await agent.initialize()
 
-  httpInboundTransport.server?.on('upgrade', (request, socket, head) => {
+  httpHost.server?.on('upgrade', (request, socket, head) => {
     socketServer.handleUpgrade(request, socket as Socket, head, (socket) => {
       socketServer.emit('connection', socket, request)
     })

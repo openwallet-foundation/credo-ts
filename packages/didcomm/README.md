@@ -204,7 +204,7 @@ agent.didcomm.registerOutboundTransport(new DidCommWsOutboundTransport());
 await agent.initialize();
 ```
 
-The same transport instances can also be passed to `transports.inbound` and `transports.outbound` in the module configuration. The `DidCommHttpInboundTransport` and `DidCommWsInboundTransport` classes exported by `@credo-ts/node` continue to work unchanged, but are deprecated in favour of the transport classes exported by `@credo-ts/didcomm`.
+The same transport instances can also be passed to `transports.inbound` and `transports.outbound` in the module configuration.
 
 #### Other or custom inbound transports
 

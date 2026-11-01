@@ -5,20 +5,20 @@ import type { Server } from 'http'
 /**
  * A route served by {@link ExpressHost}. Satisfied structurally by the DIDComm HTTP inbound transport.
  */
-export interface ExpressHostBinding {
+interface ExpressHostBinding {
   readonly path: string
   readonly contentTypes: string[]
   readonly maxBodyBytes: number
   handle(request: ExpressHostRequest, response: ExpressHostResponse): Promise<void>
 }
 
-export interface ExpressHostRequest {
+interface ExpressHostRequest {
   readonly body?: string
   readonly contentType?: string
   onClose(listener: () => void): void
 }
 
-export interface ExpressHostResponse {
+interface ExpressHostResponse {
   readonly headersSent: boolean
   send(statusCode: number, body?: string, contentType?: string): void
 }
