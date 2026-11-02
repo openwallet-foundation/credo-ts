@@ -1794,16 +1794,9 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           !dpopTokenResponse ||
           mismatchedJkt ||
           (opaqueAccessToken && (!introspectionAvailable || !introspectionHasJkt || !introspectionActive))
-        if (!dpopTokenResponse) {
+        if (shouldReject) {
           expect(issuerRedirect.searchParams.get('error')).toBe('server_error')
-          expect(issuerRedirect.searchParams.get('error_description')).toBe(
-            'Upstream authorization server did not return a DPoP-bound access token.'
-          )
-        } else if (shouldReject) {
-          expect(issuerRedirect.searchParams.get('error')).toBe('server_error')
-          expect(issuerRedirect.searchParams.get('error_description')).toBe(
-            'Unable to verify upstream DPoP-bound access token.'
-          )
+          expect(issuerRedirect.searchParams.get('error_description')).toBeNull()
         } else {
           expect(issuerRedirect.searchParams.get('code')).toEqual(expect.any(String))
         }

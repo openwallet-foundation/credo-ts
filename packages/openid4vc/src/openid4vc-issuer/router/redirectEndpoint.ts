@@ -255,40 +255,38 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
               callbacks: getOid4vcCallbacks(agentContext),
             })
 
-            try {
-              const { tokenPayload } = await openId4VcIssuerService
-                .getResourceServer(agentContext, issuer, issuerMetadata)
-                .verifyResourceRequest({
-                  request: {
-                    ...verificationRequest,
-                    headers: new Headers({
-                      Authorization: `DPoP ${accessToken}`,
-                      DPoP: dpopHeaders.DPoP,
-                    }),
-                  },
-                  resourceServer,
-                  authorizationServers: [authorizationServerMetadata],
-                })
-
-              if (!isJwtAccessToken && tokenPayload.active !== true) {
+            const { tokenPayload } = await openId4VcIssuerService
+              .getResourceServer(agentContext, issuer, issuerMetadata)
+              .verifyResourceRequest({
+                request: {
+                  ...verificationRequest,
+                  headers: new Headers({
+                    Authorization: `DPoP ${accessToken}`,
+                    DPoP: dpopHeaders.DPoP,
+                  }),
+                },
+                resourceServer,
+                authorizationServers: [authorizationServerMetadata],
+              })
+              .catch((error) => {
                 throw new Oauth2ServerErrorResponseError(
                   {
                     error: Oauth2ErrorCodes.ServerError,
-                    error_description: 'Unable to verify upstream DPoP-bound access token.',
                   },
                   {
-                    internalMessage: `Introspection did not confirm that the opaque access token from '${authorizationServerMetadata.issuer}' is active.`,
+                    internalMessage: `Unable to verify the DPoP binding of an access token from '${authorizationServerMetadata.issuer}'.`,
+                    cause: error,
                   }
                 )
-              }
-            } catch (error) {
+              })
+
+            if (!isJwtAccessToken && tokenPayload.active !== true) {
               throw new Oauth2ServerErrorResponseError(
                 {
                   error: Oauth2ErrorCodes.ServerError,
                 },
                 {
-                  internalMessage: `Unable to verify the DPoP binding of an access token from '${authorizationServerMetadata.issuer}'.`,
-                  cause: error,
+                  internalMessage: `Introspection did not confirm that the opaque access token from '${authorizationServerMetadata.issuer}' is active.`,
                 }
               )
             }
