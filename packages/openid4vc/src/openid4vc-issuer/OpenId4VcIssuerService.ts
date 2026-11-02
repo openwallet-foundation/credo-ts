@@ -61,8 +61,9 @@ import type {
   OpenId4VcJwtIssuer,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
-import { getDpopOptions, keyAttestationLevelSatisfies, OpenId4VciCredentialFormatProfile } from '../shared'
+import { keyAttestationLevelSatisfies, OpenId4VciCredentialFormatProfile } from '../shared'
 import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
+import { getDpopOptions } from '../shared/dpop'
 import {
   getCredentialConfigurationsSupportedForScopes,
   getOfferedCredentials,
