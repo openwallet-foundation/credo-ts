@@ -245,6 +245,14 @@ export function getAgentConfig(
   return new AgentConfig(config, dependencies)
 }
 
+/**
+ * Trusts the given dids as issuers. Other signer methods fall through to the next trust resolution layer.
+ */
+export function trustDids(...dids: string[]): NonNullable<InitConfig['getTrustedIssuersForVerification']> {
+  return async (_agentContext, { signer }) =>
+    signer.method === 'did' ? { trustedIssuers: dids.map((issuance) => ({ method: 'did', issuance })) } : undefined
+}
+
 export function getAgentContext({
   dependencyManager = new DependencyManager(),
   agentConfig,

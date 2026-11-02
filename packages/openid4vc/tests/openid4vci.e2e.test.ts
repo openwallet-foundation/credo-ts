@@ -24,6 +24,7 @@ import { AuthorizationFlow, Openid4vciClient } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
+import { trustDids } from '../../core/tests'
 import { TenantsModule } from '../../tenants/src'
 import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessionCoordinator'
 import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciIssuerInfo, OpenId4VciSignMdocCredentials } from '../src'
@@ -189,7 +190,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         }),
       },
       '96213c3d7fc8d4d6754c7a0fd969598e',
-      global.fetch
+      global.fetch,
+      { getTrustedIssuersForVerification: trustDids(issuer1.did) }
     )) as unknown as typeof holder
     holder1 = await createTenantForAgent(holder.agent, 'hTenant1')
 

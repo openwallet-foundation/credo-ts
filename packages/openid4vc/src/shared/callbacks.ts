@@ -12,9 +12,7 @@ import {
   TrustedIssuerContext,
   TypedArrayEncoder,
   X509Certificate,
-  X509ModuleConfig,
   X509Service,
-  type X509VerificationContext,
   type X509VerificationTrustedCertificates,
 } from '@credo-ts/core'
 import type {
@@ -46,11 +44,19 @@ function normalizeJwtTyp(typ?: string) {
 }
 
 /**
+ * Jwt types that are verified without trusting the signer, as their key is already bound by something else:
+ * - `dpop+jwt`: the key is bound to the access token or the issuance session
+ * - `oauth-client-attestation-pop+jwt`: the key is the `cnf` of the verified client attestation
+ * - `openid4vci-proof+jwt`: the key the credential is bound to, trusted through the nonce and key attestation
+ * - `at+jwt`: the key is taken from the jwks of a configured authorization server
+ */
+const jwtTypesWithoutTrustedSigner = ['dpop+jwt', 'oauth-client-attestation-pop+jwt', 'openid4vci-proof+jwt', 'at+jwt']
+
+/**
  * Maps the `typ` header of a jwt verified by oid4vc-ts to the trust verification context.
  *
- * Two shapes are returned, as the deprecated x509 callback only carries the issuance session id.
- * Returns `undefined` for jwts that are not bound to a trusted issuer (proofs, dpop, access tokens, ...),
- * for which only the signature is verified.
+ * Returns `undefined` when the jwt has no trust verification context, which is only allowed for
+ * the {@link jwtTypesWithoutTrustedSigner}.
  */
 function getOid4vcJwtVerificationContext(options: {
   /** normalized with {@link normalizeJwtTyp} */
@@ -59,61 +65,35 @@ function getOid4vcJwtVerificationContext(options: {
   payload: Record<string, unknown>
   issuanceSession?: OpenId4VcIssuanceSessionRecord
   isAuthorizationRequestJwt?: boolean
-}):
-  | { verification: OpenId4VcVerificationTypes; legacyVerification: X509VerificationContext['verification'] }
-  | undefined {
+}): OpenId4VcVerificationTypes | undefined {
   const { typ, compact, issuanceSession, isAuthorizationRequestJwt } = options
   const payload = JwtPayload.fromJson(options.payload)
 
   // oauth2 secured authorization request (JAR)
   if (typ === 'oauth-authz-req+jwt' || isAuthorizationRequestJwt) {
-    const authorizationRequest = { jwt: compact, payload }
-    return {
-      verification: { type: 'oauth2SecuredAuthorizationRequest', authorizationRequest },
-      legacyVerification: { type: 'oauth2SecuredAuthorizationRequest', authorizationRequest },
-    }
+    return { type: 'oauth2SecuredAuthorizationRequest', authorizationRequest: { jwt: compact, payload } }
   }
 
   // OID4VCI key attestation
   if ((typ === 'keyattestation+jwt' || typ === 'key-attestation+jwt') && issuanceSession) {
-    const keyAttestation = { jwt: compact, payload }
     return {
-      verification: {
-        type: 'openId4VciKeyAttestation',
-        openId4VcIssuanceSessionRecord: issuanceSession,
-        keyAttestation,
-      },
-      legacyVerification: {
-        type: 'openId4VciKeyAttestation',
-        openId4VcIssuanceSessionId: issuanceSession.id,
-        keyAttestation,
-      },
+      type: 'openId4VciKeyAttestation',
+      openId4VcIssuanceSessionRecord: issuanceSession,
+      keyAttestation: { jwt: compact, payload },
     }
   }
 
   // OID4VCI credential issuer metadata
   if (typ === 'openidvci-issuer-metadata+jwt') {
-    const credentialIssuerMetadata = { jwt: compact, payload }
-    return {
-      verification: { type: 'openId4VciCredentialIssuerMetadata', credentialIssuerMetadata },
-      legacyVerification: { type: 'openId4VciCredentialIssuerMetadata', credentialIssuerMetadata },
-    }
+    return { type: 'openId4VciCredentialIssuerMetadata', credentialIssuerMetadata: { jwt: compact, payload } }
   }
 
   // OAuth2 client attestation
   if (typ === 'oauth-client-attestation+jwt' && issuanceSession) {
-    const clientAttestation = { jwt: compact, payload }
     return {
-      verification: {
-        type: 'oauth2ClientAttestation',
-        openId4VcIssuanceSessionRecord: issuanceSession,
-        clientAttestation,
-      },
-      legacyVerification: {
-        type: 'oauth2ClientAttestation',
-        openId4VcIssuanceSessionId: issuanceSession.id,
-        clientAttestation,
-      },
+      type: 'oauth2ClientAttestation',
+      openId4VcIssuanceSessionRecord: issuanceSession,
+      clientAttestation: { jwt: compact, payload },
     }
   }
 
@@ -134,6 +114,13 @@ export function getOid4vcJwtVerifyCallback(
      * @default false
      */
     isAuthorizationRequestJwt?: boolean
+
+    /**
+     * Whether this verification callback verifies an id token. Id tokens have no fixed `typ`, and are
+     * verified without trusting the signer, as the key is taken from the jwks of a configured authorization server.
+     * @default false
+     */
+    isIdTokenJwt?: boolean
   }
 ): VerifyJwtCallback {
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
@@ -142,24 +129,7 @@ export function getOid4vcJwtVerifyCallback(
     let trustedCertificates = options?.trustedCertificates
     const typ = normalizeJwtTyp(header.typ)
 
-    // Wallet and key attestations signed with a bare `jwk` can't be checked against the trusted issuers
-    // (there is no `jwk` variant of `VerificationSigner`/`TrustedIssuer`), so any client could sign its own.
-    // This is checked regardless of the issuance session, so it applies to every endpoint.
-    if (signer.method === 'jwk') {
-      if (typ === 'oauth-client-attestation+jwt') {
-        throw new CredoError(
-          `Wallet attestations signed with a 'jwk' header are not supported. Use 'x5c' or 'did' to sign the wallet attestation.`
-        )
-      }
-
-      if (typ === 'keyattestation+jwt' || typ === 'key-attestation+jwt') {
-        throw new CredoError(
-          `Key attestations signed with a 'jwk' header are not supported. Use 'x5c' or 'did' to sign the key attestation.`
-        )
-      }
-    }
-
-    const verificationContext = getOid4vcJwtVerificationContext({
+    const verification = getOid4vcJwtVerificationContext({
       typ,
       compact,
       payload,
@@ -167,36 +137,32 @@ export function getOid4vcJwtVerifyCallback(
       isAuthorizationRequestJwt: options?.isAuthorizationRequestJwt,
     })
 
-    if (verificationContext) {
-      if (signer.method === 'x5c' && !trustedCertificates) {
-        const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
-        const certificateChain = signer.x5c.map((cert) => X509Certificate.fromEncodedCertificate(cert))
-
-        // NOTE: we can't use `ensureTrustedSigner` here (unlike the did branch below), as `JwsService`
-        // already validates the certificate chain, and falls back to the globally configured trusted
-        // certificates when nothing is resolved here.
-        trustedCertificates =
-          (
-            await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
-              signer: { method: 'x509', certificateChain },
-              verification: verificationContext.verification,
-            })
-          )?.trustedIssuers ??
-          (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain,
-            verification: verificationContext.legacyVerification,
-          }))
-      } else if (signer.method === 'did') {
-        // Consistent with did signed credentials, this allows the did when no trusted issuers are
-        // returned, and throws when the signer did is not in the returned list.
-        await TrustedIssuerContext.ensureTrustedSigner(agentContext, {
-          signer: { method: 'did', didUrl: signer.didUrl },
-          verification: verificationContext.verification,
-        })
+    if (!verification) {
+      if (!options?.isIdTokenJwt && !(typ && jwtTypesWithoutTrustedSigner.includes(typ))) {
+        throw new CredoError(
+          `Unable to verify jwt with typ '${header.typ}'. The signer can't be checked against the trusted issuers, as the jwt type is not supported${options?.issuanceSession ? '' : ' without an issuance session'}.`
+        )
       }
-
-      // NOTE: other jwts signed with a bare `jwk` are not checked against a trust list, as there is no
-      // `jwk` variant of `VerificationSigner`/`TrustedIssuer`. Wallet and key attestations are rejected above.
+    } else if (signer.method === 'x5c') {
+      // NOTE: we can't use `ensureTrustedSigner` here (unlike for did and jwk), as `JwsService`
+      // already validates the certificate chain.
+      trustedCertificates ??= (
+        await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+          signer: {
+            method: 'x509',
+            certificateChain: signer.x5c.map((cert) => X509Certificate.fromEncodedCertificate(cert)),
+          },
+          verification,
+        })
+      )?.trustedIssuers
+    } else if (signer.method === 'did' || signer.method === 'jwk') {
+      await TrustedIssuerContext.ensureTrustedSigner(agentContext, {
+        signer:
+          signer.method === 'did'
+            ? { method: 'did', didUrl: signer.didUrl }
+            : { method: 'jwk', publicJwk: Kms.PublicJwk.fromUnknown(signer.publicJwk) },
+        verification,
+      })
     }
 
     const alg = signer.alg as Kms.KnownJwaSignatureAlgorithm
@@ -422,6 +388,7 @@ export function getOid4vcCallbacks(
   options?: {
     trustedCertificates?: string[]
     isVerifyOpenId4VpAuthorizationRequest?: boolean
+    isVerifyIdToken?: boolean
     issuanceSession?: OpenId4VcIssuanceSessionRecord
   }
 ) {
@@ -437,6 +404,7 @@ export function getOid4vcCallbacks(
     verifyJwt: getOid4vcJwtVerifyCallback(agentContext, {
       trustedCertificates: options?.trustedCertificates,
       isAuthorizationRequestJwt: options?.isVerifyOpenId4VpAuthorizationRequest,
+      isIdTokenJwt: options?.isVerifyIdToken,
       issuanceSession: options?.issuanceSession,
     }),
     fetch: agentContext.config.agentDependencies.fetch,

@@ -1,6 +1,9 @@
 import { CredoError } from '../error'
 import { parseDid } from '../modules/dids'
+import { PublicJwk } from '../modules/kms'
+import { legacyTrustedCertificatesToTrustedIssuers } from '../modules/x509/utils/convertLegacyTrustedCertificates'
 import { X509Certificate } from '../modules/x509/X509Certificate'
+import { X509ModuleConfig } from '../modules/x509/X509ModuleConfig'
 import { X509Service } from '../modules/x509/X509Service'
 import type { AgentContext } from './context'
 import type {
@@ -21,6 +24,10 @@ type TrustedIssuerForSigner<SignerMethod extends VerificationSigner['method']> =
 
 // biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class TrustedIssuerContext {
+  /**
+   * Resolves the trusted issuers for the signer with the `getTrustedIssuersForVerification` callback, falling back
+   * to the trusted certificates of the X509 module for x509 signers.
+   */
   public static async getTrustedIssuersForVerification<
     Signer extends VerificationSigner,
     AdditionalVerificationTypes extends { type: string } = never,
@@ -31,8 +38,19 @@ export class TrustedIssuerContext {
     // Call the user-registered callback
     const trustedIssuers = await agentContext.config.getTrustedIssuersForVerification?.(agentContext, context)
 
-    // If there's no result, we return undefined (generally means we allow anything, but in case of mdoc nothing)
-    if (!trustedIssuers) return undefined
+    if (!trustedIssuers) {
+      if (context.signer.method !== 'x509') return undefined
+
+      // X509 signers fall back to the trusted certificates of the X509 module
+      const trustedCertificates = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+      if (!trustedCertificates) return undefined
+
+      return {
+        trustedIssuers: legacyTrustedCertificatesToTrustedIssuers(trustedCertificates) as TrustedIssuerForSigner<
+          Signer['method']
+        >[],
+      }
+    }
 
     for (const trustedIssuer of trustedIssuers.trustedIssuers) {
       // In the future we could allow a signer method to map to multiple trusted issuer methods
@@ -57,20 +75,20 @@ export class TrustedIssuerContext {
     context: TrustedIssuersForVerificationContext<Signer, AdditionalVerificationTypes>,
     // The trusted issuers to verify the signer against. If not provided they will be dynamically fetched.
     _trustedIssuers?: TrustedIssuer[]
-  ): Promise<{ trustedIssuer: TrustedIssuerForSigner<Signer['method']> | undefined }> {
+  ): Promise<{ trustedIssuer: TrustedIssuerForSigner<Signer['method']> }> {
     const signer = context.signer
     const trustedIssuers =
       _trustedIssuers ??
       (await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, context))?.trustedIssuers
 
-    if (signer.method === 'x509') {
-      // For X509 we do not allow verification to continue if there's no trusted issuers returned.
-      if (!trustedIssuers) {
-        throw new CredoError(
-          'No trusted certificates configured for X509 certificate chain validation. Signer cannot be verified.'
-        )
-      }
+    // Nothing is trusted by default, so verification can't continue if there's no trusted issuers returned.
+    if (!trustedIssuers) {
+      throw new CredoError(
+        `No trusted issuers configured for signer method '${signer.method}'. Signer cannot be verified.`
+      )
+    }
 
+    if (signer.method === 'x509') {
       const x509Issuers = trustedIssuers.filter((t) => t.method === 'x509')
       const validatedChain = await X509Service.validateCertificateChain(agentContext, {
         // TODO: we should allow x509 cert instance here
@@ -89,11 +107,7 @@ export class TrustedIssuerContext {
     }
 
     if (signer.method === 'did') {
-      // For DIDs we do allow verification to continue if there's no trusted issuers returned. To mimic original behavior.
-      // This can easily be disabled by returning an empty array
-      if (!trustedIssuers) return { trustedIssuer: undefined }
-
-      const didIssuers = trustedIssuers?.filter((t) => t.method === 'did') as TrustedIssuerDid[]
+      const didIssuers = trustedIssuers.filter((t) => t.method === 'did') as TrustedIssuerDid[]
       const signerDid = parseDid(signer.didUrl)
 
       const trustedIssuer = didIssuers.find((t) => {
@@ -103,6 +117,18 @@ export class TrustedIssuerContext {
 
       if (!trustedIssuer) {
         throw new CredoError(`Signer did ${signerDid.did} is not trusted. Unable to verify signature.`)
+      }
+
+      return { trustedIssuer: trustedIssuer as TrustedIssuerForSigner<Signer['method']> }
+    }
+
+    if (signer.method === 'jwk') {
+      const trustedIssuer = trustedIssuers.find(
+        (t) => t.method === 'jwk' && PublicJwk.fromUnknown(t.issuance).equals(signer.publicJwk)
+      )
+
+      if (!trustedIssuer) {
+        throw new CredoError('Signer jwk is not trusted. Unable to verify signature.')
       }
 
       return { trustedIssuer: trustedIssuer as TrustedIssuerForSigner<Signer['method']> }

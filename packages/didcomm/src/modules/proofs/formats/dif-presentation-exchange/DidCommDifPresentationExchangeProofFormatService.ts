@@ -2,13 +2,13 @@ import type {
   AgentContext,
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeSubmission,
-  EncodedX509Certificate,
+  GetTrustedIssuersForCredential,
   IAnonCredsW3cCredentialService,
   JsonValue,
+  VerificationSignerDid,
   W3cJsonPresentation,
   W3cVerifiablePresentation,
   W3cVerifyPresentationResult,
-  X509VerificationTrustedCertificates,
 } from '@credo-ts/core'
 import {
   ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE,
@@ -18,15 +18,15 @@ import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
   deepEquality,
-  extractX509CertificatesFromJwt,
   JsonTransformer,
   Kms,
+  TrustedIssuerContext,
   TypedArrayEncoder,
   W3cCredentialService,
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
-  X509ModuleConfig,
 } from '@credo-ts/core'
+import type { DidCommVerificationTypes } from '../../../../DidCommTrustedIssuersVerificationTypes'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../../decorators/attachment/DidCommAttachment'
 import { DidCommProofFormatSpec } from '../../models'
 import type { DidCommProofFormatService } from '../DidCommProofFormatService'
@@ -303,33 +303,30 @@ export class DidCommDifPresentationExchangeProofFormatService
 
       let verificationResult: W3cVerifyPresentationResult
 
+      const trustedIssuers: GetTrustedIssuersForCredential = async ({ signer, verification }) =>
+        (
+          await TrustedIssuerContext.getTrustedIssuersForVerification<VerificationSignerDid, DidCommVerificationTypes>(
+            agentContext,
+            {
+              signer,
+              verification: {
+                type: 'didCommProofCredential',
+                didCommProofExchangeRecord: proofRecord,
+                credential: verification.credential,
+              },
+            }
+          )
+        )?.trustedIssuers
+
       // FIXME: for some reason it won't accept the input if it doesn't know
       // whether it's a JWT or JSON-LD VP even though the input is the same.
       // Not sure how to fix
       if (parsedPresentation.claimFormat === ClaimFormat.JwtVp) {
-        const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
-
-        const certificateChain = extractX509CertificatesFromJwt(parsedPresentation.jwt)
-        let trustedCertificates: EncodedX509Certificate[] | X509VerificationTrustedCertificates[] | undefined
-        if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
-          trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain,
-            verification: {
-              type: 'credential',
-              credential: parsedPresentation,
-              didcommProofRecordId: proofRecord.id,
-            },
-          })
-        }
-
-        if (!trustedCertificates) {
-          trustedCertificates = x509Config.trustedCertificates ?? []
-        }
-
         verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
           presentation: parsedPresentation,
           challenge: request.options.challenge,
           domain: request.options.domain,
+          trustedIssuers,
         })
       } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
         if (this.shouldVerifyWithAnonCredsW3cService(parsedPresentation, jsonPresentation.presentation_submission)) {
@@ -356,6 +353,7 @@ export class DidCommDifPresentationExchangeProofFormatService
             presentation: parsedPresentation,
             challenge: request.options.challenge,
             domain: request.options.domain,
+            trustedIssuers,
           })
         }
       } else {

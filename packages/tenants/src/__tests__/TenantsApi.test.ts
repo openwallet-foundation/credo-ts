@@ -31,7 +31,7 @@ describe('TenantsApi', () => {
       const tenantAgentContext = getAgentContext({
         contextCorrelationId: 'tenant-id',
         dependencyManager: tenantDependencyManager,
-        agentConfig: rootAgent.config.extend({}),
+        agentConfig: rootAgent.config,
       })
       tenantDependencyManager.registerInstance(AgentContext, tenantAgentContext)
 
@@ -60,7 +60,7 @@ describe('TenantsApi', () => {
       const tenantAgentContext = getAgentContext({
         contextCorrelationId: 'tenant-id',
         dependencyManager: tenantDependencyManager,
-        agentConfig: rootAgent.config.extend({}),
+        agentConfig: rootAgent.config,
       })
       tenantDependencyManager.registerInstance(AgentContext, tenantAgentContext)
 
@@ -88,7 +88,7 @@ describe('TenantsApi', () => {
       const tenantAgentContext = getAgentContext({
         contextCorrelationId: 'tenant-id',
         dependencyManager: tenantDependencyManager,
-        agentConfig: rootAgent.config.extend({}),
+        agentConfig: rootAgent.config,
       })
       tenantDependencyManager.registerInstance(AgentContext, tenantAgentContext)
 

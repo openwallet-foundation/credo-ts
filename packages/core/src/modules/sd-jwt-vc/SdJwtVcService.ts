@@ -3,7 +3,7 @@ import type { DisclosureFrame, PresentationFrame, SDJwt, Verifier } from '@sd-jw
 import { type SDJWTVCConfig, SDJwtVcInstance, type VCTFetcher } from '@sd-jwt/sd-jwt-vc'
 import { AgentContext } from '../../agent'
 import { TrustedIssuerContext } from '../../agent/TrustedIssuerContext'
-import type { TrustedIssuer } from '../../agent/TrustedIssuersForVerification'
+import type { TrustedIssuer, TrustedIssuerDid, TrustedIssuerX509 } from '../../agent/TrustedIssuersForVerification'
 import { JwtPayload } from '../../crypto'
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
@@ -15,7 +15,7 @@ import { fetchWithTimeout } from '../../utils/fetch'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc/index'
-import { X509Certificate, X509ModuleConfig, X509Service } from '../x509'
+import { X509Certificate, X509Service } from '../x509'
 import { legacyTrustedCertificatesToTrustedIssuers } from '../x509/utils/convertLegacyTrustedCertificates'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { applyDisclosuresForPaths, applyDisclosuresForPayload, type ClaimPath } from './disclosureFrame'
@@ -362,7 +362,6 @@ export class SdJwtVcService {
         kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
         statusVerifier: this.getStatusVerifier(agentContext, {
           matchedTrustedIssuer: trustedIssuer,
-          credentialIssuerKey: issuerWithKey.publicJwk,
           credentialIssuerCertificateChain: issuer.method === 'x5c' ? issuer.x5c : undefined,
         }),
       })
@@ -579,71 +578,23 @@ export class SdJwtVcService {
     sdJwtVc: SdJwtVc<Header, Payload>,
     trustedIssuers?: TrustedIssuer[]
   ) {
-    const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
-
     const issuer = sdJwtVc.issuer
     if (!issuer) {
       throw new SdJwtVcError('Unsupported signing method for SD-JWT VC. Only did and x5c are supported at the moment.')
     }
 
-    if (issuer.method === 'x5c') {
-      // NOTE: we can't use the 'simpler' call directly to `ensureTrustedSigner` due to having to incorporate the
-      // legacy X509 API. In the future we can simplify this.
-      let x509Issuers = trustedIssuers?.filter((t) => t.method === 'x509')
-
-      const context = {
-        verification: { type: 'credential', credential: sdJwtVc },
-        signer: {
-          certificateChain: issuer.x5c,
-          method: 'x509',
-        },
-      } as const
-
-      // `trustedIssuers` may already be populated by a caller that pre-resolved trust with a richer
-      // context (e.g. OpenID4VP passing the `oid4VpCredential` context). When it didn't (value is
-      // `undefined`), we resolve here with the plain `credential` context; the decision is the same.
-      if (!x509Issuers) {
-        x509Issuers = (await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, context))
-          ?.trustedIssuers
-      }
-
-      // Fall back to legacy x509-specific API
-      if (!x509Issuers) {
-        const legacyTrustedCertificates =
-          (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain: issuer.x5c,
-            verification: {
-              type: 'credential',
-              credential: sdJwtVc,
-            },
-          })) ?? x509Config.trustedCertificates
-
-        if (legacyTrustedCertificates) {
-          x509Issuers = legacyTrustedCertificatesToTrustedIssuers(legacyTrustedCertificates)
-        }
-      }
-
-      if (!x509Issuers) {
-        throw new SdJwtVcError(
-          'No trusted certificates configured for X509 certificate chain validation. Issuer cannot be verified.'
-        )
-      }
-
-      return await TrustedIssuerContext.ensureTrustedSigner(agentContext, context, x509Issuers)
-    }
-
-    if (issuer.method === 'did') {
-      // `ensureTrustedSigner` consults the `getTrustedIssuersForVerification` callback and, to mimic
-      // the original behavior, allows the did by default when neither explicit trusted issuers nor the
-      // callback return any trusted issuers.
+    // `trustedIssuers` may already be populated by a caller that pre-resolved trust with a richer
+    // context (e.g. OpenID4VP passing the `oid4VpCredential` context). When it didn't (value is
+    // `undefined`), `ensureTrustedSigner` resolves it with the plain `credential` context.
+    if (issuer.method === 'x5c' || issuer.method === 'did') {
       return await TrustedIssuerContext.ensureTrustedSigner(
         agentContext,
         {
           verification: { type: 'credential', credential: sdJwtVc },
-          signer: {
-            didUrl: issuer.didUrl,
-            method: 'did',
-          },
+          signer:
+            issuer.method === 'x5c'
+              ? { method: 'x509', certificateChain: issuer.x5c }
+              : { method: 'did', didUrl: issuer.didUrl },
         },
         trustedIssuers
       )
@@ -702,11 +653,9 @@ export class SdJwtVcService {
     agentContext: AgentContext,
     {
       matchedTrustedIssuer,
-      credentialIssuerKey,
       credentialIssuerCertificateChain,
     }: {
-      matchedTrustedIssuer: TrustedIssuer | undefined
-      credentialIssuerKey: PublicJwk
+      matchedTrustedIssuer: TrustedIssuerDid | TrustedIssuerX509
       credentialIssuerCertificateChain?: X509Certificate[]
     }
   ): Verifier {
@@ -721,15 +670,6 @@ export class SdJwtVcService {
         throw new SdJwtVcError('Unable to decode the status list JWT header to extract the status list signer.', {
           cause: error,
         })
-      }
-
-      // No matched trusted issuer (e.g. did default-allow path with no configured trusted issuers).
-      // Preserve the previous behavior of verifying the status list with the credential issuer key.
-      if (!matchedTrustedIssuer) {
-        // Copy the jwk, so the alg of the status list does not affect verification of the credential itself
-        const signerJwk = PublicJwk.fromUnknown(credentialIssuerKey.toJson())
-        setJwkAlgFromJwtHeader(signerJwk, header.alg)
-        return getSdJwtVerifier(agentContext, signerJwk)(data, signatureBase64Url)
       }
 
       if (matchedTrustedIssuer.method === 'x509') {

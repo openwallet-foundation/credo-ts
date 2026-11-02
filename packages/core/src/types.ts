@@ -44,8 +44,11 @@ export interface InitConfig {
   /**
    * Optional callback to dynamically resolve trusted issuers for a verification context.
    *
-   * This is the primary trust anchor resolution hook. It is called before the X.509-module-level
-   * `getTrustedCertificatesForVerification` callback and before the global `trustedCertificates` list.
+   * This is the primary trust anchor resolution hook. It is called before the `trustedCertificates`
+   * of the X.509 module.
+   *
+   * Nothing is trusted by default: did, jwk and x509 signers are rejected when no trusted issuers are
+   * resolved. X509 signers can still fall back to the X.509 module configuration.
    *
    * Return `{ trustedIssuers: [] }` to hard-reject (trust nothing, skip remaining fallbacks).
    * Return `undefined` to fall through to the next resolution layer.

@@ -24,7 +24,6 @@ import {
   joinUriParts,
   Kms,
   type Logger,
-  legacyTrustedCertificatesToTrustedIssuers,
   Mdoc,
   MdocDeviceResponse,
   type MdocSessionTranscriptOptions,
@@ -47,7 +46,6 @@ import {
   W3cV2CredentialService,
   W3cV2SdJwtVerifiablePresentation,
   X509Certificate,
-  X509ModuleConfig,
   X509Service,
 } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
@@ -1184,7 +1182,6 @@ export class OpenId4VpVerifierService {
       }
     | { verified: false; reason: string; cause?: Error }
   > {
-    const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
     const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
 
     const { presentation, format } = options
@@ -1245,22 +1242,6 @@ export class OpenId4VpVerifierService {
               } satisfies OpenId4VcVerificationTypes,
             })
           )?.trustedIssuers
-
-          if (!trustedIssuers && issuer.method === 'x5c') {
-            const legacyTrustedCertificates =
-              (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-                certificateChain: issuer.x5c,
-                verification: {
-                  type: 'credential',
-                  credential: sdJwtVc,
-                  openId4VcVerificationSessionId: options.verificationSession.id,
-                },
-              })) ?? x509Config.trustedCertificates
-
-            if (legacyTrustedCertificates) {
-              trustedIssuers = legacyTrustedCertificatesToTrustedIssuers(legacyTrustedCertificates)
-            }
-          }
         }
 
         const verificationResult = await sdJwtVcApi.verify({
@@ -1310,17 +1291,7 @@ export class OpenId4VpVerifierService {
                   dcql: options.dcql,
                 } satisfies OpenId4VcVerificationTypes,
               })
-            )?.trustedIssuers ??
-            (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-              certificateChain,
-              verification: {
-                type: 'credential',
-                credential: mdoc,
-                openId4VcVerificationSessionId: options.verificationSession.id,
-              },
-            })) ??
-            x509Config.trustedCertificates ??
-            []
+            )?.trustedIssuers ?? []
 
           let sessionTranscriptOptions: MdocSessionTranscriptOptions
           if (options.origin && options.version === 'v1') {

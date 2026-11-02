@@ -60,6 +60,7 @@ describe('getOid4vcJwtVerifyCallback', () => {
   let did: string
   let didSigner: JwtSigner
   let jwkSigner: JwtSigner
+  let jwkSignerKey: Kms.PublicJwk
 
   let x5cSigner: JwtSigner
   let certificatePem: string
@@ -84,14 +85,14 @@ describe('getOid4vcJwtVerifyCallback', () => {
     // `kid` is the kms key id used for signing, the did document jwk itself carries no key id
     didSigner = { method: 'did', alg: Kms.KnownJwaSignatureAlgorithms.EdDSA, didUrl, kid: keyId }
 
-    const jwkKey = Kms.PublicJwk.fromPublicJwk(
+    jwkSignerKey = Kms.PublicJwk.fromPublicJwk(
       (await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
     )
     jwkSigner = {
       method: 'jwk',
       alg: Kms.KnownJwaSignatureAlgorithms.ES256,
       // biome-ignore lint/suspicious/noExplicitAny: jwk type from kms is compatible
-      publicJwk: jwkKey.toJson() as any,
+      publicJwk: jwkSignerKey.toJson() as any,
     }
 
     const certificate = await agent.x509.createCertificate({
@@ -112,7 +113,6 @@ describe('getOid4vcJwtVerifyCallback', () => {
   afterEach(() => {
     const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
     agent.context.config.setTrustedIssuersForVerification(undefined)
-    x509ModuleConfig.setTrustedCertificatesForVerification(undefined)
     x509ModuleConfig.setTrustedCertificates(undefined)
   })
 
@@ -142,10 +142,12 @@ describe('getOid4vcJwtVerifyCallback', () => {
       await expect(verify(jwt)).rejects.toThrow(`Signer did ${did} is not trusted. Unable to verify signature.`)
     })
 
-    test('is allowed by default when no trusted issuers callback is registered', async () => {
+    test('is rejected when no trusted issuers callback is registered', async () => {
       const jwt = await createJwt(agent.context, { typ: 'key-attestation+jwt', signer: didSigner })
 
-      await expect(verify(jwt)).resolves.toEqual(expect.objectContaining({ verified: true }))
+      await expect(verify(jwt)).rejects.toThrow(
+        "No trusted issuers configured for signer method 'did'. Signer cannot be verified."
+      )
     })
 
     test.each([
@@ -157,7 +159,9 @@ describe('getOid4vcJwtVerifyCallback', () => {
       ['application/oauth-client-attestation+jwt', 'oauth2ClientAttestation'],
       ['Application/Key-Attestation+JWT', 'openId4VciKeyAttestation'],
     ])('trusted issuers callback is called for typ %s', async (typ, verificationType) => {
-      const getTrustedIssuersForVerification = vi.fn().mockResolvedValue(undefined)
+      const getTrustedIssuersForVerification = vi
+        .fn()
+        .mockResolvedValue({ trustedIssuers: [{ method: 'did', issuance: did }] })
       agent.context.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
 
       const jwt = await createJwt(agent.context, { typ, signer: didSigner })
@@ -172,57 +176,116 @@ describe('getOid4vcJwtVerifyCallback', () => {
       )
     })
 
-    test('trusted issuers callback is not called for an unrelated typ', async () => {
-      const getTrustedIssuersForVerification = vi.fn().mockResolvedValue({ trustedIssuers: [] })
-      agent.context.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
-
-      const jwt = await createJwt(agent.context, { typ: 'openid4vci-proof+jwt', signer: didSigner })
-      await expect(verify(jwt)).resolves.toEqual(expect.objectContaining({ verified: true }))
-
-      expect(getTrustedIssuersForVerification).not.toHaveBeenCalled()
-    })
-
-    test.each(['key-attestation+jwt', 'oauth-client-attestation+jwt'])(
-      'trusted issuers callback is not called for typ %s without an issuance session',
+    test.each(['openid4vci-proof+jwt', 'dpop+jwt', 'oauth-client-attestation-pop+jwt', 'at+jwt'])(
+      'trusted issuers callback is not called for typ %s',
       async (typ) => {
         const getTrustedIssuersForVerification = vi.fn().mockResolvedValue({ trustedIssuers: [] })
         agent.context.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
 
         const jwt = await createJwt(agent.context, { typ, signer: didSigner })
-        await expect(verify(jwt, { issuanceSession: false })).resolves.toEqual(
-          expect.objectContaining({ verified: true })
+        await expect(verify(jwt)).resolves.toEqual(expect.objectContaining({ verified: true }))
+
+        expect(getTrustedIssuersForVerification).not.toHaveBeenCalled()
+      }
+    )
+
+    test.each(['key-attestation+jwt', 'oauth-client-attestation+jwt'])(
+      'is rejected for typ %s without an issuance session',
+      async (typ) => {
+        const getTrustedIssuersForVerification = vi
+          .fn()
+          .mockResolvedValue({ trustedIssuers: [{ method: 'did', issuance: did }] })
+        agent.context.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
+
+        const jwt = await createJwt(agent.context, { typ, signer: didSigner })
+        await expect(verify(jwt, { issuanceSession: false })).rejects.toThrow(
+          `Unable to verify jwt with typ '${typ}'. The signer can't be checked against the trusted issuers, as the jwt type is not supported without an issuance session.`
         )
 
         expect(getTrustedIssuersForVerification).not.toHaveBeenCalled()
       }
     )
+
+    test.each(['jwt', undefined])('is rejected for unknown typ %s', async (typ) => {
+      agent.context.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'did', issuance: did }],
+      }))
+
+      const jwt = await createJwt(agent.context, { typ: typ as string, signer: didSigner })
+      await expect(verify(jwt)).rejects.toThrow(`Unable to verify jwt with typ '${typ}'.`)
+    })
+
+    test('is accepted for an id token without a trusted issuers callback', async () => {
+      const jwt = await createJwt(agent.context, { typ: 'JWT', signer: didSigner })
+
+      await expect(
+        getOid4vcJwtVerifyCallback(agent.context, { isIdTokenJwt: true })(jwt.signer, {
+          compact: jwt.compact,
+          header: jwt.header,
+          payload: jwt.payload,
+        })
+      ).resolves.toEqual(expect.objectContaining({ verified: true }))
+    })
   })
 
   describe('jwk signer', () => {
-    // There is no `jwk` variant of `VerificationSigner`/`TrustedIssuer`, so a bare jwk signed
-    // credential issuer metadata is not checked against a trust list.
-    test('is not checked against the trusted issuers', async () => {
+    test('is accepted when in the trusted issuers', async () => {
+      const jwt = await createJwt(agent.context, { typ: 'key-attestation+jwt', signer: jwkSigner })
+      const getTrustedIssuersForVerification = vi.fn().mockResolvedValue({
+        trustedIssuers: [{ method: 'jwk', issuance: jwkSignerKey.toJson() }],
+      })
+      agent.context.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
+
+      await expect(verify(jwt)).resolves.toEqual(expect.objectContaining({ verified: true }))
+      expect(getTrustedIssuersForVerification).toHaveBeenCalledWith(
+        agent.context,
+        expect.objectContaining({
+          signer: { method: 'jwk', publicJwk: expect.any(Kms.PublicJwk) },
+          verification: expect.objectContaining({ type: 'openId4VciKeyAttestation' }),
+        })
+      )
+    })
+
+    test('is rejected when not in the trusted issuers', async () => {
+      const jwt = await createJwt(agent.context, { typ: 'key-attestation+jwt', signer: jwkSigner })
+      const otherJwk = (await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+      agent.context.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'jwk', issuance: otherJwk }],
+      }))
+
+      await expect(verify(jwt)).rejects.toThrow('Signer jwk is not trusted. Unable to verify signature.')
+    })
+
+    test('is rejected when an empty trusted issuers array is returned', async () => {
       const jwt = await createJwt(agent.context, { typ: 'openidvci-issuer-metadata+jwt', signer: jwkSigner })
       agent.context.config.setTrustedIssuersForVerification(async () => ({ trustedIssuers: [] }))
 
-      await expect(verify(jwt)).resolves.toEqual(expect.objectContaining({ verified: true }))
+      await expect(verify(jwt)).rejects.toThrow('Signer jwk is not trusted. Unable to verify signature.')
     })
 
     test.each([
-      ['oauth-client-attestation+jwt', 'Wallet attestations', true],
-      ['oauth-client-attestation+jwt', 'Wallet attestations', false],
-      ['key-attestation+jwt', 'Key attestations', true],
-      ['key-attestation+jwt', 'Key attestations', false],
-      ['keyattestation+jwt', 'Key attestations', true],
-      ['application/oauth-client-attestation+jwt', 'Wallet attestations', true],
-      ['Application/Key-Attestation+JWT', 'Key attestations', false],
-    ])('is rejected for typ %s (with issuance session: %s)', async (typ, name, withIssuanceSession) => {
+      'oauth-client-attestation+jwt',
+      'application/oauth-client-attestation+jwt',
+      'key-attestation+jwt',
+      'Application/Key-Attestation+JWT',
+      'openidvci-issuer-metadata+jwt',
+      'oauth-authz-req+jwt',
+    ])('is rejected for typ %s when no trusted issuers callback is registered', async (typ) => {
       const jwt = await createJwt(agent.context, { typ, signer: jwkSigner })
 
-      await expect(verify(jwt, { issuanceSession: withIssuanceSession })).rejects.toThrow(
-        `${name} signed with a 'jwk' header are not supported.`
+      await expect(verify(jwt)).rejects.toThrow(
+        "No trusted issuers configured for signer method 'jwk'. Signer cannot be verified."
       )
     })
+
+    test.each(['openid4vci-proof+jwt', 'dpop+jwt', 'oauth-client-attestation-pop+jwt', 'at+jwt'])(
+      'is accepted for typ %s without a trusted issuers callback',
+      async (typ) => {
+        const jwt = await createJwt(agent.context, { typ, signer: jwkSigner })
+
+        await expect(verify(jwt)).resolves.toEqual(expect.objectContaining({ verified: true }))
+      }
+    )
   })
 
   describe('x5c signer', () => {
@@ -233,41 +296,6 @@ describe('getOid4vcJwtVerifyCallback', () => {
       }))
 
       await expect(verify(jwt)).resolves.toEqual(expect.objectContaining({ verified: true }))
-    })
-
-    test('falls back to the deprecated x509 callback, which receives the issuance session id', async () => {
-      const jwt = await createJwt(agent.context, { typ: 'key-attestation+jwt', signer: x5cSigner })
-      const getTrustedCertificatesForVerification = vi.fn().mockResolvedValue([certificatePem])
-      agent.context.dependencyManager
-        .resolve(X509ModuleConfig)
-        .setTrustedCertificatesForVerification(getTrustedCertificatesForVerification)
-
-      await expect(verify(jwt)).resolves.toEqual(expect.objectContaining({ verified: true }))
-
-      expect(getTrustedCertificatesForVerification).toHaveBeenCalledWith(
-        agent.context,
-        expect.objectContaining({
-          verification: expect.objectContaining({
-            type: 'openId4VciKeyAttestation',
-            openId4VcIssuanceSessionId: issuanceSession.id,
-          }),
-        })
-      )
-    })
-
-    test('does not call the deprecated x509 callback when the trusted issuers callback returns a result', async () => {
-      const jwt = await createJwt(agent.context, { typ: 'key-attestation+jwt', signer: x5cSigner })
-      const getTrustedCertificatesForVerification = vi.fn().mockResolvedValue([certificatePem])
-      agent.context.dependencyManager
-        .resolve(X509ModuleConfig)
-        .setTrustedCertificatesForVerification(getTrustedCertificatesForVerification)
-      agent.context.config.setTrustedIssuersForVerification(async () => ({
-        trustedIssuers: [{ method: 'x509', issuance: [certificatePem] }],
-      }))
-
-      await expect(verify(jwt)).resolves.toEqual(expect.objectContaining({ verified: true }))
-
-      expect(getTrustedCertificatesForVerification).not.toHaveBeenCalled()
     })
 
     test('falls back to the globally configured trusted certificates', async () => {
