@@ -67,16 +67,16 @@ export interface OpenId4VciChainedAuthorizationServerConfig {
    */
   clientAuthentication: OpenId4VciAuthorizationServerClientAuthenticationClientSecret
 
-  /**
-   * Require the chained authorization server to advertise DPoP support. If support is not
-   * advertised, the authorization request fails. When the server advertises DPoP, Credo always
-   * uses it and errors rather than falling back if it cannot create a compatible proof.
-   *
-   * @default false
-   */
-  requireDpop?: boolean
-
   dpop?: {
+    /**
+     * Require the chained authorization server to advertise DPoP support. If support is not
+     * advertised, the authorization request fails. When the server advertises DPoP, Credo always
+     * uses it and errors rather than falling back if it cannot create a compatible proof.
+     *
+     * @default false
+     */
+    required?: boolean
+
     /**
      * Existing KMS key id to use for new DPoP sessions. Existing issuance sessions retain their
      * persisted key id, allowing the configured key to be rotated without breaking active sessions.
