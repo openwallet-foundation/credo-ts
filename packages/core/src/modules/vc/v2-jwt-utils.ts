@@ -52,8 +52,9 @@ export async function validateAndResolveVerificationMethod(
  * - The signer DID is the `holder` if set. Else it is the `credentialSubject.id` shared by all
  *   credentials that have one (narrowed to the `cnf.kid` DIDs when they share several). Else it is
  *   the DID of the credentials' `cnf.kid`.
- * - The signer DID is the `id` of its resolved DID document. It must equal the `holder` (if set), and
- *   be one of the `credentialSubject.id`s of every credential that has any.
+ * - The signer DID is the `id` of its resolved DID document. It must equal the `holder` (if set), be
+ *   one of the `credentialSubject.id`s of every credential that has any, and be the resolved DID of
+ *   every `cnf.kid`. A `cnf.jwk` has no DID, so it is only checked by key.
  * - The signing key is the key all `cnf`s resolve to (a `cnf.kid` is resolved under `authentication`),
  *   else the single local `authentication` method of the signer DID.
  * - The key must be a local `authentication` method of the signer DID, controlled by that DID. The
@@ -125,12 +126,14 @@ export async function resolvePresentationSigner(
     )
 
   const boundKeys = new Map<string, PublicJwk>()
+  const cnfDids: Array<{ kid: string; did?: string }> = []
   for (const holderBinding of holderBindings) {
-    const { publicJwk } = await extractKeyFromHolderBinding(agentContext, holderBinding, {
+    const { publicJwk, did } = await extractKeyFromHolderBinding(agentContext, holderBinding, {
       didPurposes: ['authentication'],
     }).catch((error) => {
       throw holderBinding.method === 'did' ? notBoundError(error) : error
     })
+    if (holderBinding.method === 'did') cnfDids.push({ kid: holderBinding.didUrl, did })
     boundKeys.set(publicJwk.fingerprint, publicJwk)
   }
 
@@ -150,6 +153,13 @@ export async function resolvePresentationSigner(
   if (candidateMethods.length > 1) {
     throw new CredoError(
       `Unable to deterministically resolve signer key for presentation ${party} '${holderDid}'. Multiple locally controlled authentication verification methods found, and the presentation credentials are bound to more than one of them.`
+    )
+  }
+
+  const otherCnfDid = cnfDids.find(({ did }) => did !== signerDid)
+  if (otherCnfDid) {
+    throw new CredoError(
+      `Presentation ${party} '${signerDid}' is not the did '${otherCnfDid.did}' of credential cnf.kid '${otherCnfDid.kid}'`
     )
   }
 

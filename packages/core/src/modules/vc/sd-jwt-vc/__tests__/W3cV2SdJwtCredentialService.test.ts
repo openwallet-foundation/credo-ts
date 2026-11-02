@@ -103,6 +103,7 @@ Date.prototype.getTime = vi.fn(function () {
 describe('W3cV2SdJwtCredentialService', () => {
   let issuerDidJwk: DidJwk
   let holderDidKey: DidKey
+  let holderDidJwk: DidJwk
   let secondHolderDidKey: DidKey
 
   beforeAll(async () => {
@@ -150,6 +151,12 @@ describe('W3cV2SdJwtCredentialService', () => {
           kmsKeyId: importedHolderKey.keyId,
         },
       ],
+    })
+
+    holderDidJwk = DidJwk.fromPublicJwk(holderDidKey.publicJwk)
+    await dids.import({
+      did: holderDidJwk.did,
+      keys: [{ didDocumentRelativeKeyId: '#0', kmsKeyId: importedHolderKey.keyId }],
     })
 
     const secondHolderPrivateJwk = transformSeedToPrivateJwk({
@@ -748,8 +755,11 @@ describe('W3cV2SdJwtCredentialService', () => {
       }
 
       // signPresentation refuses a presenter the credential is not bound to, so this signs the presentation like it without those checks
-      async function signPresentationWithKeyOf(presenter: DidKey, presentation: W3cV2Presentation) {
-        const verificationMethod = `${presenter.did}#${presenter.publicJwk.fingerprint}`
+      async function signPresentationWithKeyOf(presenter: DidKey | DidJwk, presentation: W3cV2Presentation) {
+        const verificationMethod =
+          presenter instanceof DidJwk
+            ? presenter.verificationMethodId
+            : `${presenter.did}#${presenter.publicJwk.fingerprint}`
         const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(verificationMethod)
         publicJwk.alg = KnownJwaSignatureAlgorithms.EdDSA
         const compact = await new SDJwtInstance({
@@ -924,6 +934,72 @@ describe('W3cV2SdJwtCredentialService', () => {
         ).verifyPresentation(agentContext, { presentation, challenge: 'challenge', domain: 'example.com' })
 
         expect(result.isValid).toBe(true)
+      })
+
+      describe('with a cnf.kid on a did:key and a did:jwk of the same key', () => {
+        const didKeyUrl = () => `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`
+
+        test('throws when signing as the did:jwk', async () => {
+          await expect(signPresentationBoundTo([didKeyUrl()], holderDidJwk.did)).rejects.toThrow(
+            `Presentation holder '${holderDidJwk.did}' is not the did '${holderDidKey.did}' of credential cnf.kid '${didKeyUrl()}'`
+          )
+        })
+
+        test('rejects a presentation signed as the did:jwk', async () => {
+          vi.spyOn(Date, 'now').mockReturnValue(1698151532000)
+          const credential = await w3cV2JwtCredentialService.signCredential(agentContext, {
+            alg: KnownJwaSignatureAlgorithms.ES256,
+            format: ClaimFormat.SdJwtW3cVc,
+            verificationMethod: issuerDidJwk.verificationMethodId,
+            credential: JsonTransformer.fromJSON(
+              {
+                ...Ed256DidJwkJwtVcUnsigned,
+                credentialSubject: { ...Ed256DidJwkJwtVcUnsigned.credentialSubject, id: holderDidJwk.did },
+              },
+              W3cV2Credential
+            ),
+            holder: { method: 'did', didUrl: didKeyUrl() },
+          })
+          const presentation = await signPresentationWithKeyOf(
+            holderDidJwk,
+            new W3cV2Presentation({
+              context: [CREDENTIALS_CONTEXT_V2_URL],
+              type: ['VerifiablePresentation'],
+              verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credential)],
+              holder: holderDidJwk.did,
+            })
+          )
+          vi.mocked(Date.now).mockRestore()
+
+          const result = await new W3cV2CredentialService(
+            {} as never,
+            w3cV2JwtCredentialService,
+            {} as never,
+            {} as never
+          ).verifyPresentation(agentContext, { presentation, challenge: 'challenge', domain: 'example.com' })
+
+          expect(result.presentation.isValid).toBe(true)
+          expect(result.isValid).toBe(false)
+          expect(result.credentialEntries[0]?.validations.credentialSubjectAuthentication).toEqual({ isValid: true })
+          expect(result.credentialEntries[0]?.validations.holderBinding?.error?.message).toBe(
+            `Credential is bound to cnf.kid '${didKeyUrl()}' of did '${holderDidKey.did}', but the presentation is signed by did '${holderDidJwk.did}'`
+          )
+        })
+
+        test('signs and verifies when the holder, credentialSubject.id and cnf.kid are all the did:jwk', async () => {
+          const presentation = await signPresentationBoundTo([holderDidJwk.verificationMethodId], holderDidJwk.did)
+
+          expect(presentation.sdJwt.header.kid).toBe(holderDidJwk.verificationMethodId)
+
+          const result = await new W3cV2CredentialService(
+            {} as never,
+            w3cV2JwtCredentialService,
+            {} as never,
+            {} as never
+          ).verifyPresentation(agentContext, { presentation, challenge: 'challenge', domain: 'example.com' })
+
+          expect(result.isValid).toBe(true)
+        })
       })
 
       test('throws when the credential is bound to a key the holder does not control', async () => {
@@ -1154,6 +1230,23 @@ describe('W3cV2SdJwtCredentialService', () => {
             () => ({
               credentials: [{ subjectIds: ['did:example:B'], cnf: didBinding(holderDidKey) }],
               error: "Presentation signer 'did:example:B' is not a did created by this agent",
+            }),
+          ],
+          [
+            'the cnf.kid is on another did with the same key',
+            () => ({
+              holder: holderDidJwk.did,
+              credentials: [{ subjectIds: [holderDidJwk.did], cnf: didBinding(holderDidKey) }],
+              error: `Presentation holder '${holderDidJwk.did}' is not the did '${holderDidKey.did}' of credential cnf.kid '${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}'`,
+            }),
+          ],
+          [
+            'the cnf.kid is on another did with the same key, without a holder',
+            () => ({
+              credentials: [
+                { subjectIds: [holderDidKey.did], cnf: { method: 'did', didUrl: holderDidJwk.verificationMethodId } },
+              ],
+              error: `Presentation signer '${holderDidKey.did}' is not the did '${holderDidJwk.did}' of credential cnf.kid '${holderDidJwk.verificationMethodId}'`,
             }),
           ],
           [
