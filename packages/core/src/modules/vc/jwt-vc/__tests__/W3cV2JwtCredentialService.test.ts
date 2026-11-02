@@ -599,7 +599,7 @@ describe('W3cV2JwtCredentialService', () => {
       ).resolves.toBeInstanceOf(W3cV2JwtVerifiablePresentation)
     })
 
-    test('signs when included credentials use different holder binding keys', async () => {
+    test('throws when included credentials use different holder binding keys', async () => {
       const credential = JsonTransformer.fromJSON(Ed256DidJwkJwtVcUnsigned, W3cV2Credential)
 
       const credentialForFirstHolder = await w3cV2JwtCredentialService.signCredential(agentContext, {
@@ -642,7 +642,9 @@ describe('W3cV2JwtCredentialService', () => {
           domain: 'example.com',
           format: ClaimFormat.JwtW3cVp,
         })
-      ).resolves.toBeInstanceOf(W3cV2JwtVerifiablePresentation)
+      ).rejects.toThrow(
+        `Unable to determine signer key for presentation holder '${holderDidKey.did}'. The presentation credentials are bound to more than one key.`
+      )
     })
   })
 
@@ -665,6 +667,21 @@ describe('W3cV2JwtCredentialService', () => {
           protectedHeaderOptions: { typ: 'vc+jwt', alg: options.alg, kid: options.verificationMethod },
         })
         return W3cV2JwtVerifiableCredential.fromCompact(jwt)
+      }
+
+      // signPresentation refuses a key the credential is not bound to, so this signs the presentation like it without that check
+      async function signPresentationWithKeyOf(presenter: DidKey, presentation: W3cV2Presentation) {
+        const verificationMethod = `${presenter.did}#${presenter.publicJwk.fingerprint}`
+        const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(verificationMethod)
+        const jwt = await jwsService.createJwsCompact(agentContext, {
+          payload: new JwtPayload({
+            aud: 'example.com',
+            additionalClaims: { ...JsonTransformer.toJSON(presentation), nonce: 'challenge' },
+          }),
+          keyId: publicJwk.keyId,
+          protectedHeaderOptions: { typ: 'vp+jwt', alg: KnownJwaSignatureAlgorithms.EdDSA, kid: verificationMethod },
+        })
+        return W3cV2JwtVerifiablePresentation.fromCompact(jwt)
       }
 
       /**
@@ -695,17 +712,21 @@ describe('W3cV2JwtCredentialService', () => {
           holder: cnfParty ? { method: 'did', didUrl: `${cnfParty.did}#${cnfParty.publicJwk.fingerprint}` } : undefined,
         })
 
-        const presentation = await w3cV2JwtCredentialService.signPresentation(agentContext, {
-          presentation: new W3cV2Presentation({
-            context: [CREDENTIALS_CONTEXT_V2_URL],
-            type: ['VerifiablePresentation'],
-            verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credential)],
-            holder: parties[options.presenter].did,
-          }),
-          challenge: 'challenge',
-          domain: 'example.com',
-          format: ClaimFormat.JwtW3cVp,
+        const unsignedPresentation = new W3cV2Presentation({
+          context: [CREDENTIALS_CONTEXT_V2_URL],
+          type: ['VerifiablePresentation'],
+          verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credential)],
+          holder: parties[options.presenter].did,
         })
+        const presentation =
+          options.cnf && options.cnf !== options.presenter
+            ? await signPresentationWithKeyOf(parties[options.presenter], unsignedPresentation)
+            : await w3cV2JwtCredentialService.signPresentation(agentContext, {
+                presentation: unsignedPresentation,
+                challenge: 'challenge',
+                domain: 'example.com',
+                format: ClaimFormat.JwtW3cVp,
+              })
         vi.mocked(Date.now).mockRestore()
 
         return new W3cV2CredentialService(
@@ -760,6 +781,71 @@ describe('W3cV2JwtCredentialService', () => {
         expect(result.presentation.isValid).toBe(true)
         expect(result.credentialEntries[0]?.isValid).toBe(isValid)
         expect(result.isValid).toBe(isValid)
+      })
+
+      async function signPresentationBoundTo(cnfDidUrls: string[], holder: string) {
+        vi.spyOn(Date, 'now').mockReturnValue(1698151532000)
+        try {
+          const credentials = await Promise.all(
+            cnfDidUrls.map((didUrl) =>
+              w3cV2JwtCredentialService.signCredential(agentContext, {
+                alg: KnownJwaSignatureAlgorithms.ES256,
+                format: ClaimFormat.JwtW3cVc,
+                verificationMethod: issuerDidJwk.verificationMethodId,
+                credential: JsonTransformer.fromJSON(
+                  {
+                    ...Ed256DidJwkJwtVcUnsigned,
+                    credentialSubject: { ...Ed256DidJwkJwtVcUnsigned.credentialSubject, id: holder },
+                  },
+                  W3cV2Credential
+                ),
+                holder: { method: 'did', didUrl },
+              })
+            )
+          )
+
+          return await w3cV2JwtCredentialService.signPresentation(agentContext, {
+            presentation: new W3cV2Presentation({
+              context: [CREDENTIALS_CONTEXT_V2_URL],
+              type: ['VerifiablePresentation'],
+              verifiableCredential: credentials.map((credential) =>
+                W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credential)
+              ),
+              holder,
+            }),
+            challenge: 'challenge',
+            domain: 'example.com',
+            format: ClaimFormat.JwtW3cVp,
+          })
+        } finally {
+          vi.mocked(Date.now).mockRestore()
+        }
+      }
+
+      test('presents with the key the credential is bound to', async () => {
+        const presentation = await signPresentationBoundTo(
+          [`${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`],
+          holderDidKey.did
+        )
+
+        expect(presentation.jwt.header.kid).toBe(`${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`)
+
+        const result = await new W3cV2CredentialService(
+          {} as never,
+          {} as never,
+          w3cV2JwtCredentialService,
+          {} as never
+        ).verifyPresentation(agentContext, { presentation, challenge: 'challenge', domain: 'example.com' })
+
+        expect(result.isValid).toBe(true)
+      })
+
+      test('throws when the credential is bound to a key the holder does not control', async () => {
+        await expect(
+          signPresentationBoundTo([`${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`], secondHolderDidKey.did)
+        ).rejects.toThrow(
+          `Unable to determine signer key for presentation holder '${secondHolderDidKey.did}'. The presentation credentials are bound to a key that is not a locally controlled authentication verification method of the holder.`
+        )
       })
     })
 

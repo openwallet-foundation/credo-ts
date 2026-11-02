@@ -65,11 +65,18 @@ export async function extractHolderFromPresentationCredentials(
       )
     }
 
-    if (candidateMethods.length > 1) {
-      // Pick the key the credentials are bound to
-      const credentialHolders = await getCredentialHolders(agentContext, credentials, {
-        didPurposes: ['authentication'],
-      })
+    // Pick the key the credentials are bound to
+    const credentialHolders = await getCredentialHolders(agentContext, credentials, {
+      didPurposes: ['authentication'],
+    })
+
+    if (credentialHolders.length > 1) {
+      throw new CredoError(
+        `Unable to determine signer key for presentation holder '${holderDid}'. The presentation credentials are bound to more than one key.`
+      )
+    }
+
+    if (candidateMethods.length > 1 || credentialHolders.length > 0) {
       const boundMethods = candidateMethods.filter((method) => {
         const publicJwk = getPublicJwkFromVerificationMethod(method)
         return credentialHolders.some((holder) => holder.publicJwk.equals(publicJwk))
@@ -77,7 +84,9 @@ export async function extractHolderFromPresentationCredentials(
 
       if (boundMethods.length === 0) {
         throw new CredoError(
-          `Unable to deterministically resolve signer key for presentation holder '${holderDid}'. Multiple locally controlled authentication verification methods found, and the presentation credentials are not bound to any of them.`
+          candidateMethods.length > 1
+            ? `Unable to deterministically resolve signer key for presentation holder '${holderDid}'. Multiple locally controlled authentication verification methods found, and the presentation credentials are not bound to any of them.`
+            : `Unable to determine signer key for presentation holder '${holderDid}'. The presentation credentials are bound to a key that is not a locally controlled authentication verification method of the holder.`
         )
       }
 
@@ -107,7 +116,8 @@ export async function extractHolderFromPresentationCredentials(
       alg,
       publicJwk,
       cnf: {
-        kid: selectedMethod.id,
+        // Some DID documents (e.g. did:peer:4) use relative ids, while a cnf kid is always absolute
+        kid: selectedMethod.id.startsWith('#') ? `${holderDid}${selectedMethod.id}` : selectedMethod.id,
       },
     }
   }

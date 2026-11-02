@@ -18,8 +18,17 @@ import { Hasher, JwsService, JwtPayload } from '../../../../crypto'
 import { ClassValidationError, CredoError } from '../../../../error'
 import { JsonTransformer, TypedArrayEncoder } from '../../../../utils'
 import { CacheModuleConfig, InMemoryLruCache } from '../../../cache'
-import { DidJwk, DidKey, DidRepository, DidsApi, DidsModuleConfig } from '../../../dids'
-import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
+import {
+  createPeerDidDocumentFromServices,
+  DidJwk,
+  DidKey,
+  DidRepository,
+  DidsApi,
+  DidsModuleConfig,
+  PeerDidNumAlgo,
+  type PeerDidNumAlgo4CreateOptions,
+} from '../../../dids'
+import { type Ed25519PublicJwk, KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
 import { getSdJwtSigner } from '../../../sd-jwt-vc/utils'
 import { X509ModuleConfig } from '../../../x509/X509ModuleConfig'
 import { CREDENTIALS_CONTEXT_V2_URL } from '../../constants'
@@ -628,7 +637,7 @@ describe('W3cV2SdJwtCredentialService', () => {
       ).resolves.toBeInstanceOf(W3cV2SdJwtVerifiablePresentation)
     })
 
-    test('signs when included credentials use different holder binding keys', async () => {
+    test('throws when included credentials use different holder binding keys', async () => {
       const credential = JsonTransformer.fromJSON(Ed256DidJwkJwtVcUnsigned, W3cV2Credential)
 
       const credentialForFirstHolder = await w3cV2JwtCredentialService.signCredential(agentContext, {
@@ -681,7 +690,9 @@ describe('W3cV2SdJwtCredentialService', () => {
           domain: 'example.com',
           format: ClaimFormat.SdJwtW3cVp,
         })
-      ).resolves.toBeInstanceOf(W3cV2SdJwtVerifiablePresentation)
+      ).rejects.toThrow(
+        `Unable to determine signer key for presentation holder '${holderDidKey.did}'. The presentation credentials are bound to more than one key.`
+      )
     })
   })
 
@@ -726,6 +737,28 @@ describe('W3cV2SdJwtCredentialService', () => {
         return W3cV2SdJwtVerifiableCredential.fromCompact(compact)
       }
 
+      // signPresentation refuses a key the credential is not bound to, so this signs the presentation like it without that check
+      async function signPresentationWithKeyOf(presenter: DidKey, presentation: W3cV2Presentation) {
+        const verificationMethod = `${presenter.did}#${presenter.publicJwk.fingerprint}`
+        const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(verificationMethod)
+        publicJwk.alg = KnownJwaSignatureAlgorithms.EdDSA
+        const compact = await new SDJwtInstance({
+          hasher: sdJwtVcHasher,
+          saltGenerator: () => 'salt',
+          signer: getSdJwtSigner(agentContext, publicJwk),
+          signAlg: KnownJwaSignatureAlgorithms.EdDSA,
+        }).issue(
+          {
+            ...(JsonTransformer.toJSON(presentation) as Record<string, unknown>),
+            nonce: 'challenge',
+            aud: 'example.com',
+          },
+          undefined,
+          { header: { typ: 'vp+sd-jwt', alg: KnownJwaSignatureAlgorithms.EdDSA, kid: verificationMethod } }
+        )
+        return W3cV2SdJwtVerifiablePresentation.fromCompact(compact)
+      }
+
       /**
        * Issues a credential bound to `subject` (credentialSubject.id) and/or `cnf`, and presents it
        * signed by `presenter`.
@@ -754,17 +787,21 @@ describe('W3cV2SdJwtCredentialService', () => {
           holder: cnfParty ? { method: 'did', didUrl: `${cnfParty.did}#${cnfParty.publicJwk.fingerprint}` } : undefined,
         })
 
-        const presentation = await w3cV2JwtCredentialService.signPresentation(agentContext, {
-          presentation: new W3cV2Presentation({
-            context: [CREDENTIALS_CONTEXT_V2_URL],
-            type: ['VerifiablePresentation'],
-            verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credential)],
-            holder: parties[options.presenter].did,
-          }),
-          challenge: 'challenge',
-          domain: 'example.com',
-          format: ClaimFormat.SdJwtW3cVp,
+        const unsignedPresentation = new W3cV2Presentation({
+          context: [CREDENTIALS_CONTEXT_V2_URL],
+          type: ['VerifiablePresentation'],
+          verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credential)],
+          holder: parties[options.presenter].did,
         })
+        const presentation =
+          options.cnf && options.cnf !== options.presenter
+            ? await signPresentationWithKeyOf(parties[options.presenter], unsignedPresentation)
+            : await w3cV2JwtCredentialService.signPresentation(agentContext, {
+                presentation: unsignedPresentation,
+                challenge: 'challenge',
+                domain: 'example.com',
+                format: ClaimFormat.SdJwtW3cVp,
+              })
         vi.mocked(Date.now).mockRestore()
 
         return new W3cV2CredentialService(
@@ -819,6 +856,110 @@ describe('W3cV2SdJwtCredentialService', () => {
         expect(result.presentation.isValid).toBe(true)
         expect(result.credentialEntries[0]?.isValid).toBe(isValid)
         expect(result.isValid).toBe(isValid)
+      })
+
+      async function signPresentationBoundTo(cnfDidUrls: string[], holder: string) {
+        vi.spyOn(Date, 'now').mockReturnValue(1698151532000)
+        try {
+          const credentials = await Promise.all(
+            cnfDidUrls.map((didUrl) =>
+              w3cV2JwtCredentialService.signCredential(agentContext, {
+                alg: KnownJwaSignatureAlgorithms.ES256,
+                format: ClaimFormat.SdJwtW3cVc,
+                verificationMethod: issuerDidJwk.verificationMethodId,
+                credential: JsonTransformer.fromJSON(
+                  {
+                    ...Ed256DidJwkJwtVcUnsigned,
+                    credentialSubject: { ...Ed256DidJwkJwtVcUnsigned.credentialSubject, id: holder },
+                  },
+                  W3cV2Credential
+                ),
+                holder: { method: 'did', didUrl },
+              })
+            )
+          )
+
+          return await w3cV2JwtCredentialService.signPresentation(agentContext, {
+            presentation: new W3cV2Presentation({
+              context: [CREDENTIALS_CONTEXT_V2_URL],
+              type: ['VerifiablePresentation'],
+              verifiableCredential: credentials.map((credential) =>
+                W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credential)
+              ),
+              holder,
+            }),
+            challenge: 'challenge',
+            domain: 'example.com',
+            format: ClaimFormat.SdJwtW3cVp,
+          })
+        } finally {
+          vi.mocked(Date.now).mockRestore()
+        }
+      }
+
+      test('presents with the key the credential is bound to', async () => {
+        const presentation = await signPresentationBoundTo(
+          [`${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`],
+          holderDidKey.did
+        )
+
+        expect(presentation.sdJwt.header.kid).toBe(`${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`)
+
+        const result = await new W3cV2CredentialService(
+          {} as never,
+          w3cV2JwtCredentialService,
+          {} as never,
+          {} as never
+        ).verifyPresentation(agentContext, { presentation, challenge: 'challenge', domain: 'example.com' })
+
+        expect(result.isValid).toBe(true)
+      })
+
+      test('throws when the credential is bound to a key the holder does not control', async () => {
+        await expect(
+          signPresentationBoundTo([`${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`], secondHolderDidKey.did)
+        ).rejects.toThrow(
+          `Unable to determine signer key for presentation holder '${secondHolderDidKey.did}'. The presentation credentials are bound to a key that is not a locally controlled authentication verification method of the holder.`
+        )
+      })
+
+      test('uses an absolute kid for a holder with relative verification method ids', async () => {
+        const key = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+        const { didDocument, keys } = createPeerDidDocumentFromServices(
+          [
+            {
+              id: '#inline-0',
+              serviceEndpoint: 'https://example.com',
+              recipientKeys: [PublicJwk.fromPublicJwk(key.publicJwk) as PublicJwk<Ed25519PublicJwk>],
+              routingKeys: [],
+            },
+          ],
+          true
+        )
+        const { didState } = await dids.create<PeerDidNumAlgo4CreateOptions>({
+          method: 'peer',
+          didDocument,
+          options: { numAlgo: PeerDidNumAlgo.ShortFormAndLongForm, keys },
+        })
+
+        const holderDid = didState.did as string
+        const presentation = await signPresentationBoundTo([`${holderDid}#key-1`], holderDid)
+
+        const [credential] = presentation.resolvedPresentation
+          .verifiableCredential as W3cV2EnvelopedVerifiableCredential[]
+        expect(presentation.sdJwt.header.kid).toBe(`${holderDid}#key-1`)
+        expect((credential.envelopedCredential as W3cV2SdJwtVerifiableCredential).sdJwt.prettyClaims).toMatchObject({
+          cnf: { kid: presentation.sdJwt.header.kid },
+        })
+
+        const result = await new W3cV2CredentialService(
+          {} as never,
+          w3cV2JwtCredentialService,
+          {} as never,
+          {} as never
+        ).verifyPresentation(agentContext, { presentation, challenge: 'challenge', domain: 'example.com' })
+
+        expect(result.isValid).toBe(true)
       })
 
       async function presentCredentialWithKeyBindingJwt(nonce: string, aud = 'example.com', withoutDomain = false) {
