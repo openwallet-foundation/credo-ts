@@ -25,16 +25,23 @@ interface ExpressHostResponse {
 
 export type ExpressHostOptions = { app: Express; port?: undefined } | { app?: Express; port: number }
 
+// Allow the default DIDComm processing timeout (10 seconds) to elapse before force-closing requests.
+const HTTP_SERVER_DRAIN_TIMEOUT_MS = 15_000
+
 /**
  * Serves DIDComm HTTP inbound routes on an Express application.
  *
- * When `port` is provided the host starts listening when a route is attached, and closes the
- * listener when the route is detached. When only `app` is provided the application owns the listener.
+ * When `port` is provided the host starts listening when the first route is attached, and closes the
+ * listener after the last route is detached. Reuse one host instance when transports should share its listener.
+ * When only `app` is provided the application owns the listener.
  */
 export class ExpressHost {
   public readonly app: Express
-  private port?: number
+  private readonly port?: number
   private _server?: Server
+  private attachedBindings = new Set<ExpressHostBinding>()
+  private registeredBindings = new Set<ExpressHostBinding>()
+  private lifecycle: Promise<void> = Promise.resolve()
 
   public get server() {
     return this._server
@@ -47,39 +54,70 @@ export class ExpressHost {
     this.app = app ?? express()
   }
 
-  public async attach(binding: ExpressHostBinding): Promise<void> {
-    this.app.post(binding.path, text({ type: binding.contentTypes, limit: binding.maxBodyBytes }), (req, res) =>
-      binding.handle(toHostRequest(req), toHostResponse(res))
-    )
+  public attach(binding: ExpressHostBinding): Promise<void> {
+    return this.enqueue(async () => {
+      if (this.attachedBindings.has(binding)) return
 
-    if (this.port === undefined) {
-      return
-    }
-
-    const server = this.app.listen(this.port)
-    this._server = server
-
-    await new Promise<void>((resolve, reject) => {
-      const onError = (error: Error) => {
-        server.off('listening', onListening)
-        reject(error)
-      }
-      const onListening = () => {
-        server.off('error', onError)
-        resolve()
+      if (!this.registeredBindings.has(binding)) {
+        this.app.post(binding.path, text({ type: binding.contentTypes, limit: binding.maxBodyBytes }), (req, res) =>
+          binding.handle(toHostRequest(req), toHostResponse(res))
+        )
+        this.registeredBindings.add(binding)
       }
 
-      server.once('error', onError)
-      server.once('listening', onListening)
+      this.attachedBindings.add(binding)
+
+      if (this.port === undefined || this._server) return
+
+      const server = this.app.listen(this.port)
+      this._server = server
+
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const onError = (error: Error) => {
+            server.off('listening', onListening)
+            reject(error)
+          }
+          const onListening = () => {
+            server.off('error', onError)
+            resolve()
+          }
+
+          server.once('error', onError)
+          server.once('listening', onListening)
+        })
+      } catch (error) {
+        this.attachedBindings.delete(binding)
+        if (this._server === server) this._server = undefined
+        throw error
+      }
     })
   }
 
-  public async detach(_binding: ExpressHostBinding): Promise<void> {
-    if (!this._server) {
-      return
-    }
+  public detach(binding: ExpressHostBinding): Promise<void> {
+    return this.enqueue(async () => {
+      if (!this.attachedBindings.delete(binding) || this.port === undefined || this.attachedBindings.size > 0) return
 
-    return new Promise((resolve, reject) => this._server?.close((err) => (err ? reject(err) : resolve())))
+      const server = this._server
+      if (!server) return
+
+      await new Promise<void>((resolve, reject) => {
+        const drainTimeout = setTimeout(() => server.closeAllConnections(), HTTP_SERVER_DRAIN_TIMEOUT_MS)
+
+        server.close((error) => {
+          clearTimeout(drainTimeout)
+          if (this._server === server) this._server = undefined
+          if (error) reject(error)
+          else resolve()
+        })
+      })
+    })
+  }
+
+  private enqueue(operation: () => Promise<void>): Promise<void> {
+    const result = this.lifecycle.then(operation, operation)
+    this.lifecycle = result.catch(() => undefined)
+    return result
   }
 }
 
