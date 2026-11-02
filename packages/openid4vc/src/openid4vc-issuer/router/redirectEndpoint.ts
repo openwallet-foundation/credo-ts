@@ -195,7 +195,6 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
             throw new Oauth2ServerErrorResponseError(
               {
                 error: Oauth2ErrorCodes.ServerError,
-                error_description: 'Upstream authorization server did not return a DPoP-bound access token.',
               },
               {
                 internalMessage: `Credo ${
