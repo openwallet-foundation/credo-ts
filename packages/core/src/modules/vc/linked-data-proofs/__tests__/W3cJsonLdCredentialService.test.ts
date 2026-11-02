@@ -615,6 +615,18 @@ describe('W3cJsonLdCredentialsService', () => {
           },
         })
       })
+
+      it('should reject a credential with a non-did issuer', async () => {
+        const vc = JsonTransformer.fromJSON(
+          { ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED, issuer: 'https://example.com/issuer' },
+          W3cJsonLdVerifiableCredential
+        )
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+
+        expect(result.isValid).toBe(false)
+        expect(result.error?.message).toContain("Credential issuer 'https://example.com/issuer' is not a did")
+      })
     })
 
     describe('verifyCredential with getTrustedIssuersForVerification', () => {
