@@ -1310,7 +1310,7 @@ export class OpenId4VcIssuerService {
     options?: { deleteChainedDpopKey?: boolean }
   ) {
     const issuanceSession = await this.openId4VcIssuanceSessionRepository.getById(agentContext, issuanceSessionId)
-    const chainedDpop = issuanceSession?.chainedIdentity?.dpop
+    const chainedDpop = issuanceSession?.chainedIdentity?.externalDpop
 
     if ((options?.deleteChainedDpopKey ?? true) && chainedDpop?.keyGeneratedForSession) {
       await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: chainedDpop.keyId })
@@ -1897,7 +1897,7 @@ export class OpenId4VcIssuerService {
     dpop?: RequestDpopOptions
     session?: OpenId4VcIssuanceSessionChainedIdentityDpop
   }> {
-    const persisted = options.issuanceSession.chainedIdentity?.dpop
+    const persisted = options.issuanceSession.chainedIdentity?.externalDpop
     const dpopConfig = options.chainedAuthorizationServerConfig.dpop
     const supportedSigningAlgorithms = options.authorizationServerMetadata.dpop_signing_alg_values_supported
 
@@ -1905,7 +1905,7 @@ export class OpenId4VcIssuerService {
       if (persisted) {
         throw new CredoError('Authorization server no longer advertises DPoP support for this issuance session.')
       }
-      if (dpopConfig?.required) {
+      if (dpopConfig?.requireServerSupport) {
         throw new CredoError(`Authorization server does not support DPoP.`)
       }
 

@@ -75,7 +75,7 @@ export interface OpenId4VciChainedAuthorizationServerConfig {
      *
      * @default false
      */
-    required?: boolean
+    requireServerSupport?: boolean
 
     /**
      * Existing KMS key id to use for new DPoP sessions. Existing issuance sessions retain their
@@ -84,7 +84,10 @@ export interface OpenId4VciChainedAuthorizationServerConfig {
      */
     keyId?: string
 
-    /** Restrict DPoP signing algorithms used by Credo. */
+    /**
+     * Restrict the DPoP signing algorithms Credo uses towards this authorization server. Does not affect
+     * `dpopSigningAlgValuesSupported`, which sets the algorithms accepted from wallets.
+     */
     signingAlgValuesSupported?: Kms.KnownJwaSignatureAlgorithm[]
   }
 

@@ -162,7 +162,11 @@ export interface OpenId4VcIssuanceSessionChainedIdentity {
    */
   externalAuthorizationServerMetadata?: AuthorizationServerMetadata
 
-  dpop?: OpenId4VcIssuanceSessionChainedIdentityDpop
+  /**
+   * The DPoP key and nonce Credo uses towards the external identity provider's authorization server.
+   * Not related to the wallet's DPoP binding in the top-level `dpop` of the issuance session.
+   */
+  externalDpop?: OpenId4VcIssuanceSessionChainedIdentityDpop
 
   /**
    * The access token response received from the external identity provider.

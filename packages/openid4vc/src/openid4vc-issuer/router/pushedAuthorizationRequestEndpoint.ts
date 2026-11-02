@@ -271,9 +271,9 @@ export async function handlePushedAuthorizationRequest(
   })
 
   // Store a new key before calling upstream, so a failed request doesn't orphan it and a retry reuses it
-  if (chainedDpop.session && !issuanceSession.chainedIdentity?.dpop) {
+  if (chainedDpop.session && !issuanceSession.chainedIdentity?.externalDpop) {
     const dpop = chainedDpop.session
-    issuanceSession.chainedIdentity = { ...issuanceSession.chainedIdentity, dpop }
+    issuanceSession.chainedIdentity = { ...issuanceSession.chainedIdentity, externalDpop: dpop }
     try {
       await agentContext.resolve(OpenId4VcIssuanceSessionRepository).update(agentContext, issuanceSession)
     } catch (error) {
@@ -322,7 +322,7 @@ export async function handlePushedAuthorizationRequest(
     state: parsedAuthorizationRequest.authorizationRequest.state,
     redirectUri: parsedAuthorizationRequest.authorizationRequest.redirect_uri,
     externalAuthorizationServerMetadata: authorizationServerMetadata,
-    dpop: chainedDpop.session,
+    externalDpop: chainedDpop.session,
   }
 
   const { pushedAuthorizationResponse } = authorizationServer.createPushedAuthorizationResponse({

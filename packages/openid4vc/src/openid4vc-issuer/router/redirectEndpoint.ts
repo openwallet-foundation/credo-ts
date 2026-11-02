@@ -248,7 +248,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
         issuanceSession.chainedIdentity = {
           ...issuanceSession.chainedIdentity,
           externalAccessTokenResponse: accessTokenResponse,
-          dpop: chainedDpop.session,
+          externalDpop: chainedDpop.session,
         }
 
         // TODO: we need to start using locks so we can't get corrupted state
