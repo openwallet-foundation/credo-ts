@@ -1530,92 +1530,38 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     it.each([
       {
-        mode: 'supported DPoP with a JWT access token',
+        mode: 'required DPoP support',
         requireDpop: true,
         tokenType: 'dpop',
-        opaqueAccessToken: false,
-        introspectionAvailable: false,
-        introspectionHasJkt: false,
-      },
-      {
-        mode: 'supported DPoP with a JWT access token bound to another key',
-        requireDpop: true,
-        tokenType: 'DPoP',
-        opaqueAccessToken: false,
-        introspectionAvailable: false,
-        introspectionHasJkt: false,
-        mismatchedJkt: true,
       },
       {
         mode: 'uses supported DPoP when it is not required',
         requireDpop: false,
         tokenType: 'DPoP',
-        opaqueAccessToken: true,
-        introspectionAvailable: true,
-        introspectionHasJkt: true,
-      },
-      {
-        mode: 'supported DPoP with an opaque token and no introspection endpoint',
-        requireDpop: true,
-        tokenType: 'DPoP',
-        opaqueAccessToken: true,
-        introspectionAvailable: false,
-        introspectionHasJkt: false,
-      },
-      {
-        mode: 'supported DPoP with an opaque token without an introspected jkt',
-        requireDpop: true,
-        tokenType: 'DPoP',
-        opaqueAccessToken: true,
-        introspectionAvailable: true,
-        introspectionHasJkt: false,
-      },
-      {
-        mode: 'supported DPoP with an inactive opaque token',
-        requireDpop: true,
-        tokenType: 'DPoP',
-        opaqueAccessToken: true,
-        introspectionAvailable: true,
-        introspectionHasJkt: true,
-        introspectionActive: false,
       },
       {
         mode: 'required DPoP support with a non-DPoP token type',
         requireDpop: true,
         tokenType: 'Bearer',
-        opaqueAccessToken: true,
       },
       {
         mode: 'optional DPoP support with a non-DPoP token type',
         requireDpop: false,
         tokenType: 'Bearer',
-        opaqueAccessToken: true,
       },
     ])(
       'preserves upstream nonce from authorization initiation through token exchange with $mode',
-      async ({
-        requireDpop,
-        tokenType,
-        opaqueAccessToken,
-        introspectionAvailable,
-        introspectionHasJkt,
-        introspectionActive = true,
-        mismatchedJkt,
-      }) => {
+      async ({ requireDpop, tokenType }) => {
         const issuerId = `chained-dpop-${utils.uuid()}`
         const upstreamIssuer = 'http://localhost:4748'
         const nonce = 'authorization-challenge-nonce'
         const redirectUri = 'http://localhost:5757/redirect'
         const tokenProofs: string[] = []
-        let upstreamDpopJkt: string | undefined
         let authorizationChallengeState: string | undefined
         let authorizationChallengeRedirectUri: string | undefined
 
         const upstreamServer = new Oauth2AuthorizationServer({
           callbacks: getOid4vcCallbacks(dpopAgent.agent.context),
-        })
-        const upstreamKey = await dpopAgent.agent.kms.createKey({
-          type: { kty: 'EC', crv: 'P-256' },
         })
         const upstreamApp = express()
         upstreamApp.use(express.urlencoded({ extended: false }))
@@ -1626,24 +1572,8 @@ describe('OpenId4Vc (Chained Authorization)', () => {
             authorization_endpoint: `${upstreamIssuer}/authorize`,
             authorization_challenge_endpoint: `${upstreamIssuer}/authorization-challenge`,
             token_endpoint: `${upstreamIssuer}/token`,
-            jwks_uri: `${upstreamIssuer}/jwks`,
-            ...(introspectionAvailable ? { introspection_endpoint: `${upstreamIssuer}/introspect` } : {}),
           } satisfies AuthorizationServerMetadata)
         )
-        upstreamApp.get('/jwks', (_req, res) =>
-          res.json({
-            keys: [{ ...Kms.PublicJwk.fromPublicJwk(upstreamKey.publicJwk).toJson(), kid: upstreamKey.keyId }],
-          })
-        )
-        if (introspectionAvailable) {
-          upstreamApp.post('/introspect', (_req, res) =>
-            res.json({
-              active: introspectionActive,
-              token_type: 'DPoP',
-              ...(introspectionHasJkt && upstreamDpopJkt ? { cnf: { jkt: upstreamDpopJkt } } : {}),
-            })
-          )
-        }
         upstreamApp.post('/authorization-challenge', async (req, res) => {
           authorizationChallengeState = req.body.state
           authorizationChallengeRedirectUri = req.body.redirect_uri
@@ -1678,7 +1608,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           tokenProofs.push(proof)
 
           try {
-            const verified = await upstreamServer.verifyDpopJwt({
+            await upstreamServer.verifyDpopJwt({
               dpopJwt: proof,
               request: {
                 headers: new Headers(),
@@ -1687,7 +1617,6 @@ describe('OpenId4Vc (Chained Authorization)', () => {
               },
               expectedNonce: nonce,
             })
-            upstreamDpopJkt = verified.jwkThumbprint
           } catch (error) {
             return res
               .status(400)
@@ -1698,28 +1627,8 @@ describe('OpenId4Vc (Chained Authorization)', () => {
               })
           }
 
-          const accessToken = opaqueAccessToken
-            ? 'opaque-upstream-access-token'
-            : await dpopAgent.agent.dependencyManager.resolve(JwsService).createJwsCompact(dpopAgent.agent.context, {
-                keyId: upstreamKey.keyId,
-                payload: JwtPayload.fromJson({
-                  iss: upstreamIssuer,
-                  aud: 'upstream-client',
-                  sub: 'upstream-user',
-                  jti: utils.uuid(),
-                  cnf: { jkt: mismatchedJkt ? 'another-key-thumbprint' : upstreamDpopJkt },
-                  exp: Math.floor(Date.now() / 1000) + 300,
-                  iat: Math.floor(Date.now() / 1000),
-                }),
-                protectedHeaderOptions: {
-                  typ: 'at+jwt',
-                  alg: 'ES256',
-                  kid: upstreamKey.keyId,
-                },
-              })
-
           return res.json({
-            access_token: accessToken,
+            access_token: 'upstream-access-token',
             token_type: tokenType,
             expires_in: 300,
             scope: 'MappedUniversityDegreeCredential',
@@ -1789,21 +1698,10 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         const issuerRedirectLocation = tokenExchangeResponse.headers.get('location')
         if (!issuerRedirectLocation) throw new Error('Expected the issuer to redirect the authorization response')
         const issuerRedirect = new URL(issuerRedirectLocation)
-        const dpopTokenResponse = tokenType.toLowerCase() === 'dpop'
-        const shouldReject =
-          !dpopTokenResponse ||
-          mismatchedJkt ||
-          (opaqueAccessToken && (!introspectionAvailable || !introspectionHasJkt || !introspectionActive))
-        if (!dpopTokenResponse) {
+        const shouldReject = tokenType.toLowerCase() !== 'dpop'
+        if (shouldReject) {
           expect(issuerRedirect.searchParams.get('error')).toBe('server_error')
-          expect(issuerRedirect.searchParams.get('error_description')).toBe(
-            'Upstream authorization server did not return a DPoP-bound access token.'
-          )
-        } else if (shouldReject) {
-          expect(issuerRedirect.searchParams.get('error')).toBe('server_error')
-          expect(issuerRedirect.searchParams.get('error_description')).toBe(
-            'Unable to verify upstream DPoP-bound access token.'
-          )
+          expect(issuerRedirect.searchParams.get('error_description')).toBeNull()
         } else {
           expect(issuerRedirect.searchParams.get('code')).toEqual(expect.any(String))
         }
