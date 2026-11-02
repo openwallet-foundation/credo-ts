@@ -1904,10 +1904,11 @@ export class OpenId4VcIssuerService {
         throw new CredoError(`Authorization server metadata not found for issuer '${authorizationServerUrl}'.`)
       }
 
-      const { session } = await this.createChainedAuthorizationServerDpopOptions(agentContext, {
+      const { session } = await this.getChainedAuthorizationServerDpopOptions(agentContext, {
         issuanceSession,
         chainedAuthorizationServerConfig,
         authorizationServerMetadata,
+        createKey: true,
       })
       issuanceSession.chainedIdentity.chainedAuthorizationServerDpop = session
     }
@@ -1936,97 +1937,55 @@ export class OpenId4VcIssuerService {
       issuanceSession: OpenId4VcIssuanceSessionRecord
       chainedAuthorizationServerConfig: OpenId4VciChainedAuthorizationServerConfig
       authorizationServerMetadata: AuthorizationServerMetadata
+      // Only session creation creates a key, later requests reuse the persisted one.
+      createKey?: boolean
     }
   ): Promise<{
     dpop?: RequestDpopOptions
     session?: OpenId4VcIssuanceSessionChainedAuthorizationServerDpop
   }> {
     const persisted = options.issuanceSession.chainedIdentity?.chainedAuthorizationServerDpop
-    if (persisted && !options.authorizationServerMetadata.dpop_signing_alg_values_supported) {
-      throw new CredoError('Authorization server no longer advertises DPoP support for this issuance session.')
-    }
-
-    const supportedSigningAlgorithms = this.getChainedAuthorizationServerDpopSigningAlgorithms(agentContext, options)
-    if (!supportedSigningAlgorithms) return {}
-    if (!persisted) {
-      throw new CredoError('Chained DPoP key was not initialized during issuance session creation.')
-    }
-
-    const configuredAlgorithms = options.chainedAuthorizationServerConfig.dpop?.signingAlgValuesSupported
-    const dpop = await getDpopOptions(agentContext, {
-      dpopSigningAlgValuesSupported: supportedSigningAlgorithms,
-      signingAlgValuesSupported: [persisted.alg].filter(
-        (algorithm) => configuredAlgorithms?.includes(algorithm) ?? true
-      ),
-      keyId: persisted.keyId,
-      nonce: persisted.nonce,
-    })
-
-    return {
-      dpop: dpop.options,
-      session: { ...persisted },
-    }
-  }
-
-  public async createChainedAuthorizationServerDpopOptions(
-    agentContext: AgentContext,
-    options: {
-      issuanceSession: OpenId4VcIssuanceSessionRecord
-      chainedAuthorizationServerConfig: OpenId4VciChainedAuthorizationServerConfig
-      authorizationServerMetadata: AuthorizationServerMetadata
-    }
-  ): Promise<{
-    dpop?: RequestDpopOptions
-    session?: OpenId4VcIssuanceSessionChainedAuthorizationServerDpop
-  }> {
-    if (options.issuanceSession.chainedIdentity?.chainedAuthorizationServerDpop) {
-      return this.getChainedAuthorizationServerDpopOptions(agentContext, options)
-    }
-
-    const supportedSigningAlgorithms = this.getChainedAuthorizationServerDpopSigningAlgorithms(agentContext, options)
-    if (!supportedSigningAlgorithms) return {}
-
-    const keyId = options.chainedAuthorizationServerConfig.dpop?.keyId
-    const dpop = await getDpopOptions(agentContext, {
-      dpopSigningAlgValuesSupported: supportedSigningAlgorithms,
-      signingAlgValuesSupported: options.chainedAuthorizationServerConfig.dpop?.signingAlgValuesSupported,
-      keyId,
-    })
-
-    return {
-      dpop: dpop.options,
-      session: {
-        keyId: dpop.keyId,
-        alg: dpop.alg,
-        jwkThumbprint: dpop.jwkThumbprint,
-        keyGeneratedForSession: !keyId,
-      },
-    }
-  }
-
-  private getChainedAuthorizationServerDpopSigningAlgorithms(
-    agentContext: AgentContext,
-    options: {
-      chainedAuthorizationServerConfig: OpenId4VciChainedAuthorizationServerConfig
-      authorizationServerMetadata: AuthorizationServerMetadata
-    }
-  ) {
-    const requireDpop = options.chainedAuthorizationServerConfig.dpop?.required ?? false
+    const dpopConfig = options.chainedAuthorizationServerConfig.dpop
     const supportedSigningAlgorithms = options.authorizationServerMetadata.dpop_signing_alg_values_supported
 
     if (!supportedSigningAlgorithms) {
-      if (requireDpop) {
+      if (persisted) {
+        throw new CredoError('Authorization server no longer advertises DPoP support for this issuance session.')
+      }
+      if (dpopConfig?.required) {
         throw new CredoError(`Authorization server does not support DPoP.`)
       }
 
       agentContext.config.logger.debug(`Authorization server does not support DPoP. Continuing without DPoP.`)
-      return undefined
+      return {}
     }
     if (supportedSigningAlgorithms.length === 0) {
       throw new CredoError(`Authorization server advertises DPoP support without any signing algorithms.`)
     }
+    if (!persisted && !options.createKey) {
+      throw new CredoError('Chained DPoP key was not initialized during issuance session creation.')
+    }
 
-    return supportedSigningAlgorithms
+    const dpop = await getDpopOptions(agentContext, {
+      dpopSigningAlgValuesSupported: supportedSigningAlgorithms,
+      signingAlgValuesSupported: persisted
+        ? [persisted.alg].filter((algorithm) => dpopConfig?.signingAlgValuesSupported?.includes(algorithm) ?? true)
+        : dpopConfig?.signingAlgValuesSupported,
+      keyId: persisted?.keyId ?? dpopConfig?.keyId,
+      nonce: persisted?.nonce,
+    })
+
+    return {
+      dpop: dpop.options,
+      session: persisted
+        ? { ...persisted }
+        : {
+            keyId: dpop.keyId,
+            alg: dpop.alg,
+            jwkThumbprint: dpop.jwkThumbprint,
+            keyGeneratedForSession: !dpopConfig?.keyId,
+          },
+    }
   }
 
   public getOauth2Client(agentContext: AgentContext, issuerRecord?: OpenId4VcIssuerRecord) {
