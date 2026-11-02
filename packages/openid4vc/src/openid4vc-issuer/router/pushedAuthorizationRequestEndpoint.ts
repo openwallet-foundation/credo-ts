@@ -272,19 +272,19 @@ export async function handlePushedAuthorizationRequest(
 
   // Store a new key before calling upstream, so a failed request doesn't orphan it and a retry reuses it
   if (chainedDpop.session && !issuanceSession.chainedIdentity?.externalDpop) {
-    const dpop = chainedDpop.session
-    issuanceSession.chainedIdentity = { ...issuanceSession.chainedIdentity, externalDpop: dpop }
+    const externalDpop = chainedDpop.session
+    issuanceSession.chainedIdentity = { ...issuanceSession.chainedIdentity, externalDpop }
     try {
       await agentContext.resolve(OpenId4VcIssuanceSessionRepository).update(agentContext, issuanceSession)
     } catch (error) {
-      if (dpop.keyGeneratedForSession) {
+      if (externalDpop.keyGeneratedForSession) {
         try {
-          await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: dpop.keyId })
+          await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: externalDpop.keyId })
         } catch (cleanupError) {
           agentContext.config.logger.error(
             'Failed to delete DPoP key after storing it on the issuance session failed',
             {
-              keyId: dpop.keyId,
+              keyId: externalDpop.keyId,
               error: cleanupError,
             }
           )
