@@ -1,21 +1,13 @@
 import {
-  areDidIndyIdentifiersEqual,
   didIndyCredentialDefinitionIdRegex,
-  didIndyIdentifierQuery,
   didIndyRegex,
   didIndyRevocationRegistryIdRegex,
   didIndySchemaIdRegex,
-  getCanonicalDidIndyRestriction,
-  getDidIndyIdentifierVariants,
   getIndyNamespaceFromIndyDid,
   parseIndyCredentialDefinitionId,
   parseIndyDid,
   parseIndyRevocationRegistryId,
   parseIndySchemaId,
-  withDidIndyIdentifierQueryVariants,
-  withDidIndyIdentifierVariantKeys,
-  withDidIndyProofRequestRestrictionVariants,
-  withDidIndyRestrictionVariants,
 } from '../indyIdentifiers'
 
 describe('did:indy identifiers', () => {
@@ -181,166 +173,6 @@ describe('did:indy identifiers', () => {
       expect(() => getIndyNamespaceFromIndyDid('SDqTzbVuCowusqGBNbNDjH:2:schema-name:1.0')).toThrow(
         'SDqTzbVuCowusqGBNbNDjH:2:schema-name:1.0 is not a valid did:indy did'
       )
-    })
-  })
-
-  describe('getDidIndyIdentifierVariants', () => {
-    test('returns the encoded and unencoded form of a did:indy id', () => {
-      const did = 'did:indy:sovrin:N7baRMcyvPwWc8v85CtZ6e'
-      const encoded = `${did}/anoncreds/v0/REV_REG_DEF/100669/SCH%20Employee%20ID/1-1024`
-      const unencoded = `${did}/anoncreds/v0/REV_REG_DEF/100669/SCH Employee ID/1-1024`
-
-      expect(getDidIndyIdentifierVariants(encoded)).toEqual([encoded, unencoded])
-      expect(getDidIndyIdentifierVariants(unencoded)).toEqual([unencoded, encoded])
-      expect(getDidIndyIdentifierVariants(`${did}/anoncreds/v0/SCHEMA/Medical%20Bill/1.0`)).toEqual([
-        `${did}/anoncreds/v0/SCHEMA/Medical%20Bill/1.0`,
-        `${did}/anoncreds/v0/SCHEMA/Medical Bill/1.0`,
-      ])
-    })
-
-    test('returns an id without special characters or a non did:indy id as is', () => {
-      expect(
-        getDidIndyIdentifierVariants('did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt/anoncreds/v0/CLAIM_DEF/10/TAG')
-      ).toEqual(['did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt/anoncreds/v0/CLAIM_DEF/10/TAG'])
-      expect(getDidIndyIdentifierVariants('did:web:example.com:schema')).toEqual(['did:web:example.com:schema'])
-    })
-  })
-
-  test('withDidIndyRestrictionVariants adds a restriction for each form of the ids', () => {
-    const credentialDefinitionId = 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt/anoncreds/v0/CLAIM_DEF/10/my%20tag'
-
-    expect(
-      withDidIndyRestrictionVariants([{ cred_def_id: credentialDefinitionId, 'attr::name::value': 'John' }])
-    ).toEqual([
-      { cred_def_id: credentialDefinitionId, 'attr::name::value': 'John' },
-      {
-        cred_def_id: 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt/anoncreds/v0/CLAIM_DEF/10/my tag',
-        'attr::name::value': 'John',
-      },
-    ])
-    expect(withDidIndyRestrictionVariants([{ schema_name: 'test' }])).toEqual([{ schema_name: 'test' }])
-  })
-
-  describe('percent-encoded and unencoded did:indy ids', () => {
-    const did = 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt'
-    const encodedSchemaId = `${did}/anoncreds/v0/SCHEMA/My%20Schema/1.0`
-    const unencodedSchemaId = `${did}/anoncreds/v0/SCHEMA/My Schema/1.0`
-    const encodedCredentialDefinitionId = `${did}/anoncreds/v0/CLAIM_DEF/10/my%20tag`
-    const unencodedCredentialDefinitionId = `${did}/anoncreds/v0/CLAIM_DEF/10/my tag`
-
-    test('getDidIndyIdentifierVariants returns both forms of a tag with a slash', () => {
-      expect(getDidIndyIdentifierVariants(`${did}/anoncreds/v0/CLAIM_DEF/10/a%2Fb`)).toEqual([
-        `${did}/anoncreds/v0/CLAIM_DEF/10/a%2Fb`,
-        `${did}/anoncreds/v0/CLAIM_DEF/10/a/b`,
-      ])
-      expect(getDidIndyIdentifierVariants(`${did}/anoncreds/v0/CLAIM_DEF/10/a/b`)).toEqual([
-        `${did}/anoncreds/v0/CLAIM_DEF/10/a/b`,
-        `${did}/anoncreds/v0/CLAIM_DEF/10/a%2Fb`,
-      ])
-    })
-
-    test('getDidIndyIdentifierVariants keeps an unencoded id with an invalid percent sequence', () => {
-      expect(getDidIndyIdentifierVariants(`${did}/anoncreds/v0/SCHEMA/50% off/1.0`)).toEqual([
-        `${did}/anoncreds/v0/SCHEMA/50% off/1.0`,
-        `${did}/anoncreds/v0/SCHEMA/50%25%20off/1.0`,
-      ])
-    })
-
-    test('areDidIndyIdentifiersEqual', () => {
-      expect(areDidIndyIdentifiersEqual(encodedSchemaId, unencodedSchemaId)).toBe(true)
-      expect(areDidIndyIdentifiersEqual(unencodedCredentialDefinitionId, encodedCredentialDefinitionId)).toBe(true)
-      expect(areDidIndyIdentifiersEqual(encodedSchemaId, encodedSchemaId)).toBe(true)
-      expect(areDidIndyIdentifiersEqual(encodedSchemaId, `${did}/anoncreds/v0/SCHEMA/My%20Schema/2.0`)).toBe(false)
-      expect(areDidIndyIdentifiersEqual('did:web:example.com', 'did:web:example.com')).toBe(true)
-      expect(areDidIndyIdentifiersEqual('did:web:example.com', undefined)).toBe(false)
-      expect(areDidIndyIdentifiersEqual(undefined, undefined)).toBe(true)
-    })
-
-    test('didIndyIdentifierQuery matches every form of a did:indy id', () => {
-      expect(didIndyIdentifierQuery('schemaId', encodedSchemaId)).toEqual({
-        $or: [{ schemaId: encodedSchemaId }, { schemaId: unencodedSchemaId }],
-      })
-      expect(didIndyIdentifierQuery('schemaId', 'did:web:example.com:schema')).toEqual({
-        schemaId: 'did:web:example.com:schema',
-      })
-    })
-
-    test('withDidIndyIdentifierQueryVariants replaces only the id tags that are set', () => {
-      expect(
-        withDidIndyIdentifierQueryVariants(
-          { schemaId: unencodedSchemaId, credentialDefinitionId: undefined, issuerId: did },
-          ['schemaId', 'credentialDefinitionId']
-        )
-      ).toEqual({
-        $and: [
-          { credentialDefinitionId: undefined, issuerId: did },
-          { $or: [{ schemaId: unencodedSchemaId }, { schemaId: encodedSchemaId }] },
-        ],
-      })
-      expect(withDidIndyIdentifierQueryVariants({ issuerId: did, schemaId: 'schemaId' }, ['schemaId'])).toEqual({
-        issuerId: did,
-        schemaId: 'schemaId',
-      })
-    })
-
-    test('withDidIndyIdentifierVariantKeys adds every form of the keys without overwriting keys passed in', () => {
-      expect(withDidIndyIdentifierVariantKeys({ [encodedSchemaId]: 1, 'did:web:example.com': 2 })).toEqual({
-        [encodedSchemaId]: 1,
-        [unencodedSchemaId]: 1,
-        'did:web:example.com': 2,
-      })
-      expect(withDidIndyIdentifierVariantKeys({ [encodedSchemaId]: 1, [unencodedSchemaId]: 2 })).toEqual({
-        [encodedSchemaId]: 1,
-        [unencodedSchemaId]: 2,
-      })
-    })
-
-    test('withDidIndyRestrictionVariants expands every combination of id forms', () => {
-      expect(
-        withDidIndyRestrictionVariants([
-          { schema_id: encodedSchemaId, cred_def_id: encodedCredentialDefinitionId, schema_name: 'My Schema' },
-        ])
-      ).toEqual([
-        { schema_id: encodedSchemaId, cred_def_id: encodedCredentialDefinitionId, schema_name: 'My Schema' },
-        { schema_id: encodedSchemaId, cred_def_id: unencodedCredentialDefinitionId, schema_name: 'My Schema' },
-        { schema_id: unencodedSchemaId, cred_def_id: encodedCredentialDefinitionId, schema_name: 'My Schema' },
-        { schema_id: unencodedSchemaId, cred_def_id: unencodedCredentialDefinitionId, schema_name: 'My Schema' },
-      ])
-    })
-
-    test('withDidIndyProofRequestRestrictionVariants expands attribute and predicate restrictions', () => {
-      const proofRequest = withDidIndyProofRequestRestrictionVariants({
-        name: 'proof',
-        version: '1.0',
-        nonce: '1',
-        requested_attributes: {
-          a: { name: 'name', restrictions: [{ cred_def_id: encodedCredentialDefinitionId }] },
-          b: { name: 'other' },
-        },
-        requested_predicates: {
-          p: { name: 'age', p_type: '>=', p_value: 18, restrictions: [{ schema_id: unencodedSchemaId }] },
-        },
-      })
-
-      expect(proofRequest.requested_attributes.a.restrictions).toEqual([
-        { cred_def_id: encodedCredentialDefinitionId },
-        { cred_def_id: unencodedCredentialDefinitionId },
-      ])
-      expect(proofRequest.requested_attributes.b).toEqual({ name: 'other' })
-      expect(proofRequest.requested_predicates.p.restrictions).toEqual([
-        { schema_id: unencodedSchemaId },
-        { schema_id: encodedSchemaId },
-      ])
-    })
-
-    test('getCanonicalDidIndyRestriction percent-encodes the did:indy ids', () => {
-      expect(
-        getCanonicalDidIndyRestriction({
-          cred_def_id: unencodedCredentialDefinitionId,
-          issuer_id: did,
-          schema_id: 'other',
-        })
-      ).toEqual({ cred_def_id: encodedCredentialDefinitionId, issuer_id: did, schema_id: 'other' })
     })
   })
 })

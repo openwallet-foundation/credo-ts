@@ -1,7 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
 
 import { EventEmitter, InjectionSymbols, inject, injectable, Repository, type StorageService } from '@credo-ts/core'
-import { didIndyIdentifierQuery } from '../utils/indyIdentifiers'
+import { identifierQuery } from '../utils/identifierVariants'
 
 import { AnonCredsRevocationRegistryDefinitionRecord } from './AnonCredsRevocationRegistryDefinitionRecord'
 
@@ -18,7 +18,7 @@ export class AnonCredsRevocationRegistryDefinitionRepository extends Repository<
   public async getByRevocationRegistryDefinitionId(agentContext: AgentContext, revocationRegistryDefinitionId: string) {
     return this.getSingleByQuery(
       agentContext,
-      didIndyIdentifierQuery('revocationRegistryDefinitionId', revocationRegistryDefinitionId)
+      identifierQuery(agentContext, 'revocationRegistryDefinitionId', revocationRegistryDefinitionId)
     )
   }
 
@@ -28,11 +28,14 @@ export class AnonCredsRevocationRegistryDefinitionRepository extends Repository<
   ) {
     return this.findSingleByQuery(
       agentContext,
-      didIndyIdentifierQuery('revocationRegistryDefinitionId', revocationRegistryDefinitionId)
+      identifierQuery(agentContext, 'revocationRegistryDefinitionId', revocationRegistryDefinitionId)
     )
   }
 
   public async findAllByCredentialDefinitionId(agentContext: AgentContext, credentialDefinitionId: string) {
-    return this.findByQuery(agentContext, didIndyIdentifierQuery('credentialDefinitionId', credentialDefinitionId))
+    return this.findByQuery(
+      agentContext,
+      identifierQuery(agentContext, 'credentialDefinitionId', credentialDefinitionId)
+    )
   }
 }

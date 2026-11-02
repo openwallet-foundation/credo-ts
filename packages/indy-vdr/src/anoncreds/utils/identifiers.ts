@@ -3,6 +3,12 @@ import {
   didIndyRegex,
   didIndyRevocationRegistryIdRegex,
   didIndySchemaIdRegex,
+  isDidIndyCredentialDefinitionId,
+  isDidIndyRevocationRegistryId,
+  isDidIndySchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndyRevocationRegistryId,
+  parseIndySchemaId,
 } from '@credo-ts/anoncreds'
 
 const indyVdrAnonCredsRegexes = [
@@ -71,6 +77,42 @@ export function getDidIndyRevocationRegistryEntryId(
   percentEncode = false
 ) {
   return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/REV_REG_ENTRY/${schemaSeqNo}/${encodeSegment(credentialDefinitionTag, percentEncode)}/${encodeSegment(revocationRegistryTag, percentEncode)}`
+}
+
+type EncodeSegment = (segment: string) => string
+
+/**
+ * Parses a did:indy schema, credential definition or revocation registry id once, and returns a function that
+ * formats it with `encode` applied to the schema name and tags. Returns `undefined` for other ids.
+ */
+function parseDidIndyIdentifierFormatter(identifier: string): ((encode: EncodeSegment) => string) | undefined {
+  if (isDidIndySchemaId(identifier)) {
+    const { did, schemaName, schemaVersion } = parseIndySchemaId(identifier)
+    return (encode) => `${did}/anoncreds/v0/SCHEMA/${encode(schemaName)}/${schemaVersion}`
+  }
+  if (isDidIndyCredentialDefinitionId(identifier)) {
+    const { did, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(identifier)
+    return (encode) => `${did}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/${encode(tag)}`
+  }
+  if (isDidIndyRevocationRegistryId(identifier)) {
+    const { did, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag } =
+      parseIndyRevocationRegistryId(identifier)
+    return (encode) =>
+      `${did}/anoncreds/v0/REV_REG_DEF/${schemaSeqNo}/${encode(credentialDefinitionTag)}/${encode(revocationRegistryTag)}`
+  }
+
+  return undefined
+}
+
+/**
+ * Returns a did:indy schema, credential definition or revocation registry id in its percent-encoded form (the
+ * canonical form, first), as given and unencoded, as all refer to the same object. Other ids are returned as is.
+ */
+export function getDidIndyIdentifierVariants(identifier: string): string[] {
+  const format = parseDidIndyIdentifierFormatter(identifier)
+  if (!format) return [identifier]
+
+  return [...new Set([format(encodeURIComponent), identifier, format((segment) => segment)])]
 }
 
 /**

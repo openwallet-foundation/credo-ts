@@ -9,7 +9,7 @@ import {
 } from '../../repository'
 import { AnonCredsCredentialDefinitionRecordMetadataKeys } from '../../repository/anonCredsCredentialDefinitionRecordMetadataTypes'
 import { AnonCredsRevocationRegistryDefinitionRecordMetadataKeys } from '../../repository/anonCredsRevocationRegistryDefinitionRecordMetadataTypes'
-import { didIndyIdentifierQuery } from '../../utils/indyIdentifiers'
+import { identifierQuery } from '../../utils/identifierVariants'
 import type { AnonCredsRegistry } from './AnonCredsRegistry'
 import type { AnonCredsResolutionOptions, Extensible } from './base'
 import type { GetCredentialDefinitionReturn } from './CredentialDefinitionOptions'
@@ -70,7 +70,7 @@ export class AnonCredsRegistryService {
       const anonCredsSchemaRepository = agentContext.resolve(AnonCredsSchemaRepository)
       const schemaRecord = await anonCredsSchemaRepository.findSingleByQuery(
         agentContext,
-        didIndyIdentifierQuery('schemaId', schemaId)
+        identifierQuery(agentContext, 'schemaId', schemaId)
       )
 
       if (schemaRecord) {
@@ -160,7 +160,7 @@ export class AnonCredsRegistryService {
       const anonCredsCredentialDefinitionRepository = agentContext.resolve(AnonCredsCredentialDefinitionRepository)
       const credentialDefinitionRecord = await anonCredsCredentialDefinitionRepository.findSingleByQuery(
         agentContext,
-        didIndyIdentifierQuery('credentialDefinitionId', credentialDefinitionId)
+        identifierQuery(agentContext, 'credentialDefinitionId', credentialDefinitionId)
       )
 
       if (credentialDefinitionRecord) {
@@ -258,7 +258,7 @@ export class AnonCredsRegistryService {
       const anoncredsRevocationRegistryDefinitionRecord =
         await anoncredsRevocationRegistryDefinitionRepository.findSingleByQuery(
           agentContext,
-          didIndyIdentifierQuery('revocationRegistryDefinitionId', revocationRegistryDefinitionId)
+          identifierQuery(agentContext, 'revocationRegistryDefinitionId', revocationRegistryDefinitionId)
         )
 
       if (anoncredsRevocationRegistryDefinitionRecord) {

@@ -1,10 +1,11 @@
-import type { AgentContext } from '@credo-ts/core'
+import type { AgentContext, Query } from '@credo-ts/core'
 import { CredoError, EventEmitter, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
 import type { DidCommInboundMessageContext } from '../../../../../models'
 import { DidCommConnectionRecord } from '../../../../connections'
 import type { DidCommRevocationNotificationReceivedEvent } from '../../../DidCommCredentialEvents'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { DidCommRevocationNotification } from '../../../models/DidCommRevocationNotification'
+import type { DidCommCredentialExchangeRecord } from '../../../repository'
 import { DidCommCredentialExchangeRepository } from '../../../repository'
 import type { DidCommRevocationNotificationV1Message } from '../messages/DidCommRevocationNotificationV1Message'
 import { DidCommRevocationNotificationV2Message } from '../messages/DidCommRevocationNotificationV2Message'
@@ -16,6 +17,10 @@ import {
   v2IndyRevocationIdentifierRegex,
 } from '../util/revocationIdentifier'
 import type { V2DidCommCreateRevocationNotificationMessageOptions } from './DidCommRevocationNotificationServiceOptions'
+import {
+  type DidCommRevocationRegistryIdQueryBuilder,
+  DidCommRevocationRegistryIdQueryBuilderToken,
+} from './DidCommRevocationRegistryIdQuery'
 
 @injectable()
 export class DidCommRevocationNotificationService {
@@ -41,29 +46,20 @@ export class DidCommRevocationNotificationService {
     comment?: string
   ) {
     // TODO: can we extract support for this revocation notification handler to the anoncreds module?
-    const query = {
-      anonCredsCredentialRevocationId,
-      connectionId: connection.id,
+    const revocationRegistryIdQuery = agentContext.dependencyManager.isRegistered(
+      DidCommRevocationRegistryIdQueryBuilderToken,
+      true
+    )
+      ? agentContext.dependencyManager.resolve<DidCommRevocationRegistryIdQueryBuilder>(
+          DidCommRevocationRegistryIdQueryBuilderToken
+        )(agentContext, anonCredsRevocationRegistryId)
+      : { anonCredsRevocationRegistryId }
+    const query: Query<DidCommCredentialExchangeRecord> = {
+      $and: [revocationRegistryIdQuery, { anonCredsCredentialRevocationId, connectionId: connection.id }],
     }
 
-    this.logger.trace('Getting records by query for revocation notification:', query)
-    const credentialExchangeRecords = await this.credentialRepository.findByQuery(agentContext, query)
-
-    // did:indy revocation registry ids can be percent-encoded or not, so they are compared decoded
-    const decodedRevocationRegistryId = decodeIdentifierPath(anonCredsRevocationRegistryId)
-    const matchingRecords = credentialExchangeRecords.filter((record) => {
-      const recordRevocationRegistryId = record.getTag('anonCredsRevocationRegistryId')
-      return (
-        typeof recordRevocationRegistryId === 'string' &&
-        decodeIdentifierPath(recordRevocationRegistryId) === decodedRevocationRegistryId
-      )
-    })
-    if (matchingRecords.length !== 1) {
-      throw new CredoError(
-        `Expected one credential exchange record for revocation registry ${anonCredsRevocationRegistryId} and credential revocation id ${anonCredsCredentialRevocationId}, found ${matchingRecords.length}`
-      )
-    }
-    const [credentialExchangeRecord] = matchingRecords
+    this.logger.trace('Getting record by query for revocation notification:', query)
+    const credentialExchangeRecord = await this.credentialRepository.getSingleByQuery(agentContext, query)
 
     credentialExchangeRecord.revocationNotification = new DidCommRevocationNotification(comment)
     await this.credentialRepository.update(agentContext, credentialExchangeRecord)
@@ -178,17 +174,4 @@ export class DidCommRevocationNotificationService {
       this.logger.warn('Failed to process revocation notification message', { error, credentialId })
     }
   }
-}
-
-function decodeIdentifierPath(identifier: string) {
-  return identifier
-    .split('/')
-    .map((segment) => {
-      try {
-        return decodeURIComponent(segment)
-      } catch {
-        return segment
-      }
-    })
-    .join('/')
 }

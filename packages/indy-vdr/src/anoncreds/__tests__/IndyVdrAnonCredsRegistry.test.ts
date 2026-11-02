@@ -148,6 +148,12 @@ describe('IndyVdrAnonCredsRegistry', () => {
       result: { ref: 10, tag: 'SCH Employee ID', data: { primary: {} } },
     }
 
+    test('returns every form of a did:indy id', () => {
+      expect(
+        new IndyVdrAnonCredsRegistry().getIdentifierVariants(`${did}/anoncreds/v0/SCHEMA/Medical Bill/1.0`)
+      ).toEqual([`${did}/anoncreds/v0/SCHEMA/Medical%20Bill/1.0`, `${did}/anoncreds/v0/SCHEMA/Medical Bill/1.0`])
+    })
+
     test('resolves a schema with a percent-encoded or unencoded id from the same ledger schema', async () => {
       const submitRequest = vi.fn().mockResolvedValue({
         result: { seqNo: 10, data: { attr_names: ['name'], name: 'Medical Bill', version: '1.0' } },

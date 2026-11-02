@@ -18,6 +18,10 @@ import { DidCommCredentialExchangeRecord } from '../../../../repository'
 import { DidCommCredentialExchangeRepository } from '../../../../repository/DidCommCredentialExchangeRepository'
 import { DidCommRevocationNotificationV1Message, DidCommRevocationNotificationV2Message } from '../../messages'
 import { DidCommRevocationNotificationService } from '../DidCommRevocationNotificationService'
+import {
+  type DidCommRevocationRegistryIdQueryBuilder,
+  DidCommRevocationRegistryIdQueryBuilderToken,
+} from '../DidCommRevocationRegistryIdQuery'
 
 vi.mock('../../../../repository/DidCommCredentialExchangeRepository')
 const CredentialRepositoryMock = DidCommCredentialExchangeRepository as MockedClassConstructor<
@@ -81,7 +85,7 @@ describe('RevocationNotificationService', () => {
       credentialRecord.setTag('anonCredsRevocationRegistryId', metadata.revocationRegistryId)
       credentialRecord.setTag('anonCredsCredentialRevocationId', metadata.credentialRevocationId)
 
-      mockFunction(credentialRepository.findByQuery).mockResolvedValueOnce([credentialRecord])
+      mockFunction(credentialRepository.getSingleByQuery).mockResolvedValueOnce(credentialRecord)
 
       const revocationNotificationThreadId = `indy::${metadata.revocationRegistryId}::${metadata.credentialRevocationId}`
       const revocationNotificationMessage = new DidCommRevocationNotificationV1Message({
@@ -129,7 +133,7 @@ describe('RevocationNotificationService', () => {
       const credentialRevocationId = '2'
       const revocationNotificationThreadId = `indy::${revocationRegistryId}::${credentialRevocationId}`
 
-      mockFunction(credentialRepository.findByQuery).mockResolvedValueOnce([])
+      mockFunction(credentialRepository.getSingleByQuery).mockRejectedValueOnce(new Error('Could not find record'))
 
       const revocationNotificationMessage = new DidCommRevocationNotificationV1Message({
         issueThread: revocationNotificationThreadId,
@@ -195,7 +199,7 @@ describe('RevocationNotificationService', () => {
       credentialRecord.setTag('anonCredsRevocationRegistryId', metadata.revocationRegistryId)
       credentialRecord.setTag('anonCredsCredentialRevocationId', metadata.credentialRevocationId)
 
-      mockFunction(credentialRepository.findByQuery).mockResolvedValueOnce([credentialRecord])
+      mockFunction(credentialRepository.getSingleByQuery).mockResolvedValueOnce(credentialRecord)
       const revocationNotificationCredentialId = `${metadata.revocationRegistryId}::${metadata.credentialRevocationId}`
 
       const revocationNotificationMessage = new DidCommRevocationNotificationV2Message({
@@ -231,53 +235,57 @@ describe('RevocationNotificationService', () => {
       vi.useRealTimers()
     })
 
-    test('matches a percent-encoded did:indy revocation registry id with a record that has the id unencoded', async () => {
-      const eventListenerMock = vi.fn()
-      eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
-        DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
-        eventListenerMock
-      )
+    test('queries the revocation registry id exactly without a registered query builder', async () => {
+      mockFunction(credentialRepository.getSingleByQuery).mockRejectedValueOnce(new Error('Could not find record'))
 
-      const did = 'did:indy:sovrin:N7baRMcyvPwWc8v85CtZ6e'
-      const credentialRecord = new DidCommCredentialExchangeRecord({
-        threadId: 'thread-id',
-        protocolVersion: 'v2',
-        state: DidCommCredentialState.Done,
-        role: DidCommCredentialRole.Holder,
-      })
-      credentialRecord.setTag(
-        'anonCredsRevocationRegistryId',
-        `${did}/anoncreds/v0/REV_REG_DEF/100669/SCH Employee ID/1/2`
-      )
-      credentialRecord.setTag('anonCredsCredentialRevocationId', '1')
-
-      // Same credential revocation id in another revocation registry
-      const otherCredentialRecord = new DidCommCredentialExchangeRecord({
-        threadId: 'other-thread-id',
-        protocolVersion: 'v2',
-        state: DidCommCredentialState.Done,
-        role: DidCommCredentialRole.Holder,
-      })
-      otherCredentialRecord.setTag('anonCredsRevocationRegistryId', `${did}/anoncreds/v0/REV_REG_DEF/100669/other/1`)
-      otherCredentialRecord.setTag('anonCredsCredentialRevocationId', '1')
-
-      mockFunction(credentialRepository.findByQuery).mockResolvedValueOnce([otherCredentialRecord, credentialRecord])
-
-      const revocationNotificationMessage = new DidCommRevocationNotificationV2Message({
-        credentialId: `${did}/anoncreds/v0/REV_REG_DEF/100669/SCH%20Employee%20ID/1%2F2::1`,
-        revocationFormat: 'anoncreds',
-      })
       await revocationNotificationService.v2ProcessRevocationNotification(
-        new DidCommInboundMessageContext(revocationNotificationMessage, { agentContext, connection })
+        new DidCommInboundMessageContext(
+          new DidCommRevocationNotificationV2Message({
+            credentialId: 'did:example:registry::1',
+            revocationFormat: 'anoncreds',
+          }),
+          { agentContext, connection }
+        )
       )
 
-      expect(credentialRepository.findByQuery).toHaveBeenCalledWith(agentContext, {
-        anonCredsCredentialRevocationId: '1',
-        connectionId: connection.id,
+      expect(credentialRepository.getSingleByQuery).toHaveBeenCalledWith(agentContext, {
+        $and: [
+          { anonCredsRevocationRegistryId: 'did:example:registry' },
+          { anonCredsCredentialRevocationId: '1', connectionId: connection.id },
+        ],
       })
-      expect(eventListenerMock).toHaveBeenCalledTimes(1)
-      expect(eventListenerMock.mock.calls[0][0].payload.credentialExchangeRecord.threadId).toEqual('thread-id')
-      expect(otherCredentialRecord.revocationNotification).toBeUndefined()
+    })
+
+    test('queries the revocation registry id with the registered query builder', async () => {
+      const queryBuilder: DidCommRevocationRegistryIdQueryBuilder = (_agentContext, revocationRegistryId) => ({
+        $or: [{ anonCredsRevocationRegistryId: revocationRegistryId }, { anonCredsRevocationRegistryId: 'other form' }],
+      })
+      const builderAgentContext = getAgentContext({
+        registerInstances: [[DidCommRevocationRegistryIdQueryBuilderToken, queryBuilder]],
+      })
+      mockFunction(credentialRepository.getSingleByQuery).mockRejectedValueOnce(new Error('Could not find record'))
+
+      await revocationNotificationService.v2ProcessRevocationNotification(
+        new DidCommInboundMessageContext(
+          new DidCommRevocationNotificationV2Message({
+            credentialId: 'did:example:registry::1',
+            revocationFormat: 'anoncreds',
+          }),
+          { agentContext: builderAgentContext, connection }
+        )
+      )
+
+      expect(credentialRepository.getSingleByQuery).toHaveBeenCalledWith(builderAgentContext, {
+        $and: [
+          {
+            $or: [
+              { anonCredsRevocationRegistryId: 'did:example:registry' },
+              { anonCredsRevocationRegistryId: 'other form' },
+            ],
+          },
+          { anonCredsCredentialRevocationId: '1', connectionId: connection.id },
+        ],
+      })
     })
 
     test('does not emit revocation notification event if no credential record exists for indy thread', async () => {
@@ -293,7 +301,7 @@ describe('RevocationNotificationService', () => {
       const credentialRevocationId = '2'
       const credentialId = `${revocationRegistryId}::${credentialRevocationId}`
 
-      mockFunction(credentialRepository.findByQuery).mockResolvedValueOnce([])
+      mockFunction(credentialRepository.getSingleByQuery).mockRejectedValueOnce(new Error('Could not find record'))
 
       const revocationNotificationMessage = new DidCommRevocationNotificationV2Message({
         credentialId,

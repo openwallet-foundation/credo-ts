@@ -58,6 +58,7 @@ import { IndyVdrPoolService } from '../pool'
 import { multiSignRequest } from '../utils/sign'
 import {
   getDidIndyCredentialDefinitionId,
+  getDidIndyIdentifierVariants,
   getDidIndyRevocationRegistryDefinitionId,
   getDidIndyRevocationRegistryEntryId,
   getDidIndySchemaId,
@@ -76,6 +77,10 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
   public allowsCaching = true
   public allowsLocalRecord = true
+
+  public getIdentifierVariants(identifier: string) {
+    return getDidIndyIdentifierVariants(identifier)
+  }
 
   private percentEncodeIdentifiers(agentContext: AgentContext) {
     return agentContext.dependencyManager.resolve(IndyVdrModuleConfig).encodeAnonCredsIdentifiers

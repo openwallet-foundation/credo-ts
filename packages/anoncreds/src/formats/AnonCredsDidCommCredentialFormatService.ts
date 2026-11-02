@@ -52,7 +52,7 @@ import {
   checkCredentialValuesMatch,
   convertAttributesToCredentialValues,
 } from '../utils/credential'
-import { areDidIndyIdentifiersEqual } from '../utils/indyIdentifiers'
+import { areIdentifiersEqual } from '../utils/identifierVariants'
 import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
 import type {
@@ -487,7 +487,7 @@ export class AnonCredsDidCommCredentialFormatService
   }
 
   public async shouldAutoRespondToProposal(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     { offerAttachment, proposalAttachment }: DidCommCredentialFormatAutoRespondProposalOptions
   ) {
     const proposalJson = proposalAttachment.getDataAsJson<AnonCredsDidCommCredentialProposalFormat>()
@@ -496,11 +496,11 @@ export class AnonCredsDidCommCredentialFormatService
     // We want to make sure the credential definition matches.
     // TODO: If no credential definition is present on the proposal, we could check whether the other fields
     // of the proposal match with the credential definition id.
-    return areDidIndyIdentifiersEqual(proposalJson.cred_def_id, offerJson.cred_def_id)
+    return areIdentifiersEqual(agentContext, proposalJson.cred_def_id, offerJson.cred_def_id)
   }
 
   public async shouldAutoRespondToOffer(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     { offerAttachment, proposalAttachment }: DidCommCredentialFormatAutoRespondOfferOptions
   ) {
     const proposalJson = proposalAttachment.getDataAsJson<AnonCredsDidCommCredentialProposalFormat>()
@@ -509,21 +509,21 @@ export class AnonCredsDidCommCredentialFormatService
     // We want to make sure the credential definition matches.
     // TODO: If no credential definition is present on the proposal, we could check whether the other fields
     // of the proposal match with the credential definition id.
-    return areDidIndyIdentifiersEqual(proposalJson.cred_def_id, offerJson.cred_def_id)
+    return areIdentifiersEqual(agentContext, proposalJson.cred_def_id, offerJson.cred_def_id)
   }
 
   public async shouldAutoRespondToRequest(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     { offerAttachment, requestAttachment }: DidCommCredentialFormatAutoRespondRequestOptions
   ) {
     const credentialOfferJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
     const credentialRequestJson = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
 
-    return areDidIndyIdentifiersEqual(credentialOfferJson.cred_def_id, credentialRequestJson.cred_def_id)
+    return areIdentifiersEqual(agentContext, credentialOfferJson.cred_def_id, credentialRequestJson.cred_def_id)
   }
 
   public async shouldAutoRespondToCredential(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     {
       credentialExchangeRecord,
       requestAttachment,
@@ -534,7 +534,7 @@ export class AnonCredsDidCommCredentialFormatService
     const credentialRequestJson = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
 
     // make sure the credential definition matches
-    if (!areDidIndyIdentifiersEqual(credentialJson.cred_def_id, credentialRequestJson.cred_def_id)) return false
+    if (!areIdentifiersEqual(agentContext, credentialJson.cred_def_id, credentialRequestJson.cred_def_id)) return false
 
     // If we don't have any attributes stored we can't compare so always return false.
     if (!credentialExchangeRecord.credentialAttributes) return false
