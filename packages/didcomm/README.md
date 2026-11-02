@@ -45,7 +45,8 @@ import {
   DidCommWsInboundTransport,
   DidCommWsOutboundTransport,
 } from "@credo-ts/didcomm";
-import { agentDependencies, httpServerHost, webSocketHost } from "@credo-ts/node";
+import { agentDependencies, httpServerHost } from "@credo-ts/node";
+import { webSocketHost } from "@credo-ts/node/websocket";
 
 const agent = new Agent({
   config: {
@@ -101,7 +102,26 @@ const outOfBand = await agent.didcomm.oob.createInvitation();
 
 ### Inbound HTTP and WebSocket transports
 
-Create inbound transport instances and add them to `transports.inbound`, just like outbound transports in `transports.outbound`. In Node, serve HTTP with `httpServerHost` from `@credo-ts/node` (backed by Express) and WebSocket with `webSocketHost` from `@credo-ts/node`. Use `expressHost` from `@credo-ts/node/express` for an application-owned Express app. Custom transports use the same arrays. The endpoint URLs are the externally reachable addresses advertised to other agents; they can differ from local ports when running behind a proxy.
+Create inbound transport instances and add them to `transports.inbound`, just like outbound transports in `transports.outbound`. In Node, serve HTTP with `httpServerHost` from `@credo-ts/node` (backed by Express) and WebSocket with `webSocketHost` from `@credo-ts/node/websocket`. Use `expressHost` from `@credo-ts/node/express` for an application-owned Express app. Custom transports use the same arrays. The endpoint URLs are the externally reachable addresses advertised to other agents; they can differ from local ports when running behind a proxy.
+
+#### Hosting WebSocket connections without a Node host
+
+Configure `new DidCommWsInboundTransport()` without a host if your runtime already accepts WebSocket connections. Pass each open socket to the transport's acceptor, or access it through `agent.didcomm.webSocketAcceptor` when exactly one built-in WebSocket inbound transport is configured:
+
+```ts
+import type { WebSocketLike } from "@credo-ts/core/websocket";
+
+const acceptor = agent.didcomm.webSocketAcceptor;
+if (!acceptor) throw new Error("No DIDComm WebSocket acceptor configured");
+
+function onConnection(socket: WebSocketLike) {
+  acceptor.accept(socket);
+}
+
+// Register onConnection with your runtime's WebSocket server.
+```
+
+Adapt sockets to `WebSocketLike` if needed. The application owns its listener and closes it after `agent.shutdown()`. `webSocketHost` from `@credo-ts/node/websocket` can instead manage a Node listener or attach to an application-owned `WebSocketServer`.
 
 #### Credo-owned listeners
 

@@ -5,6 +5,10 @@
       "cli": "./build/index.mjs",
       "import": "./src/index.ts"
     },
+    "./websocket": {
+      "cli": "./build/websocket/index.mjs",
+      "import": "./src/websocket/index.ts"
+    },
     "./kms": "./src/modules/kms/index.ts"
   },
   "version": "0.7.1",
@@ -23,6 +27,11 @@
         "import": "./build/modules/kms/index.mjs",
         "require": "./build/modules/kms/index.mjs",
         "types": "./build/modules/kms/index.d.mts"
+      },
+      "./websocket": {
+        "import": "./build/websocket/index.mjs",
+        "require": "./build/websocket/index.mjs",
+        "types": "./build/websocket/index.d.mts"
       }
     }
   },
@@ -66,7 +75,6 @@
     "@sphereon/ssi-types": "0.40.1",
     "@stablelib/ed25519": "catalog:",
     "@types/events": "^3.0.3",
-    "@types/ws": "catalog:",
     "@verifiables/request-converter": "^0.2.0",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",

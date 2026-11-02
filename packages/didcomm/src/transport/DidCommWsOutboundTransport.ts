@@ -1,5 +1,6 @@
 import type { AgentContext, AgentDependencies, Logger } from '@credo-ts/core'
 import { CredoError, EventEmitter, JsonEncoder } from '@credo-ts/core'
+import type { WebSocketLike } from '@credo-ts/core/websocket'
 import type { DidCommMessageReceivedEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
 import type { DidCommOutboundPackage } from '../types'
@@ -12,10 +13,10 @@ import type {
 
 import { DidCommTransportEventTypes } from './DidCommTransportEventTypes'
 
-type WebSocket = InstanceType<AgentDependencies['WebSocketClass']>
-
 export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
-  private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
+  private transportTable: Map<string, WebSocketLike> = new Map<string, WebSocketLike>()
+  // Kept so a deliberate close can detach the handler, as WebSocketLike has no onclose to clear
+  private closeHandlers = new WeakMap<WebSocketLike, () => void>()
   private agentContext!: AgentContext
   private logger!: Logger
   private WebSocketClass!: AgentDependencies['WebSocketClass']
@@ -96,7 +97,8 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
 
       this.transportTable.delete(socketId)
       socket.removeEventListener('message', this.handleMessageEvent)
-      socket.onclose = null
+      const closeHandler = this.closeHandlers.get(socket)
+      if (closeHandler) socket.removeEventListener('close', closeHandler)
       this.agentContext.dependencyManager
         .resolve(EventEmitter)
         .emit<DidCommOutboundWebSocketClosedEvent>(this.agentContext, {
@@ -145,11 +147,18 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
   }
 
   // NOTE: Because this method is passed to the event handler this must be a lambda method
-  // so 'this' is scoped to the 'WsDidCommOutboundTransport' class instance
-  // biome-ignore lint/suspicious/noExplicitAny: no explanation
-  private handleMessageEvent = (event: any) => {
-    this.logger.trace('WebSocket message event received.', { url: event.target.url })
-    const payload = JsonEncoder.fromUtf8String(event.data)
+  // so 'this' is scoped to the 'DidCommWsOutboundTransport' class instance
+  private handleMessageEvent = (event: { readonly data: unknown }) => {
+    this.logger.trace('WebSocket message event received.')
+    const payload =
+      typeof event.data === 'string'
+        ? JsonEncoder.fromUtf8String(event.data)
+        : event.data instanceof Uint8Array
+          ? JsonEncoder.fromUint8Array(event.data)
+          : undefined
+    if (payload === undefined) {
+      throw new Error('Unsupported WebSocket message data')
+    }
     if (!isValidJweStructure(payload)) {
       throw new Error(
         `Received a response from the other agent but the structure of the incoming message is not a DIDComm message: ${payload}`
@@ -167,7 +176,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     })
   }
 
-  private listenOnWebSocketMessages(socket: WebSocket) {
+  private listenOnWebSocketMessages(socket: WebSocketLike) {
     socket.addEventListener('message', this.handleMessageEvent)
   }
 
@@ -179,13 +188,15 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     socketId: string
     endpoint: string
     connectionId?: string
-  }): Promise<WebSocket> {
+  }): Promise<WebSocketLike> {
     return new Promise((resolve, reject) => {
       this.logger.debug(`Connecting to WebSocket ${endpoint}`)
       const socket = new this.WebSocketClass(endpoint)
       const eventEmitter = this.agentContext.dependencyManager.resolve(EventEmitter)
 
-      socket.onopen = () => {
+      const onOpen = () => {
+        socket.removeEventListener('open', onOpen)
+        socket.removeEventListener('error', onError)
         this.logger.debug(`Successfully connected to WebSocket ${endpoint}`)
         resolve(socket)
 
@@ -198,14 +209,16 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
         })
       }
 
-      socket.onerror = (error) => {
+      const onError = (error: unknown) => {
+        socket.removeEventListener('open', onOpen)
+        socket.removeEventListener('error', onError)
         this.logger.debug(`Error while connecting to WebSocket ${endpoint}`, {
           error,
         })
         reject(error)
       }
 
-      socket.onclose = async () => {
+      const onClose = () => {
         this.logger.debug(`WebSocket closing to ${endpoint}`)
         socket.removeEventListener('message', this.handleMessageEvent)
 
@@ -222,6 +235,11 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
           },
         })
       }
+
+      socket.addEventListener('open', onOpen)
+      socket.addEventListener('error', onError)
+      socket.addEventListener('close', onClose)
+      this.closeHandlers.set(socket, onClose)
     })
   }
 }

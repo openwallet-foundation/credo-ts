@@ -1,6 +1,6 @@
 import type { EventEmitter } from 'events'
-import type WebSocket from 'ws'
 import type { FileSystem } from '../storage/FileSystem'
+import type { WebSocketConstructor } from '../websocket'
 
 export interface AgentDependencies {
   FileSystem: {
@@ -8,5 +8,5 @@ export interface AgentDependencies {
   }
   EventEmitterClass: typeof EventEmitter
   fetch: typeof fetch
-  WebSocketClass: typeof WebSocket
+  WebSocketClass: WebSocketConstructor
 }

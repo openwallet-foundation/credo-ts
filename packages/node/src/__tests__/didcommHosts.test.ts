@@ -256,7 +256,7 @@ describe('webSocketHost', () => {
 
     const closed = new Promise<number>((resolve) => client.once('close', (code) => resolve(code)))
     await transport.stop()
-    await expect(closed).resolves.toBe(1006)
+    await expect(closed).resolves.toBe(1005)
     expect(host.server).toBeUndefined()
   })
 

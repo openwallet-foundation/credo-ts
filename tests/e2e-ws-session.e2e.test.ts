@@ -1,12 +1,9 @@
+import { once } from 'node:events'
 import { Agent } from '@credo-ts/core'
-import { DidCommWsInboundTransport } from '@credo-ts/didcomm'
-import { webSocketHost } from '@credo-ts/node'
+import { DidCommMediationState, DidCommWsInboundTransport, DidCommWsOutboundTransport } from '@credo-ts/didcomm'
+import { webSocketHost } from '@credo-ts/node/websocket'
 import { WebSocketServer } from 'ws'
 import { getAgentOptions, makeConnection } from '../packages/core/tests/helpers'
-import { DidCommMediationState, DidCommWsOutboundTransport } from '../packages/didcomm/src'
-
-// FIXME: port numbers should not depend on availability from other test suites that use web sockets
-const mediatorPort = 4102
 
 describe('E2E WS session tests', () => {
   let mediatorAgent: Agent
@@ -14,18 +11,28 @@ describe('E2E WS session tests', () => {
   let socketServer: WebSocketServer | undefined
 
   afterEach(async () => {
-    await recipientAgent?.shutdown()
-    await mediatorAgent?.shutdown()
-    // The application owns the WebSocketServer, so the agent does not close it on shutdown
-    await new Promise<void>((resolve) => (socketServer ? socketServer.close(() => resolve()) : resolve()))
+    try {
+      await recipientAgent?.shutdown()
+      await mediatorAgent?.shutdown()
+    } finally {
+      // The application owns the WebSocketServer, so the agent does not close it on shutdown
+      const server = socketServer
+      if (server) {
+        await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())))
+      }
+    }
   })
 
   // Connecting sends a trust ping without return routing in between messages that do use return routing.
   // The mediator must not close the socket for it, otherwise the mediate-grant gets queued instead.
   test('mediator keeps the WebSocket open for messages that follow one without return routing', async () => {
-    socketServer = new WebSocketServer({ port: mediatorPort })
+    const server = new WebSocketServer({ port: 0 })
+    socketServer = server
+    await once(server, 'listening')
+    const address = server.address()
+    if (!address || typeof address === 'string') throw new Error('WebSocket server did not bind to a TCP port')
     let openedSocketCount = 0
-    socketServer.on('connection', () => {
+    server.on('connection', () => {
       openedSocketCount++
     })
 
@@ -33,9 +40,9 @@ describe('E2E WS session tests', () => {
       getAgentOptions(
         'E2E WS Session Mediator',
         {
-          endpoints: [`ws://localhost:${mediatorPort}`],
+          endpoints: [`ws://localhost:${address.port}`],
           transports: {
-            inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ server: socketServer }) })],
+            inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ server }) })],
           },
           mediator: { autoAcceptMediationRequests: true },
         },

@@ -30,21 +30,3 @@ export interface DidCommHttpInboundHost {
   attach(binding: DidCommHttpInboundBinding): Promise<void>
   detach(binding: DidCommHttpInboundBinding): Promise<void>
 }
-
-export interface DidCommWebSocket {
-  readonly readyState: number
-  send(data: string, callback?: (error?: Error) => void): void
-  close(): void
-  terminate(): void
-  addEventListener(type: 'message', listener: (event: { data: unknown }) => void): void
-  addEventListener(type: 'close', listener: () => void): void
-}
-
-export interface DidCommWebSocketAcceptor {
-  accept(socket: DidCommWebSocket): void
-}
-
-export interface DidCommWebSocketHost {
-  attach(acceptor: DidCommWebSocketAcceptor): Promise<void>
-  detach(acceptor: DidCommWebSocketAcceptor): Promise<void>
-}

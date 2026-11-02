@@ -1,5 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
 import { EventEmitter, InjectionSymbols } from '@credo-ts/core'
+import type { WebSocketAcceptor, WebSocketAcceptorHost, WebSocketLike } from '@credo-ts/core/websocket'
 import { Subject } from 'rxjs'
 import { DidCommEventTypes } from '../../DidCommEvents'
 import { DidCommMessageReceiver } from '../../DidCommMessageReceiver'
@@ -8,13 +9,7 @@ import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommTransportService } from '../../DidCommTransportService'
 import { DidCommMimeType } from '../../types'
 import { DidCommHttpInboundTransport } from '../DidCommHttpInboundTransport'
-import type {
-  DidCommHttpInboundBinding,
-  DidCommHttpInboundHost,
-  DidCommWebSocket,
-  DidCommWebSocketAcceptor,
-  DidCommWebSocketHost,
-} from '../DidCommInboundHosting'
+import type { DidCommHttpInboundBinding, DidCommHttpInboundHost } from '../DidCommInboundHosting'
 import type { DidCommInboundTransport } from '../DidCommInboundTransport'
 import type { DidCommOutboundTransport } from '../DidCommOutboundTransport'
 import { DidCommWsInboundTransport } from '../DidCommWsInboundTransport'
@@ -73,12 +68,12 @@ function createHttpHost() {
 
 function createWebSocketHost() {
   const host = {
-    acceptor: undefined as DidCommWebSocketAcceptor | undefined,
-    attach: vi.fn(async (acceptor: DidCommWebSocketAcceptor) => {
+    acceptor: undefined as WebSocketAcceptor | undefined,
+    attach: vi.fn(async (acceptor: WebSocketAcceptor) => {
       host.acceptor = acceptor
     }),
-    detach: vi.fn(async (_acceptor: DidCommWebSocketAcceptor) => {}),
-  } satisfies DidCommWebSocketHost & { acceptor?: DidCommWebSocketAcceptor }
+    detach: vi.fn(async (_acceptor: WebSocketAcceptor) => {}),
+  } satisfies WebSocketAcceptorHost & { acceptor?: WebSocketAcceptor }
   return host
 }
 
@@ -221,28 +216,49 @@ describe('DidCommHttpInboundTransport', () => {
 describe('DidCommWsInboundTransport', () => {
   function createSocket() {
     const listeners: Record<string, Array<(event?: unknown) => void>> = {}
-    const socket = {
-      readyState: 1,
-      send: vi.fn(),
-      close: vi.fn(),
-      terminate: vi.fn(),
+    let readyState = 1
+    const send = vi.fn()
+    const close = vi.fn()
+    const socket: WebSocketLike = {
+      get readyState() {
+        return readyState
+      },
+      OPEN: 1,
+      CLOSING: 2,
+      CLOSED: 3,
+      send,
+      close,
       addEventListener: vi.fn((type: string, listener: (event?: unknown) => void) => {
         listeners[type] = [...(listeners[type] ?? []), listener]
       }),
+      removeEventListener: vi.fn(),
     }
-    return { socket: socket as unknown as DidCommWebSocket & typeof socket, listeners }
+    return { socket, listeners, send, close, setReadyState: (state: number) => (readyState = state) }
   }
 
-  test('emits received messages, terminates sockets on stop and removes closed sessions', async () => {
+  test('processes an externally accepted WebSocketLike connection', async () => {
+    const { agentContext, eventEmitter } = createAgentContext()
+    const transport = new DidCommWsInboundTransport()
+    await transport.start(agentContext)
+
+    const { socket, listeners, close } = createSocket()
+    transport.acceptor.accept(socket)
+    listeners.message[0]({ data: JSON.stringify(encryptedMessage) })
+    await vi.waitFor(() => expect(eventEmitter.emit).toHaveBeenCalled())
+
+    await transport.stop()
+    expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  test('emits messages, closes sockets on stop and removes saved sessions once', async () => {
     const host = createWebSocketHost()
     const { agentContext, eventEmitter, transportService } = createAgentContext()
     const transport = new DidCommWsInboundTransport({ host })
     await transport.start(agentContext)
 
-    const { socket, listeners } = createSocket()
+    const { socket, listeners, close } = createSocket()
     host.acceptor?.accept(socket)
     listeners.message[0]({ data: JSON.stringify(encryptedMessage) })
-
     await vi.waitFor(() =>
       expect(eventEmitter.emit).toHaveBeenCalledWith(
         agentContext,
@@ -255,17 +271,16 @@ describe('DidCommWsInboundTransport', () => {
 
     const session = eventEmitter.emit.mock.calls[0][1].payload.session
     transportService.saveSession(session)
-
     await transport.stop()
-    expect(socket.terminate).toHaveBeenCalled()
+
+    expect(close).toHaveBeenCalled()
     expect(host.detach).toHaveBeenCalledWith(host.acceptor)
     expect(transportService.removeSession).toHaveBeenCalledWith(session)
-
     listeners.close[0]()
     expect(transportService.removeSession).toHaveBeenCalledTimes(1)
   })
 
-  test('removes the saved session when the socket closes', async () => {
+  test('removes a saved session when the socket closes', async () => {
     const host = createWebSocketHost()
     const { agentContext, eventEmitter, transportService } = createAgentContext()
     const transport = new DidCommWsInboundTransport({ host })
@@ -282,7 +297,7 @@ describe('DidCommWsInboundTransport', () => {
     expect(transportService.removeSession).toHaveBeenCalledWith(session)
   })
 
-  test('does not remove a session that is not saved', async () => {
+  test('does not remove a session that was not saved', async () => {
     const host = createWebSocketHost()
     const { agentContext, transportService } = createAgentContext()
     const transport = new DidCommWsInboundTransport({ host })
@@ -296,27 +311,7 @@ describe('DidCommWsInboundTransport', () => {
     expect(transportService.removeSession).not.toHaveBeenCalled()
   })
 
-  test('closes sockets that are accepted before start, after stop or that are not open', async () => {
-    const host = createWebSocketHost()
-    const { agentContext } = createAgentContext()
-    const transport = new DidCommWsInboundTransport({ host })
-    await transport.start(agentContext)
-    const acceptor = host.acceptor as DidCommWebSocketAcceptor
-
-    const closing = createSocket()
-    closing.socket.readyState = 2
-    acceptor.accept(closing.socket)
-    expect(closing.socket.close).toHaveBeenCalled()
-    expect(closing.socket.addEventListener).not.toHaveBeenCalled()
-
-    await transport.stop()
-    const late = createSocket()
-    acceptor.accept(late.socket)
-    expect(late.socket.close).toHaveBeenCalled()
-    expect(late.socket.addEventListener).not.toHaveBeenCalled()
-  })
-
-  test('ignores messages received after stop', async () => {
+  test('accepts Uint8Array message data', async () => {
     const host = createWebSocketHost()
     const { agentContext, eventEmitter } = createAgentContext()
     const transport = new DidCommWsInboundTransport({ host })
@@ -324,14 +319,31 @@ describe('DidCommWsInboundTransport', () => {
 
     const { socket, listeners } = createSocket()
     host.acceptor?.accept(socket)
-    await transport.stop()
-    listeners.message[0]({ data: JSON.stringify(encryptedMessage) })
-    await new Promise((resolve) => setTimeout(resolve, 0))
-
-    expect(eventEmitter.emit).not.toHaveBeenCalled()
+    listeners.message[0]({ data: new TextEncoder().encode(JSON.stringify(encryptedMessage)) })
+    await vi.waitFor(() => expect(eventEmitter.emit).toHaveBeenCalled())
   })
 
-  test('logs malformed messages', async () => {
+  test('closes sockets accepted while stopped or not open', async () => {
+    const host = createWebSocketHost()
+    const { agentContext } = createAgentContext()
+    const transport = new DidCommWsInboundTransport({ host })
+    await transport.start(agentContext)
+    const acceptor = host.acceptor as WebSocketAcceptor
+
+    const closing = createSocket()
+    closing.setReadyState(closing.socket.CLOSING)
+    acceptor.accept(closing.socket)
+    expect(closing.close).toHaveBeenCalled()
+    expect(closing.socket.addEventListener).not.toHaveBeenCalled()
+
+    await transport.stop()
+    const late = createSocket()
+    acceptor.accept(late.socket)
+    expect(late.close).toHaveBeenCalled()
+    expect(late.socket.addEventListener).not.toHaveBeenCalled()
+  })
+
+  test('ignores messages after stop and logs malformed messages', async () => {
     const host = createWebSocketHost()
     const { agentContext, eventEmitter } = createAgentContext()
     const transport = new DidCommWsInboundTransport({ host })
@@ -340,12 +352,15 @@ describe('DidCommWsInboundTransport', () => {
     const { socket, listeners } = createSocket()
     host.acceptor?.accept(socket)
     listeners.message[0]({ data: 'not json' })
-
     expect(agentContext.config.logger.error).toHaveBeenCalledTimes(1)
+
+    await transport.stop()
+    listeners.message[0]({ data: JSON.stringify(encryptedMessage) })
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(eventEmitter.emit).not.toHaveBeenCalled()
   })
 
-  test('serializes start and stop, and attaches once when started twice', async () => {
+  test('serializes start and stop, attaching only once', async () => {
     const host = createWebSocketHost()
     const { agentContext } = createAgentContext()
     const transport = new DidCommWsInboundTransport({ host })
@@ -358,7 +373,7 @@ describe('DidCommWsInboundTransport', () => {
     expect(host.detach).toHaveBeenCalledTimes(1)
   })
 
-  test('can be started again after the host fails to attach', async () => {
+  test('can restart after the host fails to attach', async () => {
     const host = createWebSocketHost()
     const { agentContext } = createAgentContext()
     const transport = new DidCommWsInboundTransport({ host })
@@ -367,7 +382,6 @@ describe('DidCommWsInboundTransport', () => {
     await expect(transport.start(agentContext)).rejects.toThrow('attach failed')
     await transport.stop()
     expect(host.detach).not.toHaveBeenCalled()
-
     await transport.start(agentContext)
     expect(host.attach).toHaveBeenCalledTimes(2)
   })
@@ -379,9 +393,7 @@ describe('DidCommModule inbound transport options', () => {
     const outbound: DidCommOutboundTransport[] = [
       { start: vi.fn(), stop: vi.fn(), supportedSchemes: ['test'], sendMessage: vi.fn() },
     ]
-    const module = new DidCommModule({
-      transports: { inbound, outbound },
-    })
+    const module = new DidCommModule({ transports: { inbound, outbound } })
 
     expect(module.config.inboundTransports).toEqual(inbound)
     expect(module.config.outboundTransports).toEqual(outbound)
