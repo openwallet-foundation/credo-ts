@@ -285,7 +285,6 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
               throw new Oauth2ServerErrorResponseError(
                 {
                   error: Oauth2ErrorCodes.ServerError,
-                  error_description: 'Unable to verify upstream DPoP-bound access token.',
                 },
                 {
                   internalMessage: `Unable to verify the DPoP binding of an access token from '${authorizationServerMetadata.issuer}'.`,
