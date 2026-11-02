@@ -678,7 +678,7 @@ describe('W3cV2JwtCredentialService', () => {
           format: ClaimFormat.JwtW3cVp,
         })
       ).rejects.toThrow(
-        `Unable to determine signer key for presentation holder '${holderDidKey.did}'. The presentation credentials are bound to more than one key.`
+        `Presentation holder '${holderDidKey.did}' is not the did '${secondHolderDidKey.did}' of credential cnf.kid`
       )
     })
   })
@@ -949,7 +949,7 @@ describe('W3cV2JwtCredentialService', () => {
         await expect(
           signPresentationBoundTo([`${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`], secondHolderDidKey.did)
         ).rejects.toThrow(
-          `Unable to determine signer key for presentation holder '${secondHolderDidKey.did}'. The presentation credentials are bound to a key that is not a locally controlled authentication verification method of the holder.`
+          `Presentation holder '${secondHolderDidKey.did}' is not the did '${holderDidKey.did}' of credential cnf.kid`
         )
       })
 
@@ -1140,7 +1140,7 @@ describe('W3cV2JwtCredentialService', () => {
             'the credentialSubject.id does not control the cnf key, without a holder',
             () => ({
               credentials: [{ subjectIds: [secondHolderDidKey.did], cnf: didBinding(holderDidKey) }],
-              error: `Unable to determine signer key for presentation signer '${secondHolderDidKey.did}'. The presentation credentials are bound to a key that is not a locally controlled authentication verification method of the signer.`,
+              error: `Presentation signer '${secondHolderDidKey.did}' is not the did '${holderDidKey.did}' of credential cnf.kid`,
             }),
           ],
           [

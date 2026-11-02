@@ -87,6 +87,7 @@ export async function resolvePresentationSigner(
       ? new CredoError(`Presentation ${party} '${holderDid}' is not a did created by this agent`, { cause: error })
       : error
   })
+  // Methods come from the resolved document the verifier sees, the record is only used for its kms key ids
   const didDocument = await dids.resolveDidDocument(holderDid)
   const signerDid = didDocument.id
 
@@ -139,6 +140,13 @@ export async function resolvePresentationSigner(
     boundKeys.set(publicJwk.fingerprint, publicJwk)
   }
 
+  const otherCnfDid = cnfDids.find(({ did }) => did !== signerDid)
+  if (otherCnfDid) {
+    throw new CredoError(
+      `Presentation ${party} '${signerDid}' is not the did '${otherCnfDid.did}' of credential cnf.kid '${otherCnfDid.kid}'`
+    )
+  }
+
   if (boundKeys.size > 1) {
     throw new CredoError(
       `Unable to determine signer key for presentation ${party} '${holderDid}'. The presentation credentials are bound to more than one key.`
@@ -155,13 +163,6 @@ export async function resolvePresentationSigner(
   if (candidateMethods.length > 1) {
     throw new CredoError(
       `Unable to deterministically resolve signer key for presentation ${party} '${holderDid}'. Multiple locally controlled authentication verification methods found, and the presentation credentials are bound to more than one of them.`
-    )
-  }
-
-  const otherCnfDid = cnfDids.find(({ did }) => did !== signerDid)
-  if (otherCnfDid) {
-    throw new CredoError(
-      `Presentation ${party} '${signerDid}' is not the did '${otherCnfDid.did}' of credential cnf.kid '${otherCnfDid.kid}'`
     )
   }
 

@@ -736,7 +736,7 @@ describe('W3cV2SdJwtCredentialService', () => {
           format: ClaimFormat.SdJwtW3cVp,
         })
       ).rejects.toThrow(
-        `Unable to determine signer key for presentation holder '${holderDidKey.did}'. The presentation credentials are bound to more than one key.`
+        `Presentation holder '${holderDidKey.did}' is not the did '${secondHolderDidKey.did}' of credential cnf.kid`
       )
     })
   })
@@ -1034,7 +1034,7 @@ describe('W3cV2SdJwtCredentialService', () => {
         await expect(
           signPresentationBoundTo([`${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`], secondHolderDidKey.did)
         ).rejects.toThrow(
-          `Unable to determine signer key for presentation holder '${secondHolderDidKey.did}'. The presentation credentials are bound to a key that is not a locally controlled authentication verification method of the holder.`
+          `Presentation holder '${secondHolderDidKey.did}' is not the did '${holderDidKey.did}' of credential cnf.kid`
         )
       })
 
@@ -1225,7 +1225,7 @@ describe('W3cV2SdJwtCredentialService', () => {
             'the credentialSubject.id does not control the cnf key, without a holder',
             () => ({
               credentials: [{ subjectIds: [secondHolderDidKey.did], cnf: didBinding(holderDidKey) }],
-              error: `Unable to determine signer key for presentation signer '${secondHolderDidKey.did}'. The presentation credentials are bound to a key that is not a locally controlled authentication verification method of the signer.`,
+              error: `Presentation signer '${secondHolderDidKey.did}' is not the did '${holderDidKey.did}' of credential cnf.kid`,
             }),
           ],
           [
@@ -1556,23 +1556,33 @@ describe('W3cV2SdJwtCredentialService', () => {
           })
         })
 
-        async function signBoundPresentation(cnfDidUrl: string) {
+        async function signBoundPresentation(...cnfs: Array<string | W3cV2SdJwtSignCredentialOptions['holder']>) {
           const { id: _id, ...credentialSubject } = Ed256DidJwkJwtVcUnsigned.credentialSubject
           vi.spyOn(Date, 'now').mockReturnValue(1698151532000)
           try {
-            const credential = await w3cV2JwtCredentialService.signCredential(agentContext, {
-              alg: KnownJwaSignatureAlgorithms.ES256,
-              format: ClaimFormat.SdJwtW3cVc,
-              verificationMethod: issuerDidJwk.verificationMethodId,
-              credential: JsonTransformer.fromJSON({ ...Ed256DidJwkJwtVcUnsigned, credentialSubject }, W3cV2Credential),
-              holder: { method: 'did', didUrl: cnfDidUrl },
-            })
+            const credentials = []
+            for (const cnf of cnfs) {
+              credentials.push(
+                await w3cV2JwtCredentialService.signCredential(agentContext, {
+                  alg: KnownJwaSignatureAlgorithms.ES256,
+                  format: ClaimFormat.SdJwtW3cVc,
+                  verificationMethod: issuerDidJwk.verificationMethodId,
+                  credential: JsonTransformer.fromJSON(
+                    { ...Ed256DidJwkJwtVcUnsigned, credentialSubject },
+                    W3cV2Credential
+                  ),
+                  holder: typeof cnf === 'string' ? { method: 'did', didUrl: cnf } : cnf,
+                })
+              )
+            }
 
             return await w3cV2JwtCredentialService.signPresentation(agentContext, {
               presentation: new W3cV2Presentation({
                 context: [CREDENTIALS_CONTEXT_V2_URL],
                 type: ['VerifiablePresentation'],
-                verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credential)],
+                verifiableCredential: credentials.map((credential) =>
+                  W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credential)
+                ),
                 holder: holderDid,
               }),
               challenge: 'challenge',
@@ -1600,8 +1610,14 @@ describe('W3cV2SdJwtCredentialService', () => {
           expect(result.isValid).toBe(true)
         })
 
+        test('throws when the credentials are bound to more than one of its keys', async () => {
+          await expect(signBoundPresentation(`${holderDid}#key-1`, `${holderDid}#key-2`)).rejects.toThrow(
+            `Unable to determine signer key for presentation holder '${holderDid}'. The presentation credentials are bound to more than one key.`
+          )
+        })
+
         test('throws when the credential is bound to none of the keys', async () => {
-          await expect(signBoundPresentation(issuerDidJwk.verificationMethodId)).rejects.toThrow(
+          await expect(signBoundPresentation({ method: 'jwk', jwk: issuerDidJwk.publicJwk })).rejects.toThrow(
             `Unable to deterministically resolve signer key for presentation holder '${holderDid}'. Multiple locally controlled authentication verification methods found, and the presentation credentials are not bound to any of them.`
           )
         })
