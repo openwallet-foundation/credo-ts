@@ -1,6 +1,7 @@
 import { createServer, request as httpRequest, type Server } from 'node:http'
 import type { AgentContext } from '@credo-ts/core'
 import { EventEmitter } from '@credo-ts/core'
+import type { HttpHandler } from '@credo-ts/core/http'
 import {
   DidCommEventTypes,
   DidCommHttpInboundTransport,
@@ -15,7 +16,8 @@ import { Subject } from 'rxjs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket, { WebSocketServer } from 'ws'
 
-import { expressHost, httpServerHost } from '../express'
+import { ExpressHost, expressHost } from '../express'
+import { HttpServerHost, httpServerHost } from '../http'
 import { webSocketHost } from '../webSocketHost'
 
 const encryptedMessage = { protected: 'p', iv: 'i', ciphertext: 'c', tag: 't' }
@@ -90,9 +92,15 @@ function createAgentContext({
 }
 
 describe('httpServerHost', () => {
+  it('owns its listener separately from the Express app adapter', () => {
+    const host = httpServerHost({ port: 0 })
+    expect(host).toBeInstanceOf(HttpServerHost)
+    expect(host).not.toBeInstanceOf(ExpressHost)
+    expect(host.server).toBeUndefined()
+  })
+
   it('keeps one owned listener open until its last binding detaches', async () => {
     const host = httpServerHost({ port: 0 })
-    const post = vi.spyOn(host.app, 'post')
     const didcomm = new DidCommHttpInboundTransport({ host, path: '/didcomm' })
     const pickup = new DidCommHttpInboundTransport({ host, path: '/pickup' })
     const agentContext = createAgentContext()
@@ -104,7 +112,6 @@ describe('httpServerHost', () => {
 
     await pickup.start(agentContext)
     expect(host.server).toBe(server)
-    expect(post).toHaveBeenCalledTimes(2)
 
     const postMessage = (path: string) =>
       fetch(`http://127.0.0.1:${port}${path}`, {
@@ -118,17 +125,54 @@ describe('httpServerHost', () => {
 
     await didcomm.stop()
     expect(server?.listening).toBe(true)
-    expect((await postMessage('/didcomm')).status).toBe(503)
+    expect((await postMessage('/didcomm')).status).toBe(404)
     expect((await postMessage('/pickup')).status).toBe(200)
 
     await didcomm.start(agentContext)
-    expect(post).toHaveBeenCalledTimes(2)
     expect((await postMessage('/didcomm')).status).toBe(200)
 
     await didcomm.stop()
     expect(server?.listening).toBe(true)
     await pickup.stop()
     expect(server?.listening).toBe(false)
+
+    await didcomm.start(agentContext)
+    expect(host.server).not.toBe(server)
+    const restartedPort = boundPort(host.server)
+    expect(
+      (
+        await fetch(`http://127.0.0.1:${restartedPort}/didcomm`, {
+          method: 'POST',
+          headers: { 'content-type': DidCommMimeType.V1 },
+          body: JSON.stringify(encryptedMessage),
+        })
+      ).status
+    ).toBe(200)
+    await didcomm.stop()
+    expect(host.server).toBeUndefined()
+  })
+
+  it('rolls back a failed bind and can attach again once the port is free', async () => {
+    const blockingHost = httpServerHost({ port: 0 })
+    const handler: HttpHandler = {
+      pathPrefixes: ['/message'],
+      maxRequestBodyBytes: 1024,
+      async handle() {
+        return new Response('ok')
+      },
+    }
+    await blockingHost.attach(handler)
+    const port = boundPort(blockingHost.server)
+    const host = httpServerHost({ port })
+
+    await expect(host.attach(handler)).rejects.toMatchObject({ code: 'EADDRINUSE' })
+    expect(host.server).toBeUndefined()
+    await blockingHost.detach(handler)
+
+    await host.attach(handler)
+    expect((await fetch(`http://127.0.0.1:${port}/message`)).status).toBe(200)
+    await host.detach(handler)
+    expect(host.server).toBeUndefined()
   })
 
   it('listens on the configured port and returns responses from the DIDComm transport', async () => {
@@ -216,13 +260,41 @@ describe('httpServerHost', () => {
 })
 
 describe('expressHost', () => {
+  it('falls through to Express routes when no handler returns a response', async () => {
+    const app = express()
+    const host = expressHost({ app })
+    const handler: HttpHandler = {
+      pathPrefixes: ['/fallback'],
+      maxRequestBodyBytes: 1024,
+      async handle() {
+        return undefined
+      },
+    }
+    await host.attach(handler)
+    app.get('/health', (_request, response) => response.sendStatus(204))
+    app.post('/fallback', (_request, response) => response.sendStatus(202))
+    const port = await listen(createServer(app))
+
+    expect((await fetch(`http://127.0.0.1:${port}/health`)).status).toBe(204)
+    expect(
+      (
+        await fetch(`http://127.0.0.1:${port}/fallback`, {
+          method: 'POST',
+          body: 'request body',
+        })
+      ).status
+    ).toBe(202)
+    await host.detach(handler)
+  })
+
   it('mounts on an application-owned app without listening', async () => {
     const app = express()
     const host = expressHost({ app })
     const transport = new DidCommHttpInboundTransport({ host })
 
     await transport.start(createAgentContext())
-    expect(host.server).toBeUndefined()
+    expect(host).toBeInstanceOf(ExpressHost)
+    expect('server' in host).toBe(false)
 
     const server = createServer(app)
     const port = await listen(server)
@@ -235,6 +307,15 @@ describe('expressHost', () => {
     expect(response.status).toBe(200)
     await transport.stop()
     expect(server.listening).toBe(true)
+    expect(
+      (
+        await fetch(`http://127.0.0.1:${port}/`, {
+          method: 'POST',
+          headers: { 'content-type': DidCommMimeType.V1 },
+          body: JSON.stringify(encryptedMessage),
+        })
+      ).status
+    ).toBe(404)
   })
 })
 

@@ -6,6 +6,7 @@ export default defineConfig(
     ...item,
     entry: [
       './src/index.ts',
+      './src/http/index.ts',
       './src/websocket/index.ts',
       './src/modules/kms/index.ts',
       './src/modules/vc/jsonld/nativeDocumentLoader.native.ts',

@@ -5,7 +5,7 @@ import {
   DidCommHttpOutboundTransport,
   DidCommMediatorPickupStrategy,
 } from '@credo-ts/didcomm'
-import { httpServerHost } from '@credo-ts/node'
+import { httpServerHost } from '@credo-ts/node/http'
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'

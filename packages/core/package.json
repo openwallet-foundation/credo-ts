@@ -5,6 +5,10 @@
       "cli": "./build/index.mjs",
       "import": "./src/index.ts"
     },
+    "./http": {
+      "cli": "./build/http/index.mjs",
+      "import": "./src/http/index.ts"
+    },
     "./websocket": {
       "cli": "./build/websocket/index.mjs",
       "import": "./src/websocket/index.ts"
@@ -27,6 +31,11 @@
         "import": "./build/modules/kms/index.mjs",
         "require": "./build/modules/kms/index.mjs",
         "types": "./build/modules/kms/index.d.mts"
+      },
+      "./http": {
+        "import": "./build/http/index.mjs",
+        "require": "./build/http/index.mjs",
+        "types": "./build/http/index.d.mts"
       },
       "./websocket": {
         "import": "./build/websocket/index.mjs",

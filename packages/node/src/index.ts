@@ -2,7 +2,6 @@ import type { AgentDependencies } from '@credo-ts/core'
 
 import { EventEmitter } from 'events'
 import { WebSocket } from 'ws'
-import { httpServerHost } from './express'
 import { NodeFileSystem } from './NodeFileSystem'
 
 export { NodeInMemoryKeyManagementStorage } from './kms/NodeInMemoryKeyManagementStorage'
@@ -16,4 +15,4 @@ const agentDependencies: AgentDependencies = {
   WebSocketClass: WebSocket,
 }
 
-export { agentDependencies, httpServerHost, NodeFileSystem }
+export { agentDependencies, NodeFileSystem }

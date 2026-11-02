@@ -24,7 +24,7 @@ import type { DidCommCredentialsModuleConfigOptions } from './modules/credential
 import { DidCommMediationRecipientApi } from './modules/routing/DidCommMediationRecipientApi'
 import { DidCommMediatorApi } from './modules/routing/DidCommMediatorApi'
 import type { DidCommInboundTransport, DidCommOutboundTransport } from './transport'
-import { DidCommWsInboundTransport } from './transport'
+import { DidCommHttpInboundTransport, DidCommWsInboundTransport } from './transport'
 
 type ApiOrUndefined<Config, Api> = Config extends false ? never : Api
 
@@ -81,6 +81,7 @@ export class DidCommApi<Options extends DidCommModuleConfigOptions> {
   ) {}
 
   public registerInboundTransport(inboundTransport: DidCommInboundTransport) {
+    // TODO: Registering transports after initialization does not start them or manage their runtime lifecycle.
     this.config.inboundTransports.push(inboundTransport)
   }
 
@@ -91,6 +92,12 @@ export class DidCommApi<Options extends DidCommModuleConfigOptions> {
 
   public get inboundTransports() {
     return this.config.inboundTransports
+  }
+
+  public get httpHandlers() {
+    return this.config.inboundTransports.flatMap((transport) =>
+      transport instanceof DidCommHttpInboundTransport ? [transport.handler] : []
+    )
   }
 
   public get webSocketAcceptor() {

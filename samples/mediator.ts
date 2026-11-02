@@ -22,7 +22,8 @@ import {
   DidCommWsInboundTransport,
   DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
-import { agentDependencies, httpServerHost } from '@credo-ts/node'
+import { agentDependencies } from '@credo-ts/node'
+import { httpServerHost } from '@credo-ts/node/http'
 import { webSocketHost } from '@credo-ts/node/websocket'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import type { Socket } from 'net'
