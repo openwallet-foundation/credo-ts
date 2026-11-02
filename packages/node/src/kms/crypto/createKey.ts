@@ -64,7 +64,8 @@ export function assertNodeSupportedOkpCrv(
 
 export async function createOkpKey({ crv }: Kms.KmsCreateKeyTypeOkp & { crv: NodeKmsSupportedOkpCrvs }) {
   const { publicKey, privateKey } =
-    crv === 'Ed25519' ? await generateKeyPair('ed25519') : await generateKeyPair('x25519')
+    // Options are passed explicitly, as Cloudflare Workers' node:crypto requires them
+    crv === 'Ed25519' ? await generateKeyPair('ed25519', {}) : await generateKeyPair('x25519', {})
 
   const privateJwk = privateKey.export({
     format: 'jwk',

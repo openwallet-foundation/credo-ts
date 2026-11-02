@@ -47,7 +47,8 @@
     "./question-answer": {
       "cli": "./build/question-answer/bundle.mjs",
       "import": "./src/question-answer/bundle.ts"
-    }
+    },
+    "./*/migrations/sqlite": "./migrations/*/sqlite/migrations.js"
   },
   "publishConfig": {
     "access": "public",

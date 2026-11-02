@@ -17,3 +17,5 @@ cli-build
 test-logs
 testlogs
 tmp
+# Cloudflare wrangler build output
+.wrangler

@@ -1,0 +1,16 @@
+{
+  "name": "credo-host-sample",
+  "main": "./worker.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": { "AGENT_URL": "http://localhost:8787" },
+  "durable_objects": {
+    "bindings": [{ "name": "CREDO_AGENT", "class_name": "CredoAgent" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["CredoAgent"] }],
+  // Workers have no module file paths. @digitalbazaar/credentials-context (via @credo-ts/core) builds URLs from
+  // import.meta.url on import, and @credo-ts/drizzle-storage reads import.meta.dirname for its drizzle-kit paths.
+  "define": { "import.meta.url": "\"file:///worker.js\"", "import.meta.dirname": "\"/\"" },
+  // The drizzle migrations import their SQL files as text
+  "rules": [{ "type": "Text", "globs": ["**/*.sql"], "fallthrough": true }]
+}

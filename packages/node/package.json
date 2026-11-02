@@ -35,9 +35,7 @@
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
     "@types/node": "catalog:",
-    "@types/express": "catalog:",
     "@types/ws": "catalog:",
-    "express": "catalog:",
     "hpke": "catalog:",
     "rxjs": "catalog:",
     "ws": "catalog:"

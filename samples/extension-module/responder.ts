@@ -1,11 +1,11 @@
+import { createServer } from 'node:http'
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
+import { expressHost } from '@credo-ts/core/http/express'
 import { DidCommModule } from '@credo-ts/didcomm'
-import { agentDependencies, DidCommHttpInboundTransport, DidCommWsInboundTransport } from '@credo-ts/node'
+import { agentDependencies } from '@credo-ts/node'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
-import type { Socket } from 'net'
-import { WebSocketServer } from 'ws'
 import type { DummyStateChangedEvent } from './dummy'
 
 import { DummyEventTypes, DummyModule, DummyState } from './dummy'
@@ -15,16 +15,14 @@ const run = async () => {
   const port = process.env.RESPONDER_PORT ? Number(process.env.RESPONDER_PORT) : 3002
   const autoAcceptRequests = true
   const app = express()
-  const socketServer = new WebSocketServer({ noServer: true })
-
-  const httpInboundTransport = new DidCommHttpInboundTransport({ app, port })
-  const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer })
+  const server = createServer(app)
 
   // Setup the agent
   const agent = new Agent({
     config: {
       logger: new ConsoleLogger(LogLevel.Debug),
     },
+    http: expressHost(app, { server }),
     modules: {
       askar: new AskarModule({
         askar: NativeAskar,
@@ -36,7 +34,7 @@ const run = async () => {
       didcomm: new DidCommModule({
         endpoints: [`http://localhost:${port}`],
         transports: {
-          inbound: [httpInboundTransport, wsInboundTransport],
+          inbound: { http: true, ws: true },
         },
         connections: { autoAcceptConnections: true },
       }),
@@ -56,11 +54,7 @@ const run = async () => {
   //Initialize the agent
   await agent.initialize()
 
-  httpInboundTransport.server?.on('upgrade', (request, socket, head) => {
-    socketServer.handleUpgrade(request, socket as Socket, head, (socket) => {
-      socketServer.emit('connection', socket, request)
-    })
-  })
+  server.listen(port)
 
   // If autoAcceptRequests is enabled, the handler will automatically respond
   // (no need to subscribe to event and manually accept)

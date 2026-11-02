@@ -1,14 +1,16 @@
+import type { Server } from 'node:http'
 import { Agent } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
+  DidCommHttpInboundTransport,
   DidCommHttpOutboundTransport,
   DidCommMediatorPickupStrategy,
 } from '@credo-ts/didcomm'
-import { DidCommHttpInboundTransport } from '@credo-ts/node'
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 import { e2eTest } from './e2e-test'
+import { closeServers, hostAgent } from './hostAgent'
 
 const recipientAgentOptions = getAgentOptions(
   'E2E HTTP Recipient',
@@ -65,17 +67,20 @@ describe('E2E HTTP tests', () => {
   let recipientAgent: AnonCredsTestsAgent
   let mediatorAgent: AnonCredsTestsAgent
   let senderAgent: AnonCredsTestsAgent
+  const servers: Server[] = []
 
   beforeEach(async () => {
     recipientAgent = new Agent(recipientAgentOptions) as AnonCredsTestsAgent
     mediatorAgent = new Agent(mediatorAgentOptions) as AnonCredsTestsAgent
     senderAgent = new Agent(senderAgentOptions) as AnonCredsTestsAgent
+    servers.push(hostAgent(mediatorAgent, mediatorPort), hostAgent(senderAgent, senderPort))
   })
 
   afterEach(async () => {
     await recipientAgent.shutdown()
     await mediatorAgent.shutdown()
     await senderAgent.shutdown()
+    await closeServers(servers)
   })
 
   test('Full HTTP flow (connect, request mediation, issue, verify)', async () => {
@@ -84,12 +89,12 @@ describe('E2E HTTP tests', () => {
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port: mediatorPort }))
+    mediatorAgent.didcomm.registerInboundTransport(new DidCommHttpInboundTransport())
     mediatorAgent.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port: senderPort }))
+    senderAgent.didcomm.registerInboundTransport(new DidCommHttpInboundTransport())
     senderAgent.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
     await senderAgent.initialize()
 

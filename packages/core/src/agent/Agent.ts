@@ -3,6 +3,7 @@ import { InjectionSymbols } from '../constants'
 import { JweService } from '../crypto/JweService'
 import { JwsService } from '../crypto/JwsService'
 import { CredoError } from '../error'
+import { type HttpHost, HttpRouter } from '../http/HttpRouter'
 import { DependencyManager } from '../plugins'
 import { StorageUpdateService, StorageVersionRepository, UpdateAssistant } from '../storage'
 import type { InitConfig } from '../types'
@@ -18,6 +19,12 @@ interface AgentOptions<AgentModules extends AgentModulesInput> {
   config?: InitConfig
   modules?: AgentModules
   dependencies: AgentDependencies
+
+  /**
+   * Hosts the HTTP and WebSocket routes of the agent's modules on your server, for example
+   * `expressHost(app)` from `@credo-ts/core/http/express`.
+   */
+  http?: HttpHost | HttpHost[]
 }
 
 // Any makes sure you can use Agent as a type without always needing to specify the exact generics for the agent
@@ -33,6 +40,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerSingleton(JweService)
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
+    dependencyManager.registerSingleton(HttpRouter)
 
     dependencyManager.registerInstance(AgentConfig, agentConfig)
     dependencyManager.registerInstance(InjectionSymbols.AgentDependencies, agentConfig.agentDependencies)
@@ -68,6 +76,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     }
 
     super(agentConfig, dependencyManager)
+    for (const host of [options.http ?? []].flat()) this.http.addHost(host)
   }
 
   public get events() {
@@ -83,6 +92,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
 
     // We first initialize all the modules
     await this.dependencyManager.initializeModules(this.agentContext)
+    await this.http.assertHosted()
 
     // Then we initialize the root agent context
     await this.dependencyManager.initializeAgentContext(this.agentContext)

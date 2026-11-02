@@ -37,6 +37,7 @@ import type { DidCommCredentialsModuleConfigOptions } from './modules/credential
 import { DidCommMediationRecipientModule } from './modules/routing/DidCommMediationRecipientModule'
 import { DidCommMediatorModule } from './modules/routing/DidCommMediatorModule'
 import { DidCommMessageRepository } from './repository'
+import { resolveTransports } from './transport/resolveTransports'
 import { updateV0_1ToV0_2 } from './updates/0.1-0.2'
 import { updateV0_2ToV0_3 } from './updates/0.2-0.3'
 import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
@@ -124,7 +125,10 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
   public readonly modules: ReturnType<typeof getDidcommModules<Options>>
 
   public constructor(config?: Options) {
-    this.config = new DidCommModuleConfig<Options>(config)
+    this.config = new DidCommModuleConfig<Options>({
+      ...config,
+      transports: resolveTransports(config?.transports),
+    } as Options)
     this.modules = getDidcommModules(config ?? {})
   }
 
