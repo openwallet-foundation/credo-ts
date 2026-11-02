@@ -84,13 +84,12 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
           body: JSON.stringify(payload),
           headers: { 'Content-Type': didCommMimeType },
           signal: abortController.signal as NonNullable<RequestInit['signal']>,
-        })
-        clearTimeout(id)
+        }).finally(() => clearTimeout(id))
         responseMessage = await response.text()
       } catch (error) {
-        // Request is aborted after 15 seconds, but that doesn't necessarily mean the request
-        // went wrong. ACA-Py keeps the socket alive until it has a response message. So we assume
-        // that if the error was aborted and we had return routing enabled, we should ignore the error.
+        // The request is aborted when no response arrives within 15 seconds, but that doesn't necessarily mean
+        // it went wrong. ACA-Py keeps the socket alive until it has a response message, so with return routing
+        // enabled we ignore the abort.
         if (error.name === 'AbortError' && outboundPackage.responseRequested) {
           this.logger.debug(
             'Request was aborted due to timeout. Not throwing error due to return routing on sent message'
