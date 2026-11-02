@@ -61,6 +61,24 @@ describe('DidCommDcqlProofFormatService', () => {
     vi.restoreAllMocks()
   })
 
+  test('logs once that the format is experimental', async () => {
+    const service = new DidCommDcqlProofFormatService()
+    const warnSpy = vi.spyOn(agentContext.config.logger, 'warn')
+    const processProposal = () =>
+      service.processProposal(agentContext, {
+        attachment: attachment({ dcql_query: { credentials: [pidQuery] } }),
+        proofRecord: proofRecord(),
+      })
+
+    await processProposal()
+    await processProposal()
+
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledWith(
+      "The DCQL proof format of '@credo-ts/didcomm' is experimental and could have unexpected breaking changes. When using this format, make sure to use strict versions for all @credo-ts packages."
+    )
+  })
+
   describe('withUnsupportedFormatsUnmatched', () => {
     test('keeps the supported alternative option of a credential set', () => {
       const result = withUnsupportedFormatsUnmatched(queryResult([{ options: [['mdl'], ['pid']], required: true }]))

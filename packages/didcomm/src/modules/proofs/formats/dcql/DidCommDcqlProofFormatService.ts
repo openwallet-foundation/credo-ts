@@ -122,6 +122,7 @@ export function withUnsupportedFormatsUnmatched(result: DcqlQueryResult): DcqlQu
 
 export class DidCommDcqlProofFormatService implements DidCommProofFormatService<DidCommDcqlProofFormat> {
   public readonly formatKey = 'dcql' as const
+  private hasLoggedExperimentalWarning = false
 
   public supportsFormat(formatIdentifier: string): boolean {
     return formatIdentifier === DCQL_REQUEST || formatIdentifier === DCQL_PRESENTATION
@@ -276,10 +277,14 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
         throw new CredoError(`vp_token entry for '${credentialQueryId}' has an invalid number of presentations`)
       }
 
+      if (!SUPPORTED_CREDENTIAL_FORMATS.includes(credentialQuery.format)) {
+        throw new CredoError(
+          `vp_token entry for '${credentialQueryId}' has format '${credentialQuery.format}', which cannot be verified`
+        )
+      }
+
       const requireHolderBinding = credentialQuery.require_cryptographic_holder_binding !== false
-      // Entries of other formats cannot be decoded here and are discarded by verifyPresentation
-      const checkedEntries = SUPPORTED_CREDENTIAL_FORMATS.includes(credentialQuery.format) ? entries : []
-      for (const entry of checkedEntries) {
+      for (const entry of entries) {
         const { nonce, aud } = this.decodeNonceAndAudience(credentialQuery, entry)
         if (
           ((requireHolderBinding || nonce !== undefined) && nonce !== request.nonce) ||
@@ -379,6 +384,11 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     audienceDid?: string
   ): Promise<DidCommProofFormatCreateReturn> {
     for (const credentialQuery of this.validateDcqlQuery(agentContext, dcqlQuery).credentials) {
+      if (!SUPPORTED_CREDENTIAL_FORMATS.includes(credentialQuery.format)) {
+        throw new CredoError(
+          `Credential Query '${credentialQuery.id}' has format '${credentialQuery.format}', but only 'dc+sd-jwt' and 'vc+sd-jwt' presentations can be verified`
+        )
+      }
       this.assertVcSdJwtHolderBindingRequired(credentialQuery)
     }
     const verifierDid = await this.getVerifierDid(agentContext, proofRecord, audienceDid)
@@ -421,6 +431,7 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
   }
 
   private validateDcqlQuery(agentContext: AgentContext, dcqlQuery: unknown): ParsedDcqlQuery {
+    this.logExperimentalWarning(agentContext)
     const parsed = agentContext.resolve(DcqlService).validateDcqlQuery(dcqlQuery)
 
     for (const credentialQuery of (dcqlQuery as { credentials: Array<Record<string, unknown>> }).credentials) {
@@ -450,6 +461,14 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     }
 
     return parsed
+  }
+
+  private logExperimentalWarning(agentContext: AgentContext): void {
+    if (this.hasLoggedExperimentalWarning) return
+    this.hasLoggedExperimentalWarning = true
+    agentContext.config.logger.warn(
+      "The DCQL proof format of '@credo-ts/didcomm' is experimental and could have unexpected breaking changes. When using this format, make sure to use strict versions for all @credo-ts packages."
+    )
   }
 
   private assertVcSdJwtHolderBindingRequired(credentialQuery: DcqlCredentialQuery): void {
@@ -510,26 +529,30 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
       throw new CredoError('DCQL request was attached to more than one out-of-band invitation')
     }
 
-    if (outOfBandRecord) {
-      if (connection?.outOfBandId === outOfBandRecord.id) {
+    if (outOfBandRecord && connection?.outOfBandId === outOfBandRecord.id) {
+      throw new CredoError(
+        'DCQL request was attached to the invitation that created the connection. Send the request after the connection exists'
+      )
+    }
+
+    if (!connection) {
+      // The presentation goes to the `~service` when the request has one, see getServicesForMessage
+      const requestServiceKeys = requestMessage.service?.resolvedDidCommService.recipientKeys
+      if (!outOfBandRecord && !requestServiceKeys) {
+        throw new CredoError('DCQL request has no connection or out-of-band invitation to check the audience against')
+      }
+      if (outOfBandRecord) {
+        await this.assertAudienceIsServiceDid(agentContext, outOfBandRecord.outOfBandInvitation.getServices(), audience)
+      }
+      if (
+        requestServiceKeys &&
+        (requestServiceKeys.length !== 1 || new DidKey(requestServiceKeys[0]).did !== audienceDid)
+      ) {
         throw new CredoError(
-          'DCQL request was attached to the invitation that created the connection. Send the request after the connection exists'
+          `DCQL request audience '${audience}' is not the DID of the service the presentation goes to`
         )
       }
-      if (!connection) {
-        await this.assertAudienceIsServiceDid(agentContext, outOfBandRecord.outOfBandInvitation.getServices(), audience)
-        // The presentation goes to the `~service` when the request has one, see getServicesForMessage
-        const requestServiceKeys = requestMessage.service?.resolvedDidCommService.recipientKeys
-        if (
-          requestServiceKeys &&
-          (requestServiceKeys.length !== 1 || new DidKey(requestServiceKeys[0]).did !== audienceDid)
-        ) {
-          throw new CredoError(
-            `DCQL request audience '${audience}' is not the DID of the service the presentation goes to`
-          )
-        }
-        return
-      }
+      return
     }
 
     await this.assertAudienceIsConnectionDid(agentContext, connection, audience)
@@ -537,13 +560,9 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
 
   private async assertAudienceIsConnectionDid(
     agentContext: AgentContext,
-    connection: DidCommConnectionRecord | undefined,
+    connection: DidCommConnectionRecord,
     audience: string
   ): Promise<void> {
-    if (!connection) {
-      throw new CredoError('DCQL request has no connection or out-of-band invitation to check the audience against')
-    }
-
     const audienceDid = audience.slice(AUDIENCE_PREFIX.length)
     if (connection.theirDid === audienceDid) return
 

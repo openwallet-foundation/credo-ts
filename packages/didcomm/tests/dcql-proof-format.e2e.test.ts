@@ -45,6 +45,7 @@ import {
   DidCommDocumentService,
   DidCommEnvelopeService,
   DidCommHandshakeProtocol,
+  DidCommMessageReceiver,
   DidCommMessageSender,
   DidCommModule,
   DidCommOutboundMessageContext,
@@ -459,11 +460,23 @@ describe('DCQL proof format over a DIDComm connection', () => {
     expect(errorMessage).toContain("vp_token entry for 'pid' has a wrong 'nonce' or 'aud'")
   })
 
-  test('an mso_mdoc entry the verifier cannot verify is discarded instead of rejecting the response', async () => {
+  test('an mso_mdoc entry the verifier cannot verify rejects the whole response', async () => {
     const vct = `${VCT}/with-mdl`
     const pid = await signSdJwtVc({ vct })
     await storeSdJwtVc(pid)
 
+    const originalCreateRequest = DidCommDcqlProofFormatService.prototype.createRequest
+    const createRequestSpy = vi
+      .spyOn(DidCommDcqlProofFormatService.prototype, 'createRequest')
+      .mockImplementationOnce(async function (this: DidCommDcqlProofFormatService, ...args) {
+        const result = await originalCreateRequest.apply(this, args)
+        const { dcql_query } = result.attachment.data.json as {
+          dcql_query: { credentials: JsonObject[]; credential_sets?: JsonObject[] }
+        }
+        dcql_query.credentials.push({ id: 'mdl', format: 'mso_mdoc', meta: { doctype_value: 'org.iso.18013.5.1.mDL' } })
+        dcql_query.credential_sets = [{ options: [['pid']] }, { options: [['mdl']], required: false }]
+        return result
+      })
     const createPresentationSpy = vi
       .spyOn(DcqlService.prototype, 'createPresentation')
       .mockImplementationOnce(async (_agentContext, { challenge, domain }) => ({
@@ -483,15 +496,10 @@ describe('DCQL proof format over a DIDComm connection', () => {
           mdl: ['not-an-mdoc'],
         },
       }))
-    const { vpToken } = await requestAndPresent({
-      credentials: [
-        ...pidQuery(vct).credentials,
-        { id: 'mdl', format: 'mso_mdoc', meta: { doctype_value: 'org.iso.18013.5.1.mDL' } },
-      ],
-      credential_sets: [{ options: [['pid']] }, { options: [['mdl']], required: false }],
-    })
+    const errorMessage = await presentationRejected(pidQuery(vct))
+    createRequestSpy.mockRestore()
     createPresentationSpy.mockRestore()
-    expect(vpToken.mdl).toEqual(['not-an-mdoc'])
+    expect(errorMessage).toContain("vp_token entry for 'mdl' has format 'mso_mdoc', which cannot be verified")
   })
 
   const sendTamperedRequest = async (tamper: (request: Record<string, unknown>) => void): Promise<string> => {
@@ -681,6 +689,24 @@ describe('DCQL proof format over a DIDComm connection', () => {
         },
       })
     ).rejects.toThrow("Credential Query 'name' asks for a vc+sd-jwt without holder binding, which is not supported")
+  })
+
+  test('verifier rejects an mso_mdoc query it cannot verify', async () => {
+    await expect(
+      verifierAgent.didcomm.proofs.requestProof({
+        connectionId: verifierConnectionId,
+        protocolVersion: 'v2',
+        proofFormats: {
+          dcql: {
+            dcqlQuery: {
+              credentials: [{ id: 'mdl', format: 'mso_mdoc', meta: { doctype_value: 'org.iso.18013.5.1.mDL' } }],
+            },
+          },
+        },
+      })
+    ).rejects.toThrow(
+      "Credential Query 'mdl' has format 'mso_mdoc', but only 'dc+sd-jwt' and 'vc+sd-jwt' presentations can be verified"
+    )
   })
 
   const storeW3cV2SdJwt = async (
@@ -1015,6 +1041,47 @@ describe('DCQL proof format out of band', () => {
       holderAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, { label: 'holder' })
     )
     await expect(processRequest).rejects.toThrow(
+      `DCQL request audience 'didcomm:${new DidKey(routing.recipientKey).did}' is not the DID of the service the presentation goes to`
+    )
+    expect(await holderAgent.didcomm.proofs.findAllByQuery({ threadId: proofRecord.threadId })).toEqual([])
+  })
+
+  const withRequestService = (
+    message: Awaited<ReturnType<typeof createRequest>>['message'],
+    recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  ): Plaintext => {
+    message.service = ServiceDecorator.fromResolvedDidCommService({
+      id: '#inline',
+      recipientKeys: [recipientKey],
+      routingKeys: [],
+      serviceEndpoint: 'rxjs:dcql-oob-verifier',
+    })
+    return message.toJSON()
+  }
+
+  test("connectionless without an invitation: a request with only a '~service' is received", async () => {
+    const routing = await getRouting()
+    const { message, proofRecord } = await createRequest(new DidKey(routing.recipientKey).did)
+
+    await holderAgent.dependencyManager
+      .resolve(DidCommMessageReceiver)
+      .receiveMessage(withRequestService(message, routing.recipientKey))
+    await waitForProofExchangeRecordSubject(holderReplay, {
+      threadId: proofRecord.threadId,
+      state: DidCommProofState.RequestReceived,
+    })
+  })
+
+  test("connectionless without an invitation: a request whose '~service' key is not the audience is rejected", async () => {
+    const routing = await getRouting()
+    const { message, proofRecord } = await createRequest(new DidKey(routing.recipientKey).did)
+    const otherKey = (await getRouting()).recipientKey
+
+    await expect(
+      holderAgent.dependencyManager
+        .resolve(DidCommMessageReceiver)
+        .receiveMessage(withRequestService(message, otherKey))
+    ).rejects.toThrow(
       `DCQL request audience 'didcomm:${new DidKey(routing.recipientKey).did}' is not the DID of the service the presentation goes to`
     )
     expect(await holderAgent.didcomm.proofs.findAllByQuery({ threadId: proofRecord.threadId })).toEqual([])
