@@ -371,7 +371,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         {
           type: 'chained',
           issuer: 'http://localhost:4747',
-          requireDpop: true,
+          dpop: { required: true },
           clientAuthentication: {
             type: 'clientSecret',
             clientId: idpClientId,
@@ -1644,7 +1644,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           authorizationServerConfigs: [
             createDpopConfig({
               issuer: upstreamIssuer,
-              requireDpop,
+              dpop: { required: requireDpop },
               clientAuthentication: {
                 type: 'clientSecret',
                 clientId: 'upstream-client',
@@ -1958,7 +1958,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           credentialConfigurationsSupported: sessionIssuer.credentialConfigurationsSupported,
           authorizationServerConfigs: [
             createDpopConfig({
-              requireDpop: true,
+              dpop: { required: true },
               scopesMapping: { UniversityDegreeCredential: ['UniversityDegreeCredential'] },
             }),
           ],
@@ -2148,8 +2148,8 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         issuerService.createChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
           issuanceSession: createDpopIssuanceSession(),
           chainedAuthorizationServerConfig: createDpopConfig({
-            requireDpop: false,
             dpop: {
+              required: false,
               // Upstream only advertises ES256
               signingAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
             },
@@ -2190,7 +2190,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       await expect(
         issuerService.createChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
           issuanceSession: createDpopIssuanceSession(),
-          chainedAuthorizationServerConfig: createDpopConfig({ requireDpop: true }),
+          chainedAuthorizationServerConfig: createDpopConfig({ dpop: { required: true } }),
           authorizationServerMetadata: {
             issuer: upstreamAuthorizationServerMetadata.issuer,
             token_endpoint: upstreamAuthorizationServerMetadata.token_endpoint,

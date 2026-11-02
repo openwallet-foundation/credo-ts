@@ -2011,7 +2011,7 @@ export class OpenId4VcIssuerService {
       authorizationServerMetadata: AuthorizationServerMetadata
     }
   ) {
-    const requireDpop = options.chainedAuthorizationServerConfig.requireDpop ?? false
+    const requireDpop = options.chainedAuthorizationServerConfig.dpop?.required ?? false
     const supportedSigningAlgorithms = options.authorizationServerMetadata.dpop_signing_alg_values_supported
 
     if (!supportedSigningAlgorithms) {
