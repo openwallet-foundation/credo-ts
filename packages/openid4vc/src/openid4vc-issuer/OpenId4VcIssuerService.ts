@@ -294,6 +294,7 @@ export class OpenId4VcIssuerService {
       (config) => config.issuer === authorizationCodeFlowConfig?.authorizationServerUrl
     )
 
+    const issuanceSessionRepository = this.openId4VcIssuanceSessionRepository
     const issuanceSession = new OpenId4VcIssuanceSessionRecord({
       createdAt,
       expiresAt,
@@ -344,7 +345,7 @@ export class OpenId4VcIssuerService {
       issuanceMetadata: options.issuanceMetadata,
       openId4VciVersion: version,
     })
-    await this.initializeAndSaveIssuanceSession(agentContext, issuer, issuanceSession)
+    await issuanceSessionRepository.save(agentContext, issuanceSession)
     this.emitStateChangedEvent(agentContext, issuanceSession, null)
 
     return {
@@ -611,7 +612,7 @@ export class OpenId4VcIssuerService {
       openId4VciVersion: sessionOptions.version ?? 'v1',
     })
 
-    await this.initializeAndSaveIssuanceSession(agentContext, issuer, issuanceSession)
+    await this.openId4VcIssuanceSessionRepository.save(agentContext, issuanceSession)
     this.emitStateChangedEvent(agentContext, issuanceSession, null)
 
     return issuanceSession
@@ -1883,62 +1884,13 @@ export class OpenId4VcIssuerService {
     })
   }
 
-  private async initializeAndSaveIssuanceSession(
-    agentContext: AgentContext,
-    issuer: OpenId4VcIssuerRecord,
-    issuanceSession: OpenId4VcIssuanceSessionRecord
-  ) {
-    if (issuanceSession.chainedIdentity) {
-      const authorizationServerUrl = issuanceSession.chainedIdentity.externalAuthorizationServerUrl
-      const chainedAuthorizationServerConfig = issuer.chainedAuthorizationServerConfigs?.find(
-        (config) => config.issuer === authorizationServerUrl
-      )
-      if (!chainedAuthorizationServerConfig) {
-        throw new CredoError(`No chained authorization server config found for '${authorizationServerUrl}'.`)
-      }
-
-      const authorizationServerMetadata = await this.getOauth2Client(
-        agentContext,
-        issuer
-      ).fetchAuthorizationServerMetadata(authorizationServerUrl)
-      if (!authorizationServerMetadata) {
-        throw new CredoError(`Authorization server metadata not found for issuer '${authorizationServerUrl}'.`)
-      }
-
-      const { session } = await this.getChainedDpopOptions(agentContext, {
-        issuanceSession,
-        chainedAuthorizationServerConfig,
-        authorizationServerMetadata,
-        createKey: true,
-      })
-      issuanceSession.chainedIdentity.dpop = session
-    }
-
-    try {
-      await this.openId4VcIssuanceSessionRepository.save(agentContext, issuanceSession)
-    } catch (error) {
-      const dpop = issuanceSession.chainedIdentity?.dpop
-      if (dpop?.keyGeneratedForSession) {
-        try {
-          await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: dpop.keyId })
-        } catch (cleanupError) {
-          agentContext.config.logger.error('Failed to delete DPoP key after issuance session creation failed', {
-            keyId: dpop.keyId,
-            error: cleanupError,
-          })
-        }
-      }
-      throw error
-    }
-  }
-
   public async getChainedDpopOptions(
     agentContext: AgentContext,
     options: {
       issuanceSession: OpenId4VcIssuanceSessionRecord
       chainedAuthorizationServerConfig: OpenId4VciChainedAuthorizationServerConfig
       authorizationServerMetadata: AuthorizationServerMetadata
-      // Only session creation creates a key, later requests reuse the persisted one.
+      // Only the authorization request creates a key, later requests reuse the persisted one.
       createKey?: boolean
     }
   ): Promise<{
@@ -1964,7 +1916,7 @@ export class OpenId4VcIssuerService {
       throw new CredoError(`Authorization server advertises DPoP support without any signing algorithms.`)
     }
     if (!persisted && !options.createKey) {
-      throw new CredoError('Chained DPoP key was not initialized during issuance session creation.')
+      throw new CredoError('Chained DPoP key was not initialized during the authorization request.')
     }
 
     const dpop = await getDpopOptions(agentContext, {

@@ -1765,55 +1765,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         return issuanceSession
       }
 
-      it.each(['offer', 'dynamic'] as const)(
-        'persists a unique key at %s session creation and reuses it across concurrent requests',
-        async (flow) => {
-          const sessions = await Promise.all([createSession(flow), createSession(flow)])
-          const keys = sessions.map((session) => session.chainedIdentity?.dpop)
-          expect(keys[0]).toMatchObject({ keyId: expect.any(String), keyGeneratedForSession: true })
-          expect(keys[1]?.keyId).not.toBe(keys[0]?.keyId)
-
-          const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
-          const results = await Promise.all(
-            sessions.flatMap((session) =>
-              [0, 1].map(async () => {
-                const persisted = await dpopAgent.agent.modules.openid4vc.issuer.getIssuanceSessionById(session.id)
-                expect(persisted.chainedIdentity?.dpop).toEqual(session.chainedIdentity?.dpop)
-                return issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
-                  issuanceSession: persisted,
-                  chainedAuthorizationServerConfig: createDpopConfig(),
-                  authorizationServerMetadata: upstreamMetadata,
-                })
-              })
-            )
-          )
-          expect(results.map((result) => result.session?.keyId)).toEqual([
-            keys[0]?.keyId,
-            keys[0]?.keyId,
-            keys[1]?.keyId,
-            keys[1]?.keyId,
-          ])
-          expect(createKey).not.toHaveBeenCalled()
-        }
-      )
-
-      it('keeps the creation-time key through PAR even if the configured key changes', async () => {
-        const issuanceSession = await createSession()
-        const originalDpop = issuanceSession.chainedIdentity?.dpop
-        expect(originalDpop).toBeDefined()
-        const rotatedKey = await dpopAgent.agent.kms.createKeyForSignatureAlgorithm({ algorithm: 'ES256' })
-        await dpopAgent.agent.modules.openid4vc.issuer.updateIssuerMetadata({
-          issuerId: sessionIssuer.issuerId,
-          credentialConfigurationsSupported: sessionIssuer.credentialConfigurationsSupported,
-          authorizationServerConfigs: [
-            createDpopConfig({
-              dpop: { keyId: rotatedKey.keyId },
-              scopesMapping: { UniversityDegreeCredential: ['UniversityDegreeCredential'] },
-            }),
-          ],
-        })
-        const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
-
+      const pushAuthorizationRequest = async (issuanceSession: OpenId4VcIssuanceSessionRecord) => {
         const response = await fetch(`http://localhost:3000/oid4vci/${sessionIssuer.issuerId}/par`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1828,76 +1780,78 @@ describe('OpenId4Vc (Chained Authorization)', () => {
             dpop_jkt: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
           }),
         })
-        expect(response.status, await response.clone().text()).toBe(201)
-        const persisted = await dpopAgent.agent.modules.openid4vc.issuer.getIssuanceSessionById(issuanceSession.id)
-        expect(persisted.chainedIdentity?.dpop).toEqual(originalDpop)
-        expect(createKey).not.toHaveBeenCalled()
 
-        const newSession = await createSession()
+        return {
+          response,
+          issuanceSession: await dpopAgent.agent.modules.openid4vc.issuer.getIssuanceSessionById(issuanceSession.id),
+        }
+      }
+
+      const startAuthorization = async () => {
+        const { response, issuanceSession } = await pushAuthorizationRequest(await createSession())
+        expect(response.status, await response.clone().text()).toBe(201)
+        return issuanceSession
+      }
+
+      it.each(['offer', 'dynamic'] as const)('creates no key at %s session creation', async (flow) => {
+        const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
+
+        const issuanceSession = await createSession(flow)
+
+        expect(issuanceSession.chainedIdentity?.dpop).toBeUndefined()
+        expect(createKey).not.toHaveBeenCalled()
+      })
+
+      it('creates the key at PAR and reuses it in later requests', async () => {
+        const issuanceSession = await startAuthorization()
+        const persistedDpop = issuanceSession.chainedIdentity?.dpop
+        expect(persistedDpop).toMatchObject({ keyId: expect.any(String), keyGeneratedForSession: true })
+        const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
+
+        const result = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
+          issuanceSession,
+          chainedAuthorizationServerConfig: createDpopConfig(),
+          authorizationServerMetadata: upstreamMetadata,
+          createKey: true,
+        })
+
+        expect(result.session).toEqual(persistedDpop)
+        expect(createKey).not.toHaveBeenCalled()
+      })
+
+      it('keeps the PAR key even if the configured key changes', async () => {
+        const issuanceSession = await startAuthorization()
+        const originalDpop = issuanceSession.chainedIdentity?.dpop
+        expect(originalDpop).toBeDefined()
+        const rotatedKey = await dpopAgent.agent.kms.createKeyForSignatureAlgorithm({ algorithm: 'ES256' })
+        const rotatedConfig = createDpopConfig({
+          dpop: { keyId: rotatedKey.keyId },
+          scopesMapping: { UniversityDegreeCredential: ['UniversityDegreeCredential'] },
+        })
+        await dpopAgent.agent.modules.openid4vc.issuer.updateIssuerMetadata({
+          issuerId: sessionIssuer.issuerId,
+          credentialConfigurationsSupported: sessionIssuer.credentialConfigurationsSupported,
+          authorizationServerConfigs: [rotatedConfig],
+        })
+
+        const result = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
+          issuanceSession,
+          chainedAuthorizationServerConfig: rotatedConfig,
+          authorizationServerMetadata: upstreamMetadata,
+        })
+        expect(result.session).toEqual(originalDpop)
+
+        const newSession = await startAuthorization()
         expect(newSession.chainedIdentity?.dpop).toMatchObject({
           keyId: rotatedKey.keyId,
           keyGeneratedForSession: false,
         })
       })
 
-      it.each(['offer', 'dynamic'] as const)(
-        'deletes the generated key if saving a new %s session fails',
-        async (flow) => {
-          const repository = dpopAgent.agent.context.resolve(OpenId4VcIssuanceSessionRepository)
-          const saveError = new Error('Session save failed')
-          vi.spyOn(repository, 'save').mockRejectedValueOnce(saveError)
-          const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
-          const deleteKey = vi.spyOn(dpopAgent.agent.kms, 'deleteKey')
-
-          await expect(createSession(flow)).rejects.toBe(saveError)
-          expect(createKey).toHaveBeenCalledTimes(1)
-          const key = await createKey.mock.results[0].value
-          expect(deleteKey).toHaveBeenCalledExactlyOnceWith({ keyId: key.keyId })
-          await expect(dpopAgent.agent.kms.getPublicKey({ keyId: key.keyId })).rejects.toThrow()
-        }
-      )
-
-      it('retains a configured key if saving the new session fails', async () => {
-        const key = await dpopAgent.agent.kms.createKeyForSignatureAlgorithm({ algorithm: 'ES256' })
-        await dpopAgent.agent.modules.openid4vc.issuer.updateIssuerMetadata({
-          issuerId: sessionIssuer.issuerId,
-          credentialConfigurationsSupported: sessionIssuer.credentialConfigurationsSupported,
-          authorizationServerConfigs: [
-            createDpopConfig({
-              dpop: { keyId: key.keyId },
-              scopesMapping: { UniversityDegreeCredential: ['UniversityDegreeCredential'] },
-            }),
-          ],
-        })
-        const repository = dpopAgent.agent.context.resolve(OpenId4VcIssuanceSessionRepository)
-        const saveError = new Error('Session save failed')
-        vi.spyOn(repository, 'save').mockRejectedValueOnce(saveError)
-        const deleteKey = vi.spyOn(dpopAgent.agent.kms, 'deleteKey')
-
-        await expect(createSession()).rejects.toBe(saveError)
-        expect(deleteKey).not.toHaveBeenCalled()
-        await expect(dpopAgent.agent.kms.getPublicKey({ keyId: key.keyId })).resolves.toBeDefined()
-      })
-
-      it('reports cleanup failure without hiding the session save error', async () => {
-        const repository = dpopAgent.agent.context.resolve(OpenId4VcIssuanceSessionRepository)
-        const saveError = new Error('Session save failed')
-        const cleanupError = new Error('Key deletion failed')
-        vi.spyOn(repository, 'save').mockRejectedValueOnce(saveError)
-        vi.spyOn(dpopAgent.agent.kms, 'deleteKey').mockRejectedValueOnce(cleanupError)
-        const logError = vi.spyOn(dpopAgent.agent.context.config.logger, 'error')
-
-        await expect(createSession()).rejects.toBe(saveError)
-        expect(logError).toHaveBeenCalledWith('Failed to delete DPoP key after issuance session creation failed', {
-          keyId: expect.any(String),
-          error: cleanupError,
-        })
-      })
-
       it.each(['missing key', 'unsupported algorithm', 'missing DPoP support'] as const)(
         'fails without replacing the session key after %s',
         async (failure) => {
-          const issuanceSession = await createSession()
+          const issuanceSession = await startAuthorization()
           const originalDpop = issuanceSession.chainedIdentity?.dpop
           if (!originalDpop) throw new Error('Expected generated chained DPoP metadata')
           if (failure === 'missing key') {
@@ -1914,6 +1868,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
               issuanceSession,
               chainedAuthorizationServerConfig: createDpopConfig(),
               authorizationServerMetadata: upstreamMetadata,
+              createKey: true,
             })
           ).rejects.toThrow()
           expect(createKey).not.toHaveBeenCalled()
@@ -1922,9 +1877,9 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         }
       )
 
-      it('does not generate a key during requests for a session created without DPoP support', async () => {
+      it('does not create a key after a PAR without DPoP support', async () => {
         upstreamMetadata.dpop_signing_alg_values_supported = undefined
-        const issuanceSession = await createSession()
+        const issuanceSession = await startAuthorization()
         expect(issuanceSession.chainedIdentity?.dpop).toBeUndefined()
         const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
 
@@ -1932,20 +1887,71 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
             issuanceSession,
             chainedAuthorizationServerConfig: createDpopConfig(),
-            authorizationServerMetadata: upstreamMetadata,
-          })
-        ).resolves.toEqual({})
-        await expect(
-          issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
-            issuanceSession,
-            chainedAuthorizationServerConfig: createDpopConfig(),
             authorizationServerMetadata: upstreamAuthorizationServerMetadata,
           })
-        ).rejects.toThrow('Chained DPoP key was not initialized during issuance session creation.')
+        ).rejects.toThrow('Chained DPoP key was not initialized during the authorization request.')
         expect(createKey).not.toHaveBeenCalled()
       })
 
-      it('fails session creation before saving when required DPoP is unavailable', async () => {
+      it('deletes the generated key if storing it on the session fails', async () => {
+        const issuanceSession = await createSession()
+        const repository = dpopAgent.agent.context.resolve(OpenId4VcIssuanceSessionRepository)
+        vi.spyOn(repository, 'update').mockRejectedValueOnce(new Error('Session update failed'))
+        const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
+        const deleteKey = vi.spyOn(dpopAgent.agent.kms, 'deleteKey')
+
+        const { response, issuanceSession: persisted } = await pushAuthorizationRequest(issuanceSession)
+
+        expect(response.ok).toBe(false)
+        expect(persisted.chainedIdentity?.dpop).toBeUndefined()
+        expect(createKey).toHaveBeenCalledTimes(1)
+        const key = await createKey.mock.results[0].value
+        expect(deleteKey).toHaveBeenCalledExactlyOnceWith({ keyId: key.keyId })
+        await expect(dpopAgent.agent.kms.getPublicKey({ keyId: key.keyId })).rejects.toThrow()
+      })
+
+      it('retains a configured key if storing it on the session fails', async () => {
+        const key = await dpopAgent.agent.kms.createKeyForSignatureAlgorithm({ algorithm: 'ES256' })
+        await dpopAgent.agent.modules.openid4vc.issuer.updateIssuerMetadata({
+          issuerId: sessionIssuer.issuerId,
+          credentialConfigurationsSupported: sessionIssuer.credentialConfigurationsSupported,
+          authorizationServerConfigs: [
+            createDpopConfig({
+              dpop: { keyId: key.keyId },
+              scopesMapping: { UniversityDegreeCredential: ['UniversityDegreeCredential'] },
+            }),
+          ],
+        })
+        const issuanceSession = await createSession()
+        const repository = dpopAgent.agent.context.resolve(OpenId4VcIssuanceSessionRepository)
+        vi.spyOn(repository, 'update').mockRejectedValueOnce(new Error('Session update failed'))
+        const deleteKey = vi.spyOn(dpopAgent.agent.kms, 'deleteKey')
+
+        const { response } = await pushAuthorizationRequest(issuanceSession)
+
+        expect(response.ok).toBe(false)
+        expect(deleteKey).not.toHaveBeenCalled()
+        await expect(dpopAgent.agent.kms.getPublicKey({ keyId: key.keyId })).resolves.toBeDefined()
+      })
+
+      it('logs a failed key cleanup and still fails the request', async () => {
+        const issuanceSession = await createSession()
+        const repository = dpopAgent.agent.context.resolve(OpenId4VcIssuanceSessionRepository)
+        vi.spyOn(repository, 'update').mockRejectedValueOnce(new Error('Session update failed'))
+        const cleanupError = new Error('Key deletion failed')
+        vi.spyOn(dpopAgent.agent.kms, 'deleteKey').mockRejectedValueOnce(cleanupError)
+        const logError = vi.spyOn(dpopAgent.agent.context.config.logger, 'error')
+
+        const { response } = await pushAuthorizationRequest(issuanceSession)
+
+        expect(response.ok).toBe(false)
+        expect(logError).toHaveBeenCalledWith(
+          'Failed to delete DPoP key after storing it on the issuance session failed',
+          { keyId: expect.any(String), error: cleanupError }
+        )
+      })
+
+      it('fails PAR without creating a key when required DPoP is unavailable', async () => {
         upstreamMetadata.dpop_signing_alg_values_supported = undefined
         await dpopAgent.agent.modules.openid4vc.issuer.updateIssuerMetadata({
           issuerId: sessionIssuer.issuerId,
@@ -1957,12 +1963,12 @@ describe('OpenId4Vc (Chained Authorization)', () => {
             }),
           ],
         })
-        const repository = dpopAgent.agent.context.resolve(OpenId4VcIssuanceSessionRepository)
-        const save = vi.spyOn(repository, 'save')
         const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
 
-        await expect(createSession()).rejects.toThrow('Authorization server does not support DPoP.')
-        expect(save).not.toHaveBeenCalled()
+        const { response, issuanceSession } = await pushAuthorizationRequest(await createSession())
+
+        expect(response.ok).toBe(false)
+        expect(issuanceSession.chainedIdentity?.dpop).toBeUndefined()
         expect(createKey).not.toHaveBeenCalled()
       })
     })

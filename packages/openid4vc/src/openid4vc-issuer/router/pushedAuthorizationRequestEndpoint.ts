@@ -1,4 +1,4 @@
-import { AgentContext, joinUriParts, utils } from '@credo-ts/core'
+import { AgentContext, joinUriParts, Kms, utils } from '@credo-ts/core'
 import type { HttpMethod, ParsePushedAuthorizationRequestResult, RequestLike } from '@openid4vc/oauth2'
 import {
   Oauth2ErrorCodes,
@@ -24,7 +24,11 @@ import {
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
-import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../repository'
+import {
+  OpenId4VcIssuanceSessionRecord,
+  OpenId4VcIssuanceSessionRepository,
+  OpenId4VcIssuerRecord,
+} from '../repository'
 import { getPkceFromAuthorizationRequest } from '../util/pkce'
 import { getClientAttestationToVerify } from '../util/walletAttestation'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
@@ -263,7 +267,32 @@ export async function handlePushedAuthorizationRequest(
     issuanceSession,
     chainedAuthorizationServerConfig: authorizationServerConfig,
     authorizationServerMetadata,
+    createKey: true,
   })
+
+  // Store a new key before calling upstream, so a failed request doesn't orphan it and a retry reuses it
+  if (chainedDpop.session && !issuanceSession.chainedIdentity?.dpop) {
+    const dpop = chainedDpop.session
+    issuanceSession.chainedIdentity = { ...issuanceSession.chainedIdentity, dpop }
+    try {
+      await agentContext.resolve(OpenId4VcIssuanceSessionRepository).update(agentContext, issuanceSession)
+    } catch (error) {
+      if (dpop.keyGeneratedForSession) {
+        try {
+          await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: dpop.keyId })
+        } catch (cleanupError) {
+          agentContext.config.logger.error(
+            'Failed to delete DPoP key after storing it on the issuance session failed',
+            {
+              keyId: dpop.keyId,
+              error: cleanupError,
+            }
+          )
+        }
+      }
+      throw error
+    }
+  }
 
   const {
     authorizationRequestUrl,
