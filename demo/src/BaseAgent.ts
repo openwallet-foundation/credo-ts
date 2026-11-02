@@ -1,3 +1,4 @@
+import { createServer, type Server } from 'node:http'
 import { AnonCredsModule } from '@credo-ts/anoncreds'
 import {
   AnonCredsDidCommCredentialFormatService,
@@ -8,12 +9,12 @@ import { AskarModule } from '@credo-ts/askar'
 import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule, CheqdModuleConfig } from '@credo-ts/cheqd'
 import { CheqdAnonCredsRegistry } from '@credo-ts/cheqd/anoncreds'
 import { Agent, DidsModule } from '@credo-ts/core'
+import { nodeHost } from '@credo-ts/core/http/node'
 import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import {
   DidCommAutoAcceptCredential,
   DidCommAutoAcceptProof,
   DidCommCredentialV2Protocol,
-  DidCommHttpOutboundTransport,
   DidCommModule,
   DidCommProofV2Protocol,
 } from '@credo-ts/didcomm'
@@ -21,7 +22,7 @@ import { HederaDidRegistrar, HederaDidResolver, HederaModule } from '@credo-ts/h
 import { HederaAnonCredsRegistry } from '@credo-ts/hedera/anoncreds'
 import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
-import { agentDependencies, DidCommHttpInboundTransport } from '@credo-ts/node'
+import { agentDependencies } from '@credo-ts/node'
 import type { HederaNetwork } from '@hiero-did-sdk/client'
 import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
@@ -46,20 +47,23 @@ export class BaseAgent {
   public port: number
   public name: string
   public agent: DemoAgent
+  private server: Server
 
   public constructor({ port, name }: { port: number; name: string }) {
     this.name = name
     this.port = port
+    this.server = createServer()
 
     this.agent = new Agent({
       config: {},
       dependencies: agentDependencies,
+      http: nodeHost(this.server),
       modules: getAskarAnonCredsIndyModules(
         {
           endpoints: [`http://localhost:${this.port}`],
           transports: {
-            inbound: [new DidCommHttpInboundTransport({ port })],
-            outbound: [new DidCommHttpOutboundTransport()],
+            inbound: { http: true },
+            outbound: { http: true },
           },
         },
         { id: name, key: name }
@@ -69,6 +73,7 @@ export class BaseAgent {
 
   public async initializeAgent() {
     await this.agent.initialize()
+    this.server.listen(this.port)
 
     console.log(greenText(`\nAgent ${this.name} created!\n`))
   }

@@ -1,3 +1,4 @@
+import { CredoError } from '@credo-ts/core'
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import type {
   DidCommConnectionsModuleConfigOptions,
@@ -12,14 +13,30 @@ import type { DidCommProofProtocol } from './modules/proofs/protocol/DidCommProo
 import type { DidCommMediationRecipientModuleConfigOptions } from './modules/routing/DidCommMediationRecipientModuleConfig'
 import type { DidCommMediatorModuleConfigOptions } from './modules/routing/DidCommMediatorModuleConfig'
 import type { DidCommInboundTransport, DidCommOutboundTransport, DidCommQueueTransportRepository } from './transport'
+import type { DidCommHttpInboundTransportOptions } from './transport/DidCommHttpInboundTransport'
+import type { DidCommWsInboundTransportOptions } from './transport/DidCommWsInboundTransport'
 import { InMemoryQueueTransportRepository } from './transport/queue/InMemoryQueueTransportRepository'
 import { DidCommMimeType } from './types'
 
 export interface DidCommModuleConfigOptions {
   endpoints?: string[]
   transports?: {
-    inbound?: DidCommInboundTransport[]
-    outbound?: DidCommOutboundTransport[]
+    /**
+     * Either the transports, or `http` and `ws` to receive messages on the agent's routes (`agent.http`), plus any
+     * `custom` transports.
+     */
+    inbound?:
+      | DidCommInboundTransport[]
+      | {
+          http?: true | DidCommHttpInboundTransportOptions
+          ws?: true | DidCommWsInboundTransportOptions
+          custom?: DidCommInboundTransport[]
+        }
+
+    /**
+     * Either the transports, or `http` and `ws` to send messages over HTTP and WebSockets, plus any `custom` transports.
+     */
+    outbound?: DidCommOutboundTransport[] | { http?: true; ws?: true; custom?: DidCommOutboundTransport[] }
   }
   useDidSovPrefixWhereAllowed?: boolean
   processDidCommMessagesConcurrently?: boolean
@@ -133,8 +150,13 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
   public constructor(options?: Options) {
     this.options = (options ?? {}) as Options
     this._endpoints = options?.endpoints
-    this._inboundTransports = options?.transports?.inbound ?? []
-    this._outboundTransports = options?.transports?.outbound ?? []
+    const { inbound = [], outbound = [] } = options?.transports ?? {}
+    // The transport classes import this config, so DidCommModule resolves the `{ http, ws, custom }` form
+    if (!Array.isArray(inbound) || !Array.isArray(outbound)) {
+      throw new CredoError('Resolve the transports with resolveTransports, as DidCommModule does')
+    }
+    this._inboundTransports = inbound
+    this._outboundTransports = outbound
     this._queueTransportRepository = options?.queueTransportRepository ?? new InMemoryQueueTransportRepository()
 
     this.enabledModules = {

@@ -1,3 +1,4 @@
+import { HttpRouter } from '../http/HttpRouter'
 import type { Logger } from '../logger'
 import { DidsApi } from '../modules/dids'
 import { GenericRecordsApi } from '../modules/generic-records'
@@ -40,6 +41,11 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly tokenStatusList: TokenStatusListApi
 
   /**
+   * The HTTP and WebSocket routes of all modules, hosted by the agent's `http` hosts.
+   */
+  public readonly http: HttpRouter
+
+  /**
    * The DIDComm module, only available if the didcomm module is registered
    */
   public readonly didcomm: AgentModules['didcomm'] extends Module
@@ -79,6 +85,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.mdoc = this.dependencyManager.resolve(MdocApi)
     this.kms = this.dependencyManager.resolve(KeyManagementApi) as this['kms']
     this.tokenStatusList = this.dependencyManager.resolve(TokenStatusListApi)
+    this.http = this.dependencyManager.resolve(HttpRouter)
 
     const defaultApis = [
       this.genericRecords,

@@ -5,7 +5,50 @@
       "cli": "./build/index.mjs",
       "import": "./src/index.ts"
     },
-    "./kms": "./src/modules/kms/index.ts"
+    "./kms": {
+      "cli": "./build/modules/kms/index.mjs",
+      "import": "./src/modules/kms/index.ts"
+    },
+    "./http": {
+      "cli": "./build/http/index.mjs",
+      "import": "./src/http/index.ts"
+    },
+    "./http/express": {
+      "cli": "./build/http/hosts/express.mjs",
+      "import": "./src/http/hosts/express.ts"
+    },
+    "./http/hono": {
+      "cli": "./build/http/hosts/hono.mjs",
+      "import": "./src/http/hosts/hono.ts"
+    },
+    "./http/node": {
+      "cli": "./build/http/hosts/node.mjs",
+      "import": "./src/http/hosts/node.ts"
+    },
+    "./http/bun": {
+      "cli": "./build/http/hosts/bun.mjs",
+      "import": "./src/http/hosts/bun.ts"
+    },
+    "./http/fastify": {
+      "cli": "./build/http/hosts/fastify.mjs",
+      "import": "./src/http/hosts/fastify.ts"
+    },
+    "./http/h3": {
+      "cli": "./build/http/hosts/h3.mjs",
+      "import": "./src/http/hosts/h3.ts"
+    },
+    "./http/elysia": {
+      "cli": "./build/http/hosts/elysia.mjs",
+      "import": "./src/http/hosts/elysia.ts"
+    },
+    "./http/deno": {
+      "cli": "./build/http/hosts/deno.mjs",
+      "import": "./src/http/hosts/deno.ts"
+    },
+    "./http/cloudflare": {
+      "cli": "./build/http/hosts/cloudflare.mjs",
+      "import": "./src/http/hosts/cloudflare.ts"
+    }
   },
   "version": "0.7.1",
   "files": [
@@ -23,6 +66,46 @@
         "import": "./build/modules/kms/index.mjs",
         "require": "./build/modules/kms/index.mjs",
         "types": "./build/modules/kms/index.d.mts"
+      },
+      "./http": {
+        "import": "./build/http/index.mjs",
+        "types": "./build/http/index.d.mts"
+      },
+      "./http/express": {
+        "import": "./build/http/hosts/express.mjs",
+        "types": "./build/http/hosts/express.d.mts"
+      },
+      "./http/hono": {
+        "import": "./build/http/hosts/hono.mjs",
+        "types": "./build/http/hosts/hono.d.mts"
+      },
+      "./http/node": {
+        "import": "./build/http/hosts/node.mjs",
+        "types": "./build/http/hosts/node.d.mts"
+      },
+      "./http/bun": {
+        "import": "./build/http/hosts/bun.mjs",
+        "types": "./build/http/hosts/bun.d.mts"
+      },
+      "./http/fastify": {
+        "import": "./build/http/hosts/fastify.mjs",
+        "types": "./build/http/hosts/fastify.d.mts"
+      },
+      "./http/h3": {
+        "import": "./build/http/hosts/h3.mjs",
+        "types": "./build/http/hosts/h3.d.mts"
+      },
+      "./http/elysia": {
+        "import": "./build/http/hosts/elysia.mjs",
+        "types": "./build/http/hosts/elysia.d.mts"
+      },
+      "./http/deno": {
+        "import": "./build/http/hosts/deno.mjs",
+        "types": "./build/http/hosts/deno.d.mts"
+      },
+      "./http/cloudflare": {
+        "import": "./build/http/hosts/cloudflare.mjs",
+        "types": "./build/http/hosts/cloudflare.d.mts"
       }
     }
   },
@@ -65,9 +148,17 @@
     "@stablelib/ed25519": "catalog:",
     "@types/events": "^3.0.3",
     "@types/ws": "catalog:",
+    "@universal-middleware/core": "^0.7.2",
+    "@universal-middleware/elysia": "^0.9.1",
+    "@universal-middleware/express": "^0.6.1",
+    "@universal-middleware/fastify": "^0.7.1",
+    "@universal-middleware/h3": "^0.7.1",
+    "@universal-middleware/hono": "^0.6.1",
+    "@universal-middleware/node": "^0.2.9",
     "@verifiables/request-converter": "^0.2.0",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
+    "crossws": "^0.4.17",
     "dcql": "^4.0.0",
     "did-resolver": "^6.0.0",
     "ec-compression": "^2.0.0",
@@ -91,5 +182,25 @@
     "nock": "catalog:",
     "tslog": "^4.10.2",
     "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "hono": "^4",
+    "fastify": "^5",
+    "h3": "^2",
+    "elysia": "^1.4"
+  },
+  "peerDependenciesMeta": {
+    "hono": {
+      "optional": true
+    },
+    "fastify": {
+      "optional": true
+    },
+    "h3": {
+      "optional": true
+    },
+    "elysia": {
+      "optional": true
+    }
   }
 }

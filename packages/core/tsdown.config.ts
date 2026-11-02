@@ -4,7 +4,21 @@ import config from '../../tsdown.config.base'
 export default defineConfig(
   config.map((item) => ({
     ...item,
-    entry: ['./src/index.ts', './src/modules/kms/index.ts', './src/modules/vc/jsonld/nativeDocumentLoader.native.ts'],
+    entry: [
+      './src/index.ts',
+      './src/modules/kms/index.ts',
+      './src/modules/vc/jsonld/nativeDocumentLoader.native.ts',
+      './src/http/index.ts',
+      './src/http/hosts/bun.ts',
+      './src/http/hosts/cloudflare.ts',
+      './src/http/hosts/deno.ts',
+      './src/http/hosts/elysia.ts',
+      './src/http/hosts/express.ts',
+      './src/http/hosts/fastify.ts',
+      './src/http/hosts/h3.ts',
+      './src/http/hosts/hono.ts',
+      './src/http/hosts/node.ts',
+    ],
     plugins: [
       ...(Array.isArray(item.plugins) ? item.plugins : []),
       {
