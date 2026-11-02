@@ -49,6 +49,7 @@ import {
 import { AnonCredsRegistryService } from './services/registry/AnonCredsRegistryService'
 import type { AnonCredsResolutionOptions, Extensible } from './services/registry/base'
 import { dateToTimestamp, storeLinkSecret } from './utils'
+import { withDidIndyIdentifierQueryVariants } from './utils/indyIdentifiers'
 
 @injectable()
 export class AnonCredsApi {
@@ -170,7 +171,10 @@ export class AnonCredsApi {
   }
 
   public async getCreatedSchemas(query: SimpleQuery<AnonCredsSchemaRecord>) {
-    return this.anonCredsSchemaRepository.findByQuery(this.agentContext, query)
+    return this.anonCredsSchemaRepository.findByQuery(
+      this.agentContext,
+      withDidIndyIdentifierQueryVariants(query, ['schemaId'])
+    )
   }
 
   /**
@@ -263,7 +267,10 @@ export class AnonCredsApi {
   }
 
   public async getCreatedCredentialDefinitions(query: SimpleQuery<AnonCredsCredentialDefinitionRecord>) {
-    return this.anonCredsCredentialDefinitionRepository.findByQuery(this.agentContext, query)
+    return this.anonCredsCredentialDefinitionRepository.findByQuery(
+      this.agentContext,
+      withDidIndyIdentifierQueryVariants(query, ['credentialDefinitionId', 'schemaId'])
+    )
   }
 
   /**

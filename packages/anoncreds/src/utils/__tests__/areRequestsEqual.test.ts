@@ -114,6 +114,34 @@ describe('util | areAnonCredsProofRequestsEqual', () => {
     ).toBe(true)
   })
 
+  test('treats percent-encoded and unencoded did:indy ids in restrictions as equal', () => {
+    const did = 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt'
+    const withRestrictions = (schemaName: string, tag: string) => ({
+      ...proofRequest,
+      requested_attributes: {
+        a: {
+          ...proofRequest.requested_attributes.a,
+          restrictions: [
+            {
+              schema_id: `${did}/anoncreds/v0/SCHEMA/${schemaName}/1.0`,
+              cred_def_id: `${did}/anoncreds/v0/CLAIM_DEF/10/${tag}`,
+            },
+          ],
+        },
+      },
+    })
+
+    expect(
+      areAnonCredsProofRequestsEqual(
+        withRestrictions('My Schema', 'my tag'),
+        withRestrictions('My%20Schema', 'my%20tag')
+      )
+    ).toBe(true)
+    expect(
+      areAnonCredsProofRequestsEqual(withRestrictions('My Schema', 'my tag'), withRestrictions('My Schema', 'other'))
+    ).toBe(false)
+  })
+
   test('ignores attribute restriction undefined vs empty array', () => {
     expect(
       areAnonCredsProofRequestsEqual(

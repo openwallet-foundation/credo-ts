@@ -11,13 +11,15 @@ import type { CredentialWithRevocationMetadata } from '../models/utils'
 import type { AnonCredsVerifierService, VerifyProofOptions, VerifyW3cPresentationOptions } from '../services'
 
 import { fetchRevocationStatusList } from '../utils'
+import { withDidIndyIdentifierVariantKeys, withDidIndyProofRequestRestrictionVariants } from '../utils/indyIdentifiers'
 
 import { getRevocationMetadata, getW3cAnonCredsCredentialProofDetails } from './utils'
 
 @injectable()
 export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
   public async verifyProof(agentContext: AgentContext, options: VerifyProofOptions): Promise<boolean> {
-    const { credentialDefinitions, proof, proofRequest, revocationRegistries, schemas } = options
+    const { credentialDefinitions, proof, revocationRegistries, schemas } = options
+    const proofRequest = withDidIndyProofRequestRestrictionVariants(options.proofRequest)
 
     let presentation: Presentation | undefined
     try {
@@ -56,9 +58,9 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
 
       return presentation.verify({
         presentationRequest: proofRequest as unknown as JsonObject,
-        credentialDefinitions: rsCredentialDefinitions,
-        schemas: rsSchemas,
-        revocationRegistryDefinitions,
+        credentialDefinitions: withDidIndyIdentifierVariantKeys(rsCredentialDefinitions),
+        schemas: withDidIndyIdentifierVariantKeys(rsSchemas),
+        revocationRegistryDefinitions: withDidIndyIdentifierVariantKeys(revocationRegistryDefinitions),
         revocationStatusLists: lists,
         nonRevokedIntervalOverrides,
       })
@@ -181,10 +183,12 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
     }
 
     const verificationOptions: VerifyAnonCredsW3cPresentationOptions = {
-      presentationRequest: options.proofRequest as unknown as JsonObject,
-      schemas: options.schemas as unknown as Record<string, JsonObject>,
-      credentialDefinitions: options.credentialDefinitions as unknown as Record<string, JsonObject>,
-      revocationRegistryDefinitions,
+      presentationRequest: withDidIndyProofRequestRestrictionVariants(options.proofRequest) as unknown as JsonObject,
+      schemas: withDidIndyIdentifierVariantKeys(options.schemas as unknown as Record<string, JsonObject>),
+      credentialDefinitions: withDidIndyIdentifierVariantKeys(
+        options.credentialDefinitions as unknown as Record<string, JsonObject>
+      ),
+      revocationRegistryDefinitions: withDidIndyIdentifierVariantKeys(revocationRegistryDefinitions),
       revocationStatusLists: revocationMetadata.map((rm) => rm.revocationStatusList),
       nonRevokedIntervalOverrides: revocationMetadata
         .filter((rm) => rm.nonRevokedIntervalOverride)

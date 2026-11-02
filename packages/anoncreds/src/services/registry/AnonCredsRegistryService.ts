@@ -9,6 +9,7 @@ import {
 } from '../../repository'
 import { AnonCredsCredentialDefinitionRecordMetadataKeys } from '../../repository/anonCredsCredentialDefinitionRecordMetadataTypes'
 import { AnonCredsRevocationRegistryDefinitionRecordMetadataKeys } from '../../repository/anonCredsRevocationRegistryDefinitionRecordMetadataTypes'
+import { didIndyIdentifierQuery } from '../../utils/indyIdentifiers'
 import type { AnonCredsRegistry } from './AnonCredsRegistry'
 import type { AnonCredsResolutionOptions, Extensible } from './base'
 import type { GetCredentialDefinitionReturn } from './CredentialDefinitionOptions'
@@ -67,9 +68,10 @@ export class AnonCredsRegistryService {
 
     if (registry.allowsLocalRecord && useLocalRecord) {
       const anonCredsSchemaRepository = agentContext.resolve(AnonCredsSchemaRepository)
-      const schemaRecord = await anonCredsSchemaRepository.findSingleByQuery(agentContext, {
-        schemaId,
-      })
+      const schemaRecord = await anonCredsSchemaRepository.findSingleByQuery(
+        agentContext,
+        didIndyIdentifierQuery('schemaId', schemaId)
+      )
 
       if (schemaRecord) {
         return {
@@ -156,9 +158,10 @@ export class AnonCredsRegistryService {
 
     if (registry.allowsLocalRecord && useLocalRecord) {
       const anonCredsCredentialDefinitionRepository = agentContext.resolve(AnonCredsCredentialDefinitionRepository)
-      const credentialDefinitionRecord = await anonCredsCredentialDefinitionRepository.findSingleByQuery(agentContext, {
-        credentialDefinitionId,
-      })
+      const credentialDefinitionRecord = await anonCredsCredentialDefinitionRepository.findSingleByQuery(
+        agentContext,
+        didIndyIdentifierQuery('credentialDefinitionId', credentialDefinitionId)
+      )
 
       if (credentialDefinitionRecord) {
         return {
@@ -253,9 +256,10 @@ export class AnonCredsRegistryService {
         AnonCredsRevocationRegistryDefinitionRepository
       )
       const anoncredsRevocationRegistryDefinitionRecord =
-        await anoncredsRevocationRegistryDefinitionRepository.findSingleByQuery(agentContext, {
-          revocationRegistryDefinitionId,
-        })
+        await anoncredsRevocationRegistryDefinitionRepository.findSingleByQuery(
+          agentContext,
+          didIndyIdentifierQuery('revocationRegistryDefinitionId', revocationRegistryDefinitionId)
+        )
 
       if (anoncredsRevocationRegistryDefinitionRecord) {
         return {

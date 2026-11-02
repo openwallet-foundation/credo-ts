@@ -1,6 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
 
 import { EventEmitter, InjectionSymbols, inject, injectable, Repository, type StorageService } from '@credo-ts/core'
+import { didIndyIdentifierQuery } from '../utils/indyIdentifiers'
 
 import { AnonCredsSchemaRecord } from './AnonCredsSchemaRecord'
 
@@ -14,10 +15,10 @@ export class AnonCredsSchemaRepository extends Repository<AnonCredsSchemaRecord>
   }
 
   public async getBySchemaId(agentContext: AgentContext, schemaId: string) {
-    return this.getSingleByQuery(agentContext, { schemaId })
+    return this.getSingleByQuery(agentContext, didIndyIdentifierQuery('schemaId', schemaId))
   }
 
   public async findBySchemaId(agentContext: AgentContext, schemaId: string) {
-    return await this.findSingleByQuery(agentContext, { schemaId })
+    return await this.findSingleByQuery(agentContext, didIndyIdentifierQuery('schemaId', schemaId))
   }
 }

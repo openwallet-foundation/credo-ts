@@ -42,13 +42,28 @@ export class DidCommRevocationNotificationService {
   ) {
     // TODO: can we extract support for this revocation notification handler to the anoncreds module?
     const query = {
-      anonCredsRevocationRegistryId,
       anonCredsCredentialRevocationId,
       connectionId: connection.id,
     }
 
-    this.logger.trace('Getting record by query for revocation notification:', query)
-    const credentialExchangeRecord = await this.credentialRepository.getSingleByQuery(agentContext, query)
+    this.logger.trace('Getting records by query for revocation notification:', query)
+    const credentialExchangeRecords = await this.credentialRepository.findByQuery(agentContext, query)
+
+    // did:indy revocation registry ids can be percent-encoded or not, so they are compared decoded
+    const decodedRevocationRegistryId = decodeIdentifierPath(anonCredsRevocationRegistryId)
+    const matchingRecords = credentialExchangeRecords.filter((record) => {
+      const recordRevocationRegistryId = record.getTag('anonCredsRevocationRegistryId')
+      return (
+        typeof recordRevocationRegistryId === 'string' &&
+        decodeIdentifierPath(recordRevocationRegistryId) === decodedRevocationRegistryId
+      )
+    })
+    if (matchingRecords.length !== 1) {
+      throw new CredoError(
+        `Expected one credential exchange record for revocation registry ${anonCredsRevocationRegistryId} and credential revocation id ${anonCredsCredentialRevocationId}, found ${matchingRecords.length}`
+      )
+    }
+    const [credentialExchangeRecord] = matchingRecords
 
     credentialExchangeRecord.revocationNotification = new DidCommRevocationNotification(comment)
     await this.credentialRepository.update(agentContext, credentialExchangeRecord)
@@ -163,4 +178,17 @@ export class DidCommRevocationNotificationService {
       this.logger.warn('Failed to process revocation notification message', { error, credentialId })
     }
   }
+}
+
+function decodeIdentifierPath(identifier: string) {
+  return identifier
+    .split('/')
+    .map((segment) => {
+      try {
+        return decodeURIComponent(segment)
+      } catch {
+        return segment
+      }
+    })
+    .join('/')
 }

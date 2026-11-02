@@ -52,6 +52,7 @@ import {
   checkCredentialValuesMatch,
   convertAttributesToCredentialValues,
 } from '../utils/credential'
+import { areDidIndyIdentifiersEqual } from '../utils/indyIdentifiers'
 import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
 import type {
@@ -495,7 +496,7 @@ export class AnonCredsDidCommCredentialFormatService
     // We want to make sure the credential definition matches.
     // TODO: If no credential definition is present on the proposal, we could check whether the other fields
     // of the proposal match with the credential definition id.
-    return proposalJson.cred_def_id === offerJson.cred_def_id
+    return areDidIndyIdentifiersEqual(proposalJson.cred_def_id, offerJson.cred_def_id)
   }
 
   public async shouldAutoRespondToOffer(
@@ -508,7 +509,7 @@ export class AnonCredsDidCommCredentialFormatService
     // We want to make sure the credential definition matches.
     // TODO: If no credential definition is present on the proposal, we could check whether the other fields
     // of the proposal match with the credential definition id.
-    return proposalJson.cred_def_id === offerJson.cred_def_id
+    return areDidIndyIdentifiersEqual(proposalJson.cred_def_id, offerJson.cred_def_id)
   }
 
   public async shouldAutoRespondToRequest(
@@ -518,7 +519,7 @@ export class AnonCredsDidCommCredentialFormatService
     const credentialOfferJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
     const credentialRequestJson = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
 
-    return credentialOfferJson.cred_def_id === credentialRequestJson.cred_def_id
+    return areDidIndyIdentifiersEqual(credentialOfferJson.cred_def_id, credentialRequestJson.cred_def_id)
   }
 
   public async shouldAutoRespondToCredential(
@@ -533,7 +534,7 @@ export class AnonCredsDidCommCredentialFormatService
     const credentialRequestJson = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
 
     // make sure the credential definition matches
-    if (credentialJson.cred_def_id !== credentialRequestJson.cred_def_id) return false
+    if (!areDidIndyIdentifiersEqual(credentialJson.cred_def_id, credentialRequestJson.cred_def_id)) return false
 
     // If we don't have any attributes stored we can't compare so always return false.
     if (!credentialExchangeRecord.credentialAttributes) return false

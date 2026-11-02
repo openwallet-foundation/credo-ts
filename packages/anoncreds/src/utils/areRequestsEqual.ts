@@ -1,4 +1,5 @@
 import type { AnonCredsNonRevokedInterval, AnonCredsProofRequest, AnonCredsProofRequestRestriction } from '../models'
+import { getCanonicalDidIndyRestriction } from './indyIdentifiers'
 
 // Copied from the core package so we don't have to export these silly utils. We should probably move these to a separate package.
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
@@ -141,7 +142,9 @@ function areRestrictionsEqual(
 
   // Check if all restrictions in A are also in B
   return restrictionsA.every((a) => {
-    const bIndex = restrictionsB.findIndex((b) => areObjectsEqual(a, b))
+    const bIndex = restrictionsB.findIndex((b) =>
+      areObjectsEqual(getCanonicalDidIndyRestriction(a), getCanonicalDidIndyRestriction(b))
+    )
 
     // Match found
     if (bIndex !== -1) {

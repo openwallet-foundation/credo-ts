@@ -53,6 +53,7 @@ import {
   SchemaRequest,
 } from '@hyperledger/indy-vdr-shared'
 import { verificationPublicJwkForIndyDid } from '../dids/didIndyUtil'
+import { IndyVdrModuleConfig } from '../IndyVdrModuleConfig'
 import { IndyVdrPoolService } from '../pool'
 import { multiSignRequest } from '../utils/sign'
 import {
@@ -75,6 +76,10 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
   public allowsCaching = true
   public allowsLocalRecord = true
+
+  private percentEncodeIdentifiers(agentContext: AgentContext) {
+    return agentContext.dependencyManager.resolve(IndyVdrModuleConfig).encodeAnonCredsIdentifiers
+  }
 
   public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     try {
@@ -156,7 +161,13 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       const pool = indyVdrPoolService.getPoolForNamespace(namespace)
 
       let writeRequest: CustomRequest
-      const didIndySchemaId = getDidIndySchemaId(namespace, namespaceIdentifier, schema.name, schema.version)
+      const didIndySchemaId = getDidIndySchemaId(
+        namespace,
+        namespaceIdentifier,
+        schema.name,
+        schema.version,
+        this.percentEncodeIdentifiers(agentContext)
+      )
 
       const endorsedTransaction = options.options.endorsedTransaction
       if (endorsedTransaction) {
@@ -286,7 +297,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         pool.indyNamespace,
         schema.schema.issuerId,
         schema.schema.name,
-        schema.schema.version
+        schema.schema.version,
+        this.percentEncodeIdentifiers(agentContext)
       )
 
       return {
@@ -356,7 +368,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           namespace,
           namespaceIdentifier,
           schemaSeqNo,
-          tag
+          tag,
+          this.percentEncodeIdentifiers(agentContext)
         )
       } else {
         // TODO: this will bypass caching if done on a higher level.
@@ -396,7 +409,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           namespace,
           namespaceIdentifier,
           schemaSeqNo,
-          tag
+          tag,
+          this.percentEncodeIdentifiers(agentContext)
         )
 
         const credentialDefinitionRequest = new CredentialDefinitionRequest({
@@ -536,7 +550,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         pool.indyNamespace,
         namespaceIdentifier,
         schemaSeqNo,
-        credentialDefinitionTag
+        credentialDefinitionTag,
+        this.percentEncodeIdentifiers(agentContext)
       )
 
       const revocationRegistryDefinition = {
@@ -618,7 +633,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           namespaceIdentifier,
           schemaSeqNo,
           credentialDefinitionTag,
-          revocationRegistryDefinition.tag
+          revocationRegistryDefinition.tag,
+          this.percentEncodeIdentifiers(agentContext)
         )
       } else {
         const ledgerRevocationRegistryDefinitionId = getIndyLedgerRevocationRegistryDefinitionId(
@@ -633,7 +649,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           namespaceIdentifier,
           schemaSeqNo,
           credentialDefinitionTag,
-          revocationRegistryDefinition.tag
+          revocationRegistryDefinition.tag,
+          this.percentEncodeIdentifiers(agentContext)
         )
 
         const ledgerCredentialDefinitionId = getIndyLedgerCredentialDefinitionId(
@@ -853,7 +870,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         namespaceIdentifier,
         schemaSeqNo,
         credentialDefinitionTag,
-        revocationRegistryTag
+        revocationRegistryTag,
+        this.percentEncodeIdentifiers(agentContext)
       )
 
       if (revocationRegistryNamespace !== namespace) {

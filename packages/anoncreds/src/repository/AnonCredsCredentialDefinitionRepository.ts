@@ -1,6 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
 
 import { EventEmitter, InjectionSymbols, inject, injectable, Repository, type StorageService } from '@credo-ts/core'
+import { didIndyIdentifierQuery } from '../utils/indyIdentifiers'
 
 import { AnonCredsCredentialDefinitionRecord } from './AnonCredsCredentialDefinitionRecord'
 
@@ -14,10 +15,13 @@ export class AnonCredsCredentialDefinitionRepository extends Repository<AnonCred
   }
 
   public async getByCredentialDefinitionId(agentContext: AgentContext, credentialDefinitionId: string) {
-    return this.getSingleByQuery(agentContext, { credentialDefinitionId })
+    return this.getSingleByQuery(agentContext, didIndyIdentifierQuery('credentialDefinitionId', credentialDefinitionId))
   }
 
   public async findByCredentialDefinitionId(agentContext: AgentContext, credentialDefinitionId: string) {
-    return this.findSingleByQuery(agentContext, { credentialDefinitionId })
+    return this.findSingleByQuery(
+      agentContext,
+      didIndyIdentifierQuery('credentialDefinitionId', credentialDefinitionId)
+    )
   }
 }

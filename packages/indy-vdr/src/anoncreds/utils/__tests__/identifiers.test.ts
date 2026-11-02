@@ -55,6 +55,21 @@ describe('identifiers', () => {
     )
   })
 
+  test('getDidIndySchemaId percent-encodes the name when enabled', () => {
+    expect(getDidIndySchemaId('sovrin:test', '12345', 'Medical Bill/%', '1.0', true)).toEqual(
+      'did:indy:sovrin:test:12345/anoncreds/v0/SCHEMA/Medical%20Bill%2F%25/1.0'
+    )
+    expect(getDidIndySchemaId('sovrin:test', '12345', 'Medical Bill', '1.0')).toEqual(
+      'did:indy:sovrin:test:12345/anoncreds/v0/SCHEMA/Medical Bill/1.0'
+    )
+  })
+
+  test('getDidIndyCredentialDefinitionId percent-encodes the tag when enabled', () => {
+    expect(getDidIndyCredentialDefinitionId('sovrin:test', '12345', 420, 'SCH Employee ID', true)).toEqual(
+      'did:indy:sovrin:test:12345/anoncreds/v0/CLAIM_DEF/420/SCH%20Employee%20ID'
+    )
+  })
+
   test('getDidIndyCredentialDefinitionId returns a valid credential definition id given a did, seqNo, and tag', () => {
     const namespace = 'sovrin:test'
     const did = '12345'
@@ -76,6 +91,12 @@ describe('identifiers', () => {
     expect(getDidIndyRevocationRegistryDefinitionId(namespace, did, seqNo, credentialDefinitionTag, tag)).toEqual(
       'did:indy:sovrin:test:12345/anoncreds/v0/REV_REG_DEF/420/someTag/anotherTag'
     )
+  })
+
+  test('getDidIndyRevocationRegistryDefinitionId percent-encodes the tags when enabled', () => {
+    expect(
+      getDidIndyRevocationRegistryDefinitionId('sovrin:test', '12345', 420, 'SCH Employee ID', '1/1024', true)
+    ).toEqual('did:indy:sovrin:test:12345/anoncreds/v0/REV_REG_DEF/420/SCH%20Employee%20ID/1%2F1024')
   })
 
   test('getIndyLedgerSchemaId returns the ledger schema id given a did, name, and version', () => {
