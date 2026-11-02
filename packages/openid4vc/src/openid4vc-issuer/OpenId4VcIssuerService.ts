@@ -190,7 +190,7 @@ export class OpenId4VcIssuerService {
       authorizationCodeFlowConfig,
       issuer,
       credentialConfigurationIds,
-      version = 'v1.draft15',
+      version = 'v1',
       authorization,
     } = options
     if (!preAuthorizedCodeFlowConfig && !authorizationCodeFlowConfig) {
@@ -780,10 +780,15 @@ export class OpenId4VcIssuerService {
         expectedLength: verifiedCredentialRequestProofs.keys.length,
       })
 
+      // Older sessions have no version. Requests use credential_configuration_id from draft 15 on
+      const openId4VciVersion =
+        issuanceSession.openId4VciVersion ??
+        (parsedCredentialRequest.credentialConfigurationId ? 'v1' : 'v1.draft11-14')
+
       const immediateResult = await vcIssuer.createCredentialResponse({
         credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
         credentials: credentialRequest.proofs
-          ? issuanceSession.openId4VciVersion === 'v1' || issuanceSession.openId4VciVersion === 'v1.draft15'
+          ? openId4VciVersion === 'v1' || openId4VciVersion === 'v1.draft15'
             ? credentials.credentials.map((c) => ({ credential: c }))
             : credentials.credentials
           : undefined,
@@ -1844,12 +1849,7 @@ export class OpenId4VcIssuerService {
   public async verifyRefreshToken(
     agentContext: AgentContext,
     issuer: OpenId4VcIssuerRecord,
-    parsedRefreshToken: ReturnType<OpenId4VcIssuerService['parseRefreshToken']>,
-    options: {
-      dpop?: {
-        jwkThumbprint?: string
-      }
-    } = {}
+    parsedRefreshToken: ReturnType<OpenId4VcIssuerService['parseRefreshToken']>
   ) {
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
@@ -1873,12 +1873,6 @@ export class OpenId4VcIssuerService {
 
     if (!verification.isValid) {
       throw new CredoError('Invalid refresh token')
-    }
-
-    if (options.dpop?.jwkThumbprint) {
-      if (parsedRefreshToken.dpop?.jwkThumbprint !== options.dpop.jwkThumbprint) {
-        throw new CredoError(`Invalid 'cnf.jkt' claim in refresh token jwt payload`)
-      }
     }
   }
 

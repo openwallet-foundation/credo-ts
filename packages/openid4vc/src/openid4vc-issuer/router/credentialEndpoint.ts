@@ -184,8 +184,6 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
 
       // Stateful session expired
       else if (Date.now() > expiresAt.getTime()) {
-        issuanceSession.errorMessage = 'Credential offer has expired'
-        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
         return sendOauth2ErrorResponse(
           response,
           next,
