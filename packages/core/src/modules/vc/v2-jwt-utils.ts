@@ -1,5 +1,6 @@
 import { AgentContext } from '../../agent'
 import { CredoError, RecordNotFoundError } from '../../error'
+import type { JsonObject } from '../../types'
 import { asArray, isDid } from '../../utils'
 import {
   type DidPurpose,
@@ -10,6 +11,7 @@ import {
 } from '../dids'
 import { type KnownJwaSignatureAlgorithm, type PublicJwk } from '../kms'
 import { extractKeyFromHolderBinding, parseHolderBindingFromCredential } from '../sd-jwt-vc/utils'
+import { CREDENTIALS_UNDEFINED_TERMS_V2_URL } from './constants'
 import { W3cV2DataIntegrityVerifiableCredential } from './data-integrity/W3cV2DataIntegrityVerifiableCredential'
 import { W3cV2JwtVerifiableCredential } from './jwt-vc/W3cV2JwtVerifiableCredential'
 import { W3cV2JwtVerifiablePresentation } from './jwt-vc/W3cV2JwtVerifiablePresentation'
@@ -288,4 +290,12 @@ export async function getSignerForJwt(
     iss: credential.sdJwt.payload.iss ?? credential.resolvedPresentation.holderId,
     purpose,
   })
+}
+
+// The base context defines `nonce` only inside Data Integrity proofs, https://www.w3.org/TR/vc-data-model-2.0/#semantic-interoperability
+export function withUndefinedTermsContext(context: string | Array<string | JsonObject>): Array<string | JsonObject> {
+  const contexts = asArray(context)
+  return contexts.includes(CREDENTIALS_UNDEFINED_TERMS_V2_URL)
+    ? contexts
+    : [...contexts, CREDENTIALS_UNDEFINED_TERMS_V2_URL]
 }

@@ -25,7 +25,12 @@ import type {
   W3cV2VerifyPresentationResult,
 } from '../models'
 import { validateSignerIsExpectedParty } from '../resolveSigner'
-import { getSignerForJwt, resolvePresentationSigner, validateAndResolveVerificationMethod } from '../v2-jwt-utils'
+import {
+  getSignerForJwt,
+  resolvePresentationSigner,
+  validateAndResolveVerificationMethod,
+  withUndefinedTermsContext,
+} from '../v2-jwt-utils'
 import {
   validateVc2ContextBaseline,
   validateVc2CredentialStatus,
@@ -250,9 +255,11 @@ export class W3cV2SdJwtCredentialService {
     // The JWT payload is simply the presentation
     const payload = JsonTransformer.toJSON(options.presentation) as W3cV2JsonPresentation
 
-    // Add the nonce and aud to the payload
+    // Add the nonce, aud and iat to the payload
     payload.nonce = options.challenge
     payload.aud = options.domain
+    payload.iat = nowInSeconds()
+    payload['@context'] = withUndefinedTermsContext(payload['@context'])
 
     const holder = await resolvePresentationSigner(agentContext, options.presentation)
 
