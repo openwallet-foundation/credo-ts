@@ -9,11 +9,7 @@ import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/k
 import { extractKeyFromHolderBinding } from '../../sd-jwt-vc/utils'
 import type { W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models'
 import { validateSignerIsExpectedParty } from '../resolveSigner'
-import {
-  extractHolderFromPresentationCredentials,
-  getSignerForJwt,
-  validateAndResolveVerificationMethod,
-} from '../v2-jwt-utils'
+import { getSignerForJwt, resolvePresentationSigner, validateAndResolveVerificationMethod } from '../v2-jwt-utils'
 import {
   validateVc2ContextBaseline,
   validateVc2CredentialStatus,
@@ -234,7 +230,7 @@ export class W3cV2JwtCredentialService {
     jwtPayload.additionalClaims.nonce = options.challenge
     jwtPayload.aud = options.domain
 
-    const holder = await extractHolderFromPresentationCredentials(agentContext, options.presentation)
+    const holder = await resolvePresentationSigner(agentContext, options.presentation)
 
     // Sign JWT
     const jwt = await this.jwsService.createJwsCompact(agentContext, {

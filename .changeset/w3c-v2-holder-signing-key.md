@@ -2,4 +2,4 @@
 '@credo-ts/core': patch
 ---
 
-When signing a W3C VCDM 2.0 JWT or SD-JWT presentation with a `holder`, the holder now throws a clear error if the credentials are bound to a key the holder DID does not control, or to more than one key, instead of signing a presentation the verifier rejects. A credential with a `cnf` the holder cannot resolve now also throws when signing. The presentation `kid` is now an absolute DID URL when the presentation has a `holder`.
+Signing a W3C VCDM 2.0 JWT or SD-JWT presentation now picks the signer with the same rules the verifier checks. The signer DID is the `holder`, else the shared `credentialSubject.id`, else the `cnf.kid` DID, and it must be the `holder` and a `credentialSubject.id` of every credential that has one. The key is the `cnf` key, else the single local `authentication` key, and must be a local `authentication` key of that DID. Signing now throws a clear error when these can't all be met, instead of signing a presentation the verifier rejects. The presentation `kid` is now always an absolute DID URL. A credential bound only with `cnf.jwk` now needs a `holder` or `credentialSubject.id` DID to be presented.

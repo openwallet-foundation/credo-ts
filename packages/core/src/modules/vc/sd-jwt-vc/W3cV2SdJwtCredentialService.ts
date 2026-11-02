@@ -25,11 +25,7 @@ import type {
   W3cV2VerifyPresentationResult,
 } from '../models'
 import { validateSignerIsExpectedParty } from '../resolveSigner'
-import {
-  extractHolderFromPresentationCredentials,
-  getSignerForJwt,
-  validateAndResolveVerificationMethod,
-} from '../v2-jwt-utils'
+import { getSignerForJwt, resolvePresentationSigner, validateAndResolveVerificationMethod } from '../v2-jwt-utils'
 import {
   validateVc2ContextBaseline,
   validateVc2CredentialStatus,
@@ -258,7 +254,7 @@ export class W3cV2SdJwtCredentialService {
     payload.nonce = options.challenge
     payload.aud = options.domain
 
-    const holder = await extractHolderFromPresentationCredentials(agentContext, options.presentation)
+    const holder = await resolvePresentationSigner(agentContext, options.presentation)
 
     holder.publicJwk.alg = holder.alg
 
