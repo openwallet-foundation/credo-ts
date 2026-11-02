@@ -1983,7 +1983,6 @@ export class OpenId4VcIssuerService {
         : {
             keyId: dpop.keyId,
             alg: dpop.alg,
-            jwkThumbprint: dpop.jwkThumbprint,
             keyGeneratedForSession: !dpopConfig?.keyId,
           },
     }

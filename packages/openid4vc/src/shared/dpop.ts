@@ -1,6 +1,5 @@
 import { AgentContext, CredoError, Kms } from '@credo-ts/core'
-import { calculateJwkThumbprint, HashAlgorithm, type Jwk, type RequestDpopOptions } from '@openid4vc/oauth2'
-import { getOid4vcCallbacks } from './callbacks'
+import type { Jwk, RequestDpopOptions } from '@openid4vc/oauth2'
 
 export async function getDpopOptions(
   agentContext: AgentContext,
@@ -54,20 +53,13 @@ export async function getDpopOptions(
     Kms.PublicJwk.fromPublicJwk(
       (await kms.createKeyForSignatureAlgorithm({ algorithm: alg as Kms.KnownJwaSignatureAlgorithm })).publicJwk
     )
-  const jwk = resolvedPublicJwk.toJson() as Jwk
-  const callbacks = getOid4vcCallbacks(agentContext)
   const dpopOptions = {
-    signer: { method: 'jwk', alg, publicJwk: jwk },
+    signer: { method: 'jwk', alg, publicJwk: resolvedPublicJwk.toJson() as Jwk },
     nonce: options.nonce,
   } satisfies RequestDpopOptions
 
   return {
     options: dpopOptions,
-    jwkThumbprint: await calculateJwkThumbprint({
-      hashAlgorithm: HashAlgorithm.Sha256,
-      hashCallback: callbacks.hash,
-      jwk,
-    }),
     keyId: resolvedPublicJwk.keyId,
     alg: alg as Kms.KnownJwaSignatureAlgorithm,
   }

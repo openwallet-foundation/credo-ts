@@ -1976,8 +1976,6 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       })
 
       expect(result.dpop).toBeDefined()
-      const jwkThumbprint = result.session?.jwkThumbprint
-      expect(jwkThumbprint).toBeDefined()
       expect(result.session?.keyGeneratedForSession).toBe(true)
       if (!result.dpop) throw new Error('Expected DPoP options')
 
@@ -1995,7 +1993,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         allowedSigningAlgs: [Kms.KnownJwaSignatureAlgorithms.ES256],
       })
 
-      expect(verified.jwkThumbprint).toBe(jwkThumbprint)
+      expect(verified.header.jwk).toEqual(result.dpop.signer.publicJwk)
       expect(verified.payload.htm).toBe('POST')
       expect(verified.payload.htu).toBe('https://upstream.example.com/token')
     })
@@ -2216,7 +2214,6 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         dpop: {
           keyId: 'persisted-key',
           alg: Kms.KnownJwaSignatureAlgorithms.ES256,
-          jwkThumbprint: 'persisted-thumbprint',
           nonce: 'upstream-nonce',
         },
       })

@@ -176,7 +176,6 @@ export interface OpenId4VcIssuanceSessionChainedIdentity {
 export interface OpenId4VcIssuanceSessionChainedIdentityDpop {
   keyId: string
   alg: Kms.KnownJwaSignatureAlgorithm
-  jwkThumbprint: string
   nonce?: string
   /**
    * True only when this issuance session caused the key to be generated.
