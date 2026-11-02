@@ -1977,12 +1977,12 @@ export class OpenId4VcIssuerService {
     })
 
     return {
-      dpop: dpop.options,
+      dpop,
       session: persisted
         ? { ...persisted }
         : {
-            keyId: dpop.keyId,
-            alg: dpop.alg,
+            keyId: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk).keyId,
+            alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
             keyGeneratedForSession: !dpopConfig?.keyId,
           },
     }

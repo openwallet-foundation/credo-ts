@@ -53,14 +53,8 @@ export async function getDpopOptions(
     Kms.PublicJwk.fromPublicJwk(
       (await kms.createKeyForSignatureAlgorithm({ algorithm: alg as Kms.KnownJwaSignatureAlgorithm })).publicJwk
     )
-  const dpopOptions = {
+  return {
     signer: { method: 'jwk', alg, publicJwk: resolvedPublicJwk.toJson() as Jwk },
     nonce: options.nonce,
   } satisfies RequestDpopOptions
-
-  return {
-    options: dpopOptions,
-    keyId: resolvedPublicJwk.keyId,
-    alg: alg as Kms.KnownJwaSignatureAlgorithm,
-  }
 }
