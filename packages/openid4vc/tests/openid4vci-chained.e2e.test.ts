@@ -1683,7 +1683,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         const sessionAfterAuthorization = await dpopAgent.agent.modules.openid4vc.issuer.getIssuanceSessionById(
           issuanceSession.id
         )
-        expect(sessionAfterAuthorization.chainedIdentity?.chainedAuthorizationServerDpop?.nonce).toBe(nonce)
+        expect(sessionAfterAuthorization.chainedIdentity?.dpop?.nonce).toBe(nonce)
         if (!authorizationChallengeState || !authorizationChallengeRedirectUri) {
           throw new Error('Expected the upstream authorization challenge request to be sent')
         }
@@ -1709,9 +1709,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         const sessionAfterTokenExchange = await dpopAgent.agent.modules.openid4vc.issuer.getIssuanceSessionById(
           issuanceSession.id
         )
-        expect(sessionAfterTokenExchange.chainedIdentity?.chainedAuthorizationServerDpop?.nonce).toBe(
-          shouldReject ? nonce : undefined
-        )
+        expect(sessionAfterTokenExchange.chainedIdentity?.dpop?.nonce).toBe(shouldReject ? nonce : undefined)
       }
     )
 
@@ -1771,7 +1769,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         'persists a unique key at %s session creation and reuses it across concurrent requests',
         async (flow) => {
           const sessions = await Promise.all([createSession(flow), createSession(flow)])
-          const keys = sessions.map((session) => session.chainedIdentity?.chainedAuthorizationServerDpop)
+          const keys = sessions.map((session) => session.chainedIdentity?.dpop)
           expect(keys[0]).toMatchObject({ keyId: expect.any(String), keyGeneratedForSession: true })
           expect(keys[1]?.keyId).not.toBe(keys[0]?.keyId)
 
@@ -1780,10 +1778,8 @@ describe('OpenId4Vc (Chained Authorization)', () => {
             sessions.flatMap((session) =>
               [0, 1].map(async () => {
                 const persisted = await dpopAgent.agent.modules.openid4vc.issuer.getIssuanceSessionById(session.id)
-                expect(persisted.chainedIdentity?.chainedAuthorizationServerDpop).toEqual(
-                  session.chainedIdentity?.chainedAuthorizationServerDpop
-                )
-                return issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+                expect(persisted.chainedIdentity?.dpop).toEqual(session.chainedIdentity?.dpop)
+                return issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
                   issuanceSession: persisted,
                   chainedAuthorizationServerConfig: createDpopConfig(),
                   authorizationServerMetadata: upstreamMetadata,
@@ -1803,7 +1799,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
       it('keeps the creation-time key through PAR even if the configured key changes', async () => {
         const issuanceSession = await createSession()
-        const originalDpop = issuanceSession.chainedIdentity?.chainedAuthorizationServerDpop
+        const originalDpop = issuanceSession.chainedIdentity?.dpop
         expect(originalDpop).toBeDefined()
         const rotatedKey = await dpopAgent.agent.kms.createKeyForSignatureAlgorithm({ algorithm: 'ES256' })
         await dpopAgent.agent.modules.openid4vc.issuer.updateIssuerMetadata({
@@ -1834,11 +1830,11 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         })
         expect(response.status, await response.clone().text()).toBe(201)
         const persisted = await dpopAgent.agent.modules.openid4vc.issuer.getIssuanceSessionById(issuanceSession.id)
-        expect(persisted.chainedIdentity?.chainedAuthorizationServerDpop).toEqual(originalDpop)
+        expect(persisted.chainedIdentity?.dpop).toEqual(originalDpop)
         expect(createKey).not.toHaveBeenCalled()
 
         const newSession = await createSession()
-        expect(newSession.chainedIdentity?.chainedAuthorizationServerDpop).toMatchObject({
+        expect(newSession.chainedIdentity?.dpop).toMatchObject({
           keyId: rotatedKey.keyId,
           keyGeneratedForSession: false,
         })
@@ -1902,7 +1898,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         'fails without replacing the session key after %s',
         async (failure) => {
           const issuanceSession = await createSession()
-          const originalDpop = issuanceSession.chainedIdentity?.chainedAuthorizationServerDpop
+          const originalDpop = issuanceSession.chainedIdentity?.dpop
           if (!originalDpop) throw new Error('Expected generated chained DPoP metadata')
           if (failure === 'missing key') {
             await dpopAgent.agent.kms.deleteKey({ keyId: originalDpop.keyId })
@@ -1914,7 +1910,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
 
           await expect(
-            issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+            issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
               issuanceSession,
               chainedAuthorizationServerConfig: createDpopConfig(),
               authorizationServerMetadata: upstreamMetadata,
@@ -1922,25 +1918,25 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           ).rejects.toThrow()
           expect(createKey).not.toHaveBeenCalled()
           const persisted = await dpopAgent.agent.modules.openid4vc.issuer.getIssuanceSessionById(issuanceSession.id)
-          expect(persisted.chainedIdentity?.chainedAuthorizationServerDpop).toEqual(originalDpop)
+          expect(persisted.chainedIdentity?.dpop).toEqual(originalDpop)
         }
       )
 
       it('does not generate a key during requests for a session created without DPoP support', async () => {
         upstreamMetadata.dpop_signing_alg_values_supported = undefined
         const issuanceSession = await createSession()
-        expect(issuanceSession.chainedIdentity?.chainedAuthorizationServerDpop).toBeUndefined()
+        expect(issuanceSession.chainedIdentity?.dpop).toBeUndefined()
         const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
 
         await expect(
-          issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+          issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
             issuanceSession,
             chainedAuthorizationServerConfig: createDpopConfig(),
             authorizationServerMetadata: upstreamMetadata,
           })
         ).resolves.toEqual({})
         await expect(
-          issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+          issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
             issuanceSession,
             chainedAuthorizationServerConfig: createDpopConfig(),
             authorizationServerMetadata: upstreamAuthorizationServerMetadata,
@@ -1972,7 +1968,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     })
 
     it('creates a DPoP proof that the chained authorization server can verify', async () => {
-      const result = await issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+      const result = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
         createKey: true,
         issuanceSession: createDpopIssuanceSession(),
         chainedAuthorizationServerConfig: createDpopConfig(),
@@ -2008,7 +2004,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       const key = await dpopAgent.agent.kms.createKeyForSignatureAlgorithm({
         algorithm: Kms.KnownJwaSignatureAlgorithms.ES256,
       })
-      const result = await issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+      const result = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
         createKey: true,
         issuanceSession: createDpopIssuanceSession(),
         chainedAuthorizationServerConfig: createDpopConfig({
@@ -2023,7 +2019,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     it('uses a rotated configured key for new sessions while retaining existing session keys', async () => {
       const issuanceSession = createDpopIssuanceSession()
-      const originalDpop = await issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+      const originalDpop = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
         createKey: true,
         issuanceSession,
         chainedAuthorizationServerConfig: createDpopConfig(),
@@ -2031,7 +2027,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       })
       if (!originalDpop.session) throw new Error('Expected generated chained DPoP metadata')
       if (!issuanceSession.chainedIdentity) throw new Error('Expected chained identity metadata')
-      issuanceSession.chainedIdentity.chainedAuthorizationServerDpop = originalDpop.session
+      issuanceSession.chainedIdentity.dpop = originalDpop.session
 
       const rotatedKey = await dpopAgent.agent.kms.createKeyForSignatureAlgorithm({
         algorithm: Kms.KnownJwaSignatureAlgorithms.ES256,
@@ -2039,15 +2035,12 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       const rotatedConfig = createDpopConfig({
         dpop: { keyId: rotatedKey.keyId },
       })
-      const existingSessionOptions = await issuerService.getChainedAuthorizationServerDpopOptions(
-        dpopAgent.agent.context,
-        {
-          issuanceSession,
-          chainedAuthorizationServerConfig: rotatedConfig,
-          authorizationServerMetadata: upstreamAuthorizationServerMetadata,
-        }
-      )
-      const newSessionOptions = await issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+      const existingSessionOptions = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
+        issuanceSession,
+        chainedAuthorizationServerConfig: rotatedConfig,
+        authorizationServerMetadata: upstreamAuthorizationServerMetadata,
+      })
+      const newSessionOptions = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
         createKey: true,
         issuanceSession: createDpopIssuanceSession(),
         chainedAuthorizationServerConfig: rotatedConfig,
@@ -2062,7 +2055,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       const issuanceSessions = [createDpopIssuanceSession(), createDpopIssuanceSession()]
       const dpopOptions = await Promise.all(
         issuanceSessions.map((issuanceSession) =>
-          issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+          issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
             createKey: true,
             issuanceSession,
             chainedAuthorizationServerConfig: createDpopConfig(),
@@ -2074,7 +2067,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         if (!session) throw new Error('Expected generated chained DPoP metadata')
         const issuanceSession = issuanceSessions[index]
         if (!issuanceSession.chainedIdentity) throw new Error('Expected chained identity metadata')
-        issuanceSession.chainedIdentity.chainedAuthorizationServerDpop = session
+        issuanceSession.chainedIdentity.dpop = session
       }
 
       const repository = dpopAgent.agent.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
@@ -2097,7 +2090,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     it('keeps a generated chained DPoP key when deleteChainedDpopKey is false', async () => {
       const issuanceSession = createDpopIssuanceSession()
-      const dpop = await issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+      const dpop = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
         createKey: true,
         issuanceSession,
         chainedAuthorizationServerConfig: createDpopConfig(),
@@ -2107,7 +2100,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       expect(dpop.session.keyGeneratedForSession).toBe(true)
 
       if (!issuanceSession.chainedIdentity) throw new Error('Expected chained identity metadata')
-      issuanceSession.chainedIdentity.chainedAuthorizationServerDpop = dpop.session
+      issuanceSession.chainedIdentity.dpop = dpop.session
       const repository = dpopAgent.agent.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
       await repository.save(dpopAgent.agent.context, issuanceSession)
 
@@ -2124,7 +2117,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         algorithm: Kms.KnownJwaSignatureAlgorithms.ES256,
       })
       const issuanceSession = createDpopIssuanceSession()
-      const dpop = await issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+      const dpop = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
         createKey: true,
         issuanceSession,
         chainedAuthorizationServerConfig: createDpopConfig({
@@ -2136,7 +2129,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       expect(dpop.session.keyGeneratedForSession).toBe(false)
 
       if (!issuanceSession.chainedIdentity) throw new Error('Expected chained identity metadata')
-      issuanceSession.chainedIdentity.chainedAuthorizationServerDpop = dpop.session
+      issuanceSession.chainedIdentity.dpop = dpop.session
       const repository = dpopAgent.agent.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
       await repository.save(dpopAgent.agent.context, issuanceSession)
 
@@ -2147,7 +2140,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     it('fails when the upstream supports DPoP but Credo has no compatible algorithm', async () => {
       await expect(
-        issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+        issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
           createKey: true,
           issuanceSession: createDpopIssuanceSession(),
           chainedAuthorizationServerConfig: createDpopConfig({
@@ -2164,7 +2157,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     it('fails when the upstream advertises DPoP without signing algorithms', async () => {
       await expect(
-        issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+        issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
           createKey: true,
           issuanceSession: createDpopIssuanceSession(),
           chainedAuthorizationServerConfig: createDpopConfig(),
@@ -2177,7 +2170,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     })
 
     it('allows optional DPoP downgrade when the upstream does not advertise support', async () => {
-      const result = await issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+      const result = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
         createKey: true,
         issuanceSession: createDpopIssuanceSession(),
         chainedAuthorizationServerConfig: createDpopConfig(),
@@ -2193,7 +2186,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     it('requires DPoP when configured and the upstream does not advertise support', async () => {
       await expect(
-        issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+        issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
           createKey: true,
           issuanceSession: createDpopIssuanceSession(),
           chainedAuthorizationServerConfig: createDpopConfig({ dpop: { required: true } }),
@@ -2207,7 +2200,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     it('does not silently fall back when a configured DPoP key cannot be resolved', async () => {
       await expect(
-        issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+        issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
           createKey: true,
           issuanceSession: createDpopIssuanceSession(),
           chainedAuthorizationServerConfig: createDpopConfig({
@@ -2220,7 +2213,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     it('carries the persisted nonce into the next upstream DPoP request', async () => {
       const session = createDpopIssuanceSession({
-        chainedAuthorizationServerDpop: {
+        dpop: {
           keyId: 'persisted-key',
           alg: Kms.KnownJwaSignatureAlgorithms.ES256,
           jwkThumbprint: 'persisted-thumbprint',
@@ -2230,11 +2223,11 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       const key = await dpopAgent.agent.kms.createKeyForSignatureAlgorithm({
         algorithm: Kms.KnownJwaSignatureAlgorithms.ES256,
       })
-      const chainedAuthorizationServerDpop = session.chainedIdentity?.chainedAuthorizationServerDpop
-      if (!chainedAuthorizationServerDpop) throw new Error('Expected persisted chained DPoP metadata')
-      chainedAuthorizationServerDpop.keyId = key.keyId
+      const chainedDpop = session.chainedIdentity?.dpop
+      if (!chainedDpop) throw new Error('Expected persisted chained DPoP metadata')
+      chainedDpop.keyId = key.keyId
 
-      const result = await issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+      const result = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
         issuanceSession: session,
         chainedAuthorizationServerConfig: createDpopConfig(),
         authorizationServerMetadata: upstreamAuthorizationServerMetadata,
@@ -2297,7 +2290,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       const clearUpstreamNock = setupNockToExpress('http://localhost:4748', upstreamApp)
 
       try {
-        const result = await issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+        const result = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
           createKey: true,
           issuanceSession: createDpopIssuanceSession(),
           chainedAuthorizationServerConfig: createDpopConfig(),
@@ -2335,7 +2328,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     })
 
     it('rejects a replayed DPoP proof at the upstream verifier', async () => {
-      const result = await issuerService.getChainedAuthorizationServerDpopOptions(dpopAgent.agent.context, {
+      const result = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
         createKey: true,
         issuanceSession: createDpopIssuanceSession(),
         chainedAuthorizationServerConfig: createDpopConfig(),

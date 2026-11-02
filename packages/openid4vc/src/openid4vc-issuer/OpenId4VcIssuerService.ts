@@ -103,7 +103,7 @@ import type {
   OpenId4VcUpdateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import {
-  type OpenId4VcIssuanceSessionChainedAuthorizationServerDpop,
+  type OpenId4VcIssuanceSessionChainedIdentityDpop,
   OpenId4VcIssuanceSessionRecord,
   OpenId4VcIssuanceSessionRepository,
   OpenId4VcIssuerRecord,
@@ -1308,7 +1308,7 @@ export class OpenId4VcIssuerService {
     options?: { deleteChainedDpopKey?: boolean }
   ) {
     const issuanceSession = await this.openId4VcIssuanceSessionRepository.getById(agentContext, issuanceSessionId)
-    const chainedDpop = issuanceSession?.chainedIdentity?.chainedAuthorizationServerDpop
+    const chainedDpop = issuanceSession?.chainedIdentity?.dpop
 
     if ((options?.deleteChainedDpopKey ?? true) && chainedDpop?.keyGeneratedForSession) {
       await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: chainedDpop.keyId })
@@ -1904,19 +1904,19 @@ export class OpenId4VcIssuerService {
         throw new CredoError(`Authorization server metadata not found for issuer '${authorizationServerUrl}'.`)
       }
 
-      const { session } = await this.getChainedAuthorizationServerDpopOptions(agentContext, {
+      const { session } = await this.getChainedDpopOptions(agentContext, {
         issuanceSession,
         chainedAuthorizationServerConfig,
         authorizationServerMetadata,
         createKey: true,
       })
-      issuanceSession.chainedIdentity.chainedAuthorizationServerDpop = session
+      issuanceSession.chainedIdentity.dpop = session
     }
 
     try {
       await this.openId4VcIssuanceSessionRepository.save(agentContext, issuanceSession)
     } catch (error) {
-      const dpop = issuanceSession.chainedIdentity?.chainedAuthorizationServerDpop
+      const dpop = issuanceSession.chainedIdentity?.dpop
       if (dpop?.keyGeneratedForSession) {
         try {
           await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: dpop.keyId })
@@ -1931,7 +1931,7 @@ export class OpenId4VcIssuerService {
     }
   }
 
-  public async getChainedAuthorizationServerDpopOptions(
+  public async getChainedDpopOptions(
     agentContext: AgentContext,
     options: {
       issuanceSession: OpenId4VcIssuanceSessionRecord
@@ -1942,9 +1942,9 @@ export class OpenId4VcIssuerService {
     }
   ): Promise<{
     dpop?: RequestDpopOptions
-    session?: OpenId4VcIssuanceSessionChainedAuthorizationServerDpop
+    session?: OpenId4VcIssuanceSessionChainedIdentityDpop
   }> {
-    const persisted = options.issuanceSession.chainedIdentity?.chainedAuthorizationServerDpop
+    const persisted = options.issuanceSession.chainedIdentity?.dpop
     const dpopConfig = options.chainedAuthorizationServerConfig.dpop
     const supportedSigningAlgorithms = options.authorizationServerMetadata.dpop_signing_alg_values_supported
 

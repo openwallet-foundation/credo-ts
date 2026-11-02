@@ -126,14 +126,11 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
           )
         }
 
-        const chainedAuthorizationServerDpop = await openId4VcIssuerService.getChainedAuthorizationServerDpopOptions(
-          agentContext,
-          {
-            issuanceSession,
-            chainedAuthorizationServerConfig: authorizationServerConfig,
-            authorizationServerMetadata,
-          }
-        )
+        const chainedDpop = await openId4VcIssuerService.getChainedDpopOptions(agentContext, {
+          issuanceSession,
+          chainedAuthorizationServerConfig: authorizationServerConfig,
+          authorizationServerMetadata,
+        })
 
         // Retrieve access token
         const { accessTokenResponse, dpop } = await oauth2Client
@@ -142,7 +139,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
             authorizationServerMetadata,
             pkceCodeVerifier: issuanceSession.chainedIdentity.pkceCodeVerifier,
             redirectUri: joinUriParts(config.baseUrl, [issuer.issuerId, 'redirect']),
-            dpop: chainedAuthorizationServerDpop.dpop,
+            dpop: chainedDpop.dpop,
           })
           .catch((error) => {
             if (error instanceof Oauth2ClientErrorResponseError) {
@@ -182,19 +179,19 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
             )
           })
 
-        if (chainedAuthorizationServerDpop.session) {
-          chainedAuthorizationServerDpop.session.nonce = dpop?.nonce
+        if (chainedDpop.session) {
+          chainedDpop.session.nonce = dpop?.nonce
         }
 
         const isDpopTokenResponse = accessTokenResponse.token_type.toLowerCase() === 'dpop'
-        if (Boolean(chainedAuthorizationServerDpop.dpop) !== isDpopTokenResponse) {
+        if (Boolean(chainedDpop.dpop) !== isDpopTokenResponse) {
           throw new Oauth2ServerErrorResponseError(
             {
               error: Oauth2ErrorCodes.ServerError,
             },
             {
               internalMessage: `Credo ${
-                chainedAuthorizationServerDpop.dpop
+                chainedDpop.dpop
                   ? 'used DPoP but the token response type was'
                   : 'did not use DPoP but the token response type was'
               } '${accessTokenResponse.token_type}' for '${authorizationServerMetadata.issuer}'.`,
@@ -251,7 +248,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
         issuanceSession.chainedIdentity = {
           ...issuanceSession.chainedIdentity,
           externalAccessTokenResponse: accessTokenResponse,
-          chainedAuthorizationServerDpop: chainedAuthorizationServerDpop.session,
+          dpop: chainedDpop.session,
         }
 
         // TODO: we need to start using locks so we can't get corrupted state

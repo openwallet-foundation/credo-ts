@@ -259,14 +259,11 @@ export async function handlePushedAuthorizationRequest(
     )
   }
 
-  const chainedAuthorizationServerDpop = await openId4VcIssuerService.getChainedAuthorizationServerDpopOptions(
-    agentContext,
-    {
-      issuanceSession,
-      chainedAuthorizationServerConfig: authorizationServerConfig,
-      authorizationServerMetadata,
-    }
-  )
+  const chainedDpop = await openId4VcIssuerService.getChainedDpopOptions(agentContext, {
+    issuanceSession,
+    chainedAuthorizationServerConfig: authorizationServerConfig,
+    authorizationServerMetadata,
+  })
 
   const {
     authorizationRequestUrl,
@@ -279,11 +276,11 @@ export async function handlePushedAuthorizationRequest(
     state: chainedIdentityState,
     scope: scopes.join(' '),
     additionalRequestPayload,
-    dpop: chainedAuthorizationServerDpop.dpop,
+    dpop: chainedDpop.dpop,
   })
 
-  if (chainedAuthorizationServerDpop.session) {
-    chainedAuthorizationServerDpop.session.nonce = initiatedDpop?.nonce
+  if (chainedDpop.session) {
+    chainedDpop.session.nonce = initiatedDpop?.nonce
   }
 
   issuanceSession.chainedIdentity = {
@@ -296,7 +293,7 @@ export async function handlePushedAuthorizationRequest(
     state: parsedAuthorizationRequest.authorizationRequest.state,
     redirectUri: parsedAuthorizationRequest.authorizationRequest.redirect_uri,
     externalAuthorizationServerMetadata: authorizationServerMetadata,
-    chainedAuthorizationServerDpop: chainedAuthorizationServerDpop.session,
+    dpop: chainedDpop.session,
   }
 
   const { pushedAuthorizationResponse } = authorizationServer.createPushedAuthorizationResponse({
