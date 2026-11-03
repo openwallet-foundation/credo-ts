@@ -26,8 +26,8 @@ import type {
 } from '../models'
 import { validateSignerIsExpectedParty } from '../resolveSigner'
 import {
-  extractHolderFromPresentationCredentials,
   getSignerForJwt,
+  resolvePresentationSigner,
   validateAndResolveVerificationMethod,
   withUndefinedTermsContext,
 } from '../v2-jwt-utils'
@@ -261,7 +261,7 @@ export class W3cV2SdJwtCredentialService {
     payload.iat = nowInSeconds()
     payload['@context'] = withUndefinedTermsContext(payload['@context'])
 
-    const holder = await extractHolderFromPresentationCredentials(agentContext, options.presentation)
+    const holder = await resolvePresentationSigner(agentContext, options.presentation)
 
     holder.publicJwk.alg = holder.alg
 

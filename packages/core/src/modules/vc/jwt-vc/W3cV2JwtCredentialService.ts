@@ -10,8 +10,8 @@ import { extractKeyFromHolderBinding } from '../../sd-jwt-vc/utils'
 import type { W3cV2JsonPresentation, W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models'
 import { validateSignerIsExpectedParty } from '../resolveSigner'
 import {
-  extractHolderFromPresentationCredentials,
   getSignerForJwt,
+  resolvePresentationSigner,
   validateAndResolveVerificationMethod,
   withUndefinedTermsContext,
 } from '../v2-jwt-utils'
@@ -239,7 +239,7 @@ export class W3cV2JwtCredentialService {
       jwtPayload.additionalClaims['@context'] as W3cV2JsonPresentation['@context']
     )
 
-    const holder = await extractHolderFromPresentationCredentials(agentContext, options.presentation)
+    const holder = await resolvePresentationSigner(agentContext, options.presentation)
 
     // Sign JWT
     const jwt = await this.jwsService.createJwsCompact(agentContext, {
