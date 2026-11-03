@@ -16,7 +16,7 @@ import {
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
-import type { DidCommMessageSentEvent } from './DidCommEvents'
+import type { DidCommMessageQueuedEvent, DidCommMessageSentEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import type { DidCommMessage } from './DidCommMessage'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
@@ -26,12 +26,9 @@ import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 import { MessageSendingError } from './errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
-import {
-  DidCommMessagePickupEventTypes,
-  type DidCommMessagePickupMessageQueuedEvent,
-} from './modules/message-pickup/DidCommMessagePickupEvents'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
+import type { AddMessageOptions } from './transport/queue/QueueTransportRepositoryOptions'
 import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
 
 export interface TransportPriorityOptions {
@@ -178,13 +175,11 @@ export class DidCommMessageSender {
       agentContext.config.logger.debug(
         `Queue packed message for connection ${connection.id} (${connection.theirLabel})`
       )
-      const recipientDids = [verkeyToDidKey(recipientKey)]
-      const messageId = await this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, {
+      await this.queueMessage(agentContext, {
         connectionId: connection.id,
-        recipientDids,
+        recipientDids: [verkeyToDidKey(recipientKey)],
         payload: encryptedMessage,
       })
-      this.emitMessageQueuedEvent(agentContext, { connectionId: connection.id, recipientDids, messageId })
       return
     }
 
@@ -356,13 +351,11 @@ export class DidCommMessageSender {
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
-      const recipientDids = keys.recipientKeys.map((item) => new DidKey(item).did)
-      const messageId = await this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, {
+      await this.queueMessage(agentContext, {
         connectionId: connection.id,
-        recipientDids,
+        recipientDids: keys.recipientKeys.map((item) => new DidKey(item).did),
         payload: encryptedMessage,
       })
-      this.emitMessageQueuedEvent(agentContext, { connectionId: connection.id, recipientDids, messageId })
 
       this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.QueuedForPickup)
 
@@ -386,14 +379,13 @@ export class DidCommMessageSender {
     )
   }
 
-  private emitMessageQueuedEvent(
-    agentContext: AgentContext,
-    payload: DidCommMessagePickupMessageQueuedEvent['payload']
-  ) {
-    this.eventEmitter.emit<DidCommMessagePickupMessageQueuedEvent>(agentContext, {
-      type: DidCommMessagePickupEventTypes.MessageQueued,
-      payload,
+  public async queueMessage(agentContext: AgentContext, options: AddMessageOptions) {
+    const messageId = await this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, options)
+    this.eventEmitter.emit<DidCommMessageQueuedEvent>(agentContext, {
+      type: DidCommEventTypes.DidCommMessageQueued,
+      payload: { connectionId: options.connectionId, recipientDids: options.recipientDids, messageId },
     })
+    return messageId
   }
 
   private async sendMessageToService(outboundMessageContext: DidCommOutboundMessageContext) {

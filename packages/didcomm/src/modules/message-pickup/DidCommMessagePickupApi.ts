@@ -12,7 +12,6 @@ import type { DidCommMessageProcessedEvent } from '../../DidCommEvents'
 import { DidCommEventTypes } from '../../DidCommEvents'
 import type { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommTransportService } from '../../DidCommTransportService'
 import { MessageSendingError } from '../../errors'
 import { DidCommOutboundMessageContext } from '../../models'
@@ -30,7 +29,7 @@ import type {
   SetLiveDeliveryModeOptions,
   SetLiveDeliveryModeReturnType,
 } from './DidCommMessagePickupApiOptions'
-import type { DidCommMessagePickupMessageQueuedEvent, MessagePickupCompletedEvent } from './DidCommMessagePickupEvents'
+import type { MessagePickupCompletedEvent } from './DidCommMessagePickupEvents'
 import { DidCommMessagePickupEventTypes } from './DidCommMessagePickupEvents'
 import { DidCommMessagePickupModuleConfig } from './DidCommMessagePickupModuleConfig'
 import { type DidCommMessagePickupSession, DidCommMessagePickupSessionRole } from './DidCommMessagePickupSession'
@@ -108,18 +107,10 @@ export class DidCommMessagePickupApi<
     const { connectionId, message, recipientDids } = options
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
-    const queueTransportRepository =
-      this.agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
-
-    const messageId = await queueTransportRepository.addMessage(this.agentContext, {
+    await this.messageSender.queueMessage(this.agentContext, {
       connectionId: connectionRecord.id,
       recipientDids,
       payload: message,
-    })
-
-    this.eventEmitter.emit<DidCommMessagePickupMessageQueuedEvent>(this.agentContext, {
-      type: DidCommMessagePickupEventTypes.MessageQueued,
-      payload: { connectionId: connectionRecord.id, recipientDids, messageId },
     })
   }
 

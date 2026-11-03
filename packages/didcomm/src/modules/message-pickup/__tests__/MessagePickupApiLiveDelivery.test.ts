@@ -11,10 +11,6 @@ import type { DidCommOutboundMessageContext } from '../../../models'
 import { DidCommDidExchangeState } from '../../connections/models/DidCommDidExchangeState'
 import type { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
 import { DidCommMessagePickupApi } from '../DidCommMessagePickupApi'
-import {
-  DidCommMessagePickupEventTypes,
-  type DidCommMessagePickupMessageQueuedEvent,
-} from '../DidCommMessagePickupEvents'
 import { DidCommMessagePickupModuleConfig } from '../DidCommMessagePickupModuleConfig'
 import { DidCommMessagePickupSessionRole } from '../DidCommMessagePickupSession'
 import { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol } from '../protocol'
@@ -34,6 +30,7 @@ describe('DidCommMessagePickupApi live delivery', () => {
   let transportSession: DummyTransportSession
   let agentContext: ReturnType<typeof getAgentContext>
   let api: DidCommMessagePickupApi
+  let messageSender: DidCommMessageSender
 
   const saveLiveSession = (transportSessionId: string) =>
     sessionService.saveLiveSession(agentContext, {
@@ -65,8 +62,10 @@ describe('DidCommMessagePickupApi live delivery', () => {
       getById: vi.fn().mockResolvedValue(connection),
     } as unknown as DidCommConnectionService
 
+    messageSender = { queueMessage: vi.fn().mockResolvedValue('messageId') } as unknown as DidCommMessageSender
+
     api = new DidCommMessagePickupApi(
-      {} as DidCommMessageSender,
+      messageSender,
       agentContext,
       connectionService,
       eventEmitter,
@@ -83,23 +82,16 @@ describe('DidCommMessagePickupApi live delivery', () => {
     vi.restoreAllMocks()
   })
 
-  test('emits a message queued event with the id of the queued message', async () => {
-    const listener = vi.fn()
-    eventEmitter.on<DidCommMessagePickupMessageQueuedEvent>(DidCommMessagePickupEventTypes.MessageQueued, listener)
+  test('queues the message through the message sender', async () => {
+    const message = { protected: 'base64url', iv: 'base64url', ciphertext: 'base64url', tag: 'base64url' }
 
-    await api.queueMessage({
+    await api.queueMessage({ connectionId: connection.id, recipientDids: [recipientDid], message })
+
+    expect(messageSender.queueMessage).toHaveBeenCalledWith(agentContext, {
       connectionId: connection.id,
       recipientDids: [recipientDid],
-      message: { protected: 'base64url', iv: 'base64url', ciphertext: 'base64url', tag: 'base64url' },
+      payload: message,
     })
-
-    expect(listener).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: DidCommMessagePickupEventTypes.MessageQueued,
-        payload: { connectionId: connection.id, recipientDids: [recipientDid], messageId: expect.any(String) },
-      })
-    )
-    eventEmitter.off(DidCommMessagePickupEventTypes.MessageQueued, listener)
   })
 
   test('does not deliver without a live mode session', async () => {

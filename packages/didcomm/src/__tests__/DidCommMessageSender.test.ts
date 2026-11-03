@@ -18,7 +18,7 @@ import {
 import { TestMessage } from '../../../core/tests/TestMessage'
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { DidCommEnvelopeService } from '../DidCommEnvelopeService'
-import type { DidCommMessageSentEvent } from '../DidCommEvents'
+import type { DidCommMessageQueuedEvent, DidCommMessageSentEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
 import { DidCommMessageSender } from '../DidCommMessageSender'
 import { DidCommModuleConfig } from '../DidCommModuleConfig'
@@ -27,10 +27,6 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { MessageSendingError } from '../errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../models'
 import type { DidCommConnectionRecord } from '../modules'
-import {
-  DidCommMessagePickupEventTypes,
-  type DidCommMessagePickupMessageQueuedEvent,
-} from '../modules/message-pickup/DidCommMessagePickupEvents'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 import { type DidCommOutboundTransport, InMemoryQueueTransportRepository } from '../transport'
 import type { DidCommEncryptedMessage } from '../types'
@@ -252,20 +248,17 @@ describe('DidCommMessageSender', () => {
       })
       didResolverServiceResolveDidServicesMock.mockResolvedValue([getMockResolvedDidService(queueService)])
       const queuedListener = vi.fn()
-      eventEmitter.on<DidCommMessagePickupMessageQueuedEvent>(
-        DidCommMessagePickupEventTypes.MessageQueued,
-        queuedListener
-      )
+      eventEmitter.on<DidCommMessageQueuedEvent>(DidCommEventTypes.DidCommMessageQueued, queuedListener)
 
       await messageSender.sendMessage(outboundMessageContext)
 
       expect(queuedListener).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: DidCommMessagePickupEventTypes.MessageQueued,
+          type: DidCommEventTypes.DidCommMessageQueued,
           payload: { connectionId: connection.id, recipientDids: [expect.any(String)], messageId: expect.any(String) },
         })
       )
-      eventEmitter.off(DidCommMessagePickupEventTypes.MessageQueued, queuedListener)
+      eventEmitter.off(DidCommEventTypes.DidCommMessageQueued, queuedListener)
     })
 
     test('reports an undeliverable message when resolving services fails', async () => {

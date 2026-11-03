@@ -2,7 +2,7 @@ import { Kms, RecordDuplicateError, TypedArrayEncoder } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
-import { isDidKey } from '../../../../../../core/src/modules/dids/helpers'
+import { isDidKey, verkeyToDidKey } from '../../../../../../core/src/modules/dids/helpers'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
 import { DummyTransportSession } from '../../../../__tests__/stubs'
 import { DidCommMessageSender } from '../../../../DidCommMessageSender'
@@ -317,9 +317,9 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
       ?.transportSessionId
   }
 
-  async function forward(): Promise<void> {
+  async function forward(to = recipientKey): Promise<void> {
     const message = new DidCommForwardMessage({
-      to: recipientKey,
+      to,
       message: { protected: 'base64url', iv: 'base64url', ciphertext: 'base64url', tag: 'base64url' },
     })
     await mediatorService.processForwardMessage(new DidCommInboundMessageContext(message, { agentContext }))
@@ -360,5 +360,16 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
       connectionId: mockConnection.id,
       recipientDid: expect.stringContaining('did:key:'),
     })
+  })
+
+  test('looks up the mediation record by base58 key when forwarded to a did:key', async () => {
+    vi.spyOn(mediationPickupApi, 'deliverQueuedMessagesToLiveSession').mockResolvedValue(true)
+
+    await forward(verkeyToDidKey(recipientKey))
+
+    expect(mediationRepository.getSingleByRecipientKey).toHaveBeenLastCalledWith(agentContext, recipientKey)
+    expect(mediationPickupApi.queueMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ recipientDids: [verkeyToDidKey(recipientKey)] })
+    )
   })
 })

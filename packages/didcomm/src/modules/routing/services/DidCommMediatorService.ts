@@ -88,7 +88,11 @@ export class DidCommMediatorService {
       throw new CredoError('Invalid Message: Missing required attribute "to"')
     }
 
-    const mediationRecord = await this.mediationRepository.getSingleByRecipientKey(agentContext, message.to)
+    const recipientDid = verkeyToDidKey(message.to)
+    const mediationRecord = await this.mediationRepository.getSingleByRecipientKey(
+      agentContext,
+      didKeyToVerkey(message.to)
+    )
 
     // Assert mediation record is ready to be used
     mediationRecord.assertReady()
@@ -105,19 +109,19 @@ export class DidCommMediatorService {
       case DidCommMessageForwardingStrategy.QueueOnly:
         await messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
-          recipientDids: [verkeyToDidKey(message.to)],
+          recipientDids: [recipientDid],
           message: message.message,
         })
         break
       case DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery: {
         await messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
-          recipientDids: [verkeyToDidKey(message.to)],
+          recipientDids: [recipientDid],
           message: message.message,
         })
         await messagePickupApi.deliverQueuedMessagesToLiveSession({
           connectionId: mediationRecord.connectionId,
-          recipientDid: verkeyToDidKey(message.to),
+          recipientDid,
         })
         break
       }
@@ -126,7 +130,7 @@ export class DidCommMediatorService {
         // message to the connection associated with it
         await messageSender.sendPackage(agentContext, {
           connection,
-          recipientKey: verkeyToDidKey(message.to),
+          recipientKey: recipientDid,
           encryptedMessage: message.message,
         })
     }
