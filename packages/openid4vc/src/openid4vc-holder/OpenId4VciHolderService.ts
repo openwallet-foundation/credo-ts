@@ -575,9 +575,6 @@ export class OpenId4VciHolderService {
     const credentialResponseEncryptionParameters = credentialResponseEncryption
       ? await this.getCredentialResponseEncryptionParameters(agentContext, credentialResponseEncryption)
       : undefined
-    const credentialClient = credentialResponseEncryptionParameters
-      ? this.getClient(agentContext, { decryptionJwk: credentialResponseEncryptionParameters.jwk })
-      : client
 
     try {
       for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationsToRequest) {
@@ -611,7 +608,7 @@ export class OpenId4VciHolderService {
               } as const)
             : undefined
 
-        const { credentialResponse, dpop } = await credentialClient.retrieveCredentials({
+        const { credentialResponse, dpop } = await client.retrieveCredentials({
           issuerMetadata: metadata,
           accessToken: options.accessToken,
           credentialConfigurationId: offeredCredentialId,
@@ -712,7 +709,7 @@ export class OpenId4VciHolderService {
     const credentialResponseEncryptionParameters = credentialResponseEncryption
       ? await this.getCredentialResponseEncryptionParameters(agentContext, credentialResponseEncryption)
       : undefined
-    const client = this.getClient(agentContext, { decryptionJwk: credentialResponseEncryptionParameters?.jwk })
+    const client = this.getClient(agentContext)
 
     const receivedCredentials: Array<OpenId4VciCredentialResponse> = []
     const deferredCredentials: Array<OpenId4VciDeferredCredentialResponse> = []
@@ -1602,22 +1599,10 @@ export class OpenId4VciHolderService {
 
   private getClient(
     agentContext: AgentContext,
-    options: {
-      clientAttestation?: string
-      clientId?: string
-      dpopBoundClientAttestation?: boolean
-      decryptionJwk?: Jwk
-    } = {}
+    options: { clientAttestation?: string; clientId?: string; dpopBoundClientAttestation?: boolean } = {}
   ) {
-    const callbacks = this.getCallbacks(agentContext, options)
-    const { decryptionJwk } = options
     return new Openid4vciClient({
-      callbacks: decryptionJwk
-        ? {
-            ...callbacks,
-            decryptJwe: (jwe, decryptOptions) => callbacks.decryptJwe(jwe, decryptOptions ?? { jwk: decryptionJwk }),
-          }
-        : callbacks,
+      callbacks: this.getCallbacks(agentContext, options),
     })
   }
 
