@@ -234,10 +234,7 @@ export class OpenId4VpVerifierService {
     } else if (jwtIssuer?.method === 'x5c') {
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c })
 
-      if (
-        !authorizationResponseUrl.startsWith('https://') &&
-        !(authorizationResponseUrl.startsWith('http://') && agentContext.config.allowInsecureHttpUrls)
-      ) {
+      if (!utils.isAllowedHttpUrl(authorizationResponseUrl, agentContext.config.allowInsecureHttpUrls)) {
         throw new CredoError('The X509 certificate issuer must be a HTTPS URI.')
       }
 
