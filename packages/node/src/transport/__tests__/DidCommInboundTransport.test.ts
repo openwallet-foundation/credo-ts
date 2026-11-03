@@ -88,6 +88,35 @@ describe('DIDComm inbound transports', () => {
     await expect(closed).resolves.toBe(abnormalClosureCode)
   })
 
+  it('closes the WebSocket without crashing when a message exceeds the size limit', async () => {
+    const socketServer = new WebSocketServer({ noServer: true, maxPayload: 100 })
+    const publicServer = createServer()
+    publicServer.on('upgrade', (request, socket, head) => {
+      socketServer.handleUpgrade(request, socket, head, (webSocket) => {
+        socketServer.emit('connection', webSocket, request)
+      })
+    })
+    const port = await listen(publicServer)
+
+    const agentContext = createAgentContext()
+    const transport = new DidCommWsInboundTransport({ server: socketServer })
+    await transport.start(agentContext)
+
+    const client = new WebSocket(`ws://127.0.0.1:${port}`)
+    await new Promise<void>((resolve) => client.once('open', resolve))
+
+    const closed = new Promise<number>((resolve) => client.once('close', (code) => resolve(code)))
+    client.send('a'.repeat(200))
+
+    const messageTooBigCode = 1009
+    await expect(closed).resolves.toBe(messageTooBigCode)
+    expect(agentContext.config.logger.error).toHaveBeenCalledWith(
+      expect.stringContaining('Max payload size exceeded'),
+      expect.anything()
+    )
+    await transport.stop()
+  })
+
   it('closes the WebSocket when the session is closed', async () => {
     const socketServer = new WebSocketServer({ noServer: true })
     const publicServer = createServer()

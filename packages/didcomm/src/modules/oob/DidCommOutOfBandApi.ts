@@ -18,6 +18,7 @@ import { DidCommEventTypes, type DidCommMessageReceivedEvent } from '../../DidCo
 import type { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import type { DidCommAttachment } from '../../decorators/attachment/DidCommAttachment'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import type { DidCommRouting } from '../../models'
@@ -309,7 +310,13 @@ export class DidCommOutOfBandApi {
    * @returns DidCommOutOfBandInvitation
    */
   public async parseInvitation(invitationUrl: string): Promise<DidCommOutOfBandInvitation> {
-    return parseInvitationShortUrl(invitationUrl, this.agentContext.config.agentDependencies)
+    const { config } = this.agentContext
+    const { maxInvitationBytes } = this.agentContext.resolve(DidCommModuleConfig)
+
+    return parseInvitationShortUrl(invitationUrl, {
+      ...config.agentDependencies,
+      fetch: (url, init) => config.fetch(url, { ...init, maxResponseBytes: maxInvitationBytes }),
+    })
   }
 
   /**
