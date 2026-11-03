@@ -308,123 +308,126 @@ describe('OpenId4Vc', () => {
     ).rejects.toThrow()
   })
 
-  it('does not verify a document with the trusted certificates of another document in the same device response', async () => {
-    const openid4vcVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+  it.each([
+    { mdocTwoIssuer: 'one', expectValid: false },
+    { mdocTwoIssuer: 'two', expectValid: true },
+  ] as const)(
+    'verifies each document with the trusted certificates for its own doc type (mdoc two issued by $mdocTwoIssuer)',
+    async ({ mdocTwoIssuer, expectValid }) => {
+      const openid4vcVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
-    const createCertificate = async () =>
-      verifier.agent.x509.createCertificate({
-        authorityKey: Kms.PublicJwk.fromPublicJwk(
+      const createCertificate = async () =>
+        verifier.agent.x509.createCertificate({
+          authorityKey: Kms.PublicJwk.fromPublicJwk(
+            (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
+          ),
+          issuer: {
+            commonName: 'Credo',
+            countryName: 'Country',
+          },
+          extensions: {
+            subjectAlternativeName: {
+              name: [{ type: 'dns', value: 'credo.com' }],
+            },
+          },
+        })
+
+      const certificateOne = await createCertificate()
+      const certificateTwo = await createCertificate()
+
+      // Only the issuer of doc type 'two' is trusted for doc type 'two'
+      verifier.agent.x509.config.setTrustedCertificatesForVerification((_agentContext, { verification }) => {
+        if (verification.type !== 'credential' || !(verification.credential instanceof Mdoc)) return []
+        return verification.credential.docType === 'one'
+          ? [certificateOne.toString('pem')]
+          : [certificateTwo.toString('pem')]
+      })
+
+      const mdocOne = await verifier.agent.mdoc.sign({
+        docType: 'one',
+        validityInfo: { validUntil: getNextMonth() },
+        holderKey: Kms.PublicJwk.fromPublicJwk(
           (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
         ),
-        issuer: {
-          commonName: 'Credo',
-          countryName: 'Country',
-        },
-        extensions: {
-          subjectAlternativeName: {
-            name: [{ type: 'dns', value: 'credo.com' }],
+        issuerCertificate: certificateOne,
+        namespaces: {
+          one: {
+            name: 'hello',
           },
         },
       })
 
-    const certificateOne = await createCertificate()
-    const certificateTwo = await createCertificate()
-
-    // Only the issuer of doc type 'two' is trusted for doc type 'two'
-    verifier.agent.x509.config.setTrustedCertificatesForVerification((_agentContext, { verification }) => {
-      if (verification.type !== 'credential' || !(verification.credential instanceof Mdoc)) return []
-      return verification.credential.docType === 'one'
-        ? [certificateOne.toString('pem')]
-        : [certificateTwo.toString('pem')]
-    })
-
-    // Both mdocs are signed by the issuer of doc type 'one'
-    const mdocOne = await verifier.agent.mdoc.sign({
-      docType: 'one',
-      validityInfo: { validUntil: getNextMonth() },
-      holderKey: Kms.PublicJwk.fromPublicJwk(
-        (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
-      ),
-      issuerCertificate: certificateOne,
-      namespaces: {
-        one: {
-          name: 'hello',
+      const mdocTwo = await verifier.agent.mdoc.sign({
+        docType: 'two',
+        validityInfo: { validUntil: getNextMonth() },
+        holderKey: Kms.PublicJwk.fromPublicJwk(
+          (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
+        ),
+        issuerCertificate: mdocTwoIssuer === 'one' ? certificateOne : certificateTwo,
+        namespaces: {
+          two: {
+            notName: 'notHello',
+          },
         },
-      },
-    })
+      })
 
-    const mdocTwo = await verifier.agent.mdoc.sign({
-      docType: 'two',
-      validityInfo: { validUntil: getNextMonth() },
-      holderKey: Kms.PublicJwk.fromPublicJwk(
-        (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
-      ),
-      issuerCertificate: certificateOne,
-      namespaces: {
-        two: {
-          notName: 'notHello',
+      const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openid4vcVerifier.verifierId,
+        requestSigner: {
+          method: 'x5c',
+          x5c: [certificateOne],
         },
-      },
-    })
-
-    const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
-      verifierId: openid4vcVerifier.verifierId,
-      requestSigner: {
-        method: 'x5c',
-        x5c: [certificateOne],
-      },
-      expectedOrigins: ['https://credo.com'],
-      responseMode: 'dc_api',
-      version: 'v1.draft24',
-      presentationExchange: {
-        definition: {
-          id: 'random',
-          input_descriptors: [
-            {
-              id: 'one',
-              constraints: {
-                limit_disclosure: 'required',
-                fields: [
-                  {
-                    path: ["$['one']['name']"],
-                    intent_to_retain: false,
-                  },
-                ],
+        expectedOrigins: ['https://credo.com'],
+        responseMode: 'dc_api',
+        version: 'v1.draft24',
+        presentationExchange: {
+          definition: {
+            id: 'random',
+            input_descriptors: [
+              {
+                id: 'one',
+                constraints: {
+                  limit_disclosure: 'required',
+                  fields: [
+                    {
+                      path: ["$['one']['name']"],
+                      intent_to_retain: false,
+                    },
+                  ],
+                },
               },
-            },
-            {
-              id: 'two',
-              constraints: {
-                limit_disclosure: 'required',
-                fields: [
-                  {
-                    path: ["$['two']['notName']"],
-                    intent_to_retain: false,
-                  },
-                ],
+              {
+                id: 'two',
+                constraints: {
+                  limit_disclosure: 'required',
+                  fields: [
+                    {
+                      path: ["$['two']['notName']"],
+                      intent_to_retain: false,
+                    },
+                  ],
+                },
               },
-            },
-          ],
+            ],
+          },
         },
-      },
-    })
+      })
 
-    const deviceResponse = await MdocDeviceResponse.createDeviceResponse(verifier.agent.context, {
-      mdocs: [mdocOne, mdocTwo],
-      sessionTranscriptOptions: {
-        type: 'openId4VpDcApiDraft24',
-        clientId: verificationSession.requestPayload.client_id as string,
-        origin: 'https://credo.com',
-        verifierGeneratedNonce: verificationSession.requestPayload.nonce,
-      },
-      documentRequests: [
-        { docType: 'one', nameSpaces: { one: { name: false } } },
-        { docType: 'two', nameSpaces: { two: { notName: false } } },
-      ],
-    })
+      const deviceResponse = await MdocDeviceResponse.createDeviceResponse(verifier.agent.context, {
+        mdocs: [mdocOne, mdocTwo],
+        sessionTranscriptOptions: {
+          type: 'openId4VpDcApiDraft24',
+          clientId: verificationSession.requestPayload.client_id as string,
+          origin: 'https://credo.com',
+          verifierGeneratedNonce: verificationSession.requestPayload.nonce,
+        },
+        documentRequests: [
+          { docType: 'one', nameSpaces: { one: { name: false } } },
+          { docType: 'two', nameSpaces: { two: { notName: false } } },
+        ],
+      })
 
-    await expect(
-      verifier.agent.openid4vc.verifier.verifyAuthorizationResponse({
+      const verified = verifier.agent.openid4vc.verifier.verifyAuthorizationResponse({
         verificationSessionId: verificationSession.id,
         authorizationResponse: {
           vp_token: deviceResponse.encoded,
@@ -439,6 +442,14 @@ describe('OpenId4Vc', () => {
         },
         origin: 'https://credo.com',
       })
-    ).rejects.toThrow('Mdoc with doctype two is not valid - Error: No trusted certificate was found')
-  })
+
+      if (expectValid) {
+        expect((await verified).verificationSession.state).toEqual(OpenId4VcVerificationSessionState.ResponseVerified)
+      } else {
+        await expect(verified).rejects.toThrow(
+          'Mdoc with doctype two is not valid - Error: No trusted certificate was found'
+        )
+      }
+    }
+  )
 })
