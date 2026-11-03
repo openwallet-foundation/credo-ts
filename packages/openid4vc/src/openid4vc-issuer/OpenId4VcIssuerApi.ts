@@ -159,8 +159,11 @@ export class OpenId4VcIssuerApi {
 
   /**
    * Delete an issuance session record by id.
+   *
+   * @param options.deleteChainedDpopKey Delete the chained authorization server DPoP key that Credo
+   * generated for this session. Caller-configured keys are never deleted. Defaults to `true`.
    */
-  public async deleteIssuanceSessionById(issuanceSessionId: string) {
-    return this.openId4VcIssuerService.deleteIssuanceSessionById(this.agentContext, issuanceSessionId)
+  public async deleteIssuanceSessionById(issuanceSessionId: string, options?: { deleteChainedDpopKey?: boolean }) {
+    return this.openId4VcIssuerService.deleteIssuanceSessionById(this.agentContext, issuanceSessionId, options)
   }
 }

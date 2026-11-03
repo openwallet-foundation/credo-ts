@@ -34,6 +34,7 @@ import {
   Oauth2ServerErrorResponseError,
   PkceCodeChallengeMethod,
   preAuthorizedCodeGrantIdentifier,
+  type RequestDpopOptions,
   refreshTokenGrantIdentifier,
   SupportedClientAuthenticationMethod,
   type TokenIntrospectionResponse,
@@ -62,12 +63,14 @@ import type {
 } from '../shared'
 import { keyAttestationLevelSatisfies, OpenId4VciCredentialFormatProfile } from '../shared'
 import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
+import { getDpopOptions } from '../shared/dpop'
 import {
   getCredentialConfigurationsSupportedForScopes,
   getOfferedCredentials,
   getScopesFromCredentialConfigurationsSupported,
 } from '../shared/issuerMetadataUtils'
 import { getLocalAccessTokenJwks, getOid4vcLocalJwksCallback } from '../shared/localJwks'
+import type { OpenId4VciChainedAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import {
   credoJwtIssuerToOpenId4VcJwtIssuer,
@@ -101,6 +104,7 @@ import type {
   OpenId4VcUpdateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import {
+  type OpenId4VcIssuanceSessionChainedIdentityDpop,
   OpenId4VcIssuanceSessionRecord,
   OpenId4VcIssuanceSessionRepository,
   OpenId4VcIssuerRecord,
@@ -1300,7 +1304,18 @@ export class OpenId4VcIssuerService {
     return this.openId4VcIssuanceSessionRepository.getById(agentContext, issuanceSessionId)
   }
 
-  public async deleteIssuanceSessionById(agentContext: AgentContext, issuanceSessionId: string) {
+  public async deleteIssuanceSessionById(
+    agentContext: AgentContext,
+    issuanceSessionId: string,
+    options?: { deleteChainedDpopKey?: boolean }
+  ) {
+    const issuanceSession = await this.openId4VcIssuanceSessionRepository.getById(agentContext, issuanceSessionId)
+    const chainedDpop = issuanceSession?.chainedIdentity?.externalDpop
+
+    if ((options?.deleteChainedDpopKey ?? true) && chainedDpop?.keyGeneratedForSession) {
+      await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: chainedDpop.keyId })
+    }
+
     await this.openId4VcIssuanceSessionRepository.deleteById(agentContext, issuanceSessionId)
   }
 
@@ -1867,6 +1882,62 @@ export class OpenId4VcIssuerService {
     return new Openid4vciIssuer({
       callbacks: getOid4vcCallbacks(agentContext, options),
     })
+  }
+
+  public async getChainedDpopOptions(
+    agentContext: AgentContext,
+    options: {
+      issuanceSession: OpenId4VcIssuanceSessionRecord
+      chainedAuthorizationServerConfig: OpenId4VciChainedAuthorizationServerConfig
+      authorizationServerMetadata: AuthorizationServerMetadata
+      // Only the authorization request creates a key, later requests reuse the persisted one.
+      createKey?: boolean
+    }
+  ): Promise<{
+    dpop?: RequestDpopOptions
+    session?: OpenId4VcIssuanceSessionChainedIdentityDpop
+  }> {
+    const persisted = options.issuanceSession.chainedIdentity?.externalDpop
+    const dpopConfig = options.chainedAuthorizationServerConfig.dpop
+    const supportedSigningAlgorithms = options.authorizationServerMetadata.dpop_signing_alg_values_supported
+
+    if (!supportedSigningAlgorithms) {
+      if (persisted) {
+        throw new CredoError('Authorization server no longer advertises DPoP support for this issuance session.')
+      }
+      if (dpopConfig?.requireServerSupport) {
+        throw new CredoError(`Authorization server does not support DPoP.`)
+      }
+
+      agentContext.config.logger.debug(`Authorization server does not support DPoP. Continuing without DPoP.`)
+      return {}
+    }
+    if (supportedSigningAlgorithms.length === 0) {
+      throw new CredoError(`Authorization server advertises DPoP support without any signing algorithms.`)
+    }
+    if (!persisted && !options.createKey) {
+      throw new CredoError('Chained DPoP key was not initialized during the authorization request.')
+    }
+
+    const dpop = await getDpopOptions(agentContext, {
+      dpopSigningAlgValuesSupported: supportedSigningAlgorithms,
+      signingAlgValuesSupported: persisted
+        ? [persisted.alg].filter((algorithm) => dpopConfig?.signingAlgValuesSupported?.includes(algorithm) ?? true)
+        : dpopConfig?.signingAlgValuesSupported,
+      keyId: persisted?.keyId ?? dpopConfig?.keyId,
+      nonce: persisted?.nonce,
+    })
+
+    return {
+      dpop,
+      session: persisted
+        ? { ...persisted }
+        : {
+            keyId: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk).keyId,
+            alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
+            keyGeneratedForSession: !dpopConfig?.keyId,
+          },
+    }
   }
 
   public getOauth2Client(agentContext: AgentContext, issuerRecord?: OpenId4VcIssuerRecord) {

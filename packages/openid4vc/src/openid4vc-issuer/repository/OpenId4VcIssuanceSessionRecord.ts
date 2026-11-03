@@ -163,12 +163,28 @@ export interface OpenId4VcIssuanceSessionChainedIdentity {
   externalAuthorizationServerMetadata?: AuthorizationServerMetadata
 
   /**
+   * The DPoP key and nonce Credo uses towards the external identity provider's authorization server.
+   * Not related to the wallet's DPoP binding in the top-level `dpop` of the issuance session.
+   */
+  externalDpop?: OpenId4VcIssuanceSessionChainedIdentityDpop
+
+  /**
    * The access token response received from the external identity provider.
    *
    * If the scope 'openid' is requested, we automatically verify if the
    * ID Token JWT is valid.
    */
   externalAccessTokenResponse?: AccessTokenResponse
+}
+
+export interface OpenId4VcIssuanceSessionChainedIdentityDpop {
+  keyId: string
+  alg: Kms.KnownJwaSignatureAlgorithm
+  nonce?: string
+  /**
+   * True only when this issuance session caused the key to be generated.
+   */
+  keyGeneratedForSession?: boolean
 }
 
 export type DefaultOpenId4VcIssuanceSessionRecordTags = {
