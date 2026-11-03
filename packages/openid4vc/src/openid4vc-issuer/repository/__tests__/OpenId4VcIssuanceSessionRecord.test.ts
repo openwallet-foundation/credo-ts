@@ -65,6 +65,28 @@ describe('OpenId4VcIssuanceSessionRecord', () => {
     expect(JsonTransformer.toJSON(record.clone())).toEqual(issuanceSessionJson)
   })
 
+  test('decodes holder binding keys stored as a serialized PublicJwk', () => {
+    // The drizzle storage used to store the PublicJwk instance as is
+    const serializedPublicJwk = JSON.parse(JSON.stringify(Kms.PublicJwk.fromUnknown(jwk)))
+    const [transaction] = issuanceSessionJson.transactions
+
+    const record = JsonTransformer.fromJSON(
+      {
+        ...issuanceSessionJson,
+        transactions: [
+          {
+            ...transaction,
+            holderBinding: { ...transaction.holderBinding, keys: [{ method: 'jwk', jwk: serializedPublicJwk }] },
+          },
+        ],
+      },
+      OpenId4VcIssuanceSessionRecord
+    )
+
+    expect(record.transactions[0].holderBinding?.keys[0].jwk.toJson()).toEqual(jwk)
+    expect(JsonTransformer.toJSON(record)).toEqual(issuanceSessionJson)
+  })
+
   test('maps the legacy CredentialIssued state to Error', () => {
     const record = JsonTransformer.fromJSON(
       { ...issuanceSessionJson, state: 'CredentialIssued' },

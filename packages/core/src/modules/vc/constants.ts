@@ -8,6 +8,7 @@ export const SECURITY_ED25519_2020_CONTEXT_URL = 'https://w3id.org/security/suit
 export const DID_V1_CONTEXT_URL = 'https://www.w3.org/ns/did/v1'
 export const CREDENTIALS_CONTEXT_V1_URL = 'https://www.w3.org/2018/credentials/v1'
 export const CREDENTIALS_CONTEXT_V2_URL = 'https://www.w3.org/ns/credentials/v2'
+export const CREDENTIALS_UNDEFINED_TERMS_V2_URL = 'https://www.w3.org/ns/credentials/undefined-terms/v2'
 export const CREDENTIALS_ISSUER_URL = 'https://www.w3.org/2018/credentials#issuer'
 export const CREDENTIALS_CREDENTIAL_SUBJECT_URL = 'https://www.w3.org/2018/credentials#credentialSubject'
 export const SECURITY_PROOF_URL = 'https://w3id.org/security#proof'

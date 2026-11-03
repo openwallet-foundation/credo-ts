@@ -97,6 +97,13 @@ export interface SdJwtVcModuleConfigOptions {
    * @see {@link CustomStatusListFetcher}
    */
   customStatusListFetcher?: CustomStatusListFetcher
+
+  /**
+   * Maximum size in bytes of a type metadata document fetched by the default resolver.
+   *
+   * @default the `maxResponseBytes` of the agent's `fetchLimits`
+   */
+  maxTypeMetadataBytes?: number
 }
 
 /**
@@ -115,5 +122,9 @@ export class SdJwtVcModuleConfig {
 
   public get customStatusListFetcher() {
     return this.options.customStatusListFetcher
+  }
+
+  public get maxTypeMetadataBytes() {
+    return this.options.maxTypeMetadataBytes
   }
 }

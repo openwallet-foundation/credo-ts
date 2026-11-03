@@ -9,7 +9,7 @@ describe('validateW3cV2SdJwtDisclosureFrame', () => {
   test('accepts a frame disclosing regular claims', () => {
     expect(() =>
       validateW3cV2SdJwtDisclosureFrame({
-        _sd: ['validUntil'],
+        _sd: ['name'],
         credentialSubject: { _sd: ['name', 'age'], degree: { _sd: ['name'] } },
       })
     ).not.toThrow()
@@ -18,6 +18,12 @@ describe('validateW3cV2SdJwtDisclosureFrame', () => {
   test.each(NON_DISCLOSEABLE_FIELDS)('rejects %s listed in a top level _sd', (field) => {
     expect(() => validateW3cV2SdJwtDisclosureFrame({ _sd: [field] })).toThrow(CredoError)
     expect(() => validateW3cV2SdJwtDisclosureFrame({ _sd: [field] })).toThrow(
+      `'${field}' property cannot be selectively disclosed`
+    )
+  })
+
+  test.each(['issuer', 'validFrom', 'validUntil'])('rejects the issuer and validity claim %s', (field) => {
+    expect(() => validateW3cV2SdJwtDisclosureFrame({ _sd: ['name', field] })).toThrow(
       `'${field}' property cannot be selectively disclosed`
     )
   })

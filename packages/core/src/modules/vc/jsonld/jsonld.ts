@@ -1,6 +1,6 @@
 // No type definitions available for this library
 //@ts-expect-error
-import jsonld from '@digitalcredentials/jsonld'
+import jsonld from 'jsonld'
 
 export interface JsonLd {
   // biome-ignore lint/suspicious/noExplicitAny: no explanation

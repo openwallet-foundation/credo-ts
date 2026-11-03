@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 export interface AnonCredsLinkSecretRecordProps {
   id?: string
+  createdAt?: Date
   linkSecretId: string
   value?: string // If value is not provided, only reference to link secret is stored in regular storage
 }
@@ -42,6 +43,7 @@ export class AnonCredsLinkSecretRecord extends BaseRecord<
 
     if (props) {
       this.id = props.id ?? utils.uuid()
+      this.createdAt = props.createdAt ?? new Date()
       this.linkSecretId = props.linkSecretId
       this.value = props.value
     }
