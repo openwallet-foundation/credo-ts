@@ -8,6 +8,8 @@ import type {
 import {
   Agent,
   ClaimFormat,
+  CREDENTIALS_CONTEXT_V2_URL,
+  CREDENTIALS_UNDEFINED_TERMS_V2_URL,
   DcqlService,
   DidCommV1Service,
   DidDocumentBuilder,
@@ -16,6 +18,9 @@ import {
   getEd25519VerificationKey2018,
   IndyAgentService,
   JsonEncoder,
+  JsonTransformer,
+  JwsService,
+  JwtPayload,
   Kms,
   SdJwtVcModule,
   SdJwtVcRecord,
@@ -25,6 +30,7 @@ import {
   W3cV2EnvelopedVerifiableCredential,
   W3cV2Presentation,
   W3cV2SdJwtCredentialService,
+  W3cV2SdJwtVerifiablePresentation,
 } from '@credo-ts/core'
 import type { CreateDidKidVerificationMethodReturn, EventReplaySubject } from '../../core/tests'
 import {
@@ -760,7 +766,8 @@ describe('DCQL proof format over a DIDComm connection', () => {
   const handSignedPresentationRejected = async (
     type: string,
     credentialSubject: JsonObject,
-    holder: string
+    holder: string,
+    kid: string
   ): Promise<{ kid?: string; errorMessage: string }> => {
     const credential = await storeW3cV2SdJwt(type, credentialSubject)
     const holderRecord = await requestName(type)
@@ -770,15 +777,29 @@ describe('DCQL proof format over a DIDComm connection', () => {
     const disclosed = await holderAgent.dependencyManager
       .resolve(W3cV2SdJwtCredentialService)
       .present(holderAgent.context, { credential, presentationFrame: { credentialSubject: { name: true } } })
-    const presentation = await holderAgent.w3cV2Credentials.signPresentation<ClaimFormat.SdJwtW3cVp>({
-      format: ClaimFormat.SdJwtW3cVp,
-      presentation: new W3cV2Presentation({
-        holder,
-        verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(disclosed)],
+
+    // Signed without signPresentation, which refuses a holder the credential is not bound to
+    const { publicJwk } = await holderAgent.dids.resolveVerificationMethodFromCreatedDidRecord(kid)
+    const [alg] = publicJwk.supportedSignatureAlgorithms
+    const jws = await holderAgent.dependencyManager.resolve(JwsService).createJwsCompact(holderAgent.context, {
+      payload: new JwtPayload({
+        aud: request.audience,
+        iat: Math.floor(Date.now() / 1000),
+        additionalClaims: {
+          ...JsonTransformer.toJSON(
+            new W3cV2Presentation({
+              context: [CREDENTIALS_CONTEXT_V2_URL, CREDENTIALS_UNDEFINED_TERMS_V2_URL],
+              holder,
+              verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(disclosed)],
+            })
+          ),
+          nonce: request.nonce,
+        },
       }),
-      challenge: request.nonce,
-      domain: request.audience,
+      keyId: publicJwk.keyId,
+      protectedHeaderOptions: { typ: 'vp+sd-jwt', alg, kid },
     })
+    const presentation = W3cV2SdJwtVerifiablePresentation.fromCompact(`${jws}~`)
 
     const createPresentationSpy = vi
       .spyOn(DcqlService.prototype, 'createPresentation')
@@ -804,7 +825,8 @@ describe('DCQL proof format over a DIDComm connection', () => {
     const { kid, errorMessage } = await handSignedPresentationRejected(
       'ExampleCnfCredential',
       { id: otherKdv.did },
-      otherKdv.did
+      otherKdv.did,
+      otherKdv.kid
     )
     expect(kid).toBe(otherKdv.kid)
     expect(errorMessage).toContain("vp+sd-jwt header 'kid' must be the credential 'cnf.kid'")
@@ -818,7 +840,12 @@ describe('DCQL proof format over a DIDComm connection', () => {
     })
     const didJwk = didState.did as string
 
-    const { kid, errorMessage } = await handSignedPresentationRejected('ExampleCnfDidJwkCredential', {}, didJwk)
+    const { kid, errorMessage } = await handSignedPresentationRejected(
+      'ExampleCnfDidJwkCredential',
+      {},
+      didJwk,
+      `${didJwk}#0`
+    )
     expect(kid).toBe(`${didJwk}#0`)
     expect(errorMessage).toContain("vp+sd-jwt header 'kid' must be the credential 'cnf.kid'")
   })
