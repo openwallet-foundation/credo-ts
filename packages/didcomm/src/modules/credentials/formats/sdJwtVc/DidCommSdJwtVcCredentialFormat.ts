@@ -1,10 +1,16 @@
-import type { ClaimPath, SdJwtVcPayload } from '@credo-ts/core'
+import type { ClaimPath, Kms, SdJwtVcPayload, XOR } from '@credo-ts/core'
 import type { DidCommCredentialFormat } from '../DidCommCredentialFormat'
 import type {
   DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions,
   DidCommW3cV2SdJwtSignedAttachmentCredentialRequestOptions,
 } from '../w3cV2SdJwt/DidCommW3cV2SdJwtCredentialFormat'
 import type { SdJwtVcCredential, SdJwtVcCredentialOffer, SdJwtVcCredentialRequest } from './sdJwtVcExchange'
+
+export interface DidCommSdJwtVcSignedAttachmentCreateOfferOptions
+  extends DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions {
+  /** Accept a binding proof signed with a bare key in a `jwk` header. `didMethodsSupported` can then be empty. */
+  jwkSupported?: boolean
+}
 
 export interface DidCommSdJwtVcOfferCredentialFormat {
   /** `iss` must be the issuer DID, without a path, query or fragment. A `status` mechanism must have all its members. */
@@ -13,11 +19,14 @@ export interface DidCommSdJwtVcOfferCredentialFormat {
 
   /** Include the claims the `vct` Type Metadata marks `sd` `always` and leave out the `never` ones. */
   selectivelyDisclosableClaims?: ClaimPath[]
-  didCommSignedAttachmentBinding?: DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions
+  didCommSignedAttachmentBinding?: DidCommSdJwtVcSignedAttachmentCreateOfferOptions
 }
 
 export interface DidCommSdJwtVcAcceptOfferFormat {
-  didCommSignedAttachment?: DidCommW3cV2SdJwtSignedAttachmentCredentialRequestOptions
+  didCommSignedAttachment?: XOR<
+    DidCommW3cV2SdJwtSignedAttachmentCredentialRequestOptions,
+    { alg?: string; jwk: Kms.PublicJwk }
+  >
 }
 
 export interface DidCommSdJwtVcAcceptRequestFormat {

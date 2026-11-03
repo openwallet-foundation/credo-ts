@@ -1,4 +1,4 @@
-import type { AgentContext, JwsDetachedFormat } from '@credo-ts/core'
+import type { AgentContext, JwsDetachedFormat, SdJwtVcHolderBinding } from '@credo-ts/core'
 import {
   CredoError,
   DidsApi,
@@ -18,6 +18,7 @@ import { DidCommCredentialFormatSpec } from '../../models/DidCommCredentialForma
 import { DidCommCredentialProblemReportReason } from '../../models/DidCommCredentialProblemReportReason'
 import { V2CredentialProblemReportError } from '../../protocol/v2/errors'
 import { DidCommOfferCredentialV2Message } from '../../protocol/v2/messages/DidCommOfferCredentialV2Message'
+import type { DidCommCredentialExchangeRecord } from '../../repository/DidCommCredentialExchangeRecord'
 import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../../util/didCommSignedAttachment'
 import { getFormatDataAttachment } from '../../util/formatData'
 import { getIssuerVerificationMethod } from '../../util/verificationMethod'
@@ -55,6 +56,7 @@ import { type SdJwtVcCredential, SdJwtVcCredentialOffer, type SdJwtVcCredentialR
 const DC_SD_JWT_OFFER = 'didcomm/dc-sd-jwt-offer@v1.0'
 const DC_SD_JWT_REQUEST = 'didcomm/dc-sd-jwt-request@v1.0'
 const DC_SD_JWT_CREDENTIAL = 'didcomm/dc-sd-jwt@v1.0'
+const DC_SD_JWT_REQUEST_METADATA_KEY = '_sdJwtVc/credentialRequest'
 
 // SD-JWT VC section 2.2.2.3: never selectively disclosable, and neither is anything inside them
 const NON_SELECTIVELY_DISCLOSABLE_CLAIMS = ['iss', 'nbf', 'exp', 'cnf', 'vct', 'vct#integrity', 'aka_vcts', 'status']
@@ -210,14 +212,16 @@ export class DidCommSdJwtVcCredentialFormatService
 
       const algsSupported = didCommSignedAttachmentBinding.algsSupported ?? kms.supportedJwaSignatureAlgorithms()
       const didMethodsSupported = didCommSignedAttachmentBinding.didMethodsSupported ?? didsApi.supportedResolverMethods
+      const { jwkSupported } = didCommSignedAttachmentBinding
 
       if (algsSupported.length === 0) throw new CredoError('No supported JWA signature algorithms found.')
-      if (didMethodsSupported.length === 0) throw new CredoError('No supported DID methods found.')
+      if (didMethodsSupported.length === 0 && !jwkSupported) throw new CredoError('No supported DID methods found.')
 
       bindingMethod = new W3cV2SdJwtBindingMethods({
         didcommSignedAttachment: new W3cV2SdJwtDidCommSignedAttachmentBindingMethod({
           algsSupported,
           didMethodsSupported,
+          jwkSupported,
           nonce: TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 })),
         }),
       })
@@ -261,6 +265,7 @@ export class DidCommSdJwtVcCredentialFormatService
   public async acceptOffer(
     agentContext: AgentContext,
     {
+      credentialExchangeRecord,
       offerAttachment,
       attachmentId,
       credentialFormats,
@@ -276,6 +281,12 @@ export class DidCommSdJwtVcCredentialFormatService
       const bindingMethod = credentialOffer.bindingMethod?.didcommSignedAttachment
       if (!bindingMethod) {
         throw new CredoError('Cannot request credential with a binding method that was not offered.')
+      }
+      if (didCommSignedAttachmentOptions.jwk) {
+        if (!bindingMethod.jwkSupported) throw new CredoError("The offer does not accept a 'jwk' binding proof")
+        credentialExchangeRecord.metadata.set(DC_SD_JWT_REQUEST_METADATA_KEY, {
+          kmsKeyId: didCommSignedAttachmentOptions.jwk.keyId,
+        })
       }
 
       signedAttachment = await createDidCommSignedAttachment(
@@ -361,14 +372,9 @@ export class DidCommSdJwtVcCredentialFormatService
     const credentialOffer = this.parseOffer(agentContext, offerAttachment)
     const credentialRequest = requestAttachment.getDataAsJson<SdJwtVcCredentialRequest>()
 
-    let holderJwk: Kms.PublicJwk | undefined
+    let holder: SdJwtVcHolderBinding | undefined
     try {
-      holderJwk = await this.verifyBindingProof(
-        agentContext,
-        credentialOffer,
-        credentialRequest,
-        requestAppendAttachments
-      )
+      holder = await this.verifyBindingProof(agentContext, credentialOffer, credentialRequest, requestAppendAttachments)
     } catch (error) {
       throw new V2CredentialProblemReportError(error.message, {
         problemCode: DidCommCredentialProblemReportReason.IssuanceAbandoned,
@@ -387,7 +393,7 @@ export class DidCommSdJwtVcCredentialFormatService
     const { compact } = await agentContext.dependencyManager.resolve(SdJwtVcApi).sign({
       payload: credentialOffer.credential,
       issuer: { method: 'did', didUrl: verificationMethod.id },
-      holder: holderJwk ? { method: 'jwk', jwk: holderJwk } : undefined,
+      holder,
       disclosureFrame: disclosureFrameFromClaimsPathPointers(credentialOffer.selectivelyDisclosableClaims),
     })
 
@@ -448,8 +454,8 @@ export class DidCommSdJwtVcCredentialFormatService
         )
       }
 
-      const kmsKeyId = await this.verifyCredentialBinding(
-        agentContext,
+      const kmsKeyId = this.verifyCredentialBinding(
+        credentialExchangeRecord,
         sdJwtVc.payload.cnf,
         requestAttachment,
         requestAppendAttachments
@@ -542,7 +548,7 @@ export class DidCommSdJwtVcCredentialFormatService
     credentialOffer: SdJwtVcCredentialOffer,
     credentialRequest: SdJwtVcCredentialRequest,
     requestAppendAttachments?: DidCommAttachment[]
-  ): Promise<Kms.PublicJwk | undefined> {
+  ): Promise<SdJwtVcHolderBinding | undefined> {
     const bindingProof = credentialRequest.binding_proof?.didcomm_signed_attachment
     if (!bindingProof) {
       if (credentialOffer.bindingRequired) throw new CredoError('Binding is required but no binding proof was provided')
@@ -555,24 +561,25 @@ export class DidCommSdJwtVcCredentialFormatService
     const signedAttachment = requestAppendAttachments?.find(({ id }) => id === bindingProof.attachment_id)
     if (!signedAttachment) throw new CredoError('Missing binding proof attachment')
 
-    const { nonce, publicJwk } = await verifyDidCommSignedAttachment(agentContext, signedAttachment, {
+    const { nonce, kid, publicJwk } = await verifyDidCommSignedAttachment(agentContext, signedAttachment, {
       algsSupported: bindingMethod.algsSupported,
       allowedPurposes: ['authentication'],
       didMethodsSupported: bindingMethod.didMethodsSupported,
+      // Applies the RFC 0884 `jwk` header rules even when the offer has no `jwk_supported`
+      jwkSupported: true,
     })
     if (nonce !== bindingMethod.nonce) throw new CredoError('Invalid nonce in signed attachment')
+    if (!kid && !bindingMethod.jwkSupported) throw new CredoError("The offer does not accept a 'jwk' binding proof")
 
-    // RFC 0884 does not allow `x5u` in `cnf.jwk`
-    const { x5u, ...jwk } = publicJwk.toJson()
-    return Kms.PublicJwk.fromUnknown(jwk)
+    return kid ? { method: 'did', didUrl: kid } : { method: 'jwk', jwk: publicJwk }
   }
 
-  private async verifyCredentialBinding(
-    agentContext: AgentContext,
+  private verifyCredentialBinding(
+    credentialExchangeRecord: DidCommCredentialExchangeRecord,
     cnf: unknown,
     requestAttachment: DidCommAttachment,
     requestAppendAttachments?: DidCommAttachment[]
-  ): Promise<string | undefined> {
+  ): string | undefined {
     const bindingProof =
       requestAttachment.getDataAsJson<SdJwtVcCredentialRequest>().binding_proof?.didcomm_signed_attachment
     if (!bindingProof) {
@@ -586,12 +593,12 @@ export class DidCommSdJwtVcCredentialFormatService
       | JwsDetachedFormat
       | undefined
     if (!jws) throw new CredoError('Missing binding proof attachment')
-    const { kid } = JsonEncoder.fromBase64Url(jws.protected)
+    const { kid, jwk: proofJwk } = JsonEncoder.fromBase64Url(jws.protected)
 
     if (!isJsonObject(cnf) || Object.keys(cnf).length !== 1) {
       throw new CredoError("The credential must have a 'cnf' claim with exactly one member")
     }
-    if (cnf.kid !== undefined) {
+    if (kid !== undefined) {
       if (cnf.kid !== kid) throw new CredoError("The credential 'cnf.kid' is not the key of the binding proof")
       return undefined
     }
@@ -600,19 +607,10 @@ export class DidCommSdJwtVcCredentialFormatService
     if (!isJsonObject(jwk) || ['d', 'p', 'q', 'dp', 'dq', 'qi', 'oth', 'k', 'x5u'].some((member) => member in jwk)) {
       throw new CredoError("The credential 'cnf.jwk' must be a public JWK without 'x5u'")
     }
-
-    const { publicJwk } = await agentContext.dependencyManager
-      .resolve(DidsApi)
-      .resolveVerificationMethodFromCreatedDidRecord(kid)
-      .catch((error) => {
-        throw new CredoError(`The key '${kid}' of the binding proof is not in the holder DID document anymore`, {
-          cause: error,
-        })
-      })
-    if (!Kms.PublicJwk.fromUnknown(jwk).equals(publicJwk)) {
+    if (!Kms.PublicJwk.fromUnknown(jwk).equals(Kms.PublicJwk.fromUnknown(proofJwk))) {
       throw new CredoError("The credential 'cnf.jwk' is not the key of the binding proof")
     }
 
-    return publicJwk.keyId
+    return credentialExchangeRecord.metadata.get<{ kmsKeyId: string }>(DC_SD_JWT_REQUEST_METADATA_KEY)?.kmsKeyId
   }
 }

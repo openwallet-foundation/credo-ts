@@ -3,8 +3,8 @@ import type {
   DidRepository,
   IDisclosureFrame,
   JsonObject,
+  JwsDetachedFormat,
   PeerDidNumAlgo2CreateOptions,
-  SdJwtVcHolderBinding,
   SdJwtVcPayload,
   SdJwtVcSignOptions,
 } from '@credo-ts/core'
@@ -128,7 +128,7 @@ describe('dc+sd-jwt credential format service', () => {
       offerAttachment,
       requestAttachment,
       requestAppendAttachments,
-    } = await offerAndRequest({ binding: true })
+    } = await offerAndRequest({ binding: 'kid' })
 
     expect(offerAttachment.getDataAsJson()).toMatchObject({
       binding_required: true,
@@ -159,12 +159,12 @@ describe('dc+sd-jwt credential format service', () => {
     const { header, payload, prettyClaims, kmsKeyId } = record.firstCredential
 
     expect(header.typ).toBe('dc+sd-jwt')
-    expect(kmsKeyId).toBe(holderKdv.publicJwk.keyId)
+    expect(kmsKeyId).toBeUndefined()
     expect(prettyClaims).toEqual({
       ...offeredCredential,
       iss: issuerKdv.did,
       iat: expect.any(Number),
-      cnf: { jwk: holderKdv.publicJwk.toJson({ includeKid: false }) },
+      cnf: { kid: holderKdv.kid },
     })
     expect(payload).not.toHaveProperty('given_name')
     expect(payload.address).toEqual({ country: 'DE', _sd: [expect.any(String)] })
@@ -206,15 +206,18 @@ describe('dc+sd-jwt credential format service', () => {
     expect(record.firstCredential.kmsKeyId).toBeUndefined()
   })
 
-  test('issues a credential bound to a key that is only in the authentication relationship', async () => {
-    const { kid, keyId } = await createPeerDidKid('authentication')
+  test('issues a credential bound to the jwk of the binding proof', async () => {
     const {
       issuerCredentialRecord,
       holderCredentialRecord,
       offerAttachment,
       requestAttachment,
       requestAppendAttachments,
-    } = await offerAndRequest({ binding: true, kid })
+    } = await offerAndRequest({ binding: 'jwk' })
+
+    expect(offerAttachment.getDataAsJson()).toMatchObject({
+      binding_method: { didcomm_signed_attachment: { did_methods_supported: [], jwk_supported: true } },
+    })
 
     const { attachment: credentialAttachment } = await formatService.acceptRequest(agentContext, {
       credentialExchangeRecord: issuerCredentialRecord,
@@ -232,13 +235,16 @@ describe('dc+sd-jwt credential format service', () => {
     })
 
     const record = await sdJwtVcApi.getById(holderCredentialRecord.credentials[0].credentialRecordId)
-    expect(record.firstCredential.kmsKeyId).toBe(keyId)
+    expect(record.firstCredential.prettyClaims.cnf).toEqual({ jwk: holderKdv.publicJwk.toJson({ includeKid: false }) })
+    expect(record.firstCredential.kmsKeyId).toBe(holderKdv.publicJwk.keyId)
   })
+
+  test.todo('issues a credential bound to a DID key that is only in authentication, once core resolves cnf.kid there')
 
   test('rejects a binding key that is not in the authentication relationship', async () => {
     const { kid } = await createPeerDidKid('assertionMethod')
     const { issuerCredentialRecord, holderCredentialRecord, offerAttachment } = await offerAndRequest({
-      binding: true,
+      binding: 'kid',
     })
 
     const acceptOffer = formatService.acceptOffer(agentContext, {
@@ -267,26 +273,16 @@ describe('dc+sd-jwt credential format service', () => {
     await expect(acceptRequest).rejects.toThrow(`'${kid}' in purposes authentication`)
   })
 
-  test('accepts a credential bound with cnf.kid', async () => {
-    const { holderCredentialRecord, offerAttachment, requestAttachment, requestAppendAttachments } =
-      await offerAndRequest({ binding: true })
-    const { compact } = await sdJwtVcApi.sign({
-      payload: offeredCredential,
-      issuer: { method: 'did', didUrl: issuerKdv.verificationMethod.id },
-      holder: { method: 'did', didUrl: holderKdv.kid },
-      disclosureFrame,
-    })
+  test('acceptOffer rejects a jwk binding proof when the offer does not set jwk_supported', async () => {
+    const { holderCredentialRecord, offerAttachment } = await offerAndRequest({ binding: 'kid' })
 
-    await formatService.processCredential(agentContext, {
+    const acceptOffer = formatService.acceptOffer(agentContext, {
       credentialExchangeRecord: holderCredentialRecord,
-      attachment: attachment({ credential: compact }),
       offerAttachment,
-      requestAttachment,
-      requestAppendAttachments,
+      credentialFormats: { sdJwtVc: { didCommSignedAttachment: { jwk: holderKdv.publicJwk } } },
     })
 
-    const record = await sdJwtVcApi.getById(holderCredentialRecord.credentials[0].credentialRecordId)
-    expect(record.firstCredential.prettyClaims.cnf).toEqual({ kid: holderKdv.kid })
+    await expect(acceptOffer).rejects.toThrow("The offer does not accept a 'jwk' binding proof")
   })
 
   test.each<[string, { iss?: string }]>([
@@ -444,9 +440,17 @@ describe('dc+sd-jwt credential format service', () => {
 
   test('processCredential rejects a credential bound to another key', async () => {
     await processTamperedCredential({
-      binding: true,
+      binding: 'jwk',
       sign: { holder: { method: 'jwk', jwk: issuerKdv.publicJwk } },
       error: "'cnf.jwk' is not the key of the binding proof",
+    })
+  })
+
+  test('processCredential rejects cnf.jwk for a binding proof with kid', async () => {
+    await processTamperedCredential({
+      binding: 'kid',
+      sign: { holder: { method: 'jwk', jwk: holderKdv.publicJwk } },
+      error: "'cnf.kid' is not the key of the binding proof",
     })
   })
 
@@ -499,7 +503,7 @@ describe('dc+sd-jwt credential format service', () => {
   })
 
   test('processRequest rejects a request without a binding proof when the offer requires binding', async () => {
-    const { issuerCredentialRecord } = await offerAndRequest({ binding: true })
+    const { issuerCredentialRecord } = await offerAndRequest({ binding: 'kid' })
 
     const processRequest = formatService.processRequest(agentContext, {
       credentialExchangeRecord: issuerCredentialRecord,
@@ -510,13 +514,21 @@ describe('dc+sd-jwt credential format service', () => {
     await expect(processRequest).rejects.toThrow('Binding is required but no binding proof was provided')
   })
 
-  test.each<[string, JsonObject, string]>([
-    ['an alg', { algs_supported: ['ES256'] }, "alg 'EdDSA' is not one of the supported algorithms ES256"],
-    ['a nonce', { nonce: 'another-nonce' }, 'Invalid nonce in signed attachment'],
-    ['a DID method', { did_methods_supported: ['jwk'] }, "DID method 'key' is not supported by the issuer"],
-  ])('acceptRequest rejects a binding proof with %s that was not offered', async (_, bindingMethod, error) => {
+  test.each<[string, 'kid' | 'jwk', JsonObject, string]>([
+    ['an alg', 'kid', { algs_supported: ['ES256'] }, "alg 'EdDSA' is not one of the supported algorithms ES256"],
+    ['a nonce', 'kid', { nonce: 'another-nonce' }, 'Invalid nonce in signed attachment'],
+    ['a DID method', 'kid', { did_methods_supported: ['jwk'] }, "DID method 'key' is not supported by the issuer"],
+    ['a jwk', 'jwk', { jwk_supported: false }, "The offer does not accept a 'jwk' binding proof"],
+    [
+      'an alg on a jwk proof',
+      'jwk',
+      { algs_supported: ['ES256'] },
+      "alg 'EdDSA' is not one of the supported algorithms ES256",
+    ],
+    ['a nonce on a jwk proof', 'jwk', { nonce: 'another-nonce' }, 'Invalid nonce in signed attachment'],
+  ])('acceptRequest rejects a binding proof with %s that was not offered', async (_, binding, bindingMethod, error) => {
     const { issuerCredentialRecord, offerAttachment, requestAttachment, requestAppendAttachments } =
-      await offerAndRequest({ binding: true })
+      await offerAndRequest({ binding })
 
     const offer = offerAttachment.getDataAsJson<{ binding_method: { didcomm_signed_attachment: JsonObject } }>()
     const acceptRequest = formatService.acceptRequest(agentContext, {
@@ -527,6 +539,35 @@ describe('dc+sd-jwt credential format service', () => {
           didcomm_signed_attachment: { ...offer.binding_method.didcomm_signed_attachment, ...bindingMethod },
         },
       }),
+      requestAttachment,
+      requestAppendAttachments,
+    })
+
+    await expect(acceptRequest).rejects.toThrow(V2CredentialProblemReportError)
+    await expect(acceptRequest).rejects.toThrow(error)
+  })
+
+  test.each<[string, 'kid' | 'jwk', (jwk: JsonObject) => JsonObject, string]>([
+    ['both kid and jwk', 'jwk', (jwk) => ({ kid: holderKdv.kid, jwk }), "must not have both 'kid' and 'jwk'"],
+    [
+      'both kid and jwk when the offer has no jwk_supported',
+      'kid',
+      () => ({ jwk: holderKdv.publicJwk.toJson({ includeKid: false }) }),
+      "must not have both 'kid' and 'jwk'",
+    ],
+    ['an x5u', 'jwk', (jwk) => ({ jwk: { ...jwk, x5u: 'https://holder.example.com/key.pem' } }), "must not have 'x5u'"],
+    ['private key material', 'jwk', (jwk) => ({ jwk: { ...jwk, d: 'private' } }), 'JWK contains private key material'],
+  ])('acceptRequest rejects a jwk binding proof with %s', async (_, binding, header, error) => {
+    const { issuerCredentialRecord, offerAttachment, requestAttachment, requestAppendAttachments } =
+      await offerAndRequest({ binding })
+
+    const jws = requestAppendAttachments?.[0].data.jws as JwsDetachedFormat
+    const { jwk, ...protectedHeader } = JsonEncoder.fromBase64Url(jws.protected)
+    jws.protected = JsonEncoder.toBase64Url({ ...protectedHeader, ...header(jwk) })
+
+    const acceptRequest = formatService.acceptRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      offerAttachment,
       requestAttachment,
       requestAppendAttachments,
     })
@@ -559,7 +600,7 @@ describe('dc+sd-jwt credential format service', () => {
   })
 })
 
-async function offerAndRequest({ binding = false, kid = holderKdv.kid }: { binding?: boolean; kid?: string } = {}) {
+async function offerAndRequest({ binding }: { binding?: 'kid' | 'jwk' } = {}) {
   const threadId = 'f365c1a5-2baf-4873-9432-fa87c888a0aa'
   const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v2',
@@ -580,8 +621,11 @@ async function offerAndRequest({ binding = false, kid = holderKdv.kid }: { bindi
       sdJwtVc: {
         credential: { ...offeredCredential, iss: issuerKdv.did },
         selectivelyDisclosableClaims,
-        bindingRequired: binding,
-        didCommSignedAttachmentBinding: { algsSupported: ['EdDSA'], didMethodsSupported: ['key', 'peer'] },
+        bindingRequired: binding !== undefined,
+        didCommSignedAttachmentBinding:
+          binding === 'jwk'
+            ? { algsSupported: ['EdDSA'], didMethodsSupported: [], jwkSupported: true }
+            : { algsSupported: ['EdDSA'], didMethodsSupported: ['key', 'peer'] },
       },
     },
   })
@@ -596,7 +640,11 @@ async function offerAndRequest({ binding = false, kid = holderKdv.kid }: { bindi
     await formatService.acceptOffer(agentContext, {
       credentialExchangeRecord: holderCredentialRecord,
       offerAttachment,
-      credentialFormats: { sdJwtVc: binding ? { didCommSignedAttachment: { kid } } : {} },
+      credentialFormats: {
+        sdJwtVc: binding
+          ? { didCommSignedAttachment: binding === 'jwk' ? { jwk: holderKdv.publicJwk } : { kid: holderKdv.kid } }
+          : {},
+      },
     })
 
   await formatService.processRequest(agentContext, {
@@ -656,12 +704,12 @@ async function createPeerDidKid(purpose: 'authentication' | 'assertionMethod') {
 }
 
 async function processTamperedCredential({
-  binding = false,
+  binding,
   sign = {},
   tamper = (compact) => compact,
   error,
 }: {
-  binding?: boolean
+  binding?: 'kid' | 'jwk'
   sign?: Partial<SdJwtVcSignOptions>
   tamper?: (compact: string) => string
   error: string
@@ -669,11 +717,9 @@ async function processTamperedCredential({
   const { holderCredentialRecord, offerAttachment, requestAttachment, requestAppendAttachments } =
     await offerAndRequest({ binding })
 
-  const holder: SdJwtVcHolderBinding | undefined = binding ? { method: 'jwk', jwk: holderKdv.publicJwk } : undefined
   const { compact } = await sdJwtVcApi.sign({
     payload: offeredCredential,
     issuer: { method: 'did', didUrl: issuerKdv.verificationMethod.id },
-    holder,
     disclosureFrame,
     ...sign,
   })
