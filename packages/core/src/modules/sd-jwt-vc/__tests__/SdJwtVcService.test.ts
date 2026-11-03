@@ -1526,6 +1526,31 @@ describe('SdJwtVcService', () => {
       })
     })
 
+    test('Verify sd-jwt-vc with status where the status list is larger than the fetch limit and fails', async () => {
+      const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
+
+      nock('https://example.com')
+        .get('/status-list')
+        .reply(200, 'a'.repeat(agent.config.fetchLimits.maxResponseBytes + 1), {
+          'Content-Type': 'application/statuslist+jwt',
+        })
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleSdJwtVcWithStatus,
+        presentationFrame: {},
+      })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        sdJwtVc: expect.any(Object),
+        error: expect.objectContaining({ message: expect.stringMatching(/too large|exceeded limit/) }),
+      })
+    })
+
     test('Verify sd-jwt-vc with status where credential is revoked and fails', async () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
@@ -2542,6 +2567,35 @@ describe('SdJwtVcService', () => {
       ).rejects.toThrow(
         "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful response."
       )
+    })
+
+    test('Fetch type metadata throws error when the response is larger than the fetch limit', async () => {
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      })
+
+      nock('https://example.com')
+        .get('/credentials/identity')
+        .reply(200, {
+          vct: 'https://example.com/credentials/identity',
+          name: 'a'.repeat(agent.config.fetchLimits.maxResponseBytes),
+        })
+
+      nock('https://example.com').get('/.well-known/vct/credentials/identity').reply(404)
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'https://example.com/credentials/identity',
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toMatchObject({
+        message:
+          "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful response.",
+        cause: expect.objectContaining({ message: expect.stringMatching(/too large|exceeded limit/) }),
+      })
     })
 
     test('Fetch type metadata with valid vct#integrity (sha256) should succeed', async () => {

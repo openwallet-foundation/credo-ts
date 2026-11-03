@@ -1,4 +1,4 @@
-import type { AgentContext } from '@credo-ts/core'
+import { AgentConfig, type AgentContext, type AgentDependencies, type Logger } from '@credo-ts/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import type { DidCommOutboundPackage } from '../../types'
@@ -19,7 +19,7 @@ describe('DidCommHttpOutboundTransport', () => {
     vi.useFakeTimers()
     fetch = vi.fn()
     const agentContext = {
-      config: { logger, agentDependencies: { fetch } },
+      config: new AgentConfig({ logger: logger as unknown as Logger }, { fetch } as unknown as AgentDependencies),
       dependencyManager: { resolve: () => new DidCommModuleConfig() },
     } as unknown as AgentContext
     transport = new DidCommHttpOutboundTransport()
@@ -49,7 +49,7 @@ describe('DidCommHttpOutboundTransport', () => {
   })
 
   it('clears the request timeout when the request succeeds', async () => {
-    fetch.mockResolvedValue({ status: 200, text: async () => '' })
+    fetch.mockResolvedValue(new Response('', { status: 200 }))
 
     await expect(transport.sendMessage(outboundPackage(false))).resolves.toBeUndefined()
     expect(vi.getTimerCount()).toBe(0)

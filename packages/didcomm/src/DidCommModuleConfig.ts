@@ -109,6 +109,13 @@ export interface DidCommModuleConfigOptions {
    * @default true
    */
   mediationRecipient?: boolean | DidCommMediationRecipientModuleConfigOptions
+
+  /**
+   * Maximum size in bytes of an invitation fetched from a short URL.
+   *
+   * @default the `maxResponseBytes` of the agent's `fetchLimits`
+   */
+  maxInvitationBytes?: number
 }
 
 export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = DidCommModuleConfigOptions> {
@@ -208,5 +215,9 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
    */
   public get queueTransportRepository() {
     return this._queueTransportRepository
+  }
+
+  public get maxInvitationBytes() {
+    return this.options.maxInvitationBytes
   }
 }
