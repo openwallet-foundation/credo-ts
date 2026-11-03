@@ -1,6 +1,6 @@
 // No type definitions available for this package
 // @ts-expect-error
-import * as vc from '@digitalcredentials/vc'
+import * as vc from '@digitalbazaar/vc'
 import type { JsonObject } from '../../../../types'
 
 export interface VC {

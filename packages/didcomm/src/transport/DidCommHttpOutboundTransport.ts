@@ -8,10 +8,19 @@ import type { DidCommOutboundPackage } from '../types'
 import { isValidJweStructure } from '../util/JWE'
 import type { DidCommOutboundTransport } from './DidCommOutboundTransport'
 
+export interface DidCommHttpOutboundTransportOptions {
+  /**
+   * Maximum size in bytes of a DIDComm message returned in the HTTP response.
+   *
+   * @default the `maxResponseBytes` of the agent's `fetchLimits`
+   */
+  maxResponseBytes?: number
+}
+
 export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
   private agentContext!: AgentContext
   private logger!: Logger
-  private fetch!: typeof fetch
+  private options: DidCommHttpOutboundTransportOptions
   private isActive = false
 
   private outboundSessionCount = 0
@@ -19,10 +28,13 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
 
   public supportedSchemes = ['http', 'https']
 
+  public constructor(options: DidCommHttpOutboundTransportOptions = {}) {
+    this.options = options
+  }
+
   public async start(agentContext: AgentContext): Promise<void> {
     this.agentContext = agentContext
     this.logger = this.agentContext.config.logger
-    this.fetch = this.agentContext.config.agentDependencies.fetch
     this.isActive = true
     this.outboundSessionCount = 0
 
@@ -72,25 +84,23 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
     })
 
     try {
-      const abortController = new AbortController()
-      const id = setTimeout(() => abortController.abort(), 15000)
       this.outboundSessionCount++
 
       let response: Response | undefined
       let responseMessage: string | undefined
       try {
-        response = await this.fetch(endpoint, {
+        response = await this.agentContext.config.fetch(endpoint, {
           method: 'POST',
           body: JSON.stringify(payload),
           headers: { 'Content-Type': didCommMimeType },
-          signal: abortController.signal as NonNullable<RequestInit['signal']>,
+          timeoutMs: 15000,
+          maxResponseBytes: this.options.maxResponseBytes,
         })
-        clearTimeout(id)
         responseMessage = await response.text()
       } catch (error) {
-        // Request is aborted after 15 seconds, but that doesn't necessarily mean the request
-        // went wrong. ACA-Py keeps the socket alive until it has a response message. So we assume
-        // that if the error was aborted and we had return routing enabled, we should ignore the error.
+        // The request is aborted when no response arrives within 15 seconds, but that doesn't necessarily mean
+        // it went wrong. ACA-Py keeps the socket alive until it has a response message, so with return routing
+        // enabled we ignore the abort.
         if (error.name === 'AbortError' && outboundPackage.responseRequested) {
           this.logger.debug(
             'Request was aborted due to timeout. Not throwing error due to return routing on sent message'

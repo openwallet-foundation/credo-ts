@@ -46,11 +46,13 @@ export async function extractKeyFromHolderBinding(
     }
 
     let publicJwk: PublicJwk
+    let did: string | undefined
     if (forSigning) {
       publicJwk = await resolveSigningPublicJwkFromDidUrl(agentContext, holder.didUrl)
     } else {
-      const { verificationMethod } = await resolveDidUrl(agentContext, holder.didUrl, didPurposes)
+      const { verificationMethod, didDocument } = await resolveDidUrl(agentContext, holder.didUrl, didPurposes)
       publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      did = didDocument.id
     }
 
     const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
@@ -62,6 +64,7 @@ export async function extractKeyFromHolderBinding(
     return {
       alg,
       publicJwk,
+      did,
       cnf: {
         // We need to include the whole didUrl here, otherwise the verifier
         // won't know which did it is associated with
