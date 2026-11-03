@@ -2,6 +2,7 @@ import type { AgentContext } from '@credo-ts/core'
 import {
   type AgentContextProvider,
   CredoError,
+  EventEmitter,
   InjectionSymbols,
   inject,
   injectable,
@@ -11,6 +12,8 @@ import {
 import { DidCommDispatcher } from './DidCommDispatcher'
 import type { DecryptedDidCommMessageContext } from './DidCommEnvelopeService'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
+import type { DidCommMessageProcessingFailedEvent } from './DidCommEvents'
+import { DidCommEventTypes } from './DidCommEvents'
 import { DidCommMessage } from './DidCommMessage'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from './DidCommMessageSender'
@@ -25,6 +28,13 @@ import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isValidJweStructure } from './util/JWE'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
 
+export interface DidCommReceiveMessageOptions {
+  session?: DidCommTransportSession
+  connection?: DidCommConnectionRecord
+  contextCorrelationId?: string
+  receivedAt?: Date
+}
+
 @injectable()
 export class DidCommMessageReceiver {
   private envelopeService: DidCommEnvelopeService
@@ -35,6 +45,7 @@ export class DidCommMessageReceiver {
   private connectionService: DidCommConnectionService
   private messageHandlerRegistry: DidCommMessageHandlerRegistry
   private agentContextProvider: AgentContextProvider
+  private eventEmitter: EventEmitter
 
   public constructor(
     envelopeService: DidCommEnvelopeService,
@@ -43,6 +54,7 @@ export class DidCommMessageReceiver {
     connectionService: DidCommConnectionService,
     dispatcher: DidCommDispatcher,
     messageHandlerRegistry: DidCommMessageHandlerRegistry,
+    eventEmitter: EventEmitter,
     @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: AgentContextProvider,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
@@ -53,6 +65,7 @@ export class DidCommMessageReceiver {
     this.dispatcher = dispatcher
     this.messageHandlerRegistry = messageHandlerRegistry
     this.agentContextProvider = agentContextProvider
+    this.eventEmitter = eventEmitter
     this.logger = logger
   }
 
@@ -64,17 +77,7 @@ export class DidCommMessageReceiver {
    */
   public async receiveMessage(
     inboundMessage: unknown,
-    {
-      session,
-      connection,
-      contextCorrelationId,
-      receivedAt,
-    }: {
-      session?: DidCommTransportSession
-      connection?: DidCommConnectionRecord
-      contextCorrelationId?: string
-      receivedAt?: Date
-    } = {}
+    { session, connection, contextCorrelationId, receivedAt }: DidCommReceiveMessageOptions = {}
   ) {
     this.logger.debug('Agent received message')
 
@@ -102,6 +105,40 @@ export class DidCommMessageReceiver {
     } finally {
       // Always end the session for the agent context after handling the message.
       await agentContext.endSession()
+    }
+  }
+
+  public async receiveMessageAndReportFailure(
+    agentContext: AgentContext,
+    inboundMessage: unknown,
+    options: DidCommReceiveMessageOptions = {}
+  ) {
+    try {
+      await this.receiveMessage(inboundMessage, options)
+    } catch (error) {
+      this.logger.error('Failed to process message', { error })
+      const processingError =
+        error instanceof Error
+          ? error
+          : new CredoError('Failed to process message', { cause: new Error(String(error)) })
+
+      try {
+        this.eventEmitter.emit<DidCommMessageProcessingFailedEvent>(agentContext, {
+          type: DidCommEventTypes.DidCommMessageProcessingFailed,
+          payload: {
+            error: processingError,
+            message: inboundMessage,
+            connection: options.connection,
+            contextCorrelationId: options.contextCorrelationId,
+            receivedAt: options.receivedAt,
+          },
+        })
+      } catch (eventError) {
+        this.logger.error('Failed to emit message processing failure event', {
+          error: eventError,
+          processingError,
+        })
+      }
     }
   }
 

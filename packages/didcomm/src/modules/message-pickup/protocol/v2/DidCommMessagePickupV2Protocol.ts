@@ -1,10 +1,9 @@
 import type { AgentContext } from '@credo-ts/core'
 import { EventEmitter, injectable, verkeyToDidKey } from '@credo-ts/core'
-import type { DidCommMessageReceivedEvent } from '../../../../DidCommEvents'
-import { DidCommEventTypes } from '../../../../DidCommEvents'
 import type { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
 import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
+import { DidCommMessageReceiver } from '../../../../DidCommMessageReceiver'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
 import { DidCommProblemReportError } from '../../../../errors'
@@ -325,8 +324,9 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
     messageContext.assertReadyConnection()
 
     const { appendedAttachments } = messageContext.message
+    const { agentContext } = messageContext
 
-    const eventEmitter = messageContext.agentContext.dependencyManager.resolve(EventEmitter)
+    const messageReceiver = agentContext.dependencyManager.resolve(DidCommMessageReceiver)
 
     if (!appendedAttachments)
       throw new DidCommProblemReportError('Error processing attachments', {
@@ -335,16 +335,15 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
 
     const ids: string[] = []
     for (const attachment of appendedAttachments) {
-      ids.push(attachment.id)
-
-      eventEmitter.emit<DidCommMessageReceivedEvent>(messageContext.agentContext, {
-        type: DidCommEventTypes.DidCommMessageReceived,
-        payload: {
-          message: attachment.getDataAsJson<DidCommEncryptedMessage>(),
-          contextCorrelationId: messageContext.agentContext.contextCorrelationId,
+      await messageReceiver.receiveMessageAndReportFailure(
+        agentContext,
+        attachment.getDataAsJson<DidCommEncryptedMessage>(),
+        {
+          contextCorrelationId: agentContext.contextCorrelationId,
           receivedAt: attachment.lastmodTime,
-        },
-      })
+        }
+      )
+      ids.push(attachment.id)
     }
 
     const messagesReceivedMessage = new DidCommMessagesReceivedV2Message({
