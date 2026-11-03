@@ -1,4 +1,4 @@
-import type { AgentContext, JwsDetachedFormat } from '@credo-ts/core'
+import type { AgentContext, DidPurpose, JwsDetachedFormat } from '@credo-ts/core'
 import {
   CredoError,
   DidsApi,
@@ -19,7 +19,8 @@ export async function createDidCommSignedAttachment(
   agentContext: AgentContext,
   data: { nonce: string },
   options: { alg?: string; kid: string },
-  issuerSupportedAlgs: string[]
+  issuerSupportedAlgs: string[],
+  { allowedPurposes, didMethodsSupported }: { allowedPurposes?: DidPurpose[]; didMethodsSupported?: string[] } = {}
 ): Promise<DidCommAttachment> {
   const { alg, kid } = options
 
@@ -33,10 +34,13 @@ export async function createDidCommSignedAttachment(
   }
 
   const parsedDid = parseDid(kid)
+  if (didMethodsSupported && !didMethodsSupported.includes(parsedDid.method)) {
+    throw new CredoError(`DID method '${parsedDid.method}' is not supported by the issuer`)
+  }
 
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
   const { didDocument, keys } = await didsApi.resolveCreatedDidDocumentWithKeys(parsedDid.did)
-  const verificationMethod = didDocument.dereferenceKey(kid)
+  const verificationMethod = didDocument.dereferenceKey(kid, allowedPurposes)
 
   // TODO: we need an util 'getPublicJwkWithSigningKeyIdFromVerificationMethodId'
   const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
@@ -84,8 +88,13 @@ export async function createDidCommSignedAttachment(
  */
 export async function verifyDidCommSignedAttachment(
   agentContext: AgentContext,
-  signedAttachment: DidCommAttachment
-): Promise<{ nonce: string; kid: string }> {
+  signedAttachment: DidCommAttachment,
+  {
+    algsSupported,
+    allowedPurposes,
+    didMethodsSupported,
+  }: { algsSupported?: string[]; allowedPurposes?: DidPurpose[]; didMethodsSupported?: string[] } = {}
+): Promise<{ nonce: string; kid: string; publicJwk: Kms.PublicJwk }> {
   const jws = signedAttachment.data.jws as JwsDetachedFormat
   if (!jws) throw new CredoError('Missing jws in signed attachment')
   if (!jws.protected) throw new CredoError('Missing protected header in signed attachment')
@@ -106,10 +115,19 @@ export async function verifyDidCommSignedAttachment(
     resolveJwsSigner: async ({ protectedHeader: { kid, alg } }) => {
       if (!kid || typeof kid !== 'string') throw new CredoError('Missing kid in protected header.')
       if (!kid.startsWith('did:')) throw new CredoError('Only did is supported for kid identifier')
+      if (algsSupported && !algsSupported.includes(alg)) {
+        throw new CredoError(`alg '${alg}' is not one of the supported algorithms ${algsSupported.join(', ')}`)
+      }
+      if (didMethodsSupported) {
+        const { method } = parseDid(kid)
+        if (!didMethodsSupported.includes(method)) {
+          throw new CredoError(`DID method '${method}' is not supported by the issuer`)
+        }
+      }
 
       const didsApi = agentContext.dependencyManager.resolve(DidsApi)
       const didDocument = await didsApi.resolveDidDocument(kid)
-      const verificationMethod = didDocument.dereferenceKey(kid)
+      const verificationMethod = didDocument.dereferenceKey(kid, allowedPurposes)
       const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
 
       return {
@@ -130,5 +148,5 @@ export async function verifyDidCommSignedAttachment(
 
   if (jwsSigner?.method !== 'did') throw new CredoError('Could not resolve kid from signed attachment')
 
-  return { nonce: payload.nonce, kid: jwsSigner.didUrl }
+  return { nonce: payload.nonce, kid: jwsSigner.didUrl, publicJwk: jwsSigner.jwk }
 }
