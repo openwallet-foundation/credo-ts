@@ -99,6 +99,13 @@ export interface OpenId4VciDeferredCredentialResponse {
    * for each received credential.
    */
   jwkThumbprintKmsKeyIdMapping?: Record<string, string>
+
+  credentialResponseEncryption?: OpenId4VciHolderCredentialResponseEncryption
+}
+
+export interface OpenId4VciHolderCredentialResponseEncryption {
+  keyId: string
+  enc: string
 }
 
 export interface OpenId4VciResolvedCredentialOffer {
@@ -333,6 +340,8 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
    * for the proof of possession signature.
    */
   credentialBindingResolver: OpenId4VciCredentialBindingResolver
+
+  encryptCredentialResponse?: boolean
 }
 
 /**
@@ -353,6 +362,8 @@ export interface OpenId4VciDeferredCredentialRequestOptions {
    * of possession of the credential request
    */
   jwkThumbprintKmsKeyIdMapping?: Record<string, string>
+
+  credentialResponseEncryption?: OpenId4VciHolderCredentialResponseEncryption
 }
 
 /**
