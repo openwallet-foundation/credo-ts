@@ -60,6 +60,15 @@ jobs:
         id: get_version
         run: echo "CURRENT_PACKAGE_VERSION=$(node -p "require('./packages/core/package.json').version")" >> $GITHUB_ENV
 
+      # Tag the published commit first: the release action would otherwise tag the default branch tip, and its
+      # target_commitish can 403 with GITHUB_TOKEN. A re-run is a no-op; a tag on another commit fails the push.
+      - name: Push release tag
+        if: "startsWith(github.event.head_commit.message, 'chore(release): new version')"
+        run: |
+          TAG="v$CURRENT_PACKAGE_VERSION"
+          git tag "$TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$TAG" --no-verify
+
       - name: Create Github Release
         if: "startsWith(github.event.head_commit.message, 'chore(release): new version')"
         uses: softprops/action-gh-release@v3
