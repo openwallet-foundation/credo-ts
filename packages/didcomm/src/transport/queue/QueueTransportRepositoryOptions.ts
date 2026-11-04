@@ -8,6 +8,7 @@ export interface GetAvailableMessageCountOptions {
 export interface TakeFromQueueOptions {
   connectionId: string
   recipientDid?: string
+  messageIds?: string[]
   limit?: number
   deleteMessages?: boolean
 }

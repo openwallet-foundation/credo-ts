@@ -342,7 +342,7 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
     )
     mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
     saveLiveSession('transportSessionId')
-    vi.spyOn(mediationPickupApi, 'queueMessage').mockResolvedValue(undefined)
+    vi.spyOn(mediationPickupApi, 'queueMessage').mockResolvedValue({ messageId: 'messageId' })
     vi.spyOn(mediationPickupApi, 'getLiveModeSession').mockImplementation(async (options) =>
       sessionService.getLiveSessionByConnectionId(agentContext, options)
     )
@@ -359,6 +359,7 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
     expect(deliverSpy).toHaveBeenCalledWith({
       connectionId: mockConnection.id,
       recipientDid: expect.stringContaining('did:key:'),
+      messageIds: ['messageId'],
     })
   })
 

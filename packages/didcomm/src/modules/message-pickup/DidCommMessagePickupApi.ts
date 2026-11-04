@@ -107,11 +107,13 @@ export class DidCommMessagePickupApi<
     const { connectionId, message, recipientDids } = options
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
-    await this.messageSender.queueMessage(this.agentContext, {
+    const messageId = await this.messageSender.queueMessage(this.agentContext, {
       connectionId: connectionRecord.id,
       recipientDids,
       payload: message,
     })
+
+    return { messageId }
   }
 
   /**
@@ -156,6 +158,7 @@ export class DidCommMessagePickupApi<
         new DidCommOutboundMessageContext(createDeliveryReturn.message, {
           agentContext: this.agentContext,
           connection: connectionRecord,
+          sessionId: session.transportSessionId,
         }),
         { transportPriority: { schemes: ['wss', 'ws'] } }
       )
@@ -173,7 +176,7 @@ export class DidCommMessagePickupApi<
   public async deliverMessagesFromQueue(options: DeliverMessagesFromQueueOptions) {
     this.logger.debug('Delivering queued messages')
 
-    const { pickupSessionId, recipientDid: recipientKey, batchSize } = options
+    const { pickupSessionId, recipientDid: recipientKey, messageIds, batchSize } = options
 
     const session = this.messagePickupSessionService.getLiveSession(this.agentContext, pickupSessionId)
 
@@ -191,6 +194,7 @@ export class DidCommMessagePickupApi<
     const deliverMessagesReturn = await protocol.createDeliveryMessage(this.agentContext, {
       connectionRecord,
       recipientKey,
+      messageIds,
       batchSize,
     })
 
@@ -199,6 +203,7 @@ export class DidCommMessagePickupApi<
         new DidCommOutboundMessageContext(deliverMessagesReturn.message, {
           agentContext: this.agentContext,
           connection: connectionRecord,
+          sessionId: session.transportSessionId,
         }),
         { transportPriority: { schemes: ['wss', 'ws'] } }
       )
@@ -206,12 +211,12 @@ export class DidCommMessagePickupApi<
   }
 
   public async deliverQueuedMessagesToLiveSession(options: DeliverQueuedMessagesToLiveSessionOptions) {
-    const { connectionId, recipientDid } = options
+    const { connectionId, recipientDid, messageIds } = options
     const session = await this.getLiveModeSession({ connectionId, role: DidCommMessagePickupSessionRole.MessageHolder })
     if (!session) return false
 
     try {
-      await this.deliverMessagesFromQueue({ pickupSessionId: session.id, recipientDid })
+      await this.deliverMessagesFromQueue({ pickupSessionId: session.id, recipientDid, messageIds })
       return true
     } catch (error) {
       const endSession =

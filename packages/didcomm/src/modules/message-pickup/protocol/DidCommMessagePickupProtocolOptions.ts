@@ -12,6 +12,7 @@ export interface DeliverMessagesProtocolOptions {
   connectionRecord: DidCommConnectionRecord
   messages?: QueuedDidCommMessage[]
   recipientKey?: string
+  messageIds?: string[]
   batchSize?: number
 }
 

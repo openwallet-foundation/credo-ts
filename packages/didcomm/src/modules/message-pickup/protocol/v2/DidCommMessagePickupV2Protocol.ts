@@ -92,7 +92,7 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
   ): Promise<DeliverMessagesProtocolReturnType<DidCommMessage> | undefined> {
-    const { connectionRecord, recipientKey, messages } = options
+    const { connectionRecord, recipientKey, messages, messageIds } = options
     connectionRecord.assertReady()
 
     const queueTransportRepository =
@@ -104,6 +104,7 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
       (await queueTransportRepository.takeFromQueue(agentContext, {
         connectionId: connectionRecord.id,
         recipientDid: recipientKey,
+        messageIds,
         limit: 10, // TODO: Define as config parameter
       }))
 

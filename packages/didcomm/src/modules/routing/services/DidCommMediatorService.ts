@@ -114,7 +114,7 @@ export class DidCommMediatorService {
         })
         break
       case DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery: {
-        await messagePickupApi.queueMessage({
+        const { messageId } = await messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
           recipientDids: [recipientDid],
           message: message.message,
@@ -122,6 +122,7 @@ export class DidCommMediatorService {
         await messagePickupApi.deliverQueuedMessagesToLiveSession({
           connectionId: mediationRecord.connectionId,
           recipientDid,
+          messageIds: [messageId],
         })
         break
       }

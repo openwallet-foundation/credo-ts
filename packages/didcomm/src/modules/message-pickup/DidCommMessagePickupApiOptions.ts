@@ -17,12 +17,14 @@ export interface QueueMessageOptions {
 export interface DeliverMessagesFromQueueOptions {
   pickupSessionId: string
   recipientDid?: string
+  messageIds?: string[]
   batchSize?: number
 }
 
 export interface DeliverQueuedMessagesToLiveSessionOptions {
   connectionId: string
   recipientDid?: string
+  messageIds?: string[]
 }
 
 export interface DeliverMessagesOptions {
@@ -49,7 +51,7 @@ export interface SetLiveDeliveryModeOptions<
   awaitConfirmationTimeoutMs?: number
 }
 
-export type QueueMessageReturnType = undefined
+export type QueueMessageReturnType = { messageId: string }
 
 export type PickupMessagesReturnType = undefined
 
