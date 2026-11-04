@@ -10,6 +10,7 @@ import {
   joinUriParts,
   Kms,
   MdocApi,
+  parseDid,
   type Query,
   type QueryOptions,
   SdJwtVcApi,
@@ -1007,6 +1008,26 @@ export class OpenId4VcIssuerService {
       })
     }
 
+    // Without binding methods in the metadata, key binding isn't required, so any signer is accepted.
+    const bindingMethods = credentialConfiguration.cryptographic_binding_methods_supported
+    const assertBindingMethodSupported = (signer: { method: 'jwk' } | { method: 'did'; didUrl: string }) => {
+      if (!bindingMethods) return
+
+      // Same mapping as the holder: a jwk proof key can be bound as 'jwk' or 'cose_key', and 'did' allows any did method.
+      const bindingMethod = signer.method === 'jwk' ? 'jwk' : `did:${parseDid(signer.didUrl).method}`
+      const isSupported =
+        bindingMethod === 'jwk'
+          ? bindingMethods.includes('jwk') || bindingMethods.includes('cose_key')
+          : bindingMethods.includes('did') || bindingMethods.includes(bindingMethod)
+
+      if (!isSupported) {
+        throw new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidProof,
+          error_description: `Binding method '${bindingMethod}' is not supported for credential configuration '${credentialConfigurationId}'. Supported binding methods are ${bindingMethods.join(', ')}`,
+        })
+      }
+    }
+
     if (proofType === 'attestation' && proofValue.length !== 1) {
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.InvalidProof,
@@ -1022,6 +1043,7 @@ export class OpenId4VcIssuerService {
         issuerMetadata,
         keyAttestationJwt,
       })
+      assertBindingMethodSupported({ method: 'jwk' })
 
       if (!supportedProofType.proof_signing_alg_values_supported.includes(keyAttestation.header.alg)) {
         throw new Oauth2ServerErrorResponseError({
@@ -1125,6 +1147,7 @@ export class OpenId4VcIssuerService {
             error_description: "Only 'jwk' and 'did' binding methods supported for jwt proof",
           })
         }
+        assertBindingMethodSupported(signer)
 
         if (proofSigners[0] && signer.method !== proofSigners[0].method) {
           throw new Oauth2ServerErrorResponseError({
