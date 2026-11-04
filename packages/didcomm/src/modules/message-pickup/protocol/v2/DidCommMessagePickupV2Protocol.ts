@@ -335,15 +335,12 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
 
     const ids: string[] = []
     for (const attachment of appendedAttachments) {
-      await messageReceiver.receiveMessageAndReportFailure(
+      const outcome = await messageReceiver.receiveMessageAndReportFailure(
         agentContext,
         attachment.getDataAsJson<DidCommEncryptedMessage>(),
-        {
-          contextCorrelationId: agentContext.contextCorrelationId,
-          receivedAt: attachment.lastmodTime,
-        }
+        { agentContext, receivedAt: attachment.lastmodTime }
       )
-      ids.push(attachment.id)
+      if (outcome !== 'failed') ids.push(attachment.id)
     }
 
     const messagesReceivedMessage = new DidCommMessagesReceivedV2Message({

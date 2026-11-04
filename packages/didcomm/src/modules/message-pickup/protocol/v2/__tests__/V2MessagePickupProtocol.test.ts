@@ -55,7 +55,7 @@ const messageSender = new MessageSenderMock()
 const eventEmitter = new EventEmitterMock()
 const connectionService = new ConnectionServiceMock()
 const sessionService = new DidCommMessagePickupSessionService()
-const messageReceiver = { receiveMessageAndReportFailure: vi.fn() }
+const messageReceiver = { receiveMessageAndReportFailure: vi.fn().mockResolvedValue('processed') }
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -491,14 +491,34 @@ describe('DidCommMessagePickupV2Protocol', () => {
         1,
         agentContext,
         { first: 'value' },
-        { contextCorrelationId: agentContext.contextCorrelationId }
+        { agentContext }
       )
       expect(messageReceiver.receiveMessageAndReportFailure).toHaveBeenNthCalledWith(
         2,
         agentContext,
         { second: 'value' },
-        { contextCorrelationId: agentContext.contextCorrelationId }
+        { agentContext }
       )
+    })
+
+    it('acknowledges unreadable messages but not messages whose processing failed', async () => {
+      messageReceiver.receiveMessageAndReportFailure
+        .mockResolvedValueOnce('processed')
+        .mockResolvedValueOnce('unreadable')
+        .mockResolvedValueOnce('failed')
+
+      const messageDeliveryMessage = new DidCommMessageDeliveryV2Message({
+        threadId: uuid(),
+        attachments: ['1', '2', '3'].map((id) => new DidCommAttachment({ id, data: { json: { id } } })),
+      })
+      const messageContext = new DidCommInboundMessageContext(messageDeliveryMessage, {
+        connection: mockConnection,
+        agentContext,
+      })
+
+      const messagesReceivedMessage = await pickupProtocol.processDelivery(messageContext)
+
+      expect(messagesReceivedMessage.messageIdList).toEqual(['1', '2'])
     })
 
     it('acknowledges the messages only after they have been processed', async () => {
