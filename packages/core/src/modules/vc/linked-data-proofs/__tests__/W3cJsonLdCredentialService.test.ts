@@ -284,6 +284,32 @@ describe('W3cJsonLdCredentialsService', () => {
         expect(verificationMethodTypes).toEqual([VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020])
       })
     })
+
+    describe('getProofTypeForSigningCredential', () => {
+      it('should return the proof type of the suite for the verification method type', async () => {
+        const identity2018 = await create2018Identity(
+          agentContext,
+          'did:example:issuer-2018-proof-type',
+          'did:example:issuer-2018-proof-type#key-1'
+        )
+        const identity2020 = await create2020Identity(
+          agentContext,
+          'did:example:issuer-2020-proof-type',
+          'did:example:issuer-2020-proof-type#key-1'
+        )
+
+        await expect(
+          w3cJsonLdCredentialService.getProofTypeForSigningCredential(agentContext, {
+            verificationMethod: identity2018.verificationMethod,
+          })
+        ).resolves.toBe('Ed25519Signature2018')
+        await expect(
+          w3cJsonLdCredentialService.getProofTypeForSigningCredential(agentContext, {
+            verificationMethod: identity2020.verificationMethod,
+          })
+        ).resolves.toBe('Ed25519Signature2020')
+      })
+    })
   })
 
   describe('Ed25519Signature2018', () => {

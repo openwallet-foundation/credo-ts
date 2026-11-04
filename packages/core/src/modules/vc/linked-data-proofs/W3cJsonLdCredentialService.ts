@@ -89,6 +89,30 @@ export class W3cJsonLdCredentialService {
   }
 
   /**
+   * Returns the proof type of the first registered suite that can sign a credential with the given verification method.
+   */
+  public async getProofTypeForSigningCredential(
+    agentContext: AgentContext,
+    options: Pick<W3cJsonLdSignCredentialOptions, 'verificationMethod'>
+  ): Promise<string> {
+    const { verificationMethod } = await this.resolveSigningVerificationMethod(
+      agentContext,
+      options.verificationMethod,
+      ['assertionMethod']
+    )
+
+    const [suiteInfo] = this.signatureSuiteRegistry.getAllByVerificationMethod(verificationMethod)
+    if (!suiteInfo) {
+      throw new W3cJsonLdCredentialSigningNotSupportedError(
+        `No signature suite supports the verification method type '${verificationMethod.type}'`,
+        'unsupported-verification-method-type'
+      )
+    }
+
+    return suiteInfo.proofType
+  }
+
+  /**
    * Verifies the signature(s) of a credential
    *
    * @param credential the credential to be verified
@@ -431,6 +455,37 @@ export class W3cJsonLdCredentialService {
     return this.signatureSuiteRegistry.getByProofType(proofType)
   }
 
+  /**
+   * Resolves a verification method of a did created by this agent, mapping the lookup failures to typed errors.
+   */
+  private async resolveSigningVerificationMethod(
+    agentContext: AgentContext,
+    verificationMethodId: string,
+    allowedPurposes: Array<DidPurpose | 'verificationMethod'>
+  ) {
+    try {
+      return await agentContext
+        .resolve(DidsApi)
+        .resolveVerificationMethodFromCreatedDidRecord(verificationMethodId, allowedPurposes)
+    } catch (error) {
+      if (error instanceof RecordNotFoundError) {
+        throw new W3cJsonLdCredentialSigningNotSupportedError(
+          error.message,
+          'verification-method-not-controlled',
+          error
+        )
+      }
+      if (
+        error instanceof CredoError &&
+        error.message ===
+          `Unable to locate verification method with id '${verificationMethodId}' in purposes ${allowedPurposes}`
+      ) {
+        throw new W3cJsonLdCredentialSigningNotSupportedError(error.message, 'verification-method-not-found', error)
+      }
+      throw error
+    }
+  }
+
   private async prepareSigningSuite(
     agentContext: AgentContext,
     options: {
@@ -443,32 +498,11 @@ export class W3cJsonLdCredentialService {
   ) {
     const suiteInfo = this.getSigningSuiteInfo(options.proofType)
 
-    const dids = agentContext.resolve(DidsApi)
-    let resolved: Awaited<ReturnType<typeof dids.resolveVerificationMethodFromCreatedDidRecord>>
-    try {
-      resolved = await dids.resolveVerificationMethodFromCreatedDidRecord(
-        options.verificationMethodId,
-        options.allowedPurposes
-      )
-    } catch (error) {
-      if (error instanceof RecordNotFoundError) {
-        throw new W3cJsonLdCredentialSigningNotSupportedError(
-          error.message,
-          'verification-method-not-controlled',
-          error
-        )
-      }
-      if (
-        error instanceof CredoError &&
-        error.message ===
-          `Unable to locate verification method with id '${options.verificationMethodId}' in purposes ${options.allowedPurposes}`
-      ) {
-        throw new W3cJsonLdCredentialSigningNotSupportedError(error.message, 'verification-method-not-found', error)
-      }
-      throw error
-    }
-
-    const { verificationMethod: nativeVerificationMethod, publicJwk } = resolved
+    const { verificationMethod: nativeVerificationMethod, publicJwk } = await this.resolveSigningVerificationMethod(
+      agentContext,
+      options.verificationMethodId,
+      options.allowedPurposes
+    )
 
     if (!suiteInfo.verificationMethodTypes.includes(nativeVerificationMethod.type)) {
       throw new W3cJsonLdCredentialSigningNotSupportedError(
