@@ -472,6 +472,77 @@ describe('OpenId4VcIssuer', () => {
     await handleCredentialResponse(holder.context, credentialResponse.credential, universityDegreeCredentialSdJwt)
   })
 
+  it.each([
+    [['did:key'], undefined],
+    [['did'], undefined],
+    [['jwk', 'did:web'], "Binding method 'did:key' is not supported"],
+    [['cose_key'], "Binding method 'did:key' is not supported"],
+  ])('binding methods %j with a did:key proof', async (bindingMethods, expectedError) => {
+    const credentialConfiguration = {
+      ...universityDegreeCredentialSdJwt,
+      cryptographic_binding_methods_supported: bindingMethods,
+      proof_types_supported: { jwt: { proof_signing_alg_values_supported: ['EdDSA'] } },
+    } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
+    await issuer.openid4vc.issuer.updateIssuerMetadata({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationsSupported: { [credentialConfiguration.id]: credentialConfiguration },
+    })
+
+    const { issuanceSession } = await issuer.openid4vc.issuer.createCredentialOffer({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationIds: [credentialConfiguration.id],
+      preAuthorizedCodeFlowConfig: { preAuthorizedCode: '1234567890' },
+    })
+    issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    await issuer.context.dependencyManager
+      .resolve(OpenId4VcIssuanceSessionRepository)
+      .update(issuer.context, issuanceSession)
+
+    const { cNonce } = await issuer.context.dependencyManager
+      .resolve(OpenId4VcIssuerService)
+      .createNonce(issuer.context, openId4VcIssuer)
+    const credentialRequest = await createCredentialRequest(holder.context, {
+      credentialConfiguration,
+      issuerMetadata: await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId),
+      kid: holderKid,
+      nonce: cNonce,
+    })
+
+    const credentialResponsePromise = issuer.openid4vc.issuer.createCredentialResponse({
+      issuanceSessionId: issuanceSession.id,
+      parsedCredentialRequest: await parseCredentialRequestAsWallet(credentialRequest),
+      authorization: {
+        authorizationServer: 'https://authorization.com',
+        accessToken: {
+          payload: { active: true, sub: 'something', 'pre-authorized_code': 'some' },
+          value: 'the-access-token',
+        },
+      },
+      credentialRequestToCredentialMapper: () => ({
+        type: 'credentials',
+        format: 'dc+sd-jwt',
+        credentials: [
+          {
+            payload: { vct: 'UniversityDegreeCredential', degree: 'bachelor' },
+            issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
+            holder: { method: 'did', didUrl: holderVerificationMethod.id },
+          },
+        ],
+        credentialConfigurationId: credentialConfiguration.id,
+      }),
+    })
+
+    if (expectedError) {
+      await expect(credentialResponsePromise).rejects.toMatchObject({
+        errorResponse: { error: 'invalid_proof', error_description: expect.stringContaining(expectedError) },
+      })
+    } else {
+      await expect(credentialResponsePromise).resolves.toMatchObject({
+        credentialResponse: { credential: expect.any(String) },
+      })
+    }
+  })
+
   it('pre authorized code flow (sd-jwt-vc) v13', async () => {
     const preAuthorizedCode = '1234567890'
 
