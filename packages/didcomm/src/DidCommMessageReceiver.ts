@@ -2,6 +2,7 @@ import type { AgentContext } from '@credo-ts/core'
 import {
   type AgentContextProvider,
   CredoError,
+  EventEmitter,
   InjectionSymbols,
   inject,
   injectable,
@@ -11,6 +12,8 @@ import {
 import { DidCommDispatcher } from './DidCommDispatcher'
 import type { DecryptedDidCommMessageContext } from './DidCommEnvelopeService'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
+import type { DidCommMessageProcessingFailedEvent } from './DidCommEvents'
+import { DidCommEventTypes } from './DidCommEvents'
 import { DidCommMessage } from './DidCommMessage'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from './DidCommMessageSender'
@@ -25,6 +28,20 @@ import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isValidJweStructure } from './util/JWE'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
 
+export interface DidCommReceiveMessageOptions {
+  agentContext?: AgentContext
+  session?: DidCommTransportSession
+  connection?: DidCommConnectionRecord
+  contextCorrelationId?: string
+  receivedAt?: Date
+}
+
+export type DidCommReceiveMessageOutcome = 'processed' | 'unreadable' | 'failed'
+
+interface ReceiveMessageProgress {
+  unreadable: boolean
+}
+
 @injectable()
 export class DidCommMessageReceiver {
   private envelopeService: DidCommEnvelopeService
@@ -35,6 +52,7 @@ export class DidCommMessageReceiver {
   private connectionService: DidCommConnectionService
   private messageHandlerRegistry: DidCommMessageHandlerRegistry
   private agentContextProvider: AgentContextProvider
+  private eventEmitter: EventEmitter
 
   public constructor(
     envelopeService: DidCommEnvelopeService,
@@ -43,6 +61,7 @@ export class DidCommMessageReceiver {
     connectionService: DidCommConnectionService,
     dispatcher: DidCommDispatcher,
     messageHandlerRegistry: DidCommMessageHandlerRegistry,
+    eventEmitter: EventEmitter,
     @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: AgentContextProvider,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
@@ -53,6 +72,7 @@ export class DidCommMessageReceiver {
     this.dispatcher = dispatcher
     this.messageHandlerRegistry = messageHandlerRegistry
     this.agentContextProvider = agentContextProvider
+    this.eventEmitter = eventEmitter
     this.logger = logger
   }
 
@@ -62,19 +82,20 @@ export class DidCommMessageReceiver {
    *
    * @param inboundMessage the message to receive and handle
    */
-  public async receiveMessage(
+  public async receiveMessage(inboundMessage: unknown, options: DidCommReceiveMessageOptions = {}) {
+    await this.receiveMessageWithProgress(inboundMessage, options, { unreadable: false })
+  }
+
+  private async receiveMessageWithProgress(
     inboundMessage: unknown,
     {
+      agentContext: providedAgentContext,
       session,
       connection,
       contextCorrelationId,
       receivedAt,
-    }: {
-      session?: DidCommTransportSession
-      connection?: DidCommConnectionRecord
-      contextCorrelationId?: string
-      receivedAt?: Date
-    } = {}
+    }: DidCommReceiveMessageOptions,
+    progress: ReceiveMessageProgress
   ) {
     this.logger.debug('Agent received message')
 
@@ -83,9 +104,11 @@ export class DidCommMessageReceiver {
     if (session) session.hasReceivedMessage = true
 
     // Find agent context for the inbound message
-    const agentContext = await this.agentContextProvider.getContextForInboundMessage(inboundMessage, {
-      contextCorrelationId,
-    })
+    const agentContext =
+      providedAgentContext ??
+      (await this.agentContextProvider.getContextForInboundMessage(inboundMessage, {
+        contextCorrelationId,
+      }))
 
     try {
       if (this.isEncryptedMessage(inboundMessage)) {
@@ -93,25 +116,69 @@ export class DidCommMessageReceiver {
           session,
           isSessionOpeningMessage,
           receivedAt,
+          progress,
         })
       } else if (this.isPlaintextMessage(inboundMessage)) {
-        await this.receivePlaintextMessage(agentContext, inboundMessage, connection, receivedAt)
+        await this.receivePlaintextMessage(agentContext, inboundMessage, { connection, receivedAt, progress })
       } else {
+        progress.unreadable = true
         throw new CredoError('Unable to parse incoming message: unrecognized format')
       }
     } finally {
       // Always end the session for the agent context after handling the message.
-      await agentContext.endSession()
+      if (!providedAgentContext) await agentContext.endSession()
+    }
+  }
+
+  public async receiveMessageAndReportFailure(
+    agentContext: AgentContext,
+    inboundMessage: unknown,
+    options: DidCommReceiveMessageOptions = {}
+  ): Promise<DidCommReceiveMessageOutcome> {
+    const progress = { unreadable: false }
+    try {
+      await this.receiveMessageWithProgress(inboundMessage, options, progress)
+      return 'processed'
+    } catch (error) {
+      this.logger.error('Failed to process message', { error })
+      const processingError =
+        error instanceof Error
+          ? error
+          : new CredoError('Failed to process message', { cause: new Error(String(error)) })
+
+      try {
+        this.eventEmitter.emit<DidCommMessageProcessingFailedEvent>(agentContext, {
+          type: DidCommEventTypes.DidCommMessageProcessingFailed,
+          payload: {
+            error: processingError,
+            message: inboundMessage,
+            connection: options.connection,
+            contextCorrelationId: options.contextCorrelationId,
+            receivedAt: options.receivedAt,
+          },
+        })
+      } catch (eventError) {
+        this.logger.error('Failed to emit message processing failure event', {
+          error: eventError,
+          processingError,
+        })
+      }
+      return progress.unreadable ? 'unreadable' : 'failed'
     }
   }
 
   private async receivePlaintextMessage(
     agentContext: AgentContext,
     plaintextMessage: DidCommPlaintextMessage,
-    connection?: DidCommConnectionRecord,
-    receivedAt?: Date
+    {
+      connection,
+      receivedAt,
+      progress,
+    }: { connection?: DidCommConnectionRecord; receivedAt?: Date; progress: ReceiveMessageProgress }
   ) {
-    const message = await this.transformAndValidate(agentContext, plaintextMessage)
+    const message = await this.markUnreadableOnError(progress, () =>
+      this.transformAndValidate(agentContext, plaintextMessage)
+    )
     const messageContext = new DidCommInboundMessageContext(message, { connection, agentContext, receivedAt })
     await this.dispatcher.dispatch(messageContext)
   }
@@ -123,9 +190,17 @@ export class DidCommMessageReceiver {
       session,
       isSessionOpeningMessage,
       receivedAt,
-    }: { session?: DidCommTransportSession; isSessionOpeningMessage: boolean; receivedAt?: Date }
+      progress,
+    }: {
+      session?: DidCommTransportSession
+      isSessionOpeningMessage: boolean
+      receivedAt?: Date
+      progress: ReceiveMessageProgress
+    }
   ) {
-    const decryptedMessage = await this.decryptMessage(agentContext, encryptedMessage)
+    const decryptedMessage = await this.markUnreadableOnError(progress, () =>
+      this.decryptMessage(agentContext, encryptedMessage)
+    )
     const { plaintextMessage, senderKey, recipientKey } = decryptedMessage
 
     this.logger.info(
@@ -135,7 +210,9 @@ export class DidCommMessageReceiver {
 
     const connection = await this.findConnectionByMessageKeys(agentContext, decryptedMessage)
 
-    const message = await this.transformAndValidate(agentContext, plaintextMessage, connection)
+    const message = await this.markUnreadableOnError(progress, () =>
+      this.transformAndValidate(agentContext, plaintextMessage, connection)
+    )
 
     const messageContext = new DidCommInboundMessageContext(message, {
       // Only make the connection available in message context if the connection is ready
@@ -176,6 +253,15 @@ export class DidCommMessageReceiver {
     }
 
     await this.dispatcher.dispatch(messageContext)
+  }
+
+  private async markUnreadableOnError<T>(progress: ReceiveMessageProgress, read: () => Promise<T>): Promise<T> {
+    try {
+      return await read()
+    } catch (error) {
+      progress.unreadable = true
+      throw error
+    }
   }
 
   /**
