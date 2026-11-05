@@ -12,7 +12,7 @@ import {
 } from '../../shared/router'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import { getCredentialRequestDecryptionMetadata, OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
@@ -59,7 +59,7 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
         parsedCredentialRequest = await vcIssuer.parseDeferredCredentialRequest({
           deferredCredentialRequest: request.body,
           contentType: request.headers['content-type'],
-          issuerMetadata,
+          issuerMetadata: getCredentialRequestDecryptionMetadata(issuerMetadata, issuer),
         })
       } catch (error) {
         if (error instanceof Oauth2ServerErrorResponseError) {

@@ -2460,20 +2460,46 @@ function getCredentialResponseEncryptionMetadata(agentContext: AgentContext, iss
   }
 }
 
+function toCredentialRequestEncryptionJwk(jwk: Kms.KmsJwkPublic & { kid: string }) {
+  return { ...Kms.PublicJwk.fromUnknown(jwk).toJson(), kid: jwk.kid, use: 'enc', alg: 'ECDH-ES' }
+}
+
 function getCredentialRequestEncryptionMetadata(issuerRecord: OpenId4VcIssuerRecord) {
   if (!issuerRecord.credentialRequestEncryption) return undefined
 
   return {
     jwks: {
-      keys: issuerRecord.credentialRequestEncryption.jwks.map((jwk) => ({
-        ...Kms.PublicJwk.fromUnknown(jwk).toJson(),
-        kid: jwk.kid,
-        use: 'enc',
-        alg: 'ECDH-ES',
-      })),
+      keys: issuerRecord.credentialRequestEncryption.jwks.map(toCredentialRequestEncryptionJwk),
     },
     enc_values_supported: [...supportedResponseEncryptionContentAlgorithms],
     encryption_required: issuerRecord.credentialRequestEncryption.required ?? false,
+  }
+}
+
+/**
+ * Issuer metadata to parse (deferred) credential requests with. The library only decrypts with keys
+ * from the metadata, so this adds the retired request encryption keys that are not advertised.
+ */
+export function getCredentialRequestDecryptionMetadata(
+  issuerMetadata: OpenId4VciMetadata,
+  issuerRecord: OpenId4VcIssuerRecord
+): OpenId4VciMetadata {
+  const requestEncryption = issuerMetadata.credentialIssuer.credential_request_encryption
+  const retiredJwks = issuerRecord.credentialRequestEncryption?.retiredJwks
+  if (!requestEncryption || !retiredJwks?.length) return issuerMetadata
+
+  return {
+    ...issuerMetadata,
+    credentialIssuer: {
+      ...issuerMetadata.credentialIssuer,
+      credential_request_encryption: {
+        ...requestEncryption,
+        jwks: {
+          ...requestEncryption.jwks,
+          keys: [...requestEncryption.jwks.keys, ...retiredJwks.map(toCredentialRequestEncryptionJwk)],
+        },
+      },
+    },
   }
 }
 
@@ -2486,9 +2512,10 @@ export function assertCredentialEncryptionConfiguration(
     )
   }
 
-  const unsupportedKey = options.credentialRequestEncryption?.jwks.find(
-    (jwk) => jwk.kty === 'oct' || !Kms.allowedKeyDerivationAlgsForKey(jwk).includes('ECDH-ES')
-  )
+  const unsupportedKey = [
+    ...(options.credentialRequestEncryption?.jwks ?? []),
+    ...(options.credentialRequestEncryption?.retiredJwks ?? []),
+  ].find((jwk) => jwk.kty === 'oct' || !Kms.allowedKeyDerivationAlgsForKey(jwk).includes('ECDH-ES'))
   if (unsupportedKey) {
     throw new CredoError(
       `Credential request encryption key '${unsupportedKey.kid}' does not support 'ECDH-ES' key agreement.`

@@ -769,6 +769,12 @@ export interface OpenId4VciCredentialRequestEncryptionOptions {
 
   // each `kid` must be the KMS key id, it's used to find the private key when decrypting
   jwks: [Kms.KmsJwkPublic & { kid: string }, ...Array<Kms.KmsJwkPublic & { kid: string }>]
+
+  /**
+   * Keys that are no longer advertised but still decrypt credential requests, so issuance sessions that
+   * started before a key was rotated out can still finish.
+   */
+  retiredJwks?: Array<Kms.KmsJwkPublic & { kid: string }>
 }
 
 export type OpenId4VciCreateIssuerOptions = {
