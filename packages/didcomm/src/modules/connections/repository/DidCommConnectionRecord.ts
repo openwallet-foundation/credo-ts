@@ -35,7 +35,9 @@ export type DefaultDidCommConnectionTags = {
   threadId?: string
   mediatorId?: string
   did?: string
+  alias?: string
   theirDid?: string
+  theirLabel?: string
   outOfBandId?: string
   invitationDid?: string
   connectionTypes?: Array<DidCommConnectionType | string>
@@ -144,7 +146,9 @@ export class DidCommConnectionRecord extends BaseRecord<
       threadId: this.threadId,
       mediatorId: this.mediatorId,
       did: this.did,
+      alias: this.alias,
       theirDid: this.theirDid,
+      theirLabel: this.theirLabel,
       outOfBandId: this.outOfBandId,
       invitationDid: this.invitationDid,
       connectionTypes: this.connectionTypes,
