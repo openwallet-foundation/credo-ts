@@ -1230,13 +1230,11 @@ export class OpenId4VpVerifierService {
         if (issuer) {
           trustedIssuers = (
             await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+              // did:x509 issuers carry a certificate chain that has to be trusted, same as x5c issuers
               signer:
-                issuer.method === 'x5c'
-                  ? {
-                      method: 'x509',
-                      certificateChain: issuer.x5c,
-                    }
-                  : { method: 'did', didUrl: issuer.didUrl },
+                issuer.method === 'did' && !issuer.x5c
+                  ? { method: 'did', didUrl: issuer.didUrl }
+                  : { method: 'x509', certificateChain: issuer.x5c as X509Certificate[] },
               verification: {
                 type: 'openId4VpCredential',
                 credential: sdJwtVc,
@@ -1246,7 +1244,7 @@ export class OpenId4VpVerifierService {
             })
           )?.trustedIssuers
 
-          if (!trustedIssuers && issuer.method === 'x5c') {
+          if (!trustedIssuers && issuer.x5c) {
             const legacyTrustedCertificates =
               (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
                 certificateChain: issuer.x5c,
