@@ -21,12 +21,6 @@ export interface DeliverMessagesFromQueueOptions {
   batchSize?: number
 }
 
-export interface DeliverQueuedMessagesToLiveSessionOptions {
-  connectionId: string
-  recipientDid?: string
-  messageIds?: string[]
-}
-
 export interface DeliverMessagesOptions {
   pickupSessionId: string
   messages: QueuedDidCommMessage[]

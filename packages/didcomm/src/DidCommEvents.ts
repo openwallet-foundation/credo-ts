@@ -10,7 +10,6 @@ export enum DidCommEventTypes {
   DidCommMessageProcessed = 'DidCommMessageProcessed',
   DidCommMessageProcessingFailed = 'DidCommMessageProcessingFailed',
   DidCommMessageSent = 'DidCommMessageSent',
-  DidCommMessageQueued = 'DidCommMessageQueued',
 }
 
 export interface DidCommMessageReceivedEvent extends BaseEvent {
@@ -53,14 +52,5 @@ export interface DidCommMessageSentEvent extends BaseEvent {
   payload: {
     message: DidCommOutboundMessageContext
     status: OutboundMessageSendStatus
-  }
-}
-
-export interface DidCommMessageQueuedEvent extends BaseEvent {
-  type: typeof DidCommEventTypes.DidCommMessageQueued
-  payload: {
-    connectionId: string
-    recipientDids: string[]
-    messageId: string
   }
 }

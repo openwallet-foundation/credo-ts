@@ -8,6 +8,9 @@ export interface GetAvailableMessageCountOptions {
 export interface TakeFromQueueOptions {
   connectionId: string
   recipientDid?: string
+  /**
+   * Only take the messages with these ids. Implementations must honor this, as live mode delivery relies on it to deliver only the arriving message.
+   */
   messageIds?: string[]
   limit?: number
   deleteMessages?: boolean

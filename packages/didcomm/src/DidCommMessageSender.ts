@@ -16,7 +16,7 @@ import {
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
-import type { DidCommMessageQueuedEvent, DidCommMessageSentEvent } from './DidCommEvents'
+import type { DidCommMessageSentEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import type { DidCommMessage } from './DidCommMessage'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
@@ -380,12 +380,7 @@ export class DidCommMessageSender {
   }
 
   public async queueMessage(agentContext: AgentContext, options: AddMessageOptions) {
-    const messageId = await this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, options)
-    this.eventEmitter.emit<DidCommMessageQueuedEvent>(agentContext, {
-      type: DidCommEventTypes.DidCommMessageQueued,
-      payload: { connectionId: options.connectionId, recipientDids: options.recipientDids, messageId },
-    })
-    return messageId
+    return this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, options)
   }
 
   private async sendMessageToService(outboundMessageContext: DidCommOutboundMessageContext) {

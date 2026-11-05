@@ -15,13 +15,13 @@ import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommTransportService } from '../../DidCommTransportService'
 import { MessageSendingError } from '../../errors'
 import { DidCommOutboundMessageContext } from '../../models'
+import type { DidCommConnectionRecord } from '../connections/repository'
 import { DidCommConnectionService } from '../connections/services'
 import type {
   DeliverMessagesFromQueueOptions,
   DeliverMessagesFromQueueReturnType,
   DeliverMessagesOptions,
   DeliverMessagesReturnType,
-  DeliverQueuedMessagesToLiveSessionOptions,
   PickupMessagesOptions,
   PickupMessagesReturnType,
   QueueMessageOptions,
@@ -47,7 +47,6 @@ export interface DidCommMessagePickupApi<MPPs extends DidCommMessagePickupProtoc
   }): Promise<DidCommMessagePickupSession | undefined>
   deliverMessages(options: DeliverMessagesOptions): Promise<DeliverMessagesReturnType>
   deliverMessagesFromQueue(options: DeliverMessagesFromQueueOptions): Promise<DeliverMessagesFromQueueReturnType>
-  deliverQueuedMessagesToLiveSession(options: DeliverQueuedMessagesToLiveSessionOptions): Promise<boolean>
   setLiveDeliveryMode(options: SetLiveDeliveryModeOptions): Promise<SetLiveDeliveryModeReturnType>
 }
 
@@ -154,14 +153,7 @@ export class DidCommMessagePickupApi<
     })
 
     if (createDeliveryReturn) {
-      await this.messageSender.sendMessage(
-        new DidCommOutboundMessageContext(createDeliveryReturn.message, {
-          agentContext: this.agentContext,
-          connection: connectionRecord,
-          sessionId: session.transportSessionId,
-        }),
-        { transportPriority: { schemes: ['wss', 'ws'] } }
-      )
+      await this.sendLiveDelivery(session, connectionRecord, createDeliveryReturn.message)
     }
   }
 
@@ -199,47 +191,46 @@ export class DidCommMessagePickupApi<
     })
 
     if (deliverMessagesReturn) {
+      await this.sendLiveDelivery(session, connectionRecord, deliverMessagesReturn.message)
+    }
+  }
+
+  private async sendLiveDelivery(
+    session: DidCommMessagePickupSession,
+    connectionRecord: DidCommConnectionRecord,
+    message: DidCommMessage
+  ) {
+    try {
       await this.messageSender.sendMessage(
-        new DidCommOutboundMessageContext(deliverMessagesReturn.message, {
+        new DidCommOutboundMessageContext(message, {
           agentContext: this.agentContext,
           connection: connectionRecord,
           sessionId: session.transportSessionId,
         }),
         { transportPriority: { schemes: ['wss', 'ws'] } }
       )
-    }
-  }
-
-  public async deliverQueuedMessagesToLiveSession(options: DeliverQueuedMessagesToLiveSessionOptions) {
-    const { connectionId, recipientDid, messageIds } = options
-    const session = await this.getLiveModeSession({ connectionId, role: DidCommMessagePickupSessionRole.MessageHolder })
-    if (!session) return false
-
-    try {
-      await this.deliverMessagesFromQueue({ pickupSessionId: session.id, recipientDid, messageIds })
-      return true
     } catch (error) {
-      const endSession =
+      if (
         error instanceof MessageSendingError &&
         this.messagePickupSessionService.getLiveSession(this.agentContext, session.id) !== undefined
-      this.logger.warn(
-        `Live mode delivery failed for connection '${connectionId}'${endSession ? ', ending its live mode session' : ''}`,
-        { error: error.message }
-      )
-      if (endSession) {
-        this.messagePickupSessionService.removeLiveSession(this.agentContext, { connectionId })
+      ) {
+        this.logger.warn(
+          `Live mode delivery failed for connection '${session.connectionId}', ending its live mode session`,
+          { error: error.message }
+        )
+        this.messagePickupSessionService.removeLiveSession(this.agentContext, { connectionId: session.connectionId })
         try {
           await this.agentContext.dependencyManager
             .resolve(DidCommTransportService)
             .findSessionById(session.transportSessionId)
             ?.close()
         } catch (closeError) {
-          this.logger.warn(`Unable to close the transport session of connection '${connectionId}'`, {
+          this.logger.warn(`Unable to close the transport session of connection '${session.connectionId}'`, {
             error: closeError.message,
           })
         }
       }
-      return false
+      throw error
     }
   }
 

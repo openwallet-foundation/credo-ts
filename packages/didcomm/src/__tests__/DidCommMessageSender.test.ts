@@ -18,7 +18,7 @@ import {
 import { TestMessage } from '../../../core/tests/TestMessage'
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { DidCommEnvelopeService } from '../DidCommEnvelopeService'
-import type { DidCommMessageQueuedEvent, DidCommMessageSentEvent } from '../DidCommEvents'
+import type { DidCommMessageSentEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
 import { DidCommMessageSender } from '../DidCommMessageSender'
 import { DidCommModuleConfig } from '../DidCommModuleConfig'
@@ -236,7 +236,7 @@ describe('DidCommMessageSender', () => {
       })
     })
 
-    test('queues the message and emits a message queued event when the connection only has a queue service', async () => {
+    test('queues the message when the connection only has a queue service', async () => {
       const queueService = new DidCommV1Service({
         id: '<did>;queue',
         serviceEndpoint: DID_COMM_TRANSPORT_QUEUE,
@@ -247,18 +247,14 @@ describe('DidCommMessageSender', () => {
         keys: [],
       })
       didResolverServiceResolveDidServicesMock.mockResolvedValue([getMockResolvedDidService(queueService)])
-      const queuedListener = vi.fn()
-      eventEmitter.on<DidCommMessageQueuedEvent>(DidCommEventTypes.DidCommMessageQueued, queuedListener)
+      const queueMessageSpy = vi.spyOn(messageSender, 'queueMessage')
 
       await messageSender.sendMessage(outboundMessageContext)
 
-      expect(queuedListener).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: DidCommEventTypes.DidCommMessageQueued,
-          payload: { connectionId: connection.id, recipientDids: [expect.any(String)], messageId: expect.any(String) },
-        })
+      expect(queueMessageSpy).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ connectionId: connection.id, recipientDids: [expect.any(String)] })
       )
-      eventEmitter.off(DidCommEventTypes.DidCommMessageQueued, queuedListener)
     })
 
     test('reports an undeliverable message when resolving services fails', async () => {

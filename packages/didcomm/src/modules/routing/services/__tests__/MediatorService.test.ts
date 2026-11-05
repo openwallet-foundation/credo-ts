@@ -349,7 +349,7 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
   })
 
   test('queues the message and delivers it to the live mode session', async () => {
-    const deliverSpy = vi.spyOn(mediationPickupApi, 'deliverQueuedMessagesToLiveSession').mockResolvedValue(true)
+    const deliverSpy = vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockResolvedValue(undefined)
 
     await forward()
 
@@ -357,14 +357,22 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
       expect.objectContaining({ connectionId: mockConnection.id })
     )
     expect(deliverSpy).toHaveBeenCalledWith({
-      connectionId: mockConnection.id,
+      pickupSessionId: sessionService.getLiveSessionByConnectionId(agentContext, { connectionId: mockConnection.id })
+        ?.id,
       recipientDid: expect.stringContaining('did:key:'),
       messageIds: ['messageId'],
     })
   })
 
+  test('still accepts the forward message when the live delivery fails', async () => {
+    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(new Error('send failed'))
+
+    await expect(forward()).resolves.toBeUndefined()
+    expect(mediationPickupApi.queueMessage).toHaveBeenCalled()
+  })
+
   test('looks up the mediation record by base58 key when forwarded to a did:key', async () => {
-    vi.spyOn(mediationPickupApi, 'deliverQueuedMessagesToLiveSession').mockResolvedValue(true)
+    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockResolvedValue(undefined)
 
     await forward(verkeyToDidKey(recipientKey))
 

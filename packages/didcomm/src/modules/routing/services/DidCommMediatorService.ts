@@ -21,6 +21,7 @@ import type { DidCommConnectionRecord } from '../../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../../connections/services'
 import { DidCommMessagePickupApi } from '../../message-pickup'
+import { DidCommMessagePickupSessionRole } from '../../message-pickup/DidCommMessagePickupSession'
 import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
 import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
 import type { DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
@@ -119,11 +120,23 @@ export class DidCommMediatorService {
           recipientDids: [recipientDid],
           message: message.message,
         })
-        await messagePickupApi.deliverQueuedMessagesToLiveSession({
+        const session = await messagePickupApi.getLiveModeSession({
           connectionId: mediationRecord.connectionId,
-          recipientDid,
-          messageIds: [messageId],
+          role: DidCommMessagePickupSessionRole.MessageHolder,
         })
+        if (session) {
+          try {
+            await messagePickupApi.deliverMessagesFromQueue({
+              pickupSessionId: session.id,
+              recipientDid,
+              messageIds: [messageId],
+            })
+          } catch (error) {
+            this.logger.warn(`Live mode delivery failed for connection '${mediationRecord.connectionId}'`, {
+              error: error.message,
+            })
+          }
+        }
         break
       }
       case DidCommMessageForwardingStrategy.DirectDelivery:
