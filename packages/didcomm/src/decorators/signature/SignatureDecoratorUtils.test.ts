@@ -81,4 +81,49 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
       expect(error.message).toEqual('Signature is not valid')
     }
   })
+
+  test('unpackAndVerifySignatureDecorator accepts padded base64url', async () => {
+    const padded = new SignatureDecorator({
+      ...signedData,
+      signature: `${signedData.signature}==`,
+      signatureData: `${signedData.signatureData}==`,
+    })
+
+    const result = await unpackAndVerifySignatureDecorator(agentContext, padded)
+    expect(result).toEqual(data)
+  })
+
+  test('unpackAndVerifySignatureDecorator accepts standard base64', async () => {
+    const asStandardBase64 = (value: string) => TypedArrayEncoder.toBase64(TypedArrayEncoder.fromBase64Url(value))
+
+    const standard = new SignatureDecorator({
+      ...signedData,
+      signature: asStandardBase64(signedData.signature),
+      signatureData: asStandardBase64(signedData.signatureData),
+    })
+
+    // The signature contains the characters base64url substitutes
+    expect(standard.signature).toContain('+')
+    expect(standard.signature).toContain('/')
+
+    const result = await unpackAndVerifySignatureDecorator(agentContext, standard)
+    expect(result).toEqual(data)
+  })
+
+  test('unpackAndVerifySignatureDecorator surfaces the decoding failure as the error cause', async () => {
+    const undecodable = new SignatureDecorator({
+      ...signedData,
+      signatureData: 'not*valid*base64',
+    })
+
+    expect.assertions(2)
+    try {
+      await unpackAndVerifySignatureDecorator(agentContext, undecodable)
+    } catch (error) {
+      expect(error.message).toEqual('Signature is not valid')
+      expect(error.cause?.message).toEqual(
+        'Could not decode signature decorator signatureData as base64url or base64 string.'
+      )
+    }
+  })
 })
