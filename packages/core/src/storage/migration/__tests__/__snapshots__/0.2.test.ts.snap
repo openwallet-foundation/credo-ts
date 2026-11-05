@@ -245,7 +245,6 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
     "id": "1-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "did": "did:peer:1zQmWxKCTkKYQvzdUshMWy7b8vy3Y7uLtB9hp6BbQhKEtQCd",
-      "legacyUnqualifiedDid": undefined,
       "method": "peer",
       "methodSpecificIdentifier": "1zQmWxKCTkKYQvzdUshMWy7b8vy3Y7uLtB9hp6BbQhKEtQCd",
       "recipientKeyFingerprints": [
@@ -310,7 +309,6 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
     "id": "2-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "did": "did:peer:1zQmavZzrLPRYRGd5CgyKV4GBZG43eGzjic9FHXc7jLHY14W",
-      "legacyUnqualifiedDid": undefined,
       "method": "peer",
       "methodSpecificIdentifier": "1zQmavZzrLPRYRGd5CgyKV4GBZG43eGzjic9FHXc7jLHY14W",
       "recipientKeyFingerprints": [
@@ -373,7 +371,6 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
     "id": "3-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "did": "did:peer:1zQmZqQYzwqsYjj7z8kixxDXf9nux8TAsqj2izSpX1oCrd7q",
-      "legacyUnqualifiedDid": undefined,
       "method": "peer",
       "methodSpecificIdentifier": "1zQmZqQYzwqsYjj7z8kixxDXf9nux8TAsqj2izSpX1oCrd7q",
       "recipientKeyFingerprints": [
@@ -436,7 +433,6 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
     "id": "4-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "did": "did:peer:1zQmRnGYmYBdSinH2953ZgfHWEpqp5W6kJmmYBgRaCs4Yudx",
-      "legacyUnqualifiedDid": undefined,
       "method": "peer",
       "methodSpecificIdentifier": "1zQmRnGYmYBdSinH2953ZgfHWEpqp5W6kJmmYBgRaCs4Yudx",
       "recipientKeyFingerprints": [
@@ -501,7 +497,6 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
     "id": "5-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "did": "did:peer:1zQmb9oo8fn8AZ7rWh1DAfTbM3mnPp9Hq2bJFdHiqjnZX2Ce",
-      "legacyUnqualifiedDid": undefined,
       "method": "peer",
       "methodSpecificIdentifier": "1zQmb9oo8fn8AZ7rWh1DAfTbM3mnPp9Hq2bJFdHiqjnZX2Ce",
       "recipientKeyFingerprints": [
@@ -564,7 +559,6 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
     "id": "6-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "did": "did:peer:1zQmSzC6uhWYcxtkr2fBepr66kjvSHuRsSfbmei7nrGj7HfN",
-      "legacyUnqualifiedDid": undefined,
       "method": "peer",
       "methodSpecificIdentifier": "1zQmSzC6uhWYcxtkr2fBepr66kjvSHuRsSfbmei7nrGj7HfN",
       "recipientKeyFingerprints": [
@@ -627,7 +621,6 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
     "id": "7-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "did": "did:peer:1zQmPaCELen1JWMWmhVZS16nDmrAC9yGKQcJCcBs5spXakA3",
-      "legacyUnqualifiedDid": undefined,
       "method": "peer",
       "methodSpecificIdentifier": "1zQmPaCELen1JWMWmhVZS16nDmrAC9yGKQcJCcBs5spXakA3",
       "recipientKeyFingerprints": [
@@ -690,7 +683,6 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
     "id": "8-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "did": "did:peer:1zQmUo1HoiciJS628w4SHweg4Pzs4bZLM4KLZgroSmUwBw7S",
-      "legacyUnqualifiedDid": undefined,
       "method": "peer",
       "methodSpecificIdentifier": "1zQmUo1HoiciJS628w4SHweg4Pzs4bZLM4KLZgroSmUwBw7S",
       "recipientKeyFingerprints": [

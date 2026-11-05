@@ -5,7 +5,7 @@ import queryString from 'query-string'
 import { DidCommMessage } from '../../../DidCommMessage'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../decorators/attachment/DidCommAttachment'
 import type { DidCommPlaintextMessage } from '../../../types'
-import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../util/messageType'
+import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 import { outOfBandServiceToNumAlgo2Did } from '../helpers'
 
@@ -120,9 +120,6 @@ export class DidCommOutOfBandInvitation extends DidCommMessage {
     return this.getServices().filter((service): service is OutOfBandDidCommService => typeof service !== 'string')
   }
 
-  @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
-    toClassOnly: true,
-  })
   @IsValidMessageType(DidCommOutOfBandInvitation.type)
   public readonly type = DidCommOutOfBandInvitation.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/out-of-band/1.1/invitation')
@@ -135,7 +132,6 @@ export class DidCommOutOfBandInvitation extends DidCommMessage {
   public readonly goal?: string
 
   public readonly accept?: string[]
-  @Transform(({ value }) => value?.map(replaceLegacyDidSovPrefix), { toClassOnly: true })
   @Expose({ name: 'handshake_protocols' })
   public handshakeProtocols?: string[]
 

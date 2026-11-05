@@ -1,5 +1,12 @@
 import type { TagsBase } from '@credo-ts/core'
-import { BaseRecord, CredoError, createRecordEncodingSchema, utils, zJsonTransformerClass } from '@credo-ts/core'
+import {
+  BaseRecord,
+  CredoError,
+  createRecordEncodingSchema,
+  utils,
+  zJsonTransformerClass,
+  zWithUpgrade,
+} from '@credo-ts/core'
 import { z } from 'zod'
 import { getThreadIdFromPlainTextMessage } from '../../../util/thread'
 import type { DidCommOutOfBandRole } from '../domain/DidCommOutOfBandRole'
@@ -61,8 +68,31 @@ export interface DidCommOutOfBandRecordProps {
   invitationInlineServiceKeys?: DidCommOutOfBandInlineServiceKey[]
 }
 
+// Invitations stored before Credo 0.8 can use the legacy did:sov message type prefix (Aries RFC 0348)
+const legacyDidSovMessageTypePrefix = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec'
+const replaceLegacyDidSovMessageTypePrefix = (messageType: unknown) =>
+  typeof messageType === 'string' && messageType.startsWith(legacyDidSovMessageTypePrefix)
+    ? messageType.replace(legacyDidSovMessageTypePrefix, 'https://didcomm.org')
+    : messageType
+
+const upgradeStoredOutOfBandInvitation = (invitation: unknown) => {
+  if (typeof invitation !== 'object' || invitation === null) return invitation
+  const { '@type': type, handshake_protocols: handshakeProtocols, ...rest } = invitation as Record<string, unknown>
+
+  return {
+    ...rest,
+    '@type': replaceLegacyDidSovMessageTypePrefix(type),
+    ...(Array.isArray(handshakeProtocols) && {
+      handshake_protocols: handshakeProtocols.map(replaceLegacyDidSovMessageTypePrefix),
+    }),
+  }
+}
+
 const didCommOutOfBandRecordEncodingSchema = createRecordEncodingSchema({
-  outOfBandInvitation: zJsonTransformerClass(() => DidCommOutOfBandInvitation, { validate: false }).nullish(),
+  outOfBandInvitation: zWithUpgrade(
+    zJsonTransformerClass(() => DidCommOutOfBandInvitation, { validate: false }).nullish(),
+    upgradeStoredOutOfBandInvitation
+  ),
   role: z.string().nullish(),
   state: z.string().nullish(),
   alias: z.string().nullish(),

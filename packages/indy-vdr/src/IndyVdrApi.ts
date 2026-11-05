@@ -28,7 +28,7 @@ export class IndyVdrApi {
   }
 
   private async signRequest<Request extends IndyVdrRequest>(request: Request, submitterDid: string) {
-    const { pool } = await this.indyVdrPoolService.getPoolForDid(this.agentContext, submitterDid)
+    const { pool } = this.indyVdrPoolService.getPoolForDid(submitterDid)
     return signRequest(this.agentContext, pool, request, submitterDid)
   }
 

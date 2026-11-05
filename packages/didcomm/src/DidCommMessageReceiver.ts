@@ -23,7 +23,7 @@ import type { DidCommConnectionRecord } from './modules/connections/repository'
 import { DidCommConnectionService } from './modules/connections/services'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isValidJweStructure } from './util/JWE'
-import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
+import { canHandleMessageType, parseMessageType } from './util/messageType'
 
 @injectable()
 export class DidCommMessageReceiver {
@@ -247,9 +247,6 @@ export class DidCommMessageReceiver {
    * @param message the plaintext message for which to transform the message in to a class instance
    */
   private async transformMessage(message: DidCommPlaintextMessage): Promise<DidCommMessage> {
-    // replace did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix for message type with https://didcomm.org
-    replaceLegacyDidSovPrefixOnMessage(message)
-
     const messageType = message['@type']
     const MessageClass = this.messageHandlerRegistry.getMessageClassForMessageType(messageType) ?? DidCommMessage
 

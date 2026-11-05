@@ -349,29 +349,6 @@ describe('out of band', () => {
       expect(aliceCredentialRecord.state).toBe(DidCommCredentialState.OfferReceived)
     })
 
-    test('process credential offer requests with legacy did:sov prefix on message type based on OOB message', async () => {
-      const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
-
-      // we need to override the message type to use the legacy did:sov prefix
-      // @ts-expect-error
-      message.type = message.type.replace('https://didcomm.org', 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec')
-      const { outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation({
-        ...issueCredentialConfig,
-        messages: [message],
-      })
-
-      const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
-
-      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
-        state: DidCommCredentialState.OfferReceived,
-        threadId: message.threadId,
-      })
-      await aliceAgent.didcomm.oob.receiveInvitationFromUrl(urlMessage, receiveInvitationConfig)
-
-      const aliceCredentialRecord = await aliceCredentialRecordPromise
-      expect(aliceCredentialRecord.state).toBe(DidCommCredentialState.OfferReceived)
-    })
-
     test('do not process requests when a connection is not ready', async () => {
       const eventListener = vi.fn()
       aliceAgent.events.on<DidCommMessageReceivedEvent>(DidCommEventTypes.DidCommMessageReceived, eventListener)

@@ -1,8 +1,11 @@
+import type { DidRepository } from '@credo-ts/core'
+
 import {
   Agent,
   CacheModuleConfig,
   CredoError,
   DidResolverService,
+  DidsModuleConfig,
   EventEmitter,
   InjectionSymbols,
   JsonLdModuleConfig,
@@ -63,10 +66,6 @@ const inMemoryLruCache = {
   remove: vi.fn(),
 }
 
-const didResolverService = {
-  resolve: vi.fn(),
-}
-
 const cacheModuleConfig = new CacheModuleConfig({
   cache: inMemoryLruCache,
 })
@@ -84,7 +83,7 @@ const agentContext = getAgentContext({
     [InjectionSymbols.FileSystem, new agentDependencies.FileSystem()],
     [InjectionSymbols.StorageService, inMemoryStorageService],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
-    [DidResolverService, didResolverService],
+    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
     [InjectionSymbols.Logger, testLogger],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
@@ -138,7 +137,6 @@ describe('0.4-0.5 | AnonCredsRecord', () => {
       inMemoryLruCache.get.mockClear()
       inMemoryLruCache.set.mockClear()
       inMemoryLruCache.remove.mockClear()
-      didResolverService.resolve.mockClear()
 
       agent = new AgentMock()
     })
@@ -170,34 +168,28 @@ describe('0.4-0.5 | AnonCredsRecord', () => {
       })
     })
 
-    it('credential with unqualified did:indy (bcovrin:test) identifiers', async () => {
-      // The namespace is not cached. The did:sov resolution writes it to the cache.
-      inMemoryLruCache.get
-        .mockReturnValueOnce(null)
-        .mockReturnValueOnce(null)
-        .mockReturnValueOnce({ indyNamespace: 'bcovrin:test' })
+    it('revocable credential with cached unqualified did:indy (bcovrin:test) identifiers', async () => {
+      inMemoryLruCache.get.mockReturnValueOnce({ indyNamespace: 'bcovrin:test' })
 
       await testMigration(agent, {
         issuerId: 'SDqTzbVuCowusqGBNbNDjH',
         schemaIssuerId: 'SDqTzbVuCowusqGBNbNDjG',
         schemaId: 'SDqTzbVuCowusqGBNbNDjG:2:Employee Credential:1.0.0',
         indyNamespace: 'bcovrin:test',
+        shouldBeInCache: 'indy',
+        revocable: true,
       })
     })
 
-    it('revocable credential with unqualified did:indy (bcovrin:test) identifiers', async () => {
-      // The namespace is not cached. The did:sov resolution writes it to the cache.
-      inMemoryLruCache.get
-        .mockReturnValueOnce(null)
-        .mockReturnValueOnce(null)
-        .mockReturnValueOnce({ indyNamespace: 'bcovrin:test' })
+    it('does not migrate a credential with unqualified identifiers when the indy namespace is not cached', async () => {
+      inMemoryLruCache.get.mockReturnValueOnce(null).mockReturnValueOnce(null)
 
       await testMigration(agent, {
         issuerId: 'SDqTzbVuCowusqGBNbNDjH',
         schemaIssuerId: 'SDqTzbVuCowusqGBNbNDjG',
         schemaId: 'SDqTzbVuCowusqGBNbNDjG:2:Employee Credential:1.0.0',
         indyNamespace: 'bcovrin:test',
-        revocable: true,
+        expectFailure: true,
       })
     })
 
@@ -236,9 +228,10 @@ async function testMigration(
     indyNamespace?: string
     shouldBeInCache?: 'indy' | 'sov'
     revocable?: boolean
+    expectFailure?: boolean
   }
 ) {
-  const { issuerId, schemaIssuerId, schemaId, indyNamespace, revocable } = options
+  const { issuerId, schemaIssuerId, schemaId, indyNamespace, revocable, expectFailure } = options
 
   const registry = agentContext.dependencyManager
     .resolve(AnonCredsRegistryService)
@@ -388,24 +381,24 @@ async function testMigration(
 
   await testModule.storeAnonCredsInW3cFormatV0_5(agent)
 
+  if (expectFailure) {
+    // The migration logs the error and keeps the legacy record
+    expect(inMemoryLruCache.get).toHaveBeenCalledTimes(2)
+    expect(w3cRepo.save).toHaveBeenCalledTimes(0)
+    expect(anonCredsRepo.delete).toHaveBeenCalledTimes(0)
+    return
+  }
+
   if (!isUnqualifiedIndyDid(issuerId)) {
     expect(inMemoryLruCache.get).toHaveBeenCalledTimes(0)
-    expect(didResolverService.resolve).toHaveBeenCalledTimes(0)
   } else if (options.shouldBeInCache === 'indy') {
     expect(inMemoryLruCache.get).toHaveBeenCalledTimes(1)
     expect(inMemoryLruCache.get).toHaveBeenCalledWith(agent.context, `IndyVdrPoolService:${issuerId}`, {
       scope: 'global',
     })
-    expect(didResolverService.resolve).toHaveBeenCalledTimes(0)
-  } else if (options.shouldBeInCache === 'sov') {
+  } else {
     expect(inMemoryLruCache.get).toHaveBeenCalledTimes(2)
     expect(inMemoryLruCache.get).toHaveBeenCalledWith(agent.context, `IndySdkPoolService:${issuerId}`)
-    expect(didResolverService.resolve).toHaveBeenCalledTimes(0)
-  } else {
-    // The namespace was not cached, so the migration resolved the did:sov did and read the cache again
-    expect(didResolverService.resolve).toHaveBeenCalledTimes(1)
-    expect(didResolverService.resolve).toHaveBeenCalledWith(agent.context, `did:sov:${issuerId}`)
-    expect(inMemoryLruCache.get).toHaveBeenCalledTimes(3)
   }
 
   expect(anonCredsRepo.getAll).toHaveBeenCalledTimes(1)

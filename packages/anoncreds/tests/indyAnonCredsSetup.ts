@@ -41,7 +41,6 @@ import {
   IndyVdrIndyDidRegistrar,
   IndyVdrIndyDidResolver,
   IndyVdrModule,
-  IndyVdrSovDidResolver,
 } from '../../indy-vdr/src'
 import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
 import type {
@@ -126,7 +125,7 @@ export const getAnonCredsIndyModules = <
     }),
     indyVdr: new IndyVdrModule(indyVdrModuleConfig),
     dids: new DidsModule({
-      resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
+      resolvers: [new IndyVdrIndyDidResolver()],
       registrars: [new IndyVdrIndyDidRegistrar()],
     }),
     cache: new CacheModule({

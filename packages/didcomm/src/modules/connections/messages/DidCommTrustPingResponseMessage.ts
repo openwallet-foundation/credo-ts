@@ -16,8 +16,6 @@ export interface DidCommTrustPingResponseMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0048-trust-ping/README.md#messages
  */
 export class DidCommTrustPingResponseMessage extends DidCommMessage {
-  public readonly allowDidSovPrefix = true
-
   /**
    * Create new DidCommTrustPingResponseMessage instance.
    * responseRequested will be true if not passed

@@ -21,7 +21,6 @@ export interface DidCommModuleConfigOptions {
     inbound?: DidCommInboundTransport[]
     outbound?: DidCommOutboundTransport[]
   }
-  useDidSovPrefixWhereAllowed?: boolean
   processDidCommMessagesConcurrently?: boolean
   didCommMimeType?: string
   useDidKeyInProtocols?: boolean
@@ -169,10 +168,6 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
 
   public set endpoints(endpoints: string[]) {
     this._endpoints = endpoints
-  }
-
-  public get useDidSovPrefixWhereAllowed() {
-    return this.options.useDidSovPrefixWhereAllowed ?? false
   }
 
   public get inboundTransports() {

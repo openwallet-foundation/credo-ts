@@ -11,7 +11,6 @@ import { TimingDecorated } from './decorators/timing/TimingDecoratorExtension'
 import { TransportDecorated } from './decorators/transport/TransportDecoratorExtension'
 import type { DidCommPlaintextMessage } from './types'
 import type { ParsedMessageType } from './util/messageType'
-import { replaceNewDidCommPrefixWithLegacyDidSovOnMessage } from './util/messageType'
 
 export type ConstructableAgentMessage = Constructor<DidCommMessage> & { type: ParsedMessageType }
 
@@ -29,7 +28,6 @@ export class DidCommMessage extends Decorated {
    * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0348-transition-msg-type-to-https/README.md
    */
   @Exclude()
-  public readonly allowDidSovPrefix: boolean = false
 
   /**
    * Whether to use Queue Transport in case the recipient of this message does not have a reliable
@@ -40,21 +38,8 @@ export class DidCommMessage extends Decorated {
   @Exclude()
   public readonly allowQueueTransport: boolean = true
 
-  public toJSON({
-    useDidSovPrefixWhereAllowed,
-  }: {
-    useDidSovPrefixWhereAllowed?: boolean
-  } = {}): DidCommPlaintextMessage {
-    const json = JsonTransformer.toJSON(this)
-
-    // If we have `useDidSovPrefixWhereAllowed` enabled, we want to replace the new https://didcomm.org prefix with the legacy did:sov prefix.
-    // However, we only do this if the protocol RFC was initially written with the did:sov message type prefix
-    // See https://github.com/hyperledger/aries-rfcs/blob/main/features/0348-transition-msg-type-to-https/README.md
-    if (this.allowDidSovPrefix && useDidSovPrefixWhereAllowed) {
-      replaceNewDidCommPrefixWithLegacyDidSovOnMessage(json)
-    }
-
-    return json as DidCommPlaintextMessage
+  public toJSON(): DidCommPlaintextMessage {
+    return JsonTransformer.toJSON(this) as DidCommPlaintextMessage
   }
 
   public is<C extends typeof DidCommMessage>(Class: C): this is InstanceType<C> {

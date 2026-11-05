@@ -15,7 +15,7 @@ import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
 
 import { getAgentOptions, importExistingIndyDidFromPrivateKey, retryUntilResult } from '../../core/tests/helpers'
-import { IndyVdrModule, IndyVdrSovDidResolver } from '../src'
+import { IndyVdrModule } from '../src'
 import { indyDidFromNamespaceAndInitialKey } from '../src/dids/didIndyUtil'
 import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
@@ -34,7 +34,7 @@ const endorser = new Agent(
       }),
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
-        resolvers: [new IndyVdrIndyDidResolver(), new IndyVdrSovDidResolver()],
+        resolvers: [new IndyVdrIndyDidResolver()],
       }),
     }
   )
@@ -51,7 +51,7 @@ const agent = new Agent(
       }),
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
-        resolvers: [new IndyVdrIndyDidResolver(), new IndyVdrSovDidResolver()],
+        resolvers: [new IndyVdrIndyDidResolver()],
       }),
     }
   )
