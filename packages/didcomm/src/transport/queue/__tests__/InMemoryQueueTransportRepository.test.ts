@@ -52,4 +52,14 @@ describe('InMemoryQueueTransportRepository', () => {
     expect(repository.takeFromQueue(agentContext, { connectionId: 'connection-1' }).map((msg) => msg.id)).toEqual([id])
     expect(repository.getAvailableMessageCount(agentContext, { connectionId: 'connection-2' })).toBe(0)
   })
+
+  test('only takes the messages with the given ids', () => {
+    repository.addMessage(agentContext, { connectionId: 'connection-1', recipientDids: [], payload })
+    const id = repository.addMessage(agentContext, { connectionId: 'connection-1', recipientDids: [], payload })
+
+    expect(
+      repository.takeFromQueue(agentContext, { connectionId: 'connection-1', messageIds: [id] }).map((msg) => msg.id)
+    ).toEqual([id])
+    expect(repository.getAvailableMessageCount(agentContext, { connectionId: 'connection-1' })).toBe(1)
+  })
 })

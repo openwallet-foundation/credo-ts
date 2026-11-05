@@ -2,7 +2,7 @@ import { Kms, RecordDuplicateError, TypedArrayEncoder } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
-import { isDidKey } from '../../../../../../core/src/modules/dids/helpers'
+import { isDidKey, verkeyToDidKey } from '../../../../../../core/src/modules/dids/helpers'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
 import { DummyTransportSession } from '../../../../__tests__/stubs'
 import { DidCommMessageSender } from '../../../../DidCommMessageSender'
@@ -299,7 +299,7 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
   )
 
   const recipientKey = '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'
-  const sendError = new MessageSendingError('Message is undeliverable', {
+  const _sendError = new MessageSendingError('Message is undeliverable', {
     outboundMessageContext: {} as DidCommOutboundMessageContext,
   })
 
@@ -312,14 +312,14 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
     })
   }
 
-  function liveTransportSessionId(): string | undefined {
+  function _liveTransportSessionId(): string | undefined {
     return sessionService.getLiveSessionByConnectionId(agentContext, { connectionId: mockConnection.id })
       ?.transportSessionId
   }
 
-  async function forward(): Promise<void> {
+  async function forward(to = recipientKey): Promise<void> {
     const message = new DidCommForwardMessage({
-      to: recipientKey,
+      to,
       message: { protected: 'base64url', iv: 'base64url', ciphertext: 'base64url', tag: 'base64url' },
     })
     await mediatorService.processForwardMessage(new DidCommInboundMessageContext(message, { agentContext }))
@@ -342,52 +342,43 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
     )
     mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
     saveLiveSession('transportSessionId')
-    vi.spyOn(mediationPickupApi, 'queueMessage').mockResolvedValue(undefined)
+    vi.spyOn(mediationPickupApi, 'queueMessage').mockResolvedValue({ messageId: 'messageId' })
     vi.spyOn(mediationPickupApi, 'getLiveModeSession').mockImplementation(async (options) =>
       sessionService.getLiveSessionByConnectionId(agentContext, options)
     )
   })
 
-  test('ends the live mode session, closes its transport and completes the forward when the live delivery send fails', async () => {
-    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(sendError)
-    const warnSpy = vi.spyOn(agentConfig.logger, 'warn')
+  test('queues the message and delivers it to the live mode session', async () => {
+    const deliverSpy = vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockResolvedValue(undefined)
 
     await forward()
 
-    expect(transportSession.close).toHaveBeenCalledTimes(1)
-    expect(liveTransportSessionId()).toBeUndefined()
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(`'${mockConnection.id}'`), {
-      error: 'Message is undeliverable',
+    expect(mediationPickupApi.queueMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ connectionId: mockConnection.id })
+    )
+    expect(deliverSpy).toHaveBeenCalledWith({
+      pickupSessionId: sessionService.getLiveSessionByConnectionId(agentContext, { connectionId: mockConnection.id })
+        ?.id,
+      recipientDid: expect.stringContaining('did:key:'),
+      messageIds: ['messageId'],
     })
   })
 
-  test('completes the forward when closing the transport throws', async () => {
-    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(sendError)
-    vi.spyOn(transportSession, 'close').mockRejectedValue(new Error('close failed'))
+  test('still accepts the forward message when the live delivery fails', async () => {
+    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(new Error('send failed'))
 
     await expect(forward()).resolves.toBeUndefined()
-
-    expect(liveTransportSessionId()).toBeUndefined()
+    expect(mediationPickupApi.queueMessage).toHaveBeenCalled()
   })
 
-  test('keeps a live mode session that replaced the failed one', async () => {
-    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockImplementation(async () => {
-      saveLiveSession('newTransportSessionId')
-      throw sendError
-    })
+  test('looks up the mediation record by base58 key when forwarded to a did:key', async () => {
+    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockResolvedValue(undefined)
 
-    await forward()
+    await forward(verkeyToDidKey(recipientKey))
 
-    expect(transportSession.close).not.toHaveBeenCalled()
-    expect(liveTransportSessionId()).toBe('newTransportSessionId')
-  })
-
-  test('keeps the live mode session when live delivery fails before sending', async () => {
-    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(new Error('storage unavailable'))
-
-    await forward()
-
-    expect(transportSession.close).not.toHaveBeenCalled()
-    expect(liveTransportSessionId()).toBe('transportSessionId')
+    expect(mediationRepository.getSingleByRecipientKey).toHaveBeenLastCalledWith(agentContext, recipientKey)
+    expect(mediationPickupApi.queueMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ recipientDids: [verkeyToDidKey(recipientKey)] })
+    )
   })
 })

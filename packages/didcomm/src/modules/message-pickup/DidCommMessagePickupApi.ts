@@ -12,8 +12,10 @@ import type { DidCommMessageProcessedEvent } from '../../DidCommEvents'
 import { DidCommEventTypes } from '../../DidCommEvents'
 import type { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { DidCommModuleConfig } from '../../DidCommModuleConfig'
+import { DidCommTransportService } from '../../DidCommTransportService'
+import { MessageSendingError } from '../../errors'
 import { DidCommOutboundMessageContext } from '../../models'
+import type { DidCommConnectionRecord } from '../connections/repository'
 import { DidCommConnectionService } from '../connections/services'
 import type {
   DeliverMessagesFromQueueOptions,
@@ -30,7 +32,7 @@ import type {
 import type { MessagePickupCompletedEvent } from './DidCommMessagePickupEvents'
 import { DidCommMessagePickupEventTypes } from './DidCommMessagePickupEvents'
 import { DidCommMessagePickupModuleConfig } from './DidCommMessagePickupModuleConfig'
-import type { DidCommMessagePickupSession, DidCommMessagePickupSessionRole } from './DidCommMessagePickupSession'
+import { type DidCommMessagePickupSession, DidCommMessagePickupSessionRole } from './DidCommMessagePickupSession'
 import type { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol } from './protocol'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 import { DidCommStatusV2Message } from './protocol/v2/messages'
@@ -104,14 +106,13 @@ export class DidCommMessagePickupApi<
     const { connectionId, message, recipientDids } = options
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
-    const queueTransportRepository =
-      this.agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
-
-    await queueTransportRepository.addMessage(this.agentContext, {
+    const messageId = await this.messageSender.queueMessage(this.agentContext, {
       connectionId: connectionRecord.id,
       recipientDids,
       payload: message,
     })
+
+    return { messageId }
   }
 
   /**
@@ -152,13 +153,7 @@ export class DidCommMessagePickupApi<
     })
 
     if (createDeliveryReturn) {
-      await this.messageSender.sendMessage(
-        new DidCommOutboundMessageContext(createDeliveryReturn.message, {
-          agentContext: this.agentContext,
-          connection: connectionRecord,
-        }),
-        { transportPriority: { schemes: ['wss', 'ws'] } }
-      )
+      await this.sendLiveDelivery(session, connectionRecord, createDeliveryReturn.message)
     }
   }
 
@@ -173,7 +168,7 @@ export class DidCommMessagePickupApi<
   public async deliverMessagesFromQueue(options: DeliverMessagesFromQueueOptions) {
     this.logger.debug('Delivering queued messages')
 
-    const { pickupSessionId, recipientDid: recipientKey, batchSize } = options
+    const { pickupSessionId, recipientDid: recipientKey, messageIds, batchSize } = options
 
     const session = this.messagePickupSessionService.getLiveSession(this.agentContext, pickupSessionId)
 
@@ -191,17 +186,51 @@ export class DidCommMessagePickupApi<
     const deliverMessagesReturn = await protocol.createDeliveryMessage(this.agentContext, {
       connectionRecord,
       recipientKey,
+      messageIds,
       batchSize,
     })
 
     if (deliverMessagesReturn) {
+      await this.sendLiveDelivery(session, connectionRecord, deliverMessagesReturn.message)
+    }
+  }
+
+  private async sendLiveDelivery(
+    session: DidCommMessagePickupSession,
+    connectionRecord: DidCommConnectionRecord,
+    message: DidCommMessage
+  ) {
+    try {
       await this.messageSender.sendMessage(
-        new DidCommOutboundMessageContext(deliverMessagesReturn.message, {
+        new DidCommOutboundMessageContext(message, {
           agentContext: this.agentContext,
           connection: connectionRecord,
+          sessionId: session.transportSessionId,
         }),
         { transportPriority: { schemes: ['wss', 'ws'] } }
       )
+    } catch (error) {
+      if (
+        error instanceof MessageSendingError &&
+        this.messagePickupSessionService.getLiveSession(this.agentContext, session.id) !== undefined
+      ) {
+        this.logger.warn(
+          `Live mode delivery failed for connection '${session.connectionId}', ending its live mode session`,
+          { error: error.message }
+        )
+        this.messagePickupSessionService.removeLiveSession(this.agentContext, { connectionId: session.connectionId })
+        try {
+          await this.agentContext.dependencyManager
+            .resolve(DidCommTransportService)
+            .findSessionById(session.transportSessionId)
+            ?.close()
+        } catch (closeError) {
+          this.logger.warn(`Unable to close the transport session of connection '${session.connectionId}'`, {
+            error: closeError.message,
+          })
+        }
+      }
+      throw error
     }
   }
 

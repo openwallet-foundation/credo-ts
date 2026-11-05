@@ -16,6 +16,7 @@ import {
   mockFunction,
 } from '../../../core/tests/helpers'
 import { TestMessage } from '../../../core/tests/TestMessage'
+import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { DidCommEnvelopeService } from '../DidCommEnvelopeService'
 import type { DidCommMessageSentEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
@@ -233,6 +234,27 @@ describe('DidCommMessageSender', () => {
           status: OutboundMessageSendStatus.Undeliverable,
         },
       })
+    })
+
+    test('queues the message when the connection only has a queue service', async () => {
+      const queueService = new DidCommV1Service({
+        id: '<did>;queue',
+        serviceEndpoint: DID_COMM_TRANSPORT_QUEUE,
+        recipientKeys: ['#authentication-1'],
+      })
+      resolveCreatedDidDocumentWithKeysMock.mockResolvedValue({
+        didDocument: getMockDidDocument({ service: [queueService] }),
+        keys: [],
+      })
+      didResolverServiceResolveDidServicesMock.mockResolvedValue([getMockResolvedDidService(queueService)])
+      const queueMessageSpy = vi.spyOn(messageSender, 'queueMessage')
+
+      await messageSender.sendMessage(outboundMessageContext)
+
+      expect(queueMessageSpy).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ connectionId: connection.id, recipientDids: [expect.any(String)] })
+      )
     })
 
     test('reports an undeliverable message when resolving services fails', async () => {

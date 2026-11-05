@@ -28,6 +28,7 @@ import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './mode
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
+import type { AddMessageOptions } from './transport/queue/QueueTransportRepositoryOptions'
 import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
 
 export interface TransportPriorityOptions {
@@ -174,7 +175,7 @@ export class DidCommMessageSender {
       agentContext.config.logger.debug(
         `Queue packed message for connection ${connection.id} (${connection.theirLabel})`
       )
-      await this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, {
+      await this.queueMessage(agentContext, {
         connectionId: connection.id,
         recipientDids: [verkeyToDidKey(recipientKey)],
         payload: encryptedMessage,
@@ -350,7 +351,7 @@ export class DidCommMessageSender {
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
-      await this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, {
+      await this.queueMessage(agentContext, {
         connectionId: connection.id,
         recipientDids: keys.recipientKeys.map((item) => new DidKey(item).did),
         payload: encryptedMessage,
@@ -376,6 +377,10 @@ export class DidCommMessageSender {
       `Message is undeliverable to connection ${connection.id} (${connection.theirLabel}). \n\nReasons:\n\t- ${errors.map((e) => e.message).join('\n\t-')}`,
       { outboundMessageContext }
     )
+  }
+
+  public async queueMessage(agentContext: AgentContext, options: AddMessageOptions) {
+    return this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, options)
   }
 
   private async sendMessageToService(outboundMessageContext: DidCommOutboundMessageContext) {

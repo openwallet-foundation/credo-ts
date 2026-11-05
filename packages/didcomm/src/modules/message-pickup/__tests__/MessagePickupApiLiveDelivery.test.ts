@@ -1,0 +1,182 @@
+import { Subject } from 'rxjs'
+import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
+import { testLogger } from '../../../../../core/tests'
+import { getAgentConfig, getAgentContext, getMockConnection } from '../../../../../core/tests/helpers'
+import { DummyTransportSession } from '../../../__tests__/stubs'
+import { DidCommMessage } from '../../../DidCommMessage'
+import type { DidCommMessageSender } from '../../../DidCommMessageSender'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
+import { DidCommTransportService } from '../../../DidCommTransportService'
+import { MessageSendingError } from '../../../errors'
+import type { DidCommOutboundMessageContext } from '../../../models'
+import { DidCommDidExchangeState } from '../../connections/models/DidCommDidExchangeState'
+import type { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
+import { DidCommMessagePickupApi } from '../DidCommMessagePickupApi'
+import { DidCommMessagePickupModuleConfig } from '../DidCommMessagePickupModuleConfig'
+import { DidCommMessagePickupSessionRole } from '../DidCommMessagePickupSession'
+import { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol } from '../protocol'
+import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'
+
+describe('DidCommMessagePickupApi live delivery', () => {
+  const agentConfig = getAgentConfig('MessagePickupApiLiveDelivery')
+  const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
+  const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
+  const recipientDid = 'did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'
+  const sendError = new MessageSendingError('Message is undeliverable', {
+    outboundMessageContext: {} as DidCommOutboundMessageContext,
+  })
+
+  let sessionService: DidCommMessagePickupSessionService
+  let transportService: DidCommTransportService
+  let transportSession: DummyTransportSession
+  let agentContext: ReturnType<typeof getAgentContext>
+  let api: DidCommMessagePickupApi
+  let messageSender: DidCommMessageSender
+
+  const saveLiveSession = (transportSessionId: string) =>
+    sessionService.saveLiveSession(agentContext, {
+      connectionId: connection.id,
+      protocolVersion: 'v2',
+      role: DidCommMessagePickupSessionRole.MessageHolder,
+      transportSessionId,
+    })
+
+  const liveTransportSessionId = () =>
+    sessionService.getLiveSessionByConnectionId(agentContext, { connectionId: connection.id })?.transportSessionId
+
+  beforeEach(() => {
+    sessionService = new DidCommMessagePickupSessionService()
+    transportService = new DidCommTransportService(getAgentContext(), eventEmitter)
+    agentContext = getAgentContext({
+      agentConfig,
+      registerInstances: [
+        [DidCommModuleConfig, new DidCommModuleConfig()],
+        [DidCommTransportService, transportService],
+        [EventEmitter, eventEmitter],
+      ],
+    })
+    transportSession = new DummyTransportSession('transportSessionId')
+    vi.spyOn(transportSession, 'close').mockResolvedValue()
+    transportService.saveSession(transportSession)
+
+    const connectionService = {
+      getById: vi.fn().mockResolvedValue(connection),
+    } as unknown as DidCommConnectionService
+
+    messageSender = {
+      queueMessage: vi.fn().mockResolvedValue('messageId'),
+      sendMessage: vi.fn().mockResolvedValue(undefined),
+    } as unknown as DidCommMessageSender
+
+    api = new DidCommMessagePickupApi(
+      messageSender,
+      agentContext,
+      connectionService,
+      eventEmitter,
+      sessionService,
+      new DidCommMessagePickupModuleConfig({
+        protocols: [new DidCommMessagePickupV1Protocol(), new DidCommMessagePickupV2Protocol()],
+      }),
+      new Subject(),
+      testLogger
+    )
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  test('queues the message through the message sender', async () => {
+    const message = { protected: 'base64url', iv: 'base64url', ciphertext: 'base64url', tag: 'base64url' }
+
+    await expect(
+      api.queueMessage({ connectionId: connection.id, recipientDids: [recipientDid], message })
+    ).resolves.toEqual({ messageId: 'messageId' })
+    expect(messageSender.queueMessage).toHaveBeenCalledWith(agentContext, {
+      connectionId: connection.id,
+      recipientDids: [recipientDid],
+      payload: message,
+    })
+  })
+
+  const livePickupSessionId = () =>
+    sessionService.getLiveSessionByConnectionId(agentContext, { connectionId: connection.id })?.id as string
+
+  const mockDelivery = () =>
+    vi
+      .spyOn(DidCommMessagePickupV2Protocol.prototype, 'createDeliveryMessage')
+      .mockResolvedValue({ message: new DidCommMessage() })
+
+  test('delivers only the given messages on the transport session of the live mode session', async () => {
+    saveLiveSession('transportSessionId')
+    const createDeliverySpy = mockDelivery()
+
+    await api.deliverMessagesFromQueue({ pickupSessionId: livePickupSessionId(), messageIds: ['messageId'] })
+
+    expect(createDeliverySpy).toHaveBeenCalledWith(agentContext, expect.objectContaining({ messageIds: ['messageId'] }))
+    expect(messageSender.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId: 'transportSessionId' }),
+      expect.anything()
+    )
+  })
+
+  test('ends the live mode session and closes its transport when the delivery send fails', async () => {
+    saveLiveSession('transportSessionId')
+    mockDelivery()
+    vi.mocked(messageSender.sendMessage).mockRejectedValue(sendError)
+
+    await expect(api.deliverMessagesFromQueue({ pickupSessionId: livePickupSessionId() })).rejects.toBe(sendError)
+
+    expect(transportSession.close).toHaveBeenCalledTimes(1)
+    expect(liveTransportSessionId()).toBeUndefined()
+  })
+
+  test('ends the live mode session when a direct delivery send fails', async () => {
+    saveLiveSession('transportSessionId')
+    mockDelivery()
+    vi.mocked(messageSender.sendMessage).mockRejectedValue(sendError)
+
+    await expect(api.deliverMessages({ pickupSessionId: livePickupSessionId(), messages: [] })).rejects.toBe(sendError)
+
+    expect(transportSession.close).toHaveBeenCalledTimes(1)
+    expect(liveTransportSessionId()).toBeUndefined()
+  })
+
+  test('ends the live mode session when closing the transport throws', async () => {
+    saveLiveSession('transportSessionId')
+    mockDelivery()
+    vi.mocked(messageSender.sendMessage).mockRejectedValue(sendError)
+    vi.spyOn(transportSession, 'close').mockRejectedValue(new Error('close failed'))
+
+    await expect(api.deliverMessagesFromQueue({ pickupSessionId: livePickupSessionId() })).rejects.toBe(sendError)
+    expect(liveTransportSessionId()).toBeUndefined()
+  })
+
+  test('keeps a live mode session that replaced the failed one', async () => {
+    saveLiveSession('transportSessionId')
+    mockDelivery()
+    vi.mocked(messageSender.sendMessage).mockImplementation(async () => {
+      saveLiveSession('newTransportSessionId')
+      throw sendError
+    })
+
+    await expect(api.deliverMessagesFromQueue({ pickupSessionId: livePickupSessionId() })).rejects.toBe(sendError)
+
+    expect(transportSession.close).not.toHaveBeenCalled()
+    expect(liveTransportSessionId()).toBe('newTransportSessionId')
+  })
+
+  test('keeps the live mode session when delivery fails before sending', async () => {
+    saveLiveSession('transportSessionId')
+    vi.spyOn(DidCommMessagePickupV2Protocol.prototype, 'createDeliveryMessage').mockRejectedValue(
+      new Error('storage unavailable')
+    )
+
+    await expect(api.deliverMessagesFromQueue({ pickupSessionId: livePickupSessionId() })).rejects.toThrow(
+      'storage unavailable'
+    )
+
+    expect(transportSession.close).not.toHaveBeenCalled()
+    expect(liveTransportSessionId()).toBe('transportSessionId')
+  })
+})
