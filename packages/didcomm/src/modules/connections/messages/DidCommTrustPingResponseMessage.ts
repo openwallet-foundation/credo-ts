@@ -1,6 +1,7 @@
 import { IsOptional, IsString } from 'class-validator'
 import { DidCommMessage } from '../../../DidCommMessage'
 import type { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
+import type { DidCommVersion } from '../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 export interface DidCommTrustPingResponseMessageOptions {
@@ -17,6 +18,7 @@ export interface DidCommTrustPingResponseMessageOptions {
  */
 export class DidCommTrustPingResponseMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   /**
    * Create new DidCommTrustPingResponseMessage instance.
