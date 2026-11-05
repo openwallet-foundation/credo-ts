@@ -2478,15 +2478,15 @@ function getCredentialRequestEncryptionMetadata(issuerRecord: OpenId4VcIssuerRec
 
 /**
  * Issuer metadata to parse (deferred) credential requests with. The library only decrypts with keys
- * from the metadata, so this adds the retired request encryption keys that are not advertised.
+ * from the metadata, so this adds the previous request encryption keys that are not advertised.
  */
 export function getCredentialRequestDecryptionMetadata(
   issuerMetadata: OpenId4VciMetadata,
   issuerRecord: OpenId4VcIssuerRecord
 ): OpenId4VciMetadata {
   const requestEncryption = issuerMetadata.credentialIssuer.credential_request_encryption
-  const retiredJwks = issuerRecord.credentialRequestEncryption?.retiredJwks
-  if (!requestEncryption || !retiredJwks?.length) return issuerMetadata
+  const previousJwks = issuerRecord.credentialRequestEncryption?.previousJwks
+  if (!requestEncryption || !previousJwks?.length) return issuerMetadata
 
   return {
     ...issuerMetadata,
@@ -2496,7 +2496,7 @@ export function getCredentialRequestDecryptionMetadata(
         ...requestEncryption,
         jwks: {
           ...requestEncryption.jwks,
-          keys: [...requestEncryption.jwks.keys, ...retiredJwks.map(toCredentialRequestEncryptionJwk)],
+          keys: [...requestEncryption.jwks.keys, ...previousJwks.map(toCredentialRequestEncryptionJwk)],
         },
       },
     },
@@ -2514,7 +2514,7 @@ export function assertCredentialEncryptionConfiguration(
 
   const unsupportedKey = [
     ...(options.credentialRequestEncryption?.jwks ?? []),
-    ...(options.credentialRequestEncryption?.retiredJwks ?? []),
+    ...(options.credentialRequestEncryption?.previousJwks ?? []),
   ].find((jwk) => jwk.kty === 'oct' || !Kms.allowedKeyDerivationAlgsForKey(jwk).includes('ECDH-ES'))
   if (unsupportedKey) {
     throw new CredoError(

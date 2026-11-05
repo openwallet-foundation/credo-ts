@@ -1794,9 +1794,9 @@ describe('OpenId4VcIssuer', () => {
       ).resolves.toMatchObject({ credentialRequest })
     })
 
-    it('decrypts a credential request encrypted to a retired key without advertising it', async () => {
-      const retiredKey = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
-      const { publicJwk, issuerRecord } = await configureRequestEncryption({ retiredJwks: [retiredKey.publicJwk] })
+    it('decrypts a credential request encrypted to a previous key without advertising it', async () => {
+      const previousKey = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const { publicJwk, issuerRecord } = await configureRequestEncryption({ previousJwks: [previousKey.publicJwk] })
 
       const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
       expect(issuerMetadata.credentialIssuer.credential_request_encryption?.jwks.keys).toEqual([
@@ -1804,7 +1804,7 @@ describe('OpenId4VcIssuer', () => {
       ])
 
       await expect(
-        parse(issuerRecord, await encryptRequest(retiredKey.publicJwk, credentialRequest))
+        parse(issuerRecord, await encryptRequest(previousKey.publicJwk, credentialRequest))
       ).resolves.toMatchObject({ credentialRequest })
     })
 
