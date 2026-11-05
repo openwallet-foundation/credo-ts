@@ -1,5 +1,5 @@
 import type { AgentContext, Constructor, DependencyManager, Module, Update } from '@credo-ts/core'
-import { CredoError, EventEmitter, InjectionSymbols } from '@credo-ts/core'
+import { AgentConfig, CredoError, EventEmitter, InjectionSymbols } from '@credo-ts/core'
 import type { Subject } from 'rxjs'
 import { mergeMap, takeUntil } from 'rxjs'
 import { DidCommApi } from './DidCommApi'
@@ -137,6 +137,14 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
    * Registers the dependencies of the question answer module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
+    if (this.config.isSupported('v2')) {
+      dependencyManager
+        .resolve(AgentConfig)
+        .logger.warn(
+          'DIDComm V2 support is experimental and could have unexpected breaking changes. When enabling it, make sure to use strict versions for all @credo-ts packages.'
+        )
+    }
+
     // Config
     dependencyManager.registerInstance(DidCommModuleConfig, this.config)
 
