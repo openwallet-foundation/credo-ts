@@ -157,6 +157,13 @@ export interface DidCommModuleConfigOptions {
    * @default true
    */
   mediationRecipient?: boolean | DidCommMediationRecipientModuleConfigOptions
+
+  /**
+   * Maximum size in bytes of an invitation fetched from a short URL.
+   *
+   * @default the `maxResponseBytes` of the agent's `fetchLimits`
+   */
+  maxInvitationBytes?: number
 }
 
 export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = DidCommModuleConfigOptions> {
@@ -291,5 +298,9 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
 
   public get v2DefaultAnoncryptContentEncryption(): DidCommV2AnoncryptContentEncryptionAlgorithm {
     return this.options.v2DefaultAnoncryptContentEncryption ?? 'A256CBC-HS512'
+  }
+
+  public get maxInvitationBytes() {
+    return this.options.maxInvitationBytes
   }
 }

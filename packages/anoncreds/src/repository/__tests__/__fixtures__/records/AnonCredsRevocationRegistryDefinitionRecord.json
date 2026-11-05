@@ -1,0 +1,33 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "id": "anoncreds-revocation-registry-definition-record-id",
+  "metadata": {
+    "_internal/anonCredsRevocationRegistryDefinitionMetadata": {
+      "issuanceType": "ISSUANCE_BY_DEFAULT"
+    },
+    "_internal/anonCredsRevocationRegistryDefinitionRegistrationMetadata": {
+      "didIndyNamespace": "bcovrin:test"
+    }
+  },
+  "revocationRegistryDefinition": {
+    "credDefId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx/anoncreds/v0/CLAIM_DEF/400832/default",
+    "issuerId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx",
+    "revocDefType": "CL_ACCUM",
+    "tag": "revocation",
+    "value": {
+      "maxCredNum": 100,
+      "publicKeys": {
+        "accumKey": {
+          "z": "1 0BB3F9A4C1E5D7F9A1B3C5D7E9F1A3B5C7D9E1F3A5B7C9D1E3F5A7B9C1D3E5 1 1A0C2E4F6B8D0A2C4E6F8B0D2A4C6E8F0B2D4A6C8E0F2B4D6A8C0E2F4B6D8A 1 0C3E5F7B9D1A3C5E7F9B1D3A5C7E9F1B3D5A7C9E1F3B5D7A9C1E3F5B7D9A1C 1 1D2F4A6C8E0B2D4F6A8C0E2B4D6F8A0C2E4B6D8F0A2C4E6B8D0F2A4C6E8B0D 2 095E45DDF417D05FB10933FFC63D474548B7FFFF7888802F07FFFFFF7D07A8A8 1 0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      },
+      "tailsHash": "7Tqg6BwSSWapxgUDm9KKgg",
+      "tailsLocation": "https://tails.example.com/7Tqg6BwSSWapxgUDm9KKgg"
+    }
+  },
+  "revocationRegistryDefinitionId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx/anoncreds/v0/REV_REG_DEF/400832/default/revocation",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

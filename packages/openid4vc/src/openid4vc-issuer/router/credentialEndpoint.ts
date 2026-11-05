@@ -6,7 +6,7 @@ import {
   getCredentialConfigurationsMatchingRequestFormat,
 } from '@openid4vc/openid4vci'
 import type { Response, Router } from 'express'
-import { getCredentialConfigurationsSupportedForScopes } from '../../shared'
+import { getCredentialConfigurationsSupportedForScopes, type OpenId4VciParsedCredentialRequest } from '../../shared'
 import {
   getRequestContext,
   sendJsonResponse,
@@ -19,6 +19,8 @@ import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
+
+const recoverableCredentialErrorCodes: string[] = [Oauth2ErrorCodes.InvalidProof, Oauth2ErrorCodes.InvalidNonce]
 
 export function configureCredentialEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
   router.post(config.credentialEndpointPath, async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
@@ -52,13 +54,13 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
     if (!resourceRequestResult) return
     const { tokenPayload, accessToken, scheme, authorizationServer } = resourceRequestResult
 
-    const credentialRequest = request.body
     const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
 
-    let parsedCredentialRequest: ReturnType<typeof vcIssuer.parseCredentialRequest>
+    let parsedCredentialRequest: OpenId4VciParsedCredentialRequest
     try {
-      parsedCredentialRequest = vcIssuer.parseCredentialRequest({
-        credentialRequest,
+      parsedCredentialRequest = await vcIssuer.parseCredentialRequest({
+        credentialRequest: request.body,
+        contentType: request.headers['content-type'],
         issuerMetadata,
       })
     } catch (error) {
@@ -182,8 +184,6 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
 
       // Stateful session expired
       else if (Date.now() > expiresAt.getTime()) {
-        issuanceSession.errorMessage = 'Credential offer has expired'
-        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
         return sendOauth2ErrorResponse(
           response,
           next,
@@ -203,6 +203,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
       }
     }
 
+    const isExistingSession = issuanceSession !== null
     if (!issuanceSession) {
       // No session bound to the access token. This is a dynamic (wallet-initiated) issuance request
       // for an external authorization server. The credential configurations that can be issued are
@@ -286,7 +287,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         agentContext,
         {
           issuanceSession,
-          credentialRequest,
+          parsedCredentialRequest,
           authorization: {
             authorizationServer,
             accessToken: {
@@ -313,7 +314,12 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         credentialResponse.transaction_id ? 202 : 200
       )
     } catch (error) {
-      if (issuanceSession) {
+      const canRetry =
+        isExistingSession &&
+        error instanceof Oauth2ServerErrorResponseError &&
+        recoverableCredentialErrorCodes.includes(error.errorResponse.error)
+
+      if (issuanceSession && !canRetry) {
         issuanceSession.errorMessage =
           typeof error.message === 'string' && error.message !== ''
             ? error.message

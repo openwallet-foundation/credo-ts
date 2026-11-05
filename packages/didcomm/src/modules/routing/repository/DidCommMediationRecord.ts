@@ -1,5 +1,5 @@
-import { BaseRecord, CredoError, utils } from '@credo-ts/core'
-import { Transform } from 'class-transformer'
+import { BaseRecord, CredoError, createRecordEncodingSchema, utils, zWithUpgrade } from '@credo-ts/core'
+import { z } from 'zod'
 import { DidCommMediatorPickupStrategy } from '../DidCommMediatorPickupStrategy'
 import type { DidCommMediationRole } from '../models/DidCommMediationRole'
 import { DidCommMediationState } from '../models/DidCommMediationState'
@@ -33,10 +33,30 @@ export type DefaultDidCommMediationTags = {
   threadId: string
 }
 
+const didCommMediationRecordEncodingSchema = createRecordEncodingSchema({
+  state: z.string().nullish(),
+  role: z.string().nullish(),
+  connectionId: z.string().nullish(),
+  threadId: z.string().nullish(),
+  endpoint: z.string().nullish(),
+  recipientKeys: z.array(z.string()).nullish(),
+  routingKeys: z.array(z.string()).nullish(),
+  routingDid: z.string().nullish(),
+  recipientDids: z.array(z.string()).nullish(),
+  protocolVersion: z.string().nullish(),
+  pickupStrategy: zWithUpgrade(z.string(), (value) =>
+    value === 'Explicit' ? DidCommMediatorPickupStrategy.PickUpV1 : value
+  ).nullish(),
+})
+
 export class DidCommMediationRecord
   extends BaseRecord<DefaultDidCommMediationTags, CustomDidCommMediationTags>
   implements DidCommMediationRecordProps
 {
+  public static get encodingSchema(): z.ZodType {
+    return didCommMediationRecordEncodingSchema
+  }
+
   public state!: DidCommMediationState
   public role!: DidCommMediationRole
   public connectionId!: string
@@ -66,12 +86,6 @@ export class DidCommMediationRecord
   /** Coordinate Mediation protocol version; undefined = v1. */
   public protocolVersion?: string
 
-  @Transform(({ value }) => {
-    if (value === 'Explicit') {
-      return DidCommMediatorPickupStrategy.PickUpV1
-    }
-    return value
-  })
   public pickupStrategy?: DidCommMediatorPickupStrategy
 
   public static readonly type = 'MediationRecord'
@@ -91,7 +105,7 @@ export class DidCommMediationRecord
       this.recipientKeys = props.recipientKeys || []
       this.routingKeys = props.routingKeys || []
       this.routingDid = props.routingDid
-      this.recipientDids = props.recipientDids || []
+      this.recipientDids = props.recipientDids
       this.protocolVersion = props.protocolVersion
       this.state = props.state
       this.role = props.role

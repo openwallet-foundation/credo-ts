@@ -1,6 +1,6 @@
 import type { TagsBase } from '@credo-ts/core'
-import { BaseRecord, CredoError, utils } from '@credo-ts/core'
-import { Transform, Type } from 'class-transformer'
+import { BaseRecord, CredoError, createRecordEncodingSchema, JsonTransformer, utils } from '@credo-ts/core'
+import { z } from 'zod'
 import { getThreadIdFromPlainTextMessage } from '../../../util/thread'
 import type { DidCommOutOfBandRole } from '../domain/DidCommOutOfBandRole'
 import type { DidCommOutOfBandState } from '../domain/DidCommOutOfBandState'
@@ -72,20 +72,69 @@ export interface DidCommOutOfBandRecordProps {
   invitationInlineServiceKeys?: DidCommOutOfBandInlineServiceKey[]
 }
 
+// `v2Invitation` is excluded from the invitation JSON. The record `upgrade` copies it from the metadata into the
+// invitation JSON, so that this codec can restore it.
+const zOutOfBandInvitation = z.codec(
+  z.looseObject({ v2Invitation: z.record(z.string(), z.unknown()).optional() }),
+  z.custom<DidCommOutOfBandInvitation>((value) => typeof value === 'object' && value !== null, 'Must be an object'),
+  {
+    decode: ({ v2Invitation, ...json }, payload) => {
+      try {
+        const invitation = JsonTransformer.fromJSON(json, DidCommOutOfBandInvitation, { validate: false })
+        if (v2Invitation) invitation.v2Invitation = DidCommOutOfBandInvitationV2.fromJson(v2Invitation)
+        return invitation
+      } catch (error) {
+        payload.issues.push({
+          code: 'custom',
+          message: error instanceof Error ? error.message : String(error),
+          input: json,
+        })
+        return z.NEVER
+      }
+    },
+    encode: (invitation) => JsonTransformer.toJSON(invitation),
+  }
+)
+
+const didCommOutOfBandRecordEncodingSchema = createRecordEncodingSchema(
+  {
+    outOfBandInvitation: zOutOfBandInvitation.nullish(),
+    role: z.string().nullish(),
+    state: z.string().nullish(),
+    alias: z.string().nullish(),
+    reusable: z.boolean().nullish(),
+    autoAcceptConnection: z.boolean().nullish(),
+    mediatorId: z.string().nullish(),
+    reuseConnectionId: z.string().nullish(),
+    invitationInlineServiceKeys: z
+      .array(
+        z.object({
+          recipientKeyFingerprint: z.string(),
+          kmsKeyId: z.string(),
+        })
+      )
+      .nullish(),
+  },
+  {
+    upgrade: (encoded) => {
+      const metadata = encoded.metadata as Record<string, unknown> | undefined
+      const v2Invitation = metadata?.[DidCommOutOfBandRecordMetadataKeys.V2Invitation]
+      if (!v2Invitation || !encoded.outOfBandInvitation) return encoded
+
+      return { ...encoded, outOfBandInvitation: { ...(encoded.outOfBandInvitation as object), v2Invitation } }
+    },
+  }
+)
+
 export class DidCommOutOfBandRecord extends BaseRecord<
   DefaultDidCommOutOfBandRecordTags,
   CustomDidCommOutOfBandRecordTags,
   DidCommOutOfBandRecordMetadata
 > {
-  @Type(() => DidCommOutOfBandInvitation)
-  @Transform(
-    ({ value, obj }) => {
-      const v2InvitationJson = obj.metadata?.[DidCommOutOfBandRecordMetadataKeys.V2Invitation]
-      if (v2InvitationJson) value.v2Invitation = DidCommOutOfBandInvitationV2.fromJson(v2InvitationJson)
-      return value
-    },
-    { toClassOnly: true }
-  )
+  public static get encodingSchema(): z.ZodType {
+    return didCommOutOfBandRecordEncodingSchema
+  }
+
   public outOfBandInvitation!: DidCommOutOfBandInvitation
   public role!: DidCommOutOfBandRole
   public state!: DidCommOutOfBandState

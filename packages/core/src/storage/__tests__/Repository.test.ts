@@ -4,8 +4,9 @@ import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../tests/helpers'
 import type { AgentContext } from '../../agent'
 import { EventEmitter } from '../../agent/EventEmitter'
-import { CredoError, RecordDuplicateError, RecordNotFoundError } from '../../error'
+import { CredoError, RecordDuplicateError, RecordNotFoundError, ZodValidationError } from '../../error'
 import { CacheModuleConfig, InMemoryLruCache } from '../../modules/cache'
+import { GenericRecord } from '../../modules/generic-records/repository/GenericRecord'
 import type { TagsBase } from '../BaseRecord'
 import { Repository } from '../Repository'
 import type { RecordDeletedEvent, RecordSavedEvent, RecordUpdatedEvent } from '../RepositoryEvents'
@@ -357,6 +358,20 @@ describe('Repository', () => {
         { something: 'interesting' },
         undefined
       )
+    })
+  })
+
+  describe('delete() with an invalid record', () => {
+    it('should throw before the record is deleted', async () => {
+      const genericStorageMock = new StorageMock() as unknown as StorageService<GenericRecord>
+      const genericRecordRepository = new Repository(GenericRecord, genericStorageMock, eventEmitter)
+      const record = new GenericRecord({
+        id: 'test-id',
+        content: 'not-an-object' as unknown as Record<string, unknown>,
+      })
+
+      await expect(genericRecordRepository.delete(agentContext, record)).rejects.toThrow(ZodValidationError)
+      expect(genericStorageMock.delete).not.toHaveBeenCalled()
     })
   })
 })

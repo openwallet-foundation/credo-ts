@@ -1,0 +1,34 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "entries": {
+    "array": {
+      "value": ["one", 2]
+    },
+    "number": {
+      "expiresAt": 1767225600000,
+      "value": 10
+    },
+    "object": {
+      "expiresAt": 1767225600000,
+      "value": {
+        "name": "value",
+        "nested": {
+          "list": [1, "two", null, true]
+        }
+      }
+    },
+    "string": {
+      "value": "value"
+    }
+  },
+  "id": "single-context-lru-cache-record-id",
+  "metadata": {
+    "custom": {
+      "key": "value"
+    }
+  },
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

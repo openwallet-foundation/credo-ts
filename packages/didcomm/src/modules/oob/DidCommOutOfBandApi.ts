@@ -494,7 +494,13 @@ export class DidCommOutOfBandApi {
    * @returns DidCommOutOfBandInvitation
    */
   public async parseInvitation(invitationUrl: string): Promise<DidCommOutOfBandInvitation> {
-    return parseInvitationShortUrl(invitationUrl, this.agentContext.config.agentDependencies)
+    const { config } = this.agentContext
+    const { maxInvitationBytes } = this.agentContext.resolve(DidCommModuleConfig)
+
+    return parseInvitationShortUrl(invitationUrl, {
+      ...config.agentDependencies,
+      fetch: (url, init) => config.fetch(url, { ...init, maxResponseBytes: maxInvitationBytes }),
+    })
   }
 
   /**

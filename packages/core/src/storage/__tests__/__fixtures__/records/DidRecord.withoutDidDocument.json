@@ -1,0 +1,12 @@
+{
+  "_tags": {
+    "alternativeDids": ["did:example:bob-alias"],
+    "recipientKeyFingerprints": ["z6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V"]
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "did": "did:example:bob",
+  "id": "did-record-id",
+  "metadata": {},
+  "role": "received",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

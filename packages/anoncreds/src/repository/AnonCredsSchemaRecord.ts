@@ -1,5 +1,6 @@
 import type { TagsBase } from '@credo-ts/core'
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils, zTypedObject } from '@credo-ts/core'
+import { z } from 'zod'
 import type { AnonCredsSchema } from '../models'
 import type { AnonCredsSchemaRecordMetadata } from './anonCredsSchemaRecordMetadataTypes'
 
@@ -19,11 +20,21 @@ export type DefaultAnonCredsSchemaTags = {
   methodName: string
 }
 
+const anonCredsSchemaRecordEncodingSchema = createRecordEncodingSchema({
+  schemaId: z.string().nullish(),
+  schema: zTypedObject<AnonCredsSchema>().nullish(),
+  methodName: z.string().nullish(),
+})
+
 export class AnonCredsSchemaRecord extends BaseRecord<
   DefaultAnonCredsSchemaTags,
   TagsBase,
   AnonCredsSchemaRecordMetadata
 > {
+  public static get encodingSchema(): z.ZodType {
+    return anonCredsSchemaRecordEncodingSchema
+  }
+
   public static readonly type = 'AnonCredsSchemaRecord'
   public readonly type = AnonCredsSchemaRecord.type
 

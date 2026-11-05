@@ -12,6 +12,7 @@ import type {
   DeferredCredentialRequest,
   IssuerInfo,
   IssuerMetadataResult,
+  Openid4vciIssuer,
   ParseCredentialRequestReturn,
 } from '@openid4vc/openid4vci'
 import type {
@@ -49,6 +50,9 @@ export type OpenId4VciCredentialRequest = CredentialRequest
 export type OpenId4VciCredentialRequestWithFormats = CredentialRequestWithFormats
 
 export type OpenId4VciDeferredCredentialRequest = DeferredCredentialRequest
+export type OpenId4VciParsedDeferredCredentialRequest = Awaited<
+  ReturnType<Openid4vciIssuer['parseDeferredCredentialRequest']>
+>
 
 export type OpenId4VciCredentialOfferPayload = CredentialOfferObject
 

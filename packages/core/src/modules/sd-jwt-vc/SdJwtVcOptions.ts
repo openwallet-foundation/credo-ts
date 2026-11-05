@@ -55,15 +55,7 @@ export interface SdJwtVcIssuerX5c {
   x5c: X509Certificate[]
 
   /**
-   * The issuer of the SD-JWT VC.
-   *
-   * NOTE: in the latest draft of SD-JWT VC the issuer field is optional when using an X509 certificates
-   * to sign the SD-JWT VC.
-   *
-   * Since it's not clear what the iss value should be Credo will likely require
-   * the value to be undefined in a future version, but for now if the issuer value
-   * is defined it MUST match an SAN URI or DNS entry in the leaf certificate, mimicking
-   * previous behavior.
+   * The issuer of the SD-JWT VC. Optional when signing with X509 certificates.
    */
   issuer?: string
 }

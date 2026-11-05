@@ -49,7 +49,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
 
     let schema: Schema | undefined
     try {
-      const schema = Schema.create({
+      schema = Schema.create({
         issuerId,
         name,
         version,
@@ -266,6 +266,9 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
     }
 
     let credential: Credential | undefined
+    let revocationRegistryDefinitionObj: RevocationRegistryDefinition | undefined
+    let revocationRegistryDefinitionPrivateObj: RevocationRegistryDefinitionPrivate | undefined
+    let revocationStatusListObj: RevocationStatusList | undefined
     try {
       const attributeRawValues: Record<string, string> = {}
       const attributeEncodedValues: Record<string, string> = {}
@@ -299,14 +302,17 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
           revocationRegistryDefinitionPrivateRecord.state = AnonCredsRevocationRegistryState.Full
         }
 
+        revocationRegistryDefinitionObj = RevocationRegistryDefinition.fromJson(
+          revocationRegistryDefinitionRecord.revocationRegistryDefinition as unknown as JsonObject
+        )
+        revocationRegistryDefinitionPrivateObj = RevocationRegistryDefinitionPrivate.fromJson(
+          revocationRegistryDefinitionPrivateRecord.value
+        )
+        revocationStatusListObj = RevocationStatusList.fromJson(revocationStatusList as unknown as JsonObject)
         revocationConfiguration = new CredentialRevocationConfig({
-          registryDefinition: RevocationRegistryDefinition.fromJson(
-            revocationRegistryDefinitionRecord.revocationRegistryDefinition as unknown as JsonObject
-          ),
-          registryDefinitionPrivate: RevocationRegistryDefinitionPrivate.fromJson(
-            revocationRegistryDefinitionPrivateRecord.value
-          ),
-          statusList: RevocationStatusList.fromJson(revocationStatusList as unknown as JsonObject),
+          registryDefinition: revocationRegistryDefinitionObj,
+          registryDefinitionPrivate: revocationRegistryDefinitionPrivateObj,
+          statusList: revocationStatusListObj,
           registryIndex: revocationRegistryIndex,
         })
       }
@@ -314,15 +320,10 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         credentialDefinition: credentialDefinitionRecord.credentialDefinition as unknown as JsonObject,
         credentialOffer: credentialOffer as unknown as JsonObject,
         credentialRequest: credentialRequest as unknown as JsonObject,
-        revocationRegistryId: revocationRegistryDefinitionId,
         attributeEncodedValues,
         attributeRawValues,
         credentialDefinitionPrivate: credentialDefinitionPrivateRecord.value,
         revocationConfiguration,
-        // FIXME: duplicated input parameter?
-        revocationStatusList: revocationStatusList
-          ? RevocationStatusList.fromJson(revocationStatusList as unknown as JsonObject)
-          : undefined,
       })
 
       return {
@@ -331,6 +332,9 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       }
     } finally {
       credential?.handle.clear()
+      revocationRegistryDefinitionObj?.handle.clear()
+      revocationRegistryDefinitionPrivateObj?.handle.clear()
+      revocationStatusListObj?.handle.clear()
     }
   }
 }

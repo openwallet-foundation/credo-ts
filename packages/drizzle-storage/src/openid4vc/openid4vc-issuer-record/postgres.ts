@@ -5,6 +5,7 @@ import type {
   OpenId4VciBatchCredentialIssuanceOptions,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
+  OpenId4VciCredentialRequestEncryptionOptions,
   OpenId4VciCredentialResponseEncryptionOptions,
   OpenId4VciIssuerInfo,
 } from '@credo-ts/openid4vc'
@@ -41,6 +42,9 @@ export const openid4vcIssuer = pgTable(
     credentialResponseEncryption: jsonb(
       'credential_response_encryption'
     ).$type<OpenId4VciCredentialResponseEncryptionOptions>(),
+    credentialRequestEncryption: jsonb(
+      'credential_request_encryption'
+    ).$type<OpenId4VciCredentialRequestEncryptionOptions>(),
   },
   (table) => postgresBaseRecordIndexes(table, 'openid4vcIssuer')
 )

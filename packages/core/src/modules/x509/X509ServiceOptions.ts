@@ -252,6 +252,12 @@ export type X509CertificateSigningRequestExtensionsOptions = Pick<
 export interface X509CertificateIssuerAndSubjectOptions {
   countryName?: string
   stateOrProvinceName?: string
+  organizationName?: string
+
+  /**
+   * The registered identifier of the organization (OID 2.5.4.97), for example `NTRNL-12345678`
+   */
+  organizationIdentifier?: string
   organizationalUnit?: string
   commonName?: string
 }
@@ -285,6 +291,8 @@ export interface X509CreateCertificateOptions {
    *
    * The issuer information of the X.509 Certificate
    *
+   * A string is used as-is and must already be escaped according to RFC 4514.
+   *
    */
   issuer: string | X509CertificateIssuerAndSubjectOptions
 
@@ -294,6 +302,7 @@ export interface X509CreateCertificateOptions {
    *
    * If the `subject` is not included, the `issuer` will be used
    *
+   * A string is used as-is and must already be escaped according to RFC 4514.
    *
    */
   subject?: string | X509CertificateIssuerAndSubjectOptions
@@ -338,6 +347,8 @@ export interface X509CreateCertificateSigningRequestOptions {
 
   /**
    * The subject information of the certificate signing request
+   *
+   * A string is used as-is and must already be escaped according to RFC 4514.
    */
   subject: string | X509CertificateIssuerAndSubjectOptions
 
@@ -389,6 +400,8 @@ export interface X509CertificateRevocationListEntryOptions {
    * The issuer of the revoked certificate, for indirect CRLs (RFC 5280 §5.3.3 `certificateIssuer`
    * CRL entry extension). Only meaningful when the CRL is an indirect CRL
    * (`issuingDistributionPoint.indirectCRL`).
+   *
+   * A string is used as-is and must already be escaped according to RFC 4514.
    */
   issuer?: string | X509CertificateIssuerAndSubjectOptions
 }
@@ -447,6 +460,8 @@ export interface X509CreateCertificateRevocationListOptions {
 
   /**
    * The issuer of the CRL. Must match the issuer certificate's subject.
+   *
+   * A string is used as-is and must already be escaped according to RFC 4514.
    */
   issuer: string | X509CertificateIssuerAndSubjectOptions
 

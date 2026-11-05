@@ -1280,17 +1280,13 @@ export class OpenId4VpVerifierService {
           throw new CredoError('Expected vp_token entry for format mso_mdoc to be of type string')
         }
         const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(presentation)
-        const document = mdocDeviceResponse.deviceResponse.documents?.[0]
-        if (!document) {
+        if (!mdocDeviceResponse.deviceResponse.documents?.length) {
           throw new CredoError('mdoc device response does not contain any mdocs')
         }
 
-        const mdoc = new Mdoc(document.issuerSigned)
-
-        const deviceResponses = mdocDeviceResponse.splitIntoSingleDocumentResponses()
-
-        for (const deviceResponseIndex of deviceResponses.keys()) {
-          const mdocDeviceResponse = deviceResponses[deviceResponseIndex]
+        for (const documentResponse of mdocDeviceResponse.splitIntoSingleDocumentResponses()) {
+          // biome-ignore lint/style/noNonNullAssertion: splitIntoSingleDocumentResponses always returns responses with exactly one document
+          const mdoc = new Mdoc(documentResponse.deviceResponse.documents![0].issuerSigned)
 
           const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
             X509Certificate.fromRawCertificate(cert)
@@ -1365,7 +1361,7 @@ export class OpenId4VpVerifierService {
             }
           }
 
-          await mdocDeviceResponse.verify(agentContext, {
+          await documentResponse.verify(agentContext, {
             sessionTranscriptOptions,
             trustedCertificates,
           })

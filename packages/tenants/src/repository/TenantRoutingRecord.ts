@@ -1,6 +1,7 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils } from '@credo-ts/core'
+import { z } from 'zod'
 
 export type TenantRoutingRecordTags = RecordTags<TenantRoutingRecord>
 
@@ -18,7 +19,16 @@ export interface TenantRoutingRecordProps {
   recipientKeyFingerprint: string
 }
 
+const tenantRoutingRecordEncodingSchema = createRecordEncodingSchema({
+  tenantId: z.string().nullish(),
+  recipientKeyFingerprint: z.string().nullish(),
+})
+
 export class TenantRoutingRecord extends BaseRecord<DefaultTenantRoutingRecordTags> {
+  public static get encodingSchema(): z.ZodType {
+    return tenantRoutingRecordEncodingSchema
+  }
+
   public static readonly type = 'TenantRoutingRecord'
   public readonly type = TenantRoutingRecord.type
 

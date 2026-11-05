@@ -1,0 +1,60 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "deviceRequestBase64Url": "omd2ZXJzaW9uYzEuMGtkb2NSZXF1ZXN0c4A",
+  "deviceRequestDefinition": {
+    "docRequests": [
+      {
+        "docType": "org.iso.18013.5.1.mDL",
+        "nameSpaces": {
+          "org.iso.18013.5.1": {
+            "family_name": {
+              "intentToRetain": false
+            },
+            "given_name": {
+              "intentToRetain": true,
+              "optional": true,
+              "source": "deviceSigned"
+            },
+            "portrait": {
+              "intentToRetain": false,
+              "optional": false,
+              "source": "any"
+            }
+          }
+        }
+      },
+      {
+        "docType": "eu.europa.ec.eudi.pid.1",
+        "nameSpaces": {
+          "eu.europa.ec.eudi.pid.1": {
+            "age_over_18": {
+              "intentToRetain": false,
+              "source": "issuerSigned"
+            }
+          }
+        }
+      }
+    ],
+    "treatAmbiguousMultipleDocRequestsAsAlternatives": true
+  },
+  "errorMessage": "Device response could not be verified",
+  "expiresAt": "2026-01-01T00:05:00.000Z",
+  "id": "mdoc-verification-session-record-id",
+  "metadata": {
+    "custom": {
+      "key": "value"
+    }
+  },
+  "sessionKeyId": "session-key-id",
+  "sessionTranscript": {
+    "encryptionInfoBase64Url": "gmVkY2FwaaJlbm9uY2VYIBAgMEBQYHCAkKCwwNDg8Q",
+    "nonce": "ECAwQFBgcICQoLDA0ODxA",
+    "origin": "https://verifier.example.com",
+    "type": "isoMdocDcApi"
+  },
+  "state": "Error",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

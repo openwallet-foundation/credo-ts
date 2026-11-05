@@ -6,7 +6,7 @@ import type { AgentContext } from '../../../../agent/context/AgentContext'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
 import { ConsoleLogger, LogLevel } from '../../../../logger'
-import type { JsonObject } from '../../../../types'
+import type { JsonObject, JsonValue } from '../../../../types'
 import { asArray, TypedArrayEncoder } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import {
@@ -502,20 +502,6 @@ describe('W3cJsonLdCredentialsService', () => {
             vcJs: {
               isValid: true,
               results: expect.any(Array),
-              log: [
-                {
-                  id: 'valid_signature',
-                  valid: true,
-                },
-                {
-                  id: 'issuer_did_resolves',
-                  valid: true,
-                },
-                {
-                  id: 'expiration',
-                  valid: true,
-                },
-              ],
             },
           },
         })
@@ -615,6 +601,18 @@ describe('W3cJsonLdCredentialsService', () => {
           },
         })
       })
+
+      it('should reject a credential with a non-did issuer', async () => {
+        const vc = JsonTransformer.fromJSON(
+          { ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED, issuer: 'https://example.com/issuer' },
+          W3cJsonLdVerifiableCredential
+        )
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+
+        expect(result.isValid).toBe(false)
+        expect(result.error?.message).toContain("Credential issuer 'https://example.com/issuer' is not a did")
+      })
     })
 
     describe('verifyCredential with getTrustedIssuersForVerification', () => {
@@ -649,6 +647,40 @@ describe('W3cJsonLdCredentialsService', () => {
 
         expect(result.isValid).toBe(false)
         expect(result.error?.message).toContain('is not trusted')
+      })
+    })
+
+    describe('verifyCredential with expirationDate', () => {
+      const signWithExpirationDate = async (expirationDate: Date) => {
+        const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT
+        const credential = JsonTransformer.fromJSON(
+          { ...credentialJson, expirationDate: expirationDate.toISOString().replace(/\.\d{3}Z$/, 'Z') },
+          W3cCredential
+        )
+
+        return w3cJsonLdCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential,
+          proofType: 'Ed25519Signature2018',
+          verificationMethod,
+        })
+      }
+
+      it('should accept a credential that expired within validitySkewSeconds', async () => {
+        const vc = await signWithExpirationDate(new Date(Date.now() - 10_000))
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+
+        expect(result.isValid).toBe(true)
+      })
+
+      it('should reject a credential that expired before validitySkewSeconds', async () => {
+        const vc = await signWithExpirationDate(new Date(Date.now() - 60_000))
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+
+        expect(result.isValid).toBe(false)
+        expect(result.error?.message).toEqual('Credential has expired.')
       })
     })
 
@@ -842,8 +874,12 @@ describe('W3cJsonLdCredentialsService', () => {
       // ldp_vp that is signed (authentication proof) by issuerDidKey — the "holder". When the
       // subject differs from issuerDidKey this models an attacker presenting someone else's
       // credential under their own key. Both the issuer proof and the presentation proof are valid,
-      // so only the credentialSubject authentication check can reject it.
-      const signPresentationForSubject = async (credentialSubjectId: string) => {
+      // so only the credentialSubject authentication check can reject it. `presentCredential` can
+      // change the signed credential before it is presented.
+      const signPresentationForSubject = async (
+        credentialSubjectId: string,
+        presentCredential: (credential: JsonObject) => JsonObject = (credential) => credential
+      ) => {
         const credential = JsonTransformer.fromJSON(
           {
             ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT,
@@ -871,7 +907,7 @@ describe('W3cJsonLdCredentialsService', () => {
             '@context': ['https://www.w3.org/2018/credentials/v1'],
             type: ['VerifiablePresentation'],
             holder: issuerDidKey.did,
-            verifiableCredential: [verifiableCredential.toJson()],
+            verifiableCredential: [presentCredential(verifiableCredential.toJson() as JsonObject)],
           },
           W3cPresentation
         )
@@ -911,6 +947,71 @@ describe('W3cJsonLdCredentialsService', () => {
         })
         expect(result.error?.message).toContain('does not authenticate the credentialSubject')
       })
+
+      it('should fail when only a presentation proof that does not verify is signed by the credentialSubject', async () => {
+        const subject = await create2018Identity(agentContext, 'did:example:subject', 'did:example:subject#key-1')
+        const verifiablePresentation = await signPresentationForSubject(subject.did)
+
+        // A second proof that claims the subject's key but whose signature does not verify
+        const presentationJson = JsonTransformer.toJSON(verifiablePresentation)
+        const presentation = JsonTransformer.fromJSON(
+          {
+            ...presentationJson,
+            proof: [
+              presentationJson.proof,
+              { ...presentationJson.proof, verificationMethod: subject.verificationMethod },
+            ],
+          },
+          W3cJsonLdVerifiablePresentation
+        )
+
+        const result = await w3cJsonLdCredentialService.verifyPresentation(agentContext, {
+          presentation,
+          challenge: 'challenge-holder-binding',
+        })
+
+        expect(result.isValid).toBe(false)
+        // The proof set passes because one proof verifies
+        expect(result.validations.vcJs?.isValid).toBe(true)
+        expect(result.validations.credentials?.[0].isValid).toBe(false)
+        expect(result.error?.message).toContain('does not authenticate the credentialSubject')
+      })
+
+      it.each([
+        [
+          '@id',
+          ({ id, ...credentialSubject }: JsonObject) => ({ ...credentialSubject, '@id': id }),
+          (context: JsonValue[]) => context,
+        ],
+        [
+          'an alias of @id',
+          ({ id, ...credentialSubject }: JsonObject) => ({ ...credentialSubject, sid: id }),
+          (context: JsonValue[]) => [...context, { sid: '@id' }],
+        ],
+      ])(
+        'should fail when the credentialSubject id is presented as %s and the holder is not the credentialSubject',
+        async (_, presentSubject, presentContext) => {
+          const verifiablePresentation = await signPresentationForSubject(
+            'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV',
+            (credential) => ({
+              ...credential,
+              '@context': presentContext(credential['@context'] as JsonValue[]),
+              credentialSubject: presentSubject(credential.credentialSubject as JsonObject),
+            })
+          )
+
+          const result = await w3cJsonLdCredentialService.verifyPresentation(agentContext, {
+            presentation: verifiablePresentation as W3cJsonLdVerifiablePresentation,
+            challenge: 'challenge-holder-binding',
+          })
+
+          expect(result.isValid).toBe(false)
+          // The issuer signature covers the same data, so it still verifies
+          expect(result.validations.vcJs?.isValid).toBe(true)
+          expect(result.validations.credentials?.[0].isValid).toBe(false)
+          expect(result.error?.message).toContain('does not authenticate the credentialSubject')
+        }
+      )
 
       it('should verify a presentation when the signer (holder) is the credentialSubject', async () => {
         const verifiablePresentation = await signPresentationForSubject(issuerDidKey.did)

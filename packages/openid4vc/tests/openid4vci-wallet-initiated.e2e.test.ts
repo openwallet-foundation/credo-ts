@@ -353,6 +353,7 @@ describe('OpenId4Vc (Wallet Initiated Issuance)', () => {
     expect(code).toBeDefined()
 
     const tokenResponseTenant = await holderTenant.openid4vc.holder.requestToken({
+      dpop: resolvedAuthorization.dpop,
       resolvedCredentialOffer,
       clientId: walletClientId,
       codeVerifier: resolvedAuthorization.codeVerifier,

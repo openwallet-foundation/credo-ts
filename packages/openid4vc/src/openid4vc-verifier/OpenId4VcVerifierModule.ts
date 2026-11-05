@@ -1,6 +1,12 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { NextFunction, Response } from 'express'
-import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
+import {
+  endRequestSession,
+  getAgentContextForActorId,
+  importExpress,
+  registerRequestSession,
+  sendPayloadTooLargeResponse,
+} from '../shared/router'
 import { OpenId4VcVerifierApi } from './OpenId4VcVerifierApi'
 import type { InternalOpenId4VcVerifierModuleConfigOptions } from './OpenId4VcVerifierModuleConfig'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
@@ -63,13 +69,14 @@ export class OpenId4VcVerifierModule implements Module {
     const verifierEndpointRouter = Router()
     const verifierContextRouter = Router()
 
-    // parse application/x-www-form-urlencoded
-    verifierContextRouter.use(urlencoded({ extended: false, limit: '5mb' }))
-    // parse application/json
-    verifierContextRouter.use(json({ limit: '5mb' }))
-
     verifierContextRouter.param('verifierId', this.getVerifierIdParamHandler(rootAgentContext))
     verifierContextRouter.use('/:verifierId', verifierEndpointRouter)
+
+    // Bodies are only parsed for known verifiers, so other paths return a 404
+    // parse application/x-www-form-urlencoded
+    verifierEndpointRouter.use(urlencoded({ extended: false, limit: '5mb' }))
+    // parse application/json
+    verifierEndpointRouter.use(json({ limit: '5mb' }))
 
     // Configure endpoints
     configureAuthorizationEndpoint(verifierEndpointRouter, this.config)
@@ -77,26 +84,23 @@ export class OpenId4VcVerifierModule implements Module {
 
     // First one will be called for all requests (when next is called)
     verifierContextRouter.use(async (req: OpenId4VcVerificationRequest, _res: unknown, next) => {
-      const { agentContext } = getRequestContext(req)
-      await agentContext.endSession()
+      await endRequestSession(req)
       next()
     })
 
     // This one will be called for all errors that are thrown
     verifierContextRouter.use(
       async (error: unknown, req: OpenId4VcVerificationRequest, res: Response, next: NextFunction) => {
-        const { agentContext } = getRequestContext(req)
+        // Requests that don't match a verifier id (e.g. the base path) have no request context, so fall back to the root logger
+        const logger = req.requestContext?.agentContext.config.logger ?? rootAgentContext.config.logger
 
-        // Check if the error is specifically a payload limit issue
-        if (error instanceof Error && error.name === 'PayloadTooLargeError') {
-          return res.status(413).json({
-            error: 'invalid_request',
-            message: `The request body exceeds the maximum allowed limit.`,
-          })
-        }
+        // End the session first, so an early return below can't skip it
+        await endRequestSession(req)
+
+        if (sendPayloadTooLargeResponse(res, error)) return
 
         if (!res.headersSent) {
-          agentContext.config.logger.warn(
+          logger.warn(
             'Error was thrown but openid4vp endpoint did not send a response. Sending generic server_error.',
             { error }
           )
@@ -107,7 +111,6 @@ export class OpenId4VcVerifierModule implements Module {
           })
         }
 
-        await agentContext.endSession()
         next()
       }
     )
@@ -136,6 +139,7 @@ export class OpenId4VcVerifierModule implements Module {
           agentContext,
           verifier,
         }
+        registerRequestSession(req, res, agentContext)
       } catch (error) {
         agentContext?.config.logger.error(
           'Failed to correlate incoming openid request to existing tenant and verifier',

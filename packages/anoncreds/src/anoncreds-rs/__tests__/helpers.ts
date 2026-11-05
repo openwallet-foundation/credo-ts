@@ -99,7 +99,6 @@ export async function createCredentialForHolder(options: {
   attributes: Record<string, string>
   linkSecret: string
   linkSecretId: string
-  revocationRegistryDefinitionId: string
 }) {
   const {
     credentialDefinition,
@@ -110,7 +109,6 @@ export async function createCredentialForHolder(options: {
     attributes,
     linkSecret,
     linkSecretId,
-    revocationRegistryDefinitionId,
   } = options
 
   const credentialOffer = CredentialOffer.create({
@@ -152,8 +150,6 @@ export async function createCredentialForHolder(options: {
     credentialOffer,
     credentialRequest,
     attributeRawValues: attributes,
-    revocationRegistryId: revocationRegistryDefinitionId,
-    revocationStatusList,
     revocationConfiguration: new CredentialRevocationConfig({
       statusList: revocationStatusList,
       registryDefinition: new RevocationRegistryDefinition(revocationRegistryDefinition.handle),
@@ -178,14 +174,18 @@ export async function createCredentialForHolder(options: {
   const returnObj = {
     credential: w3cJsonLdCredential,
     credentialInfo,
-    revocationRegistryDefinition,
+    revocationRegistryDefinition: JSON.parse(
+      NativeAnoncreds.instance.getJson({ objectHandle: revocationRegistryDefinition })
+    ) as JsonObject,
     tailsPath,
-    credentialRequestMetadata,
+    credentialRequestMetadata: credentialRequestMetadata.toJson(),
   }
 
   credentialObj.handle.clear()
   credentialOffer.handle.clear()
   credentialRequest.handle.clear()
+  credentialRequestMetadata.handle.clear()
+  revocationRegistryDefinition.clear()
   revocationRegistryDefinitionPrivate.clear()
   revocationStatusList.handle.clear()
 
@@ -197,15 +197,17 @@ export function createRevocationRegistryDefinition(options: {
   credentialDefinition: Record<string, unknown>
 }) {
   const { credentialDefinitionId, credentialDefinition } = options
+  const credentialDefinitionObj = CredentialDefinition.fromJson(credentialDefinition)
   const { revocationRegistryDefinition, revocationRegistryDefinitionPrivate } =
     NativeAnoncreds.instance.createRevocationRegistryDefinition({
       credentialDefinitionId,
-      credentialDefinition: CredentialDefinition.fromJson(credentialDefinition).handle,
+      credentialDefinition: credentialDefinitionObj.handle,
       issuerId: credentialDefinition.issuerId as string,
       tag: 'some_tag',
       revocationRegistryType: 'CL_ACCUM',
       maximumCredentialNumber: 10,
     })
+  credentialDefinitionObj.handle.clear()
 
   const tailsPath = NativeAnoncreds.instance.revocationRegistryDefinitionGetAttribute({
     objectHandle: revocationRegistryDefinition,
