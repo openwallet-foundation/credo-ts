@@ -11,7 +11,6 @@ import {
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
-import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { getResolvedDidcommServiceWithSigningKeyId, toX25519 } from './modules/connections/services/helpers'
 import { DidCommOutOfBandRole } from './modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandRepository } from './modules/oob/repository/DidCommOutOfBandRepository'
@@ -256,13 +255,10 @@ export class DidCommEnvelopeService {
     payload: DidCommMessage,
     keys: EnvelopeKeys
   ): Promise<DidCommEncryptedMessage> {
-    const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
-
     const { routingKeys, senderKey } = keys
     let recipientKeys = keys.recipientKeys
 
-    // pass whether we want to use legacy did sov prefix
-    const message = payload.toJSON({ useDidSovPrefixWhereAllowed: didcommConfig.useDidSovPrefixWhereAllowed })
+    const message = payload.toJSON()
 
     this.logger.debug(`Pack outbound message ${message['@type']}`)
 
@@ -278,9 +274,7 @@ export class DidCommEnvelopeService {
       recipientKeys = [routingKey]
       this.logger.debug('Forward message created', forwardMessage)
 
-      const forwardJson = forwardMessage.toJSON({
-        useDidSovPrefixWhereAllowed: didcommConfig.useDidSovPrefixWhereAllowed,
-      })
+      const forwardJson = forwardMessage.toJSON()
 
       // Forward messages are anon packed
       encryptedMessage = await this.encryptDidcommV1Message(agentContext, forwardJson, [routingKey])

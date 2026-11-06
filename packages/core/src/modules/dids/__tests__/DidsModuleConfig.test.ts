@@ -25,7 +25,7 @@ describe('DidsModuleConfig', () => {
       expect.any(PeerDidResolver),
       expect.any(JwkDidResolver),
     ])
-    expect(config.publicDidMethods).toEqual(['web', 'indy', 'sov', 'cheqd', 'hedera', 'webvh'])
+    expect(config.publicDidMethods).toEqual(['web', 'indy', 'cheqd', 'hedera', 'webvh'])
   })
 
   test('sets values', () => {

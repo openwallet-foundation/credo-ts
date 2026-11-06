@@ -133,16 +133,10 @@ export function mapV2AttachmentToV1(v2: DidCommV2Attachment): Record<string, unk
  * `toV2Plaintext()` and then adjust the result, for example to move a body field into a header.
  *
  * @param message - The DidCommMessage to convert
- * @param config - Optional config (e.g. useDidSovPrefixWhereAllowed)
  * @returns A DIDComm v2 plaintext message
  */
-export function buildDefaultV2PlaintextFromMessage(
-  message: DidCommMessage,
-  config?: { useDidSovPrefixWhereAllowed?: boolean }
-): DidCommV2PlaintextMessage {
-  const v1 = message.toJSON({
-    useDidSovPrefixWhereAllowed: config?.useDidSovPrefixWhereAllowed ?? false,
-  })
+export function buildDefaultV2PlaintextFromMessage(message: DidCommMessage): DidCommV2PlaintextMessage {
+  const v1 = message.toJSON()
 
   const {
     '@type': type,
@@ -215,13 +209,12 @@ export function buildDefaultV2PlaintextFromMessage(
  * Then adds the from, to, from_prior, ack and pthid headers that the class did not set.
  *
  * @param message - The DidCommMessage to convert
- * @param config - Optional config (e.g. useDidSovPrefixWhereAllowed, from/to override for connection-based sends)
+ * @param config - Optional config (e.g. from/to override for connection-based sends)
  * @returns A DIDComm v2 plaintext message
  */
 export function buildV2PlaintextFromMessage(
   message: DidCommMessage,
   config?: {
-    useDidSovPrefixWhereAllowed?: boolean
     /** Override from (e.g. connection.did) when message doesn't have it */
     from?: string
     /** Override to (e.g. [connection.theirDid]) when message doesn't have it */
@@ -234,9 +227,7 @@ export function buildV2PlaintextFromMessage(
   const plaintext =
     typeof v2Native.toV2Plaintext === 'function'
       ? v2Native.toV2Plaintext()
-      : buildDefaultV2PlaintextFromMessage(message, {
-          useDidSovPrefixWhereAllowed: config?.useDidSovPrefixWhereAllowed,
-        })
+      : buildDefaultV2PlaintextFromMessage(message)
 
   if (plaintext.from === undefined && config?.from !== undefined) plaintext.from = config.from
   if (plaintext.to === undefined && config?.to !== undefined) {
