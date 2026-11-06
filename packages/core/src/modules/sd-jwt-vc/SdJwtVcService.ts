@@ -4,12 +4,12 @@ import { type SDJWTVCConfig, SDJwtVcInstance, type VCTFetcher } from '@sd-jwt/sd
 import { AgentContext } from '../../agent'
 import { TrustedIssuerContext } from '../../agent/TrustedIssuerContext'
 import type { TrustedIssuer } from '../../agent/TrustedIssuersForVerification'
-import { JwtPayload } from '../../crypto'
+import { Jwt, JwtPayload } from '../../crypto'
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
-import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArrayEncoder } from '../../utils'
+import { dateToSeconds, IntegrityVerifier, nowInSeconds, TypedArrayEncoder } from '../../utils'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
 import { TokenStatusListModuleConfig } from '../token-status-list/TokenStatusListModuleConfig'
@@ -674,7 +674,7 @@ export class SdJwtVcService {
    * for the credential issuer (the status list signer is not always the credential issuer).
    *
    * The library's `Verifier` only receives the unsigned token (`<header>.<payload>`) and the signature,
-   * so the status list JWT's own header (`x5c`/`kid`) is recovered by decoding the first segment.
+   * so the status list JWT is decoded again to read its own header (`x5c`/`kid`) and payload (`iss`).
    */
   private getStatusVerifier(
     agentContext: AgentContext,
@@ -692,14 +692,15 @@ export class SdJwtVcService {
       // A failure to extract or authorize the status list signer is thrown (rather than returning
       // `false`) so the verification result carries the actual reason instead of a generic
       // "invalid signature". Only the final signature check returns a boolean.
-      let header: { alg?: string; x5c?: string[]; kid?: string }
+      let statusListJwt: Jwt
       try {
-        header = JsonEncoder.fromBase64Url(data.split('.')[0])
+        statusListJwt = Jwt.fromSerializedJwt(`${data}.${signatureBase64Url}`)
       } catch (error) {
-        throw new SdJwtVcError('Unable to decode the status list JWT header to extract the status list signer.', {
+        throw new SdJwtVcError('Unable to decode the status list JWT to extract the status list signer.', {
           cause: error,
         })
       }
+      const { header } = statusListJwt
 
       // No matched trusted issuer (e.g. did default-allow path with no configured trusted issuers).
       // Preserve the previous behavior of verifying the status list with the credential issuer key.
@@ -757,33 +758,28 @@ export class SdJwtVcService {
         return getSdJwtVerifier(agentContext, signerJwk)(data, signatureBase64Url)
       }
 
-      // did: require the status list signer did to equal the trusted issuer did. The signer did is the
-      // `iss` of the status list payload; the `kid` header is typically a relative reference (e.g.
-      // `#key-1`) that has to be resolved against that did.
-      let statusListIssuerDid: unknown
+      // did: require the status list signer did to equal the trusted issuer did. The signer is parsed like
+      // the credential issuer, so the `kid` header has to belong to the `iss` did.
+      let statusListIssuer: SdJwtVcIssuer
       try {
-        statusListIssuerDid = JsonEncoder.fromBase64Url(data.split('.')[1]).iss
+        statusListIssuer = parseIssuerFromCredential(header, statusListJwt.payload.toJson())
       } catch (error) {
-        throw new SdJwtVcError('Unable to decode the status list JWT payload to extract the status list signer.', {
-          cause: error,
-        })
+        throw new SdJwtVcError('Unable to extract the status list signer from the status list JWT.', { cause: error })
       }
 
-      if (typeof statusListIssuerDid !== 'string') {
-        throw new SdJwtVcError('Unable to extract the status list signer: the status list JWT payload has no `iss`.')
-      }
-      if (parseDid(statusListIssuerDid).did !== parseDid(matchedTrustedIssuer.issuance).did) {
+      if (statusListIssuer.method !== 'did') {
         throw new SdJwtVcError(
-          `The status list signer did '${parseDid(statusListIssuerDid).did}' does not match the trusted issuer did.`
+          `The status list signer method '${statusListIssuer.method}' does not match the trusted issuer method 'did'.`
+        )
+      }
+      const statusListIssuerDid = parseDid(statusListIssuer.didUrl).did
+      if (statusListIssuerDid !== parseDid(matchedTrustedIssuer.issuance).did) {
+        throw new SdJwtVcError(
+          `The status list signer did '${statusListIssuerDid}' does not match the trusted issuer did.`
         )
       }
 
-      const didUrl = header.kid?.startsWith('#') ? `${statusListIssuerDid}${header.kid}` : header.kid
-      if (!didUrl) {
-        throw new SdJwtVcError('Unable to resolve the status list signer: the status list JWT has no `kid` header.')
-      }
-
-      const { verificationMethod } = await resolveDidUrl(agentContext, didUrl)
+      const { verificationMethod } = await resolveDidUrl(agentContext, statusListIssuer.didUrl)
       const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
       setJwkAlgFromJwtHeader(publicJwk, header.alg)
       return getSdJwtVerifier(agentContext, publicJwk)(data, signatureBase64Url)
