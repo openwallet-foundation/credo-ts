@@ -1,8 +1,13 @@
-import { JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
+import { JsonEncoder, JsonTransformer, MessageValidator, TypedArrayEncoder } from '@credo-ts/core'
 
 import { agentDependencies } from '../../../../core/tests'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from '../../modules/oob'
-import { oobInvitationFromShortUrl, parseInvitationShortUrl, parseInvitationUrl } from '../parseInvitation'
+import {
+  oobInvitationFromShortUrl,
+  parseInvitationJson,
+  parseInvitationShortUrl,
+  parseInvitationUrl,
+} from '../parseInvitation'
 
 const mockOobInvite = {
   '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/out-of-band/1.0/invitation',
@@ -177,7 +182,7 @@ describe('unsupported invitations', () => {
         'http://sour-cow-15.tun1.indiciotech.io?c_i=eyJAdHlwZSI6ICJkaWQ6c292OkJ6Q2JzTlloTXJqSGlxWkRUVUFTSGc7c3BlYy9jb25uZWN0aW9ucy8xLjAvaW52aXRhdGlvbiIsICJAaWQiOiAiMjA5NzFlZjAtMTAyOS00NmRiLWEyNWItYWY0YzQ2NWRkMTZiIiwgImxhYmVsIjogInRlc3QiLCAic2VydmljZUVuZHBvaW50IjogImh0dHA6Ly9zb3VyLWNvdy0xNS50dW4xLmluZGljaW90ZWNoLmlvIiwgInJlY2lwaWVudEtleXMiOiBbIjVHdnBmOU00ajd2V3BIeWVUeXZCS2JqWWU3cVdjNzJrR282cVphTEhrTHJkIl19'
       )
     ).toThrow(
-      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob` or `d_m`.'
+      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `_oob`, `oob` or `d_m`.'
     )
   })
 
@@ -237,5 +242,19 @@ describe('invitation url encoding', () => {
 
   test('throws for an invitation that is not valid base64url or base64', () => {
     expect(() => parseInvitationUrl('https://example.com?oob=not*valid*base64')).toThrow()
+  })
+})
+
+describe('v2 out-of-band invitations', () => {
+  test('parse an invitation with an attachment that is not JSON', () => {
+    const base64 = TypedArrayEncoder.toBase64Url(Uint8Array.from([0xff]))
+    const invitation = parseInvitationJson({
+      type: 'https://didcomm.org/out-of-band/2.0/invitation',
+      id: 'invitation-1',
+      from: 'did:example:alice',
+      attachments: [{ id: 'attachment-1', data: { base64 } }],
+    })
+
+    expect(invitation.toJSON()['requests~attach']).toMatchObject([{ '@id': 'attachment-1', data: { base64 } }])
   })
 })

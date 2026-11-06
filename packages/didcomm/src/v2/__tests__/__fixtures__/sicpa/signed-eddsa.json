@@ -1,0 +1,34 @@
+{
+  "$description": "SICPA didcomm-rust SIGNED_MSG_ALICE_KEY_1: DIDComm v2 signed message with EdDSA over Ed25519. Alice signs a lets_do_lunch proposal for Bob.",
+  "$source": "https://github.com/sicpa-dlab/didcomm-rust/blob/main/src/test_vectors/signed.rs",
+  "$license": "Apache-2.0",
+  "signedMessage": {
+    "payload": "eyJpZCI6IjEyMzQ1Njc4OTAiLCJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJ0eXBlIjoiaHR0cDovL2V4YW1wbGUuY29tL3Byb3RvY29scy9sZXRzX2RvX2x1bmNoLzEuMC9wcm9wb3NhbCIsImZyb20iOiJkaWQ6ZXhhbXBsZTphbGljZSIsInRvIjpbImRpZDpleGFtcGxlOmJvYiJdLCJjcmVhdGVkX3RpbWUiOjE1MTYyNjkwMjIsImV4cGlyZXNfdGltZSI6MTUxNjM4NTkzMSwiYm9keSI6eyJtZXNzYWdlc3BlY2lmaWNhdHRyaWJ1dGUiOiJhbmQgaXRzIHZhbHVlIn19",
+    "signatures": [
+      {
+        "protected": "eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXNpZ25lZCtqc29uIiwiYWxnIjoiRWREU0EifQ",
+        "signature": "FW33NnvOHV0Ted9-F7GZbkia-vYAfBKtH4oBxbrttWAhBZ6UFJMxcGjL3lwOl4YohI3kyyd08LHPWNMgP2EVCQ",
+        "header": { "kid": "did:example:alice#key-1" }
+      }
+    ]
+  },
+  "expectedPlaintext": {
+    "id": "1234567890",
+    "typ": "application/didcomm-plain+json",
+    "type": "http://example.com/protocols/lets_do_lunch/1.0/proposal",
+    "from": "did:example:alice",
+    "to": ["did:example:bob"],
+    "created_time": 1516269022,
+    "expires_time": 1516385931,
+    "body": { "messagespecificattribute": "and its value" }
+  },
+  "signer": {
+    "kid": "did:example:alice#key-1",
+    "alg": "EdDSA",
+    "publicJwk": {
+      "kty": "OKP",
+      "crv": "Ed25519",
+      "x": "G-boxFB6vOZBu-wXkm-9Lh79I8nf9Z50cILaOgKKGww"
+    }
+  }
+}
