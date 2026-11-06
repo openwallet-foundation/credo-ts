@@ -2460,20 +2460,46 @@ function getCredentialResponseEncryptionMetadata(agentContext: AgentContext, iss
   }
 }
 
+function toCredentialRequestEncryptionJwk(jwk: Kms.KmsJwkPublic & { kid: string }) {
+  return { ...Kms.PublicJwk.fromUnknown(jwk).toJson(), kid: jwk.kid, use: 'enc', alg: 'ECDH-ES' }
+}
+
 function getCredentialRequestEncryptionMetadata(issuerRecord: OpenId4VcIssuerRecord) {
   if (!issuerRecord.credentialRequestEncryption) return undefined
 
   return {
     jwks: {
-      keys: issuerRecord.credentialRequestEncryption.jwks.map((jwk) => ({
-        ...Kms.PublicJwk.fromUnknown(jwk).toJson(),
-        kid: jwk.kid,
-        use: 'enc',
-        alg: 'ECDH-ES',
-      })),
+      keys: issuerRecord.credentialRequestEncryption.jwks.map(toCredentialRequestEncryptionJwk),
     },
     enc_values_supported: [...supportedResponseEncryptionContentAlgorithms],
     encryption_required: issuerRecord.credentialRequestEncryption.required ?? false,
+  }
+}
+
+/**
+ * Issuer metadata to parse (deferred) credential requests with. The library only decrypts with keys
+ * from the metadata, so this adds the previous request encryption keys that are not advertised.
+ */
+export function getCredentialRequestDecryptionMetadata(
+  issuerMetadata: OpenId4VciMetadata,
+  issuerRecord: OpenId4VcIssuerRecord
+): OpenId4VciMetadata {
+  const requestEncryption = issuerMetadata.credentialIssuer.credential_request_encryption
+  const previousJwks = issuerRecord.credentialRequestEncryption?.previousJwks
+  if (!requestEncryption || !previousJwks?.length) return issuerMetadata
+
+  return {
+    ...issuerMetadata,
+    credentialIssuer: {
+      ...issuerMetadata.credentialIssuer,
+      credential_request_encryption: {
+        ...requestEncryption,
+        jwks: {
+          ...requestEncryption.jwks,
+          keys: [...requestEncryption.jwks.keys, ...previousJwks.map(toCredentialRequestEncryptionJwk)],
+        },
+      },
+    },
   }
 }
 
@@ -2486,7 +2512,22 @@ export function assertCredentialEncryptionConfiguration(
     )
   }
 
-  const unsupportedKey = options.credentialRequestEncryption?.jwks.find(
+  const requestEncryptionJwks = [
+    ...(options.credentialRequestEncryption?.jwks ?? []),
+    ...(options.credentialRequestEncryption?.previousJwks ?? []),
+  ]
+
+  // Requests are matched to a decryption key by kid, so a kid must identify a single key
+  const duplicateKey = requestEncryptionJwks.find(
+    (jwk, index) => requestEncryptionJwks.findIndex(({ kid }) => kid === jwk.kid) !== index
+  )
+  if (duplicateKey) {
+    throw new CredoError(
+      `Credential request encryption key '${duplicateKey.kid}' must be unique across 'jwks' and 'previousJwks'.`
+    )
+  }
+
+  const unsupportedKey = requestEncryptionJwks.find(
     (jwk) => jwk.kty === 'oct' || !Kms.allowedKeyDerivationAlgsForKey(jwk).includes('ECDH-ES')
   )
   if (unsupportedKey) {
