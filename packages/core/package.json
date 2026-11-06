@@ -46,7 +46,6 @@
     "@animo-id/pex": "catalog:",
     "@astronautlabs/jsonpath": "catalog:",
     "@digitalbazaar/vc": "^7.3.0",
-    "@multiformats/base-x": "^4.0.1",
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
     "@owf/cose": "^0.7.0",
@@ -80,14 +79,12 @@
     "rxjs": "catalog:",
     "tsyringe": "catalog:",
     "uuid": "^14.0.3",
-    "varint": "^6.0.0",
     "web-did-resolver": "^3.2.0",
     "webcrypto-core": "^1.9.2",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@types/object-inspect": "^1.13.0",
-    "@types/varint": "^6.0.3",
     "nock": "catalog:",
     "tslog": "^4.10.2",
     "typescript": "catalog:"

@@ -53,7 +53,6 @@
     "@types/express": "catalog:",
     "@types/node": "catalog:",
     "@types/supertest": "^7.2.1",
-    "@types/varint": "^6.0.3",
     "@types/ws": "catalog:",
     "@typescript/native": "catalog:",
     "@vitest/coverage-v8": "catalog:",
