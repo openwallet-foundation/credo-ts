@@ -41,6 +41,17 @@ export interface SdJwtVcIssuerDid {
 
   // didUrl referencing a specific key in a did document.
   didUrl: string
+
+  /**
+   * Certificate chain, leaf certificate first and the CA certificate (trust anchor) last.
+   *
+   * Only supported for `did:x509` issuers, where it is required. It is placed in the `x5c` header
+   * next to the `kid` when signing, and read from the `x5c` header when verifying. The chain is not
+   * the issuer identity: the credential stays bound to the DID in `iss`. The chain is the evidence
+   * used to resolve the DID (passed to the did resolver as the `x509chain` resolution option) and it
+   * must chain up to a trusted certificate (see the x509 trusted certificates configuration).
+   */
+  x5c?: X509Certificate[]
 }
 
 export interface SdJwtVcIssuerX5c {

@@ -34,9 +34,11 @@ import type {
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 import {
   extractKeyFromHolderBinding,
+  getDidX509ResolutionOptions,
   getSdJwtHashingAlgorithm,
   getSdJwtSigner,
   getSdJwtVerifier,
+  isDidX509,
   parseHolderBindingFromCredential,
   parseIssuerFromCredential,
   resolveDidUrl,
@@ -342,7 +344,8 @@ export class SdJwtVcService {
         statusVerifier: this.getStatusVerifier(agentContext, {
           matchedTrustedIssuer: trustedIssuer,
           credentialIssuerKey: issuerWithKey.publicJwk,
-          credentialIssuerCertificateChain: issuer.method === 'x5c' ? issuer.x5c : undefined,
+          // Set for x5c issuers and for did:x509 issuers, as both are trusted by their certificate chain
+          credentialIssuerCertificateChain: issuer.x5c,
         }),
       })
 
@@ -497,11 +500,37 @@ export class SdJwtVcService {
         )
       }
 
+      // The x5c chain is only supported for did:x509, where it is the evidence required to resolve the did.
+      // For any other did it would turn the credential into one that verifiers handle as a plain x5c credential.
+      const didX509 = isDidX509(issuer.didUrl)
+      if (issuer.x5c && !didX509) {
+        throw new SdJwtVcError("The 'x5c' option is only supported for did:x509 issuers.")
+      }
+      if (didX509 && !issuer.x5c?.length) {
+        throw new SdJwtVcError(
+          'A did:x509 issuer requires a certificate chain (x5c), as it is needed to resolve the did.'
+        )
+      }
+
       let publicJwk: PublicJwk
       if (forSigning) {
         publicJwk = await resolveSigningPublicJwkFromDidUrl(agentContext, issuer.didUrl)
+
+        // Cheap consistency check, so we don't issue a credential no verifier will be able to resolve. The did
+        // is fully validated against the chain by the did resolver at verification time.
+        if (issuer.x5c && !issuer.x5c[0].publicJwk.equals(publicJwk)) {
+          throw new SdJwtVcError(
+            "The public key of the first certificate in 'x5c' does not match the key of the did url used for signing."
+          )
+        }
       } else {
-        const { verificationMethod } = await resolveDidUrl(agentContext, issuer.didUrl)
+        // For did:x509 the did can only be resolved (and thus verified) with the certificate chain
+        const { verificationMethod } = await resolveDidUrl(
+          agentContext,
+          issuer.didUrl,
+          undefined,
+          issuer.x5c ? getDidX509ResolutionOptions(issuer.x5c) : undefined
+        )
         publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
       }
 
@@ -518,6 +547,7 @@ export class SdJwtVcService {
         publicJwk,
         iss: parsedDid.did,
         kid: `#${parsedDid.fragment}`,
+        x5c: issuer.x5c,
       }
     }
 
@@ -556,57 +586,26 @@ export class SdJwtVcService {
     sdJwtVc: SdJwtVc<Header, Payload>,
     trustedIssuers?: TrustedIssuer[]
   ) {
-    const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
-
     const issuer = sdJwtVc.issuer
     if (!issuer) {
       throw new SdJwtVcError('Unsupported signing method for SD-JWT VC. Only did and x5c are supported at the moment.')
     }
 
     if (issuer.method === 'x5c') {
-      // NOTE: we can't use the 'simpler' call directly to `ensureTrustedSigner` due to having to incorporate the
-      // legacy X509 API. In the future we can simplify this.
-      let x509Issuers = trustedIssuers?.filter((t) => t.method === 'x509')
+      return await this.ensureX509TrustedSigner(agentContext, sdJwtVc, issuer.x5c, trustedIssuers)
+    }
 
-      const context = {
-        verification: { type: 'credential', credential: sdJwtVc },
-        signer: {
-          certificateChain: issuer.x5c,
-          method: 'x509',
-        },
-      } as const
-
-      // `trustedIssuers` may already be populated by a caller that pre-resolved trust with a richer
-      // context (e.g. OpenID4VP passing the `oid4VpCredential` context). When it didn't (value is
-      // `undefined`), we resolve here with the plain `credential` context; the decision is the same.
-      if (!x509Issuers) {
-        x509Issuers = (await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, context))
-          ?.trustedIssuers
-      }
-
-      // Fall back to legacy x509-specific API
-      if (!x509Issuers) {
-        const legacyTrustedCertificates =
-          (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain: issuer.x5c,
-            verification: {
-              type: 'credential',
-              credential: sdJwtVc,
-            },
-          })) ?? x509Config.trustedCertificates
-
-        if (legacyTrustedCertificates) {
-          x509Issuers = legacyTrustedCertificatesToTrustedIssuers(legacyTrustedCertificates)
-        }
-      }
-
-      if (!x509Issuers) {
+    if (issuer.method === 'did' && isDidX509(issuer.didUrl)) {
+      // The credential is bound to the did:x509. Resolving the did with the chain (done when extracting the key) validates
+      // the chain, the CA fingerprint and the predicates against the leaf certificate, but it does not decide whether the
+      // CA is acceptable. That is decided here, by requiring the chain to anchor in a trusted certificate, using
+      // the same configuration as for x5c issuers.
+      if (!issuer.x5c?.length) {
         throw new SdJwtVcError(
-          'No trusted certificates configured for X509 certificate chain validation. Issuer cannot be verified.'
+          'A did:x509 issuer requires a certificate chain (x5c), as it is needed to resolve the did.'
         )
       }
-
-      return await TrustedIssuerContext.ensureTrustedSigner(agentContext, context, x509Issuers)
+      return await this.ensureX509TrustedSigner(agentContext, sdJwtVc, issuer.x5c, trustedIssuers)
     }
 
     if (issuer.method === 'did') {
@@ -627,6 +626,62 @@ export class SdJwtVcService {
     }
 
     throw new SdJwtVcError('Unsupported signing method for SD-JWT VC. Only did and x5c are supported at the moment.')
+  }
+
+  /**
+   * Ensures the certificate chain is trusted, using the trusted issuers passed in, the trusted entities
+   * callback or the (legacy) x509 module configuration.
+   */
+  private async ensureX509TrustedSigner<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
+    agentContext: AgentContext,
+    sdJwtVc: SdJwtVc<Header, Payload>,
+    certificateChain: X509Certificate[],
+    trustedIssuers?: TrustedIssuer[]
+  ) {
+    const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+
+    // NOTE: we can't use the 'simpler' call directly to `ensureTrustedSigner` due to having to incorporate the
+    // legacy X509 API. In the future we can simplify this.
+    let x509Issuers = trustedIssuers?.filter((t) => t.method === 'x509')
+
+    const context = {
+      verification: { type: 'credential', credential: sdJwtVc },
+      signer: {
+        certificateChain: certificateChain,
+        method: 'x509',
+      },
+    } as const
+
+    // `trustedIssuers` may already be populated by a caller that pre-resolved trust with a richer
+    // context (e.g. OpenID4VP passing the `oid4VpCredential` context). When it didn't (value is
+    // `undefined`), we resolve here with the plain `credential` context; the decision is the same.
+    if (!x509Issuers) {
+      x509Issuers = (await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, context))?.trustedIssuers
+    }
+
+    // Fall back to legacy x509-specific API
+    if (!x509Issuers) {
+      const legacyTrustedCertificates =
+        (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+          certificateChain: certificateChain,
+          verification: {
+            type: 'credential',
+            credential: sdJwtVc,
+          },
+        })) ?? x509Config.trustedCertificates
+
+      if (legacyTrustedCertificates) {
+        x509Issuers = legacyTrustedCertificatesToTrustedIssuers(legacyTrustedCertificates)
+      }
+    }
+
+    if (!x509Issuers) {
+      throw new SdJwtVcError(
+        'No trusted certificates configured for X509 certificate chain validation. Issuer cannot be verified.'
+      )
+    }
+
+    return await TrustedIssuerContext.ensureTrustedSigner(agentContext, context, x509Issuers)
   }
 
   private getBaseSdJwtConfig(agentContext: AgentContext): SDJWTVCConfig {
