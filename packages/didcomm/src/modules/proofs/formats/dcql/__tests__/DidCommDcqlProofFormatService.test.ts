@@ -162,13 +162,9 @@ describe('DidCommDcqlProofFormatService', () => {
         "must have 'meta.vct_values'",
       ],
       [
-        'a vc+sd-jwt query with vct_values',
-        request({
-          dcql_query: {
-            credentials: [{ id: 'vc', format: 'vc+sd-jwt', meta: { type_values: [['A']], vct_values: ['A'] } }],
-          },
-        }),
-        "no 'meta.vct_values'",
+        'a legacy vc+sd-jwt query with only vct_values',
+        request({ dcql_query: { credentials: [{ id: 'vc', format: 'vc+sd-jwt', meta: { vct_values: ['A'] } }] } }),
+        "must have 'meta.type_values'",
       ],
       [
         'a vc+sd-jwt query with flat type_values',
@@ -198,10 +194,16 @@ describe('DidCommDcqlProofFormatService', () => {
       ).rejects.toThrow("must not have a 'nonce' or an 'audience'")
     })
 
-    test('accepts a proposal with a valid query', async () => {
+    test.each([
+      ['a valid query', pidQuery],
+      [
+        'a vc+sd-jwt query that also has vct_values',
+        { id: 'vc', format: 'vc+sd-jwt', meta: { type_values: [['A']], vct_values: ['A'] } },
+      ],
+    ])('accepts a proposal with %s', async (_, credentialQuery) => {
       await expect(
         dcqlFormatService.processProposal(agentContext, {
-          attachment: attachment({ dcql_query: { credentials: [pidQuery] } }),
+          attachment: attachment({ dcql_query: { credentials: [credentialQuery] } }),
           proofRecord: proofRecord(),
         })
       ).resolves.toBeUndefined()

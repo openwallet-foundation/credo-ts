@@ -463,8 +463,80 @@ describe('DCQL proof format over a DIDComm connection', () => {
     )
     const errorMessage = await presentationRejected(pidQuery(vct))
     createPresentationSpy.mockRestore()
-    expect(errorMessage).toContain("vp_token entry for 'pid' has a wrong 'nonce' or 'aud'")
+    expect(errorMessage).toBe("vp_token entry for 'pid' has a wrong 'nonce' or 'aud'")
   })
+
+  test('dc+sd-jwt: without required holder binding a KB-JWT with a wrong nonce rejects the whole response', async () => {
+    const vct = `${VCT}/optional-binding`
+    const pid = await signSdJwtVc({ vct })
+    await storeSdJwtVc(pid)
+
+    const createPresentationSpy = mockPidPresentation(({ domain }) =>
+      holderAgent.sdJwtVc.present({
+        sdJwtVc: pid,
+        presentationFrame: { given_name: true },
+        verifierMetadata: { audience: domain as string, nonce: 'wrong-nonce', issuedAt: Math.floor(Date.now() / 1000) },
+      })
+    )
+    const errorMessage = await presentationRejected(pidQuery(vct, false))
+    createPresentationSpy.mockRestore()
+    expect(errorMessage).toBe("vp_token entry for 'pid' has a wrong 'nonce' or 'aud'")
+  })
+
+  test.each([
+    ["header 'typ' 'vc+sd-jwt'", async () => ({ headerType: 'vc+sd-jwt' as const })],
+    [
+      'an issuer the verifier does not trust',
+      async () => {
+        const { kid } = await createDidKidVerificationMethod(verifierAgent.context)
+        return { issuer: { method: 'did', didUrl: kid } as const }
+      },
+    ],
+  ])(
+    'dc+sd-jwt: a wrong nonce on a presentation discarded for %s does not reject the response',
+    async (_, getSignOptions) => {
+      const vct = `${VCT}/discarded`
+      const pid = await signSdJwtVc({ vct })
+      await storeSdJwtVc(pid)
+      const { compact: discarded } = await verifierAgent.sdJwtVc.sign({
+        issuer: { method: 'did', didUrl: issuerKdv.kid },
+        holder: { method: 'did', didUrl: holderKdv.kid },
+        payload: { vct, given_name: 'Erika' },
+        disclosureFrame: { _sd: ['given_name'] },
+        ...(await getSignOptions()),
+      })
+
+      const present = (sdJwtVc: string, audience: string, nonce: string): Promise<string> =>
+        holderAgent.sdJwtVc.present({
+          sdJwtVc,
+          presentationFrame: { given_name: true },
+          verifierMetadata: { audience, nonce, issuedAt: Math.floor(Date.now() / 1000) },
+        })
+      const createPresentationSpy = vi
+        .spyOn(DcqlService.prototype, 'createPresentation')
+        .mockImplementationOnce(async (_agentContext, { challenge, domain }) => ({
+          dcqlPresentation: {},
+          encodedDcqlPresentation: {
+            pid: [
+              await present(pid, domain as string, challenge),
+              await present(discarded, domain as string, 'wrong-nonce'),
+            ],
+          },
+        }))
+      verifierAgent.context.config.setTrustedIssuersForVerification(async (_agentContext, { signer }) =>
+        signer.method === 'did' ? { trustedIssuers: [{ method: 'did', issuance: issuerKdv.did }] } : undefined
+      )
+      try {
+        const { vpToken } = await requestAndPresent({
+          credentials: [{ ...pidQuery(vct).credentials[0], multiple: true }],
+        })
+        expect(vpToken.pid).toHaveLength(2)
+      } finally {
+        createPresentationSpy.mockRestore()
+        verifierAgent.context.config.setTrustedIssuersForVerification(undefined)
+      }
+    }
+  )
 
   test('an mso_mdoc entry the verifier cannot verify rejects the whole response', async () => {
     const vct = `${VCT}/with-mdl`

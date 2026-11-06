@@ -7,7 +7,6 @@ import type {
   DcqlQueryResult,
   DidDocument,
   DidPurpose,
-  JsonObject,
   JsonValue,
   SdJwtVc,
 } from '@credo-ts/core'
@@ -94,6 +93,12 @@ const NON_SELECTIVELY_DISCLOSABLE_PRESENTATION_CLAIMS = ['nonce', 'aud', 'iat']
 type ParsedDcqlQuery = ReturnType<DcqlService['validateDcqlQuery']>
 type DcqlCredentialQuery = ParsedDcqlQuery['credentials'][number]
 type ParsedDcqlRequest = Omit<DcqlRequestAttachment, 'dcql_query'> & { dcql_query: ParsedDcqlQuery }
+
+class WrongNonceOrAudienceError extends CredoError {
+  public constructor(credentialQueryId: string) {
+    super(`vp_token entry for '${credentialQueryId}' has a wrong 'nonce' or 'aud'`)
+  }
+}
 
 // Same credential_sets rule as runDcqlQuery in the dcql library, applied after unmatching unsupported formats
 export function withUnsupportedFormatsUnmatched(result: DcqlQueryResult): DcqlQueryResult {
@@ -283,17 +288,6 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
         )
       }
 
-      const requireHolderBinding = credentialQuery.require_cryptographic_holder_binding !== false
-      for (const entry of entries) {
-        const { nonce, aud } = this.decodeNonceAndAudience(credentialQuery, entry)
-        if (
-          ((requireHolderBinding || nonce !== undefined) && nonce !== request.nonce) ||
-          ((requireHolderBinding || aud !== undefined) && aud !== request.audience)
-        ) {
-          throw new CredoError(`vp_token entry for '${credentialQueryId}' has a wrong 'nonce' or 'aud'`)
-        }
-      }
-
       return { credentialQuery, entries }
     })
 
@@ -305,6 +299,7 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
         try {
           verified.push(await this.verifyPresentation(agentContext, credentialQuery, entry, request))
         } catch (error) {
+          if (error instanceof WrongNonceOrAudienceError) throw error
           discarded.push(`${credentialQuery.id}: ${error.message}`)
         }
       }
@@ -442,10 +437,8 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
       if (format === 'dc+sd-jwt' && !Array.isArray(meta.vct_values)) {
         throw new CredoError(`Credential Query '${id}' with format 'dc+sd-jwt' must have 'meta.vct_values'`)
       }
-      if (format === 'vc+sd-jwt' && (!Array.isArray(meta.type_values) || 'vct_values' in meta)) {
-        throw new CredoError(
-          `Credential Query '${id}' with format 'vc+sd-jwt' must have 'meta.type_values' and no 'meta.vct_values'`
-        )
+      if (format === 'vc+sd-jwt' && !Array.isArray(meta.type_values)) {
+        throw new CredoError(`Credential Query '${id}' with format 'vc+sd-jwt' must have 'meta.type_values'`)
       }
       if (format === 'mso_mdoc' && typeof meta.doctype_value !== 'string') {
         throw new CredoError(`Credential Query '${id}' with format 'mso_mdoc' must have 'meta.doctype_value'`)
@@ -607,19 +600,6 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     throw new CredoError(`DCQL request audience '${audience}' is not the DID of the service the presentation goes to`)
   }
 
-  private decodeNonceAndAudience(credentialQuery: DcqlCredentialQuery, presentation: unknown): JsonObject {
-    if (typeof presentation !== 'string') return {}
-
-    const parts = presentation.split('~')
-    const jwt = credentialQuery.format === 'dc+sd-jwt' ? parts[parts.length - 1] : parts[0]
-    try {
-      const payload = JsonEncoder.fromBase64Url(jwt.split('.')[1])
-      return isJsonObject(payload) ? payload : {}
-    } catch {
-      return {}
-    }
-  }
-
   private async verifyPresentation(
     agentContext: AgentContext,
     credentialQuery: DcqlCredentialQuery,
@@ -654,6 +634,19 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     if (typeof sdJwtVc.payload.iss === 'string' && sdJwtVc.payload.iss.startsWith('did:') && sdJwtVc.header.x5c) {
       throw new CredoError("dc+sd-jwt with a DID 'iss' must not have an 'x5c' header")
     }
+    // sdJwtVcApi.verify decides x5c trust, with a fallback to the deprecated X509ModuleConfig certificates
+    if (sdJwtVc.issuer.method === 'did') {
+      await this.assertTrustedIssuer(agentContext, sdJwtVc.issuer.didUrl, sdJwtVc)
+    }
+
+    const requireHolderBinding = credentialQuery.require_cryptographic_holder_binding !== false
+    if (
+      (requireHolderBinding || sdJwtVc.kbJwt) &&
+      (sdJwtVc.kbJwt?.payload.nonce !== request.nonce || sdJwtVc.kbJwt?.payload.aud !== request.audience)
+    ) {
+      throw new WrongNonceOrAudienceError(credentialQuery.id)
+    }
+
     const vctValues = credentialQuery.format === 'dc+sd-jwt' ? credentialQuery.meta?.vct_values : undefined
     if (!vctValues?.includes(sdJwtVc.payload.vct)) {
       throw new CredoError("dc+sd-jwt 'vct' is not one of the Credential Query 'meta.vct_values'")
@@ -662,7 +655,6 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
       this.assertSupportedStatus(sdJwtVc.payload.status)
     }
 
-    const requireHolderBinding = credentialQuery.require_cryptographic_holder_binding !== false
     const result = await sdJwtVcApi.verify({
       compactSdJwtVc: presentation,
       keyBinding:
@@ -703,10 +695,29 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
       throw new CredoError('vc+sd-jwt presentations without holder binding are not supported')
     }
 
+    if (JsonEncoder.fromBase64Url(presentation.split('.')[0]).typ !== 'vp+sd-jwt') {
+      // RFC 0882 counts the missing vp+sd-jwt nonce and aud of a bare credential as wrong values
+      const credential = W3cV2SdJwtVerifiableCredential.fromCompact(presentation)
+      await this.assertTrustedIssuer(agentContext, credential.resolvedCredential.issuerId, credential)
+      throw new WrongNonceOrAudienceError(credentialQuery.id)
+    }
+
     const verifiablePresentation = W3cV2SdJwtVerifiablePresentation.fromCompact(presentation)
-    const { header, payload, prettyClaims, kbJwt } = verifiablePresentation.sdJwt
-    if (header.typ !== 'vp+sd-jwt') {
-      throw new CredoError("vc+sd-jwt presentation must have header 'typ' 'vp+sd-jwt'")
+    const entries = asArray(verifiablePresentation.resolvedPresentation.verifiableCredential)
+    const entry = entries[0]
+    if (entries.length !== 1 || !(entry instanceof W3cV2EnvelopedVerifiableCredential)) {
+      throw new CredoError('vp+sd-jwt must hold exactly one EnvelopedVerifiableCredential')
+    }
+
+    const credential = entry.envelopedCredential
+    if (!(credential instanceof W3cV2SdJwtVerifiableCredential)) {
+      throw new CredoError('vp+sd-jwt must envelope a vc+sd-jwt credential')
+    }
+    await this.assertTrustedIssuer(agentContext, credential.resolvedCredential.issuerId, credential)
+
+    const { payload, prettyClaims, kbJwt } = verifiablePresentation.sdJwt
+    if (payload.nonce !== request.nonce || payload.aud !== request.audience) {
+      throw new WrongNonceOrAudienceError(credentialQuery.id)
     }
     if (kbJwt) {
       throw new CredoError('vp+sd-jwt must not have a KB-JWT')
@@ -718,20 +729,6 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
       if (claim in prettyClaims && !(claim in payload)) {
         throw new CredoError(`vp+sd-jwt claim '${claim}' must not be selectively disclosable`)
       }
-    }
-    if (payload.nonce !== request.nonce || payload.aud !== request.audience) {
-      throw new CredoError("vp+sd-jwt 'nonce' or 'aud' does not match the request")
-    }
-
-    const entries = asArray(verifiablePresentation.resolvedPresentation.verifiableCredential)
-    const entry = entries[0]
-    if (entries.length !== 1 || !(entry instanceof W3cV2EnvelopedVerifiableCredential)) {
-      throw new CredoError('vp+sd-jwt must hold exactly one EnvelopedVerifiableCredential')
-    }
-
-    const credential = entry.envelopedCredential
-    if (!(credential instanceof W3cV2SdJwtVerifiableCredential)) {
-      throw new CredoError('vp+sd-jwt must envelope a vc+sd-jwt credential')
     }
     if (credential.sdJwt.header.typ !== undefined && credential.sdJwt.header.typ !== 'vc+sd-jwt') {
       throw new CredoError("Enveloped credential header 'typ' must be 'vc+sd-jwt'")
@@ -751,11 +748,6 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     if (credential.resolvedCredential.credentialStatus !== undefined) {
       throw new CredoError("Enveloped credential 'credentialStatus' cannot be checked")
     }
-
-    await TrustedIssuerContext.ensureTrustedSigner(agentContext, {
-      signer: { method: 'did', didUrl: credential.resolvedCredential.issuerId },
-      verification: { type: 'credential', credential },
-    })
 
     this.assertHolderBindingKid(verifiablePresentation, credential)
 
@@ -780,6 +772,17 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     }
 
     return verifiablePresentation
+  }
+
+  private async assertTrustedIssuer(
+    agentContext: AgentContext,
+    didUrl: string,
+    credential: SdJwtVc | W3cV2SdJwtVerifiableCredential
+  ): Promise<void> {
+    await TrustedIssuerContext.ensureTrustedSigner(agentContext, {
+      signer: { method: 'did', didUrl },
+      verification: { type: 'credential', credential },
+    })
   }
 
   // verifyPresentation checks the cnf key signed it (under `authentication`) and the holder, but accepts any kid for that key
