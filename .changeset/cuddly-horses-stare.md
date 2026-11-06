@@ -2,4 +2,4 @@
 "@credo-ts/core": patch
 ---
 
-Group multicodec prefixes and key constraints into a flat multicodecDefinition descriptor. Retain legacy prefix and validation properties with editor deprecation annotations; fingerprints and validation behavior remain unchanged.
+Validate public-key payload lengths and compressed EC encodings inside fromMulticodec, including direct decoder calls. Existing multicodec prefix fields, valid fingerprints, and general public-key imports remain unchanged.
