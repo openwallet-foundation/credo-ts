@@ -1429,6 +1429,13 @@ export class OpenId4VcIssuerService {
     credentialIssuerMetadata: OpenId4VciCredentialIssuerMetadata,
     metadataSigner: OpenId4VcJwtIssuer
   ) {
+    // Wallets must establish trust in the metadata signer (OID4VCI 1.0 section 12.2.3), which a bare jwk can't provide.
+    if (metadataSigner.method === 'jwk') {
+      throw new CredoError(
+        `Signing the credential issuer metadata with a 'jwk' signer is not supported. Use 'x5c' or 'did' to sign the credential issuer metadata, or set 'metadataSigner' to null to stop signing it.`
+      )
+    }
+
     const issuer = this.getIssuer(agentContext)
     const credentialIssuerMetadataJwt = await issuer.createSignedCredentialIssuerMetadataJwt({
       credentialIssuerMetadata,

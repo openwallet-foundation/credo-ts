@@ -26,7 +26,8 @@ import type {
   OpenId4VciIssuerInfo,
   OpenId4VciParsedCredentialRequest,
   OpenId4VciTxCode,
-  OpenId4VcJwtIssuer,
+  OpenId4VcJwtIssuerDid,
+  OpenId4VcJwtIssuerX5c,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
 import type {
@@ -835,8 +836,10 @@ export type OpenId4VciCreateIssuerOptions = {
    * Currently the metadata is signed when the issuer metadata is created or updated, but
    * it won't be updated for each wallet that resolves the metadata. This also mean that no exp
    * is added to the signed metadata.
+   *
+   * A `jwk` signer is not supported, as wallets can't establish trust in it.
    */
-  metadataSigner?: OpenId4VcJwtIssuer
+  metadataSigner?: OpenId4VcJwtIssuerDid | OpenId4VcJwtIssuerX5c
 }
 
 export interface OpenId4VcUpdateIssuerOptions {
@@ -851,7 +854,7 @@ export interface OpenId4VcUpdateIssuerOptions {
    *
    * See {@link OpenId4VciCreateIssuerOptions.metadataSigner} for the signing behaviour.
    */
-  metadataSigner?: OpenId4VcJwtIssuer | null
+  metadataSigner?: OpenId4VcJwtIssuerDid | OpenId4VcJwtIssuerX5c | null
 }
 
 export type OpenId4VcUpdateIssuerRecordOptions = Pick<
