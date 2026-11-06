@@ -414,13 +414,13 @@ describe('dc+sd-jwt credential format service', () => {
     })
   })
 
-  test('processCredential rejects a credential that makes vct#integrity selectively disclosable', async () => {
+  test('processCredential rejects a credential that makes aka_vcts selectively disclosable', async () => {
     await processTamperedCredential({
       sign: {
-        payload: { ...offeredCredential, 'vct#integrity': 'sha256-9cLlJNXN-TsMk-PmKjZ5t0WRL5ca_xGgX3c1VLmXfh-WRL5' },
-        disclosureFrame: { ...disclosureFrame, _sd: ['given_name', 'vct#integrity'] },
+        payload: { ...offeredCredential, aka_vcts: ['https://credentials.example.com/previous_identity_credential'] },
+        disclosureFrame: { ...disclosureFrame, _sd: ['given_name', 'aka_vcts'] },
       },
-      error: "Claim 'vct#integrity' must not be selectively disclosable",
+      error: "Claim 'aka_vcts' must not be selectively disclosable",
     })
   })
 
