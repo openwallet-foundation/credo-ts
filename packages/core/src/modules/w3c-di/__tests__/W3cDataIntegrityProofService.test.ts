@@ -1077,14 +1077,7 @@ describe('W3cDataIntegrityProofService', () => {
     expect(mockCreateByCryptosuite).not.toHaveBeenCalled()
   })
 
-  test('verifyProofSetAndChain rejects a proof set containing an expired proof', async () => {
-    mockCreateByCryptosuite.mockReturnValue({
-      verifyProof: vi.fn().mockResolvedValue({
-        verified: true,
-        verifiedDocument: { id: 'urn:example:test' },
-      }),
-    })
-
+  test('verifyProofSetAndChain rejects a proof set containing an expired proof before cryptosuite verification', async () => {
     const result = await service.verifyProofSetAndChain(agentContext, {
       id: 'urn:example:test',
       proof: [
@@ -1108,8 +1101,15 @@ describe('W3cDataIntegrityProofService', () => {
 
     expect(result).toMatchObject({
       verified: false,
-      errors: [{ type: 'https://w3id.org/security#PROOF_VERIFICATION_ERROR', title: 'Proof has expired' }],
+      errors: [
+        {
+          type: 'https://w3id.org/security#PROOF_VERIFICATION_ERROR',
+          title: 'Proof at index 1 has invalid created/expires times',
+          detail: "Proof expired at '2020-01-01T00:00:00Z'",
+        },
+      ],
     })
+    expect(mockCreateByCryptosuite).not.toHaveBeenCalled()
   })
 
   test('verifyProof rejects malformed proofValue encoding before cryptosuite verification', async () => {

@@ -97,6 +97,7 @@ kms.randomBytes = vi.fn(function () {
   return TypedArrayEncoder.fromUtf8String('salt')
 })
 vi.setSystemTime(1698151532000)
+afterAll(() => vi.useRealTimers())
 
 describe('W3cV2SdJwtCredentialService', () => {
   let issuerDidJwk: DidJwk

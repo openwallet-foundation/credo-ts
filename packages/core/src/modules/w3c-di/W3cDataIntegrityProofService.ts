@@ -266,6 +266,26 @@ export class W3cDataIntegrityProofService {
         return createInvalidResult(proofFieldFormatIssues[0], proofFieldFormatIssues.slice(1))
       }
 
+      const proofTimestampIssues = proofs
+        .map((proof, index) => {
+          const proofTimestampError = validateProofTimestamps(proof, {
+            skewSeconds: agentContext.config.validitySkewSeconds,
+            now: options.now,
+          })
+          if (!proofTimestampError) return undefined
+
+          return createIssue(
+            W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
+            `Proof at index ${index} has invalid created/expires times`,
+            proofTimestampError.errors[0]?.detail ?? proofTimestampError.errors[0]?.title
+          )
+        })
+        .filter((issue): issue is W3cDataIntegrityProcessingIssue => issue !== undefined)
+
+      if (proofTimestampIssues.length > 0) {
+        return createInvalidResult(proofTimestampIssues[0], proofTimestampIssues.slice(1))
+      }
+
       const proofIdToIndex = this.createProofIdToIndexMap(proofs)
 
       const { proof: _, ...unsecuredDocument } = normalizedSecuredDocument
