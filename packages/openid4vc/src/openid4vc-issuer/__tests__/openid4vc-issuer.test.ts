@@ -1444,6 +1444,29 @@ describe('OpenId4VcIssuer', () => {
     ).toBeUndefined()
   })
 
+  it('rejects a jwk metadata signer', async () => {
+    const key = await issuer.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })
+
+    await expect(
+      issuer.openid4vc.issuer.createIssuer({
+        credentialConfigurationsSupported: { openBadgeCredential },
+        // @ts-expect-error a jwk signer is not allowed
+        metadataSigner: { method: 'jwk', jwk: Kms.PublicJwk.fromPublicJwk(key.publicJwk) },
+      })
+    ).rejects.toThrow(`Signing the credential issuer metadata with a 'jwk' signer is not supported.`)
+
+    // Issuer records stored before jwk signers were rejected can still hold one
+    openId4VcIssuer.signedMetadata = { signer: { method: 'jwk', jwk: key.publicJwk }, jwt: 'signed.metadata.jwt' }
+    await issuer.context.dependencyManager.resolve(OpenId4VcIssuerRepository).update(issuer.context, openId4VcIssuer)
+
+    await expect(
+      issuer.openid4vc.issuer.updateIssuerMetadata({
+        issuerId: openId4VcIssuer.issuerId,
+        credentialConfigurationsSupported: { openBadgeCredential },
+      })
+    ).rejects.toThrow(`Signing the credential issuer metadata with a 'jwk' signer is not supported.`)
+  })
+
   it('re-signs the metadata with a stored x5c signer', async () => {
     const credentialConfigurationsSupported = { openBadgeCredential }
 
