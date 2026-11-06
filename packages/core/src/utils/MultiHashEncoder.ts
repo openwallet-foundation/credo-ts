@@ -4,16 +4,22 @@ import { CredoError } from '../error'
 import { TypedArrayEncoder } from './TypedArrayEncoder'
 import { VarintEncoder } from './VarintEncoder'
 
-type MultiHashNameMap = Partial<Record<HashName, number>>
+type MultiHashName = Exclude<HashName, 'sha-1'>
 
 type MultiHashCodeMap = {
-  [key: number]: HashName
+  [key: number]: MultiHashName | undefined
 }
 
-const multiHashNameMap: MultiHashNameMap = {
+const multiHashNameMap: Record<MultiHashName, number> = {
   'sha-256': 0x12,
   'sha-512': 0x13,
   'sha-384': 0x20,
+}
+
+const hashExpectedDigestLength: Record<MultiHashName, number> = {
+  'sha-256': 32,
+  'sha-384': 48,
+  'sha-512': 64,
 }
 
 const multiHashCodeMap: MultiHashCodeMap = Object.entries(multiHashNameMap).reduce(
@@ -34,6 +40,10 @@ export class MultiHashEncoder {
    * @returns a multihash
    */
   public static encode(data: Uint8Array, hashName: HashName): Uint8Array {
+    if (hashName === 'sha-1') {
+      throw new CredoError(`Unsupported hash algorithm '${hashName}'`)
+    }
+
     const hashCode = multiHashNameMap[hashName]
     if (hashCode === undefined) {
       throw new CredoError(`Unsupported hash algorithm '${hashName}'`)
@@ -72,15 +82,14 @@ export class MultiHashEncoder {
       throw new CredoError('Multihash digest length prefix does not match digest length')
     }
 
-    const expectedDigestLength =
-      hashName === 'sha-256' ? 32 : hashName === 'sha-384' ? 48 : hashName === 'sha-512' ? 64 : undefined
-    if (expectedDigestLength === undefined || digestLength !== expectedDigestLength) {
+    const expectedDigestLength = hashExpectedDigestLength[hashName]
+    if (digestLength !== expectedDigestLength) {
       throw new CredoError(`Invalid digest length for hash algorithm '${hashName}'`)
     }
 
     return {
       data: new Uint8Array(withoutLengthPrefix),
-      hashName: multiHashCodeMap[hashPrefix],
+      hashName,
     }
   }
 
