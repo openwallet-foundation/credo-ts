@@ -10,7 +10,6 @@ import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
 import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArrayEncoder } from '../../utils'
-import { getDomainFromUrl } from '../../utils/domain'
 import { isAllowedHttpUrl } from '../../utils/uri'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
@@ -253,26 +252,6 @@ export class SdJwtVcService {
     })
 
     return compactDerivedSdJwtVc
-  }
-
-  private assertValidX5cJwtIssuer(
-    agentContext: AgentContext,
-    iss: string | undefined,
-    leafCertificate: X509Certificate
-  ) {
-    // No 'iss' is allowed for X509
-    if (!iss) return
-
-    // If iss is present it MUST be an HTTPS url
-    if (!isAllowedHttpUrl(iss, agentContext.config.allowInsecureHttpUrls)) {
-      throw new SdJwtVcError('The X509 certificate issuer must be a HTTPS URI.')
-    }
-
-    if (!leafCertificate.sanUriNames?.includes(iss) && !leafCertificate.sanDnsNames?.includes(getDomainFromUrl(iss))) {
-      throw new SdJwtVcError(
-        `The 'iss' claim in the payload does not match a 'SAN-URI' name and the domain extracted from the HTTPS URI does not match a 'SAN-DNS' name in the x5c certificate. Either remove the 'iss' claim or make it match with at least one SAN-URI or DNS-URI entry`
-      )
-    }
   }
 
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
@@ -561,8 +540,6 @@ export class SdJwtVcService {
         )
       }
       const alg = supportedSignatureAlgorithms[0]
-
-      this.assertValidX5cJwtIssuer(agentContext, issuer.issuer, leafCertificate)
 
       return {
         publicJwk,

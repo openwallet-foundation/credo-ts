@@ -273,24 +273,24 @@ describe('SdJwtVcService', () => {
       vi.mocked(agent.kms.randomBytes).mockImplementation(staticSalt)
     })
 
-    test('Sign (x509) sd-jwt-vc with an invalid certificate issuer should fail', async () => {
-      await expect(
-        sdJwtVcService.sign(agent.context, {
-          payload: {
-            claim: 'some-claim',
-            vct: 'IdentityCredential',
-          },
-          holder: {
-            method: 'jwk',
-            jwk: holderKey,
-          },
-          issuer: {
-            method: 'x5c',
-            x5c: [simpleX509Certificate],
-            issuer: 'some-issuer',
-          },
-        })
-      ).rejects.toThrow()
+    test('Sign (x509) sd-jwt-vc with an issuer claim that does not match the certificate', async () => {
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          claim: 'some-claim',
+          vct: 'IdentityCredential',
+        },
+        holder: {
+          method: 'jwk',
+          jwk: holderKey,
+        },
+        issuer: {
+          method: 'x5c',
+          x5c: [simpleX509Certificate],
+          issuer: 'some-issuer',
+        },
+      })
+
+      expect(sdJwtVcService.fromCompact(compact).payload.iss).toEqual('some-issuer')
     })
 
     test('Sign (x509) sd-jwt-vc from a basic payload without disclosures', async () => {
