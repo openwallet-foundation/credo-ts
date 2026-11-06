@@ -11,7 +11,7 @@ import {
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
-import { getResolvedDidcommServiceWithSigningKeyId } from './modules/connections/services/helpers'
+import { getResolvedDidcommServiceWithSigningKeyId, toX25519 } from './modules/connections/services/helpers'
 import { DidCommOutOfBandRole } from './modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandRepository } from './modules/oob/repository/DidCommOutOfBandRepository'
 import { DidCommOutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
@@ -24,6 +24,8 @@ export interface EnvelopeKeys {
   recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   senderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> | null
+  /** DID URL of the sender key; used as skid in DIDComm v2 so recipient can resolve it */
+  senderKeySkid?: string
 }
 
 @injectable()
@@ -63,13 +65,15 @@ export class DidCommEnvelopeService {
       let encryptedSender: string | undefined
 
       if (senderKey) {
+        // DIDComm v1 uses Ed25519 keys but encryption happens with X25519 keys.
+        const recipientX25519Jwk = toX25519(recipientKey).toJson()
+
         // Encrypt the sender
         const { encrypted } = await kms.encrypt({
           key: {
             keyAgreement: {
               algorithm: 'ECDH-HSALSA20',
-              // DIDComm v1 uses Ed25519 keys but encryption happens with X25519 keys
-              externalPublicJwk: recipientKey.convertTo(Kms.X25519PublicJwk).toJson(),
+              externalPublicJwk: recipientX25519Jwk,
             },
           },
           encryption: {
@@ -82,11 +86,13 @@ export class DidCommEnvelopeService {
       }
 
       // Encrypt the key
+      const recipientX25519JwkForKey = toX25519(recipientKey).toJson()
+
       const { encrypted, iv } = await kms.encrypt({
         key: {
           keyAgreement: {
             algorithm: 'ECDH-HSALSA20',
-            externalPublicJwk: recipientKey.convertTo(Kms.X25519PublicJwk).toJson(),
+            externalPublicJwk: recipientX25519JwkForKey,
 
             // Sender key only needed for Authcrypt
             keyId: senderKey?.keyId,
@@ -337,8 +343,10 @@ export class DidCommEnvelopeService {
             `Found mediator routing record with id '${mediatorRoutingRecord.id}' for recipient key '${publicKey.fingerprint}' for incoming didcomm message`
           )
 
-          const routingKey = mediatorRoutingRecord.routingKeysWithKeyId.find((routingKey) =>
-            publicKey.equals(routingKey)
+          // DIDComm v1 uses the Ed25519 routing key, the X25519 routing key only serves DIDComm v2
+          const routingKey = mediatorRoutingRecord.routingKeysWithKeyId.find(
+            (routingKey): routingKey is Kms.PublicJwk<Kms.Ed25519PublicJwk> =>
+              routingKey.is(Kms.Ed25519PublicJwk) && publicKey.equals(routingKey)
           )
 
           // This should not happen as we only get here if the tag matches
@@ -431,6 +439,17 @@ export class DidCommEnvelopeService {
     return null
   }
 }
+
+/**
+ * A key that can appear on a DIDComm envelope.
+ *
+ * V1 uses Ed25519 keys throughout. V2 uses the key-agreement curves that the DIDComm Messaging
+ * v2.1 specification requires. Both versions produce a decrypted context, so the context carries
+ * the union rather than the v1 type with a cast over it.
+ */
+export type DidCommEnvelopeKey = Kms.PublicJwk<
+  Kms.Ed25519PublicJwk | Kms.X25519PublicJwk | Kms.P256PublicJwk | Kms.P384PublicJwk
+>
 
 export interface DecryptedDidCommMessageContext {
   plaintextMessage: DidCommPlaintextMessage

@@ -3,6 +3,7 @@ import { IsObject, IsString } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import type { DidCommEncryptedMessage } from '../../../../../types'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface DidCommForwardMessageOptions {
@@ -15,6 +16,8 @@ export interface DidCommForwardMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0094-cross-domain-messaging/README.md#corerouting10forward
  */
 export class DidCommForwardMessage extends DidCommMessage {
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
+
   /**
    * Create new ForwardMessage instance.
    *

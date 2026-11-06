@@ -10,6 +10,7 @@ import { ThreadDecorated } from './decorators/thread/ThreadDecoratorExtension'
 import { TimingDecorated } from './decorators/timing/TimingDecoratorExtension'
 import { TransportDecorated } from './decorators/transport/TransportDecoratorExtension'
 import type { DidCommPlaintextMessage } from './types'
+import type { DidCommVersion } from './util/didcommVersion'
 import type { ParsedMessageType } from './util/messageType'
 
 export type ConstructableAgentMessage = Constructor<DidCommMessage> & { type: ParsedMessageType }
@@ -22,14 +23,6 @@ const Decorated = ThreadDecorated(
 
 export class DidCommMessage extends Decorated {
   /**
-   * Whether the protocol RFC was initially written using the legacy did:prefix instead of the
-   * new https://didcomm.org message type prefix.
-   *
-   * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0348-transition-msg-type-to-https/README.md
-   */
-  @Exclude()
-
-  /**
    * Whether to use Queue Transport in case the recipient of this message does not have a reliable
    * endpoint available
    *
@@ -37,6 +30,13 @@ export class DidCommMessage extends Decorated {
    */
   @Exclude()
   public readonly allowQueueTransport: boolean = true
+
+  /**
+   * DIDComm envelope versions this message type supports. undefined = both v1 and v2 allowed (default for all existing messages).
+   * Set to ['v2'] for v2-only protocols (e.g. present-proof/3.0, trust-ping/2.0). Used to throw when sending v2-only over v1 connection.
+   */
+  @Exclude()
+  public readonly supportedDidCommVersions?: readonly DidCommVersion[]
 
   public toJSON(): DidCommPlaintextMessage {
     return JsonTransformer.toJSON(this) as DidCommPlaintextMessage

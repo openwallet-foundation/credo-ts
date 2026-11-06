@@ -49,7 +49,7 @@ import type {
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
 import { getOid4vcEncryptJweCallback } from '../../shared/callbacks'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
-import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import { getCredentialRequestDecryptionMetadata, OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
 import type { OpenId4VcIssuerRecord } from '../repository'
 import { OpenId4VcIssuanceSessionRepository, OpenId4VcIssuerRepository } from '../repository'
@@ -1708,7 +1708,10 @@ describe('OpenId4VcIssuer', () => {
       return issuerService.getIssuer(issuer.context).parseCredentialRequest({
         credentialRequest,
         contentType: typeof credentialRequest === 'string' ? 'application/jwt' : 'application/json',
-        issuerMetadata: await issuerService.getIssuerMetadata(issuer.context, issuerRecord),
+        issuerMetadata: getCredentialRequestDecryptionMetadata(
+          await issuerService.getIssuerMetadata(issuer.context, issuerRecord),
+          issuerRecord
+        ),
       })
     }
 
@@ -1789,6 +1792,34 @@ describe('OpenId4VcIssuer', () => {
       await expect(
         parse(issuerRecord, await encryptRequest(secondKey.publicJwk, credentialRequest))
       ).resolves.toMatchObject({ credentialRequest })
+    })
+
+    it('decrypts a credential request encrypted to a previous key without advertising it', async () => {
+      const previousKey = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const { publicJwk, issuerRecord } = await configureRequestEncryption({ previousJwks: [previousKey.publicJwk] })
+
+      const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+      expect(issuerMetadata.credentialIssuer.credential_request_encryption?.jwks.keys).toEqual([
+        { ...publicJwk, use: 'enc', alg: 'ECDH-ES' },
+      ])
+
+      await expect(
+        parse(issuerRecord, await encryptRequest(previousKey.publicJwk, credentialRequest))
+      ).resolves.toMatchObject({ credentialRequest })
+    })
+
+    it('rejects a key id that is in both jwks and previousJwks', async () => {
+      const key = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+      await expect(
+        issuer.openid4vc.issuer.updateIssuerMetadata({
+          issuerId: openId4VcIssuer.issuerId,
+          credentialConfigurationsSupported: openId4VcIssuer.credentialConfigurationsSupported,
+          credentialRequestEncryption: { jwks: [key.publicJwk], previousJwks: [key.publicJwk] },
+        })
+      ).rejects.toThrow(
+        `Credential request encryption key '${key.keyId}' must be unique across 'jwks' and 'previousJwks'.`
+      )
     })
 
     it('rejects a credential request encryption key that does not support ECDH-ES', async () => {
