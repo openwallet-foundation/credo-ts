@@ -49,7 +49,7 @@ import type {
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
 import { getOid4vcEncryptJweCallback } from '../../shared/callbacks'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
-import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import { getCredentialRequestDecryptionMetadata, OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
 import type { OpenId4VcIssuerRecord } from '../repository'
 import { OpenId4VcIssuanceSessionRepository, OpenId4VcIssuerRepository } from '../repository'
@@ -472,6 +472,77 @@ describe('OpenId4VcIssuer', () => {
     await handleCredentialResponse(holder.context, credentialResponse.credential, universityDegreeCredentialSdJwt)
   })
 
+  it.each([
+    [['did:key'], undefined],
+    [['did'], undefined],
+    [['jwk', 'did:web'], "Binding method 'did:key' is not supported"],
+    [['cose_key'], "Binding method 'did:key' is not supported"],
+  ])('binding methods %j with a did:key proof', async (bindingMethods, expectedError) => {
+    const credentialConfiguration = {
+      ...universityDegreeCredentialSdJwt,
+      cryptographic_binding_methods_supported: bindingMethods,
+      proof_types_supported: { jwt: { proof_signing_alg_values_supported: ['EdDSA'] } },
+    } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
+    await issuer.openid4vc.issuer.updateIssuerMetadata({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationsSupported: { [credentialConfiguration.id]: credentialConfiguration },
+    })
+
+    const { issuanceSession } = await issuer.openid4vc.issuer.createCredentialOffer({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationIds: [credentialConfiguration.id],
+      preAuthorizedCodeFlowConfig: { preAuthorizedCode: '1234567890' },
+    })
+    issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    await issuer.context.dependencyManager
+      .resolve(OpenId4VcIssuanceSessionRepository)
+      .update(issuer.context, issuanceSession)
+
+    const { cNonce } = await issuer.context.dependencyManager
+      .resolve(OpenId4VcIssuerService)
+      .createNonce(issuer.context, openId4VcIssuer)
+    const credentialRequest = await createCredentialRequest(holder.context, {
+      credentialConfiguration,
+      issuerMetadata: await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId),
+      kid: holderKid,
+      nonce: cNonce,
+    })
+
+    const credentialResponsePromise = issuer.openid4vc.issuer.createCredentialResponse({
+      issuanceSessionId: issuanceSession.id,
+      parsedCredentialRequest: await parseCredentialRequestAsWallet(credentialRequest),
+      authorization: {
+        authorizationServer: 'https://authorization.com',
+        accessToken: {
+          payload: { active: true, sub: 'something', 'pre-authorized_code': 'some' },
+          value: 'the-access-token',
+        },
+      },
+      credentialRequestToCredentialMapper: () => ({
+        type: 'credentials',
+        format: 'dc+sd-jwt',
+        credentials: [
+          {
+            payload: { vct: 'UniversityDegreeCredential', degree: 'bachelor' },
+            issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
+            holder: { method: 'did', didUrl: holderVerificationMethod.id },
+          },
+        ],
+        credentialConfigurationId: credentialConfiguration.id,
+      }),
+    })
+
+    if (expectedError) {
+      await expect(credentialResponsePromise).rejects.toMatchObject({
+        errorResponse: { error: 'invalid_proof', error_description: expect.stringContaining(expectedError) },
+      })
+    } else {
+      await expect(credentialResponsePromise).resolves.toMatchObject({
+        credentialResponse: { credential: expect.any(String) },
+      })
+    }
+  })
+
   it('pre authorized code flow (sd-jwt-vc) v13', async () => {
     const preAuthorizedCode = '1234567890'
 
@@ -571,6 +642,61 @@ describe('OpenId4VcIssuer', () => {
     })
 
     await handleCredentialResponse(holder.context, credentialResponse.credential, universityDegreeCredentialSdJwt)
+  })
+
+  it('returns a v1 batch response for a session without a version and a credential_configuration_id request', async () => {
+    const preAuthorizedCode = '1234567890'
+    const result = await issuer.openid4vc.issuer.createCredentialOffer({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationIds: [universityDegreeCredentialSdJwt.id],
+      preAuthorizedCodeFlowConfig: { preAuthorizedCode },
+    })
+
+    // Sessions stored before the version was persisted have no version
+    const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    result.issuanceSession.openId4VciVersion = undefined
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
+
+    const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
+    const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
+    const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const { proof } = (await createCredentialRequest(holder.context, {
+      credentialConfiguration: universityDegreeCredentialSdJwt,
+      issuerMetadata,
+      kid: holderKid,
+      nonce: cNonce,
+    })) as { proof: { jwt: string } }
+
+    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
+      issuanceSessionId: result.issuanceSession.id,
+      parsedCredentialRequest: await parseCredentialRequestAsWallet({
+        credential_configuration_id: universityDegreeCredentialSdJwt.id,
+        proofs: { jwt: [proof.jwt] },
+      }),
+      authorization: {
+        authorizationServer: 'https://authorization.com',
+        accessToken: {
+          payload: { active: true, sub: 'something', 'pre-authorized_code': preAuthorizedCode },
+          value: 'the-access-token',
+        },
+      },
+      credentialRequestToCredentialMapper: () => ({
+        type: 'credentials',
+        format: 'dc+sd-jwt',
+        credentials: [
+          {
+            payload: { vct: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
+            issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
+            holder: { method: 'did', didUrl: holderVerificationMethod.id },
+            disclosureFrame: { _sd: ['university', 'degree'] },
+          },
+        ],
+        credentialConfigurationId: universityDegreeCredentialSdJwt.id,
+      }),
+    })
+
+    expect(credentialResponse.credentials).toEqual([{ credential: expect.any(String) }])
   })
 
   it('pre authorized code flow (jwt-vc-json)', async () => {
@@ -1582,7 +1708,10 @@ describe('OpenId4VcIssuer', () => {
       return issuerService.getIssuer(issuer.context).parseCredentialRequest({
         credentialRequest,
         contentType: typeof credentialRequest === 'string' ? 'application/jwt' : 'application/json',
-        issuerMetadata: await issuerService.getIssuerMetadata(issuer.context, issuerRecord),
+        issuerMetadata: getCredentialRequestDecryptionMetadata(
+          await issuerService.getIssuerMetadata(issuer.context, issuerRecord),
+          issuerRecord
+        ),
       })
     }
 
@@ -1663,6 +1792,34 @@ describe('OpenId4VcIssuer', () => {
       await expect(
         parse(issuerRecord, await encryptRequest(secondKey.publicJwk, credentialRequest))
       ).resolves.toMatchObject({ credentialRequest })
+    })
+
+    it('decrypts a credential request encrypted to a previous key without advertising it', async () => {
+      const previousKey = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const { publicJwk, issuerRecord } = await configureRequestEncryption({ previousJwks: [previousKey.publicJwk] })
+
+      const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+      expect(issuerMetadata.credentialIssuer.credential_request_encryption?.jwks.keys).toEqual([
+        { ...publicJwk, use: 'enc', alg: 'ECDH-ES' },
+      ])
+
+      await expect(
+        parse(issuerRecord, await encryptRequest(previousKey.publicJwk, credentialRequest))
+      ).resolves.toMatchObject({ credentialRequest })
+    })
+
+    it('rejects a key id that is in both jwks and previousJwks', async () => {
+      const key = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+      await expect(
+        issuer.openid4vc.issuer.updateIssuerMetadata({
+          issuerId: openId4VcIssuer.issuerId,
+          credentialConfigurationsSupported: openId4VcIssuer.credentialConfigurationsSupported,
+          credentialRequestEncryption: { jwks: [key.publicJwk], previousJwks: [key.publicJwk] },
+        })
+      ).rejects.toThrow(
+        `Credential request encryption key '${key.keyId}' must be unique across 'jwks' and 'previousJwks'.`
+      )
     })
 
     it('rejects a credential request encryption key that does not support ECDH-ES', async () => {

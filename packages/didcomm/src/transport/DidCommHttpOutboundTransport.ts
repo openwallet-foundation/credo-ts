@@ -5,13 +5,24 @@ import type { DidCommMessageReceivedEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
 import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import type { DidCommOutboundPackage } from '../types'
+import { isDidCommV2EncryptedMessage } from '../util/didcommVersion'
 import { isValidJweStructure } from '../util/JWE'
+import { DIDCOMM_V2_ENCRYPTED_MIME_TYPE } from '../v2/types'
 import type { DidCommOutboundTransport } from './DidCommOutboundTransport'
+
+export interface DidCommHttpOutboundTransportOptions {
+  /**
+   * Maximum size in bytes of a DIDComm message returned in the HTTP response.
+   *
+   * @default the `maxResponseBytes` of the agent's `fetchLimits`
+   */
+  maxResponseBytes?: number
+}
 
 export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
   private agentContext!: AgentContext
   private logger!: Logger
-  private fetch!: typeof fetch
+  private options: DidCommHttpOutboundTransportOptions
   private isActive = false
 
   private outboundSessionCount = 0
@@ -19,10 +30,13 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
 
   public supportedSchemes = ['http', 'https']
 
+  public constructor(options: DidCommHttpOutboundTransportOptions = {}) {
+    this.options = options
+  }
+
   public async start(agentContext: AgentContext): Promise<void> {
     this.agentContext = agentContext
     this.logger = this.agentContext.config.logger
-    this.fetch = this.agentContext.config.agentDependencies.fetch
     this.isActive = true
     this.outboundSessionCount = 0
 
@@ -58,6 +72,7 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
   public async sendMessage(outboundPackage: DidCommOutboundPackage) {
     const { payload, endpoint } = outboundPackage
     const didCommMimeType = this.agentContext.dependencyManager.resolve(DidCommModuleConfig).didCommMimeType
+    const contentType = isDidCommV2EncryptedMessage(payload) ? DIDCOMM_V2_ENCRYPTED_MIME_TYPE : didCommMimeType
 
     if (!this.isActive) {
       throw new CredoError('Outbound transport is not active. Not sending message.')
@@ -72,19 +87,18 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
     })
 
     try {
-      const abortController = new AbortController()
-      const id = setTimeout(() => abortController.abort(), 15000)
       this.outboundSessionCount++
 
       let response: Response | undefined
       let responseMessage: string | undefined
       try {
-        response = await this.fetch(endpoint, {
+        response = await this.agentContext.config.fetch(endpoint, {
           method: 'POST',
           body: JSON.stringify(payload),
-          headers: { 'Content-Type': didCommMimeType },
-          signal: abortController.signal as NonNullable<RequestInit['signal']>,
-        }).finally(() => clearTimeout(id))
+          headers: { 'Content-Type': contentType },
+          timeoutMs: 15000,
+          maxResponseBytes: this.options.maxResponseBytes,
+        })
         responseMessage = await response.text()
       } catch (error) {
         // The request is aborted when no response arrives within 15 seconds, but that doesn't necessarily mean
@@ -138,7 +152,7 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
         error,
         message: error.message,
         body: payload,
-        didCommMimeType,
+        contentType,
       })
       throw new CredoError(`Error sending message to ${endpoint}: ${error.message}`, { cause: error })
     } finally {

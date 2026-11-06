@@ -2,6 +2,7 @@ import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommProtocol } from '../../models'
 import { DidCommOutOfBandApi } from './DidCommOutOfBandApi'
 import { DidCommOutOfBandService } from './DidCommOutOfBandService'
@@ -38,5 +39,15 @@ export class DidCommOutOfBandModule implements Module {
         roles: ['sender', 'receiver'],
       })
     )
+
+    // Out-of-band 2.0 invitations are only accepted by a v2 agent, so only a v2 agent advertises them
+    if (agentContext.resolve(DidCommModuleConfig).isSupported('v2')) {
+      featureRegistry.register(
+        new DidCommProtocol({
+          id: 'https://didcomm.org/out-of-band/2.0',
+          roles: ['sender', 'receiver'],
+        })
+      )
+    }
   }
 }

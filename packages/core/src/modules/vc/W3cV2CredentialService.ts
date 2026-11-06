@@ -408,7 +408,8 @@ export class W3cV2CredentialService {
   }
 
   /**
-   * A credential bound to a key with `cnf` must be presented with that key.
+   * A credential bound to a key with `cnf` must be presented with that key. A `cnf.kid` must also be a key of
+   * the DID that signed the presentation.
    */
   private async verifyHolderBinding(
     agentContext: AgentContext,
@@ -420,17 +421,28 @@ export class W3cV2CredentialService {
       if (!holderBinding) return { isValid: true }
 
       // The presentation signer is resolved under `authentication`, so the holder key must be too
-      const { publicJwk } = await extractKeyFromHolderBinding(agentContext, holderBinding, {
+      const { publicJwk, did } = await extractKeyFromHolderBinding(agentContext, holderBinding, {
         didPurposes: ['authentication'],
       })
-      if (publicJwk.equals(getPublicJwkFromVerificationMethod(signer.verificationMethod))) return { isValid: true }
-
-      return {
-        isValid: false,
-        error: new CredoError(
-          `Credential is bound to a different key than verification method ${signer.verificationMethod.id} that signed the presentation`
-        ),
+      if (!publicJwk.equals(getPublicJwkFromVerificationMethod(signer.verificationMethod))) {
+        return {
+          isValid: false,
+          error: new CredoError(
+            `Credential is bound to a different key than verification method ${signer.verificationMethod.id} that signed the presentation`
+          ),
+        }
       }
+
+      if (holderBinding.method === 'did' && did !== signer.signer) {
+        return {
+          isValid: false,
+          error: new CredoError(
+            `Credential is bound to cnf.kid '${holderBinding.didUrl}' of did '${did}', but the presentation is signed by did '${signer.signer}'`
+          ),
+        }
+      }
+
+      return { isValid: true }
     } catch (error) {
       return { isValid: false, error }
     }
