@@ -221,6 +221,13 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
           `DIDComm v2 nested signer '${verified.signerDid}' does not match the authcrypt sender '${senderDid}'`
         )
       }
+      // The inner JWM MUST name us in `to`, so a signed message cannot be re-encrypted to someone else unnoticed.
+      // https://identity.foundation/didcomm-messaging/spec/v2.1/#message-layer-addressing-consistency
+      if (!isAddressedTo(unwrapped.to, matchedKid)) {
+        throw new CredoError(
+          "DIDComm v2 signed and encrypted message 'to' does not contain the DID the message was encrypted to"
+        )
+      }
     }
 
     // Lenient on purpose: authcrypt without from falls back to the skid DID, though the spec requires from.
@@ -251,20 +258,13 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     }
   }
 
+  // A message whose `to` omits us MUST still be accepted: https://identity.foundation/didcomm-messaging/spec/v2.1/#message-headers
   private warnIfNotAddressedToUs(agentContext: AgentContext, to: unknown, matchedKid: string): void {
-    if (to === undefined) return
-
-    const ourDid = matchedKid.split('#')[0]
-    if (
-      Array.isArray(to) &&
-      to.some((entry) => typeof entry === 'string' && areEquivalentDidPeer4Forms(entry, ourDid))
-    ) {
-      return
-    }
+    if (to === undefined || isAddressedTo(to, matchedKid)) return
 
     agentContext.config.logger.warn("DIDComm v2 plaintext 'to' does not contain the DID the message was encrypted to", {
       to,
-      ourDid,
+      ourDid: matchedKid.split('#')[0],
     })
   }
 
@@ -415,6 +415,14 @@ export function toV2EnvelopeRecipients(
   }
 
   return sameDidAndCurve
+}
+
+function isAddressedTo(to: unknown, matchedKid: string): boolean {
+  const ourDid = matchedKid.split('#')[0]
+  return (
+    Array.isArray(to) &&
+    to.some((entry) => typeof entry === 'string' && areEquivalentDidPeer4Forms(entry.split('#')[0], ourDid))
+  )
 }
 
 /**

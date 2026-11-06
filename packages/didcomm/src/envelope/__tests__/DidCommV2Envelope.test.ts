@@ -637,29 +637,70 @@ describe('DidCommV2Envelope', () => {
       )
     })
 
-    it('rejects a nested signature by someone other than the authcrypt sender', async () => {
-      const sender = await createKeyAgreementDid()
-      const recipient = await createKeyAgreementDid()
-      const signer = await createKeyAgreementDid()
-      const { didDocument, keys } = await agent.dids.resolveCreatedDidDocumentWithKeys(signer.did)
+    // Signs with the authentication key of one of our DIDs
+    const signWithDid = async (did: string, plaintext: Omit<DidCommV2PlaintextMessage, 'id' | 'type'>) => {
+      const { didDocument, keys } = await agent.dids.resolveCreatedDidDocumentWithKeys(did)
       const [authentication] = didDocument.findVerificationMethodsByPurpose(['authentication'])
       const signingKeyId = keys?.find((key) => authentication.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
-      if (!signingKeyId) throw new Error(`No authentication key in ${signer.did}`)
+      if (!signingKeyId) throw new Error(`No authentication key in ${did}`)
 
-      const envelopeService = agent.dependencyManager.resolve(DidCommV2EnvelopeService)
-      const signed = await envelopeService.signPlaintext(
-        agent.context,
-        { id: utils.uuid(), type: DidCommTrustPingMessage.type.messageTypeUri, to: [recipient.did] },
-        { keyId: signingKeyId, kid: toAbsoluteDidUrl(didDocument.id, authentication.id), alg: 'EdDSA' }
-      )
-      const encrypted = await envelopeService.pack(agent.context, JsonEncoder.toUint8Array(signed), {
+      return agent.dependencyManager
+        .resolve(DidCommV2EnvelopeService)
+        .signPlaintext(
+          agent.context,
+          { id: utils.uuid(), type: DidCommTrustPingMessage.type.messageTypeUri, ...plaintext },
+          { keyId: signingKeyId, kid: toAbsoluteDidUrl(didDocument.id, authentication.id), alg: 'EdDSA' }
+        )
+    }
+
+    const packSignedAndAuthcrypted = async (
+      signed: Awaited<ReturnType<typeof signWithDid>>,
+      sender: Awaited<ReturnType<typeof createKeyAgreementDid>>,
+      recipient: Awaited<ReturnType<typeof createKeyAgreementDid>>
+    ) =>
+      agent.dependencyManager.resolve(DidCommV2EnvelopeService).pack(agent.context, JsonEncoder.toUint8Array(signed), {
         senderKey: sender.publicJwk,
         senderKeySkid: sender.didUrl,
         recipients: [{ key: recipient.publicJwk, kid: recipient.didUrl }],
       })
 
+    it('rejects a nested signature by someone other than the authcrypt sender', async () => {
+      const sender = await createKeyAgreementDid()
+      const recipient = await createKeyAgreementDid()
+      const signer = await createKeyAgreementDid()
+      const signed = await signWithDid(signer.did, { from: signer.did, to: [recipient.did] })
+      const encrypted = await packSignedAndAuthcrypted(signed, sender, recipient)
+
       await expect(agent.dependencyManager.resolve(DidCommV2Envelope).unpack(agent.context, encrypted)).rejects.toThrow(
         /nested signer .* does not match the authcrypt sender/
+      )
+    })
+
+    it('accepts a signed and encrypted message addressed to us', async () => {
+      const sender = await createKeyAgreementDid()
+      const recipient = await createKeyAgreementDid()
+      const signed = await signWithDid(sender.did, { from: sender.did, to: [recipient.did] })
+      const encrypted = await packSignedAndAuthcrypted(signed, sender, recipient)
+
+      const { authenticatedSenderDid, plaintextMessage } = await agent.dependencyManager
+        .resolve(DidCommV2Envelope)
+        .unpack(agent.context, encrypted)
+
+      expect(authenticatedSenderDid).toBe(sender.did)
+      expect(plaintextMessage.to).toEqual([recipient.did])
+    })
+
+    it.each([
+      { case: 'is absent', to: undefined },
+      { case: 'names only another DID', to: ['did:example:someone-else'] },
+    ])('rejects a signed and encrypted message whose inner to $case', async ({ to }) => {
+      const sender = await createKeyAgreementDid()
+      const recipient = await createKeyAgreementDid()
+      const signed = await signWithDid(sender.did, { from: sender.did, to })
+      const encrypted = await packSignedAndAuthcrypted(signed, sender, recipient)
+
+      await expect(agent.dependencyManager.resolve(DidCommV2Envelope).unpack(agent.context, encrypted)).rejects.toThrow(
+        /signed and encrypted message 'to' does not contain the DID/
       )
     })
 
