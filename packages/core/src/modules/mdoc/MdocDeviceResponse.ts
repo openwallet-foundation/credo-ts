@@ -367,10 +367,7 @@ export class MdocDeviceResponse {
     }
 
     if (options.type === 'openId4VpDraft18') {
-      // The mdoc-generated nonce is a CBOR `tstr` in the ISO 18013-7 / OpenID4VP draft 18 handover. It
-      // may be passed as raw bytes (e.g. the JARM `apu` octet string from the verifier), in which case
-      // we interpret those bytes as the UTF-8 text string. This throws for a non-UTF-8 nonce, which is
-      // correct: the draft 18 handover cannot represent a non-UTF-8 nonce.
+      // The draft 18 handover encodes the nonce as a `tstr`, so raw bytes must be valid UTF-8.
       const mdocGeneratedNonce =
         typeof options.mdocGeneratedNonce === 'string'
           ? options.mdocGeneratedNonce
