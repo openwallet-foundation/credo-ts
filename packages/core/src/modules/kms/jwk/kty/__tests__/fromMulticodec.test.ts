@@ -42,19 +42,25 @@ describe('fromMulticodec', () => {
     }
   )
 
-  it.each(ecFixtures)('requires compressed SEC1 payloads for $fixture.id', ({ fixture, JwkClass }) => {
-    const publicJwk = PublicJwk.fromFingerprint(fixture.id.slice('did:key:'.length))
-    const publicKey = publicJwk.publicKey
-    if (publicKey.kty !== 'EC') throw new Error('Expected an EC fixture')
-    const instance = JwkClass.fromPublicKey(publicKey.publicKey)
-    expect(PublicJwk.fromPublicJwk(instance.jwk).fingerprint).toBe(publicJwk.fingerprint)
-    expect(() => JwkClass.fromMulticodec(publicKey.publicKey)).toThrow('Invalid public key length')
+  describe.each(ecFixtures)('compressed SEC1 payloads for $fixture.id', ({ fixture, JwkClass }) => {
+    it('accepts uncompressed keys for general imports but rejects them for multicodec decoding', () => {
+      const publicJwk = PublicJwk.fromFingerprint(fixture.id.slice('did:key:'.length))
+      const publicKey = publicJwk.publicKey
+      if (publicKey.kty !== 'EC') throw new Error('Expected an EC fixture')
+      const instance = JwkClass.fromPublicKey(publicKey.publicKey)
 
-    for (const header of [0x00, 0x04, 0x06, 0x07]) {
-      const payload = instance.multicodec
+      expect(PublicJwk.fromPublicJwk(instance.jwk).fingerprint).toBe(publicJwk.fingerprint)
+      expect(() => JwkClass.fromMulticodec(publicKey.publicKey)).toThrow('Invalid public key length')
+    })
+
+    it.each([0x00, 0x04, 0x06, 0x07])('rejects compressed-length payloads with header %i', (header) => {
+      const { data } = MultiBaseEncoder.decode(fixture.id.slice('did:key:'.length))
+      const [, prefixLength] = VarintEncoder.decode(data)
+      const payload = data.slice(prefixLength)
       payload[0] = header
-      expect(() => JwkClass.fromMulticodec(payload)).toThrow('Invalid compressed public key header')
-    }
+
+      expect(() => JwkClass.fromMulticodec(payload)).toThrow('neither a valid compressed or uncompressed key')
+    })
   })
 
   it.each(okpFixtures)('does not interpret OKP payload bytes as SEC1 headers for $fixture.id', ({ JwkClass }) => {

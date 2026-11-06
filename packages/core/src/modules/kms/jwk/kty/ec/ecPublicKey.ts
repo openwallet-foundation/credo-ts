@@ -69,9 +69,5 @@ export function ecMulticodecToPublicJwk<Crv extends KmsJwkPublicEc['crv']>(publi
     )
   }
 
-  if (publicKey[0] !== 0x02 && publicKey[0] !== 0x03) {
-    throw new KeyManagementError(`Invalid compressed public key header for multicodec with crv '${crv}'`)
-  }
-
   return ecPublicKeyToPublicJwk(publicKey, crv)
 }
