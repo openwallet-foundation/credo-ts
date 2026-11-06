@@ -1,3 +1,4 @@
+import { CredoError } from '../../error'
 import { VarintEncoder } from '../VarintEncoder'
 
 describe('VarintEncoder', () => {
@@ -25,14 +26,14 @@ describe('VarintEncoder', () => {
     [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
     [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00],
   ])('rejects malformed or unsafe encoding %j', (bytes) => {
-    expect(() => VarintEncoder.decode(bytes)).toThrow()
+    expect(() => VarintEncoder.decode(bytes)).toThrow(CredoError)
   })
 
   it.each([-1, 1.5, Number.MAX_SAFE_INTEGER + 1, Number.NaN, Number.POSITIVE_INFINITY])(
     'rejects invalid encode input %s',
     (value) => {
-      expect(() => VarintEncoder.encode(value)).toThrow()
-      expect(() => VarintEncoder.encodingLength(value)).toThrow()
+      expect(() => VarintEncoder.encode(value)).toThrow(CredoError)
+      expect(() => VarintEncoder.encodingLength(value)).toThrow(CredoError)
     }
   )
 })

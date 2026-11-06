@@ -1,4 +1,5 @@
 import { Hasher } from '../../crypto'
+import { CredoError } from '../../error'
 import { MultiHashEncoder } from '../MultiHashEncoder'
 import { TypedArrayEncoder } from '../TypedArrayEncoder'
 
@@ -18,7 +19,7 @@ describe('MultiHashEncoder', () => {
     })
 
     it('does not encode SHA-1 multihashes', () => {
-      expect(() => MultiHashEncoder.encode(validData, 'sha-1')).toThrow()
+      expect(() => MultiHashEncoder.encode(validData, 'sha-1')).toThrow(CredoError)
     })
   })
 
@@ -44,7 +45,7 @@ describe('MultiHashEncoder', () => {
     it('Decodes invalid multihash', () => {
       expect(() => {
         MultiHashEncoder.decode(invalidMultiHash)
-      }).toThrow()
+      }).toThrow(CredoError)
     })
 
     it.each([
@@ -55,7 +56,7 @@ describe('MultiHashEncoder', () => {
       new Uint8Array([0x12, 0x30, ...new Uint8Array(48)]),
       new Uint8Array([0x11, 0x14, ...new Uint8Array(20)]),
     ])('rejects malformed multihash %j', (multihash) => {
-      expect(() => MultiHashEncoder.decode(multihash)).toThrow()
+      expect(() => MultiHashEncoder.decode(multihash)).toThrow(CredoError)
     })
   })
 

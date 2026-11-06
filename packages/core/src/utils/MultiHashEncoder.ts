@@ -1,5 +1,6 @@
 import type { HashName } from '../crypto/hashes'
 import { Hasher } from '../crypto/hashes/Hasher'
+import { CredoError } from '../error'
 import { TypedArrayEncoder } from './TypedArrayEncoder'
 import { VarintEncoder } from './VarintEncoder'
 
@@ -35,7 +36,7 @@ export class MultiHashEncoder {
   public static encode(data: Uint8Array, hashName: HashName): Uint8Array {
     const hashCode = multiHashNameMap[hashName]
     if (hashCode === undefined) {
-      throw new Error(`Unsupported hash algorithm '${hashName}'`)
+      throw new CredoError(`Unsupported hash algorithm '${hashName}'`)
     }
 
     const hash = Hasher.hash(data, hashName)
@@ -64,17 +65,17 @@ export class MultiHashEncoder {
     const hashName = multiHashCodeMap[hashPrefix]
 
     if (!hashName) {
-      throw new Error(`Unsupported hash code 0x${hashPrefix.toString(16)}`)
+      throw new CredoError(`Unsupported hash code 0x${hashPrefix.toString(16)}`)
     }
 
     if (digestLength !== withoutLengthPrefix.length) {
-      throw new Error('Multihash digest length prefix does not match digest length')
+      throw new CredoError('Multihash digest length prefix does not match digest length')
     }
 
     const expectedDigestLength =
       hashName === 'sha-256' ? 32 : hashName === 'sha-384' ? 48 : hashName === 'sha-512' ? 64 : undefined
     if (expectedDigestLength === undefined || digestLength !== expectedDigestLength) {
-      throw new Error(`Invalid digest length for hash algorithm '${hashName}'`)
+      throw new CredoError(`Invalid digest length for hash algorithm '${hashName}'`)
     }
 
     return {

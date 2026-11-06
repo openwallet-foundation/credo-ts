@@ -1,8 +1,10 @@
+import { CredoError } from '../error'
+
 // biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class VarintEncoder {
   public static decode(data: Uint8Array | number[]) {
     if (data.length === 0) {
-      throw new Error('Cannot decode an empty varint')
+      throw new CredoError('Cannot decode an empty varint')
     }
 
     let value = 0
@@ -10,22 +12,22 @@ export class VarintEncoder {
 
     for (let index = 0; index < data.length; index++) {
       if (index >= 9) {
-        throw new Error('Varint encoding is longer than nine bytes')
+        throw new CredoError('Varint encoding is longer than nine bytes')
       }
 
       const byte = data[index]
       if (!Number.isInteger(byte) || byte < 0 || byte > 0xff) {
-        throw new Error('Varint input contains an invalid byte')
+        throw new CredoError('Varint input contains an invalid byte')
       }
 
       value += (byte & 0x7f) * multiplier
       if (!Number.isSafeInteger(value)) {
-        throw new Error('Varint value exceeds the maximum safe integer')
+        throw new CredoError('Varint value exceeds the maximum safe integer')
       }
 
       if ((byte & 0x80) === 0) {
         if (index > 0 && (byte & 0x7f) === 0) {
-          throw new Error('Varint encoding is not minimal')
+          throw new CredoError('Varint encoding is not minimal')
         }
 
         return [value, index + 1] as const
@@ -34,7 +36,7 @@ export class VarintEncoder {
       multiplier *= 0x80
     }
 
-    throw new Error('Varint encoding is truncated')
+    throw new CredoError('Varint encoding is truncated')
   }
 
   public static encode(int: number) {
@@ -52,7 +54,7 @@ export class VarintEncoder {
 
   public static encodingLength(int: number) {
     if (!Number.isSafeInteger(int) || int < 0) {
-      throw new Error('Varint value must be a non-negative safe integer')
+      throw new CredoError('Varint value must be a non-negative safe integer')
     }
 
     let length = 1
