@@ -260,7 +260,9 @@ describe('mdoc device-response openid4vp test', () => {
             mdocGeneratedNonce: TypedArrayEncoder.fromUtf8String(mdocGeneratedNonce),
           },
         })
-      ).resolves.toBeUndefined()
+      ).resolves.toEqual({
+        documents: [{ documentIndex: 0, mdoc: expect.any(Mdoc), trustedIssuanceChain: expect.any(Array) }],
+      })
     })
 
     describe('should not be verifiable', () => {
