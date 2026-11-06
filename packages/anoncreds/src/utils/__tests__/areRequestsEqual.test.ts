@@ -114,6 +114,20 @@ describe('util | areAnonCredsProofRequestsEqual', () => {
     ).toBe(true)
   })
 
+  test('matches each restriction in B only once', () => {
+    const withRestrictions = (restrictions: Array<{ cred_def_id: string }>) => ({
+      ...proofRequest,
+      requested_attributes: { a: { ...proofRequest.requested_attributes.a, restrictions } },
+    })
+
+    expect(
+      areAnonCredsProofRequestsEqual(
+        withRestrictions([{ cred_def_id: 'one' }, { cred_def_id: 'one' }]),
+        withRestrictions([{ cred_def_id: 'one' }, { cred_def_id: 'two' }])
+      )
+    ).toBe(false)
+  })
+
   test('ignores attribute restriction undefined vs empty array', () => {
     expect(
       areAnonCredsProofRequestsEqual(

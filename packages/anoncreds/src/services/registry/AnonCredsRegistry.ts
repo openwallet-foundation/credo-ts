@@ -44,6 +44,15 @@ export interface AnonCredsRegistry {
    */
   readonly allowsLocalRecord?: boolean
 
+  /**
+   * Returns every form of an identifier that refers to the same object, with the canonical form first. Ids for the
+   * same object have the same canonical form. This matches ids that are formatted differently, such as did:indy ids
+   * with and without percent-encoding.
+   *
+   * @default the identifier itself
+   */
+  getIdentifierVariants?(identifier: string): string[]
+
   getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn>
   registerSchema(agentContext: AgentContext, options: RegisterSchemaOptions): Promise<RegisterSchemaReturn>
 

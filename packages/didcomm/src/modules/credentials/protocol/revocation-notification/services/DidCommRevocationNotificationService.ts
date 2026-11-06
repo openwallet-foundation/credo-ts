@@ -1,10 +1,11 @@
-import type { AgentContext } from '@credo-ts/core'
+import type { AgentContext, Query } from '@credo-ts/core'
 import { CredoError, EventEmitter, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
 import type { DidCommInboundMessageContext } from '../../../../../models'
 import { DidCommConnectionRecord } from '../../../../connections'
 import type { DidCommRevocationNotificationReceivedEvent } from '../../../DidCommCredentialEvents'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { DidCommRevocationNotification } from '../../../models/DidCommRevocationNotification'
+import type { DidCommCredentialExchangeRecord } from '../../../repository'
 import { DidCommCredentialExchangeRepository } from '../../../repository'
 import type { DidCommRevocationNotificationV1Message } from '../messages/DidCommRevocationNotificationV1Message'
 import { DidCommRevocationNotificationV2Message } from '../messages/DidCommRevocationNotificationV2Message'
@@ -16,6 +17,10 @@ import {
   v2IndyRevocationIdentifierRegex,
 } from '../util/revocationIdentifier'
 import type { V2DidCommCreateRevocationNotificationMessageOptions } from './DidCommRevocationNotificationServiceOptions'
+import {
+  type DidCommRevocationRegistryIdQueryBuilder,
+  DidCommRevocationRegistryIdQueryBuilderToken,
+} from './DidCommRevocationRegistryIdQuery'
 
 @injectable()
 export class DidCommRevocationNotificationService {
@@ -41,10 +46,16 @@ export class DidCommRevocationNotificationService {
     comment?: string
   ) {
     // TODO: can we extract support for this revocation notification handler to the anoncreds module?
-    const query = {
-      anonCredsRevocationRegistryId,
-      anonCredsCredentialRevocationId,
-      connectionId: connection.id,
+    const revocationRegistryIdQuery = agentContext.dependencyManager.isRegistered(
+      DidCommRevocationRegistryIdQueryBuilderToken,
+      true
+    )
+      ? agentContext.dependencyManager.resolve<DidCommRevocationRegistryIdQueryBuilder>(
+          DidCommRevocationRegistryIdQueryBuilderToken
+        )(agentContext, anonCredsRevocationRegistryId)
+      : { anonCredsRevocationRegistryId }
+    const query: Query<DidCommCredentialExchangeRecord> = {
+      $and: [revocationRegistryIdQuery, { anonCredsCredentialRevocationId, connectionId: connection.id }],
     }
 
     this.logger.trace('Getting record by query for revocation notification:', query)

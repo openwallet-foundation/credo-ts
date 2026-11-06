@@ -72,6 +72,20 @@ describe('did:indy identifiers', () => {
       })
     })
 
+    test('decodes a percent-encoded schema name', () => {
+      expect(
+        parseIndySchemaId('did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH/anoncreds/v0/SCHEMA/Medical%20Bill%2F%25/1.0')
+          .schemaName
+      ).toEqual('Medical Bill/%')
+    })
+
+    test('parses a schema id created before names were percent-encoded', () => {
+      expect(
+        parseIndySchemaId('did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH/anoncreds/v0/SCHEMA/Medical Bill 100%/1.0')
+          .schemaName
+      ).toEqual('Medical Bill 100%')
+    })
+
     test('throws an error for an unqualified schema id', () => {
       expect(() => parseIndySchemaId('SDqTzbVuCowusqGBNbNDjH:2:schema-name:1.0')).toThrow(
         'Invalid did:indy schema id: SDqTzbVuCowusqGBNbNDjH:2:schema-name:1.0'
@@ -92,6 +106,14 @@ describe('did:indy identifiers', () => {
       })
     })
 
+    test('decodes a percent-encoded tag', () => {
+      expect(
+        parseIndyCredentialDefinitionId(
+          'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt/anoncreds/v0/CLAIM_DEF/10/SCH%20Employee%20ID'
+        ).tag
+      ).toEqual('SCH Employee ID')
+    })
+
     test('throws an error for an unqualified credential definition id', () => {
       expect(() => parseIndyCredentialDefinitionId('TL1EaPFCZ8Si5aUrqScBDt:3:CL:10:TAG')).toThrow(
         'Invalid did:indy credential definition id: TL1EaPFCZ8Si5aUrqScBDt:3:CL:10:TAG'
@@ -110,6 +132,17 @@ describe('did:indy identifiers', () => {
         schemaSeqNo: '56495',
         credentialDefinitionTag: 'npdb',
         revocationRegistryTag: 'TAG1',
+      })
+    })
+
+    test('decodes percent-encoded tags', () => {
+      expect(
+        parseIndyRevocationRegistryId(
+          'did:indy:sovrin:N7baRMcyvPwWc8v85CtZ6e/anoncreds/v0/REV_REG_DEF/100669/SCH%20Employee%20ID/1%2F1024'
+        )
+      ).toMatchObject({
+        credentialDefinitionTag: 'SCH Employee ID',
+        revocationRegistryTag: '1/1024',
       })
     })
 

@@ -149,6 +149,20 @@ describe('AnonCreds API', () => {
     const [schemaRecord] = await agent.modules.anoncreds.getCreatedSchemas({
       schemaId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ/anoncreds/v0/SCHEMA/Employee Credential/1.0.0',
     })
+
+    // The percent-encoded form of the id resolves from the same local record
+    const encodedSchemaResult = await agent.modules.anoncreds.getSchema(
+      'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ/anoncreds/v0/SCHEMA/Employee%20Credential/1.0.0'
+    )
+    expect(encodedSchemaResult.resolutionMetadata).toMatchObject({ servedFromRecord: true })
+    expect(encodedSchemaResult.schema?.name).toEqual('Employee Credential')
+
+    // and finds the same record
+    expect(
+      await agent.modules.anoncreds.getCreatedSchemas({
+        schemaId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ/anoncreds/v0/SCHEMA/Employee%20Credential/1.0.0',
+      })
+    ).toEqual([schemaRecord])
     expect(schemaRecord).toMatchObject({
       schemaId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ/anoncreds/v0/SCHEMA/Employee Credential/1.0.0',
       methodName: 'inMemory',
@@ -246,6 +260,13 @@ describe('AnonCreds API', () => {
     const [credentialDefinitionRecord] = await agent.modules.anoncreds.getCreatedCredentialDefinitions({
       credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/10065/TAG',
     })
+
+    // The percent-encoded form of the schema id finds the same record
+    expect(
+      await agent.modules.anoncreds.getCreatedCredentialDefinitions({
+        schemaId: 'did:indy:pool:localhost:7Cd2Yj9yEZNcmNoH54tq9i/anoncreds/v0/SCHEMA/Test%20Schema/1.0.0',
+      })
+    ).toEqual([credentialDefinitionRecord])
     expect(credentialDefinitionRecord).toMatchObject({
       credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/10065/TAG',
       methodName: 'inMemory',
