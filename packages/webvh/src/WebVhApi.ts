@@ -1,6 +1,6 @@
 import { AgentContext, injectable } from '@credo-ts/core'
 
-import { WebVhDidResolver } from './dids/WebVhDidResolver'
+import { getWebVhDidResolver } from './dids/getWebVhDidResolver'
 
 @injectable()
 export class WebVhApi {
@@ -11,7 +11,7 @@ export class WebVhApi {
   }
 
   public async resolveResource(resourceUrl: string) {
-    const webvhDidResolver = this.agentContext.dependencyManager.resolve(WebVhDidResolver)
+    const webvhDidResolver = getWebVhDidResolver(this.agentContext)
     return await webvhDidResolver.resolveResource(this.agentContext, resourceUrl)
   }
 }
