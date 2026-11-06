@@ -2512,10 +2512,24 @@ export function assertCredentialEncryptionConfiguration(
     )
   }
 
-  const unsupportedKey = [
+  const requestEncryptionJwks = [
     ...(options.credentialRequestEncryption?.jwks ?? []),
     ...(options.credentialRequestEncryption?.previousJwks ?? []),
-  ].find((jwk) => jwk.kty === 'oct' || !Kms.allowedKeyDerivationAlgsForKey(jwk).includes('ECDH-ES'))
+  ]
+
+  // Requests are matched to a decryption key by kid, so a kid must identify a single key
+  const duplicateKey = requestEncryptionJwks.find(
+    (jwk, index) => requestEncryptionJwks.findIndex(({ kid }) => kid === jwk.kid) !== index
+  )
+  if (duplicateKey) {
+    throw new CredoError(
+      `Credential request encryption key '${duplicateKey.kid}' must be unique across 'jwks' and 'previousJwks'.`
+    )
+  }
+
+  const unsupportedKey = requestEncryptionJwks.find(
+    (jwk) => jwk.kty === 'oct' || !Kms.allowedKeyDerivationAlgsForKey(jwk).includes('ECDH-ES')
+  )
   if (unsupportedKey) {
     throw new CredoError(
       `Credential request encryption key '${unsupportedKey.kid}' does not support 'ECDH-ES' key agreement.`

@@ -1808,6 +1808,20 @@ describe('OpenId4VcIssuer', () => {
       ).resolves.toMatchObject({ credentialRequest })
     })
 
+    it('rejects a key id that is in both jwks and previousJwks', async () => {
+      const key = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+      await expect(
+        issuer.openid4vc.issuer.updateIssuerMetadata({
+          issuerId: openId4VcIssuer.issuerId,
+          credentialConfigurationsSupported: openId4VcIssuer.credentialConfigurationsSupported,
+          credentialRequestEncryption: { jwks: [key.publicJwk], previousJwks: [key.publicJwk] },
+        })
+      ).rejects.toThrow(
+        `Credential request encryption key '${key.keyId}' must be unique across 'jwks' and 'previousJwks'.`
+      )
+    })
+
     it('rejects a credential request encryption key that does not support ECDH-ES', async () => {
       const key = await issuer.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
 
