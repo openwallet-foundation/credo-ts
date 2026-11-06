@@ -71,6 +71,13 @@
       "when": 1793390855118,
       "tag": "0009_add_openid4vc_versions",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793898748531,
+      "tag": "0010_batch_credential_issuance_json",
+      "breakpoints": true
     }
   ]
 }
