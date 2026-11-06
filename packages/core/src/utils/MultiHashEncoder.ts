@@ -3,16 +3,13 @@ import { Hasher } from '../crypto/hashes/Hasher'
 import { TypedArrayEncoder } from './TypedArrayEncoder'
 import { VarintEncoder } from './VarintEncoder'
 
-type MultiHashNameMap = {
-  [key in HashName]: number
-}
+type MultiHashNameMap = Partial<Record<HashName, number>>
 
 type MultiHashCodeMap = {
   [key: number]: HashName
 }
 
 const multiHashNameMap: MultiHashNameMap = {
-  'sha-1': 0x11,
   'sha-256': 0x12,
   'sha-512': 0x13,
   'sha-384': 0x20,
@@ -36,8 +33,12 @@ export class MultiHashEncoder {
    * @returns a multihash
    */
   public static encode(data: Uint8Array, hashName: HashName): Uint8Array {
-    const hash = Hasher.hash(data, hashName)
     const hashCode = multiHashNameMap[hashName]
+    if (hashCode === undefined) {
+      throw new Error(`Unsupported hash algorithm '${hashName}'`)
+    }
+
+    const hash = Hasher.hash(data, hashName)
 
     const hashPrefix = VarintEncoder.encode(hashCode)
     const hashLengthPrefix = VarintEncoder.encode(hash.length)
@@ -57,13 +58,23 @@ export class MultiHashEncoder {
     const [hashPrefix, hashPrefixByteLength] = VarintEncoder.decode(data)
     const withoutHashPrefix = data.slice(hashPrefixByteLength)
 
-    const [, lengthPrefixByteLength] = VarintEncoder.decode(withoutHashPrefix)
+    const [digestLength, lengthPrefixByteLength] = VarintEncoder.decode(withoutHashPrefix)
     const withoutLengthPrefix = withoutHashPrefix.slice(lengthPrefixByteLength)
 
     const hashName = multiHashCodeMap[hashPrefix]
 
     if (!hashName) {
       throw new Error(`Unsupported hash code 0x${hashPrefix.toString(16)}`)
+    }
+
+    if (digestLength !== withoutLengthPrefix.length) {
+      throw new Error('Multihash digest length prefix does not match digest length')
+    }
+
+    const expectedDigestLength =
+      hashName === 'sha-256' ? 32 : hashName === 'sha-384' ? 48 : hashName === 'sha-512' ? 64 : undefined
+    if (expectedDigestLength === undefined || digestLength !== expectedDigestLength) {
+      throw new Error(`Invalid digest length for hash algorithm '${hashName}'`)
     }
 
     return {
