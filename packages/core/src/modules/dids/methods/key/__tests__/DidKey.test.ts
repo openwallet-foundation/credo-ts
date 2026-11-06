@@ -53,7 +53,7 @@ describe('DidKey', () => {
         const invalidHeader = data.slice()
         invalidHeader[prefixLength] = header
         expect(() => PublicJwk.fromFingerprint(MultiBaseEncoder.encode(invalidHeader, 'base58btc'))).toThrow(
-          'Invalid compressed public key header'
+          'neither a valid compressed or uncompressed key'
         )
       }
     }
