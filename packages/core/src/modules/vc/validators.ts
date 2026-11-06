@@ -3,6 +3,7 @@ import type { ValidationOptions } from 'class-validator'
 import { buildMessage, isString, isURL, ValidateBy } from 'class-validator'
 import { CredoError } from '../../error'
 import { isJsonObject } from '../../types'
+import { dateToSeconds } from '../../utils'
 import {
   CREDENTIALS_CONTEXT_V1_URL,
   CREDENTIALS_CONTEXT_V2_URL,
@@ -106,7 +107,7 @@ export interface ValidateVc2CredentialValidityPeriodOptions {
   validFrom?: string
   validUntil?: string
   skewSeconds: number
-  now?: number
+  now?: Date
 }
 
 export function validateVc2ContextBaseline(context: unknown): ValidationResult {
@@ -172,10 +173,10 @@ export function validateVc2CredentialStatus(options: {
 export function validateVc2CredentialValidityPeriod(
   options: ValidateVc2CredentialValidityPeriodOptions
 ): ValidationResult {
-  const now = options.now ?? Math.floor(Date.now() / 1000)
+  const now = dateToSeconds(options.now)
 
-  const validFromTimestamp = options.validFrom ? Math.floor(Date.parse(options.validFrom) / 1000) : undefined
-  const validUntilTimestamp = options.validUntil ? Math.floor(Date.parse(options.validUntil) / 1000) : undefined
+  const validFromTimestamp = options.validFrom ? dateToSeconds(new Date(options.validFrom)) : undefined
+  const validUntilTimestamp = options.validUntil ? dateToSeconds(new Date(options.validUntil)) : undefined
 
   if (
     validFromTimestamp !== undefined &&

@@ -229,7 +229,7 @@ export class JwtPayload {
 }
 
 function getNowSkewed(now?: number, skewSeconds?: number) {
-  const _now = now ?? dateToSeconds(new Date())
+  const _now = now ?? dateToSeconds()
   const _skewSeconds = skewSeconds ?? DEFAULT_SKEW_TIME
 
   return {

@@ -4,7 +4,7 @@ import { JwsService, JwtPayload } from '../../../crypto'
 import type { VerifyJwsResult } from '../../../crypto/JwsService'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
-import { asArray, JsonTransformer, MessageValidator, nowInSeconds } from '../../../utils'
+import { asArray, dateToSeconds, JsonTransformer, MessageValidator, nowInSeconds } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { extractKeyFromHolderBinding } from '../../sd-jwt-vc/utils'
 import type { W3cV2JsonPresentation, W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models'
@@ -115,6 +115,7 @@ export class W3cV2JwtCredentialService {
 
         // Verify the JWT payload (verifies whether it's not expired, etc...)
         credential.jwt.payload.validate({
+          now: dateToSeconds(options.now),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
@@ -133,6 +134,7 @@ export class W3cV2JwtCredentialService {
           validFrom: credential.resolvedCredential.validFrom,
           validUntil: credential.resolvedCredential.validUntil,
           skewSeconds: agentContext.config.validitySkewSeconds,
+          now: options.now,
         })
 
         validationResults.validations.credentialStatus = validateVc2CredentialStatus({
@@ -289,6 +291,7 @@ export class W3cV2JwtCredentialService {
 
         // Verify the JWT payload (verifies whether it's not expired, etc...)
         presentation.jwt.payload.validate({
+          now: dateToSeconds(options.now),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
