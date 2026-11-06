@@ -4,7 +4,7 @@ import type { KmsCreateKeyType } from './KmsCreateKeyOptions'
 import type { KmsDecryptDataDecryption } from './KmsDecryptOptions'
 import type { KmsEncryptDataEncryption } from './KmsEncryptOptions'
 import type { KmsKeyAgreementDecryptOptions } from './KmsKeyAgreementDecryptOptions'
-import type { KmsKeyAgreementEncryptOptions } from './KmsKeyAgreementEncryptOptions'
+import type { KmsJwkPublicEcdh, KmsKeyAgreementEncryptOptions } from './KmsKeyAgreementEncryptOptions'
 
 export type KmsOperationCreateKey = {
   operation: 'createKey'
@@ -30,16 +30,45 @@ export type KmsOperationVerify = {
   algorithm: KnownJwaSignatureAlgorithm
 }
 
+/**
+ * The key id is not needed to determine whether an operation is supported, and is
+ * often not known yet when checking for support.
+ */
+type WithOptionalKeyId<Options> = Options extends { keyId: string }
+  ? Omit<Options, 'keyId'> & { keyId?: string }
+  : Options
+
 export type KmsOperationEncrypt = {
   operation: 'encrypt'
+  /**
+   * `HPKE` for the integrated-encryption HPKE algorithms, where the suite fixes the AEAD.
+   */
   encryption: KmsEncryptDataEncryption
-  keyAgreement?: KmsKeyAgreementEncryptOptions
+  keyAgreement?: WithOptionalKeyId<KmsKeyAgreementEncryptOptions>
 }
 
 export type KmsOperationDecrypt = {
   operation: 'decrypt'
+  /**
+   * `HPKE` for the integrated-encryption HPKE algorithms, where the suite fixes the AEAD.
+   */
   decryption: KmsDecryptDataDecryption
-  keyAgreement?: KmsKeyAgreementDecryptOptions
+  keyAgreement?: WithOptionalKeyId<KmsKeyAgreementDecryptOptions>
+}
+
+/**
+ * The public keys in a key agreement: the recipients on encrypt, the sender's ephemeral and static keys on decrypt.
+ */
+export function keyAgreementPublicJwks(
+  keyAgreement: NonNullable<KmsOperationEncrypt['keyAgreement'] | KmsOperationDecrypt['keyAgreement']>
+): KmsJwkPublicEcdh[] {
+  if ('recipients' in keyAgreement) return keyAgreement.recipients.map(({ externalPublicJwk }) => externalPublicJwk)
+
+  return [
+    'externalPublicJwk' in keyAgreement ? keyAgreement.externalPublicJwk : undefined,
+    'ephemeralPublicJwk' in keyAgreement ? keyAgreement.ephemeralPublicJwk : undefined,
+    'senderPublicJwk' in keyAgreement ? keyAgreement.senderPublicJwk : undefined,
+  ].filter((jwk) => jwk !== undefined)
 }
 
 export type KmsOperationRandomBytes = {
@@ -87,18 +116,12 @@ export function getKmsOperationHumanDescription(operation: KmsOperation) {
     return `'${operation.operation}' operation with algorithm '${operation.algorithm}'`
   }
 
-  if (operation.operation === 'encrypt') {
-    let message = `'encrypt' operation with encryption algorithm '${operation.encryption.algorithm}'`
-    if (operation.keyAgreement) {
-      message += `and key agreement algorithm '${operation.keyAgreement.algorithm}'`
-    }
-    return message
-  }
+  if (operation.operation === 'encrypt' || operation.operation === 'decrypt') {
+    const encryption = operation.operation === 'encrypt' ? operation.encryption : operation.decryption
 
-  if (operation.operation === 'decrypt') {
-    let message = `'decrypt' operation with encryption algorithm '${operation.decryption.algorithm}'`
+    let message = `'${operation.operation}' operation with encryption algorithm '${encryption.algorithm}'`
     if (operation.keyAgreement) {
-      message += `and key agreement algorithm '${operation.keyAgreement.algorithm}'`
+      message += ` and key agreement algorithm '${operation.keyAgreement.algorithm}'`
     }
     return message
   }

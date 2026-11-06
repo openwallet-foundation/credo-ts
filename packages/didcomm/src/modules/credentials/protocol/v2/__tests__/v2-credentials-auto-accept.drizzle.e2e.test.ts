@@ -1,10 +1,9 @@
-import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import { setupAnonCredsTests } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
+import { setupAnonCredsTests } from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import { anoncredsDefinitionFourAttributesNoRevocation } from '../../../../../../../anoncreds/tests/preCreatedAnonCredsDefinition'
 import type { EventReplaySubject } from '../../../../../../../core/tests'
 import {
   waitForAgentMessageProcessedEventSubject,
-  waitForCredentialRecord,
   waitForCredentialRecordSubject,
 } from '../../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../../core/tests/logger'
@@ -224,7 +223,7 @@ describe('V2 Credentials Auto Accept', () => {
         threadId: faberCredentialRecord.threadId,
       })
 
-      faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+      faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: faberCredentialRecord.threadId,
         state: DidCommCredentialState.Done,
       })

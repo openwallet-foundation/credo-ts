@@ -4,7 +4,8 @@ import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../../../../core/src/module
 import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
 import type { JsonLdTestsAgent } from '../../../../../../../core/tests'
 import { setupJsonLdTests } from '../../../../../../../core/tests'
-import { waitForCredentialRecord } from '../../../../../../../core/tests/helpers'
+import type { EventReplaySubject } from '../../../../../../../core/tests/events'
+import { waitForCredentialRecordSubject } from '../../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommAutoAcceptCredential, DidCommCredentialRole, DidCommCredentialState } from '../../../models'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
@@ -33,12 +34,16 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
   let aliceAgent: JsonLdTestsAgent
   let faberConnectionId: string
   let aliceConnectionId: string
+  let faberReplay: EventReplaySubject
+  let aliceReplay: EventReplaySubject
 
   describe("Auto accept on 'always'", () => {
     beforeAll(async () => {
       ;({
         issuerAgent: faberAgent,
         holderAgent: aliceAgent,
+        issuerReplay: faberReplay,
+        holderReplay: aliceReplay,
         issuerHolderConnectionId: faberConnectionId,
         holderIssuerConnectionId: aliceConnectionId,
       } = await setupJsonLdTests({
@@ -87,13 +92,13 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
 
       testLogger.test('Alice waits for credential from Faber')
 
-      let aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
         threadId: aliceCredentialExchangeRecord.threadId,
         state: DidCommCredentialState.CredentialReceived,
       })
 
       testLogger.test('Faber waits for credential ack from Alice')
-      aliceCredentialRecord = await waitForCredentialRecord(faberAgent, {
+      aliceCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: aliceCredentialRecord.threadId,
         state: DidCommCredentialState.Done,
       })
@@ -118,17 +123,17 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
           protocolVersion: 'v2',
         })
       testLogger.test('Alice waits for credential from Faber')
-      let aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: DidCommCredentialState.OfferReceived,
       })
       testLogger.test('Alice waits for credential from Faber')
-      aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: DidCommCredentialState.CredentialReceived,
       })
       testLogger.test('Faber waits for credential ack from Alice')
-      const faberCredentialRecord: DidCommCredentialExchangeRecord = await waitForCredentialRecord(faberAgent, {
+      const faberCredentialRecord: DidCommCredentialExchangeRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: DidCommCredentialState.Done,
       })
@@ -154,6 +159,8 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       ;({
         issuerAgent: faberAgent,
         holderAgent: aliceAgent,
+        issuerReplay: faberReplay,
+        holderReplay: aliceReplay,
         issuerHolderConnectionId: faberConnectionId,
         holderIssuerConnectionId: aliceConnectionId,
       } = await setupJsonLdTests({
@@ -200,7 +207,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       })
 
       testLogger.test('Faber waits for credential proposal from Alice')
-      let faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+      let faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: aliceCredentialExchangeRecord.threadId,
         state: DidCommCredentialState.ProposalReceived,
       })
@@ -212,14 +219,14 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       })
 
       testLogger.test('Alice waits for credential from Faber')
-      const aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      const aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: DidCommCredentialState.CredentialReceived,
       })
 
       testLogger.test('Faber waits for credential ack from Alice')
 
-      faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+      faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: faberCredentialRecord.threadId,
         state: DidCommCredentialState.Done,
       })
@@ -253,7 +260,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       })
 
       testLogger.test('Alice waits for credential offer from Faber')
-      let aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: DidCommCredentialState.OfferReceived,
       })
@@ -280,14 +287,14 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       })
 
       testLogger.test('Alice waits for credential from Faber')
-      aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: DidCommCredentialState.CredentialReceived,
       })
 
       testLogger.test('Faber waits for credential ack from Alice')
 
-      const faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+      const faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: DidCommCredentialState.Done,
       })
@@ -320,7 +327,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
           protocolVersion: 'v2',
         })
       testLogger.test('Alice waits for credential from Faber')
-      let aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: DidCommCredentialState.OfferReceived,
       })
@@ -357,7 +364,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       })
 
       testLogger.test('Faber waits for credential proposal from Alice')
-      const faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+      const faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: aliceExchangeCredentialRecord.threadId,
         state: DidCommCredentialState.ProposalReceived,
       })
@@ -382,7 +389,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       })
 
       testLogger.test('Faber waits for credential proposal from Alice')
-      let faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+      let faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: aliceCredentialExchangeRecord.threadId,
         state: DidCommCredentialState.ProposalReceived,
       })
@@ -406,7 +413,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
 
       testLogger.test('Alice waits for credential offer from Faber')
 
-      const record = await waitForCredentialRecord(aliceAgent, {
+      const record = await waitForCredentialRecordSubject(aliceReplay, {
         threadId: faberCredentialRecord.threadId,
         state: DidCommCredentialState.OfferReceived,
       })

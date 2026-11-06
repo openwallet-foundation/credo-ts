@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
       - uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
@@ -39,16 +39,22 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      # Needed for the Signed-off-by line in .changeset/commit.js
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Create Release Pull Request or Publish to npm
         id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
-          title: 'chore(release): new version'
-          commit: 'chore(release): new version'
-          publish: pnpm release
-          version: pnpm changeset-version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-title: 'chore(release): new version'
+          commit-message: 'chore(release): new version'
+          publish-script: pnpm release
+          version-script: pnpm changeset-version
+          push-with-git-cli: true
 
       - name: Get current package version
         id: get_version
@@ -63,6 +69,7 @@ jobs:
   release-unstable:
     name: Release Unstable
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     if: "always() && (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'openwallet-foundation/credo-ts') || (github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore(release): new version'))"
     steps:
       - uses: snnaplab/get-labels-action@v1
@@ -78,8 +85,13 @@ jobs:
             echo "run=true" >> $GITHUB_OUTPUT
           fi
 
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         if: steps.should-run.outputs.run == 'true'
+        with:
+          # changesets deepens shallow clones until it finds the commits that added the changesets. On pull requests
+          # the checked out merge commit can become unreachable (e.g. when re-running a job after the PR merge ref
+          # was updated), in which case deepening never succeeds and changesets loops forever.
+          fetch-depth: 0
       - uses: pnpm/action-setup@v6
         if: steps.should-run.outputs.run == 'true'
 

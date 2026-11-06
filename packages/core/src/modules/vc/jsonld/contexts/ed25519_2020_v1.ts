@@ -24,6 +24,7 @@ export const ED25519_2020_V1 = {
         },
         publicKeyMultibase: {
           '@id': 'https://w3id.org/security#publicKeyMultibase',
+          '@type': 'https://w3id.org/security#multibase',
         },
       },
     },
@@ -61,9 +62,27 @@ export const ED25519_2020_V1 = {
               '@type': '@id',
               '@container': '@set',
             },
+            capabilityInvocation: {
+              '@id': 'https://w3id.org/security#capabilityInvocationMethod',
+              '@type': '@id',
+              '@container': '@set',
+            },
+            capabilityDelegation: {
+              '@id': 'https://w3id.org/security#capabilityDelegationMethod',
+              '@type': '@id',
+              '@container': '@set',
+            },
+            keyAgreement: {
+              '@id': 'https://w3id.org/security#keyAgreementMethod',
+              '@type': '@id',
+              '@container': '@set',
+            },
           },
         },
-        proofValue: 'https://w3id.org/security#proofValue',
+        proofValue: {
+          '@id': 'https://w3id.org/security#proofValue',
+          '@type': 'https://w3id.org/security#multibase',
+        },
         verificationMethod: {
           '@id': 'https://w3id.org/security#verificationMethod',
           '@type': '@id',

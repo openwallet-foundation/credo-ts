@@ -48,7 +48,7 @@ export class W3cV2CredentialsApi {
     return this.w3cV2CredentialService.findCredentialsByQuery(this.agentContext, query, queryOptions)
   }
 
-  public async signCredential<Format extends ClaimFormat.JwtW3cVc | ClaimFormat.SdJwtW3cVc>(
+  public async signCredential<Format extends ClaimFormat.JwtW3cVc | ClaimFormat.SdJwtW3cVc | ClaimFormat.DiVc>(
     options: W3cV2SignCredentialOptions<Format>
   ) {
     return this.w3cV2CredentialService.signCredential<Format>(this.agentContext, options)
@@ -58,7 +58,7 @@ export class W3cV2CredentialsApi {
     return this.w3cV2CredentialService.verifyCredential(this.agentContext, options)
   }
 
-  public async signPresentation<Format extends ClaimFormat.JwtW3cVp | ClaimFormat.SdJwtW3cVp>(
+  public async signPresentation<Format extends ClaimFormat.JwtW3cVp | ClaimFormat.SdJwtW3cVp | ClaimFormat.DiVp>(
     options: W3cV2SignPresentationOptions<Format>
   ) {
     return this.w3cV2CredentialService.signPresentation<Format>(this.agentContext, options)

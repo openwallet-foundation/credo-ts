@@ -1,6 +1,5 @@
-import type { AgentContext, Logger } from '@credo-ts/core'
+import type { AgentContext, AgentDependencies, Logger } from '@credo-ts/core'
 import { CredoError, EventEmitter, JsonEncoder } from '@credo-ts/core'
-import type { WebSocket } from 'ws'
 import type { DidCommMessageReceivedEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
 import type { DidCommOutboundPackage } from '../types'
@@ -13,11 +12,13 @@ import type {
 
 import { DidCommTransportEventTypes } from './DidCommTransportEventTypes'
 
+type WebSocket = InstanceType<AgentDependencies['WebSocketClass']>
+
 export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
   private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
   private agentContext!: AgentContext
   private logger!: Logger
-  private WebSocketClass!: typeof WebSocket
+  private WebSocketClass!: AgentDependencies['WebSocketClass']
   public supportedSchemes = ['ws', 'wss']
   private isActive = false
 
@@ -75,7 +76,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     }
 
     const socketId = `${endpoint}-${connectionId}`
-    const isNewSocket = !this.hasOpenSocket(socketId)
+    const isNewSocket = this.transportTable.get(socketId)?.readyState !== this.WebSocketClass.OPEN
     const socket = await this.resolveSocket({ socketId, endpoint, connectionId })
 
     // If the socket was created for this message and we don't have return routing enabled
@@ -88,8 +89,27 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     }
   }
 
-  private hasOpenSocket(socketId: string) {
-    return this.transportTable.get(socketId) !== undefined
+  public closeSocketByConnectionId(connectionId: string): boolean {
+    let closed = false
+    for (const [socketId, socket] of this.transportTable) {
+      if (!socketId.endsWith(`-${connectionId}`)) continue
+
+      this.transportTable.delete(socketId)
+      socket.removeEventListener('message', this.handleMessageEvent)
+      socket.onclose = null
+      this.agentContext.dependencyManager
+        .resolve(EventEmitter)
+        .emit<DidCommOutboundWebSocketClosedEvent>(this.agentContext, {
+          type: DidCommTransportEventTypes.DidCommOutboundWebSocketClosedEvent,
+          payload: { socketId, connectionId },
+        })
+
+      // A close handshake on a dead link only gives up after a timeout (30 s in Node ws)
+      if ('terminate' in socket && typeof socket.terminate === 'function') socket.terminate()
+      else socket.close()
+      closed = true
+    }
+    return closed
   }
 
   private async resolveSocket({
@@ -101,10 +121,10 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     endpoint?: string
     connectionId?: string
   }) {
-    // If we already have a socket connection use it
+    // Reuse the socket if it's still open, otherwise replace it with a new connection
     let socket = this.transportTable.get(socketId)
 
-    if (!socket || socket.readyState === this.WebSocketClass.CLOSING) {
+    if (!socket || socket.readyState !== this.WebSocketClass.OPEN) {
       if (!endpoint) {
         throw new CredoError(`Missing endpoint. I don't know how and where to send the message.`)
       }
@@ -188,7 +208,11 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
       socket.onclose = async () => {
         this.logger.debug(`WebSocket closing to ${endpoint}`)
         socket.removeEventListener('message', this.handleMessageEvent)
-        this.transportTable.delete(socketId)
+
+        // The socket may already have been replaced by a new connection, which we should keep
+        if (this.transportTable.get(socketId) === socket) {
+          this.transportTable.delete(socketId)
+        }
 
         eventEmitter.emit<DidCommOutboundWebSocketClosedEvent>(this.agentContext, {
           type: DidCommTransportEventTypes.DidCommOutboundWebSocketClosedEvent,

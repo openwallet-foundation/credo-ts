@@ -98,6 +98,8 @@ describe('mdoc device-response status list verification', () => {
       alg: KnownJwaSignatureAlgorithms.ES256,
       statusList: { statusListLength: 10, bitsPerStatus: 1 },
       statusListUri,
+      // ISO 18013-5 12.3.6.3 requires the status list token to have an expiration time
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     })
 
     nock('https://example.org')
@@ -141,7 +143,9 @@ describe('mdoc device-response status list verification', () => {
         trustedCertificates: [{ issuance: [rootCertificate.toString('base64')] }],
         sessionTranscriptOptions,
       })
-    ).resolves.toBeUndefined()
+    ).resolves.toEqual({
+      documents: [{ documentIndex: 0, mdoc: expect.any(Mdoc), trustedIssuanceChain: expect.any(Array) }],
+    })
   })
 
   test('verify fails when status list is anchored to a different root and no status certificates are configured', async () => {
@@ -216,6 +220,8 @@ describe('mdoc device-response status list verification', () => {
         ],
         sessionTranscriptOptions,
       })
-    ).resolves.toBeUndefined()
+    ).resolves.toEqual({
+      documents: [{ documentIndex: 0, mdoc: expect.any(Mdoc), trustedIssuanceChain: expect.any(Array) }],
+    })
   })
 })

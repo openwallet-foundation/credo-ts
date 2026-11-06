@@ -12,7 +12,7 @@ import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { agentDependencies } from '../../../../core/tests'
-import { anoncreds } from '../../../tests/helpers'
+import { NativeAnoncreds } from '../../../tests/helpers'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModule } from '../../AnonCredsModule'
 import {
@@ -60,7 +60,7 @@ describe('UpdateAssistant | AnonCreds | v0.4 - v0.5', () => {
           // We need to include the AnonCredsModule to run the updates
           anoncreds: new AnonCredsModule({
             registries: [new InMemoryAnonCredsRegistry()],
-            anoncreds,
+            anoncreds: NativeAnoncreds,
           }),
         },
       },

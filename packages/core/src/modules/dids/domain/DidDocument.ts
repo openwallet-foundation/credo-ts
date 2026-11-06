@@ -4,11 +4,11 @@ import { CredoError } from '../../../error'
 import { TypedArrayEncoder } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
-import { Ed25519PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
+import { Ed25519PublicJwk, P256PublicJwk, P384PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
 import { findMatchingEd25519Key } from '../findMatchingEd25519Key'
 import { getPublicJwkFromVerificationMethod } from './key-type'
 import type { DidDocumentService } from './service'
-import { DidCommV1Service, IndyAgentService } from './service'
+import { DidCommV1Service, DidCommV2Service, IndyAgentService, NewDidCommV2Service } from './service'
 import { ServiceTransformer } from './service/ServiceTransformer'
 import { IsStringOrVerificationMethod, VerificationMethod, VerificationMethodTransformer } from './verificationMethod'
 
@@ -148,6 +148,29 @@ export class DidDocument {
     throw new CredoError(`Unable to locate verification method with id '${keyId}' in purposes ${purposes}`)
   }
 
+  public findVerificationMethodsByPurpose(allowedPurposes: readonly DidVerificationMethods[]): VerificationMethod[] {
+    const methods: VerificationMethod[] = []
+
+    for (const purpose of allowedPurposes) {
+      for (const entry of this[purpose] ?? []) {
+        methods.push(typeof entry === 'string' ? this.dereferenceVerificationMethod(entry) : entry)
+      }
+    }
+
+    return methods
+  }
+
+  public findVerificationMethodsByTypeAndPurpose(
+    verificationMethodTypes: string | readonly string[],
+    allowedPurposes: readonly DidVerificationMethods[]
+  ): VerificationMethod[] {
+    const acceptedTypes = new Set(
+      typeof verificationMethodTypes === 'string' ? [verificationMethodTypes] : verificationMethodTypes
+    )
+
+    return this.findVerificationMethodsByPurpose(allowedPurposes).filter((method) => acceptedTypes.has(method.type))
+  }
+
   private matchKeyId(externalKeyId: string, didDocumentKeyId: string) {
     // Compact is did removed from start but only if it matches the id of this document.
     const compactExternalKeyId = externalKeyId.startsWith(this.id) ? externalKeyId.slice(this.id.length) : externalKeyId
@@ -216,6 +239,60 @@ export class DidDocument {
     return services.sort((a, b) => a.priority - b.priority)
   }
 
+  /**
+   * Get all DIDComm v2 services (`DIDCommMessaging`) in document order. They carry no priority.
+   */
+  public get didCommV2Services(): Array<DidCommV2Service | NewDidCommV2Service> {
+    const didCommV2ServiceTypes = [DidCommV2Service.type, NewDidCommV2Service.type]
+    return (this.service?.filter((service) => didCommV2ServiceTypes.includes(service.type)) ?? []) as Array<
+      DidCommV2Service | NewDidCommV2Service
+    >
+  }
+
+  /**
+   * The keys a DIDComm peer of either version encrypts to: the recipient keys of the DIDComm v1
+   * services and, when the document has a DIDComm v2 service, its keyAgreement keys.
+   */
+  public get allDidCommRecipientKeys(): PublicJwk<
+    Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk
+  >[] {
+    const keys: PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk>[] = [
+      ...this.recipientKeys,
+    ]
+    for (const { publicJwk } of this.getKeyAgreementRecipientKeysWithVerificationMethod()) {
+      if (!keys.some((key) => key.fingerprint === publicJwk.fingerprint)) keys.push(publicJwk)
+    }
+    return keys
+  }
+
+  /**
+   * The keyAgreement keys that DIDComm v2 peers encrypt to, with their verification methods.
+   * Empty when the document has no DIDComm v2 service.
+   */
+  public getKeyAgreementRecipientKeysWithVerificationMethod(): Array<{
+    verificationMethod: VerificationMethod
+    publicJwk: PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk>
+  }> {
+    if (this.didCommV2Services.length === 0) return []
+
+    const recipientKeys: Array<{
+      verificationMethod: VerificationMethod
+      publicJwk: PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk>
+    }> = []
+    const seenVerificationMethodIds: string[] = []
+    for (const keyRef of this.keyAgreement ?? []) {
+      const verificationMethod = typeof keyRef === 'string' ? this.dereferenceVerificationMethod(keyRef) : keyRef
+      if (seenVerificationMethodIds.includes(verificationMethod.id)) continue
+
+      const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      if (!publicJwk.is(Ed25519PublicJwk, X25519PublicJwk, P256PublicJwk, P384PublicJwk)) continue
+
+      recipientKeys.push({ publicJwk, verificationMethod })
+      seenVerificationMethodIds.push(verificationMethod.id)
+    }
+    return recipientKeys
+  }
+
   // TODO: it would probably be easier if we add a utility to each service so we don't have to handle logic for all service types here
   public get recipientKeys(): PublicJwk<Ed25519PublicJwk | X25519PublicJwk>[] {
     return this.getRecipientKeysWithVerificationMethod({
@@ -242,15 +319,19 @@ export class DidDocument {
       publicJwk: PublicJwk<Ed25519PublicJwk | X25519PublicJwk>
     }> = []
 
-    const seenVerificationMethodIds: string[] = []
+    // A key is one recipient key, no matter how many services reference it or how many
+    // verification methods carry it. The first verification method that carries it is kept.
+    const seenFingerprints: string[] = []
     for (const service of this.didCommServices) {
-      if (service.type === IndyAgentService.type) {
+      if (service instanceof IndyAgentService) {
         for (const publicKeyBase58 of service.recipientKeys) {
           const publicJwk = PublicJwk.fromPublicKey({
             kty: 'OKP',
             crv: 'Ed25519',
             publicKey: TypedArrayEncoder.fromBase58(publicKeyBase58),
           })
+          if (seenFingerprints.includes(publicJwk.fingerprint)) continue
+
           const verificationMethod = [...(this.verificationMethod ?? []), ...(this.authentication ?? [])]
             .map((v) => (typeof v === 'string' ? this.dereferenceVerificationMethod(v) : v))
             .find((v) => {
@@ -262,24 +343,15 @@ export class DidDocument {
             throw new CredoError('Could not find verification method for IndyAgentService recipient key')
           }
 
-          // Skip adding if already present
-          if (seenVerificationMethodIds.includes(verificationMethod.id)) {
-            continue
-          }
-
+          seenFingerprints.push(publicJwk.fingerprint)
           recipientKeys.push({
             publicJwk,
             verificationMethod,
           })
         }
-      } else if (service.type === DidCommV1Service.type) {
+      } else if (service instanceof DidCommV1Service) {
         for (const recipientKey of service.recipientKeys) {
           const verificationMethod = this.dereferenceKey(recipientKey, ['authentication', 'keyAgreement'])
-          if (seenVerificationMethodIds.includes(verificationMethod.id)) {
-            // Skip adding if already present
-            continue
-          }
-
           const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
 
           if (!publicJwk.is(Ed25519PublicJwk, X25519PublicJwk)) {
@@ -287,7 +359,9 @@ export class DidDocument {
               'Expected either Ed25519PublicJwk or X25519PublicJwk for DidcommV1Service recipient key'
             )
           }
+          if (seenFingerprints.includes(publicJwk.fingerprint)) continue
 
+          seenFingerprints.push(publicJwk.fingerprint)
           recipientKeys.push({
             publicJwk,
             verificationMethod,
@@ -303,20 +377,38 @@ export class DidDocument {
       }>
     }
 
-    return recipientKeys.map(({ publicJwk, verificationMethod }) => {
-      if (publicJwk.is(Ed25519PublicJwk)) return { publicJwk, verificationMethod }
+    // An X25519 key maps to the Ed25519 key it was derived from. When the document lists both,
+    // the mapped entry is the same key as the Ed25519 entry, so it is dropped as well.
+    const mappedFingerprints: string[] = []
+    const mappedRecipientKeys: Array<{
+      verificationMethod: VerificationMethod
+      publicJwk: PublicJwk<Ed25519PublicJwk>
+    }> = []
+    for (const { publicJwk, verificationMethod } of recipientKeys) {
+      let mapped: { verificationMethod: VerificationMethod; publicJwk: PublicJwk<Ed25519PublicJwk> }
+      if (publicJwk.is(Ed25519PublicJwk)) {
+        mapped = { publicJwk, verificationMethod }
+      } else {
+        const matchingEd25519Key = findMatchingEd25519Key(publicJwk as PublicJwk<X25519PublicJwk>, this)
 
-      const matchingEd25519Key = findMatchingEd25519Key(publicJwk as PublicJwk<X25519PublicJwk>, this)
-
-      // For DIDcomm v1 if you use X25519 you MUST also include the Ed25519 key
-      if (!matchingEd25519Key) {
-        throw new CredoError(
-          `Unable to find matching Ed25519 key for X25519 verification method with id ${verificationMethod.id}`
-        )
+        // For DIDcomm v1 if you use X25519 you MUST also include the Ed25519 key
+        if (!matchingEd25519Key) {
+          throw new CredoError(
+            `Unable to find matching Ed25519 key for X25519 verification method with id ${verificationMethod.id}`
+          )
+        }
+        mapped = matchingEd25519Key
       }
 
-      return matchingEd25519Key
-    })
+      if (mappedFingerprints.includes(mapped.publicJwk.fingerprint)) continue
+      mappedFingerprints.push(mapped.publicJwk.fingerprint)
+      mappedRecipientKeys.push(mapped)
+    }
+
+    return mappedRecipientKeys as Array<{
+      verificationMethod: VerificationMethod
+      publicJwk: PublicJwk<MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk>
+    }>
   }
 
   public toJSON() {
@@ -326,41 +418,4 @@ export class DidDocument {
   public static fromJSON(didDocument: unknown) {
     return JsonTransformer.fromJSON(didDocument, DidDocument)
   }
-}
-
-/**
- * Extracting the verification method for signature type
- * @param keyType Signature key type
- * @param didDocument DidDocument
- * @param allowedPurposes Optional array of purposes to search in order. Defaults to all purposes.
- * @returns verification method
- */
-export async function findVerificationMethodByKeyType(
-  keyType: string,
-  didDocument: DidDocument,
-  allowedPurposes?: DidVerificationMethods[]
-): Promise<VerificationMethod | null> {
-  const allPurposes: DidVerificationMethods[] = [
-    'verificationMethod',
-    'authentication',
-    'keyAgreement',
-    'assertionMethod',
-    'capabilityInvocation',
-    'capabilityDelegation',
-  ]
-  const purposes = allowedPurposes ?? allPurposes
-  for (const purpose of purposes) {
-    const key: VerificationMethod[] | (string | VerificationMethod)[] | undefined = didDocument[purpose]
-    if (Array.isArray(key)) {
-      for (const method of key) {
-        if (typeof method !== 'string') {
-          if (method.type === keyType) {
-            return method
-          }
-        }
-      }
-    }
-  }
-
-  return null
 }

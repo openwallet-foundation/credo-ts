@@ -164,6 +164,10 @@ export class DidCommMessagePickupV1Protocol extends DidCommBaseMessagePickupProt
       return null
     }
 
-    return (await this.createPickupMessage(agentContext, { connectionRecord: connection })).message
+    const { message: pickupMessage } = await this.createPickupMessage(agentContext, { connectionRecord: connection })
+    // pickupMessages waits for the empty batch that ends the pickup on the thread it started
+    pickupMessage.setThread({ threadId: batchMessage.threadId })
+
+    return pickupMessage
   }
 }

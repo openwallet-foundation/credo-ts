@@ -1,6 +1,6 @@
 import type { X509Certificate } from '@credo-ts/core'
 import { CredoError, X509ModuleConfig, X509Service } from '@credo-ts/core'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { AskarKeyManagementService, AskarModuleConfig, transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { AskarStoreManager } from '../../../../askar/src/AskarStoreManager'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
@@ -34,20 +34,16 @@ describe('JwsService', () => {
   let didJwszDnaeyKey: PublicJwk<P256PublicJwk>
 
   beforeAll(async () => {
+    const askarModuleConfig = new AskarModuleConfig({
+      askar: NativeAskar,
+      store: getAskarStoreConfig('JwsService'),
+    })
     agentContext = getAgentContext({
       registerInstances: [
         [X509ModuleConfig, new X509ModuleConfig()],
 
-        [
-          AskarStoreManager,
-          new AskarStoreManager(
-            new NodeFileSystem(),
-            new AskarModuleConfig({
-              askar,
-              store: getAskarStoreConfig('JwsService'),
-            })
-          ),
-        ],
+        [AskarModuleConfig, askarModuleConfig],
+        [AskarStoreManager, new AskarStoreManager(new NodeFileSystem(), askarModuleConfig)],
       ],
       kmsBackends: [new AskarKeyManagementService()],
       agentConfig: getAgentConfig('JwsService'),
@@ -162,6 +158,16 @@ describe('JwsService', () => {
     expect(jws).toEqual(
       `${didJwsz6Mkf.JWS_JSON.protected}.${TypedArrayEncoder.toBase64Url(payload)}.${didJwsz6Mkf.JWS_JSON.signature}`
     )
+  })
+
+  it('throws an error when creating a jws with crit or b64', async () => {
+    await expect(
+      jwsService.createJwsCompact(agentContext, {
+        payload: JsonEncoder.toUint8Array(didJwsz6Mkf.DATA_JSON),
+        keyId: didJwsz6MkfKey.keyId,
+        protectedHeaderOptions: { alg: KnownJwaSignatureAlgorithms.EdDSA, b64: false, crit: ['b64'] },
+      })
+    ).rejects.toThrow("JWS protected header parameters 'crit' and 'b64' are not supported.")
   })
 
   it('allows both x5c/jwk and kid (no did) to be present', async () => {
@@ -291,6 +297,20 @@ describe('JwsService', () => {
       expect(isValid).toBe(false)
       expect(jwsSigners).toMatchObject([])
     })
+
+    it.each([{ crit: ['exp'] }, { b64: false, crit: ['b64'] }, { b64: true }])(
+      'throws an error if the protected header contains %o',
+      async (header) => {
+        const protectedHeader = JsonEncoder.toBase64Url({
+          ...JsonEncoder.fromBase64Url(didJwsz6Mkf.JWS_JSON.protected),
+          ...header,
+        })
+
+        await expect(
+          jwsService.verifyJws(agentContext, { jws: { ...didJwsz6Mkf.JWS_JSON, protected: protectedHeader } })
+        ).rejects.toThrow("JWS protected header parameters 'crit' and 'b64' are not supported.")
+      }
+    )
 
     it('throws an error if the jws signatures array does not contain a JWS', async () => {
       await expect(

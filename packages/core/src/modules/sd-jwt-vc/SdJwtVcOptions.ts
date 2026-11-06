@@ -14,9 +14,12 @@ export type { SdJwtVcPayload }
 export type SdJwtVcHeader = Record<string, unknown>
 
 export interface IDisclosureFrame {
-  _sd?: string[]
+  /**
+   * The claims that are selectively disclosable: property names in an object, element positions in an array.
+   */
+  _sd?: Array<string | number>
   _sd_decoy?: number
-  [x: string]: string[] | number | IDisclosureFrame | undefined
+  [x: string]: Array<string | number> | number | IDisclosureFrame | undefined
 }
 
 export interface IPresentationFrame {
@@ -52,15 +55,7 @@ export interface SdJwtVcIssuerX5c {
   x5c: X509Certificate[]
 
   /**
-   * The issuer of the SD-JWT VC.
-   *
-   * NOTE: in the latest draft of SD-JWT VC the issuer field is optional when using an X509 certificates
-   * to sign the SD-JWT VC.
-   *
-   * Since it's not clear what the iss value should be Credo will likely require
-   * the value to be undefined in a future version, but for now if the issuer value
-   * is defined it MUST match an SAN URI or DNS entry in the leaf certificate, mimicking
-   * previous behavior.
+   * The issuer of the SD-JWT VC. Optional when signing with X509 certificates.
    */
   issuer?: string
 }
@@ -87,9 +82,15 @@ export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayl
   disclosureFrame?: IDisclosureFrame
 
   /**
-   * Default of sha-256 will be used if not provided
+   * The hashing algorithm used for the disclosure digests, and placed in the
+   * `_sd_alg` claim of the SD-JWT VC.
+   *
+   * `sha-1` is not supported, as SD-JWT VC requires a hash algorithm that is
+   * considered secure at the time of issuance.
+   *
+   * @default 'sha-256'
    */
-  hashingAlgorithm?: HashName
+  hashingAlgorithm?: Exclude<HashName, 'sha-1'>
 
   /**
    * The header 'typ' to use for the SD-JWT VC. vc+sd-jwt is supported

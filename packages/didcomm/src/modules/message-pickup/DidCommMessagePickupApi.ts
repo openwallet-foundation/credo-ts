@@ -7,10 +7,14 @@ import {
   injectable,
   type Logger,
 } from '@credo-ts/core'
-import { filter, first, firstValueFrom, ReplaySubject, Subject, takeUntil, timeout } from 'rxjs'
+import { filter, first, firstValueFrom, map, ReplaySubject, Subject, takeUntil, timeout } from 'rxjs'
+import type { DidCommMessageProcessedEvent } from '../../DidCommEvents'
+import { DidCommEventTypes } from '../../DidCommEvents'
+import type { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommOutboundMessageContext } from '../../models'
+import { assertDidCommV1Connection, assertDidCommV2Connection } from '../../util/didcommVersion'
 import { DidCommConnectionService } from '../connections/services'
 import type {
   DeliverMessagesFromQueueOptions,
@@ -28,8 +32,14 @@ import type { MessagePickupCompletedEvent } from './DidCommMessagePickupEvents'
 import { DidCommMessagePickupEventTypes } from './DidCommMessagePickupEvents'
 import { DidCommMessagePickupModuleConfig } from './DidCommMessagePickupModuleConfig'
 import type { DidCommMessagePickupSession, DidCommMessagePickupSessionRole } from './DidCommMessagePickupSession'
-import type { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol } from './protocol'
+import type {
+  DidCommMessagePickupV1Protocol,
+  DidCommMessagePickupV2Protocol,
+  DidCommMessagePickupV4Protocol,
+} from './protocol'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
+import { DidCommStatusV2Message } from './protocol/v2/messages'
+import { DidCommStatusV4Message } from './protocol/v4/messages'
 import { DidCommMessagePickupSessionService } from './services/DidCommMessagePickupSessionService'
 
 export interface DidCommMessagePickupApi<MPPs extends DidCommMessagePickupProtocol[]> {
@@ -47,7 +57,11 @@ export interface DidCommMessagePickupApi<MPPs extends DidCommMessagePickupProtoc
 @injectable()
 // biome-ignore lint/suspicious/noUnsafeDeclarationMerging: no explanation
 export class DidCommMessagePickupApi<
-  MPPs extends DidCommMessagePickupProtocol[] = [DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol],
+  MPPs extends DidCommMessagePickupProtocol[] = [
+    DidCommMessagePickupV1Protocol,
+    DidCommMessagePickupV2Protocol,
+    DidCommMessagePickupV4Protocol,
+  ],
 > implements DidCommMessagePickupApi<MPPs>
 {
   public config: DidCommMessagePickupModuleConfig<MPPs>
@@ -99,6 +113,7 @@ export class DidCommMessagePickupApi<
     this.logger.debug('Queuing message...')
     const { connectionId, message, recipientDids } = options
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
+    // Queue accepts both v1 and v2 connections (recipientDids used for v2 mediation)
 
     const queueTransportRepository =
       this.agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
@@ -139,6 +154,11 @@ export class DidCommMessagePickupApi<
     }
 
     const connectionRecord = await this.connectionService.getById(this.agentContext, session.connectionId)
+    if (session.protocolVersion === 'v4') {
+      assertDidCommV2Connection(connectionRecord, 'Message Pickup 4.0')
+    } else {
+      assertDidCommV1Connection(connectionRecord, 'Message Pickup')
+    }
 
     const protocol = this.getProtocol(session.protocolVersion)
 
@@ -177,12 +197,22 @@ export class DidCommMessagePickupApi<
       throw new CredoError(`No active live mode session found with id ${pickupSessionId}`)
     }
     const connectionRecord = await this.connectionService.getById(this.agentContext, session.connectionId)
+    if (session.protocolVersion === 'v4') {
+      assertDidCommV2Connection(connectionRecord, 'Message Pickup 4.0')
+    } else {
+      assertDidCommV1Connection(connectionRecord, 'Message Pickup')
+    }
+
+    if (!this.messagePickupSessionService.getLiveSession(this.agentContext, pickupSessionId)) {
+      throw new CredoError(`Live mode session ${pickupSessionId} ended while loading its connection`)
+    }
 
     const protocol = this.getProtocol(session.protocolVersion)
 
     const deliverMessagesReturn = await protocol.createDeliveryMessage(this.agentContext, {
       connectionRecord,
-      recipientKey,
+      recipientKey: session.protocolVersion === 'v4' ? undefined : recipientKey,
+      recipientDid: session.protocolVersion === 'v4' ? recipientKey : undefined,
       batchSize,
     })
 
@@ -209,6 +239,11 @@ export class DidCommMessagePickupApi<
    */
   public async pickupMessages(options: PickupMessagesOptions<MPPs>): Promise<PickupMessagesReturnType> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
+    if (options.protocolVersion === 'v4') {
+      assertDidCommV2Connection(connectionRecord, 'Message Pickup 4.0')
+    } else {
+      assertDidCommV1Connection(connectionRecord, 'Message Pickup')
+    }
 
     const protocol = this.getProtocol(options.protocolVersion)
     const { message } = await protocol.createPickupMessage(this.agentContext, {
@@ -230,8 +265,8 @@ export class DidCommMessagePickupApi<
         .pipe(
           // Stop when the agent shuts down
           takeUntil(this.stop$),
-          // filter by connection id
-          filter((e) => e.payload.connection.id === connectionRecord.id),
+          // filter by connection and thread id
+          filter((e) => e.payload.connection.id === connectionRecord.id && e.payload.threadId === message.threadId),
           // Only wait for first event that matches the criteria
           first(),
           // If we don't receive all messages within timeoutMs miliseconds (no response, not supported, etc...) error
@@ -256,15 +291,45 @@ export class DidCommMessagePickupApi<
    * Enable or disable Live Delivery mode as a recipient. Depending on the message pickup protocol used,
    * after receiving a response from the mediator the agent might retrieve any pending message.
    *
-   * @param options connectionId, protocol version to use and boolean to enable/disable Live Mode
+   * By default, this method only waits until the message is sent. Use `options.awaitConfirmation` to wait until
+   * the mediator's status reply confirms the change. It rejects on a timeout or on any other reply to the change.
+   *
+   * @param options connectionId, protocol version to use, boolean to enable/disable Live Mode, awaitConfirmation,
+   * awaitConfirmationTimeoutMs
    */
   public async setLiveDeliveryMode(options: SetLiveDeliveryModeOptions): Promise<SetLiveDeliveryModeReturnType> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
+    if (options.protocolVersion === 'v4') {
+      assertDidCommV2Connection(connectionRecord, 'Message Pickup 4.0')
+    } else {
+      assertDidCommV1Connection(connectionRecord, 'Message Pickup')
+    }
     const protocol = this.getProtocol(options.protocolVersion)
     const { message } = await protocol.setLiveDeliveryMode(this.agentContext, {
       connectionRecord,
       liveDelivery: options.liveDelivery,
     })
+
+    const replySubject = new ReplaySubject<DidCommMessage>(1)
+
+    if (options.awaitConfirmation) {
+      this.eventEmitter
+        .observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed)
+        .pipe(
+          takeUntil(this.stop$),
+          first(
+            ({ payload: { connection, message: reply } }) =>
+              connection?.id === connectionRecord.id &&
+              (reply.threadId === message.threadId || reply.thread?.parentThreadId === message.threadId)
+          ),
+          map((e) => e.payload.message),
+          timeout({
+            first: options.awaitConfirmationTimeoutMs ?? 10000,
+            meta: 'DidCommMessagePickupApi.setLiveDeliveryMode',
+          })
+        )
+        .subscribe(replySubject)
+    }
 
     // Live mode requires a long-lived transport session, so we'll require WebSockets to send this message
     await this.messageSender.sendMessage(
@@ -274,5 +339,13 @@ export class DidCommMessagePickupApi<
       }),
       { transportPriority: { schemes: ['wss', 'ws'], restrictive: options.liveDelivery } }
     )
+
+    if (options.awaitConfirmation) {
+      const reply = await firstValueFrom(replySubject)
+      const isStatus = reply instanceof DidCommStatusV2Message || reply instanceof DidCommStatusV4Message
+      if (!isStatus || reply.liveDelivery === !options.liveDelivery) {
+        throw new CredoError(`Live delivery change was not confirmed, the mediator replied with '${reply.type}'`)
+      }
+    }
   }
 }

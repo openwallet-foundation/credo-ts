@@ -1,4 +1,4 @@
-import { anoncreds } from '../../tests/helpers'
+import { NativeAnoncreds } from '../../tests/helpers'
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import type { AnonCredsRegistry } from '../services'
 
@@ -8,7 +8,7 @@ describe('AnonCredsModuleConfig', () => {
 
     const config = new AnonCredsModuleConfig({
       registries: [registry],
-      anoncreds,
+      anoncreds: NativeAnoncreds,
     })
 
     expect(config.registries).toEqual([registry])

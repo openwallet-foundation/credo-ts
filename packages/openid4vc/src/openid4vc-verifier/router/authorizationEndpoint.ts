@@ -1,7 +1,7 @@
 import { AgentContext, TypedArrayEncoder } from '@credo-ts/core'
 import { decodeJwtHeader, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 // FIXME: export parseOpenid4VpAuthorizationResponsePayload from openid4vp
-import { zOpenid4vpAuthorizationResponse } from '@openid4vc/openid4vp'
+import { Openid4vpAuthorizationResponseError, zOpenid4vpAuthorizationResponse } from '@openid4vc/openid4vp'
 import { ValidationError } from '@openid4vc/utils'
 import type { NextFunction, Request, Response, Router } from 'express'
 import {
@@ -11,6 +11,7 @@ import {
   sendOauth2ErrorResponse,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
+import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
 import {
@@ -33,7 +34,14 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
       // Response already handled in the method
       if (!result.success) return
 
-      authorizationResponseRedirectUri = result.verificationSession.authorizationResponseRedirectUri
+      // Only the response that ends the session gets the redirect_uri, so a replayed one doesn't learn it.
+      const { state } = result.verificationSession
+      if (
+        state === OpenId4VcVerificationSessionState.RequestCreated ||
+        state === OpenId4VcVerificationSessionState.RequestUriRetrieved
+      ) {
+        authorizationResponseRedirectUri = result.verificationSession.authorizationResponseRedirectUri
+      }
 
       const { verificationSession } = await openId4VcVerifierService.verifyAuthorizationResponse(agentContext, {
         authorizationResponse: request.body,
@@ -47,6 +55,10 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
         redirect_uri: verificationSession.authorizationResponseRedirectUri,
       })
     } catch (error) {
+      if (error instanceof Openid4vpAuthorizationResponseError) {
+        return sendJsonResponse(response, next, { redirect_uri: authorizationResponseRedirectUri })
+      }
+
       if (error instanceof Oauth2ServerErrorResponseError) {
         error.errorResponse.redirect_uri = authorizationResponseRedirectUri
         return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)

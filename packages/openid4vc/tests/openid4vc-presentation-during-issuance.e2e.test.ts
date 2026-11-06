@@ -1,11 +1,13 @@
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2, SdJwtVc, SdJwtVcIssuer } from '@credo-ts/core'
 import { ClaimFormat, SdJwtVcRecord } from '@credo-ts/core'
+import { createDpopHeadersForRequest, type Jwk } from '@openid4vc/oauth2'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
   getScopesFromCredentialConfigurationsSupported,
+  OpenId4VcIssuanceSessionRepository,
   OpenId4VcIssuanceSessionState,
   type OpenId4VcIssuerModuleConfigOptions,
   type OpenId4VciGetVerificationSession,
@@ -14,6 +16,7 @@ import {
   type OpenId4VcVerifierModuleConfigOptions,
 } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
+import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType } from './utils'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupported } from './utilsVci'
@@ -306,15 +309,30 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     // Request authorization code
     const { authorizationCode } = await holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+      dpop: resolvedAuthorization.dpop,
       authSession: resolvedAuthorization.authSession,
       resolvedCredentialOffer,
       presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
     })
 
+    // The pkce code challenge from the authorization challenge request is bound to the authorization code
+    expect(resolvedAuthorization.codeVerifier).toEqual(expect.any(String))
+    await expect(
+      holder.agent.openid4vc.holder.requestToken({
+        dpop: resolvedAuthorization.dpop,
+        resolvedCredentialOffer,
+        code: authorizationCode,
+        clientId: 'foo',
+        redirectUri: 'http://localhost:1234/redirect',
+      })
+    ).rejects.toThrow('Received token error response with status 400')
+
     // Request access token
     const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
+      dpop: resolvedAuthorization.dpop,
       resolvedCredentialOffer,
       code: authorizationCode,
+      codeVerifier: resolvedAuthorization.codeVerifier,
       clientId: 'foo',
       redirectUri: 'http://localhost:1234/redirect',
     })
@@ -426,6 +444,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     // Request authorization code
     const { authorizationCode } = await holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+      dpop: resolvedAuthorization.dpop,
       authSession: resolvedAuthorization.authSession,
       resolvedCredentialOffer,
       presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
@@ -433,8 +452,10 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     // Request access token
     const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
+      dpop: resolvedAuthorization.dpop,
       resolvedCredentialOffer,
       code: authorizationCode,
+      codeVerifier: resolvedAuthorization.codeVerifier,
       clientId: 'foo',
       redirectUri: 'http://localhost:1234/redirect',
     })
@@ -529,10 +550,141 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     // Requesting authorization code should fail
     await expect(
       holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+        dpop: resolvedAuthorization.dpop,
         authSession: resolvedAuthorization.authSession,
         resolvedCredentialOffer,
       })
     ).rejects.toThrow(`Invalid presentation for 'auth_session'`)
+  })
+
+  it('rejects a token request with a code_verifier when no code_challenge was bound to the authorization request', async () => {
+    const issuerRecord = await issuer.agent.openid4vc.issuer.createIssuer({
+      issuerId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+    })
+
+    const x5cIssuer = {
+      method: 'x5c',
+      x5c: [issuer.certificate],
+      issuer: baseUrl,
+    } satisfies SdJwtVcIssuer
+
+    await issuer.agent.openid4vc.verifier.createVerifier({
+      verifierId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',
+    })
+
+    // Pre-store identity credential
+    const holderIdentityCredential = await issuer.agent.sdJwtVc.sign({
+      issuer: x5cIssuer,
+      payload: {
+        vct: 'urn:eu.europa.ec.eudi:pid:1',
+        given_name: 'Erika',
+        family_name: 'Powerstar',
+      },
+      disclosureFrame: {
+        _sd: ['given_name', 'family_name'],
+      },
+      holder: {
+        method: 'jwk',
+        jwk: holder.jwk,
+      },
+    })
+    holderIdentityCredential.kmsKeyId = holder.jwk.keyId
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(holderIdentityCredential) })
+
+    const { issuanceSession, credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
+      issuerId: issuerRecord.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      authorizationCodeFlowConfig: {
+        requirePresentationDuringIssuance: true,
+      },
+      authorization: {
+        requirePkce: false,
+      },
+    })
+
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const resolvedAuthorization = await holder.agent.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(
+      resolvedCredentialOffer,
+      {
+        clientId: 'foo',
+        redirectUri: 'http://localhost:1234/redirect',
+        scope: getScopesFromCredentialConfigurationsSupported(resolvedCredentialOffer.offeredCredentialConfigurations),
+      }
+    )
+    if (resolvedAuthorization.authorizationFlow !== AuthorizationFlow.PresentationDuringIssuance) {
+      throw new Error('Not supported')
+    }
+
+    const resolvedPresentationRequest = await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
+      resolvedAuthorization.openid4vpRequestUrl
+    )
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
+      // biome-ignore lint/style/noNonNullAssertion: presentation exchange is used for this request
+      resolvedPresentationRequest.presentationExchange!.credentialsForRequest
+    )
+    const openId4VpResult = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedPresentationRequest.authorizationRequestPayload,
+      presentationExchange: {
+        credentials: selectedCredentials,
+      },
+    })
+    if (!openId4VpResult.ok) {
+      throw new Error('not ok')
+    }
+
+    const { authorizationCode } = await holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+      dpop: resolvedAuthorization.dpop,
+      authSession: resolvedAuthorization.authSession,
+      resolvedCredentialOffer,
+      presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
+    })
+
+    // Simulate a client that did not use pkce in the authorization challenge request (allowed because
+    // `requirePkce` is `false` for this session), by removing the bound code challenge from the issuance session.
+    const issuanceSessionRepository = issuer.agent.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    const issuanceSessionRecord = await issuanceSessionRepository.getById(issuer.agent.context, issuanceSession.id)
+    issuanceSessionRecord.pkce = undefined
+    await issuanceSessionRepository.update(issuer.agent.context, issuanceSessionRecord)
+
+    // biome-ignore lint/style/noNonNullAssertion: credo is the authorization server for this flow
+    const tokenEndpoint = resolvedCredentialOffer.metadata.authorizationServers[0].token_endpoint!
+    const dpop = resolvedAuthorization.dpop
+    if (!dpop) throw new Error('Expected dpop')
+    const requestAccessToken = async (additionalPayload: Record<string, string>) =>
+      fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          ...(await createDpopHeadersForRequest({
+            request: { method: 'POST', url: tokenEndpoint },
+            callbacks: getOid4vcCallbacks(holder.agent.context),
+            signer: { method: 'jwk', alg: dpop.alg, publicJwk: dpop.jwk.toJson() as Jwk },
+          })),
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code: authorizationCode,
+          client_id: 'foo',
+          redirect_uri: 'http://localhost:1234/redirect',
+          ...additionalPayload,
+        }).toString(),
+      })
+
+    // A code verifier for an authorization request without code challenge must not be ignored (RFC 9700 §2.1.1)
+    const downgradeResponse = await requestAccessToken({ code_verifier: resolvedAuthorization.codeVerifier as string })
+    expect(downgradeResponse.status).toBe(400)
+    expect(await downgradeResponse.json()).toEqual({
+      error: 'invalid_grant',
+      error_description: `Unexpected 'code_verifier' in access token request, no code challenge is bound to the grant`,
+    })
+
+    // Without a code verifier the code can still be redeemed, as pkce was not required for this session
+    const tokenResponse = await requestAccessToken({})
+    expect(tokenResponse.status).toBe(200)
+    expect(await tokenResponse.json()).toMatchObject({ access_token: expect.any(String) })
   })
 
   it('e2e flow with requesting presentation of credentials before issuance but fails because invalid auth session', async () => {

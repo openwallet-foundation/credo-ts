@@ -1,0 +1,159 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "accessTokenPublicJwk": {
+    "crv": "P-256",
+    "kid": "access-token-key-id",
+    "kty": "EC",
+    "x": "969Qi28BrTJYhiiuY62UwNwd-FlBDUv6aw-WjqrISmY",
+    "y": "X1loO6-u-U3PAjA4FCN9ut8SyPU5mT8nbGyuiFL-SOg"
+  },
+  "accessTokenSignerKmsBackend": "remote-kms",
+  "authorizationServerConfigs": [
+    {
+      "clientAuthentication": {
+        "clientId": "issuer-server",
+        "clientSecret": "issuer-secret",
+        "type": "clientSecret"
+      },
+      "issuer": "https://auth.example.com",
+      "type": "direct"
+    },
+    {
+      "clientAuthentication": {
+        "clientId": "chained-client",
+        "clientSecret": "chained-secret",
+        "type": "clientSecret"
+      },
+      "issuer": "https://idp.example.com",
+      "redirectUris": ["https://wallet.example.com/redirect"],
+      "scopesMapping": {
+        "diploma": [],
+        "pid": ["openid", "profile"]
+      },
+      "type": "chained"
+    }
+  ],
+  "batchCredentialIssuance": {
+    "batchSize": 10
+  },
+  "clientAttestationPopSigningAlgValuesSupported": ["ES256", "ES384"],
+  "clientAttestationSigningAlgValuesSupported": ["ES256"],
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "credentialConfigurationsSupported": {
+    "diploma-jwt-vc": {
+      "credential_definition": {
+        "type": ["VerifiableCredential", "UniversityDegreeCredential"]
+      },
+      "credential_signing_alg_values_supported": ["EdDSA"],
+      "cryptographic_binding_methods_supported": ["did:key"],
+      "format": "jwt_vc_json",
+      "scope": "diploma"
+    },
+    "mdl-mdoc": {
+      "credential_signing_alg_values_supported": [-7],
+      "cryptographic_binding_methods_supported": ["cose_key"],
+      "doctype": "org.iso.18013.5.1.mDL",
+      "format": "mso_mdoc"
+    },
+    "pid-sd-jwt": {
+      "credential_metadata": {
+        "claims": [
+          {
+            "display": [
+              {
+                "locale": "en-US",
+                "name": "Given name"
+              }
+            ],
+            "mandatory": true,
+            "path": ["given_name"]
+          },
+          {
+            "path": ["address", "country"]
+          }
+        ],
+        "display": [
+          {
+            "background_color": "#12107c",
+            "locale": "en-US",
+            "logo": {
+              "alt_text": "PID logo",
+              "uri": "https://issuer.example.com/pid.png"
+            },
+            "name": "PID",
+            "text_color": "#ffffff"
+          }
+        ]
+      },
+      "credential_signing_alg_values_supported": ["ES256"],
+      "cryptographic_binding_methods_supported": ["jwk"],
+      "format": "dc+sd-jwt",
+      "proof_types_supported": {
+        "attestation": {
+          "proof_signing_alg_values_supported": ["ES256"]
+        },
+        "jwt": {
+          "key_attestations_required": {
+            "key_storage": ["iso_18045_high"]
+          },
+          "proof_signing_alg_values_supported": ["ES256"]
+        }
+      },
+      "scope": "pid",
+      "vct": "urn:eudi:pid:1"
+    }
+  },
+  "credentialResponseEncryption": {
+    "algValuesSupported": ["ECDH-ES"],
+    "encValuesSupported": ["A128GCM", "A256GCM"],
+    "required": true
+  },
+  "display": [
+    {
+      "locale": "en-US",
+      "logo": {
+        "alt_text": "Example Issuer logo",
+        "uri": "https://issuer.example.com/logo.png"
+      },
+      "name": "Example Issuer"
+    },
+    {
+      "locale": "nl-NL",
+      "name": "Voorbeeld Uitgever"
+    }
+  ],
+  "dpopSigningAlgValuesSupported": ["ES256", "EdDSA"],
+  "id": "issuer-record-id",
+  "issuerId": "issuer-id",
+  "issuerInfo": [
+    {
+      "data": "eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJpc3N1ZXIifQ.c2lnbmF0dXJl",
+      "format": "registration_cert"
+    },
+    {
+      "credential_ids": ["pid-sd-jwt"],
+      "data": {
+        "registered": true
+      },
+      "format": "custom"
+    }
+  ],
+  "metadata": {
+    "meta": {
+      "key": "value"
+    }
+  },
+  "signedMetadata": {
+    "jwt": "eyJhbGciOiJFUzI1NiIsInR5cCI6Im9wZW5pZHZjaS1pc3N1ZXItbWV0YWRhdGErand0In0.eyJzdWIiOiJpc3N1ZXIifQ.c2lnbmF0dXJl",
+    "signer": {
+      "leafCertificateKeyId": "leaf-key-id",
+      "method": "x5c",
+      "x5c": [
+        "MIIBEzCBu6ADAgECAhBwnaR5jboQ4R7Ne/k+sfhCMAoGCCqGSM49BAMCMA0xCzAJBgNVBAYTAk5MMB4XDTcwMDEwMTAwMDAwMFoXDTI1MTEyMjA4MjIxMlowDTELMAkGA1UEBhMCTkwwOTATBgcqhkjOPQIBBggqhkjOPQMBBwMiAALcD1XzKepFxWMAOqV+ln1fybBt7DRO5CV0f9A6mRp2xaMdMBswGQYDVR0RBBIwEIIOZnVua2UuYW5pbW8uaWQwCgYIKoZIzj0EAwIDRwAwRAIgPM5ITfUD6VWLgRm8Eu1gw53Of+SUdjS+yRClR68m//4CIDxnng7NnJyGnpsKDuUqSIl/A0rRQCwTLBZw9Hx3MZnZ"
+      ]
+    }
+  },
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

@@ -1,8 +1,8 @@
-import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import {
-  issueLegacyAnonCredsCredential,
+  issueIndyAnonCredsCredential,
   setupAnonCredsTests,
-} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+} from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import type { EventReplaySubject } from '../../../../../../../core/tests'
 import { waitForProofExchangeRecordSubject } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
@@ -34,7 +34,7 @@ describe('V2 Proofs - Indy', () => {
       attributeNames: ['name', 'age'],
     }))
 
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
       holderAgent: aliceAgent,
@@ -69,7 +69,7 @@ describe('V2 Proofs - Indy', () => {
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'ProofRequest',
           version: '1.0',
           attributes: [
@@ -103,7 +103,7 @@ describe('V2 Proofs - Indy', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof-req@v2.0',
+          format: 'anoncreds/proof-request@v1.0',
         },
       ],
       proposalAttachments: [
@@ -143,7 +143,7 @@ describe('V2 Proofs - Indy', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof-req@v2.0',
+          format: 'anoncreds/proof-request@v1.0',
         },
       ],
       requestAttachments: [

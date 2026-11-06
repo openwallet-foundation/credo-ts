@@ -6,7 +6,7 @@ import { performSign } from './sign'
 
 export async function performDecrypt(
   key: Kms.KmsJwkPrivateOct,
-  dataDecryption: Kms.KmsDecryptDataDecryption,
+  dataDecryption: Kms.KmsDecryptDataContentDecryption,
   encrypted: Uint8Array
 ): Promise<{ data: Uint8Array }> {
   const secretKeyBytes = TypedArrayEncoder.fromBase64Url(key.k)
@@ -35,7 +35,8 @@ export async function performDecrypt(
           ? 'aes-192-gcm'
           : 'aes-256-gcm'
 
-    const decipher = createDecipheriv(nodeAlgorithm, nodeKey, dataDecryption.iv)
+    // Without authTagLength node accepts truncated tags down to 4 bytes
+    const decipher = createDecipheriv(nodeAlgorithm, nodeKey, dataDecryption.iv, { authTagLength: 16 })
 
     // Set auth tag before decryption for authenticated modes
     decipher.setAuthTag(dataDecryption.tag)

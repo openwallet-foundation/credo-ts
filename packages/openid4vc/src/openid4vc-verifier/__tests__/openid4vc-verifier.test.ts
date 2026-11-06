@@ -1,4 +1,4 @@
-import { Jwt, RecordNotFoundError, utils } from '@credo-ts/core'
+import { Jwt, Kms, RecordNotFoundError, utils } from '@credo-ts/core'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { type AgentType, createAgentFromModules } from '../../../tests/utils'
 import { openBadgeDcqlQuery, universityDegreePresentationDefinition } from '../../../tests/utilsVp'
@@ -81,6 +81,34 @@ describe('OpenId4VcVerifier', () => {
       })
 
       expect(verificationSession.expiresAt).toEqual(utils.addSecondsToDate(verificationSession.createdAt, 60 * 60))
+    })
+
+    it('throws when creating a draft 21 request with the x509_hash client id prefix', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const certificate = await verifier.agent.x509.createCertificate({
+        issuer: { commonName: 'Credo', countryName: 'NL' },
+        authorityKey: Kms.PublicJwk.fromPublicJwk(
+          (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+        ),
+        extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'redirect-uri' }] } },
+      })
+
+      await expect(
+        verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+          requestSigner: {
+            method: 'x5c',
+            x5c: [certificate],
+            clientIdPrefix: 'x509_hash',
+          },
+          verifierId: openIdVerifier.verifierId,
+          presentationExchange: {
+            definition: universityDegreePresentationDefinition,
+          },
+          version: 'v1.draft21',
+        })
+      ).rejects.toThrow(
+        "OpenID4VP version 'v1.draft21' cannot be used with clientIdPrefix 'x509_hash'. Use clientIdPrefix 'x509_san_dns', or version 'v1' instead."
+      )
     })
 
     it('deletes a verification session by id', async () => {

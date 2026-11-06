@@ -164,7 +164,9 @@ QucCIHCvouHEm/unjBXMCeUZ7QR/ympjGyHITw25/B9H9QsC
           verifierGeneratedNonce: '121784205639044947422645',
         },
       })
-    ).resolves.toBeUndefined()
+    ).resolves.toEqual({
+      documents: [{ documentIndex: 0, mdoc: expect.any(Mdoc), trustedIssuanceChain: expect.any(Array) }],
+    })
   })
 
   describe('verify with getTrustedIssuersForVerification', () => {

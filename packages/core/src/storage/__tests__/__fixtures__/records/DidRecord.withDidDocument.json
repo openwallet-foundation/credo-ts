@@ -1,0 +1,174 @@
+{
+  "_tags": {
+    "alternativeDids": ["did:example:alice-alias"],
+    "custom": "tag"
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "did": "did:example:alice",
+  "didDocument": {
+    "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/suites/ed25519-2018/v1"],
+    "alsoKnownAs": ["did:example:alice-alias"],
+    "assertionMethod": [
+      "did:example:alice#key-2",
+      {
+        "controller": "did:example:alice",
+        "id": "did:example:alice#assertion-1",
+        "publicKeyJwk": {
+          "crv": "Ed25519",
+          "kty": "OKP",
+          "x": "oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo"
+        },
+        "type": "JsonWebKey2020"
+      }
+    ],
+    "authentication": [
+      "did:example:alice#key-1",
+      {
+        "controller": "did:example:alice",
+        "id": "did:example:alice#authentication-1",
+        "publicKeyBase58": "CQZzRfoJMRzoESU2VtWrgx3rTsk9yjrjqXL2UdxWjX2q",
+        "type": "Ed25519VerificationKey2018"
+      }
+    ],
+    "capabilityDelegation": [
+      {
+        "controller": "did:example:alice",
+        "id": "did:example:alice#delegation-1",
+        "publicKeyMultibase": "z6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V",
+        "type": "Ed25519VerificationKey2020"
+      }
+    ],
+    "capabilityInvocation": ["did:example:alice#key-1"],
+    "controller": ["did:example:alice", "did:example:controller"],
+    "id": "did:example:alice",
+    "keyAgreement": [
+      {
+        "controller": "did:example:alice",
+        "id": "did:example:alice#key-agreement-1",
+        "publicKeyBase58": "7SbWSgJgjSvSTc7ZAKHJiaZbTBwNM9TdFUAU1UyZfJn8",
+        "type": "X25519KeyAgreementKey2019"
+      },
+      "did:example:alice#key-3"
+    ],
+    "service": [
+      {
+        "accept": ["didcomm/aip2;env=rfc19"],
+        "id": "did:example:alice#did-communication",
+        "priority": 1,
+        "recipientKeys": ["did:example:alice#key-1"],
+        "routingKeys": ["did:example:mediator#key-1"],
+        "serviceEndpoint": "https://example.com/didcomm",
+        "type": "did-communication"
+      },
+      {
+        "id": "did:example:alice#indy-agent",
+        "priority": 2,
+        "recipientKeys": ["CQZzRfoJMRzoESU2VtWrgx3rTsk9yjrjqXL2UdxWjX2q"],
+        "routingKeys": ["7SbWSgJgjSvSTc7ZAKHJiaZbTBwNM9TdFUAU1UyZfJn8"],
+        "serviceEndpoint": "https://example.com/indy",
+        "type": "IndyAgent"
+      },
+      {
+        "id": "did:example:alice#didcomm-messaging",
+        "serviceEndpoint": {
+          "accept": ["didcomm/v2"],
+          "routingKeys": ["did:example:mediator#key-2"],
+          "uri": "https://example.com/didcomm/v2"
+        },
+        "type": "DIDCommMessaging"
+      },
+      {
+        "id": "did:example:alice#didcomm-messaging-array",
+        "serviceEndpoint": [
+          {
+            "accept": ["didcomm/v2"],
+            "uri": "https://example.com/didcomm/v2/array"
+          }
+        ],
+        "type": "DIDCommMessaging"
+      },
+      {
+        "accept": ["didcomm/v2"],
+        "id": "did:example:alice#didcomm-messaging-legacy",
+        "routingKeys": ["did:example:mediator#key-3"],
+        "serviceEndpoint": "https://example.com/didcomm/v2/legacy",
+        "type": "DIDCommMessaging"
+      },
+      {
+        "accept": ["didcomm/v2"],
+        "id": "did:example:alice#didcomm",
+        "routingKeys": ["did:example:mediator#key-4"],
+        "serviceEndpoint": "https://example.com/didcomm/legacy",
+        "type": "DIDComm"
+      },
+      {
+        "id": "did:example:alice#linked-domains",
+        "serviceEndpoint": {
+          "origins": ["https://example.com"]
+        },
+        "type": "LinkedDomains"
+      }
+    ],
+    "verificationMethod": [
+      {
+        "controller": "did:example:alice",
+        "id": "did:example:alice#key-1",
+        "publicKeyBase58": "CQZzRfoJMRzoESU2VtWrgx3rTsk9yjrjqXL2UdxWjX2q",
+        "type": "Ed25519VerificationKey2018"
+      },
+      {
+        "controller": "did:example:alice",
+        "id": "did:example:alice#key-2",
+        "publicKeyMultibase": "z6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V",
+        "type": "Ed25519VerificationKey2020"
+      },
+      {
+        "controller": "did:example:alice",
+        "id": "did:example:alice#key-3",
+        "publicKeyJwk": {
+          "crv": "Ed25519",
+          "kty": "OKP",
+          "x": "oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo"
+        },
+        "type": "JsonWebKey2020"
+      },
+      {
+        "blockchainAccountId": "eip155:1:0x89a932207c485f85226d86f7cd486a89a24fcc12",
+        "controller": "did:example:alice",
+        "ethereumAddress": "0x89a932207c485f85226d86f7cd486a89a24fcc12",
+        "id": "did:example:alice#key-4",
+        "publicKeyHex": "02b97c30de767f084ce3080168ee293053ba33b235d7116a3263d29f1450936b71",
+        "type": "EcdsaSecp256k1VerificationKey2019"
+      },
+      {
+        "controller": "did:example:alice",
+        "id": "did:example:alice#key-5",
+        "publicKeyBase64": "AAAA",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----",
+        "type": "RsaVerificationKey2018"
+      }
+    ]
+  },
+  "id": "did-record-id",
+  "keys": [
+    {
+      "didDocumentRelativeKeyId": "#key-1",
+      "kmsKeyId": "kms-key-1"
+    },
+    {
+      "didDocumentRelativeKeyId": "#key-agreement-1",
+      "kmsKeyId": "kms-key-2"
+    }
+  ],
+  "metadata": {
+    "_internal/legacyDid": {
+      "didDocumentString": "{\"id\":\"did:sov:LjgpST2rjsoxYegQDRm7EL\"}",
+      "unqualifiedDid": "LjgpST2rjsoxYegQDRm7EL"
+    },
+    "custom": {
+      "key": "value"
+    }
+  },
+  "role": "created",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

@@ -1,5 +1,57 @@
 # Changelog
 
+## 0.7.1
+
+### Patch Changes
+
+- 9f4278b: Add `DidDocument.findVerificationMethodsByPurpose` and
+  `DidDocument.findVerificationMethodsByTypeAndPurpose`.
+  
+  The relationship-aware methods resolve inline and referenced methods and
+  return them in requested relationship order while preserving entry order
+  within each relationship. The type-filtered method accepts one or more
+  verification-method representations and delegates relationship traversal to
+  the purpose-only method. DIDComm JSON-LD, JWT credentials, presentation
+  selection, DIDComm messaging, AnonCreds data integrity, Cheqd signing, peer
+  DID conversion, and did:webvh signing now use the appropriate shared lookup.
+  AnonCreds credential signing prefers verification methods authorized for
+  `assertionMethod`, with declared `verificationMethod` entries as a fallback.
+- Updated dependencies [9f4278b]
+- Updated dependencies [f127ff5]
+- Updated dependencies [5cfcadb]
+- Updated dependencies [84dfcf4]
+- Updated dependencies [b75467c]
+- Updated dependencies [e80900a]
+- Updated dependencies [8ded8d2]
+- Updated dependencies [fd5016d]
+- Updated dependencies [d45aec0]
+- Updated dependencies [5cfcadb]
+- Updated dependencies [097c831]
+- Updated dependencies [20d6ab1]
+- Updated dependencies [bc4638e]
+- Updated dependencies [bc4638e]
+- Updated dependencies [bc4638e]
+- Updated dependencies [907f12f]
+- Updated dependencies [bc4638e]
+- Updated dependencies [96dc69b]
+- Updated dependencies [7dfafeb]
+- Updated dependencies [3a3eb03]
+- Updated dependencies [23c354e]
+- Updated dependencies [907cc54]
+- Updated dependencies [339f4cc]
+- Updated dependencies [bc4638e]
+- Updated dependencies [5cfcadb]
+- Updated dependencies [f127ff5]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [e97c18b]
+- Updated dependencies [121dd14]
+- Updated dependencies [b75467c]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [0a58888]
+- Updated dependencies [1e2088f]
+  - @credo-ts/core@0.7.1
+  - @credo-ts/anoncreds@0.7.1
+
 ## 0.7.0
 
 ### Minor Changes

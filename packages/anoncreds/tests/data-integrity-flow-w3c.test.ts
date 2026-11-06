@@ -1,20 +1,20 @@
-import type { DidRepository, SuiteInfo } from '@credo-ts/core'
+import type { DidRepository, JsonObject, SuiteInfo } from '@credo-ts/core'
 import {
   AgentContext,
   DidResolverService,
   DidsModuleConfig,
   Ed25519Signature2018,
   InjectionSymbols,
+  JsonLdModuleConfig,
   KeyDidRegistrar,
   KeyDidResolver,
   Kms,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
-  W3cCredentialsModuleConfig,
   X509ModuleConfig,
 } from '@credo-ts/core'
 import {
@@ -22,8 +22,9 @@ import {
   DidCommCredentialPreviewAttribute,
   DidCommCredentialRole,
   DidCommCredentialState,
+  DidCommDataIntegrityCredentialFormatService,
 } from '@credo-ts/didcomm'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
@@ -40,6 +41,7 @@ import {
   getAskarStoreConfig,
   testLogger,
 } from '../../core/tests'
+import { getFormatDataAttachment } from '../../didcomm/src/modules/credentials/util/formatData'
 import {
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
@@ -47,14 +49,13 @@ import {
   AnonCredsVerifierServiceSymbol,
 } from '../src'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
-import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
-import { anoncreds } from './helpers'
+import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const tailsFileService = new InMemoryTailsFileService()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
-  anoncreds,
+  anoncreds: NativeAnoncreds,
   registries: [registry],
   tailsFileService,
 })
@@ -71,6 +72,17 @@ const didsModuleConfig = new DidsModuleConfig({
   resolvers: [new KeyDidResolver()],
 })
 const fileSystem = new agentDependencies.FileSystem()
+const signatureSuiteRegistry = new SignatureSuiteRegistry([
+  {
+    suiteClass: Ed25519Signature2018,
+    proofType: 'Ed25519Signature2018',
+    verificationMethodTypes: [
+      VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+      VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+    ],
+    supportedPublicJwkTypes: [Kms.Ed25519PublicJwk],
+  } satisfies SuiteInfo,
+])
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -86,24 +98,13 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig()],
     [X509ModuleConfig, new X509ModuleConfig()],
-    [
-      SignatureSuiteToken,
-      {
-        suiteClass: Ed25519Signature2018,
-        proofType: 'Ed25519Signature2018',
-        verificationMethodTypes: [
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-        ],
-        supportedPublicJwkTypes: [Kms.Ed25519PublicJwk],
-      } satisfies SuiteInfo,
-    ],
+    [SignatureSuiteRegistry, signatureSuiteRegistry],
     [
       AskarModuleConfig,
       new AskarModuleConfig({
-        askar,
+        askar: NativeAskar,
         store: getAskarStoreConfig('data-integrity-flow-w3c'),
       }),
     ],
@@ -114,7 +115,7 @@ const agentContext = getAgentContext({
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
 
-const dataIntegrityCredentialFormatService = new DataIntegrityDidCommCredentialFormatService()
+const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService()
 
 describe('data integrity format service (w3c)', () => {
   let issuerKdv: CreateDidKidVerificationMethodReturn
@@ -218,6 +219,22 @@ describe('data integrity format service (w3c)', () => {
         },
       }
     )
+
+    // The issuance date is not compared against the offer, so only the proof catches this change
+    const { credential: issuedCredentialJson } = credentialAttachment.getDataAsJson<{ credential: JsonObject }>()
+    const tamperedCredentialAttachment = getFormatDataAttachment(
+      { credential: { ...issuedCredentialJson, issuanceDate: new Date(0).toISOString() } },
+      credentialAttachment.id
+    )
+    await expect(
+      dataIntegrityCredentialFormatService.processCredential(agentContext, {
+        offerAttachment,
+        credentialExchangeRecord: holderCredentialRecord,
+        attachment: tamperedCredentialAttachment,
+        requestAttachment,
+      })
+    ).rejects.toThrow('Failed to validate credential')
+    expect(holderCredentialRecord.credentials).toEqual([])
 
     // Holder processes and accepts credential
     await dataIntegrityCredentialFormatService.processCredential(agentContext, {

@@ -7,7 +7,16 @@ import type {
   DidCommMessageReceivedEvent,
   DidCommTransportSession,
 } from '@credo-ts/didcomm'
-import { DidCommEventTypes, DidCommMimeType, DidCommModuleConfig, DidCommTransportService } from '@credo-ts/didcomm'
+import {
+  DIDCOMM_V2_ENCRYPTED_MIME_TYPE,
+  DIDCOMM_V2_SIGNED_MIME_TYPE,
+  DidCommEventTypes,
+  DidCommMimeType,
+  DidCommModuleConfig,
+  DidCommTransportService,
+  isDidCommV2EncryptedMessage,
+  normalizeDidCommMediaType,
+} from '@credo-ts/didcomm'
 import type { Express, Request, Response } from 'express'
 import express, { text } from 'express'
 import type { Server } from 'http'
@@ -17,7 +26,7 @@ const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
 
 export class DidCommHttpInboundTransport implements DidCommInboundTransport {
   public readonly app: Express
-  private port: number
+  private port?: number
   private path: string
   private _server?: Server
   private processedMessageListenerTimeoutMs: number
@@ -31,20 +40,15 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
     path,
     port,
     processedMessageListenerTimeoutMs,
-  }: {
-    app?: Express
-    path?: string
-    port: number
-    processedMessageListenerTimeoutMs?: number
-  }) {
+  }:
+    | { app: Express; port?: undefined; path?: string; processedMessageListenerTimeoutMs?: number }
+    | { app?: Express; port: number; path?: string; processedMessageListenerTimeoutMs?: number }) {
     this.port = port
     this.processedMessageListenerTimeoutMs = processedMessageListenerTimeoutMs ?? 10000 // timeout after 10 seconds
 
-    // Create Express App
+    // Use the caller-provided Express app, or create one
     this.app = app ?? express()
     this.path = path ?? '/'
-
-    this.app.use(text({ type: supportedContentTypes, limit: '5mb' }))
   }
 
   public async start(agentContext: AgentContext) {
@@ -54,13 +58,51 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
       port: this.port,
     })
 
-    this.app.post(this.path, async (req, res) => {
-      const contentType = req.headers['content-type']
+    this.registerRoute(agentContext, transportService)
 
-      if (!contentType || !supportedContentTypes.includes(contentType)) {
+    if (this.port === undefined) {
+      return
+    }
+
+    const server = this.app.listen(this.port)
+    this._server = server
+
+    await new Promise<void>((resolve, reject) => {
+      const onError = (error: Error) => {
+        server.off('listening', onListening)
+        reject(error)
+      }
+      const onListening = () => {
+        server.off('error', onError)
+        resolve()
+      }
+
+      server.once('error', onError)
+      server.once('listening', onListening)
+    })
+  }
+
+  public async stop(): Promise<void> {
+    if (!this._server) {
+      return
+    }
+
+    return new Promise((resolve, reject) => this._server?.close((err) => (err ? reject(err) : resolve())))
+  }
+
+  private registerRoute(agentContext: AgentContext, transportService: DidCommTransportService) {
+    const acceptedContentTypes = agentContext.dependencyManager.resolve(DidCommModuleConfig).isSupported('v2')
+      ? [...supportedContentTypes, DIDCOMM_V2_ENCRYPTED_MIME_TYPE, DIDCOMM_V2_SIGNED_MIME_TYPE]
+      : supportedContentTypes
+    const isAccepted = (contentType: string | undefined): boolean =>
+      contentType !== undefined && acceptedContentTypes.includes(normalizeDidCommMediaType(contentType))
+
+    const parseBody = text({ type: (req) => isAccepted(req.headers['content-type']), limit: '5mb' })
+    this.app.post(this.path, parseBody, async (req, res) => {
+      if (!isAccepted(req.headers['content-type'])) {
         return res
           .status(415)
-          .send(`Unsupported content-type. Supported content-types are: ${supportedContentTypes.join(', ')}`)
+          .send(`Unsupported content-type. Supported content-types are: ${acceptedContentTypes.join(', ')}`)
       }
 
       const session = new HttpTransportSession(utils.uuid(), req, res)
@@ -69,7 +111,7 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
       req.once('close', () => transportService.removeSession(session))
 
       try {
-        const message = req.body
+        const message = req.body as string
         const encryptedMessage = JSON.parse(message) as DidCommEncryptedMessage
 
         const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
@@ -115,12 +157,6 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
         transportService.removeSession(session)
       }
     })
-
-    this._server = this.app.listen(this.port)
-  }
-
-  public async stop(): Promise<void> {
-    return new Promise((resolve, reject) => this._server?.close((err) => (err ? reject(err) : resolve())))
   }
 }
 
@@ -154,8 +190,11 @@ export class HttpTransportSession implements DidCommTransportSession {
     // However, if the request mime-type is a mime-type that is supported by us, we use that
     // to minimize the chance of interoperability issues
     const requestMimeType = this.req.headers['content-type']
-    if (requestMimeType && supportedContentTypes.includes(requestMimeType)) {
-      responseMimeType = requestMimeType
+    const normalized = requestMimeType ? normalizeDidCommMediaType(requestMimeType) : undefined
+    if (isDidCommV2EncryptedMessage(encryptedMessage)) {
+      responseMimeType = DIDCOMM_V2_ENCRYPTED_MIME_TYPE
+    } else if (normalized && supportedContentTypes.includes(normalized)) {
+      responseMimeType = normalized
     }
 
     this.res.status(200).contentType(responseMimeType).json(encryptedMessage).end()

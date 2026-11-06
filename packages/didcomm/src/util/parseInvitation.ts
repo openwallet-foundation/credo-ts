@@ -4,10 +4,10 @@ import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@cre
 import queryString from 'query-string'
 
 import { DidCommMessage } from '../DidCommMessage'
-import { DidCommConnectionInvitationMessage } from '../modules/connections/messages'
-import { convertToNewInvitation } from '../modules/oob/converters'
+import { convertV2InvitationToOutOfBandInvitation } from '../modules/oob/converters'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from '../modules/oob/messages'
+import { DidCommOutOfBandInvitationV2 } from '../modules/oob/messages/DidCommOutOfBandInvitationV2'
 
 import { parseMessageType, supportsIncomingMessageType } from './messageType'
 
@@ -22,12 +22,29 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
+      signal: abortController.signal as NonNullable<RequestInit['signal']>,
     })
   } catch (error) {
     throw new CredoError(`Get request failed on provided url: ${error.message}`, { cause: error })
+  } finally {
+    clearTimeout(id)
   }
-  clearTimeout(id)
   return response
+}
+
+// Invitations are spec'd as base64url, but agents in the wild also emit padded base64url or standard base64
+const decodeInvitationJson = (encoded: string): Record<string, unknown> => {
+  try {
+    return JsonEncoder.fromBase64Url(encoded.replace(/=+$/, '')) as Record<string, unknown>
+  } catch (base64UrlError) {
+    try {
+      return JsonEncoder.fromBase64(encoded) as Record<string, unknown>
+    } catch {
+      throw new CredoError('Could not decode invitation data as base64url or base64 string.', {
+        cause: base64UrlError,
+      })
+    }
+  }
 }
 
 /**
@@ -37,6 +54,14 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
  * @returns DidCommOutOfBandInvitation
  */
 export const parseInvitationJson = (invitationJson: Record<string, unknown>): DidCommOutOfBandInvitation => {
+  // DIDComm v2 OOB uses "type" not "@type"
+  const v2Type = invitationJson.type as string
+  if (v2Type === DidCommOutOfBandInvitationV2.type.messageTypeUri) {
+    const v2Invitation = DidCommOutOfBandInvitationV2.fromJson(invitationJson)
+    MessageValidator.validateSync(v2Invitation)
+    return convertV2InvitationToOutOfBandInvitation(v2Invitation)
+  }
+
   const messageType = invitationJson['@type'] as string
 
   if (!messageType) {
@@ -49,13 +74,6 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Di
     MessageValidator.validateSync(invitation)
     invitation.invitationType = DidCommInvitationType.OutOfBand
     return invitation
-  }
-  if (supportsIncomingMessageType(parsedMessageType, DidCommConnectionInvitationMessage.type)) {
-    const invitation = JsonTransformer.fromJSON(invitationJson, DidCommConnectionInvitationMessage)
-    MessageValidator.validateSync(invitation)
-    const outOfBandInvitation = convertToNewInvitation(invitation)
-    outOfBandInvitation.invitationType = DidCommInvitationType.Connection
-    return outOfBandInvitation
   }
   if (invitationJson['~service']) {
     // This is probably a legacy connectionless invitation
@@ -74,14 +92,13 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Di
 export const parseInvitationUrl = (invitationUrl: string): DidCommOutOfBandInvitation => {
   const parsedUrl = queryString.parseUrl(invitationUrl).query
 
-  const encodedInvitation = parsedUrl.oob ?? parsedUrl.c_i ?? parsedUrl.d_m
+  const encodedInvitation = parsedUrl._oob ?? parsedUrl.oob ?? parsedUrl.d_m
 
   if (typeof encodedInvitation === 'string') {
-    const invitationJson = JsonEncoder.fromBase64Url(encodedInvitation) as Record<string, unknown>
-    return parseInvitationJson(invitationJson)
+    return parseInvitationJson(decodeInvitationJson(encodedInvitation))
   }
   throw new CredoError(
-    'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`.'
+    'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `_oob`, `oob` or `d_m`.'
   )
 }
 
@@ -144,13 +161,12 @@ export const parseInvitationShortUrl = async (
   dependencies: AgentDependencies
 ): Promise<DidCommOutOfBandInvitation> => {
   const parsedUrl = queryString.parseUrl(invitationUrl).query
-  if (parsedUrl.oob || parsedUrl.c_i) {
+  if (parsedUrl._oob || parsedUrl.oob) {
     return parseInvitationUrl(invitationUrl)
   }
   // Legacy connectionless invitation
   if (parsedUrl.d_m) {
-    const messageJson = JsonEncoder.fromBase64Url(parsedUrl.d_m as string)
-    return transformLegacyConnectionlessInvitationToOutOfBandInvitation(messageJson)
+    return transformLegacyConnectionlessInvitationToOutOfBandInvitation(decodeInvitationJson(parsedUrl.d_m as string))
   }
   try {
     const outOfBandInvitation = await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
@@ -158,7 +174,7 @@ export const parseInvitationShortUrl = async (
     return outOfBandInvitation
   } catch (_error) {
     throw new CredoError(
-      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`, or be valid shortened URL'
+      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `_oob`, `oob` or `d_m`, or be valid shortened URL'
     )
   }
 }

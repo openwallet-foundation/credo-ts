@@ -12,12 +12,6 @@ export { areCredentialPreviewAttributesEqual } from './credentialPreviewAttribut
 export { getCredentialsForAnonCredsProofRequest } from './getCredentialsForAnonCredsRequest'
 export { getRevocationRegistriesForProof, getRevocationRegistriesForRequest } from './getRevocationRegistries'
 export { assertNoDuplicateGroupsNamesInProofRequest } from './hasDuplicateGroupNames'
-export {
-  unqualifiedCredentialDefinitionIdRegex,
-  unqualifiedIndyDidRegex,
-  unqualifiedSchemaIdRegex,
-  unqualifiedSchemaVersionRegex,
-} from './indyIdentifiers'
 export { IsMap } from './isMap'
 export { storeLinkSecret } from './linkSecret'
 export {

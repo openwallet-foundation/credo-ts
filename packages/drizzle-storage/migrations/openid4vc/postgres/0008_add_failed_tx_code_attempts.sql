@@ -1,0 +1,1 @@
+ALTER TABLE "OpenId4VcIssuanceSession" ADD COLUMN "failed_tx_code_attempts" integer;

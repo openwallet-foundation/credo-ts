@@ -2,14 +2,13 @@ import { Subject } from 'rxjs'
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { DidCommCredentialV1Preview } from '../../../../../../../anoncreds/src'
-import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import {
   getAnonCredsIndyModules,
-  issueLegacyAnonCredsCredential,
+  issueIndyAnonCredsCredential,
   prepareForAnonCredsIssuance,
   setupAnonCredsTests,
-} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+} from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import { Agent } from '../../../../../../../core/src/index'
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import {
@@ -23,8 +22,10 @@ import {
 import {
   DidCommAutoAcceptProof,
   DidCommCredentialEventTypes,
+  DidCommCredentialV2Preview,
   DidCommHandshakeProtocol,
   DidCommMediatorPickupStrategy,
+  type DidCommModuleConfigOptions,
   DidCommPresentationV2Message,
   DidCommProofEventTypes,
   DidCommProofState,
@@ -56,7 +57,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       attributeNames: ['name', 'age'],
     })
 
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
       holderAgent: aliceAgent,
@@ -83,7 +84,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     let { proofRecord: faberProofExchangeRecord, message } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'test-proof-request',
           version: '1.0',
           requested_attributes: {
@@ -133,7 +134,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     aliceProofExchangeRecord = await aliceAgent.didcomm.proofs.acceptRequest({
       proofExchangeRecordId: aliceProofExchangeRecord.id,
       useReturnRoute: returnRoute,
-      proofFormats: { indy: requestedCredentials.proofFormats.indy },
+      proofFormats: { anoncreds: requestedCredentials.proofFormats.anoncreds },
     })
 
     testLogger.test('Faber waits for presentation from Alice')
@@ -179,7 +180,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       attributeNames: ['name', 'age'],
     })
 
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
       holderAgent: aliceAgent,
@@ -205,7 +206,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'test-proof-request',
           version: '1.0',
           requested_attributes: {
@@ -258,13 +259,18 @@ describe('V2 Connectionless Proofs - Indy', () => {
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
-    const credentialPreview = DidCommCredentialV1Preview.fromRecord({
+    const credentialPreview = DidCommCredentialV2Preview.fromRecord({
       name: 'John',
       age: '99',
     })
 
     const unique = uuid().substring(0, 4)
 
+    // Mediation flow (requestAndAwaitGrant) with Subject transport times out with DIDComm v2.
+    // Use v1 for mediator, Faber, and Alice in this test until v2 mediation is fully supported.
+    const mediationV1Config: Pick<DidCommModuleConfigOptions, 'didcommVersions'> = {
+      didcommVersions: ['v1'],
+    }
     const mediatorOptions = getAgentOptions(
       `Connectionless proofs with mediator Mediator-${unique}`,
       {},
@@ -273,6 +279,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: DidCommAutoAcceptProof.Always,
           extraDidCommConfig: {
+            ...mediationV1Config,
             endpoints: ['rxjs:mediator'],
             mediator: { autoAcceptMediationRequests: true },
           },
@@ -292,12 +299,12 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     const faberMediationOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation({
       label: 'faber invitation',
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     const aliceMediationOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation({
       label: 'alice invitation',
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     const faberOptions = getAgentOptions(
@@ -308,6 +315,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: DidCommAutoAcceptProof.Always,
           extraDidCommConfig: {
+            ...mediationV1Config,
             mediationRecipient: {
               mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
                 domain: 'https://example.com',
@@ -328,6 +336,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: DidCommAutoAcceptProof.Always,
           extraDidCommConfig: {
+            ...mediationV1Config,
             mediationRecipient: {
               mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
                 domain: 'https://example.com',
@@ -361,7 +370,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const [faberConnection] = await makeConnection(faberAgent, aliceAgent)
 
     // issue credential
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent as AnonCredsTestsAgent,
       issuerReplay: faberReplay,
       issuerHolderConnectionId: faberConnection.id,
@@ -376,7 +385,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'test-proof-request',
           version: '1.0',
           requested_attributes: {
@@ -454,7 +463,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       attributeNames: ['name', 'age'],
     })
 
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
       holderAgent: aliceAgent,
@@ -480,7 +489,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'test-proof-request',
           version: '1.0',
           requested_attributes: {
@@ -550,7 +559,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       attributeNames: ['name', 'age'],
     })
 
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
       holderAgent: aliceAgent,
@@ -576,7 +585,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'test-proof-request',
           version: '1.0',
           requested_attributes: {
@@ -643,7 +652,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       autoAcceptProofs: DidCommAutoAcceptProof.Always,
       attributeNames: ['name', 'age'],
     })
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
       holderAgent: aliceAgent,
@@ -668,7 +677,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const { message } = await aliceAgent.didcomm.proofs.createProofProposal({
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'abc',
           version: '1.0',
           attributes: [

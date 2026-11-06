@@ -37,6 +37,15 @@ export const openId4VciSupportedCredentialFormats: OpenId4VciSupportedCredential
   OpenId4VciCredentialFormatProfile.MsoMdoc,
 ]
 
+export type OpenId4VciSignedMetadataPolicy = 'required' | 'preferred' | 'disallowed'
+
+export interface OpenId4VciResolveIssuerMetadataOptions {
+  /**
+   * Overrides the `signedMetadata` holder module config for this call.
+   */
+  signedMetadata?: OpenId4VciSignedMetadataPolicy
+}
+
 export interface OpenId4VciDpopRequestOptions {
   jwk: Kms.PublicJwk
   alg: Kms.KnownJwaSignatureAlgorithm
@@ -107,6 +116,12 @@ export type OpenId4VciResolvedAuthorizationRequest =
       openid4vpRequestUrl: string
       authorizationFlow: OpenId4VciAuthorizationFlow.PresentationDuringIssuance
       authSession: string
+
+      /**
+       * The pkce code verifier, to be provided in the token request when exchanging
+       * the authorization code obtained using the presentation.
+       */
+      codeVerifier?: string
 
       /**
        * DPoP request options if DPoP was used for the authorization challenge request

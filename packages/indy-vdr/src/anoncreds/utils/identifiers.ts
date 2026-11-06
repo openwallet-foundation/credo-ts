@@ -3,30 +3,19 @@ import {
   didIndyRegex,
   didIndyRevocationRegistryIdRegex,
   didIndySchemaIdRegex,
-  unqualifiedCredentialDefinitionIdRegex,
-  unqualifiedRevocationRegistryIdRegex,
-  unqualifiedSchemaIdRegex,
 } from '@credo-ts/anoncreds'
 
-// combines both legacy and did:indy anoncreds identifiers and also the issuer id
 const indyVdrAnonCredsRegexes = [
-  // NOTE: we only include the qualified issuer id here, as we don't support registering objects based on legacy issuer ids.
-  // you can still resolve using legacy issuer ids, but you need to use the full did:indy identifier when registering.
-  // As we find a matching anoncreds registry based on the issuerId only when creating an object, this will make sure
-  // it will throw an no registry found for identifier error.
   // issuer id
   didIndyRegex,
 
   // schema
   didIndySchemaIdRegex,
-  unqualifiedSchemaIdRegex,
 
   // credential definition
   didIndyCredentialDefinitionIdRegex,
-  unqualifiedCredentialDefinitionIdRegex,
 
   // revocation registry
-  unqualifiedRevocationRegistryIdRegex,
   didIndyRevocationRegistryIdRegex,
 ]
 
@@ -65,4 +54,33 @@ export function getDidIndyRevocationRegistryEntryId(
   revocationRegistryTag: string
 ) {
   return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/REV_REG_ENTRY/${schemaSeqNo}/${credentialDefinitionTag}/${revocationRegistryTag}`
+}
+
+/**
+ * The indy ledger identifies AnonCreds objects with the unqualified identifier format in its transactions.
+ * The functions below create these ledger identifiers from the parts of a did:indy identifier.
+ */
+
+// <namespaceIdentifier>:2:<schemaName>:<schemaVersion>
+export function getIndyLedgerSchemaId(namespaceIdentifier: string, name: string, version: string) {
+  return `${namespaceIdentifier}:2:${name}:${version}`
+}
+
+// <namespaceIdentifier>:3:CL:<schemaSeqNo>:<tag>
+export function getIndyLedgerCredentialDefinitionId(
+  namespaceIdentifier: string,
+  schemaSeqNo: string | number,
+  tag: string
+) {
+  return `${namespaceIdentifier}:3:CL:${schemaSeqNo}:${tag}`
+}
+
+// <namespaceIdentifier>:4:<namespaceIdentifier>:3:CL:<schemaSeqNo>:<credentialDefinitionTag>:CL_ACCUM:<revocationRegistryTag>
+export function getIndyLedgerRevocationRegistryDefinitionId(
+  namespaceIdentifier: string,
+  schemaSeqNo: string | number,
+  credentialDefinitionTag: string,
+  revocationRegistryTag: string
+) {
+  return `${namespaceIdentifier}:4:${namespaceIdentifier}:3:CL:${schemaSeqNo}:${credentialDefinitionTag}:CL_ACCUM:${revocationRegistryTag}`
 }

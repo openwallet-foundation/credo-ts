@@ -23,6 +23,8 @@ import type {
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialRequestFormatSpecific,
   OpenId4VciDeferredCredentialRequest,
+  OpenId4VciIssuerInfo,
+  OpenId4VciParsedCredentialRequest,
   OpenId4VciTxCode,
   OpenId4VcJwtIssuer,
   VerifiedOpenId4VcCredentialHolderBinding,
@@ -31,6 +33,10 @@ import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciChainedAuthorizationServerConfig,
 } from '../shared/models/OpenId4VciAuthorizationServerConfig'
+import type {
+  supportedResponseEncryptionContentAlgorithms,
+  supportedResponseEncryptionKeyAgreementAlgorithms,
+} from '../shared/utils'
 import {
   OpenId4VcIssuanceSessionRecord,
   type OpenId4VcIssuanceSessionRecordTransaction,
@@ -154,24 +160,39 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
     /**
      * Whether wallet attestations are required at the PAR, Authorization Challenge and token endpoints.
      *
-     * If not provided, the value from the global agent config will be used.
+     * If not provided, the value from the global agent config will be used. If `false`, wallet attestations
+     * are not required for this issuance session, even if they are required in the global agent config.
      *
      * NOTE: this only has effect if the Credo authorization server is used. If an external authorization
      * server is used, it's up to the authorization server to require wallet attestations for client authentication.
      */
-    requireWalletAttestation: boolean
+    requireWalletAttestation?: boolean
 
     /**
      * Whether DPoP is required.
      *
-     * If not provided, the value from the global agent config will be used.
+     * If not provided, the value from the global agent config will be used. If `false`, DPoP is not required
+     * for this issuance session, even if it is required in the global agent config.
      *
      * NOTE: it's up to the authorization server to enforce DPoP binding. So if an external authorization server
      * is used, and DPoP is required, you should ensure the authorization server enforces DPoP. If DPoP is required
      * but not bound to the access token created by an external authorization server, the issuance will fail when the
      * credential endpoint is called.
      */
-    requireDpop: boolean
+    requireDpop?: boolean
+
+    /**
+     * Whether PKCE is required for the authorization code flow. When required, authorization requests
+     * (pushed authorization requests and authorization challenge requests) without a `code_challenge`
+     * are rejected. When a client provides a `code_challenge` it is always verified.
+     *
+     * If not provided, the value from the global agent config will be used. If `false`, PKCE is not required
+     * for this issuance session, even if it is required in the global agent config.
+     *
+     * NOTE: this only has effect if the Credo authorization server is used. If an external authorization
+     * server is used, it's up to the authorization server to require PKCE.
+     */
+    requirePkce?: boolean
   }
 
   /**
@@ -183,7 +204,8 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
   issuanceMetadata?: Record<string, unknown>
 
   /**
-   * Whether this issuance session allows to generate refresh tokens.
+   * Whether this issuance session allows to generate refresh tokens. If not provided, the global config value is
+   * used. Refresh tokens are bound to the DPoP key of the wallet, so this requires DPoP to be required for the session.
    */
   generateRefreshTokens?: boolean
 
@@ -198,7 +220,7 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {
-  credentialRequest: OpenId4VciCredentialRequest
+  parsedCredentialRequest: OpenId4VciParsedCredentialRequest
   authorization: OpenId4VciCredentialRequestAuthorization
 
   /**
@@ -329,19 +351,28 @@ interface OpenId4VciDynamicIssuanceSessionOptionsBase {
  */
 interface OpenId4VciInternalDynamicIssuanceSessionOptionsBase extends OpenId4VciDynamicIssuanceSessionOptionsBase {
   /**
-   * Whether DPoP is required for this issuance session. If not provided, the global config value
-   * is used.
+   * Whether DPoP is required for this issuance session. If not provided, the global config value is used.
+   * If `false`, DPoP is not required for this issuance session, even if it is required in the global config.
    */
   requireDpop?: boolean
 
   /**
-   * Whether wallet attestations are required for this issuance session. If not provided, the
-   * global config value is used.
+   * Whether wallet attestations are required for this issuance session. If not provided, the global config
+   * value is used. If `false`, wallet attestations are not required for this issuance session, even if they
+   * are required in the global config.
    */
   requireWalletAttestation?: boolean
 
   /**
-   * Whether this issuance session allows to generate refresh tokens.
+   * Whether PKCE is required for this issuance session. If not provided, the global config value is used.
+   * If `false`, PKCE is not required for this issuance session, even if it is required in the global config.
+   * When a client provides a `code_challenge` it is always verified.
+   */
+  requirePkce?: boolean
+
+  /**
+   * Whether this issuance session allows to generate refresh tokens. If not provided, the global config value is
+   * used. Refresh tokens are bound to the DPoP key of the wallet, so this requires DPoP to be required for the session.
    */
   generateRefreshTokens?: boolean
 }
@@ -719,6 +750,33 @@ export interface OpenId4VciBatchCredentialIssuanceOptions {
   batchSize: number
 }
 
+export interface OpenId4VciCredentialResponseEncryptionOptions {
+  required?: boolean
+
+  algValuesSupported?: [
+    (typeof supportedResponseEncryptionKeyAgreementAlgorithms)[number],
+    ...(typeof supportedResponseEncryptionKeyAgreementAlgorithms)[number][],
+  ]
+
+  encValuesSupported?: [
+    (typeof supportedResponseEncryptionContentAlgorithms)[number],
+    ...(typeof supportedResponseEncryptionContentAlgorithms)[number][],
+  ]
+}
+
+export interface OpenId4VciCredentialRequestEncryptionOptions {
+  required?: boolean
+
+  // each `kid` must be the KMS key id, it's used to find the private key when decrypting
+  jwks: [Kms.KmsJwkPublic & { kid: string }, ...Array<Kms.KmsJwkPublic & { kid: string }>]
+
+  /**
+   * Keys that are no longer advertised but still decrypt credential requests, so issuance sessions that
+   * started before a key was rotated out can still finish.
+   */
+  previousJwks?: Array<Kms.KmsJwkPublic & { kid: string }>
+}
+
 export type OpenId4VciCreateIssuerOptions = {
   /**
    * Id of the issuer, not the id of the issuer record. Will be exposed publicly
@@ -738,8 +796,24 @@ export type OpenId4VciCreateIssuerOptions = {
    */
   accessTokenSignerKeyType?: Kms.KmsCreateKeyTypeAsymmetric
 
+  /**
+   * KMS backend to use for the access token signing key. If not provided, the default KMS backend is used.
+   */
+  accessTokenSignerKmsBackend?: string
+
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
+
+  /**
+   * Issuer attestations published as `issuer_info` in the credential issuer metadata.
+   */
+  issuerInfo?: OpenId4VciIssuerInfo
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
+
+  /**
+   * The DPoP signing algorithms supported by this issuer.
+   * If not provided, `dpopSigningAlgValuesSupported` from the issuer module config is used, or else all
+   * signature algorithms supported by the agent's KMS.
+   */
   dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   clientAttestationSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   clientAttestationPopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
@@ -750,6 +824,10 @@ export type OpenId4VciCreateIssuerOptions = {
    * Indicate support for batch issuance of credentials
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
+
+  credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
+
+  credentialRequestEncryption?: OpenId4VciCredentialRequestEncryptionOptions
 
   /**
    * When provided, allows wallets to fetch signed metadata.
@@ -780,11 +858,14 @@ export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   OpenId4VcIssuerRecordProps,
   | 'issuerId'
   | 'display'
+  | 'issuerInfo'
   | 'dpopSigningAlgValuesSupported'
   | 'clientAttestationSigningAlgValuesSupported'
   | 'clientAttestationPopSigningAlgValuesSupported'
   | 'credentialConfigurationsSupported'
   | 'batchCredentialIssuance'
+  | 'credentialResponseEncryption'
+  | 'credentialRequestEncryption'
   | 'authorizationServerConfigs'
 > &
   OpenId4VcUpdateIssuerOptions

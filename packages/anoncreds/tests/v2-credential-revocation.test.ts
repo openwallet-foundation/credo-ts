@@ -9,7 +9,7 @@ import {
 } from '@credo-ts/didcomm'
 import type { EventReplaySubject } from '../../core/tests'
 import { waitForCredentialRecordSubject } from '../../core/tests'
-import { waitForRevocationNotification } from '../../core/tests/helpers'
+import { waitForRevocationNotificationSubject } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import { setupAnonCredsTests } from './anoncredsSetup'
@@ -231,7 +231,7 @@ describe('IC v2 credential revocation', () => {
     })
 
     testLogger.test('Alice waits for credential revocation notification from Faber')
-    await waitForRevocationNotification(aliceAgent, {
+    await waitForRevocationNotificationSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
     })
   })

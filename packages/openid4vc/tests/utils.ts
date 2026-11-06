@@ -1,4 +1,4 @@
-import type { BaseEvent, ModulesMap, X509Module } from '@credo-ts/core'
+import type { BaseEvent, InitConfig, ModulesMap, X509Module } from '@credo-ts/core'
 import { Agent, getDomainFromUrl, LogLevel } from '@credo-ts/core'
 import type { TenantsModule } from '@credo-ts/tenants'
 import type { Observable } from 'rxjs'
@@ -21,12 +21,14 @@ import { OpenId4VcIssuerEvents, OpenId4VcModule, OpenId4VcVerifierEvents } from 
 export async function createAgentFromModules<MM extends ModulesMap>(
   modulesMap: MM,
   secretKey?: string,
-  customFetch?: typeof global.fetch
+  customFetch?: typeof global.fetch,
+  config?: InitConfig
 ) {
   const agent = new Agent<MM>({
     config: {
       allowInsecureHttpUrls: true,
       logger: new TestLogger(LogLevel.Off),
+      ...config,
     },
     dependencies: {
       ...agentDependencies,

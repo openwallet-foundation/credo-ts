@@ -1,6 +1,7 @@
 import type { TagsBase } from '@credo-ts/core'
 
-import { BaseRecord, CredoError, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, createRecordEncodingSchema, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
+import { z } from 'zod'
 
 export interface DidCommMediatorRoutingRecordProps {
   id?: string
@@ -25,7 +26,25 @@ export type DefaultDidCommMediatorRoutingRecordTags = {
   routingKeyFingerprints: string[]
 }
 
+const didCommMediatorRoutingRecordEncodingSchema = createRecordEncodingSchema({
+  routingKeys: z
+    .array(
+      z.union([
+        z.string(),
+        z.object({
+          routingKeyFingerprint: z.string(),
+          kmsKeyId: z.string(),
+        }),
+      ])
+    )
+    .nullish(),
+})
+
 export class DidCommMediatorRoutingRecord extends BaseRecord<DefaultDidCommMediatorRoutingRecordTags> {
+  public static get encodingSchema(): z.ZodType {
+    return didCommMediatorRoutingRecordEncodingSchema
+  }
+
   // TODO: update routing keys here to a did, so we can just point to a did here
   // and reuse all the key management logic we already have in place for dids
 
@@ -35,9 +54,6 @@ export class DidCommMediatorRoutingRecord extends BaseRecord<DefaultDidCommMedia
 
   public static readonly type = 'MediatorRoutingRecord'
   public readonly type = DidCommMediatorRoutingRecord.type
-
-  public static readonly allowCache = true
-  public readonly allowCache = true
 
   public constructor(props: DidCommMediatorRoutingRecordProps) {
     super()
@@ -67,8 +83,9 @@ export class DidCommMediatorRoutingRecord extends BaseRecord<DefaultDidCommMedia
       const publicJwk = Kms.PublicJwk.fromFingerprint(routingKey.routingKeyFingerprint)
       publicJwk.keyId = routingKey.kmsKeyId
 
-      if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
-        throw new CredoError('Expected mediator routing record key to be of type Ed25519.')
+      // The Ed25519 key serves DIDComm v1 forwards, the X25519 key serves DIDComm v2 forwards
+      if (!publicJwk.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk)) {
+        throw new CredoError('Expected mediator routing record key to be of type Ed25519 or X25519.')
       }
       return publicJwk
     })

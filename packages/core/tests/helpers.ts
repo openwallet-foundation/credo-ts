@@ -1,4 +1,4 @@
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { readFileSync } from 'fs'
 import path from 'path'
 import type { Observable } from 'rxjs'
@@ -12,6 +12,8 @@ import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
 import type {
   DidCommBasicMessage,
   DidCommBasicMessageStateChangedEvent,
+  DidCommBasicMessageV2,
+  DidCommBasicMessageV2StateChangedEvent,
   DidCommConnectionDidRotatedEvent,
   DidCommConnectionRecordProps,
   DidCommConnectionStateChangedEvent,
@@ -80,6 +82,45 @@ export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '00000000
 export const taaVersion = (process.env.TEST_AGENT_TAA_VERSION ?? '1') as `${number}.${number}` | `${number}`
 export const taaAcceptanceMechanism = process.env.TEST_AGENT_TAA_ACCEPTANCE_MECHANISM ?? 'accept'
 export { agentDependencies }
+
+/**
+ * DIDComm version for tests. Single source of truth for E2E tests.
+ * - Unset or DIDCOMM_VERSION=v1 → v1 only (default)
+ * - DIDCOMM_VERSION=v2 → v1+v2
+ * Use: `pnpm test:e2e` (v1 default) or `DIDCOMM_VERSION=v2 pnpm test:e2e` / `pnpm test:e2e:v2`
+ * Individual tests can still override via didcommConfig / extraDidCommConfig.
+ */
+export function getDefaultDidCommConfigForTests(): Pick<DidCommModuleConfigOptions, 'didcommVersions'> {
+  const version = process.env.DIDCOMM_VERSION
+  if (version === 'v2') {
+    return { didcommVersions: ['v1', 'v2'] }
+  }
+  return { didcommVersions: ['v1'] }
+}
+
+/**
+ * DIDComm version for tests. Single source of truth when no explicit override is passed.
+ * - Unset or DIDCOMM_VERSION=v1 → v1 (default)
+ * - DIDCOMM_VERSION=v2 → v2
+ */
+export function getDefaultDidCommVersionForTests(): 'v1' | 'v2' {
+  return process.env.DIDCOMM_VERSION === 'v2' ? 'v2' : 'v1'
+}
+
+/**
+ * Returns createInvitation config for connection setup, based on didCommVersion.
+ * When v1: handshakeProtocols so inviter gets a connection.
+ * When v2: no handshake (v2 OOB); caller must run receive in both directions (or use makeConnection).
+ */
+export function getCreateInvitationConfigForConnection(
+  didCommVersion: 'v1' | 'v2' = 'v1',
+  overrides: Record<string, unknown> = {}
+): Record<string, unknown> {
+  if (didCommVersion === 'v1') {
+    return { handshakeProtocols: [DidCommHandshakeProtocol.DidExchange], ...overrides }
+  }
+  return { ...overrides }
+}
 
 export function getAskarStoreConfig(
   name: string,
@@ -150,11 +191,25 @@ export function getAgentOptions<
   const _modules = {
     ...(storage === 'drizzle' ? drizzleModules : {}),
     ...(requireDidcomm
-      ? {
+      ? // ? {
+        //     didcomm: new DidCommModule({
+        //       // DIDComm v2 defaults for tests (individual tests can override via didcommConfig)
+        //       didcommVersions: ['v1', 'v2'],
+        //       ...didcommConfig,
+        //       connections: {
+        //         autoAcceptConnections: true,
+        //         autoCreateConnectionOnFirstMessage: true,
+        //         ...didcommConfig?.connections,
+        //       },
+        //     }),
+        //   }
+        // : {}),
+        {
           didcomm: new DidCommModule({
             connections: {
               autoAcceptConnections: true,
             },
+            ...getDefaultDidCommConfigForTests(),
             ...didcommConfig,
           }),
         }
@@ -164,7 +219,7 @@ export function getAgentOptions<
     ...(kms === 'askar' || storage === 'askar'
       ? {
           askar: new AskarModule({
-            askar,
+            askar: NativeAskar,
             enableKms: kms === 'askar',
             enableStorage: storage === 'askar',
             store: getAskarStoreConfig(name, { inMemory }),
@@ -364,20 +419,6 @@ export function waitForProofExchangeRecordSubject(
   )
 }
 
-export async function waitForTrustPingReceivedEvent(
-  agent: Agent,
-  options: {
-    threadId?: string
-    timeoutMs?: number
-  }
-) {
-  const observable = agent.events.observable<DidCommTrustPingReceivedEvent>(
-    DidCommTrustPingEventTypes.DidCommTrustPingReceivedEvent
-  )
-
-  return waitForTrustPingReceivedEventSubject(observable, options)
-}
-
 export function waitForTrustPingReceivedEventSubject(
   subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
   {
@@ -406,20 +447,6 @@ export function waitForTrustPingReceivedEventSubject(
   )
 }
 
-export async function waitForTrustPingResponseReceivedEvent(
-  agent: Agent,
-  options: {
-    threadId?: string
-    timeoutMs?: number
-  }
-) {
-  const observable = agent.events.observable<TrustPingResponseReceivedEvent>(
-    DidCommTrustPingEventTypes.DidCommTrustPingResponseReceivedEvent
-  )
-
-  return waitForTrustPingResponseReceivedEventSubject(observable, options)
-}
-
 export function waitForTrustPingResponseReceivedEventSubject(
   subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
   {
@@ -446,19 +473,6 @@ export function waitForTrustPingResponseReceivedEventSubject(
       map((e) => e.payload.message)
     )
   )
-}
-
-export async function waitForAgentMessageProcessedEvent(
-  agent: Agent,
-  options: {
-    threadId?: string
-    messageType?: string
-    timeoutMs?: number
-  }
-) {
-  const observable = agent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed)
-
-  return waitForAgentMessageProcessedEventSubject(observable, options)
 }
 
 export async function firstValueWithStackTrace<T>(source: Observable<T>): Promise<T> {
@@ -620,80 +634,52 @@ export function waitForConnectionRecordSubject(
   )
 }
 
-export async function waitForConnectionRecord(
-  agent: Agent,
-  options: {
+const isBasicMessageStateChangedEvent = (
+  e: BaseEvent
+): e is DidCommBasicMessageStateChangedEvent | DidCommBasicMessageV2StateChangedEvent =>
+  e.type === DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged ||
+  e.type === DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged
+
+export function waitForBasicMessageSubject(
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
+  {
+    threadId,
+    content,
+    connectionId,
+    timeoutMs = 10000,
+  }: {
     threadId?: string
-    state?: DidCommDidExchangeState
-    previousState?: DidCommDidExchangeState | null
+    content?: string
+    connectionId?: string
     timeoutMs?: number
   }
-) {
-  const observable = agent.events.observable<DidCommConnectionStateChangedEvent>(
-    DidCommConnectionEventTypes.DidCommConnectionStateChanged
-  )
-  return waitForConnectionRecordSubject(observable, options)
-}
+): Promise<DidCommBasicMessage | DidCommBasicMessageV2> {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
 
-export async function waitForDidRotate(
-  agent: Agent,
-  options: {
-    threadId?: string
-    state?: DidCommDidExchangeState
-    timeoutMs?: number
-  }
-) {
-  const observable = agent.events.observable<DidCommConnectionDidRotatedEvent>(
-    DidCommConnectionEventTypes.DidCommConnectionDidRotated
-  )
-  return waitForDidRotateSubject(observable, options)
-}
-
-export async function waitForBasicMessage(
-  agent: Agent,
-  { content, connectionId }: { content?: string; connectionId?: string }
-): Promise<DidCommBasicMessage> {
-  return new Promise((resolve) => {
-    const listener = (event: DidCommBasicMessageStateChangedEvent) => {
-      const contentMatches = content === undefined || event.payload.message.content === content
-      const connectionIdMatches =
-        connectionId === undefined || event.payload.basicMessageRecord.connectionId === connectionId
-
-      if (contentMatches && connectionIdMatches) {
-        agent.events.off<DidCommBasicMessageStateChangedEvent>(
-          DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
-          listener
-        )
-
-        resolve(event.payload.message)
-      }
-    }
-
-    agent.events.on<DidCommBasicMessageStateChangedEvent>(
-      DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
-      listener
+  return firstValueWithStackTrace(
+    observable.pipe(
+      filter(isBasicMessageStateChangedEvent),
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      filter((e) => content === undefined || e.payload.message.content === content),
+      filter((e) => connectionId === undefined || e.payload.basicMessageRecord.connectionId === connectionId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(`DidCommBasicMessageStateChanged event not emitted within specified timeout: {
+  threadId: ${threadId},
+  content: ${content},
+  connectionId: ${connectionId}
+}`)
+      }),
+      map((e) => e.payload.message)
     )
-  })
-}
-
-export async function waitForRevocationNotification(
-  agent: Agent,
-  options: {
-    threadId?: string
-    timeoutMs?: number
-  }
-) {
-  const observable = agent.events.observable<DidCommRevocationNotificationReceivedEvent>(
-    DidCommCredentialEventTypes.DidCommRevocationNotificationReceived
   )
-
-  return waitForRevocationNotificationSubject(observable, options)
 }
+
+const isRevocationNotificationReceivedEvent = (e: BaseEvent): e is DidCommRevocationNotificationReceivedEvent =>
+  e.type === DidCommCredentialEventTypes.DidCommRevocationNotificationReceived
 
 export function waitForRevocationNotificationSubject(
-  subject:
-    | ReplaySubject<DidCommRevocationNotificationReceivedEvent>
-    | Observable<DidCommRevocationNotificationReceivedEvent>,
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
   {
     threadId,
     timeoutMs = 10000,
@@ -705,6 +691,7 @@ export function waitForRevocationNotificationSubject(
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
   return firstValueWithStackTrace(
     observable.pipe(
+      filter(isRevocationNotificationReceivedEvent),
       filter((e) => threadId === undefined || e.payload.credentialExchangeRecord.threadId === threadId),
       timeout(timeoutMs),
       catchError(() => {
@@ -728,6 +715,7 @@ export function getMockConnection({
   tags = {},
   theirLabel,
   theirDid = 'their-did',
+  didcommVersion,
 }: Partial<DidCommConnectionRecordProps> = {}) {
   return new DidCommConnectionRecord({
     did,
@@ -738,6 +726,7 @@ export function getMockConnection({
     state,
     tags,
     theirLabel,
+    didcommVersion,
   })
 }
 
@@ -802,27 +791,99 @@ export function getMockOutOfBand({
   return outOfBandRecord
 }
 
+export interface MakeConnectionOptions {
+  /**
+   * DIDComm envelope version for the connection. When 'v2', uses v2 OOB (bidirectional)
+   * so both agents get connections with didcommVersion: 'v2'. Defaults to 'v1'.
+   */
+  didCommVersion?: 'v1' | 'v2'
+}
+
 export async function makeConnection(
   // biome-ignore lint/suspicious/noExplicitAny: no explanation
   agentA: Agent<{ didcomm: DidCommModule<any> }>,
   // biome-ignore lint/suspicious/noExplicitAny: no explanation
-  agentB: Agent<{ didcomm: DidCommModule<any> }>
-) {
+  agentB: Agent<{ didcomm: DidCommModule<any> }>,
+  options?: MakeConnectionOptions
+): Promise<[DidCommConnectionRecord, DidCommConnectionRecord]> {
+  const didCommVersion = options?.didCommVersion ?? 'v1'
+
+  if (didCommVersion === 'v2') {
+    // V2 OOB bidirectional: reuse DIDs so both agents have matching ourDid/theirDid for connection lookup.
+    // 1) B creates inv, A receives → A gets ourDid=A_A, theirDid=B_F
+    // 2) A creates inv with ourDid=A_A, B receives with ourDid=B_F → both have matching DIDs
+    const invB = await agentB.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+    const bDid = invB.outOfBandInvitation.v2Invitation?.from
+    const { connectionRecord: aConn, outOfBandRecord: aOutOfBand } = await agentA.didcomm.oob.receiveInvitation(
+      invB.outOfBandInvitation,
+      { label: '' }
+    )
+    const aConnectionId = aConn?.id ?? (await agentA.didcomm.connections.findAllByOutOfBandId(aOutOfBand.id))[0]?.id
+    if (!aConnectionId) {
+      throw new Error('makeConnection (v2): No connection record created for agent A when receiving from B.')
+    }
+    const aConnection = await agentA.didcomm.connections.returnWhenIsConnected(aConnectionId)
+
+    const invA = await agentA.didcomm.oob.createInvitation({
+      didCommVersion: 'v2',
+      ourDid: aConnection.did,
+    })
+    const { connectionRecord: bConn, outOfBandRecord: bOutOfBand } = await agentB.didcomm.oob.receiveInvitation(
+      invA.outOfBandInvitation,
+      {
+        label: '',
+        ourDid: bDid ?? undefined,
+      }
+    )
+    const bConnectionId = bConn?.id ?? (await agentB.didcomm.connections.findAllByOutOfBandId(bOutOfBand.id))[0]?.id
+    if (!bConnectionId) {
+      throw new Error('makeConnection (v2): No connection record created for agent B when receiving from A.')
+    }
+    const bConnection = await agentB.didcomm.connections.returnWhenIsConnected(bConnectionId)
+
+    return [aConnection, bConnection]
+  }
+
+  // V1: handshake protocol, both agents get connections from a single invitation
   const agentAOutOfBand = await agentA.didcomm.oob.createInvitation({
-    handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+    handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
   })
 
-  let { connectionRecord: agentBConnection } = await agentB.didcomm.oob.receiveInvitation(
-    agentAOutOfBand.outOfBandInvitation,
-    { label: '' }
-  )
+  const { connectionRecord: agentBConnection, outOfBandRecord: agentBOutOfBand } =
+    await agentB.didcomm.oob.receiveInvitation(agentAOutOfBand.outOfBandInvitation, {
+      label: '',
+    })
 
-  // biome-ignore lint/style/noNonNullAssertion: no explanation
-  agentBConnection = await agentB.didcomm.connections.returnWhenIsConnected(agentBConnection?.id!)
-  let [agentAConnection] = await agentA.didcomm.connections.findAllByOutOfBandId(agentAOutOfBand.id)
-  agentAConnection = await agentA.didcomm.connections.returnWhenIsConnected(agentAConnection?.id)
+  const agentBConnectionId =
+    agentBConnection?.id ?? (await agentB.didcomm.connections.findAllByOutOfBandId(agentBOutOfBand.id))[0]?.id
+  if (!agentBConnectionId) {
+    throw new Error(
+      'makeConnection: No connection record created for agent B. receiveInvitation did not return a connection and none found by outOfBandId.'
+    )
+  }
 
-  return [agentAConnection, agentBConnection]
+  const agentBConnectionResolved = await agentB.didcomm.connections.returnWhenIsConnected(agentBConnectionId)
+
+  // Agent A's connection is created when A receives B's connection request; with Subject transport
+  // there can be a short delay. Poll for up to ~5s.
+  let agentAConnectionFromFind: DidCommConnectionRecord | undefined
+  for (let i = 0; i < 25; i++) {
+    const found = await agentA.didcomm.connections.findAllByOutOfBandId(agentAOutOfBand.id)
+    if (found.length > 0) {
+      agentAConnectionFromFind = found[0]
+      break
+    }
+    await sleep(200)
+  }
+  const agentAConnectionId = agentAConnectionFromFind?.id
+  if (!agentAConnectionId) {
+    throw new Error(
+      'makeConnection: No connection record found for agent A. Connection may not have been created yet (check Subject transport message delivery).'
+    )
+  }
+  const agentAConnection = await agentA.didcomm.connections.returnWhenIsConnected(agentAConnectionId)
+
+  return [agentAConnection, agentBConnectionResolved]
 }
 
 /**

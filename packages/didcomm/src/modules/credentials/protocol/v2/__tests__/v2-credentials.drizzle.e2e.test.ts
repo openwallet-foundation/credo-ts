@@ -1,11 +1,11 @@
 import type { AnonCredsHolderService } from '../../../../../../../anoncreds/src'
 import { AnonCredsHolderServiceSymbol } from '../../../../../../../anoncreds/src'
-import type { LegacyIndyDidCommProposeCredentialFormat } from '../../../../../../../anoncreds/src/formats/LegacyIndyDidCommCredentialFormat'
-import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsDidCommProposeCredentialFormat } from '../../../../../../../anoncreds/src/formats/AnonCredsDidCommCredentialFormat'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import {
-  issueLegacyAnonCredsCredential,
+  issueIndyAnonCredsCredential,
   setupAnonCredsTests,
-} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+} from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import { JsonTransformer } from '../../../../../../../core/src/utils'
 import type { EventReplaySubject } from '../../../../../../../core/tests'
 import { waitForCredentialRecord, waitForCredentialRecordSubject } from '../../../../../../../core/tests'
@@ -40,7 +40,7 @@ describe('v2 credentials', () => {
   let faberReplay: EventReplaySubject
   let aliceReplay: EventReplaySubject
 
-  let indyCredentialProposal: LegacyIndyDidCommProposeCredentialFormat
+  let anonCredsCredentialProposal: AnonCredsDidCommProposeCredentialFormat
 
   const newCredentialPreview = DidCommCredentialV2Preview.fromRecord({
     name: 'John',
@@ -66,7 +66,7 @@ describe('v2 credentials', () => {
       useDrizzleStorage: 'postgres',
     }))
 
-    indyCredentialProposal = {
+    anonCredsCredentialProposal = {
       credentialDefinitionId: credentialDefinitionId,
       schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
       schemaName: 'ahoy',
@@ -89,7 +89,7 @@ describe('v2 credentials', () => {
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       credentialFormats: {
-        indy: {
+        anoncreds: {
           attributes: credentialPreview.attributes,
           schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
           schemaName: 'ahoy',
@@ -120,7 +120,7 @@ describe('v2 credentials', () => {
       credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Proposal',
       credentialFormats: {
-        indy: {
+        anoncreds: {
           credentialDefinitionId: credentialDefinitionId,
           attributes: credentialPreview.attributes,
         },
@@ -228,7 +228,7 @@ describe('v2 credentials', () => {
   })
 
   test('Faber issues credential which is then deleted from Alice`s wallet', async () => {
-    const { holderCredentialExchangeRecord } = await issueLegacyAnonCredsCredential({
+    const { holderCredentialExchangeRecord } = await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
       issuerHolderConnectionId: faberConnectionId,
@@ -273,8 +273,8 @@ describe('v2 credentials', () => {
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       credentialFormats: {
-        indy: {
-          ...indyCredentialProposal,
+        anoncreds: {
+          ...anonCredsCredentialProposal,
           attributes: credentialPreview.attributes,
         },
       },
@@ -293,7 +293,7 @@ describe('v2 credentials', () => {
     faberCredentialRecord = await faberAgent.didcomm.credentials.negotiateProposal({
       credentialExchangeRecordId: faberCredentialRecord.id,
       credentialFormats: {
-        indy: {
+        anoncreds: {
           credentialDefinitionId: credentialDefinitionId,
           attributes: newCredentialPreview.attributes,
         },
@@ -319,8 +319,8 @@ describe('v2 credentials', () => {
     aliceCredentialExchangeRecord = await aliceAgent.didcomm.credentials.negotiateOffer({
       credentialExchangeRecordId: aliceCredentialRecord.id,
       credentialFormats: {
-        indy: {
-          ...indyCredentialProposal,
+        anoncreds: {
+          ...anonCredsCredentialProposal,
           attributes: newCredentialPreview.attributes,
         },
       },
@@ -339,7 +339,7 @@ describe('v2 credentials', () => {
     faberCredentialRecord = await faberAgent.didcomm.credentials.negotiateProposal({
       credentialExchangeRecordId: faberCredentialRecord.id,
       credentialFormats: {
-        indy: {
+        anoncreds: {
           credentialDefinitionId: credentialDefinitionId,
           attributes: newCredentialPreview.attributes,
         },
@@ -407,7 +407,7 @@ describe('v2 credentials', () => {
       comment: 'some comment about credential',
       connectionId: faberConnectionId,
       credentialFormats: {
-        indy: {
+        anoncreds: {
           attributes: credentialPreview.attributes,
           credentialDefinitionId: credentialDefinitionId,
         },
@@ -426,8 +426,8 @@ describe('v2 credentials', () => {
     aliceCredentialRecord = await aliceAgent.didcomm.credentials.negotiateOffer({
       credentialExchangeRecordId: aliceCredentialRecord.id,
       credentialFormats: {
-        indy: {
-          ...indyCredentialProposal,
+        anoncreds: {
+          ...anonCredsCredentialProposal,
           attributes: newCredentialPreview.attributes,
         },
       },
@@ -445,7 +445,7 @@ describe('v2 credentials', () => {
     faberCredentialRecord = await faberAgent.didcomm.credentials.negotiateProposal({
       credentialExchangeRecordId: faberCredentialRecord.id,
       credentialFormats: {
-        indy: {
+        anoncreds: {
           credentialDefinitionId: credentialDefinitionId,
           attributes: newCredentialPreview.attributes,
         },
@@ -464,8 +464,8 @@ describe('v2 credentials', () => {
     aliceCredentialRecord = await aliceAgent.didcomm.credentials.negotiateOffer({
       credentialExchangeRecordId: aliceCredentialRecord.id,
       credentialFormats: {
-        indy: {
-          ...indyCredentialProposal,
+        anoncreds: {
+          ...anonCredsCredentialProposal,
           attributes: newCredentialPreview.attributes,
         },
       },
@@ -486,7 +486,7 @@ describe('v2 credentials', () => {
       credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Proposal',
       credentialFormats: {
-        indy: {
+        anoncreds: {
           credentialDefinitionId: credentialDefinitionId,
           attributes: credentialPreview.attributes,
         },
@@ -563,7 +563,7 @@ describe('v2 credentials', () => {
         },
       ],
       proposal: {
-        indy: {
+        anoncreds: {
           schema_issuer_did: expect.any(String),
           schema_id: expect.any(String),
           schema_name: expect.any(String),
@@ -573,7 +573,7 @@ describe('v2 credentials', () => {
         },
       },
       offer: {
-        indy: {
+        anoncreds: {
           schema_id: expect.any(String),
           cred_def_id: expect.any(String),
           key_correctness_proof: expect.any(Object),
@@ -603,8 +603,8 @@ describe('v2 credentials', () => {
         },
       ],
       request: {
-        indy: {
-          prover_did: expect.any(String),
+        anoncreds: {
+          entropy: expect.any(String),
           cred_def_id: expect.any(String),
           blinded_ms: expect.any(Object),
           blinded_ms_correctness_proof: expect.any(Object),
@@ -612,7 +612,7 @@ describe('v2 credentials', () => {
         },
       },
       credential: {
-        indy: {
+        anoncreds: {
           schema_id: expect.any(String),
           cred_def_id: expect.any(String),
           rev_reg_id: null,
@@ -646,7 +646,7 @@ describe('v2 credentials', () => {
       comment: 'some comment about credential',
       connectionId: faberConnectionId,
       credentialFormats: {
-        indy: {
+        anoncreds: {
           attributes: credentialPreview.attributes,
           credentialDefinitionId: credentialDefinitionId,
         },

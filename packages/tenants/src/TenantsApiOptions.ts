@@ -4,6 +4,14 @@ import type { TenantAgent } from './TenantAgent'
 
 export interface GetTenantAgentOptions {
   tenantId: string
+
+  /**
+   * Whether a session can be opened for a tenant that is inactive. By default sessions
+   * can only be opened for active tenants.
+   *
+   * @default false
+   */
+  allowInactive?: boolean
 }
 
 export type WithTenantAgentCallback<AgentModules extends ModulesMap, Return> = (

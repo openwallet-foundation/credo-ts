@@ -1,12 +1,17 @@
 import { CredoError } from '../../../error'
-import { injectAll, injectable } from '../../../plugins'
+import { injectable } from '../../../plugins'
 import { PublicJwk, type SupportedPublicJwkClass } from '../../kms/jwk/PublicJwk'
 
 import { suites } from './adapters/jsonld-signatures-adapter'
 
 const LinkedDataSignature = suites.LinkedDataSignature
 
+/**
+ * @deprecated Registration token retained for backward compatibility.
+ * Will be removed in 0.8.
+ */
 export const SignatureSuiteToken = Symbol('SignatureSuiteToken')
+
 export interface SuiteInfo {
   suiteClass: typeof LinkedDataSignature
   proofType: string
@@ -18,10 +23,26 @@ export interface SuiteInfo {
 export class SignatureSuiteRegistry {
   private suiteMapping: SuiteInfo[]
 
-  // TODO: replace this signature suite token with just injecting and registering the suites
-  // on the registry. It's a bit ugly/awkward approach.
-  public constructor(@injectAll(SignatureSuiteToken) suites: Array<SuiteInfo | 'default'>) {
-    this.suiteMapping = suites.filter((suite): suite is SuiteInfo => suite !== 'default')
+  public constructor(suites: SuiteInfo[] = []) {
+    this.suiteMapping = [...suites]
+  }
+
+  /**
+   * @deprecated Pass suites to the constructor instead.
+   * Will be removed in 0.8.
+   */
+  public registerSuite(suiteInfo: SuiteInfo) {
+    this.suiteMapping.push(suiteInfo)
+  }
+
+  /**
+   * @deprecated Pass suites to the constructor instead.
+   * Will be removed in 0.8.
+   */
+  public registerSuites(suites: SuiteInfo[]) {
+    for (const suite of suites) {
+      this.registerSuite(suite)
+    }
   }
 
   public get supportedProofTypes(): string[] {
@@ -48,6 +69,19 @@ export class SignatureSuiteRegistry {
     }
 
     return suiteInfo
+  }
+
+  /**
+   * Returns the `@context` url that the signature suite for the given proof type adds to documents
+   * it signs (see `LinkedDataSignature.ensureSuiteContext`), or undefined if the proof type is not
+   * registered or its suite does not declare a context url.
+   */
+  public findContextUrlByProofType(proofType: string): string | undefined {
+    const suiteClass = this.suiteMapping.find((x) => x.proofType === proofType)?.suiteClass as
+      | { CONTEXT_URL?: unknown }
+      | undefined
+
+    return typeof suiteClass?.CONTEXT_URL === 'string' ? suiteClass.CONTEXT_URL : undefined
   }
 
   public getVerificationMethodTypesByProofType(proofType: string): string[] {

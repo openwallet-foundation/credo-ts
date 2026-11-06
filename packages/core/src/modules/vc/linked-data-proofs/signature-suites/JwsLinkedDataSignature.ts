@@ -13,12 +13,12 @@ const LinkedDataSignature = suites.LinkedDataSignature
 export interface JwsLinkedDataSignatureOptions {
   type: string
   algorithm: string
-  LDKeyClass: typeof LdKeyPair
+  LDKeyClass?: typeof LdKeyPair
   key?: LdKeyPair
-  proof: Proof
-  date: string
+  proof?: Proof
+  date?: string
   contextUrl: string
-  useNativeCanonize: boolean
+  useNativeCanonize?: boolean
 }
 
 export class JwsLinkedDataSignature extends LinkedDataSignature {

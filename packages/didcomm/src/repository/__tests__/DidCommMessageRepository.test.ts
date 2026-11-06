@@ -6,7 +6,7 @@ import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests'
-import { DidCommConnectionInvitationMessage } from '../../modules'
+import { DidCommTrustPingMessage } from '../../modules'
 import { DidCommMessageRecord } from '../DidCommMessageRecord'
 import { DidCommMessageRepository } from '../DidCommMessageRepository'
 import { DidCommMessageRole } from '../DidCommMessageRole'
@@ -18,11 +18,10 @@ const StorageMock = InMemoryStorageService as unknown as MockedClassConstructor<
 >
 
 const invitationJson = {
-  '@type': 'https://didcomm.org/connections/1.0/invitation',
+  '@type': 'https://didcomm.org/trust_ping/1.0/ping',
   '@id': '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-  recipientKeys: ['recipientKeyOne', 'recipientKeyTwo'],
-  serviceEndpoint: 'https://example.com',
-  label: 'test',
+  comment: 'test',
+  response_requested: true,
 }
 
 const config = getAgentConfig('DidCommMessageRepository')
@@ -63,7 +62,7 @@ describe('DidCommMessageRepository', () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record]))
 
       const invitation = await repository.findAgentMessage(agentContext, {
-        messageClass: DidCommConnectionInvitationMessage,
+        messageClass: DidCommTrustPingMessage,
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
@@ -72,13 +71,13 @@ describe('DidCommMessageRepository', () => {
         DidCommMessageRecord,
         {
           associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-          messageName: 'invitation',
-          protocolName: 'connections',
+          messageName: 'ping',
+          protocolName: 'trust_ping',
           protocolMajorVersion: '1',
         },
         undefined
       )
-      expect(invitation).toBeInstanceOf(DidCommConnectionInvitationMessage)
+      expect(invitation).toBeInstanceOf(DidCommTrustPingMessage)
     })
   })
   describe('findAgentMessage()', () => {
@@ -87,7 +86,7 @@ describe('DidCommMessageRepository', () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record]))
 
       const invitation = await repository.findAgentMessage(agentContext, {
-        messageClass: DidCommConnectionInvitationMessage,
+        messageClass: DidCommTrustPingMessage,
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
@@ -96,20 +95,20 @@ describe('DidCommMessageRepository', () => {
         DidCommMessageRecord,
         {
           associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-          messageName: 'invitation',
-          protocolName: 'connections',
+          messageName: 'ping',
+          protocolName: 'trust_ping',
           protocolMajorVersion: '1',
         },
         undefined
       )
-      expect(invitation).toBeInstanceOf(DidCommConnectionInvitationMessage)
+      expect(invitation).toBeInstanceOf(DidCommTrustPingMessage)
     })
 
     it("should return null because the record doesn't exist", async () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([]))
 
       const invitation = await repository.findAgentMessage(agentContext, {
-        messageClass: DidCommConnectionInvitationMessage,
+        messageClass: DidCommTrustPingMessage,
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
@@ -118,8 +117,8 @@ describe('DidCommMessageRepository', () => {
         DidCommMessageRecord,
         {
           associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-          messageName: 'invitation',
-          protocolName: 'connections',
+          messageName: 'ping',
+          protocolName: 'trust_ping',
           protocolMajorVersion: '1',
         },
         undefined
@@ -132,7 +131,7 @@ describe('DidCommMessageRepository', () => {
     it('should transform and save the agent message', async () => {
       await repository.saveAgentMessage(agentContext, {
         role: DidCommMessageRole.Receiver,
-        agentMessage: JsonTransformer.fromJSON(invitationJson, DidCommConnectionInvitationMessage),
+        agentMessage: JsonTransformer.fromJSON(invitationJson, DidCommTrustPingMessage),
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
@@ -152,7 +151,7 @@ describe('DidCommMessageRepository', () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([]))
       await repository.saveOrUpdateAgentMessage(agentContext, {
         role: DidCommMessageRole.Receiver,
-        agentMessage: JsonTransformer.fromJSON(invitationJson, DidCommConnectionInvitationMessage),
+        agentMessage: JsonTransformer.fromJSON(invitationJson, DidCommTrustPingMessage),
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
@@ -171,7 +170,7 @@ describe('DidCommMessageRepository', () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record]))
       await repository.saveOrUpdateAgentMessage(agentContext, {
         role: DidCommMessageRole.Receiver,
-        agentMessage: JsonTransformer.fromJSON(invitationJson, DidCommConnectionInvitationMessage),
+        agentMessage: JsonTransformer.fromJSON(invitationJson, DidCommTrustPingMessage),
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
@@ -180,8 +179,8 @@ describe('DidCommMessageRepository', () => {
         DidCommMessageRecord,
         {
           associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-          messageName: 'invitation',
-          protocolName: 'connections',
+          messageName: 'ping',
+          protocolName: 'trust_ping',
           protocolMajorVersion: '1',
         },
         undefined

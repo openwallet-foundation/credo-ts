@@ -1,5 +1,5 @@
 import type { VersionString } from '@credo-ts/core'
-import type { TenantRecord } from '@credo-ts/tenants'
+import type { TenantRecord, TenantStatus } from '@credo-ts/tenants'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
@@ -11,6 +11,10 @@ export const tenant = sqliteTable(
     storageVersion: text('storage_version').$type<VersionString>(),
     config: text({ mode: 'json' }).$type<TenantRecord['config']>().notNull(),
     label: text().notNull(),
+    status: text()
+      .$type<TenantStatus>()
+      .notNull()
+      .default('active' satisfies `${TenantStatus}` as TenantStatus),
   },
   (table) => sqliteBaseRecordIndexes(table, 'tenant')
 )

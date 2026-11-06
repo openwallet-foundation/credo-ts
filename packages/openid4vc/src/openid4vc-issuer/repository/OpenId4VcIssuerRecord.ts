@@ -1,13 +1,29 @@
-import { BaseRecord, CredoError, isJsonObject, Kms, type RecordTags, type TagsBase, utils } from '@credo-ts/core'
+import {
+  BaseRecord,
+  CredoError,
+  createRecordEncodingSchema,
+  isJsonObject,
+  Kms,
+  type RecordTags,
+  type TagsBase,
+  utils,
+  zTypedObject,
+  zWithUpgrade,
+} from '@credo-ts/core'
 import { credentialsSupportedToCredentialConfigurationsSupported } from '@openid4vc/openid4vci'
-import { Transform, TransformationType } from 'class-transformer'
+import { z } from 'zod'
 import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
+  OpenId4VciIssuerInfo,
   OpenId4VcJwtIssuerEncoded,
 } from '../../shared'
-import type { OpenId4VciBatchCredentialIssuanceOptions } from '../OpenId4VcIssuerServiceOptions'
+import type {
+  OpenId4VciBatchCredentialIssuanceOptions,
+  OpenId4VciCredentialRequestEncryptionOptions,
+  OpenId4VciCredentialResponseEncryptionOptions,
+} from '../OpenId4VcIssuerServiceOptions'
 
 export type OpenId4VcIssuerRecordTags = RecordTags<OpenId4VcIssuerRecord>
 
@@ -37,8 +53,14 @@ export type OpenId4VcIssuerRecordProps = {
   accessTokenPublicJwk: Kms.KmsJwkPublicAsymmetric
 
   /**
+   * KMS backend that owns the access token signing key. If not provided, the default KMS backend is used.
+   */
+  accessTokenSignerKmsBackend?: string
+
+  /**
    * The DPoP signing algorithms supported by this issuer.
-   * If not provided, dPoP is considered unsupported.
+   * If not provided, `dpopSigningAlgValuesSupported` from the issuer module config is used, or else all
+   * signature algorithms supported by the agent's KMS.
    */
   dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
 
@@ -51,6 +73,9 @@ export type OpenId4VcIssuerRecordProps = {
   clientAttestationPopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
 
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
+
+  // Issuer attestations published as `issuer_info` in the credential issuer metadata.
+  issuerInfo?: OpenId4VciIssuerInfo
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
@@ -60,6 +85,9 @@ export type OpenId4VcIssuerRecordProps = {
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 
+  credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
+  credentialRequestEncryption?: OpenId4VciCredentialRequestEncryptionOptions
+
   /**
    * When signed metadata is supported, this stores the
    * signed jwt and signer information to update the JWT in the future.
@@ -67,42 +95,17 @@ export type OpenId4VcIssuerRecordProps = {
   signedMetadata?: OpenId4VcIssuerRecordSignedMetadata
 }
 
-/**
- * For OID4VC you need to expose metadata files. Each issuer needs to host this metadata. This is not the case for DIDComm where we can just have one /didcomm endpoint.
- * So we create a record per openid issuer/verifier that you want, and each tenant can create multiple issuers/verifiers which have different endpoints
- * and metadata files
- * */
-export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerRecordTags> {
-  public static readonly type = 'OpenId4VcIssuerRecord'
-  public readonly type = OpenId4VcIssuerRecord.type
+const openId4VcIssuerRecordEncodingSchema = createRecordEncodingSchema(
+  {
+    issuerId: z.string().nullish(),
+    accessTokenPublicKeyFingerprint: z.string().nullish(),
+    accessTokenPublicJwk: zTypedObject<Kms.KmsJwkPublicAsymmetric>().nullish(),
+    accessTokenSignerKmsBackend: z.string().nullish(),
+    credentialConfigurationsSupported: zTypedObject<OpenId4VciCredentialConfigurationsSupportedWithFormats>().nullish(),
+    // Draft 11 to draft 13+ syntax
+    display: zWithUpgrade(z.array(zTypedObject<OpenId4VciCredentialIssuerMetadataDisplay>()), (value) => {
+      if (!Array.isArray(value)) return value
 
-  public issuerId!: string
-
-  /**
-   * @deprecated accessTokenPublicJwk should be used
-   * @todo remove in migration
-   */
-  public accessTokenPublicKeyFingerprint?: string
-  public accessTokenPublicJwk?: Kms.KmsJwkPublicAsymmetric
-
-  /**
-   * Only here for class transformation. If credentialsSupported is set we transform
-   * it to the new credentialConfigurationsSupported format
-   */
-  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: see above
-  private set credentialsSupported(credentialsSupported: Array<unknown>) {
-    if (this.credentialConfigurationsSupported) return
-
-    this.credentialConfigurationsSupported =
-      // biome-ignore lint/suspicious/noExplicitAny: no explanation
-      credentialsSupportedToCredentialConfigurationsSupported(credentialsSupported as any) as any
-  }
-
-  public credentialConfigurationsSupported!: OpenId4VciCredentialConfigurationsSupportedWithFormats
-
-  // Draft 11 to draft 13+ syntax
-  @Transform(({ type, value }) => {
-    if (type === TransformationType.PLAIN_TO_CLASS && Array.isArray(value)) {
       return value.map((display) => {
         if (display.logo?.uri) return display
 
@@ -117,15 +120,12 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
             : undefined,
         }
       })
-    }
+    }).nullish(),
+    issuerInfo: z.array(zTypedObject<OpenId4VciIssuerInfo[number]>()).nullish(),
+    // Adds the type field if missing (for older records)
+    authorizationServerConfigs: zWithUpgrade(z.array(zTypedObject<OpenId4VciAuthorizationServerConfig>()), (value) => {
+      if (!Array.isArray(value)) return value
 
-    return value
-  })
-  public display?: OpenId4VciCredentialIssuerMetadataDisplay[]
-
-  // Adds the type field if missing (for older records)
-  @Transform(({ type, value }) => {
-    if (type === TransformationType.PLAIN_TO_CLASS && Array.isArray(value)) {
       return value.map((config) => {
         if (isJsonObject(config) && typeof config.type === 'undefined') {
           return {
@@ -136,10 +136,60 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
 
         return config
       })
-    }
+    }).nullish(),
+    dpopSigningAlgValuesSupported: z.array(z.string()).nullish(),
+    clientAttestationSigningAlgValuesSupported: z.array(z.string()).nullish(),
+    clientAttestationPopSigningAlgValuesSupported: z.array(z.string()).nullish(),
+    batchCredentialIssuance: zTypedObject<OpenId4VciBatchCredentialIssuanceOptions>().nullish(),
+    credentialResponseEncryption: zTypedObject<OpenId4VciCredentialResponseEncryptionOptions>().nullish(),
+    credentialRequestEncryption: zTypedObject<OpenId4VciCredentialRequestEncryptionOptions>().nullish(),
+    signedMetadata: zTypedObject<OpenId4VcIssuerRecordSignedMetadata>().nullish(),
+  },
+  {
+    // Records stored before draft 13 have credentialsSupported instead of credentialConfigurationsSupported
+    upgrade: ({ credentialsSupported, ...encoded }) => {
+      if (credentialsSupported === undefined || encoded.credentialConfigurationsSupported !== undefined) return encoded
 
-    return value
-  })
+      return {
+        ...encoded,
+        credentialConfigurationsSupported: credentialsSupportedToCredentialConfigurationsSupported(
+          // biome-ignore lint/suspicious/noExplicitAny: no explanation
+          credentialsSupported as any
+        ),
+      }
+    },
+  }
+)
+
+/**
+ * For OID4VC you need to expose metadata files. Each issuer needs to host this metadata. This is not the case for DIDComm where we can just have one /didcomm endpoint.
+ * So we create a record per openid issuer/verifier that you want, and each tenant can create multiple issuers/verifiers which have different endpoints
+ * and metadata files
+ * */
+export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerRecordTags> {
+  public static get encodingSchema(): z.ZodType {
+    return openId4VcIssuerRecordEncodingSchema
+  }
+
+  public static readonly type = 'OpenId4VcIssuerRecord'
+  public readonly type = OpenId4VcIssuerRecord.type
+
+  public issuerId!: string
+
+  /**
+   * @deprecated accessTokenPublicJwk should be used
+   * @todo remove in migration
+   */
+  public accessTokenPublicKeyFingerprint?: string
+  public accessTokenPublicJwk?: Kms.KmsJwkPublicAsymmetric
+  public accessTokenSignerKmsBackend?: string
+
+  public credentialConfigurationsSupported!: OpenId4VciCredentialConfigurationsSupportedWithFormats
+
+  public display?: OpenId4VciCredentialIssuerMetadataDisplay[]
+
+  public issuerInfo?: OpenId4VciIssuerInfo
+
   public authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 
   public dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
@@ -152,6 +202,8 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
     ...Kms.KnownJwaSignatureAlgorithm[],
   ]
   public batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
+  public credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
+  public credentialRequestEncryption?: OpenId4VciCredentialRequestEncryptionOptions
 
   public signedMetadata?: OpenId4VcIssuerRecordSignedMetadata
 
@@ -190,13 +242,17 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
 
       this.issuerId = props.issuerId
       this.accessTokenPublicJwk = props.accessTokenPublicJwk
+      this.accessTokenSignerKmsBackend = props.accessTokenSignerKmsBackend
       this.credentialConfigurationsSupported = props.credentialConfigurationsSupported
       this.dpopSigningAlgValuesSupported = props.dpopSigningAlgValuesSupported
       this.clientAttestationSigningAlgValuesSupported = props.clientAttestationSigningAlgValuesSupported
       this.clientAttestationPopSigningAlgValuesSupported = props.clientAttestationPopSigningAlgValuesSupported
       this.display = props.display
+      this.issuerInfo = props.issuerInfo
       this.authorizationServerConfigs = props.authorizationServerConfigs
       this.batchCredentialIssuance = props.batchCredentialIssuance
+      this.credentialResponseEncryption = props.credentialResponseEncryption
+      this.credentialRequestEncryption = props.credentialRequestEncryption
       this.signedMetadata = props.signedMetadata
     }
   }

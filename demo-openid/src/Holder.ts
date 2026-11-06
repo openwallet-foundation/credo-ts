@@ -24,14 +24,14 @@ import {
   OpenId4VcModule,
   preAuthorizedCodeGrantIdentifier,
 } from '@credo-ts/openid4vc'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import type { Express } from 'express'
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output } from './OutputClass'
 
 function getOpenIdHolderModules(askarStorageConfig: AskarModuleConfigStoreOptions) {
   return (app: Express) => ({
-    askar: new AskarModule({ askar, store: askarStorageConfig }),
+    askar: new AskarModule({ askar: NativeAskar, store: askarStorageConfig }),
     openid4vc: new OpenId4VcModule({
       app,
     }),

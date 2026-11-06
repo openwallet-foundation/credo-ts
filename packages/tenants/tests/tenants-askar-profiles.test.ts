@@ -3,7 +3,7 @@ import type { InitConfig } from '@credo-ts/core'
 import { Agent } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 import { TenantsModule } from '@credo-ts/tenants'
-import { askar, Store } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar, Store } from '@openwallet-foundation/askar-nodejs'
 import { AskarModule, AskarMultiWalletDatabaseScheme } from '../../askar/src'
 import { AskarStoreManager } from '../../askar/src/AskarStoreManager'
 import { getAskarStoreConfig, testLogger } from '../../core/tests'
@@ -20,7 +20,7 @@ describe('Tenants Askar database schemes E2E', () => {
       modules: {
         tenants: new TenantsModule(),
         askar: new AskarModule({
-          askar,
+          askar: NativeAskar,
           store: getAskarStoreConfig('askar tenants without profiles e2e agent 1', { inMemory: false }),
           // Database per wallet
           multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.DatabasePerWallet,
@@ -72,7 +72,7 @@ describe('Tenants Askar database schemes E2E', () => {
       modules: {
         tenants: new TenantsModule(),
         askar: new AskarModule({
-          askar,
+          askar: NativeAskar,
           store: getAskarStoreConfig('askar tenants with profiles e2e agent 1'),
           // Profile per wallet
           multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.ProfilePerWallet,

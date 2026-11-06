@@ -4,16 +4,18 @@ import type { DependencyManager } from '../../../../../core/src/plugins/Dependen
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { DidCommProtocol } from '../../../models'
 import { DidCommOutOfBandService } from '../../oob'
 import { DidCommRoutingService } from '../../routing'
 import { DidCommConnectionsModule } from '../DidCommConnectionsModule'
 import { DidCommConnectionsModuleConfig } from '../DidCommConnectionsModuleConfig'
 import { DidExchangeProtocol } from '../DidExchangeProtocol'
-import { DidCommConnectionRole, DidCommDidExchangeRole, DidCommDidRotateRole } from '../models'
+import { DidCommDidExchangeRole, DidCommDidRotateRole } from '../models'
 import { DidCommConnectionRepository } from '../repository'
 import { DidCommConnectionService, DidCommTrustPingService } from '../services'
 import { DidCommDidRotateService } from '../services/DidCommDidRotateService'
+import { DidCommDidRotateV2Service } from '../services/DidCommDidRotateV2Service'
 
 describe('DidCommConnectionsModule', () => {
   test('registers dependencies on the dependency manager', () => {
@@ -32,11 +34,12 @@ describe('DidCommConnectionsModule', () => {
       connectionsModule.config
     )
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(5)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(6)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommConnectionService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidExchangeProtocol)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommTrustPingService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommDidRotateService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommDidRotateV2Service)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommConnectionRepository)
   })
 
@@ -46,6 +49,7 @@ describe('DidCommConnectionsModule', () => {
       registerInstances: [
         [DidCommFeatureRegistry, featureRegistry],
         [DidCommMessageHandlerRegistry, new DidCommMessageHandlerRegistry()],
+        [DidCommModuleConfig, new DidCommModuleConfig()],
         [DidCommConnectionService, {} as unknown as DidCommConnectionService],
         [DidCommOutOfBandService, {} as unknown as DidCommOutOfBandService],
         [DidCommRoutingService, {} as unknown as DidCommRoutingService],
@@ -54,15 +58,12 @@ describe('DidCommConnectionsModule', () => {
         [DidCommTrustPingService, {} as unknown as DidCommTrustPingService],
         [DidExchangeProtocol, {} as unknown as DidExchangeProtocol],
         [DidCommDidRotateService, {} as unknown as DidCommDidRotateService],
+        [DidCommDidRotateV2Service, {} as unknown as DidCommDidRotateV2Service],
       ],
     })
     await new DidCommConnectionsModule().initialize(agentContext)
 
     expect(featureRegistry.query({ featureType: 'protocol', match: '*' })).toEqual([
-      new DidCommProtocol({
-        id: 'https://didcomm.org/connections/1.0',
-        roles: [DidCommConnectionRole.Invitee, DidCommConnectionRole.Inviter],
-      }),
       new DidCommProtocol({
         id: 'https://didcomm.org/didexchange/1.1',
         roles: [DidCommDidExchangeRole.Requester, DidCommDidExchangeRole.Responder],

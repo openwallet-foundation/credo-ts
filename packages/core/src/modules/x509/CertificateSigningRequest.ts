@@ -17,9 +17,10 @@ import {
   createSubjectKeyIdentifierExtension,
   X509ExtensionIdentifier,
 } from './utils'
+import { defaultX509ParseOptions } from './utils/parseOptions'
 import { X509ExtendedKeyUsage, X509KeyUsage } from './X509Certificate'
 import { X509Error } from './X509Error'
-import type { X509CreateCertificateSigningRequestOptions } from './X509ServiceOptions'
+import type { X509CreateCertificateSigningRequestOptions, X509ParseOptions } from './X509ServiceOptions'
 
 export type CertificateSigningRequestOptions = {
   publicJwk: PublicJwk
@@ -47,18 +48,31 @@ export class CertificateSigningRequest {
     return this.publicJwk.hasKeyId
   }
 
-  public static fromRawCertificateRequest(rawCertificateRequest: Uint8Array): CertificateSigningRequest {
-    const certificateRequest = new x509.Pkcs10CertificateRequest(rawCertificateRequest)
-    return CertificateSigningRequest.parseCertificateRequest(certificateRequest)
+  public static fromRawCertificateRequest(
+    rawCertificateRequest: Uint8Array,
+    parseOptions: X509ParseOptions = defaultX509ParseOptions
+  ): CertificateSigningRequest {
+    const certificateRequest = new x509.Pkcs10CertificateRequest(rawCertificateRequest, { berOptions: parseOptions })
+    return CertificateSigningRequest.parseCertificateRequest(certificateRequest, parseOptions)
   }
 
-  public static fromEncodedCertificateRequest(encodedCertificateRequest: string): CertificateSigningRequest {
-    const certificateRequest = new x509.Pkcs10CertificateRequest(encodedCertificateRequest)
-    return CertificateSigningRequest.parseCertificateRequest(certificateRequest)
+  public static fromEncodedCertificateRequest(
+    encodedCertificateRequest: string,
+    parseOptions: X509ParseOptions = defaultX509ParseOptions
+  ): CertificateSigningRequest {
+    const certificateRequest = new x509.Pkcs10CertificateRequest(encodedCertificateRequest, {
+      berOptions: parseOptions,
+    })
+    return CertificateSigningRequest.parseCertificateRequest(certificateRequest, parseOptions)
   }
 
-  private static parseCertificateRequest(certificateRequest: x509.Pkcs10CertificateRequest): CertificateSigningRequest {
-    const spki = AsnParser.parse(certificateRequest.publicKey.rawData, SubjectPublicKeyInfo)
+  private static parseCertificateRequest(
+    certificateRequest: x509.Pkcs10CertificateRequest,
+    parseOptions?: X509ParseOptions
+  ): CertificateSigningRequest {
+    const spki = AsnParser.parse(certificateRequest.publicKey.rawData, SubjectPublicKeyInfo, {
+      berOptions: parseOptions,
+    })
     const publicJwk = spkiToPublicJwk(spki)
 
     return new CertificateSigningRequest({

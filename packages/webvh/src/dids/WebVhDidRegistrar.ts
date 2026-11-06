@@ -82,6 +82,12 @@ export class WebVhDidRegistrar implements DidRegistrar {
       const verifier = new WebVhDidCrypto(agentContext)
       const baseDid = `did:webvh:{SCID}:${encodeURIComponent(domain)}`
 
+      // didwebvh-ts derives verification method ids as `<did>#<last 8 chars of publicKeyMultibase>`.
+      // We reference the key relatively, as the full id is only known once the SCID has been
+      // derived, and a relative reference is unaffected by the {SCID} substitution that happens
+      // while the initial log entry is hashed.
+      const verificationMethodFragment = `#${publicKeyMultibase.slice(-8)}`
+
       // Create DID
       const { did, doc, log } = await createDID({
         domain,
@@ -95,6 +101,11 @@ export class WebVhDidRegistrar implements DidRegistrar {
             publicKeyMultibase,
           },
         ],
+        // didwebvh-ts places verification methods without a purpose in `authentication` only, and
+        // emits an empty `assertionMethod`. Without this, every attested resource signed by this
+        // did would be unverifiable. Setting `purpose: 'assertionMethod'` on the verification
+        // method is not an alternative, as that would empty `authentication` instead.
+        assertionMethod: [verificationMethodFragment],
         verifier,
       })
 
@@ -171,8 +182,17 @@ export class WebVhDidRegistrar implements DidRegistrar {
         service: services,
         verificationMethod: inputVerificationMethod,
       } = inputDidDocument
-      const verificationMethods =
-        inputVerificationMethod ?? (log[log.length - 1].state.verificationMethod as VerificationMethod[])
+      const lastState = log[log.length - 1].state
+      const verificationMethods = inputVerificationMethod ?? (lastState.verificationMethod as VerificationMethod[])
+      // didwebvh-ts resets the verification relationships whenever verification methods are
+      // supplied, so we fall back to the last log state to avoid dropping `assertionMethod` for
+      // callers that only intend to update e.g. the services. References to keys that the update
+      // removes are left behind, as carrying them over would publish a dangling reference.
+      const assertionMethodRefs =
+        normalizeMethodArray(assertionMethod) ??
+        (lastState.assertionMethod as string[] | undefined)?.filter((reference) =>
+          verificationMethods?.some((vm) => vm.id.endsWith(reference))
+        )
       const { updateKeys } = log[log.length - 1].parameters
       const verificationMethod = verificationMethods?.find((vm) => vm.publicKeyMultibase)
       if (!verificationMethod?.publicKeyMultibase)
@@ -192,7 +212,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
         verificationMethods: verificationMethods as unknown as WebVhVerificationMethod[],
         controller: Array.isArray(controller) ? controller[0] : controller,
         authentication: normalizeMethodArray(authentication),
-        assertionMethod: normalizeMethodArray(assertionMethod),
+        assertionMethod: assertionMethodRefs,
         keyAgreement: normalizeMethodArray(keyAgreement),
         services: services as unknown as WebVhServiceEndpoint[],
       })

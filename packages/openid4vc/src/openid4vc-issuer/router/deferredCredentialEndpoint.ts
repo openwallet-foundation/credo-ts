@@ -2,6 +2,7 @@ import { joinUriParts, utils } from '@credo-ts/core'
 import type { HttpMethod } from '@openid4vc/oauth2'
 import { Oauth2ErrorCodes, Oauth2ResourceUnauthorizedError, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import type { Response, Router } from 'express'
+import type { OpenId4VciParsedDeferredCredentialRequest } from '../../shared'
 import {
   getRequestContext,
   sendJsonResponse,
@@ -11,7 +12,7 @@ import {
 } from '../../shared/router'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import { getCredentialRequestDecryptionMetadata, OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
@@ -23,7 +24,7 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
       const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
       const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer, true)
       const vcIssuer = openId4VcIssuerService.getIssuer(agentContext)
-      const resourceServer = openId4VcIssuerService.getResourceServer(agentContext, issuer)
+      const resourceServer = openId4VcIssuerService.getResourceServer(agentContext, issuer, issuerMetadata)
 
       const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [
         config.deferredCredentialEndpointPath,
@@ -40,18 +41,32 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
           },
         })
         .catch((error) => {
-          sendUnauthorizedError(response, next, agentContext.config.logger, error)
+          // Only a rejected token or DPoP proof is a client error, anything else (e.g. a misconfigured resource server) is ours
+          if (error instanceof Oauth2ResourceUnauthorizedError) {
+            sendUnauthorizedError(response, next, agentContext.config.logger, error)
+          } else {
+            sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
+          }
         })
 
       if (!resourceRequestResult) return
       const { tokenPayload, accessToken, scheme, authorizationServer } = resourceRequestResult
 
-      const deferredCredentialRequest = request.body
       const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
 
-      const parsedCredentialRequest = vcIssuer.parseDeferredCredentialRequest({
-        deferredCredentialRequest,
-      })
+      let parsedCredentialRequest: OpenId4VciParsedDeferredCredentialRequest
+      try {
+        parsedCredentialRequest = await vcIssuer.parseDeferredCredentialRequest({
+          deferredCredentialRequest: request.body,
+          contentType: request.headers['content-type'],
+          issuerMetadata: getCredentialRequestDecryptionMetadata(issuerMetadata, issuer),
+        })
+      } catch (error) {
+        if (error instanceof Oauth2ServerErrorResponseError) {
+          return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
+        }
+        return sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
+      }
 
       const preAuthorizedCode =
         typeof tokenPayload['pre-authorized_code'] === 'string' ? tokenPayload['pre-authorized_code'] : undefined
@@ -157,8 +172,6 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
         utils.addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
 
       if (Date.now() > expiresAt.getTime()) {
-        issuanceSession.errorMessage = 'Credential offer has expired'
-        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
         return sendOauth2ErrorResponse(
           response,
           next,
@@ -172,9 +185,8 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
       }
 
       try {
-        const { deferredCredentialResponse } = await openId4VcIssuerService.createDeferredCredentialResponse(
-          agentContext,
-          {
+        const { deferredCredentialResponse, deferredCredentialResponseJwt } =
+          await openId4VcIssuerService.createDeferredCredentialResponse(agentContext, {
             issuanceSession,
             deferredCredentialRequest: parsedCredentialRequest.deferredCredentialRequest,
             authorization: {
@@ -184,8 +196,15 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
                 value: accessToken,
               },
             },
-          }
-        )
+          })
+
+        if (deferredCredentialResponseJwt) {
+          response
+            .type('application/jwt')
+            .status(deferredCredentialResponse.interval ? 202 : 200)
+            .send(deferredCredentialResponseJwt)
+          return next()
+        }
 
         return sendJsonResponse(
           response,

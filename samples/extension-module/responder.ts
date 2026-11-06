@@ -2,7 +2,7 @@ import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
 import { DidCommModule } from '@credo-ts/didcomm'
 import { agentDependencies, DidCommHttpInboundTransport, DidCommWsInboundTransport } from '@credo-ts/node'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
 import type { Socket } from 'net'
 import { WebSocketServer } from 'ws'
@@ -27,7 +27,7 @@ const run = async () => {
     },
     modules: {
       askar: new AskarModule({
-        askar,
+        askar: NativeAskar,
         store: {
           id: 'responder',
           key: 'responder',

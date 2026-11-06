@@ -1,0 +1,923 @@
+import {
+  type AgentContext,
+  ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE,
+  ClaimFormat,
+  CredoError,
+  DidsApi,
+  deepEquality,
+  getPublicJwkFromVerificationMethod,
+  type JsonObject,
+  JsonTransformer,
+  Kms,
+  RecordNotFoundError,
+  SignatureSuiteRegistry,
+  type SingleOrArray,
+  TypedArrayEncoder,
+  W3cCredential,
+  W3cCredentialRecord,
+  W3cCredentialRepository,
+  W3cCredentialService,
+  W3cCredentialSubject,
+  W3cDataIntegrityApi,
+  W3cJsonLdVerifiableCredential,
+  W3cV2Credential,
+  W3cV2CredentialRecord,
+  W3cV2CredentialRepository,
+  W3cV2CredentialService,
+  W3cV2DataIntegrityVerifiableCredential,
+} from '@credo-ts/core'
+import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
+import { DidCommProblemReportError } from '../../../../errors/problem-reports/DidCommProblemReportError'
+import { DidCommCredentialFormatSpec } from '../../models/DidCommCredentialFormatSpec'
+import type { DidCommCredentialPreviewAttributeOptions } from '../../models/DidCommCredentialPreviewAttribute'
+import { DidCommCredentialProblemReportReason } from '../../models/DidCommCredentialProblemReportReason'
+import type { DidCommCredentialExchangeRecord } from '../../repository/DidCommCredentialExchangeRecord'
+import { assertAndSetCredentialSubjectId, assertCredentialSubjectMatchesOffer } from '../../util/credentialSubject'
+import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../../util/didCommSignedAttachment'
+import { getFormatDataAttachment } from '../../util/formatData'
+import { getIssuerVerificationMethod } from '../../util/verificationMethod'
+import type { DidCommCredentialFormatService } from '../DidCommCredentialFormatService'
+import type {
+  DidCommCredentialFormatAcceptOfferOptions,
+  DidCommCredentialFormatAcceptProposalOptions,
+  DidCommCredentialFormatAcceptRequestOptions,
+  DidCommCredentialFormatAutoRespondCredentialOptions,
+  DidCommCredentialFormatAutoRespondOfferOptions,
+  DidCommCredentialFormatAutoRespondProposalOptions,
+  DidCommCredentialFormatAutoRespondRequestOptions,
+  DidCommCredentialFormatCreateOfferOptions,
+  DidCommCredentialFormatCreateOfferReturn,
+  DidCommCredentialFormatCreateProposalOptions,
+  DidCommCredentialFormatCreateProposalReturn,
+  DidCommCredentialFormatCreateReturn,
+  DidCommCredentialFormatProcessCredentialOptions,
+  DidCommCredentialFormatProcessOptions,
+} from '../DidCommCredentialFormatServiceOptions'
+import type {
+  DidCommDataIntegrityCredentialFormat,
+  DidCommDataIntegrityOfferCredentialFormat,
+} from './DidCommDataIntegrityCredentialFormat'
+import type { DidCommDataIntegrityLinkSecretBindingProvider } from './DidCommDataIntegrityLinkSecretBinding'
+import { DidCommDataIntegrityLinkSecretBindingProviderToken } from './DidCommDataIntegrityLinkSecretBinding'
+import type {
+  AnonCredsLinkSecretBindingMethod,
+  AnonCredsLinkSecretDataIntegrityBindingProof,
+  DataIntegrityCredential,
+  DataIntegrityCredentialRequest,
+  DataIntegrityCredentialRequestBindingProof,
+  DidCommSignedAttachmentBindingMethod,
+  DidCommSignedAttachmentDataIntegrityBindingProof,
+  W3C_VC_DATA_MODEL_VERSION,
+} from './dataIntegrityExchange'
+import { DataIntegrityCredentialOffer } from './dataIntegrityExchange'
+
+const W3C_DATA_INTEGRITY_CREDENTIAL_OFFER = 'didcomm/w3c-di-vc-offer@v0.1'
+const W3C_DATA_INTEGRITY_CREDENTIAL_REQUEST = 'didcomm/w3c-di-vc-request@v0.1'
+const W3C_DATA_INTEGRITY_CREDENTIAL = 'didcomm/w3c-di-vc@v0.1'
+
+export class DidCommDataIntegrityCredentialFormatService
+  implements DidCommCredentialFormatService<DidCommDataIntegrityCredentialFormat>
+{
+  /** formatKey is the key used when calling agent.credentials.xxx with credentialFormats.anoncreds */
+  public readonly formatKey = 'dataIntegrity' as const
+
+  /**
+   * credentialRecordType is the type of record that stores the credential. It is stored in the credential
+   * record binding in the credential exchange record.
+   */
+  public readonly credentialRecordType = 'w3c' as const
+
+  /**
+   * Create a {@link AttachmentFormats} object dependent on the message type.
+   *
+   * @param options The object containing all the options for the proposed credential
+   * @returns object containing associated attachment, format and optionally the credential preview
+   *
+   */
+  public async createProposal(
+    _agentContext: AgentContext,
+    options: DidCommCredentialFormatCreateProposalOptions<DidCommDataIntegrityCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateProposalReturn> {
+    throw new CredoError('Not defined')
+  }
+
+  public async processProposal(
+    _agentContext: AgentContext,
+    options: DidCommCredentialFormatProcessOptions
+  ): Promise<void> {
+    throw new CredoError('Not defined')
+  }
+
+  public async acceptProposal(
+    _agentContext: AgentContext,
+    _input: DidCommCredentialFormatAcceptProposalOptions<DidCommDataIntegrityCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateOfferReturn> {
+    throw new CredoError('Not defined')
+  }
+
+  /**
+   * Create a credential attachment format for a credential request.
+   *
+   * @param options The object containing all the options for the credential offer
+   * @returns object containing associated attachment, formats and offersAttach elements
+   *
+   */
+  public async createOffer(
+    agentContext: AgentContext,
+    {
+      credentialFormats,
+      credentialExchangeRecord,
+      attachmentId,
+    }: DidCommCredentialFormatCreateOfferOptions<DidCommDataIntegrityCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateOfferReturn> {
+    const dataIntegrityFormat = credentialFormats.dataIntegrity
+    if (!dataIntegrityFormat) throw new CredoError('Missing data integrity credential format data')
+
+    const format = new DidCommCredentialFormatSpec({
+      attachmentId: attachmentId,
+      format: W3C_DATA_INTEGRITY_CREDENTIAL_OFFER,
+    })
+
+    const credential = dataIntegrityFormat.credential
+    if ('proof' in credential) throw new CredoError('The offered credential MUST NOT contain any proofs.')
+
+    const { dataIntegrityCredentialOffer, previewAttributes } = await this.createDataIntegrityCredentialOffer(
+      agentContext,
+      credentialExchangeRecord,
+      dataIntegrityFormat
+    )
+
+    const attachment = getFormatDataAttachment(
+      JsonTransformer.toJSON(dataIntegrityCredentialOffer),
+      format.attachmentId
+    )
+    return { format, attachment, previewAttributes }
+  }
+
+  /**
+   * Resolves the provider implementing the `anoncreds_link_secret` binding method, which is
+   * registered by the `AnonCredsModule`. Throws when the binding method is used without it.
+   */
+  private findLinkSecretBindingProvider(
+    agentContext: AgentContext
+  ): DidCommDataIntegrityLinkSecretBindingProvider | undefined {
+    if (!agentContext.dependencyManager.isRegistered(DidCommDataIntegrityLinkSecretBindingProviderToken, true)) {
+      return undefined
+    }
+
+    return agentContext.dependencyManager.resolve<DidCommDataIntegrityLinkSecretBindingProvider>(
+      DidCommDataIntegrityLinkSecretBindingProviderToken
+    )
+  }
+
+  private getLinkSecretBindingProvider(agentContext: AgentContext): DidCommDataIntegrityLinkSecretBindingProvider {
+    const provider = this.findLinkSecretBindingProvider(agentContext)
+
+    if (!provider) {
+      throw new CredoError(
+        'The anoncreds link secret binding method is not supported. Register the AnonCredsModule to add support for it.'
+      )
+    }
+
+    return provider
+  }
+
+  /**
+   * Both data model versions require the base context to be the first entry of `@context`, so only
+   * the first entry decides the version.
+   */
+  private getCredentialVersion(credentialJson: JsonObject): W3C_VC_DATA_MODEL_VERSION {
+    const context = credentialJson['@context']
+    if (!context || !Array.isArray(context)) throw new CredoError('Invalid @context in credential offer')
+
+    const baseContext = context[0]
+    if (baseContext === 'https://www.w3.org/2018/credentials/v1') return '1.1'
+    if (baseContext === 'https://www.w3.org/ns/credentials/v2') return '2.0'
+    throw new CredoError('Cannot determine credential version from @context. The first entry must be the base context.')
+  }
+
+  public async processOffer(
+    agentContext: AgentContext,
+    { attachment, credentialExchangeRecord }: DidCommCredentialFormatProcessOptions
+  ) {
+    agentContext.config.logger.debug(
+      `Processing data integrity credential offer for credential record ${credentialExchangeRecord.id}`
+    )
+
+    const dataIntegrityCredentialOffer = JsonTransformer.fromJSON(
+      attachment.getDataAsJson(),
+      DataIntegrityCredentialOffer
+    )
+
+    const credentialJson = dataIntegrityCredentialOffer.credential
+    const credentialVersion = this.getCredentialVersion(credentialJson)
+
+    const credentialToBeValidated = {
+      ...credentialJson,
+      issuer: credentialJson.issuer ?? 'https://example.com',
+      ...(credentialVersion === '1.1'
+        ? { issuanceDate: new Date().toISOString() }
+        : { validFrom: new Date().toISOString() }),
+    }
+
+    if (credentialVersion === '2.0') {
+      JsonTransformer.fromJSON(credentialToBeValidated, W3cV2Credential)
+    } else {
+      JsonTransformer.fromJSON(credentialToBeValidated, W3cCredential)
+    }
+
+    const missingBindingMethod =
+      dataIntegrityCredentialOffer.bindingRequired &&
+      !dataIntegrityCredentialOffer.bindingMethod?.anoncredsLinkSecret &&
+      !dataIntegrityCredentialOffer.bindingMethod?.didcommSignedAttachment
+
+    if (missingBindingMethod) {
+      throw new DidCommProblemReportError('Invalid credential offer. Missing binding method.', {
+        problemCode: DidCommCredentialProblemReportReason.IssuanceAbandoned,
+      })
+    }
+  }
+
+  public async acceptOffer(
+    agentContext: AgentContext,
+    {
+      credentialExchangeRecord,
+      attachmentId,
+      offerAttachment,
+      credentialFormats,
+    }: DidCommCredentialFormatAcceptOfferOptions<DidCommDataIntegrityCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateReturn> {
+    const dataIntegrityFormat = credentialFormats?.dataIntegrity
+
+    const credentialOffer = JsonTransformer.fromJSON(offerAttachment.getDataAsJson(), DataIntegrityCredentialOffer)
+
+    let anonCredsLinkSecretDataIntegrityBindingProof: AnonCredsLinkSecretDataIntegrityBindingProof | undefined
+    const autoAcceptOfferWithAnonCredsLinkSecretMethod =
+      credentialOffer.bindingRequired &&
+      !dataIntegrityFormat?.didCommSignedAttachment &&
+      credentialOffer.bindingMethod?.anoncredsLinkSecret
+
+    if (dataIntegrityFormat?.anonCredsLinkSecret || autoAcceptOfferWithAnonCredsLinkSecretMethod) {
+      if (!credentialOffer.bindingMethod?.anoncredsLinkSecret) {
+        throw new CredoError('Cannot request credential with a binding method that was not offered.')
+      }
+
+      anonCredsLinkSecretDataIntegrityBindingProof = await this.getLinkSecretBindingProvider(
+        agentContext
+      ).createBindingProof(agentContext, {
+        credentialExchangeRecord,
+        bindingMethod: credentialOffer.bindingMethod.anoncredsLinkSecret,
+        linkSecretId: dataIntegrityFormat?.anonCredsLinkSecret?.linkSecretId,
+      })
+    }
+
+    let didCommSignedAttachmentBindingProof: DidCommSignedAttachmentDataIntegrityBindingProof | undefined
+    let didCommSignedAttachment: DidCommAttachment | undefined
+    if (dataIntegrityFormat?.didCommSignedAttachment) {
+      if (!credentialOffer.bindingMethod?.didcommSignedAttachment) {
+        throw new CredoError('Cannot request credential with a binding method that was not offered.')
+      }
+
+      didCommSignedAttachment = await createDidCommSignedAttachment(
+        agentContext,
+        { nonce: credentialOffer.bindingMethod.didcommSignedAttachment.nonce },
+        dataIntegrityFormat.didCommSignedAttachment,
+        credentialOffer.bindingMethod.didcommSignedAttachment.algsSupported
+      )
+
+      didCommSignedAttachmentBindingProof = { attachment_id: didCommSignedAttachment.id }
+    }
+
+    const bindingProof: DataIntegrityCredentialRequestBindingProof | undefined =
+      !anonCredsLinkSecretDataIntegrityBindingProof && !didCommSignedAttachmentBindingProof
+        ? undefined
+        : {
+            anoncreds_link_secret: anonCredsLinkSecretDataIntegrityBindingProof,
+            didcomm_signed_attachment: didCommSignedAttachmentBindingProof,
+          }
+
+    if (credentialOffer.bindingRequired && !bindingProof) throw new CredoError('Missing required binding proof')
+
+    const dataModelVersion = dataIntegrityFormat?.dataModelVersion ?? credentialOffer.dataModelVersionsSupported[0]
+    if (!credentialOffer.dataModelVersionsSupported.includes(dataModelVersion)) {
+      throw new CredoError('Cannot request credential with a data model version that was not offered.')
+    }
+
+    const credentialRequest: DataIntegrityCredentialRequest = {
+      data_model_version: dataModelVersion,
+      binding_proof: bindingProof,
+    }
+
+    const format = new DidCommCredentialFormatSpec({
+      attachmentId,
+      format: W3C_DATA_INTEGRITY_CREDENTIAL_REQUEST,
+    })
+
+    const attachment = getFormatDataAttachment(credentialRequest, format.attachmentId)
+    return { format, attachment, appendAttachments: didCommSignedAttachment ? [didCommSignedAttachment] : undefined }
+  }
+
+  /**
+   * Starting from a request is not supported for anoncreds credentials, this method only throws an error.
+   */
+  public async createRequest(): Promise<DidCommCredentialFormatCreateReturn> {
+    throw new CredoError('Starting from a request is not supported for w3c credentials')
+  }
+
+  /**
+   * We don't have any models to validate an anoncreds request object, for now this method does nothing
+   */
+  public async processRequest(
+    _agentContext: AgentContext,
+    _options: DidCommCredentialFormatProcessOptions
+  ): Promise<void> {
+    // not needed for dataIntegrity
+  }
+
+  private async getVerificationMethod(agentContext: AgentContext, issuerId: string, issuerVerificationMethod?: string) {
+    return await getIssuerVerificationMethod(agentContext, {
+      issuerId,
+      verificationMethodId: issuerVerificationMethod,
+      allowedPurposes: ['authentication', 'assertionMethod'],
+      discoveryPurposes: ['authentication', 'assertionMethod', 'verificationMethod'],
+    })
+  }
+
+  private async getSignatureMetadata(
+    agentContext: AgentContext,
+    offeredCredential: W3cCredential,
+    issuerVerificationMethod?: string
+  ) {
+    const { verificationMethod } = await this.getVerificationMethod(
+      agentContext,
+      offeredCredential.issuerId,
+      issuerVerificationMethod
+    )
+
+    const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
+    const signatureSuite = signatureSuiteRegistry.getByVerificationMethodType(verificationMethod.type)
+    if (!signatureSuite) {
+      throw new CredoError(`Could not find signature suite for verification method type ${verificationMethod.type}`)
+    }
+
+    return { verificationMethod, signatureSuite, offeredCredential }
+  }
+
+  /**
+   * Secures a data model 2.0 credential with a `DataIntegrityProof`.
+   *
+   * RFC 0809 leaves the choice of cryptosuite to the issuer, so it is not negotiated with the holder.
+   * When the issuer does not name one, the first registered cryptosuite supporting the key type of
+   * the issuer verification method is used.
+   */
+  private async signV2Credential(
+    agentContext: AgentContext,
+    credential: W3cV2Credential,
+    { cryptosuite, issuerVerificationMethod }: { cryptosuite?: string; issuerVerificationMethod?: string }
+  ) {
+    // The anoncreds cryptosuite is not a registered Data Integrity cryptosuite. It is only produced
+    // through the anoncreds link secret binding method, which is limited to data model 1.1.
+    if (cryptosuite === ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE) {
+      throw new CredoError(
+        `The '${ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE}' cryptosuite cannot be used to secure a VC Data Model 2.0 credential. It is only available through the anoncreds link secret binding method for data model 1.1 credentials.`
+      )
+    }
+
+    const { verificationMethod } = await this.getVerificationMethod(
+      agentContext,
+      credential.issuerId,
+      issuerVerificationMethod
+    )
+
+    if (!cryptosuite) {
+      const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      const w3cDataIntegrityApi = agentContext.dependencyManager.resolve(W3cDataIntegrityApi)
+      const [firstSupportedCryptosuite] = w3cDataIntegrityApi.getSupportedCryptosuites(publicJwk)
+
+      if (!firstSupportedCryptosuite) {
+        throw new CredoError(
+          `No Data Integrity cryptosuite is registered for the ${publicJwk.jwkTypeHumanDescription} key of issuer verification method '${verificationMethod.id}'. Register one, or pick another key using the 'issuerVerificationMethod' data integrity credential format option.`
+        )
+      }
+
+      cryptosuite = firstSupportedCryptosuite
+    }
+
+    const w3cV2CredentialService = agentContext.dependencyManager.resolve(W3cV2CredentialService)
+    return await w3cV2CredentialService.signCredential<ClaimFormat.DiVc>(agentContext, {
+      format: ClaimFormat.DiVc,
+      credential,
+      cryptosuite,
+      verificationMethod: verificationMethod.id,
+    })
+  }
+
+  private async signCredential(
+    agentContext: AgentContext,
+    credential: W3cCredential | W3cJsonLdVerifiableCredential,
+    issuerVerificationMethod?: string
+  ) {
+    const { signatureSuite, verificationMethod } = await this.getSignatureMetadata(
+      agentContext,
+      credential,
+      issuerVerificationMethod
+    )
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+
+    let credentialToBeSigned = credential
+    if (credential instanceof W3cJsonLdVerifiableCredential) {
+      const { proof, ..._credentialToBeSigned } = credential
+      credentialToBeSigned = _credentialToBeSigned as W3cCredential
+    }
+
+    const w3cJsonLdVerifiableCredential = (await w3cCredentialService.signCredential(agentContext, {
+      format: ClaimFormat.LdpVc,
+      credential: credentialToBeSigned as W3cCredential,
+      proofType: signatureSuite.proofType,
+      verificationMethod: verificationMethod.id,
+    })) as W3cJsonLdVerifiableCredential
+
+    if (Array.isArray(w3cJsonLdVerifiableCredential.proof)) {
+      throw new CredoError('A newly signed credential can not have multiple proofs')
+    }
+
+    if (credential instanceof W3cJsonLdVerifiableCredential) {
+      const combinedProofs = Array.isArray(credential.proof) ? credential.proof : [credential.proof]
+      combinedProofs.push(w3cJsonLdVerifiableCredential.proof)
+      w3cJsonLdVerifiableCredential.proof = combinedProofs
+    }
+    return w3cJsonLdVerifiableCredential
+  }
+
+  public async acceptRequest(
+    agentContext: AgentContext,
+    {
+      credentialFormats,
+      credentialExchangeRecord,
+      attachmentId,
+      offerAttachment,
+      requestAttachment,
+      requestAppendAttachments,
+    }: DidCommCredentialFormatAcceptRequestOptions<DidCommDataIntegrityCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateReturn> {
+    const dataIntegrityFormat = credentialFormats?.dataIntegrity
+
+    const credentialOffer = JsonTransformer.fromJSON(offerAttachment?.getDataAsJson(), DataIntegrityCredentialOffer)
+
+    const credentialRequest = requestAttachment.getDataAsJson<DataIntegrityCredentialRequest>()
+    if (!credentialRequest) throw new CredoError('Missing data integrity credential request in createCredential')
+
+    const format = new DidCommCredentialFormatSpec({
+      attachmentId,
+      format: W3C_DATA_INTEGRITY_CREDENTIAL,
+    })
+
+    // A data model 2.0 credential is secured with a DataIntegrityProof rather than a linked data
+    // signature suite, and is never bound using the anoncreds link secret binding method.
+    if (credentialRequest.data_model_version === '2.0') {
+      if (credentialRequest.binding_proof?.anoncreds_link_secret) {
+        throw new CredoError(
+          'The anoncreds link secret binding method is not supported for VC Data Model 2.0 credentials.'
+        )
+      }
+
+      const assertedV2Credential = assertAndSetCredentialSubjectId(
+        JsonTransformer.fromJSON(credentialOffer.credential, W3cV2Credential),
+        dataIntegrityFormat?.credentialSubjectId
+      )
+
+      const signedV2Credential = await this.signV2Credential(agentContext, assertedV2Credential, {
+        cryptosuite: dataIntegrityFormat?.cryptosuite,
+        issuerVerificationMethod: dataIntegrityFormat?.issuerVerificationMethod,
+      })
+
+      return {
+        format,
+        attachment: getFormatDataAttachment(
+          { credential: JsonTransformer.toJSON(signedV2Credential.securedCredential) },
+          format.attachmentId
+        ),
+      }
+    }
+
+    const assertedCredential = assertAndSetCredentialSubjectId(
+      JsonTransformer.fromJSON(credentialOffer.credential, W3cCredential),
+      dataIntegrityFormat?.credentialSubjectId
+    )
+
+    let signedCredential: W3cJsonLdVerifiableCredential | undefined
+    if (credentialRequest.binding_proof?.anoncreds_link_secret) {
+      if (!credentialOffer.bindingMethod?.anoncredsLinkSecret) {
+        throw new CredoError('Cannot issue credential with a binding method that was not offered')
+      }
+
+      const issuedCredential = await this.getLinkSecretBindingProvider(agentContext).issueBoundCredential(
+        agentContext,
+        {
+          credentialExchangeRecord,
+          bindingMethod: credentialOffer.bindingMethod.anoncredsLinkSecret,
+          bindingProof: credentialRequest.binding_proof.anoncreds_link_secret,
+          credentialSubjectId: dataIntegrityFormat?.credentialSubjectId,
+        }
+      )
+
+      signedCredential = JsonTransformer.fromJSON(issuedCredential, W3cJsonLdVerifiableCredential)
+    }
+
+    if (credentialRequest.binding_proof?.didcomm_signed_attachment) {
+      if (!credentialOffer.bindingMethod?.didcommSignedAttachment) {
+        throw new CredoError('Cannot issue credential with a binding method that was not offered')
+      }
+
+      const bindingProofAttachment = requestAppendAttachments?.find(
+        (attachments) => attachments.id === credentialRequest.binding_proof?.didcomm_signed_attachment?.attachment_id
+      )
+      if (!bindingProofAttachment) throw new CredoError('Missing binding proof attachment')
+
+      const { nonce } = await verifyDidCommSignedAttachment(agentContext, bindingProofAttachment)
+      if (nonce !== credentialOffer.bindingMethod.didcommSignedAttachment.nonce) {
+        throw new CredoError('Invalid nonce in signed attachment')
+      }
+
+      signedCredential = await this.signCredential(
+        agentContext,
+        signedCredential ?? assertedCredential,
+        dataIntegrityFormat?.issuerVerificationMethod
+      )
+    }
+
+    if (
+      !credentialRequest.binding_proof?.anoncreds_link_secret &&
+      !credentialRequest.binding_proof?.didcomm_signed_attachment
+    ) {
+      signedCredential = await this.signCredential(agentContext, assertedCredential)
+    }
+
+    const attachment = getFormatDataAttachment(
+      { credential: JsonTransformer.toJSON(signedCredential) },
+      format.attachmentId
+    )
+    return { format, attachment }
+  }
+
+  /**
+   * Processes an incoming credential - retrieve metadata, retrieve payload and store it in wallet
+   * @param options the issue credential message wrapped inside this object
+   * @param credentialExchangeRecord the credential exchange record for this credential
+   */
+  public async processCredential(
+    agentContext: AgentContext,
+    {
+      credentialExchangeRecord,
+      attachment,
+      requestAttachment,
+      offerAttachment,
+    }: DidCommCredentialFormatProcessCredentialOptions
+  ): Promise<void> {
+    const credentialOffer = JsonTransformer.fromJSON(offerAttachment.getDataAsJson(), DataIntegrityCredentialOffer)
+    const offeredCredentialJson = credentialOffer.credential
+
+    const credentialRequest = requestAttachment.getDataAsJson<DataIntegrityCredentialRequest>()
+    if (!credentialRequest) throw new CredoError('Missing data integrity credential request in createCredential')
+
+    if (!credentialExchangeRecord.credentialAttributes) {
+      throw new CredoError('Missing credential attributes on credential record.')
+    }
+
+    const { credential: credentialJson } = attachment.getDataAsJson<DataIntegrityCredential>()
+
+    assertCredentialSubjectMatchesOffer(
+      offeredCredentialJson.credentialSubject as SingleOrArray<JsonObject>,
+      credentialJson.credentialSubject as SingleOrArray<JsonObject>
+    )
+
+    const credentialVersion = this.getCredentialVersion(credentialJson)
+    const expectedReceivedCredential = {
+      ...offeredCredentialJson,
+      '@context': credentialJson['@context'],
+      issuer: offeredCredentialJson.issuer ?? credentialJson.issuer,
+      credentialSubject: credentialJson.credentialSubject,
+      ...(credentialVersion === '1.1' && { issuanceDate: credentialJson.issuanceDate }),
+      ...(credentialVersion === '2.0' && { validFrom: credentialJson.validFrom }),
+      ...(offeredCredentialJson.credentialStatus && { credentialStatus: credentialJson.credentialStatus }),
+      proof: credentialJson.proof,
+    }
+
+    if (!deepEquality(credentialJson, expectedReceivedCredential)) {
+      throw new CredoError('Received invalid credential. Received credential does not match the offered credential')
+    }
+
+    // A data model 2.0 credential is secured with a DataIntegrityProof and is held in a
+    // W3cV2CredentialRecord, as W3cCredentialRecord only holds data model 1.1 credentials. The
+    // binding on the exchange record still uses this format's single record type, as that is what
+    // the credential protocol uses to route deletion back to this format service.
+    if (credentialVersion === '2.0') {
+      const w3cV2CredentialService = agentContext.dependencyManager.resolve(W3cV2CredentialService)
+      const credential = W3cV2DataIntegrityVerifiableCredential.fromObject(
+        credentialJson as Parameters<typeof W3cV2DataIntegrityVerifiableCredential.fromObject>[0]
+      )
+
+      const result = await w3cV2CredentialService.verifyCredential(agentContext, { credential })
+      if (result && !result.isValid) {
+        throw new CredoError(`Failed to validate credential, error = ${result.error}`)
+      }
+
+      const w3cV2CredentialRecord = await w3cV2CredentialService.storeCredential(agentContext, {
+        record: W3cV2CredentialRecord.fromCredential(credential),
+      })
+
+      credentialExchangeRecord.credentials.push({
+        credentialRecordType: this.credentialRecordType,
+        credentialRecordId: w3cV2CredentialRecord.id,
+      })
+
+      return
+    }
+
+    let credentialRecordId: string
+    if (credentialRequest.binding_proof?.anoncreds_link_secret) {
+      credentialRecordId = await this.getLinkSecretBindingProvider(agentContext).storeBoundCredential(agentContext, {
+        credentialExchangeRecord,
+        credentialJson,
+        offeredCredentialJson,
+      })
+    } else {
+      const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+      const w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)
+
+      const result = await w3cCredentialService.verifyCredential(agentContext, {
+        credential: w3cJsonLdVerifiableCredential,
+      })
+      if (!result.isValid) {
+        throw new CredoError(`Failed to validate credential, error = ${result.error}`)
+      }
+
+      const w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, {
+        record: W3cCredentialRecord.fromCredential(w3cJsonLdVerifiableCredential),
+      })
+      credentialRecordId = w3cCredentialRecord.id
+    }
+
+    credentialExchangeRecord.credentials.push({
+      credentialRecordType: this.credentialRecordType,
+      credentialRecordId,
+    })
+  }
+
+  public supportsFormat(format: string): boolean {
+    const supportedFormats = [
+      W3C_DATA_INTEGRITY_CREDENTIAL_REQUEST,
+      W3C_DATA_INTEGRITY_CREDENTIAL_OFFER,
+      W3C_DATA_INTEGRITY_CREDENTIAL,
+    ]
+
+    return supportedFormats.includes(format)
+  }
+
+  /**
+   * Gets the attachment object for a given attachmentId. We need to get out the correct attachmentId for
+   * anoncreds and then find the corresponding attachment (if there is one)
+   * @param formats the formats object containing the attachmentId
+   * @param messageAttachments the attachments containing the payload
+   * @returns The DidCommAttachment if found or undefined
+   *
+   */
+  public getAttachment(
+    formats: DidCommCredentialFormatSpec[],
+    messageAttachments: DidCommAttachment[]
+  ): DidCommAttachment | undefined {
+    const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachmentId)
+    const supportedAttachment = messageAttachments.find((attachment) => supportedAttachmentIds.includes(attachment.id))
+
+    return supportedAttachment
+  }
+
+  /**
+   * Deletes a credential received over this format. The record type on the exchange record is the
+   * same for every credential of this format, so the store holding the record decides how it is
+   * deleted:
+   *
+   * - A data model 1.1 credential bound to an anoncreds link secret is a `W3cCredentialRecord`
+   *   stored by the anoncreds holder service. It is deleted through the link secret binding
+   *   provider, so that its anoncreds state is cleaned up as well.
+   * - Any other data model 1.1 credential, secured with a linked data proof and either bound using
+   *   a DIDComm signed attachment or not bound at all, is a plain `W3cCredentialRecord` and is
+   *   deleted from the 1.1 repository directly.
+   * - A data model 2.0 credential, secured with a `DataIntegrityProof`, is a `W3cV2CredentialRecord`
+   *   and is deleted from the 2.0 repository directly.
+   */
+  public async deleteCredentialById(agentContext: AgentContext, credentialRecordId: string): Promise<void> {
+    const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
+    const w3cCredentialRecord = await w3cCredentialRepository.findById(agentContext, credentialRecordId)
+    if (w3cCredentialRecord) {
+      const linkSecretBindingProvider = this.findLinkSecretBindingProvider(agentContext)
+
+      if (linkSecretBindingProvider?.isBoundCredentialRecord(w3cCredentialRecord)) {
+        await linkSecretBindingProvider.deleteCredentialRecord(agentContext, w3cCredentialRecord)
+      } else {
+        await w3cCredentialRepository.delete(agentContext, w3cCredentialRecord)
+      }
+
+      return
+    }
+
+    const w3cV2CredentialRepository = agentContext.dependencyManager.resolve(W3cV2CredentialRepository)
+    const w3cV2CredentialRecord = await w3cV2CredentialRepository.findById(agentContext, credentialRecordId)
+    if (w3cV2CredentialRecord) {
+      await w3cV2CredentialRepository.delete(agentContext, w3cV2CredentialRecord)
+      return
+    }
+
+    throw new RecordNotFoundError(`Credential record with id ${credentialRecordId} not found`, {
+      recordType: `${W3cCredentialRecord.type} | ${W3cV2CredentialRecord.type}`,
+    })
+  }
+
+  public async shouldAutoRespondToProposal(
+    _agentContext: AgentContext,
+    options: DidCommCredentialFormatAutoRespondProposalOptions
+  ): Promise<boolean> {
+    throw new CredoError('Not implemented')
+  }
+
+  public async shouldAutoRespondToOffer(
+    _agentContext: AgentContext,
+    { offerAttachment }: DidCommCredentialFormatAutoRespondOfferOptions
+  ) {
+    const credentialOffer = JsonTransformer.fromJSON(offerAttachment.getDataAsJson(), DataIntegrityCredentialOffer)
+    if (!credentialOffer.bindingRequired) return true
+    return false
+  }
+
+  public async shouldAutoRespondToRequest(
+    _agentContext: AgentContext,
+    { offerAttachment, requestAttachment }: DidCommCredentialFormatAutoRespondRequestOptions
+  ) {
+    const credentialOffer = JsonTransformer.fromJSON(offerAttachment?.getDataAsJson(), DataIntegrityCredentialOffer)
+    const credentialRequest = requestAttachment.getDataAsJson<DataIntegrityCredentialRequest>()
+
+    if (
+      !credentialOffer.bindingRequired &&
+      !credentialRequest.binding_proof?.anoncreds_link_secret &&
+      !credentialRequest.binding_proof?.didcomm_signed_attachment
+    ) {
+      return true
+    }
+
+    if (
+      credentialOffer.bindingRequired &&
+      !credentialRequest.binding_proof?.anoncreds_link_secret &&
+      !credentialRequest.binding_proof?.didcomm_signed_attachment
+    ) {
+      return false
+    }
+
+    // cannot auto response credential subject id must be set manually
+    if (credentialRequest.binding_proof?.didcomm_signed_attachment) {
+      try {
+        const subjectJson = credentialOffer.credential.credentialSubject
+        const credentialSubject = JsonTransformer.fromJSON(subjectJson, W3cCredentialSubject)
+        if (credentialSubject.id === undefined) return false
+      } catch (_e) {
+        return false
+      }
+    }
+
+    const validLinkSecretRequest =
+      !credentialRequest.binding_proof?.anoncreds_link_secret ||
+      (credentialRequest.binding_proof?.anoncreds_link_secret && credentialOffer.bindingMethod?.anoncredsLinkSecret)
+
+    const validDidCommSignedAttachmetRequest =
+      !credentialRequest.binding_proof?.didcomm_signed_attachment ||
+      (credentialRequest.binding_proof?.didcomm_signed_attachment &&
+        credentialOffer.bindingMethod?.didcommSignedAttachment)
+
+    return Boolean(validLinkSecretRequest && validDidCommSignedAttachmetRequest)
+  }
+
+  public async shouldAutoRespondToCredential(
+    _agentContext: AgentContext,
+    options: DidCommCredentialFormatAutoRespondCredentialOptions
+  ) {
+    return true
+  }
+
+  private async createDataIntegrityCredentialOffer(
+    agentContext: AgentContext,
+    credentialExchangeRecord: DidCommCredentialExchangeRecord,
+    options: DidCommDataIntegrityOfferCredentialFormat
+  ): Promise<{
+    dataIntegrityCredentialOffer: DataIntegrityCredentialOffer
+    previewAttributes: DidCommCredentialPreviewAttributeOptions[]
+  }> {
+    const {
+      bindingRequired,
+      credential,
+      anonCredsLinkSecretBinding: anonCredsLinkSecretBindingMethodOptions,
+      didCommSignedAttachmentBinding: didCommSignedAttachmentBindingMethodOptions,
+    } = options
+
+    const credentialJson =
+      credential instanceof W3cCredential || credential instanceof W3cV2Credential
+        ? JsonTransformer.toJSON(credential)
+        : credential
+
+    // The offered credential MUST conform to the first supported data model version, so the version
+    // of the credential we are offering is the version we advertise.
+    const dataModelVersion = this.getCredentialVersion(credentialJson)
+    const dataModelVersionsSupported: W3C_VC_DATA_MODEL_VERSION[] = [dataModelVersion]
+
+    // The anoncreds link secret binding method is defined in terms of the anoncredsvc-2023
+    // cryptosuite and data model 1.1 only.
+    if (dataModelVersion === '2.0' && anonCredsLinkSecretBindingMethodOptions) {
+      throw new CredoError(
+        'The anoncreds link secret binding method is not supported for VC Data Model 2.0 credentials.'
+      )
+    }
+
+    // validate the credential and get the preview attributes
+    const validW3cCredential =
+      dataModelVersion === '2.0'
+        ? JsonTransformer.fromJSON(credentialJson, W3cV2Credential)
+        : JsonTransformer.fromJSON(credentialJson, W3cCredential)
+    const previewAttributes = this.previewAttributesFromCredential(validW3cCredential)
+
+    let anonCredsLinkSecretBindingMethod: AnonCredsLinkSecretBindingMethod | undefined
+    if (anonCredsLinkSecretBindingMethodOptions) {
+      anonCredsLinkSecretBindingMethod = await this.getLinkSecretBindingProvider(agentContext).createOfferBindingMethod(
+        agentContext,
+        {
+          credentialExchangeRecord,
+          ...anonCredsLinkSecretBindingMethodOptions,
+          offeredCredential: credentialJson,
+        }
+      )
+    }
+
+    let didCommSignedAttachmentBindingMethod: DidCommSignedAttachmentBindingMethod | undefined
+    if (didCommSignedAttachmentBindingMethodOptions) {
+      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+
+      const { didMethodsSupported, algsSupported } = didCommSignedAttachmentBindingMethodOptions
+      didCommSignedAttachmentBindingMethod = {
+        didMethodsSupported:
+          didMethodsSupported ?? agentContext.dependencyManager.resolve(DidsApi).supportedResolverMethods,
+        algsSupported: algsSupported ?? kms.supportedJwaSignatureAlgorithms(),
+        nonce: TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 })),
+      }
+
+      if (didCommSignedAttachmentBindingMethod.algsSupported.length === 0) {
+        throw new CredoError('No supported JWA signature algorithms found.')
+      }
+
+      if (didCommSignedAttachmentBindingMethod.didMethodsSupported.length === 0) {
+        throw new CredoError('No supported DID methods found.')
+      }
+    }
+
+    if (bindingRequired && !anonCredsLinkSecretBindingMethod && !didCommSignedAttachmentBindingMethod) {
+      throw new CredoError('Missing required binding method.')
+    }
+
+    const dataIntegrityCredentialOffer = new DataIntegrityCredentialOffer({
+      dataModelVersionsSupported,
+      bindingRequired: bindingRequired,
+      bindingMethod: {
+        anoncredsLinkSecret: anonCredsLinkSecretBindingMethod,
+        didcommSignedAttachment: didCommSignedAttachmentBindingMethod,
+      },
+      credential: credentialJson,
+    })
+
+    return { dataIntegrityCredentialOffer, previewAttributes }
+  }
+
+  private previewAttributesFromCredential(
+    credential: W3cCredential | W3cV2Credential
+  ): DidCommCredentialPreviewAttributeOptions[] {
+    const credentialSubject = credential.credentialSubject
+    if (Array.isArray(credentialSubject)) {
+      throw new CredoError('Credential subject must be an object.')
+    }
+
+    // Data model 1.1 nests the claims under `claims`, data model 2.0 holds them on the subject itself
+    const claims = {
+      ...(credentialSubject instanceof W3cCredentialSubject
+        ? credentialSubject.claims
+        : Object.fromEntries(Object.entries(credentialSubject).filter(([key]) => key !== 'id'))),
+      ...(credentialSubject.id && { id: credentialSubject.id }),
+    } as Record<string, string | number>
+    const attributes = Object.entries(claims).map(([key, value]): DidCommCredentialPreviewAttributeOptions => {
+      return { name: key, value: value.toString() }
+    })
+    return attributes
+  }
+
+  /**
+   * @deprecated This helper leaked into the public API of this class. Every other format service keeps
+   * it private. Use {@link getFormatDataAttachment} instead. Will be removed in the next major version.
+   */
+  public getFormatData(data: unknown, id: string): DidCommAttachment {
+    return getFormatDataAttachment(data, id)
+  }
+}

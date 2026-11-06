@@ -9,8 +9,11 @@ import {
   X25519PublicJwk,
 } from '../../kms'
 import { PublicJwk } from '../../kms/jwk/PublicJwk'
-import { SECURITY_JWS_CONTEXT_URL, SECURITY_X25519_CONTEXT_URL } from '../../vc/constants'
-import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../vc/linked-data-proofs/signature-suites/ed25519/constants'
+import {
+  SECURITY_ED25519_2018_CONTEXT_URL,
+  SECURITY_JWS_CONTEXT_URL,
+  SECURITY_X25519_CONTEXT_URL,
+} from '../../vc/constants'
 import { DidDocumentBuilder } from './DidDocumentBuilder'
 import { convertPublicKeyToX25519 } from './key-type/ed25519'
 import { getEd25519VerificationKey2018, getJsonWebKey2020, getX25519KeyAgreementKey2019 } from './verificationMethod'
@@ -87,7 +90,7 @@ function getEd25519DidDoc(did: string, publicJwk: PublicJwk<Ed25519PublicJwk>) {
   const didDocBuilder = getSignatureKeyBase({ did, publicJwk, verificationMethod })
 
   didDocBuilder
-    .addContext(ED25519_SUITE_CONTEXT_URL_2018)
+    .addContext(SECURITY_ED25519_2018_CONTEXT_URL)
     .addContext(SECURITY_X25519_CONTEXT_URL)
     .addKeyAgreement(x25519VerificationMethod)
 

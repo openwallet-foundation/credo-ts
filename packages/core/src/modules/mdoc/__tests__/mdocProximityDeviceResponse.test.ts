@@ -1,6 +1,7 @@
 import { DeviceRequest, DocRequest, ItemsRequest, SessionTranscript } from '@owf/mdoc'
 import { getAgentOptions } from '../../../../tests'
-import { Agent, TypedArrayEncoder, X509Certificate } from '../../..'
+import { Agent, CredoError, TypedArrayEncoder, X509Certificate } from '../../..'
+import { getMdocContext } from '../../../crypto/contexts/mdocContext'
 import { PublicJwk } from '../../kms'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
@@ -67,6 +68,8 @@ const DEVICE_REQUEST_1 = DeviceRequest.create({
               ['un_distinguishing_sign', false],
             ]),
           ],
+          // Device signed values are only disclosed when requested
+          ['com.foobar-device', new Map([['test', false]])],
         ]),
       }),
     }),
@@ -99,6 +102,7 @@ describe('mdoc device-response proximity test', () => {
         validUntil: new Date('2050-10-24'),
       },
       holderKey: PublicJwk.fromPublicJwk(importedDeviceKey.publicJwk),
+      keyAuthorizations: { namespaces: ['com.foobar-device'] },
       issuerCertificate,
       namespaces: {
         'org.iso.18013.5.1': {
@@ -166,5 +170,19 @@ describe('mdoc device-response proximity test', () => {
           []
       ).map(([namespace, value]) => [namespace, Array.from(value.deviceSignedItems.entries())])
     ).toEqual([['com.foobar-device', [['test', 1234]]]])
+  })
+
+  it('rejects device MAC authentication (hdkf) as unsupported', async () => {
+    const mdocContext = getMdocContext(agent.context)
+
+    const input: Parameters<typeof mdocContext.crypto.hdkf>[0] = {
+      publicKey: new Uint8Array(),
+      privateKey: new Uint8Array(),
+      salt: new Uint8Array(),
+      info: new Uint8Array(),
+    }
+
+    await expect(mdocContext.crypto.hdkf(input)).rejects.toThrow(CredoError)
+    await expect(mdocContext.crypto.hdkf(input)).rejects.toThrow('mdoc device MAC authentication is not supported')
   })
 })

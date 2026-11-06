@@ -5,6 +5,9 @@ import type {
   OpenId4VciBatchCredentialIssuanceOptions,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
+  OpenId4VciCredentialRequestEncryptionOptions,
+  OpenId4VciCredentialResponseEncryptionOptions,
+  OpenId4VciIssuerInfo,
 } from '@credo-ts/openid4vc'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
@@ -24,6 +27,7 @@ export const openid4vcIssuer = sqliteTable(
       mode: 'json',
     }),
     accessTokenPublicJwk: text('access_token_public_jwk', { mode: 'json' }).$type<Kms.KmsJwkPublicAsymmetric>(),
+    accessTokenSignerKmsBackend: text('access_token_signer_kms_backend'),
 
     signedMetadata: text('signed_metadata', { mode: 'json' }).$type<OpenId4VcIssuerRecordSignedMetadata>(),
 
@@ -31,6 +35,7 @@ export const openid4vcIssuer = sqliteTable(
       .$type<OpenId4VciCredentialConfigurationsSupportedWithFormats>()
       .notNull(),
     display: text({ mode: 'json' }).$type<OpenId4VciCredentialIssuerMetadataDisplay[]>(),
+    issuerInfo: text('issuer_info', { mode: 'json' }).$type<OpenId4VciIssuerInfo>(),
     authorizationServerConfigs: text('authorization_server_configs', { mode: 'json' }).$type<
       OpenId4VciAuthorizationServerConfig[]
     >(),
@@ -43,7 +48,15 @@ export const openid4vcIssuer = sqliteTable(
     clientAttestationPopSigningAlgValuesSupported: text('client_attestation_pop_signing_alg_values_supported', {
       mode: 'json',
     }).$type<[Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]>(),
-    batchCredentialIssuance: text('batch_credential_issuance').$type<OpenId4VciBatchCredentialIssuanceOptions>(),
+    batchCredentialIssuance: text('batch_credential_issuance', {
+      mode: 'json',
+    }).$type<OpenId4VciBatchCredentialIssuanceOptions>(),
+    credentialResponseEncryption: text('credential_response_encryption', {
+      mode: 'json',
+    }).$type<OpenId4VciCredentialResponseEncryptionOptions>(),
+    credentialRequestEncryption: text('credential_request_encryption', {
+      mode: 'json',
+    }).$type<OpenId4VciCredentialRequestEncryptionOptions>(),
   },
   (table) => sqliteBaseRecordIndexes(table, 'openid4vcIssuer')
 )

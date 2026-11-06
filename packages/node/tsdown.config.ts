@@ -4,6 +4,7 @@ import config from '../../tsdown.config.base'
 export default defineConfig(
   config.map((e) => ({
     ...e,
+    platform: 'node' as const,
     dts: {
       ...(typeof e.dts === 'object' ? e.dts : {}),
       // We have overridden the tsconfig for node module

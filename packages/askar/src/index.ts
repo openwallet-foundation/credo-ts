@@ -5,9 +5,11 @@ export {
   type AskarModuleConfigOptions,
   type AskarModuleConfigStoreOptions,
   AskarMultiWalletDatabaseScheme,
+  type NativeAskarLike,
 } from './AskarModuleConfig'
 export type {
   AskarPostgresConfig,
+  AskarPostgresConnectionParameters,
   AskarPostgresCredentials,
   AskarPostgresStorageConfig,
   AskarSqliteConfig,
@@ -16,6 +18,7 @@ export type {
 export { AskarStoreManager } from './AskarStoreManager'
 // Errors
 export {
+  AskarStoreAlreadyRegisteredError,
   AskarStoreDuplicateError,
   AskarStoreError,
   AskarStoreExportPathExistsError,

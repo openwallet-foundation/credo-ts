@@ -1,4 +1,4 @@
-import { DidCommConnectionInvitationMessage } from '../../modules'
+import { DidCommTrustPingMessage } from '../../modules'
 import { DidCommMessageRecord } from '../DidCommMessageRecord'
 import { DidCommMessageRole } from '../DidCommMessageRole'
 
@@ -36,11 +36,10 @@ describe('DidCommMessageRecord', () => {
 
   it('correctly returns a message class instance', () => {
     const invitationJson = {
-      '@type': 'https://didcomm.org/connections/1.0/invitation',
+      '@type': 'https://didcomm.org/trust_ping/1.0/ping',
       '@id': '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-      recipientKeys: ['recipientKeyOne', 'recipientKeyTwo'],
-      serviceEndpoint: 'https://example.com',
-      label: 'test',
+      comment: 'test',
+      response_requested: true,
     }
 
     const didCommeMessageRecord = new DidCommMessageRecord({
@@ -49,8 +48,8 @@ describe('DidCommMessageRecord', () => {
       associatedRecordId: '16ca6665-29f6-4333-a80e-d34db6bfe0b0',
     })
 
-    const invitation = didCommeMessageRecord.getMessageInstance(DidCommConnectionInvitationMessage)
+    const invitation = didCommeMessageRecord.getMessageInstance(DidCommTrustPingMessage)
 
-    expect(invitation).toBeInstanceOf(DidCommConnectionInvitationMessage)
+    expect(invitation).toBeInstanceOf(DidCommTrustPingMessage)
   })
 })

@@ -42,6 +42,17 @@ export interface DidCommDataIntegrityOfferCredentialFormat {
 export interface DidCommDataIntegrityAcceptRequestFormat {
   credentialSubjectId?: string
   issuerVerificationMethod?: string
+
+  /**
+   * The Data Integrity cryptosuite to secure a data model 2.0 credential with, for example
+   * `eddsa-jcs-2022`.
+   *
+   * RFC 0809 leaves the choice of cryptosuite to the issuer, so this is not negotiated with the
+   * holder. When omitted, the first registered cryptosuite that supports the key type of the issuer
+   * verification method is selected. Ignored for data model 1.1 credentials, which are secured with
+   * a linked data signature suite instead.
+   */
+  cryptosuite?: string
 }
 
 export interface DidCommDataIntegrityCredentialFormat extends DidCommCredentialFormat {

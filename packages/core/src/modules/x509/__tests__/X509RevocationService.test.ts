@@ -949,6 +949,22 @@ describe('X509RevocationService', () => {
       }
     })
 
+    it('uses the module-config options that per-call options omit', async () => {
+      const config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+      const leaf = await createLeaf({ serialNumber: '5f0a', crlDistributionPoints: { urls: [FULL_URL] } })
+      mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+
+      try {
+        config.setRevocationCheck({ maxCrlSizeBytes: 10 })
+
+        const result = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+        expect(result.isValid).toBe(false)
+        expect(result.error?.message).toContain('Failed to fetch CRL')
+      } finally {
+        config.setRevocationCheck(undefined)
+      }
+    })
+
     it('revalidates a stale summary by hash without re-parsing when the CRL bytes are unchanged', async () => {
       const leaf = await createLeaf({ serialNumber: '500f', crlDistributionPoints: { urls: [FULL_URL] } })
       // Two interceptors: the initial fetch and the revalidation fetch; the third check must not fetch.
@@ -1045,6 +1061,50 @@ describe('X509RevocationService', () => {
       })
       expect(soft.isValid).toBe(true)
       expect(soft.details).toContain('SoftFail')
+    })
+  })
+
+  describe('parse options', () => {
+    afterEach(() => {
+      agentContext.dependencyManager.resolve(X509ModuleConfig).setParseOptions(undefined)
+    })
+
+    it('applies the parse options configured on the module config when parsing a fetched CRL', async () => {
+      const leaf = await createLeaf({ serialNumber: '1101', crlDistributionPoints: { urls: [FULL_URL] } })
+      // A CRL that fails to parse is never cached, so every check attempts a fetch.
+      mockCrl(FULL_URL, await crlBytes({ entries: [{ serialNumber: 'dead' }] }), { times: 3 })
+
+      const valid = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(valid.isValid).toBe(true)
+
+      // That check cached a verified summary of the CRL, which would be served without parsing the
+      // CRL again. Drop it so the checks below actually reach the parser.
+      cache.clear()
+      agentContext.dependencyManager.resolve(X509ModuleConfig).setParseOptions({ maxNodes: 3 })
+
+      // A CRL that cannot be parsed is not an availability failure, so SoftFail does not tolerate
+      // it either: the CRL was fetched, it just could not be understood.
+      for (const mode of [X509RevocationCheckMode.SoftFail, X509RevocationCheckMode.Require]) {
+        const result = await checkRevocation(leaf, issuerCertificate, { mode })
+        expect(result.isValid).toBe(false)
+        expect(result.error?.message).toContain('Failed to parse CRL')
+      }
+    })
+
+    it('lets the per-call parse options override the module config when parsing a fetched CRL', async () => {
+      const leaf = await createLeaf({ serialNumber: '1102', crlDistributionPoints: { urls: [FULL_URL] } })
+      mockCrl(FULL_URL, await crlBytes({ entries: [{ serialNumber: 'dead' }] }))
+
+      agentContext.dependencyManager.resolve(X509ModuleConfig).setParseOptions({ maxNodes: 3 })
+
+      const result = await X509RevocationService.checkCertificateRevocation(agentContext, {
+        certificate: leaf,
+        issuerCertificate,
+        revocationCheckOptions: { mode: X509RevocationCheckMode.Require },
+        parseOptions: {},
+      })
+
+      expect(result.isValid).toBe(true)
     })
   })
 })

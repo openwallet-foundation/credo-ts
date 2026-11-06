@@ -1,4 +1,9 @@
-import type { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from '@credo-ts/didcomm'
+import type {
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
+  DidCommHandshakeProtocol,
+  DidCommVersion,
+} from '@credo-ts/didcomm'
 import { boolean, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
@@ -22,14 +27,20 @@ export const didcommConnectionStateEnum = pgEnum('DidcommConnectionState', didco
 export const didcommConnectionRoles = exhaustiveArray({} as DidCommDidExchangeRole, ['requester', 'responder'] as const)
 export const didcommConnectionRoleEnum = pgEnum('DidcommConnectionRole', didcommConnectionRoles)
 
-export const didcommConnectionHandshakeProtocols = exhaustiveArray(
-  {} as DidCommHandshakeProtocol,
-  ['https://didcomm.org/didexchange/1.x', 'https://didcomm.org/connections/1.x'] as const
-)
+// NOTE: the connection protocol (https://didcomm.org/connections/1.x) is not supported anymore, but the value
+// is kept in the database enum so connection records created with the connection protocol can still be read.
+export const didcommConnectionHandshakeProtocols = [
+  'https://didcomm.org/didexchange/1.x',
+  'https://didcomm.org/connections/1.x',
+  'None',
+] as const
 export const didcommConnectionHandshakeProtocolEnum = pgEnum(
   'DidcommConnectionHandshakeProtocol',
   didcommConnectionHandshakeProtocols
 )
+
+export const didcommConnectionVersions = exhaustiveArray({} as DidCommVersion, ['v1', 'v2'] as const)
+export const didcommConnectionVersionEnum = pgEnum('DidcommConnectionVersion', didcommConnectionVersions)
 
 export const didcommConnection = pgTable(
   'DidcommConnection',
@@ -53,7 +64,8 @@ export const didcommConnection = pgTable(
     outOfBandId: text('out_of_band_id'),
 
     errorMessage: text('error_message'),
-    protocol: didcommConnectionHandshakeProtocolEnum(),
+    protocol: didcommConnectionHandshakeProtocolEnum().$type<DidCommHandshakeProtocol>(),
+    didcommVersion: didcommConnectionVersionEnum('didcomm_version'),
     connectionTypes: text('connection_types').array(),
 
     previousDids: text('previous_dids').array(),

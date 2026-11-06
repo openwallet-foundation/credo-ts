@@ -6,8 +6,7 @@ import { PeerDidNumAlgo } from '@credo-ts/core'
  */
 export interface DidCommConnectionsModuleConfigOptions {
   /**
-   * Whether to automatically accept connection messages. Applies to both the connection protocol (RFC 0160)
-   * and the DID exchange protocol (RFC 0023).
+   * Whether to automatically accept connection messages. Applies to the DID exchange protocol (RFC 0023).
    *
    * Note: this setting does not apply to implicit invitation flows, which always need to be manually accepted
    * using ConnectionStateChangedEvent
@@ -30,10 +29,21 @@ export interface DidCommConnectionsModuleConfigOptions {
    * @default PeerDidNumAlgo.ShortFormAndLongForm
    */
   peerNumAlgoForDidRotation?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
+
+  /**
+   * When true, create a connection record automatically when receiving the first DIDComm v2 message
+   * from an invitee, if an out-of-band record exists for the recipient DID (v2 OOB inviter flow).
+   * A created DID with no out-of-band record also acts as an implicit invitation, as long as every connection
+   * using it was opened through it or got it as `ourDid` or `toDid`.
+   *
+   * @default false
+   */
+  autoCreateConnectionOnFirstMessage?: boolean
 }
 
 export class DidCommConnectionsModuleConfig {
   #autoAcceptConnections?: boolean
+  #autoCreateConnectionOnFirstMessage?: boolean
   #peerNumAlgoForDidExchangeRequests?: PeerDidNumAlgo
   #peerNumAlgoForDidRotation?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
 
@@ -42,6 +52,7 @@ export class DidCommConnectionsModuleConfig {
   public constructor(options?: DidCommConnectionsModuleConfigOptions) {
     this.options = options ?? {}
     this.#autoAcceptConnections = this.options.autoAcceptConnections
+    this.#autoCreateConnectionOnFirstMessage = this.options.autoCreateConnectionOnFirstMessage
     this.#peerNumAlgoForDidExchangeRequests = this.options.peerNumAlgoForDidExchangeRequests
     this.#peerNumAlgoForDidRotation = this.options.peerNumAlgoForDidRotation
   }
@@ -54,6 +65,11 @@ export class DidCommConnectionsModuleConfig {
   /** See {@link DidCommConnectionsModuleConfigOptions.autoAcceptConnections} */
   public set autoAcceptConnections(autoAcceptConnections: boolean) {
     this.#autoAcceptConnections = autoAcceptConnections
+  }
+
+  /** See {@link DidCommConnectionsModuleConfigOptions.autoCreateConnectionOnFirstMessage} */
+  public get autoCreateConnectionOnFirstMessage() {
+    return this.#autoCreateConnectionOnFirstMessage ?? false
   }
 
   /** See {@link DidCommConnectionsModuleConfigOptions.peerNumAlgoForDidExchangeRequests} */

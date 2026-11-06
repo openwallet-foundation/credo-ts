@@ -1,8 +1,14 @@
 import type { RecordTags, TagsBase, VersionString } from '@credo-ts/core'
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils, zTypedObject } from '@credo-ts/core'
+import { z } from 'zod'
 import type { TenantConfig } from '../models/TenantConfig'
 
 export type TenantRecordTags = RecordTags<TenantRecord>
+
+export enum TenantStatus {
+  Active = 'active',
+  Inactive = 'inactive',
+}
 
 export interface TenantRecordProps {
   id?: string
@@ -10,14 +16,26 @@ export interface TenantRecordProps {
   config: TenantConfig
   tags?: TagsBase
   storageVersion: VersionString
+  status?: TenantStatus
 }
 
 export type DefaultTenantRecordTags = {
   label: string
   storageVersion: VersionString
+  status: TenantStatus
 }
 
+const tenantRecordEncodingSchema = createRecordEncodingSchema({
+  config: zTypedObject<TenantConfig>().nullish(),
+  storageVersion: z.string().nullish(),
+  status: z.string().nullish(),
+})
+
 export class TenantRecord extends BaseRecord<DefaultTenantRecordTags> {
+  public static get encodingSchema(): z.ZodType {
+    return tenantRecordEncodingSchema
+  }
+
   public static readonly type = 'TenantRecord'
   public readonly type = TenantRecord.type
 
@@ -32,6 +50,15 @@ export class TenantRecord extends BaseRecord<DefaultTenantRecordTags> {
    */
   public storageVersion: VersionString = '0.4'
 
+  /**
+   * Whether the tenant is active. Sessions can not be opened for inactive tenants,
+   * meaning the tenant can not be used anymore until it is set to active again.
+   *
+   * @default TenantStatus.Active records stored before this field was introduced are
+   * considered active
+   */
+  public status: TenantStatus = TenantStatus.Active
+
   public constructor(props: TenantRecordProps) {
     super()
 
@@ -41,6 +68,7 @@ export class TenantRecord extends BaseRecord<DefaultTenantRecordTags> {
       this._tags = props.tags ?? {}
       this.config = props.config
       this.storageVersion = props.storageVersion
+      this.status = props.status ?? TenantStatus.Active
     }
   }
 
@@ -49,6 +77,7 @@ export class TenantRecord extends BaseRecord<DefaultTenantRecordTags> {
       ...this._tags,
       label: this.config.label,
       storageVersion: this.storageVersion,
+      status: this.status,
     }
   }
 }

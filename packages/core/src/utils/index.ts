@@ -13,3 +13,14 @@ export * from './timestamp'
 export { DateTransformer, IsStringOrStringArray } from './transformers'
 export * from './VarintEncoder'
 export * from './validators'
+export {
+  getEncodingSchema,
+  type ZodEncodedClass,
+  zDecodeWithErrorHandling,
+  zEncodeWithErrorHandling,
+  zIsoDate,
+  zMapFromObject,
+  zNonEmptyArray,
+  zTypedObject,
+  zWithUpgrade,
+} from './zod'

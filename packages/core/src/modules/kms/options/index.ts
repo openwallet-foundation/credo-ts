@@ -1,3 +1,4 @@
+export type { KmsBackendName, KmsCreateKeyBackendOptionsOf } from './backend'
 export type {
   KmsCreateKeyForSignatureAlgorithmOptions,
   KmsCreateKeyOptions,
@@ -10,18 +11,24 @@ export type {
   KmsCreateKeyTypeRsa,
 } from './KmsCreateKeyOptions'
 export type {
+  KmsDecryptDataContentDecryption,
   KmsDecryptDataDecryption,
   KmsDecryptDataDecryptionAesCbc,
   KmsDecryptDataDecryptionAesGcm,
   KmsDecryptDataDecryptionC20p,
+  KmsDecryptDataDecryptionHpke,
   KmsDecryptOptions,
   KmsDecryptReturn,
 } from './KmsDecryptOptions'
 export type { KmsDeleteKeyOptions } from './KmsDeleteKeyOptions'
 export type {
+  KmsEncryptAad,
+  KmsEncryptAadContext,
+  KmsEncryptDataContentEncryption,
   KmsEncryptDataEncryption,
   KmsEncryptDataEncryptionAesCbc,
   KmsEncryptDataEncryptionAesGcm,
+  KmsEncryptDataEncryptionHpke,
   KmsEncryptDataEncryptionX20c,
   KmsEncryptedKey,
   KmsEncryptOptions,
@@ -30,17 +37,24 @@ export type {
 export type { KmsGetPublicKeyOptions } from './KmsGetPublicKeyOptions'
 export type { KmsImportKeyOptions, KmsImportKeyReturn } from './KmsImportKeyOptions'
 export type {
+  KmsKeyAgreementDecryptEcdh1Pu,
+  KmsKeyAgreementDecryptEcdhEs,
   KmsKeyAgreementDecryptEcdhEsKw,
   KmsKeyAgreementDecryptEcdhHsalsa20,
+  KmsKeyAgreementDecryptHpke,
   KmsKeyAgreementDecryptOptions,
 } from './KmsKeyAgreementDecryptOptions'
+export { isKmsKeyAgreementDecryptHpke } from './KmsKeyAgreementDecryptOptions'
 export type {
   KmsJwkPublicEcdh,
-  KmsKeyAgreementEcdhEs,
+  KmsKeyAgreementEncryptEcdh1Pu,
+  KmsKeyAgreementEncryptEcdhEs,
   KmsKeyAgreementEncryptEcdhEsKw,
   KmsKeyAgreementEncryptEcdhHsalsa20,
+  KmsKeyAgreementEncryptHpke,
   KmsKeyAgreementEncryptOptions,
 } from './KmsKeyAgreementEncryptOptions'
+export { isKmsKeyAgreementEncryptHpke } from './KmsKeyAgreementEncryptOptions'
 export {
   getKmsOperationHumanDescription,
   type KmsOperation,
@@ -51,6 +65,7 @@ export {
   type KmsOperationImportKey,
   type KmsOperationSign,
   type KmsOperationVerify,
+  keyAgreementPublicJwks,
 } from './KmsOperation'
 export type { KmsRandomBytesOptions, KmsRandomBytesReturn } from './KmsRandomBytesOptions'
 export type { KmsSignOptions, KmsSignReturn } from './KmsSignOptions'

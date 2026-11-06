@@ -1,0 +1,6 @@
+export * from '../formats/AnonCredsDidCommCredentialFormat'
+export { AnonCredsDidCommCredentialFormatService } from '../formats/AnonCredsDidCommCredentialFormatService'
+export * from '../formats/AnonCredsDidCommProofFormat'
+export { AnonCredsDidCommProofFormatService } from '../formats/AnonCredsDidCommProofFormatService'
+export { AnonCredsLinkSecretBindingProvider } from '../formats/AnonCredsLinkSecretBindingProvider'
+export { migrateCredentialExchangeRecordToV0_4 } from '../updates/0.3.1-0.4/credentialExchangeRecord'

@@ -34,7 +34,7 @@ export function sendUnauthorizedError(
 
   response
     .setHeader('WWW-Authenticate', unauthorizedError.toHeaderValue())
-    .status(status ?? 403)
+    .status(status ?? 401)
     .send()
   next(error)
 }
@@ -120,6 +120,52 @@ export function sendJsonResponse(
     .send(JSON.stringify(body))
 
   next()
+}
+
+/**
+ * Sends a 413 response if the body parser rejected the request body as too large. Returns whether it did.
+ */
+export function sendPayloadTooLargeResponse(response: Response, error: unknown) {
+  if (!(error instanceof Error) || error.name !== 'PayloadTooLargeError') return false
+
+  response.status(413).json({
+    error: 'invalid_request',
+    message: 'The request body exceeds the maximum allowed limit.',
+  })
+  return true
+}
+
+const requestSessions = new WeakMap<Request, () => Promise<void>>()
+
+/**
+ * Ends the agent context session for the request once: when the router calls {@link endRequestSession},
+ * or when the response finishes, so a handler that sends a response without calling `next()` can't leak it.
+ */
+export function registerRequestSession(request: Request, response: Response, agentContext: AgentContext) {
+  let endSessionPromise: Promise<void> | undefined
+  const endSession = () => {
+    endSessionPromise ??= agentContext.endSession()
+    return endSessionPromise
+  }
+
+  requestSessions.set(request, endSession)
+  response.once('finish', () => {
+    // Leaving a nested router defers `next()` by a `setImmediate`, so the router can still end the session after 'finish'
+    setImmediate(() => {
+      if (endSessionPromise) return
+
+      agentContext.config.logger.warn(
+        `[OID4VC] Agent context session for ${request.method} ${request.originalUrl} was not ended by the router, a handler probably did not call next(). Ending it after the response.`
+      )
+      endSession().catch((error) => {
+        agentContext.config.logger.error('[OID4VC] Failed to end agent context session after response', { error })
+      })
+    })
+  })
+}
+
+export async function endRequestSession(request: Request) {
+  await requestSessions.get(request)?.()
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: no explanation

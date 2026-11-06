@@ -1,0 +1,48 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "associatedRecordId": "credential-exchange-record-id",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "id": "didcomm-message-record-id",
+  "message": {
+    "@id": "f1ed5be5-7b2b-4e0c-a1d8-6b3e8c0e8d1a",
+    "@type": "https://didcomm.org/issue-credential/2.0/offer-credential",
+    "~thread": {
+      "thid": "ea24e14a-4fc4-40f4-85a0-f6fcf02bfc1c"
+    },
+    "comment": "Offer for the Faber College Graduate credential",
+    "credential_preview": {
+      "@type": "https://didcomm.org/issue-credential/2.0/credential-preview",
+      "attributes": [
+        {
+          "mime-type": "text/plain",
+          "name": "name",
+          "value": "Alice"
+        }
+      ]
+    },
+    "formats": [
+      {
+        "attach_id": "offer-attachment-id",
+        "format": "hlindy/cred-abstract@v2.0"
+      }
+    ],
+    "offers~attach": [
+      {
+        "@id": "offer-attachment-id",
+        "data": {
+          "base64": "eyJzY2hlbWFfaWQiOiJzY2hlbWEtaWQifQ=="
+        },
+        "mime-type": "application/json"
+      }
+    ]
+  },
+  "metadata": {
+    "meta": {
+      "key": "value"
+    }
+  },
+  "role": "receiver",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

@@ -1,70 +1,34 @@
-import type { AgentContext, DidDocumentKey, Query, QueryOptions } from '@credo-ts/core'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import {
   CredoError,
-  DidDocumentRole,
-  DidRecord,
-  DidRecordMetadataKeys,
   DidRepository,
-  DidsApi,
-  didDocumentJsonToNumAlgo1Did,
   EventEmitter,
   filterContextCorrelationId,
-  IndyAgentService,
   InjectionSymbols,
   inject,
   injectable,
-  JsonTransformer,
   Kms,
   type Logger,
-  parseDid,
-  TypedArrayEncoder,
-  utils,
 } from '@credo-ts/core'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import type { DidCommMessage } from '../../../DidCommMessage'
-import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
-import type { DidCommAckMessage } from '../../../messages'
-import type { DidCommInboundMessageContext, DidCommRouting } from '../../../models'
+import type { DidCommInboundMessageContext } from '../../../models'
 import { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
 import { DidCommOutOfBandRole } from '../../oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../oob/domain/DidCommOutOfBandState'
 import { DidCommInvitationType } from '../../oob/messages'
-import type { DidCommOutOfBandRecord } from '../../oob/repository'
 import { DidCommOutOfBandRepository } from '../../oob/repository'
 import { DidCommOutOfBandRecordMetadataKeys } from '../../oob/repository/outOfBandRecordMetadataTypes'
 import type { DidCommConnectionStateChangedEvent } from '../DidCommConnectionEvents'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
-import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
-import type { DidCommConnectionProblemReportMessage } from '../messages'
-import { DidCommConnectionRequestMessage, DidCommConnectionResponseMessage, DidCommTrustPingMessage } from '../messages'
+import { DidCommTrustPingMessage, DidCommTrustPingV2Message } from '../messages'
 import type { DidCommConnectionType } from '../models'
-import {
-  authenticationTypes,
-  DidCommConnection,
-  DidCommDidExchangeRole,
-  DidCommDidExchangeState,
-  DidCommHandshakeProtocol,
-  DidDoc,
-  Ed25119Sig2018,
-  ReferencedAuthentication,
-} from '../models'
+import { DidCommDidExchangeRole, DidCommDidExchangeState } from '../models'
 import type { DidCommConnectionRecordProps } from '../repository'
 import { DidCommConnectionRecord, DidCommConnectionRepository } from '../repository'
-
-import {
-  assertNoCreatedDidExistsForKeys,
-  convertToNewDidDocument,
-  getResolvedDidcommServiceWithSigningKeyId,
-} from './helpers'
-
-export interface ConnectionRequestParams {
-  label: string
-  imageUrl?: string
-  alias?: string
-  routing: DidCommRouting
-  autoAcceptConnection?: boolean
-}
+import type { DidCommConnectionMetadata } from '../repository/DidCommConnectionMetadataTypes'
+import { keyAgreementsEqual } from './helpers'
 
 @injectable()
 export class DidCommConnectionService {
@@ -72,8 +36,6 @@ export class DidCommConnectionService {
   private didRepository: DidRepository
   private eventEmitter: EventEmitter
   private logger: Logger
-
-  private hasLoggedWarning = false
 
   public constructor(
     @inject(InjectionSymbols.Logger) logger: Logger,
@@ -85,307 +47,6 @@ export class DidCommConnectionService {
     this.didRepository = didRepository
     this.eventEmitter = eventEmitter
     this.logger = logger
-  }
-
-  private ensureWarningLoggedOnce() {
-    if (this.hasLoggedWarning) return
-
-    this.logger.debug(
-      'The v1 connection protocol is deprecated and will be removed in version 0.7 of Credo. You should upgrade to the did exchange protocol instead.'
-    )
-    this.hasLoggedWarning = true
-  }
-
-  /**
-   * Create a connection request message for a given out-of-band.
-   *
-   * @param outOfBandRecord out-of-band record for which to create a connection request
-   * @param config config for creation of connection request
-   * @returns outbound message containing connection request
-   */
-  public async createRequest(
-    agentContext: AgentContext,
-    outOfBandRecord: DidCommOutOfBandRecord,
-    config: ConnectionRequestParams
-  ): Promise<ConnectionProtocolMsgReturnType<DidCommConnectionRequestMessage>> {
-    this.ensureWarningLoggedOnce()
-    this.logger.debug(`Create message ${DidCommConnectionRequestMessage.type.messageTypeUri} start`, outOfBandRecord)
-    outOfBandRecord.assertRole(DidCommOutOfBandRole.Receiver)
-    outOfBandRecord.assertState(DidCommOutOfBandState.PrepareResponse)
-
-    // TODO check there is no connection record for particular oob record
-
-    const { outOfBandInvitation } = outOfBandRecord
-
-    const { mediatorId } = config.routing
-    const { didDoc, keys } = this.createDidDoc(config.routing)
-
-    // TODO: We should store only one did that we'll use to send the request message with success.
-    // We take just the first one for now.
-    const [invitationDid] = outOfBandInvitation.invitationDids
-
-    const { did: peerDid } = await this.createDid(agentContext, {
-      role: DidDocumentRole.Created,
-      didDoc,
-      keys,
-    })
-
-    const { label, imageUrl } = config
-
-    const connectionRequest = new DidCommConnectionRequestMessage({
-      label,
-      did: didDoc.id,
-      didDoc,
-      imageUrl,
-    })
-
-    connectionRequest.setThread({
-      threadId: connectionRequest.threadId,
-      parentThreadId: outOfBandRecord.outOfBandInvitation.id,
-    })
-
-    const connectionRecord = await this.createConnection(agentContext, {
-      protocol: DidCommHandshakeProtocol.Connections,
-      role: DidCommDidExchangeRole.Requester,
-      state: DidCommDidExchangeState.InvitationReceived,
-      theirLabel: outOfBandInvitation.label,
-      alias: config?.alias,
-      did: peerDid,
-      mediatorId,
-      autoAcceptConnection: config?.autoAcceptConnection,
-      outOfBandId: outOfBandRecord.id,
-      invitationDid,
-      imageUrl: outOfBandInvitation.imageUrl,
-      threadId: connectionRequest.threadId,
-    })
-
-    await this.updateState(agentContext, connectionRecord, DidCommDidExchangeState.RequestSent)
-
-    return {
-      connectionRecord,
-      message: connectionRequest,
-    }
-  }
-
-  public async processRequest(
-    messageContext: DidCommInboundMessageContext<DidCommConnectionRequestMessage>,
-    outOfBandRecord: DidCommOutOfBandRecord
-  ): Promise<DidCommConnectionRecord> {
-    this.ensureWarningLoggedOnce()
-    this.logger.debug(`Process message ${DidCommConnectionRequestMessage.type.messageTypeUri} start`, {
-      message: messageContext.message,
-    })
-    outOfBandRecord.assertRole(DidCommOutOfBandRole.Sender)
-    outOfBandRecord.assertState(DidCommOutOfBandState.AwaitResponse)
-
-    // TODO check there is no connection record for particular oob record
-
-    const { message } = messageContext
-    if (!message.connection.didDoc) {
-      throw new ConnectionProblemReportError('Public DIDs are not supported yet', {
-        problemCode: ConnectionProblemReportReason.RequestNotAccepted,
-      })
-    }
-
-    const { did: peerDid } = await this.createDid(messageContext.agentContext, {
-      role: DidDocumentRole.Received,
-      didDoc: message.connection.didDoc,
-    })
-
-    const connectionRecord = await this.createConnection(messageContext.agentContext, {
-      protocol: DidCommHandshakeProtocol.Connections,
-      role: DidCommDidExchangeRole.Responder,
-      state: DidCommDidExchangeState.RequestReceived,
-      alias: outOfBandRecord.alias,
-      theirLabel: message.label,
-      imageUrl: message.imageUrl,
-      outOfBandId: outOfBandRecord.id,
-      theirDid: peerDid,
-      threadId: message.threadId,
-      mediatorId: outOfBandRecord.mediatorId,
-      autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
-    })
-
-    await this.connectionRepository.update(messageContext.agentContext, connectionRecord)
-    this.emitStateChangedEvent(messageContext.agentContext, connectionRecord, null)
-
-    this.logger.debug(`Process message ${DidCommConnectionRequestMessage.type.messageTypeUri} end`, connectionRecord)
-    return connectionRecord
-  }
-
-  /**
-   * Create a connection response message for the connection with the specified connection id.
-   *
-   * @param connectionRecord the connection for which to create a connection response
-   * @returns outbound message containing connection response
-   */
-  public async createResponse(
-    agentContext: AgentContext,
-    connectionRecord: DidCommConnectionRecord,
-    outOfBandRecord: DidCommOutOfBandRecord,
-    routing?: DidCommRouting
-  ): Promise<ConnectionProtocolMsgReturnType<DidCommConnectionResponseMessage>> {
-    this.ensureWarningLoggedOnce()
-    this.logger.debug(`Create message ${DidCommConnectionResponseMessage.type.messageTypeUri} start`, connectionRecord)
-    connectionRecord.assertState(DidCommDidExchangeState.RequestReceived)
-    connectionRecord.assertRole(DidCommDidExchangeRole.Responder)
-
-    let didDoc: DidDoc
-    let keys: DidDocumentKey[]
-    if (routing) {
-      const result = this.createDidDoc(routing)
-      didDoc = result.didDoc
-      keys = result.keys
-    } else if (outOfBandRecord.outOfBandInvitation.getInlineServices().length > 0) {
-      const result = this.createDidDocFromOutOfBandDidCommServices(outOfBandRecord)
-      didDoc = result.didDoc
-      keys = result.keys
-    } else {
-      // We don't support using a did from the OOB invitation services currently, in this case we always pass routing to this method
-      throw new CredoError(
-        'No routing provided, and no inline services found in out of band invitation. When using did services in out of band invitation, make sure to provide routing information for rotation.'
-      )
-    }
-
-    const { did: peerDid } = await this.createDid(agentContext, {
-      role: DidDocumentRole.Created,
-      didDoc,
-      keys,
-    })
-
-    const connection = new DidCommConnection({
-      did: didDoc.id,
-      didDoc,
-    })
-
-    const connectionJson = JsonTransformer.toJSON(connection)
-
-    if (!connectionRecord.threadId) {
-      throw new CredoError(`Connection record with id ${connectionRecord.id} does not have a thread id`)
-    }
-
-    let signingKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
-    const firstService = outOfBandRecord.outOfBandInvitation.getServices()[0]
-    if (typeof firstService === 'string') {
-      const dids = agentContext.resolve(DidsApi)
-      const resolved = await dids.resolveCreatedDidDocumentWithKeys(parseDid(firstService).did)
-
-      const recipientKeys = resolved.didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
-      if (recipientKeys.length === 0) {
-        throw new CredoError(`Unable to extract signing key for connection response from did '${firstService}'`)
-      }
-
-      signingKey = recipientKeys[0].publicJwk
-      // TOOD: we probably need an util: addKeyIdToVerificationMethodKey
-      signingKey.keyId =
-        resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
-          recipientKeys[0].verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-        )?.kmsKeyId ?? signingKey.legacyKeyId
-    } else {
-      const service = getResolvedDidcommServiceWithSigningKeyId(
-        firstService,
-        outOfBandRecord.invitationInlineServiceKeys
-      )
-      signingKey = service.recipientKeys[0]
-    }
-
-    const connectionResponse = new DidCommConnectionResponseMessage({
-      threadId: connectionRecord.threadId,
-      connectionSig: await signData(agentContext, connectionJson, signingKey),
-    })
-
-    connectionRecord.did = peerDid
-    await this.updateState(agentContext, connectionRecord, DidCommDidExchangeState.ResponseSent)
-
-    this.logger.debug(`Create message ${DidCommConnectionResponseMessage.type.messageTypeUri} end`, {
-      connectionRecord,
-      message: connectionResponse,
-    })
-    return {
-      connectionRecord,
-      message: connectionResponse,
-    }
-  }
-
-  /**
-   * Process a received connection response message. This will not accept the connection request
-   * or send a connection acknowledgement message. It will only update the existing connection record
-   * with all the new information from the connection response message. Use {@link DidCommConnectionService.createTrustPing}
-   * after calling this function to create a trust ping message.
-   *
-   * @param messageContext the message context containing a connection response message
-   * @returns updated connection record
-   */
-  public async processResponse(
-    messageContext: DidCommInboundMessageContext<DidCommConnectionResponseMessage>,
-    outOfBandRecord: DidCommOutOfBandRecord
-  ): Promise<DidCommConnectionRecord> {
-    this.ensureWarningLoggedOnce()
-    this.logger.debug(`Process message ${DidCommConnectionResponseMessage.type.messageTypeUri} start`, {
-      message: messageContext.message,
-    })
-    const { connection: connectionRecord, message, recipientKey, senderKey } = messageContext
-
-    if (!recipientKey || !senderKey) {
-      throw new CredoError('Unable to process connection request without senderKey or recipientKey')
-    }
-
-    if (!connectionRecord) {
-      throw new CredoError('No connection record in message context.')
-    }
-
-    connectionRecord.assertState(DidCommDidExchangeState.RequestSent)
-    connectionRecord.assertRole(DidCommDidExchangeRole.Requester)
-
-    let connectionJson = null
-    try {
-      connectionJson = await unpackAndVerifySignatureDecorator(messageContext.agentContext, message.connectionSig)
-    } catch (error) {
-      if (error instanceof CredoError) {
-        throw new ConnectionProblemReportError(error.message, {
-          problemCode: ConnectionProblemReportReason.ResponseProcessingError,
-        })
-      }
-      throw error
-    }
-
-    const connection = JsonTransformer.fromJSON(connectionJson, DidCommConnection)
-
-    // Per the Connection RFC we must check if the key used to sign the connection~sig is the same key
-    // as the recipient key(s) in the connection invitation message
-    const signerVerkey = message.connectionSig.signer
-
-    const invitationKey = Kms.PublicJwk.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0])
-    if (!invitationKey.is(Kms.Ed25519PublicJwk)) {
-      throw new ConnectionProblemReportError(
-        `Expected invitation key to be an Ed25519 key, found ${invitationKey.jwkTypeHumanDescription}`,
-        { problemCode: ConnectionProblemReportReason.ResponseNotAccepted }
-      )
-    }
-
-    const invitationKeyBase58 = TypedArrayEncoder.toBase58(invitationKey.publicKey.publicKey)
-
-    if (signerVerkey !== invitationKeyBase58) {
-      throw new ConnectionProblemReportError(
-        `Connection object in connection response message is not signed with same key as recipient key in invitation expected='${invitationKey}' received='${signerVerkey}'`,
-        { problemCode: ConnectionProblemReportReason.ResponseNotAccepted }
-      )
-    }
-
-    if (!connection.didDoc) {
-      throw new CredoError('DID Document is missing.')
-    }
-
-    const { did: peerDid } = await this.createDid(messageContext.agentContext, {
-      role: DidDocumentRole.Received,
-      didDoc: connection.didDoc,
-    })
-
-    connectionRecord.theirDid = peerDid
-    connectionRecord.threadId = message.threadId
-
-    await this.updateState(messageContext.agentContext, connectionRecord, DidCommDidExchangeState.ResponseReceived)
-    return connectionRecord
   }
 
   /**
@@ -402,13 +63,16 @@ export class DidCommConnectionService {
     agentContext: AgentContext,
     connectionRecord: DidCommConnectionRecord,
     config: { responseRequested?: boolean; comment?: string } = {}
-  ): Promise<ConnectionProtocolMsgReturnType<DidCommTrustPingMessage>> {
+  ): Promise<ConnectionProtocolMsgReturnType<DidCommTrustPingMessage | DidCommTrustPingV2Message>> {
     connectionRecord.assertState([DidCommDidExchangeState.ResponseReceived, DidCommDidExchangeState.Completed])
 
     // TODO:
     //  - create ack message
     //  - maybe this shouldn't be in the connection service?
-    const trustPing = new DidCommTrustPingMessage(config)
+    const trustPing =
+      connectionRecord.didcommVersion === 'v2'
+        ? new DidCommTrustPingV2Message({ responseRequested: config.responseRequested })
+        : new DidCommTrustPingMessage(config)
 
     // Only update connection record and emit an event if the state is not already 'Complete'
     if (connectionRecord.state !== DidCommDidExchangeState.Completed) {
@@ -419,95 +83,6 @@ export class DidCommConnectionService {
       connectionRecord,
       message: trustPing,
     }
-  }
-
-  /**
-   * Process a received ack message. This will update the state of the connection
-   * to Completed if this is not already the case.
-   *
-   * @param messageContext the message context containing an ack message
-   * @returns updated connection record
-   */
-  public async processAck(
-    messageContext: DidCommInboundMessageContext<DidCommAckMessage>
-  ): Promise<DidCommConnectionRecord> {
-    const { connection, recipientKey } = messageContext
-
-    if (!connection) {
-      throw new CredoError(
-        `Unable to process connection ack: connection for recipient key ${recipientKey?.fingerprint} not found`
-      )
-    }
-
-    // TODO: This is better addressed in a middleware of some kind because
-    // any message can transition the state to complete, not just an ack or trust ping
-    if (
-      connection.state === DidCommDidExchangeState.ResponseSent &&
-      connection.role === DidCommDidExchangeRole.Responder
-    ) {
-      await this.updateState(messageContext.agentContext, connection, DidCommDidExchangeState.Completed)
-    }
-
-    return connection
-  }
-
-  /**
-   * Process a received {@link DidCommProblemReportMessage}.
-   *
-   * @param messageContext The message context containing a connection problem report message
-   * @returns connection record associated with the connection problem report message
-   *
-   */
-  public async processProblemReport(
-    messageContext: DidCommInboundMessageContext<DidCommConnectionProblemReportMessage>
-  ): Promise<DidCommConnectionRecord> {
-    this.ensureWarningLoggedOnce()
-    const { message: connectionProblemReportMessage, recipientKey, senderKey } = messageContext
-
-    this.logger.debug(`Processing connection problem report for verkey ${recipientKey?.fingerprint}`)
-
-    if (!recipientKey) {
-      throw new CredoError('Unable to process connection problem report without recipientKey')
-    }
-
-    const ourDidRecord = await this.didRepository.findCreatedDidByRecipientKey(
-      messageContext.agentContext,
-      recipientKey
-    )
-    if (!ourDidRecord) {
-      throw new CredoError(
-        `Unable to process connection problem report: created did record for recipient key ${recipientKey.fingerprint} not found`
-      )
-    }
-
-    const connectionRecord = await this.findByOurDid(messageContext.agentContext, ourDidRecord.did)
-    if (!connectionRecord) {
-      throw new CredoError(
-        `Unable to process connection problem report: connection for recipient key ${recipientKey.fingerprint} not found`
-      )
-    }
-
-    const theirDidRecord =
-      connectionRecord.theirDid &&
-      (await this.didRepository.findReceivedDid(messageContext.agentContext, connectionRecord.theirDid))
-    if (!theirDidRecord) {
-      throw new CredoError(`Received did record for did ${connectionRecord.theirDid} not found.`)
-    }
-
-    if (senderKey) {
-      if (!theirDidRecord?.getTags().recipientKeyFingerprints?.includes(senderKey.fingerprint)) {
-        throw new CredoError("Sender key doesn't match key of connection record")
-      }
-    }
-
-    connectionRecord.errorMessage = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
-    await this.update(messageContext.agentContext, connectionRecord)
-
-    // Marking connection as abandoned in case of problem report from issuer agent
-    // TODO: Can be conditionally abandoned - Like if another user is scanning already used connection invite where issuer will send invite-already-used problem code.
-    await this.updateState(messageContext.agentContext, connectionRecord, DidCommDidExchangeState.Abandoned)
-
-    return connectionRecord
   }
 
   /**
@@ -552,8 +127,8 @@ export class DidCommConnectionService {
         type: message.type,
       })
 
-      const recipientKey = messageContext.recipientKey
-      const senderKey = messageContext.senderKey
+      const recipientKey = messageContext.recipientKeyAgreementKey ?? messageContext.recipientKey
+      const senderKey = messageContext.senderKeyAgreementKey ?? messageContext.senderKey
 
       // set theirService to the value of lastReceivedMessage.service
       let theirService =
@@ -609,17 +184,18 @@ export class DidCommConnectionService {
         )
       }
 
-      // Check if recipientKey is in ourService
+      // Check if recipientKey is in ourService. Compare bridges Ed25519 <-> X25519 (legacy v1)
+      // and matches same-curve keys directly for v2 X25519 / P-256.
       if (recipientKey && ourService) {
-        const recipientKeyFound = ourService.recipientKeys.some((key) => recipientKey.equals(key))
+        const recipientKeyFound = ourService.recipientKeys.some((key) => keyAgreementsEqual(recipientKey, key))
         if (!recipientKeyFound) {
           throw new CredoError(`Recipient key ${recipientKey.fingerprint} not found in our service`)
         }
       }
 
-      // Check if senderKey is in theirService
+      // Check if senderKey is in theirService. Same compare semantics as the recipient check above.
       if (senderKey && theirService) {
-        const senderKeyFound = theirService.recipientKeys.some((key) => senderKey.equals(key))
+        const senderKeyFound = theirService.recipientKeys.some((key) => keyAgreementsEqual(senderKey, key))
         if (!senderKeyFound) {
           throw new CredoError(`Sender key ${senderKey.fingerprint} not found in their service.`)
         }
@@ -801,6 +377,35 @@ export class DidCommConnectionService {
     return this.connectionRepository.findSingleByQuery(agentContext, { theirDid })
   }
 
+  /**
+   * Find connection by their DID or by sender key. Used when findConnection fails (e.g. connection in
+   * RequestReceived, or DID format mismatch). Tries: 1) exact theirDid, 2) resolve theirDid via
+   * DidRepository (handles alternative forms), 3) resolve sender key to their DID.
+   */
+  public async findByTheirDidOrSender(
+    agentContext: AgentContext,
+    opts: { theirDid?: string; senderKey?: Kms.PublicJwk }
+  ): Promise<DidCommConnectionRecord | null> {
+    const { theirDid, senderKey } = opts
+    if (theirDid) {
+      const byDid = await this.findByTheirDid(agentContext, theirDid)
+      if (byDid) return byDid
+      const didRecord = await this.didRepository.findReceivedDid(agentContext, theirDid)
+      if (didRecord) {
+        const byCanonical = await this.findByTheirDid(agentContext, didRecord.did)
+        if (byCanonical) return byCanonical
+      }
+    }
+    if (senderKey) {
+      const theirDidRecord = await this.didRepository.findReceivedDidByRecipientKey(agentContext, senderKey)
+      if (theirDidRecord) {
+        const byKey = await this.findByTheirDid(agentContext, theirDidRecord.did)
+        if (byKey) return byKey
+      }
+    }
+    return null
+  }
+
   public async findByOurDid(agentContext: AgentContext, ourDid: string): Promise<DidCommConnectionRecord | null> {
     return this.connectionRepository.findSingleByQuery(agentContext, { did: ourDid })
   }
@@ -822,10 +427,9 @@ export class DidCommConnectionService {
 
   public async findByKeys(
     agentContext: AgentContext,
-    {
-      senderKey,
-      recipientKey,
-    }: { senderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>; recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> }
+    // DID record tags index the fingerprints of every recipient key type (Ed25519 for v1,
+    // X25519/P-256/P-384 for v2), so any public JWK can match here.
+    { senderKey, recipientKey }: { senderKey: Kms.PublicJwk; recipientKey: Kms.PublicJwk }
   ) {
     const theirDidRecord = await this.didRepository.findReceivedDidByRecipientKey(agentContext, senderKey)
     if (theirDidRecord) {
@@ -856,10 +460,16 @@ export class DidCommConnectionService {
 
   public async createConnection(
     agentContext: AgentContext,
-    options: DidCommConnectionRecordProps
+    options: DidCommConnectionRecordProps | DidCommConnectionRecord,
+    emitStateChanged = false,
+    metadata?: Partial<DidCommConnectionMetadata>
   ): Promise<DidCommConnectionRecord> {
-    const connectionRecord = new DidCommConnectionRecord(options)
+    const connectionRecord = options instanceof DidCommConnectionRecord ? options : new DidCommConnectionRecord(options)
+    for (const [key, value] of Object.entries(metadata ?? {})) connectionRecord.metadata.set(key, value)
     await this.connectionRepository.save(agentContext, connectionRecord)
+    if (emitStateChanged) {
+      this.emitStateChangedEvent(agentContext, connectionRecord, null)
+    }
     return connectionRecord
   }
 
@@ -882,141 +492,17 @@ export class DidCommConnectionService {
     return connectionRecord.connectionTypes || []
   }
 
-  private async createDid(
-    agentContext: AgentContext,
-    { role, didDoc, keys }: { role: DidDocumentRole; didDoc: DidDoc; keys?: DidDocumentKey[] }
-  ) {
-    if (keys && role !== DidDocumentRole.Created) {
-      throw new CredoError(`keys can only be provided for did documents when the role is '${DidDocumentRole.Created}'`)
-    }
-
-    // Convert the legacy did doc to a new did document
-    const { didDocument, keys: updatedKeys } = convertToNewDidDocument(didDoc, keys)
-
-    // Assert that the keys we are going to use for creating a did document haven't already been used in another did document
-    if (role === DidDocumentRole.Created) {
-      await assertNoCreatedDidExistsForKeys(agentContext, didDocument.recipientKeys)
-    }
-
-    const peerDid = didDocumentJsonToNumAlgo1Did(didDocument.toJSON())
-    didDocument.id = peerDid
-    const didRecord = new DidRecord({
-      did: peerDid,
-      role,
-      didDocument,
-      keys: updatedKeys,
-    })
-
-    // Store the unqualified did with the legacy did document in the metadata
-    // Can be removed at a later stage if we know for sure we don't need it anymore
-    didRecord.metadata.set(DidRecordMetadataKeys.LegacyDid, {
-      unqualifiedDid: didDoc.id,
-      didDocumentString: JsonTransformer.serialize(didDoc),
-    })
-
-    this.logger.debug('Saving DID record', {
-      id: didRecord.id,
-      did: didRecord.did,
-      role: didRecord.role,
-      tags: didRecord.getTags(),
-      didDocument: 'omitted...',
-    })
-
-    await this.didRepository.save(agentContext, didRecord)
-    this.logger.debug('Did record created.', didRecord)
-    return { did: peerDid, didDocument }
-  }
-
-  private createDidDoc(routing: DidCommRouting) {
-    const recipientKeyBase58 = TypedArrayEncoder.toBase58(routing.recipientKey.publicKey.publicKey)
-    const indyDid = utils.indyDidFromPublicKeyBase58(recipientKeyBase58)
-
-    const keys: DidDocumentKey[] = [
-      {
-        didDocumentRelativeKeyId: '#1',
-        kmsKeyId: routing.recipientKey.keyId,
-      },
-    ]
-
-    const publicKey = new Ed25119Sig2018({
-      id: `${indyDid}#1`,
-      controller: indyDid,
-      publicKeyBase58: recipientKeyBase58,
-    })
-
-    const auth = new ReferencedAuthentication(publicKey, authenticationTypes.Ed25519VerificationKey2018)
-
-    // IndyAgentService is old service type
-    const services = routing.endpoints.map(
-      (endpoint, index) =>
-        new IndyAgentService({
-          id: `${indyDid}#IndyAgentService-${index + 1}`,
-          serviceEndpoint: endpoint,
-          recipientKeys: [recipientKeyBase58],
-          routingKeys: routing.routingKeys.map((key) => TypedArrayEncoder.toBase58(key.publicKey.publicKey)),
-          // Order of endpoint determines priority
-          priority: index,
-        })
-    )
-
-    return {
-      didDoc: new DidDoc({
-        id: indyDid,
-        authentication: [auth],
-        service: services,
-        publicKey: [publicKey],
-      }),
-      keys,
-    }
-  }
-
-  private createDidDocFromOutOfBandDidCommServices(outOfBandRecord: DidCommOutOfBandRecord) {
-    const services = outOfBandRecord.outOfBandInvitation
-      .getInlineServices()
-      .map((service) => getResolvedDidcommServiceWithSigningKeyId(service, outOfBandRecord.invitationInlineServiceKeys))
-
-    const [recipientKey] = services[0].recipientKeys
-    const recipientKeyBase58 = TypedArrayEncoder.toBase58(recipientKey.publicKey.publicKey)
-    const did = utils.indyDidFromPublicKeyBase58(recipientKeyBase58)
-
-    const publicKey = new Ed25119Sig2018({
-      id: `${did}#1`,
-      controller: did,
-      publicKeyBase58: recipientKeyBase58,
-    })
-
-    const auth = new ReferencedAuthentication(publicKey, authenticationTypes.Ed25519VerificationKey2018)
-
-    // IndyAgentService is old service type
-    const service = services.map(
-      (service, index) =>
-        new IndyAgentService({
-          id: `${did}#IndyAgentService-${index + 1}`,
-          serviceEndpoint: service.serviceEndpoint,
-          recipientKeys: [recipientKeyBase58],
-          routingKeys: service.routingKeys?.map((publicJwk) =>
-            TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey)
-          ),
-          priority: index,
-        })
-    )
-
-    return {
-      didDoc: new DidDoc({
-        id: did,
-        authentication: [auth],
-        service,
-        publicKey: [publicKey],
-      }),
-      keys: [{ didDocumentRelativeKeyId: '#1', kmsKeyId: recipientKey.keyId }] satisfies DidDocumentKey[],
-    }
-  }
-
   public async returnWhenIsConnected(
     agentContext: AgentContext,
     connectionId: string,
     timeoutMs = 20000
   ): Promise<DidCommConnectionRecord> {
+    // An empty id matches no record. Fail with a clear error before the event subscription is set up,
+    // otherwise the subscription stays open until the timeout while getById fails with a not-found error.
+    if (!connectionId) {
+      throw new CredoError('connectionId is required for returnWhenIsConnected')
+    }
+
     const isConnected = (connection: DidCommConnectionRecord) => {
       return connection.id === connectionId && connection.state === DidCommDidExchangeState.Completed
     }

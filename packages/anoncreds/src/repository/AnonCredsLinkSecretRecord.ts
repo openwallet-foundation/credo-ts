@@ -1,9 +1,11 @@
 import type { TagsBase } from '@credo-ts/core'
 
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils } from '@credo-ts/core'
+import { z } from 'zod'
 
 export interface AnonCredsLinkSecretRecordProps {
   id?: string
+  createdAt?: Date
   linkSecretId: string
   value?: string // If value is not provided, only reference to link secret is stored in regular storage
 }
@@ -17,10 +19,19 @@ export type CustomAnonCredsLinkSecretTags = TagsBase & {
   isDefault?: boolean
 }
 
+const anonCredsLinkSecretRecordEncodingSchema = createRecordEncodingSchema({
+  linkSecretId: z.string().nullish(),
+  value: z.string().nullish(),
+})
+
 export class AnonCredsLinkSecretRecord extends BaseRecord<
   DefaultAnonCredsLinkSecretTags,
   CustomAnonCredsLinkSecretTags
 > {
+  public static get encodingSchema(): z.ZodType {
+    return anonCredsLinkSecretRecordEncodingSchema
+  }
+
   public static readonly type = 'AnonCredsLinkSecretRecord'
   public readonly type = AnonCredsLinkSecretRecord.type
 
@@ -32,6 +43,7 @@ export class AnonCredsLinkSecretRecord extends BaseRecord<
 
     if (props) {
       this.id = props.id ?? utils.uuid()
+      this.createdAt = props.createdAt ?? new Date()
       this.linkSecretId = props.linkSecretId
       this.value = props.value
     }

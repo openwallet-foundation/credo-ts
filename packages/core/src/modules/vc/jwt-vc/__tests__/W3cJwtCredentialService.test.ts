@@ -1,4 +1,4 @@
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
 import { AskarKeyManagementService, AskarModuleConfig, transformSeedToPrivateJwk } from '../../../../../../askar/src'
@@ -17,7 +17,16 @@ import { JwsService } from '../../../../crypto'
 import { ClassValidationError, CredoError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
 import { CacheModuleConfig, InMemoryLruCache } from '../../../cache'
-import { DidJwk, DidKey, DidRepository, DidsApi, DidsModuleConfig } from '../../../dids'
+import {
+  DidDocument,
+  DidJwk,
+  DidKey,
+  DidRepository,
+  DidsApi,
+  DidsModuleConfig,
+  getJsonWebKey2020,
+  VerificationMethod,
+} from '../../../dids'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
 import { X509ModuleConfig } from '../../../x509/X509ModuleConfig'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
@@ -31,12 +40,15 @@ import {
   CredoEs256DidKeyJwtVp,
   Ed256DidJwkJwtVcUnsigned,
 } from './fixtures/credo-jwt-vc'
-import { didIonJwtVcPresentationProfileJwtVc } from './fixtures/jwt-vc-presentation-profile'
 import { didKeyTransmuteJwtVc, didKeyTransmuteJwtVp } from './fixtures/transmute-verifiable-data'
 
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 const storageSerivice = new InMemoryStorageService<any>()
 const config = getAgentConfig('W3cJwtCredentialService')
+const askarModuleConfig = new AskarModuleConfig({
+  askar: NativeAskar,
+  store: getAskarStoreConfig('W3cJwtCredentialService'),
+})
 const agentContext = getAgentContext({
   registerInstances: [
     [InjectionSymbols.Logger, testLogger],
@@ -44,16 +56,8 @@ const agentContext = getAgentContext({
     [DidRepository, new DidRepository(storageSerivice, new EventEmitter(agentDependencies, new Subject()))],
     [InjectionSymbols.StorageService, storageSerivice],
     [X509ModuleConfig, new X509ModuleConfig()],
-    [
-      AskarStoreManager,
-      new AskarStoreManager(
-        new NodeFileSystem(),
-        new AskarModuleConfig({
-          askar,
-          store: getAskarStoreConfig('W3cJwtCredentialService'),
-        })
-      ),
-    ],
+    [AskarModuleConfig, askarModuleConfig],
+    [AskarStoreManager, new AskarStoreManager(new NodeFileSystem(), askarModuleConfig)],
     [
       CacheModuleConfig,
       new CacheModuleConfig({
@@ -186,15 +190,25 @@ describe('W3cJwtCredentialService', () => {
   })
 
   describe('verifyCredential', () => {
-    // Fails because the `jti` is not an uri (and the `vc.id` MUST be an uri according to vc data model)
-    test.skip('verifies a vc from the vc-jwt-presentation-profile', async () => {
+    test('bypasses status validation when verifyCredentialStatus is false', async () => {
       const result = await w3cJwtCredentialService.verifyCredential(agentContext, {
-        credential: didIonJwtVcPresentationProfileJwtVc,
+        credential: CredoEs256DidJwkJwtVc,
         verifyCredentialStatus: false,
       })
 
-      expect(result).toMatchObject({
-        verified: true,
+      expect(result).toEqual({
+        isValid: true,
+        validations: {
+          dataModel: {
+            isValid: true,
+          },
+          signature: {
+            isValid: true,
+          },
+          issuerIsSigner: {
+            isValid: true,
+          },
+        },
       })
     })
 
@@ -393,6 +407,103 @@ describe('W3cJwtCredentialService', () => {
   })
 
   describe('verifyPresentation', () => {
+    test('applies the trusted issuers of each credential to that credential only', async () => {
+      const signCredential = (type: string) =>
+        w3cJwtCredentialService.signCredential(agentContext, {
+          alg: KnownJwaSignatureAlgorithms.ES256,
+          format: ClaimFormat.JwtVc,
+          verificationMethod: issuerDidJwk.verificationMethodId,
+          credential: JsonTransformer.fromJSON(
+            { ...Ed256DidJwkJwtVcUnsigned, type: ['VerifiableCredential', type] },
+            W3cCredential
+          ),
+        })
+
+      // Both credentials have the same issuer, which is only trusted for the allowed credential
+      const signedJwtVp = await w3cJwtCredentialService.signPresentation(agentContext, {
+        presentation: new W3cPresentation({
+          context: [CREDENTIALS_CONTEXT_V1_URL],
+          type: ['VerifiablePresentation'],
+          verifiableCredential: [
+            await signCredential('RestrictedCredential'),
+            await signCredential('AllowedCredential'),
+          ],
+          holder: holderDidKey.did,
+        }),
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
+        challenge: 'challenge',
+        domain: 'example.com',
+        format: ClaimFormat.JwtVp,
+        verificationMethod: `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`,
+      })
+
+      const result = await w3cJwtCredentialService.verifyPresentation(agentContext, {
+        presentation: signedJwtVp,
+        challenge: 'challenge',
+        domain: 'example.com',
+        trustedIssuers: async ({ verification }) =>
+          (verification.credential as W3cJwtVerifiableCredential).type.includes('AllowedCredential')
+            ? [{ method: 'did', issuance: issuerDidJwk.did }]
+            : [],
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.validations.credentials).toMatchObject([
+        {
+          isValid: false,
+          error: { message: `Signer did ${issuerDidJwk.did} is not trusted. Unable to verify signature.` },
+        },
+        { isValid: true },
+      ])
+    })
+
+    test('rejects a presentation signed with a key that names the holder as its controller', async () => {
+      const signerDid = 'did:web:signer.example'
+      const signerKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const verificationMethod = new VerificationMethod({
+        ...getJsonWebKey2020({
+          did: signerDid,
+          verificationMethodId: `${signerDid}#key-1`,
+          publicJwk: PublicJwk.fromPublicJwk(signerKey.publicJwk),
+        }),
+        controller: holderDidKey.did,
+      })
+      await dids.import({
+        did: signerDid,
+        didDocument: new DidDocument({
+          id: signerDid,
+          verificationMethod: [verificationMethod],
+          authentication: [verificationMethod.id],
+        }),
+        keys: [{ didDocumentRelativeKeyId: '#key-1', kmsKeyId: signerKey.keyId }],
+      })
+
+      // No holder, so the JWT has no iss and is attributed to the signer of its kid
+      const signedJwtVp = await w3cJwtCredentialService.signPresentation(agentContext, {
+        presentation: new W3cPresentation({
+          context: [CREDENTIALS_CONTEXT_V1_URL],
+          type: ['VerifiablePresentation'],
+          verifiableCredential: [W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)],
+        }),
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
+        challenge: 'challenge',
+        domain: 'example.com',
+        format: ClaimFormat.JwtVp,
+        verificationMethod: verificationMethod.id,
+      })
+
+      const result = await w3cJwtCredentialService.verifyPresentation(agentContext, {
+        presentation: signedJwtVp,
+        challenge: 'challenge',
+        domain: 'example.com',
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain(
+        `is controlled by '${holderDidKey.did}', not by the DID document '${signerDid}' it is listed in`
+      )
+    })
+
     test('verifies an ES256 JWT vp signed by Credo', async () => {
       const result = await w3cJwtCredentialService.verifyPresentation(agentContext, {
         presentation: CredoEs256DidKeyJwtVp,

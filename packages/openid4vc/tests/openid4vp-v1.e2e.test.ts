@@ -3,13 +3,16 @@ import {
   ClaimFormat,
   DateOnly,
   type DcqlQuery,
+  type GetTrustedIssuersForVerification,
   Kms,
   MdocDeviceResponse,
   MdocRecord,
   parseDid,
   type SdJwtVc,
   SdJwtVcRecord,
+  type SdJwtVcWithTypeMetadataChain,
   TypedArrayEncoder,
+  type VerificationSigner,
   W3cCredential,
   W3cCredentialRecord,
   W3cCredentialSubject,
@@ -26,10 +29,24 @@ import {
   X509Service,
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
+import nock from 'nock'
+import { filter, firstValueFrom } from 'rxjs'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
+import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessionCoordinator'
+import {
+  OpenId4VcModule,
+  OpenId4VcVerificationSessionRepository,
+  OpenId4VcVerificationSessionState,
+  type OpenId4VcVerificationSessionStateChangedEvent,
+  type OpenId4VcVerificationTypes,
+  OpenId4VcVerifierEvents,
+  type OpenId4VcVerifierModuleConfigOptions,
+  type OpenId4VpAuthorizationRequestPayload,
+  Openid4vpAuthorizationRequestError,
+} from '../src'
+import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
 import { openBadgeDcqlQuery, universityDegreeDcqlQuery } from './utilsVp'
@@ -622,13 +639,24 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         ],
       },
     })
+    if (!dcql) {
+      throw new Error('DCQL not defined')
+    }
 
     expect(
-      asArray(
-        (dcql?.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
-          .verifiableCredential
-      )[0].resolvedCredential
-    ).toMatchObject({
+      (dcql.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+        .context
+    ).toEqual(['https://www.w3.org/ns/credentials/v2', 'https://www.w3.org/ns/credentials/undefined-terms/v2'])
+
+    const openBadgeEntry = asArray(
+      (dcql.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+        .verifiableCredential
+    )[0]
+    if (!openBadgeEntry || !('resolvedCredential' in openBadgeEntry)) {
+      throw new Error('Expected EnvelopedVerifiableCredential entry in OpenBadgeCredentialDescriptor presentation')
+    }
+
+    expect(openBadgeEntry.resolvedCredential).toMatchObject({
       type: ['VerifiableCredential', 'OpenBadgeCredential'],
       credentialSubject: {
         id: holder1.did,
@@ -689,17 +717,53 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         ],
       },
     })
-    expect(
-      asArray(
-        (dcql2?.presentations.UniversityDegree[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
-          .verifiableCredential
-      )[0].resolvedCredential
-    ).toMatchObject({
+    if (!dcql2) {
+      throw new Error('DCQL not defined')
+    }
+    const universityDegreeEntry = asArray(
+      (dcql2.presentations.UniversityDegree[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+        .verifiableCredential
+    )[0]
+    if (!universityDegreeEntry || !('resolvedCredential' in universityDegreeEntry)) {
+      throw new Error('Expected EnvelopedVerifiableCredential entry in UniversityDegree presentation')
+    }
+
+    expect(universityDegreeEntry.resolvedCredential).toMatchObject({
       type: ['VerifiableCredential', 'UniversityDegreeCredential'],
       credentialSubject: {
         id: holder1.did,
       },
     })
+  })
+
+  it('returns 404 for unknown verifiers and 413 when the request body exceeds the limit', async () => {
+    const verifierTenant = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
+    const openIdVerifier = await verifierTenant.openid4vc.verifier.createVerifier()
+    await verifierTenant.endSession()
+
+    const postLargeBody = (url: string) =>
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: 'a'.repeat(5 * 1024 * 1024) }),
+      })
+
+    const warnSpy = vi.spyOn(verifier.agent.config.logger, 'warn')
+    expect((await postLargeBody(verificationBaseUrl)).status).toBe(404)
+    expect((await postLargeBody(`${verificationBaseUrl}/unknown-verifier/authorize`)).status).toBe(404)
+
+    const response = await postLargeBody(`${verificationBaseUrl}/${openIdVerifier.verifierId}/authorize`)
+    expect(response.status).toBe(413)
+    expect(await response.json()).toEqual({
+      error: 'invalid_request',
+      message: 'The request body exceeds the maximum allowed limit.',
+    })
+
+    const sessionCoordinator = verifier.agent.dependencyManager.resolve(TenantSessionCoordinator)
+    await vi.waitFor(() => expect(sessionCoordinator.getSessionCountForTenant(verifier1.tenantId)).toBe(0))
+    // The router must end the session itself, not the fallback after the response
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('was not ended by the router'))
+    warnSpy.mockRestore()
   })
 
   it('Invalid verifier attestation in combination with dcql', async () => {
@@ -742,6 +806,87 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     ).rejects.toThrow(
       'Verifier info (attestations) were provided, but the verifier info used credential ids that are not present in the query'
     )
+  })
+
+  it('holder rejects transaction data with credential ids that are not present in the dcql query', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: { commonName: 'Credo', countryName: 'NL' },
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
+    })
+
+    const rawCertificate = certificate.toString('base64')
+    holder.agent.x509.config.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
+
+    const { authorizationRequest, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        responseMode: 'direct_post.jwt',
+        requestSigner: {
+          method: 'x5c',
+          x5c: [certificate],
+        },
+        transactionData: [
+          {
+            type: 'OpenBadgeTx',
+            credential_ids: ['UnknownCredentialId', 'OpenBadgeCredentialDescriptor', 'OtherUnknownCredentialId'],
+            transaction_data_hashes_alg: ['sha-256'],
+          },
+          {
+            type: 'OpenBadgeTx',
+            credential_ids: ['OpenBadgeCredentialDescriptor'],
+            transaction_data_hashes_alg: ['sha-256'],
+          },
+          {
+            type: 'OpenBadgeTx',
+            credential_ids: ['ThirdUnknownCredentialId'],
+            transaction_data_hashes_alg: ['sha-256'],
+          },
+        ],
+        dcql: {
+          query: {
+            credentials: [
+              {
+                id: 'OpenBadgeCredentialDescriptor',
+                format: 'dc+sd-jwt',
+                meta: { vct_values: ['OpenBadgeCredential'] },
+              },
+            ],
+          },
+        },
+        version: 'v1',
+      })
+
+    const error = await holder.agent.openid4vc.holder
+      .resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      .catch((error) => error)
+
+    // The client is authenticated, so the holder can send the error to the verifier
+    expect(error).toBeInstanceOf(Openid4vpAuthorizationRequestError)
+    expect(error).toMatchObject({
+      errorResponse: {
+        error: 'invalid_transaction_data',
+        error_description:
+          "Transaction data references credential ids that are not present in the dcql query: entry with index 0 references 'UnknownCredentialId', 'OtherUnknownCredentialId'; entry with index 2 references 'ThirdUnknownCredentialId'.",
+      },
+      authorizationRequestPayload: { response_uri: expect.any(String) },
+      isClientAuthenticated: true,
+    })
+
+    const result = await holder.agent.openid4vc.holder.declineOpenId4VpAuthorizationRequest({
+      authorizationRequestError: error,
+    })
+
+    expect(result).toMatchObject({ ok: true, serverResponse: { status: 200 } })
+    expect(await verifier.agent.openid4vc.verifier.getVerificationSessionById(verificationSession.id)).toMatchObject({
+      state: OpenId4VcVerificationSessionState.Error,
+      errorMessage: expect.stringContaining('"error": "invalid_transaction_data"'),
+    })
   })
 
   it('e2e flow (jarm) with verifier endpoints verifying a sd-jwt-vc with selective disclosure (transaction data)', async () => {
@@ -827,6 +972,9 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const resolvedAuthorizationRequest =
       await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
     expect(resolvedAuthorizationRequest.authorizationRequestPayload.response_mode).toEqual('direct_post.jwt')
+    expect(resolvedAuthorizationRequest.signedAuthorizationRequest?.compact).toEqual(
+      verificationSession.authorizationRequestJwt
+    )
 
     expect(resolvedAuthorizationRequest.authorizationRequestPayload).toMatchObject({
       verifier_info: [{ format: 'jwt', data: { hello: 'world' } }],
@@ -854,6 +1002,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                   {
                     claim_set_index: undefined,
                     success: true,
+                    disclosed_paths: [['vct'], ['degree'], ['cnf'], ['iss'], ['iat'], ['university']],
                     output: {
                       cnf: {
                         kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
@@ -1074,7 +1223,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?response_type=vp_token&client_id=redirect_uri%3A${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_uri=${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_mode=direct_post&nonce=${authorizationRequestObject.nonce}&dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22OpenBadgeCredentialDescriptor%22%2C%22format%22%3A%22dc%2Bsd-jwt%22%2C%22meta%22%3A%7B%22vct_values%22%3A%5B%22OpenBadgeCredential%22%5D%7D%2C%22claims%22%3A%5B%7B%22path%22%3A%5B%22university%22%5D%7D%5D%7D%5D%7D&client_metadata=%7B%22vp_formats_supported%22%3A%7B%22dc%2Bsd-jwt%22%3A%7B%22sd-jwt_alg_values%22%3A%5B%22HS256%22%2C%22HS384%22%2C%22HS512%22%2C%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22Ed25519%22%2C%22ES256K%22%5D%2C%22kb-jwt_alg_values%22%3A%5B%22HS256%22%2C%22HS384%22%2C%22HS512%22%2C%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22Ed25519%22%2C%22ES256K%22%5D%7D%7D%7D&state=${authorizationRequestObject.state}`
+      `openid4vp://?response_type=vp_token&client_id=redirect_uri%3A${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_uri=${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_mode=direct_post&nonce=${authorizationRequestObject.nonce}&dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22OpenBadgeCredentialDescriptor%22%2C%22format%22%3A%22dc%2Bsd-jwt%22%2C%22meta%22%3A%7B%22vct_values%22%3A%5B%22OpenBadgeCredential%22%5D%7D%2C%22claims%22%3A%5B%7B%22path%22%3A%5B%22university%22%5D%7D%5D%7D%5D%7D&client_metadata=%7B%22vp_formats_supported%22%3A%7B%22dc%2Bsd-jwt%22%3A%7B%22sd-jwt_alg_values%22%3A%5B%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22Ed25519%22%2C%22ES256K%22%5D%2C%22kb-jwt_alg_values%22%3A%5B%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22Ed25519%22%2C%22ES256K%22%5D%7D%7D%7D&state=${authorizationRequestObject.state}`
     )
 
     const resolvedAuthorizationRequest =
@@ -1121,6 +1270,103 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
+  })
+
+  it('e2e flow verifying a sd-jwt-vc whose vct extends the requested vct', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const requestedVct = 'https://example.com/vct/degree'
+    const presentedVct = 'https://example.com/vct/bachelor-degree'
+
+    // Served once each: DCQL matching must reuse the chain resolved before the trust callback
+    nock('https://example.com')
+      .get('/vct/bachelor-degree')
+      .once()
+      .reply(200, { vct: presentedVct, extends: requestedVct })
+      .get('/vct/degree')
+      .once()
+      .reply(200, { vct: requestedVct })
+
+    const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
+      holder: { method: 'did', didUrl: holder.kid },
+      issuer: { method: 'did', didUrl: verifier.kid },
+      payload: { vct: presentedVct, university: 'innsbruck' },
+    })
+    const credentialRecord = await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
+
+    const trustContexts: Array<{ credentialQueryId?: string; vctChain?: string[] }> = []
+    const getTrustedIssuersForVerification: GetTrustedIssuersForVerification<
+      VerificationSigner,
+      OpenId4VcVerificationTypes
+    > = async (_agentContext, { verification }) => {
+      if (verification.type === 'openId4VpCredential' && verification.credential.claimFormat === ClaimFormat.SdJwtDc) {
+        trustContexts.push({
+          credentialQueryId: verification.dcql?.credentialQueryId,
+          vctChain: verification.credential.typeMetadataChain?.map((typeMetadata) => typeMetadata.vct),
+        })
+      }
+
+      return undefined
+    }
+    verifier.agent.context.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
+
+    const { authorizationRequest, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post',
+        dcql: {
+          query: {
+            credentials: [{ id: 'degree', format: 'dc+sd-jwt', meta: { vct_values: [requestedVct] } }],
+          },
+        },
+        version: 'v1',
+      })
+
+    const resolvedAuthorizationRequest =
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+
+    const { serverResponse } = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
+      dcql: {
+        credentials: {
+          degree: [
+            { claimFormat: ClaimFormat.SdJwtDc, credentialRecord, disclosedPayload: { university: 'innsbruck' } },
+          ],
+        },
+      },
+    })
+    expect(serverResponse).toMatchObject({ status: 200 })
+
+    // The event has the presentations as verified, so the type metadata doesn't have to be resolved again
+    const verifiedEvent = await firstValueFrom(
+      verifier.replaySubject.pipe(
+        filter(
+          (event): event is OpenId4VcVerificationSessionStateChangedEvent =>
+            event.type === OpenId4VcVerifierEvents.VerificationSessionStateChanged
+        ),
+        filter(
+          (
+            event
+          ): event is OpenId4VcVerificationSessionStateChangedEvent & {
+            payload: { state: OpenId4VcVerificationSessionState.ResponseVerified }
+          } =>
+            event.payload.verificationSession.id === verificationSession.id &&
+            event.payload.state === OpenId4VcVerificationSessionState.ResponseVerified
+        )
+      )
+    )
+
+    expect(trustContexts).toEqual([{ credentialQueryId: 'degree', vctChain: [presentedVct, requestedVct] }])
+
+    const presentation = verifiedEvent.payload.verifiedAuthorizationResponse.dcql?.presentations.degree[0] as
+      | SdJwtVcWithTypeMetadataChain
+      | undefined
+    expect(presentation?.typeMetadataChain?.map((typeMetadata) => typeMetadata.vct)).toEqual([
+      presentedVct,
+      requestedVct,
+    ])
+    expect(presentation?.typeMetadata).toMatchObject({ vct: presentedVct, extends: requestedVct })
   })
 
   it('e2e flow with verifier endpoints verifying a sd-jwt-vc with selective disclosure', async () => {
@@ -1226,6 +1472,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                   {
                     claim_set_index: undefined,
                     success: true,
+                    disclosed_paths: [['vct'], ['degree'], ['cnf'], ['iss'], ['iat'], ['university']],
                     output: {
                       cnf: {
                         kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
@@ -1493,6 +1740,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                   {
                     claim_set_index: undefined,
                     success: true,
+                    disclosed_paths: [['vct'], ['degree'], ['cnf'], ['iss'], ['iat'], ['university']],
                     output: {
                       cnf: {
                         kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
@@ -1525,6 +1773,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                   {
                     claim_set_index: undefined,
                     success: true,
+                    disclosed_paths: [['vct'], ['degree'], ['cnf'], ['iss'], ['iat'], ['university']],
                     output: {
                       cnf: {
                         kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
@@ -1555,7 +1804,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     }
 
     const validCredentials =
-      resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor.valid_credentials
+      resolvedAuthorizationRequest.dcql.queryResult.credential_matches.OpenBadgeCredentialDescriptor.valid_credentials
+    if (!validCredentials || validCredentials.length < 2) {
+      throw new Error('Expected at least two valid OpenBadge credentials')
+    }
 
     const { serverResponse, authorizationResponsePayload } =
       await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
@@ -1566,16 +1818,16 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               {
                 claimFormat: ClaimFormat.SdJwtDc,
                 // biome-ignore lint/suspicious/noExplicitAny: no explanation
-                credentialRecord: (validCredentials?.[0] as any).record,
+                credentialRecord: (validCredentials[0] as any).record,
                 // biome-ignore lint/suspicious/noExplicitAny: no explanation
-                disclosedPayload: (validCredentials?.[0] as any).claims.valid_claim_sets[0].output,
+                disclosedPayload: (validCredentials[0] as any).claims.valid_claim_sets[0].output,
               },
               {
                 claimFormat: ClaimFormat.SdJwtDc,
                 // biome-ignore lint/suspicious/noExplicitAny: no explanation
-                credentialRecord: (validCredentials?.[1] as any).record,
+                credentialRecord: (validCredentials[1] as any).record,
                 // biome-ignore lint/suspicious/noExplicitAny: no explanation
-                disclosedPayload: (validCredentials?.[1] as any).claims.valid_claim_sets[0].output,
+                disclosedPayload: (validCredentials[1] as any).claims.valid_claim_sets[0].output,
               },
             ],
           },
@@ -1903,6 +2155,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                   {
                     claim_set_index: undefined,
                     success: true,
+                    disclosed_paths: [['vct'], ['degree'], ['cnf'], ['iss'], ['iat'], ['university']],
                     output: {
                       cnf: {
                         kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
@@ -1942,6 +2195,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                   {
                     claim_set_index: undefined,
                     success: true,
+                    disclosed_paths: [['vct'], ['degree'], ['cnf'], ['iss'], ['iat'], ['name']],
                     output: {
                       cnf: {
                         kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
@@ -2546,6 +2800,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                     claim_set_index: undefined,
                     valid_claim_indexes: [0],
                     success: true,
+                    disclosed_paths: [['vct'], ['degree'], ['cnf'], ['iss'], ['iat'], ['university']],
                     output: {
                       cnf: {
                         kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
@@ -2772,6 +3027,20 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
 
+    const trustedIssuersQueryIds: Array<string | undefined> = []
+    const getTrustedIssuersForVerification: GetTrustedIssuersForVerification<
+      VerificationSigner,
+      OpenId4VcVerificationTypes
+    > = async (_agentContext, { verification }) => {
+      if (verification.type === 'openId4VpCredential') {
+        trustedIssuersQueryIds.push(verification.dcql?.credentialQueryId)
+      }
+
+      // Fall back to the trusted certificates configured above
+      return undefined
+    }
+    verifier.agent.context.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
+
     const dcqlQuery = {
       credentials: [
         {
@@ -2924,6 +3193,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                       claim_set_index: undefined,
                       valid_claim_indexes: [0],
                       success: true,
+                      disclosed_paths: [['vct'], ['degree'], ['cnf'], ['iss'], ['iat'], ['university']],
                       output: {
                         cnf: {
                           kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
@@ -2979,6 +3249,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const { dcql, transactionData } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession.id
     )
+
+    expect(trustedIssuersQueryIds.sort()).toEqual(['OpenBadgeCredentialDescriptor', 'university'])
 
     expect(transactionData).toEqual([
       {
@@ -3534,5 +3806,382 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     }
   ]
 }`)
+  })
+
+  it('responds with 200 to an authorization error response (direct_post)', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post',
+        dcql: { query: openBadgeDcqlQuery },
+        authorizationResponseRedirectUri: 'https://example.com/redirect',
+        version: 'v1',
+      })
+
+    const errorResponse = {
+      error: 'access_denied',
+      error_description: 'The user declined the request',
+      state: authorizationRequestObject.state as string,
+    }
+
+    const response = await fetch(authorizationRequestObject.response_uri as string, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(errorResponse).toString(),
+    })
+
+    expect(response.status).toEqual(200)
+    expect(await response.json()).toEqual({ redirect_uri: 'https://example.com/redirect' })
+
+    const updatedVerificationSession = await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.Error,
+      verificationSessionId: verificationSession.id,
+    })
+
+    expect(updatedVerificationSession.errorMessage).toEqual(
+      `The wallet returned an openid4vp authorization error response.\n${JSON.stringify(errorResponse, null, 2)}`
+    )
+  })
+
+  it('returns redirect_uri for a failed verification, but not when the response is replayed', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post',
+        dcql: { query: openBadgeDcqlQuery },
+        authorizationResponseRedirectUri: 'https://example.com/redirect',
+        version: 'v1',
+      })
+
+    const postAuthorizationResponse = () =>
+      fetch(authorizationRequestObject.response_uri as string, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          vp_token: JSON.stringify({ UnknownCredentialQuery: ['invalid'] }),
+          state: authorizationRequestObject.state as string,
+        }).toString(),
+      })
+
+    const response = await postAuthorizationResponse()
+    expect(response.status).toEqual(400)
+    expect(await response.json()).toMatchObject({
+      error: 'invalid_request',
+      redirect_uri: 'https://example.com/redirect',
+    })
+
+    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.Error,
+      verificationSessionId: verificationSession.id,
+    })
+
+    const replayResponse = await postAuthorizationResponse()
+    expect(replayResponse.status).toEqual(400)
+    expect(await replayResponse.json()).toEqual({
+      error: 'invalid_request',
+      error_description: 'Invalid session',
+    })
+  })
+
+  it('returns redirect_uri for a response to an expired session, but not when the response is replayed', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post',
+        dcql: { query: openBadgeDcqlQuery },
+        authorizationResponseRedirectUri: 'https://example.com/redirect',
+        version: 'v1',
+      })
+
+    const verificationSessionRepository = verifier.agent.dependencyManager.resolve(
+      OpenId4VcVerificationSessionRepository
+    )
+    verificationSession.expiresAt = new Date(Date.now() - 1000)
+    await verificationSessionRepository.update(verifier.agent.context, verificationSession)
+
+    const postAuthorizationResponse = () =>
+      fetch(authorizationRequestObject.response_uri as string, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          error: 'access_denied',
+          state: authorizationRequestObject.state as string,
+        }).toString(),
+      })
+
+    const response = await postAuthorizationResponse()
+    expect(response.status).toEqual(400)
+    expect(await response.json()).toEqual({
+      error: 'invalid_request',
+      error_description: 'session expired',
+      redirect_uri: 'https://example.com/redirect',
+    })
+
+    const replayResponse = await postAuthorizationResponse()
+    expect(replayResponse.status).toEqual(400)
+    expect(await replayResponse.json()).toEqual({
+      error: 'invalid_request',
+      error_description: 'Invalid session',
+    })
+  })
+
+  it('responds with 200 to an encrypted authorization error response (direct_post.jwt)', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post.jwt',
+        dcql: { query: openBadgeDcqlQuery },
+        version: 'v1',
+      })
+
+    const encryptionJwk = verificationSession.requestPayload.client_metadata?.jwks?.keys[0]
+    if (!encryptionJwk) {
+      throw new Error('Expected an encryption jwk in the client metadata')
+    }
+
+    const errorResponse = {
+      error: 'access_denied',
+      error_description: 'The user declined the request',
+      state: authorizationRequestObject.state as string,
+    }
+
+    const { jwe } = await getOid4vcCallbacks(holder.agent.context).encryptJwe(
+      { method: 'jwk', publicJwk: encryptionJwk, alg: 'ECDH-ES', enc: 'A128GCM' },
+      JSON.stringify(errorResponse)
+    )
+
+    const response = await fetch(authorizationRequestObject.response_uri as string, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ response: jwe }).toString(),
+    })
+
+    expect(response.status).toEqual(200)
+    expect(await response.json()).toEqual({})
+
+    const updatedVerificationSession = await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.Error,
+      verificationSessionId: verificationSession.id,
+    })
+
+    expect(updatedVerificationSession.errorMessage).toEqual(
+      `The wallet returned an openid4vp authorization error response.\n${JSON.stringify(errorResponse, null, 2)}`
+    )
+  })
+
+  it('holder declines an authorization request (direct_post)', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequest, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post',
+        dcql: { query: openBadgeDcqlQuery },
+        authorizationResponseRedirectUri: 'https://example.com/redirect',
+        version: 'v1',
+      })
+
+    const resolved = await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+    const result = await holder.agent.openid4vc.holder.declineOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolved.authorizationRequestPayload,
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      serverResponse: { status: 200, body: { redirect_uri: 'https://example.com/redirect' } },
+      authorizationResponse: { error: 'access_denied', state: resolved.authorizationRequestPayload.state },
+      authorizationResponsePayload: { error: 'access_denied', state: resolved.authorizationRequestPayload.state },
+      redirectUri: 'https://example.com/redirect',
+    })
+
+    expect(await verifier.agent.openid4vc.verifier.getVerificationSessionById(verificationSession.id)).toMatchObject({
+      state: OpenId4VcVerificationSessionState.Error,
+      errorMessage: expect.stringContaining('"error": "access_denied"'),
+    })
+  })
+
+  it('holder declines an authorization request (direct_post.jwt)', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequest, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post.jwt',
+        dcql: { query: openBadgeDcqlQuery },
+        authorizationResponseRedirectUri: 'https://example.com/redirect',
+        version: 'v1',
+      })
+
+    const resolved = await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+    const result = await holder.agent.openid4vc.holder.declineOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolved.authorizationRequestPayload,
+      error: 'access_denied',
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      serverResponse: { status: 200 },
+      authorizationResponse: { response: expect.any(String) },
+      redirectUri: 'https://example.com/redirect',
+    })
+
+    expect(await verifier.agent.openid4vc.verifier.getVerificationSessionById(verificationSession.id)).toMatchObject({
+      state: OpenId4VcVerificationSessionState.Error,
+      errorMessage: expect.stringContaining('"error": "access_denied"'),
+    })
+  })
+
+  it.each([
+    ['no encryption key', { jwks: undefined }],
+    ['an unsupported enc value', { encrypted_response_enc_values_supported: ['A256CBC-HS512'] }],
+  ])(
+    'holder sends an unencrypted error response when it cannot encrypt it (direct_post.jwt, %s)',
+    async (_, clientMetadata) => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+      const { authorizationRequest, verificationSession } =
+        await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+          verifierId: openIdVerifier.verifierId,
+          requestSigner: { method: 'none' },
+          responseMode: 'direct_post.jwt',
+          dcql: { query: openBadgeDcqlQuery },
+          authorizationResponseRedirectUri: 'https://example.com/redirect',
+          version: 'v1',
+        })
+
+      const { authorizationRequestPayload } =
+        await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      const result = await holder.agent.openid4vc.holder.declineOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: {
+          ...authorizationRequestPayload,
+          client_metadata: { ...authorizationRequestPayload.client_metadata, ...clientMetadata },
+        },
+      })
+
+      expect(result).toMatchObject({
+        ok: true,
+        authorizationResponse: { error: 'access_denied' },
+        redirectUri: 'https://example.com/redirect',
+      })
+
+      expect(await verifier.agent.openid4vc.verifier.getVerificationSessionById(verificationSession.id)).toMatchObject({
+        state: OpenId4VcVerificationSessionState.Error,
+      })
+    }
+  )
+
+  it('holder declines a dc api authorization request', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequestObject } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+      verifierId: openIdVerifier.verifierId,
+      requestSigner: { method: 'none' },
+      responseMode: 'dc_api',
+      expectedOrigins: ['https://example.com'],
+      dcql: { query: openBadgeDcqlQuery },
+      version: 'v1',
+    })
+
+    const result = await holder.agent.openid4vc.holder.declineOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: authorizationRequestObject as OpenId4VpAuthorizationRequestPayload,
+      origin: 'https://example.com',
+      errorDescription: 'Not included for the DC API',
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      authorizationResponse: { error: 'access_denied' },
+      authorizationResponsePayload: { error: 'access_denied' },
+    })
+  })
+
+  it('holder sends an error for a request with an unsupported format, without following the redirect for an unauthenticated client', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post',
+        dcql: { query: openBadgeDcqlQuery },
+        authorizationResponseRedirectUri: 'https://example.com/redirect',
+        version: 'v1',
+      })
+
+    // The client id no longer matches the response uri, so the client is not authenticated
+    const error = await holder.agent.openid4vc.holder
+      .resolveOpenId4VpAuthorizationRequest({
+        ...authorizationRequestObject,
+        client_id: 'redirect_uri:https://other.example.com/response',
+      })
+      .catch((error) => error)
+
+    expect(error).toBeInstanceOf(Openid4vpAuthorizationRequestError)
+    expect(error).toMatchObject({ isClientAuthenticated: false, errorResponse: { error: 'invalid_client' } })
+
+    const result = await holder.agent.openid4vc.holder.declineOpenId4VpAuthorizationRequest({
+      authorizationRequestError: error,
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      serverResponse: { status: 200, body: { redirect_uri: 'https://example.com/redirect' } },
+      authorizationResponsePayload: { error: 'invalid_client' },
+      redirectUri: undefined,
+    })
+    expect(await verifier.agent.openid4vc.verifier.getVerificationSessionById(verificationSession.id)).toMatchObject({
+      state: OpenId4VcVerificationSessionState.Error,
+    })
+  })
+
+  it('holder sends vp_formats_not_supported when none of the requested formats are supported', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post',
+        dcql: { query: openBadgeDcqlQuery },
+        authorizationResponseRedirectUri: 'https://example.com/redirect',
+        version: 'v1',
+      })
+
+    const error = await holder.agent.openid4vc.holder
+      .resolveOpenId4VpAuthorizationRequest({
+        ...authorizationRequestObject,
+        dcql_query: { credentials: [{ id: 'anoncreds', format: 'ac_vp' }] },
+      })
+      .catch((error) => error)
+
+    expect(error).toBeInstanceOf(Openid4vpAuthorizationRequestError)
+    expect(error).toMatchObject({ isClientAuthenticated: true, errorResponse: { error: 'vp_formats_not_supported' } })
+
+    const result = await holder.agent.openid4vc.holder.declineOpenId4VpAuthorizationRequest({
+      authorizationRequestError: error,
+    })
+
+    expect(result).toMatchObject({ ok: true, redirectUri: 'https://example.com/redirect' })
+    expect(await verifier.agent.openid4vc.verifier.getVerificationSessionById(verificationSession.id)).toMatchObject({
+      state: OpenId4VcVerificationSessionState.Error,
+      errorMessage: expect.stringContaining('"error": "vp_formats_not_supported"'),
+    })
   })
 })

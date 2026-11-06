@@ -1,10 +1,12 @@
 import type { DependencyManager, Module, Update } from '@credo-ts/core'
-import { AnonCredsDataIntegrityServiceSymbol } from '@credo-ts/core'
+import { AnonCredsW3cCredentialServiceSymbol } from '@credo-ts/core'
+import { DidCommDataIntegrityLinkSecretBindingProviderToken } from '@credo-ts/didcomm'
 import { AnonCredsApi } from './AnonCredsApi'
 import type { AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from './anoncreds-rs'
-import { AnonCredsDataIntegrityService } from './anoncreds-rs/AnonCredsDataIntegrityService'
+import { AnonCredsW3cCredentialService } from './anoncreds-rs/AnonCredsW3cCredentialService'
+import { AnonCredsLinkSecretBindingProvider } from './formats/AnonCredsLinkSecretBindingProvider'
 import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsKeyCorrectnessProofRepository,
@@ -50,7 +52,15 @@ export class AnonCredsModule implements Module {
     dependencyManager.registerSingleton(AnonCredsIssuerServiceSymbol, AnonCredsRsIssuerService)
     dependencyManager.registerSingleton(AnonCredsVerifierServiceSymbol, AnonCredsRsVerifierService)
 
-    dependencyManager.registerSingleton(AnonCredsDataIntegrityServiceSymbol, AnonCredsDataIntegrityService)
+    dependencyManager.registerSingleton(AnonCredsW3cCredentialServiceSymbol, AnonCredsW3cCredentialService)
+
+    // Makes the `anoncreds_link_secret` binding method of the W3C Data Integrity credential
+    // attachment format available. Without it, that format only supports the binding methods that
+    // do not require anoncreds.
+    dependencyManager.registerSingleton(
+      DidCommDataIntegrityLinkSecretBindingProviderToken,
+      AnonCredsLinkSecretBindingProvider
+    )
   }
 
   public updates = [

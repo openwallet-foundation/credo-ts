@@ -1,5 +1,6 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils } from '@credo-ts/core'
+import { z } from 'zod'
 import type { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
 
 export type CustomDidCommBasicMessageTags = TagsBase
@@ -22,18 +23,34 @@ export interface DidCommBasicMessageStorageProps {
   parentThreadId?: string
   content: string
   sentTime: string
+  protocolVersion?: string
 }
+
+const didCommBasicMessageRecordEncodingSchema = createRecordEncodingSchema({
+  content: z.string().nullish(),
+  sentTime: z.string().nullish(),
+  connectionId: z.string().nullish(),
+  role: z.string().nullish(),
+  threadId: z.string().nullish(),
+  parentThreadId: z.string().nullish(),
+  protocolVersion: z.string().nullish(),
+})
 
 export class DidCommBasicMessageRecord extends BaseRecord<
   DefaultDidCommBasicMessageTags,
   CustomDidCommBasicMessageTags
 > {
+  public static get encodingSchema(): z.ZodType {
+    return didCommBasicMessageRecordEncodingSchema
+  }
+
   public content!: string
   public sentTime!: string
   public connectionId!: string
   public role!: DidCommBasicMessageRole
   public threadId?: string
   public parentThreadId?: string
+  public protocolVersion?: string
 
   public static readonly type = 'BasicMessageRecord'
   public readonly type = DidCommBasicMessageRecord.type
@@ -51,6 +68,7 @@ export class DidCommBasicMessageRecord extends BaseRecord<
       this.role = props.role
       this.threadId = props.threadId
       this.parentThreadId = props.parentThreadId
+      this.protocolVersion = props.protocolVersion
     }
   }
 

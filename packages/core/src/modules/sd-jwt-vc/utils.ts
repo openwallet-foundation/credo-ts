@@ -1,8 +1,9 @@
 import type { Signer, Verifier } from '@sd-jwt/core'
 import { AgentContext } from '../../agent'
+import type { HashName } from '../../crypto'
 import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'
-import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
+import { type DidPurpose, DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { isKnownJwaSignatureAlgorithm, type Jwk, KeyManagementApi, PublicJwk } from '../kms'
 import { X509Certificate } from '../x509/X509Certificate'
 import { SdJwtVcError } from './SdJwtVcError'
@@ -15,12 +16,16 @@ export async function resolveSigningPublicJwkFromDidUrl(agentContext: AgentConte
   return publicJwk
 }
 
-export async function resolveDidUrl(agentContext: AgentContext, didUrl: string) {
+export async function resolveDidUrl(
+  agentContext: AgentContext,
+  didUrl: string,
+  purposes: DidPurpose[] = ['assertionMethod']
+) {
   const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
   const didDocument = await didResolver.resolveDidDocument(agentContext, didUrl)
 
   return {
-    verificationMethod: didDocument.dereferenceKey(didUrl, ['assertionMethod']),
+    verificationMethod: didDocument.dereferenceKey(didUrl, purposes),
     didDocument,
   }
 }
@@ -28,7 +33,11 @@ export async function resolveDidUrl(agentContext: AgentContext, didUrl: string) 
 export async function extractKeyFromHolderBinding(
   agentContext: AgentContext,
   holder: SdJwtVcHolderBinding,
-  { forSigning = false, jwkKeyId }: { forSigning?: boolean; jwkKeyId?: string } = {}
+  {
+    forSigning = false,
+    jwkKeyId,
+    didPurposes,
+  }: { forSigning?: boolean; jwkKeyId?: string; didPurposes?: DidPurpose[] } = {}
 ) {
   if (holder.method === 'did') {
     const parsedDid = parseDid(holder.didUrl)
@@ -37,11 +46,13 @@ export async function extractKeyFromHolderBinding(
     }
 
     let publicJwk: PublicJwk
+    let did: string | undefined
     if (forSigning) {
       publicJwk = await resolveSigningPublicJwkFromDidUrl(agentContext, holder.didUrl)
     } else {
-      const { verificationMethod } = await resolveDidUrl(agentContext, holder.didUrl)
+      const { verificationMethod, didDocument } = await resolveDidUrl(agentContext, holder.didUrl, didPurposes)
       publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      did = didDocument.id
     }
 
     const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
@@ -53,6 +64,7 @@ export async function extractKeyFromHolderBinding(
     return {
       alg,
       publicJwk,
+      did,
       cnf: {
         // We need to include the whole didUrl here, otherwise the verifier
         // won't know which did it is associated with
@@ -93,6 +105,35 @@ export function setJwkAlgFromJwtHeader(publicJwk: PublicJwk, jwtHeaderAlg: unkno
   }
 
   publicJwk.alg = jwtHeaderAlg
+}
+
+/**
+ * Hashing algorithms that can be used for the disclosure digests of an SD-JWT, and are placed
+ * in the `_sd_alg` claim.
+ *
+ * `sha-1` is omitted, as SD-JWT requires a hash algorithm that is considered secure at the
+ * time of issuance.
+ *
+ * @see https://www.ietf.org/archive/id/draft-ietf-oauth-selective-disclosure-jwt-22.html#name-hash-function-claim
+ */
+export const sdJwtHashingAlgorithms: Array<Exclude<HashName, 'sha-1'>> = ['sha-256', 'sha-384', 'sha-512']
+
+/**
+ * Get the hashing algorithm to use for the disclosure digests of an SD-JWT, defaulting to `sha-256`.
+ *
+ * The sign options already exclude insecure hashing algorithms on a type level, but this is
+ * enforced at runtime as well, as the value can originate from JavaScript callers or dynamic input.
+ */
+export function getSdJwtHashingAlgorithm(hashingAlgorithm?: HashName): Exclude<HashName, 'sha-1'> {
+  const hashAlg = hashingAlgorithm ?? 'sha-256'
+
+  if (!sdJwtHashingAlgorithms.includes(hashAlg as Exclude<HashName, 'sha-1'>)) {
+    throw new CredoError(
+      `Unsupported hashing algorithm '${hashAlg}' for the disclosure digests of an SD-JWT. Supported hashing algorithms are ${sdJwtHashingAlgorithms.join(', ')}`
+    )
+  }
+
+  return hashAlg as Exclude<HashName, 'sha-1'>
 }
 
 export function getSdJwtSigner(agentContext: AgentContext, key: PublicJwk): Signer {

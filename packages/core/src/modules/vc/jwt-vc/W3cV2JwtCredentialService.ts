@@ -7,13 +7,19 @@ import { injectable } from '../../../plugins'
 import { asArray, JsonTransformer, MessageValidator, nowInSeconds } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { extractKeyFromHolderBinding } from '../../sd-jwt-vc/utils'
-import type { W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models'
-import { validateCredentialSubjectAuthentication } from '../util'
+import type { W3cV2JsonPresentation, W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models'
+import { validateSignerIsExpectedParty } from '../resolveSigner'
 import {
-  extractHolderFromPresentationCredentials,
-  getVerificationMethodForJwt,
+  getSignerForJwt,
+  resolvePresentationSigner,
   validateAndResolveVerificationMethod,
+  withUndefinedTermsContext,
 } from '../v2-jwt-utils'
+import {
+  validateVc2ContextBaseline,
+  validateVc2CredentialStatus,
+  validateVc2CredentialValidityPeriod,
+} from '../validators'
 import type {
   W3cV2JwtSignCredentialOptions,
   W3cV2JwtSignPresentationOptions,
@@ -56,7 +62,7 @@ export class W3cV2JwtCredentialService {
     // Add iat and cnf to the payload
     jwtPayload.iat = nowInSeconds()
     jwtPayload.additionalClaims.cnf = options.holder
-      ? (await extractKeyFromHolderBinding(agentContext, options.holder)).cnf
+      ? (await extractKeyFromHolderBinding(agentContext, options.holder, { didPurposes: ['authentication'] })).cnf
       : undefined
 
     // Validate and resolve the verification method
@@ -112,9 +118,28 @@ export class W3cV2JwtCredentialService {
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
+        this.logCredentialShouldWarnings(agentContext, credential)
+
+        validationResults.validations.dataModel = validateVc2ContextBaseline(credential.resolvedCredential.context)
+        if (!validationResults.validations.dataModel.isValid) {
+          return validationResults
+        }
+
         validationResults.validations.dataModel = {
           isValid: true,
         }
+
+        validationResults.validations.validityPeriod = validateVc2CredentialValidityPeriod({
+          validFrom: credential.resolvedCredential.validFrom,
+          validUntil: credential.resolvedCredential.validUntil,
+          skewSeconds: agentContext.config.validitySkewSeconds,
+        })
+
+        validationResults.validations.credentialStatus = validateVc2CredentialStatus({
+          credentialStatus: credential.resolvedCredential.credentialStatus,
+          credentialFormat: 'JWT',
+          verifyCredentialStatus: options.verifyCredentialStatus,
+        })
       } catch (error) {
         validationResults.validations.dataModel = {
           isValid: false,
@@ -124,13 +149,14 @@ export class W3cV2JwtCredentialService {
         return validationResults
       }
 
-      const issuerVerificationMethod = await getVerificationMethodForJwt(agentContext, credential, ['assertionMethod'])
+      const issuer = await getSignerForJwt(agentContext, credential, ['assertionMethod'])
+      const issuerVerificationMethod = issuer.verificationMethod
       const issuerPublicKey = getPublicJwkFromVerificationMethod(issuerVerificationMethod)
 
       // Ensure the issuer is trusted according to the (optional) `getTrustedIssuersForVerification`
       // callback. For did-based issuers this is a no-op when no trusted issuers are configured,
       // preserving the previous "trust any valid signature" behavior. Throws when the issuer is not trusted.
-      await TrustedIssuerContext.ensureTrustedSigner(
+      await TrustedIssuerContext.ensureTrustedCredentialSigner(
         agentContext,
         {
           signer: { method: 'did', didUrl: issuerVerificationMethod.id },
@@ -169,37 +195,16 @@ export class W3cV2JwtCredentialService {
         }
       }
 
-      // Validate whether the credential is signed with the 'issuer' id
-      // NOTE: this uses the verificationMethod.controller. We may want to use the verificationMethod.id?
-      if (credential.resolvedCredential.issuerId !== issuerVerificationMethod.controller) {
-        validationResults.validations.issuerIsSigner = {
-          isValid: false,
-          error: new CredoError(
-            `Credential is signed using verification method ${issuerVerificationMethod.id}, while the issuer of the credential is '${credential.resolvedCredential.issuerId}'`
-          ),
-        }
-      } else {
-        validationResults.validations.issuerIsSigner = {
-          isValid: true,
-        }
-      }
-
-      // Validate whether the `issuer` of the credential is also the signer
-      const issuerIsSigner = signatureResult?.jwsSigners.some(
+      const isSignedByIssuerKey = signatureResult?.jwsSigners.some(
         (jwsSigner) => jwsSigner.jwk.fingerprint === issuerPublicKey.fingerprint
       )
-      if (!issuerIsSigner) {
-        validationResults.validations.issuerIsSigner = {
-          isValid: false,
-          error: new CredoError('Credential is not signed by the issuer of the credential'),
-        }
-      } else {
-        validationResults.validations.issuerIsSigner = {
-          isValid: true,
-        }
-      }
+      validationResults.validations.issuerIsSigner = isSignedByIssuerKey
+        ? validateSignerIsExpectedParty(issuer, credential.resolvedCredential.issuerId, 'issuer')
+        : { isValid: false, error: new CredoError('Credential is not signed by the issuer of the credential') }
 
-      validationResults.isValid = Object.values(validationResults.validations).every((v) => v.isValid)
+      validationResults.isValid = Object.values(validationResults.validations).every(
+        (validation) => validation?.isValid === true
+      )
 
       return validationResults
     } catch (error) {
@@ -226,11 +231,15 @@ export class W3cV2JwtCredentialService {
       additionalClaims: JsonTransformer.toJSON(options.presentation),
     })
 
-    // Add the nonce and aud to the payload
+    // Add the nonce, aud and iat to the payload
     jwtPayload.additionalClaims.nonce = options.challenge
     jwtPayload.aud = options.domain
+    jwtPayload.iat = nowInSeconds()
+    jwtPayload.additionalClaims['@context'] = withUndefinedTermsContext(
+      jwtPayload.additionalClaims['@context'] as W3cV2JsonPresentation['@context']
+    )
 
-    const holder = await extractHolderFromPresentationCredentials(agentContext, options.presentation)
+    const holder = await resolvePresentationSigner(agentContext, options.presentation)
 
     // Sign JWT
     const jwt = await this.jwsService.createJwsCompact(agentContext, {
@@ -258,7 +267,11 @@ export class W3cV2JwtCredentialService {
   ): Promise<W3cV2VerifyPresentationResult> {
     const validationResults: W3cV2VerifyPresentationResult = {
       isValid: false,
-      validations: {},
+      presentation: {
+        isValid: false,
+        validations: {},
+      },
+      credentialEntries: [],
     }
 
     try {
@@ -279,6 +292,8 @@ export class W3cV2JwtCredentialService {
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
+        this.logPresentationShouldWarnings(agentContext, presentation)
+
         // Make sure challenge matches nonce
         if (options.challenge !== presentation.jwt.payload.additionalClaims.nonce) {
           throw new CredoError(`JWT payload 'nonce' does not match challenge '${options.challenge}'`)
@@ -289,11 +304,16 @@ export class W3cV2JwtCredentialService {
           throw new CredoError(`JWT payload 'aud' does not include domain '${options.domain}'`)
         }
 
-        validationResults.validations.dataModel = {
+        const contextValidationResult = validateVc2ContextBaseline(presentation.resolvedPresentation.context)
+        if (!contextValidationResult.isValid) {
+          throw contextValidationResult.error
+        }
+
+        validationResults.presentation.validations.dataModel = {
           isValid: true,
         }
       } catch (error) {
-        validationResults.validations.dataModel = {
+        validationResults.presentation.validations.dataModel = {
           isValid: false,
           error,
         }
@@ -301,13 +321,13 @@ export class W3cV2JwtCredentialService {
         return validationResults
       }
 
-      const proverVerificationMethod = await getVerificationMethodForJwt(agentContext, presentation, ['authentication'])
+      const prover = await getSignerForJwt(agentContext, presentation, ['authentication'])
+      const proverVerificationMethod = prover.verificationMethod
       const proverPublicKey = getPublicJwkFromVerificationMethod(proverVerificationMethod)
 
-      let signatureResult: VerifyJwsResult | undefined
       try {
         // Verify the JWS signature
-        signatureResult = await this.jwsService.verifyJws(agentContext, {
+        const signatureResult = await this.jwsService.verifyJws(agentContext, {
           jws: presentation.jwt.serializedJwt,
           allowedJwsSignerMethods: ['did'],
           jwsSigner: {
@@ -319,88 +339,101 @@ export class W3cV2JwtCredentialService {
         })
 
         if (!signatureResult.isValid) {
-          validationResults.validations.presentationSignature = {
+          validationResults.presentation.validations.presentationSignature = {
             isValid: false,
             error: new CredoError('Invalid JWS signature on presentation'),
           }
         } else {
-          validationResults.validations.presentationSignature = {
+          validationResults.presentation.validations.presentationSignature = {
             isValid: true,
           }
         }
       } catch (error) {
-        validationResults.validations.presentationSignature = {
+        validationResults.presentation.validations.presentationSignature = {
           isValid: false,
           error,
         }
       }
 
-      // Validate whether the presentation is signed with the 'holder' id
-      // NOTE: this uses the verificationMethod.controller. We may want to use the verificationMethod.id?
-      if (
-        presentation.resolvedPresentation.holderId &&
-        proverVerificationMethod.controller !== presentation.resolvedPresentation.holderId
-      ) {
-        validationResults.validations.holderIsSigner = {
-          isValid: false,
-          error: new CredoError(
-            `Presentation is signed using verification method ${proverVerificationMethod.id}, while the holder of the presentation is '${presentation.resolvedPresentation.holderId}'`
-          ),
-        }
-      } else {
-        // If no holderId is present, this validation passes by default as there can't be
-        // a mismatch between the 'holder' property and the signer of the presentation.
-        validationResults.validations.holderIsSigner = {
-          isValid: true,
-        }
-      }
-
-      // To keep things simple, we only support JWT VCs in JWT VPs for now
-      const credentials = asArray(presentation.resolvedPresentation.verifiableCredential)
-
-      // Verify all credentials in parallel, and await the result
-      validationResults.validations.credentials = await Promise.all(
-        credentials.map(async (credential) => {
-          if (!(credential.envelopedCredential instanceof W3cV2JwtVerifiableCredential)) {
-            return {
-              isValid: false,
-              error: new CredoError(
-                'Credential is not of format JWT. Presentations in JWT format can only contain credentials in JWT format.'
-              ),
-              validations: {},
-            }
-          }
-
-          const credentialResult = await this.verifyCredential(agentContext, {
-            credential: credential.envelopedCredential,
-            trustedIssuers: options.trustedIssuers,
-          })
-
-          const credentialSubjectAuthentication = validateCredentialSubjectAuthentication(
-            credential.resolvedCredential.credentialSubjectIds,
-            proverVerificationMethod.controller
-          )
-
-          return {
-            ...credentialResult,
-            isValid: credentialResult.isValid && credentialSubjectAuthentication.isValid,
-            validations: {
-              ...credentialResult.validations,
-              credentialSubjectAuthentication,
-            },
-          }
-        })
+      validationResults.presentation.validations.holderIsSigner = validateSignerIsExpectedParty(
+        prover,
+        presentation.resolvedPresentation.holderId,
+        'holder'
       )
 
-      // Deeply nested check whether all validations have passed
-      validationResults.isValid = Object.values(validationResults.validations).every((v) =>
-        Array.isArray(v) ? v.every((vv) => vv.isValid) : v.isValid
+      validationResults.presentation.isValid = Object.values(validationResults.presentation.validations).every(
+        (validation) => validation.isValid
       )
+
+      // Credential-entry dispatch is orchestrated by W3cV2CredentialService.
+      // This service verifies VP container integrity only.
+      validationResults.isValid = validationResults.presentation.isValid
 
       return validationResults
     } catch (error) {
       validationResults.error = error
       return validationResults
+    }
+  }
+
+  private logCredentialShouldWarnings(agentContext: AgentContext, credential: W3cV2JwtVerifiableCredential) {
+    const payload = credential.jwt.payload
+    const headerIss = credential.jwt.header.iss
+
+    if (typeof headerIss === 'string' && typeof payload.iss === 'string' && headerIss !== payload.iss) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: JOSE header iss conflicts with payload iss', {
+        format: 'vc+jwt',
+        headerIss,
+        payloadIss: payload.iss,
+      })
+    }
+
+    if (
+      typeof payload.jti === 'string' &&
+      credential.resolvedCredential.id &&
+      credential.resolvedCredential.id !== payload.jti
+    ) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: jti claim conflicts with credential id', {
+        format: 'vc+jwt',
+        jti: payload.jti,
+        credentialId: credential.resolvedCredential.id,
+      })
+    }
+
+    if (typeof payload.sub === 'string' && !credential.resolvedCredential.credentialSubjectIds.includes(payload.sub)) {
+      agentContext.config.logger.warn(
+        'VC-JOSE-COSE SHOULD warning: sub claim does not match any credentialSubject.id',
+        {
+          format: 'vc+jwt',
+          sub: payload.sub,
+          credentialSubjectIds: credential.resolvedCredential.credentialSubjectIds,
+        }
+      )
+    }
+  }
+
+  private logPresentationShouldWarnings(agentContext: AgentContext, presentation: W3cV2JwtVerifiablePresentation) {
+    const payload = presentation.jwt.payload
+    const headerIss = presentation.jwt.header.iss
+
+    if (typeof headerIss === 'string' && typeof payload.iss === 'string' && headerIss !== payload.iss) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: JOSE header iss conflicts with payload iss', {
+        format: 'vp+jwt',
+        headerIss,
+        payloadIss: payload.iss,
+      })
+    }
+
+    if (
+      typeof payload.jti === 'string' &&
+      presentation.resolvedPresentation.id &&
+      presentation.resolvedPresentation.id !== payload.jti
+    ) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: jti claim conflicts with presentation id', {
+        format: 'vp+jwt',
+        jti: payload.jti,
+        presentationId: presentation.resolvedPresentation.id,
+      })
     }
   }
 }

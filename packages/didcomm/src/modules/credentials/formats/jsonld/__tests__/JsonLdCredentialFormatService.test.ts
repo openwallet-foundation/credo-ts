@@ -1,9 +1,19 @@
 import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import type { AgentContext } from '../../../../../../../core/src/agent'
-import { DidDocument } from '../../../../../../../core/src/modules/dids'
+import {
+  DidDocument,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+} from '../../../../../../../core/src/modules/dids'
 import { DidResolverService } from '../../../../../../../core/src/modules/dids/services/DidResolverService'
+import { Ed25519PublicJwk } from '../../../../../../../core/src/modules/kms'
 import {
   CREDENTIALS_CONTEXT_V1_URL,
+  Ed25519Signature2018,
+  Ed25519Signature2020,
+  SECURITY_ED25519_2020_CONTEXT_URL,
+  SignatureSuiteRegistry,
+  W3cCredential,
   W3cCredentialRecord,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
@@ -162,10 +172,62 @@ const requestAttachment = new DidCommAttachment({
     base64: JsonEncoder.toBase64(signCredentialOptions),
   }),
 })
+
+const signCredentialOptions2020: DidCommJsonLdCredentialDetailFormat = {
+  credential: inputDocAsJson,
+  options: {
+    proofPurpose: 'assertionMethod',
+    proofType: 'Ed25519Signature2020',
+  },
+}
+
+const requestAttachment2020 = new DidCommAttachment({
+  mimeType: 'application/json',
+  data: new DidCommAttachmentData({
+    base64: JsonEncoder.toBase64(signCredentialOptions2020),
+  }),
+})
+
+// An Ed25519Signature2020 suite is required to add its own `@context` when signing, as the
+// credentials/v1 context does not define the 2020 proof terms.
+const vcJson2020 = {
+  ...vcJson,
+  '@context': [...vcJson['@context'], SECURITY_ED25519_2020_CONTEXT_URL],
+  proof: {
+    verificationMethod: vcJson.proof.verificationMethod,
+    type: 'Ed25519Signature2020',
+    created: vcJson.proof.created,
+    proofPurpose: 'assertionMethod',
+    proofValue: 'z4oey5q2M3XKaxup3tmzN4DRFTLVqpLMweBrSxMY2xHX5XTYVQeVbY8nQAVHMrXFkXJpmEcqdoDwLWxaqA3Q1geV6',
+  },
+}
+
+const credentialAttachment2020 = new DidCommAttachment({
+  mimeType: 'application/json',
+  data: new DidCommAttachmentData({
+    base64: JsonEncoder.toBase64(vcJson2020),
+  }),
+})
+
 let jsonLdFormatService: DidCommCredentialFormatService<DidCommJsonLdCredentialFormat>
 let w3cCredentialService: W3cCredentialService
 let w3cJsonLdCredentialService: W3cJsonLdCredentialService
 let didResolver: DidResolverService
+
+const signatureSuiteRegistry = new SignatureSuiteRegistry([
+  {
+    suiteClass: Ed25519Signature2018,
+    proofType: 'Ed25519Signature2018',
+    verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018],
+    supportedPublicJwkTypes: [Ed25519PublicJwk],
+  },
+  {
+    suiteClass: Ed25519Signature2020,
+    proofType: 'Ed25519Signature2020',
+    verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020],
+    supportedPublicJwkTypes: [Ed25519PublicJwk],
+  },
+])
 
 describe('JsonLd CredentialFormatService', () => {
   let agentContext: AgentContext
@@ -180,6 +242,7 @@ describe('JsonLd CredentialFormatService', () => {
         [DidResolverService, didResolver],
         [W3cCredentialService, w3cCredentialService],
         [W3cJsonLdCredentialService, w3cJsonLdCredentialService],
+        [SignatureSuiteRegistry, signatureSuiteRegistry],
       ],
       agentConfig,
     })
@@ -222,6 +285,12 @@ describe('JsonLd CredentialFormatService', () => {
     })
 
     test('Creates JsonLd Credential Offer', async () => {
+      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument))
+      mockFunction(w3cJsonLdCredentialService.getVerificationMethodTypesByProofType).mockReturnValue([
+        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+      ])
+      mockFunction(w3cJsonLdCredentialService.assertCanSignCredential).mockResolvedValue()
+
       // when
       const { attachment, previewAttributes, format } = await jsonLdFormatService.createOffer(agentContext, {
         credentialFormats: {
@@ -249,11 +318,36 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       expect(previewAttributes).toBeUndefined()
+      expect(w3cJsonLdCredentialService.assertCanSignCredential).toHaveBeenCalledWith(agentContext, {
+        proofType: 'Ed25519Signature2018',
+        verificationMethod:
+          'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        controller: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+      })
 
       expect(format).toMatchObject({
         attachmentId: expect.any(String),
         format: 'aries/ld-proof-vc-detail@v1.0',
       })
+    })
+
+    test('rejects a JsonLd Credential Offer when the issuer DID was not created by the agent', async () => {
+      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument))
+      mockFunction(w3cJsonLdCredentialService.getVerificationMethodTypesByProofType).mockReturnValue([
+        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+      ])
+      mockFunction(w3cJsonLdCredentialService.assertCanSignCredential).mockRejectedValue(
+        new Error("Created did 'did:key:external' not found")
+      )
+
+      await expect(
+        jsonLdFormatService.createOffer(agentContext, {
+          credentialFormats: {
+            jsonld: signCredentialOptions,
+          },
+          credentialExchangeRecord: mockCredentialRecord(),
+        })
+      ).rejects.toThrow("Created did 'did:key:external' not found")
     })
   })
 
@@ -296,6 +390,68 @@ describe('JsonLd CredentialFormatService', () => {
     })
   })
 
+  describe('Accept Credential Proposal', () => {
+    test('accepts a proposal when the issuer DID has a verification method compatible with the proof type', async () => {
+      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument))
+      mockFunction(w3cJsonLdCredentialService.getVerificationMethodTypesByProofType).mockReturnValue([
+        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+      ])
+      mockFunction(w3cJsonLdCredentialService.assertCanSignCredential).mockResolvedValue()
+
+      const { attachment, format } = await jsonLdFormatService.acceptProposal(agentContext, {
+        credentialExchangeRecord: mockCredentialRecord({
+          state: DidCommCredentialState.ProposalReceived,
+        }),
+        proposalAttachment: requestAttachment,
+      })
+
+      expect(didResolver.resolveDidDocument).toHaveBeenCalledWith(agentContext, inputDocAsJson.issuer)
+      expect(w3cJsonLdCredentialService.assertCanSignCredential).toHaveBeenCalledWith(agentContext, {
+        proofType: 'Ed25519Signature2018',
+        verificationMethod:
+          'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        controller: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+      })
+      expect(attachment.getDataAsJson()).toEqual(signCredentialOptions)
+      expect(format.format).toBe('aries/ld-proof-vc-detail@v1.0')
+    })
+
+    test('rejects a proposal when the issuer DID was not created by the agent', async () => {
+      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument))
+      mockFunction(w3cJsonLdCredentialService.getVerificationMethodTypesByProofType).mockReturnValue([
+        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+      ])
+      mockFunction(w3cJsonLdCredentialService.assertCanSignCredential).mockRejectedValue(
+        new Error("Created did 'did:key:external' not found")
+      )
+
+      await expect(
+        jsonLdFormatService.acceptProposal(agentContext, {
+          credentialExchangeRecord: mockCredentialRecord({
+            state: DidCommCredentialState.ProposalReceived,
+          }),
+          proposalAttachment: requestAttachment,
+        })
+      ).rejects.toThrow("Created did 'did:key:external' not found")
+    })
+
+    test('rejects a proposal when the issuer DID has no verification method compatible with the proof type', async () => {
+      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument))
+      mockFunction(w3cJsonLdCredentialService.getVerificationMethodTypesByProofType).mockReturnValue([
+        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+      ])
+
+      await expect(
+        jsonLdFormatService.acceptProposal(agentContext, {
+          credentialExchangeRecord: mockCredentialRecord({
+            state: DidCommCredentialState.ProposalReceived,
+          }),
+          proposalAttachment: requestAttachment,
+        })
+      ).rejects.toThrow('Missing verification method for key type Ed25519VerificationKey2020')
+    })
+  })
+
   describe('Accept Request', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
 
@@ -312,7 +468,7 @@ describe('JsonLd CredentialFormatService', () => {
       // calls private method in the format service
       const verificationMethod = await service.deriveVerificationMethod(
         agentContext,
-        signCredentialOptions.credential,
+        JsonTransformer.fromJSON(signCredentialOptions.credential, W3cCredential),
         credentialRequest
       )
       expect(verificationMethod).toBe(
@@ -534,6 +690,52 @@ describe('JsonLd CredentialFormatService', () => {
           credentialExchangeRecord,
         })
       ).rejects.toThrow('Received credential proof purpose does not match proof purpose from credential request')
+    })
+
+    test('accepts a credential whose @context gained the suite context added when signing', async () => {
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c))
+
+      await jsonLdFormatService.processCredential(agentContext, {
+        offerAttachment,
+        attachment: credentialAttachment2020,
+        requestAttachment: requestAttachment2020,
+        credentialExchangeRecord,
+      })
+
+      expect(w3cCredentialService.storeCredential).toHaveBeenCalledTimes(1)
+    })
+
+    test('auto responds to a credential whose @context gained the suite context added when signing', async () => {
+      await expect(
+        jsonLdFormatService.shouldAutoRespondToCredential(agentContext, {
+          credentialExchangeRecord,
+          requestAttachment: requestAttachment2020,
+          credentialAttachment: credentialAttachment2020,
+        })
+      ).resolves.toBe(true)
+    })
+
+    test('throws error if the received credential gained a context unrelated to the suite', async () => {
+      const credentialAttachmentWithExtraContext = new DidCommAttachment({
+        mimeType: 'application/json',
+        data: new DidCommAttachmentData({
+          base64: JsonEncoder.toBase64({
+            ...vcJson2020,
+            '@context': [...vcJson2020['@context'], 'https://w3id.org/citizenship/v1'],
+          }),
+        }),
+      })
+
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c))
+
+      await expect(
+        jsonLdFormatService.processCredential(agentContext, {
+          offerAttachment,
+          attachment: credentialAttachmentWithExtraContext,
+          requestAttachment: requestAttachment2020,
+          credentialExchangeRecord,
+        })
+      ).rejects.toThrow('Received credential does not match credential request')
     })
 
     test('are credentials equal', async () => {

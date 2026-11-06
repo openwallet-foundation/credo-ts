@@ -10,15 +10,14 @@ import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
 import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArrayEncoder } from '../../utils'
-import { getDomainFromUrl } from '../../utils/domain'
-import { fetchWithTimeout } from '../../utils/fetch'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
+import { TokenStatusListModuleConfig } from '../token-status-list/TokenStatusListModuleConfig'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig, X509Service } from '../x509'
 import { legacyTrustedCertificatesToTrustedIssuers } from '../x509/utils/convertLegacyTrustedCertificates'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
-import { applyDisclosuresForPayload } from './disclosureFrame'
+import { applyDisclosuresForPaths, applyDisclosuresForPayload, type ClaimPath } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcError } from './SdJwtVcError'
 import { SdJwtVcModuleConfig } from './SdJwtVcModuleConfig'
@@ -35,6 +34,7 @@ import type {
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 import {
   extractKeyFromHolderBinding,
+  getSdJwtHashingAlgorithm,
   getSdJwtSigner,
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
@@ -91,6 +91,20 @@ export interface SdJwtVc<
   typeMetadata?: SdJwtVcTypeMetadata
 }
 
+/**
+ * An SD-JWT VC with the resolved chain of type metadata documents.
+ */
+export type SdJwtVcWithTypeMetadataChain<
+  Header extends SdJwtVcHeader = SdJwtVcHeader,
+  Payload extends SdJwtVcPayload = SdJwtVcPayload,
+> = SdJwtVc<Header, Payload> & {
+  /**
+   * The type metadata of the `vct`, followed by the type metadata of each `extends` value. Only set
+   * when the type metadata was resolved.
+   */
+  typeMetadataChain?: NonEmptyArray<SdJwtVcTypeMetadata>
+}
+
 export interface VerificationResult {
   isValid: boolean
   isValidJwtPayload?: boolean
@@ -117,11 +131,6 @@ export class SdJwtVcService {
   ): Promise<SdJwtVc> {
     const { payload, disclosureFrame, hashingAlgorithm } = options
 
-    // default is sha-256
-    if (hashingAlgorithm && hashingAlgorithm !== 'sha-256') {
-      throw new SdJwtVcError(`Unsupported hashing algorithm used: ${hashingAlgorithm}`)
-    }
-
     const issuer = await this.extractKeyFromIssuer(agentContext, options.issuer, true)
 
     // holer binding is optional
@@ -139,7 +148,7 @@ export class SdJwtVcService {
     const sdJwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       signer: getSdJwtSigner(agentContext, issuer.publicJwk),
-      hashAlg: 'sha-256',
+      hashAlg: getSdJwtHashingAlgorithm(hashingAlgorithm),
       signAlg: issuer.alg,
     })
 
@@ -186,9 +195,18 @@ export class SdJwtVcService {
     return decodeSdJwtVc(compactSdJwtVc, typeMetadata)
   }
 
+  /**
+   * @deprecated use `applyDisclosuresForPaths` instead
+   */
   public applyDisclosuresForPayload(compactSdJwtVc: string, requestedPayload: JsonObject): SdJwtVc {
     const sdJwt = applyDisclosuresForPayload(compactSdJwtVc, requestedPayload)
     const disclosedDecoded = decodeSdJwtVc(sdJwt)
+    return disclosedDecoded
+  }
+
+  public applyDisclosuresForPaths(compactSdJwtVc: string, disclosedPaths: ClaimPath[]): SdJwtVc {
+    const { compact } = applyDisclosuresForPaths(compactSdJwtVc, disclosedPaths)
+    const disclosedDecoded = decodeSdJwtVc(compact)
     return disclosedDecoded
   }
 
@@ -233,26 +251,6 @@ export class SdJwtVcService {
     })
 
     return compactDerivedSdJwtVc
-  }
-
-  private assertValidX5cJwtIssuer(
-    agentContext: AgentContext,
-    iss: string | undefined,
-    leafCertificate: X509Certificate
-  ) {
-    // No 'iss' is allowed for X509
-    if (!iss) return
-
-    // If iss is present it MUST be an HTTPS url
-    if (!iss.startsWith('https://') && !(iss.startsWith('http://') && agentContext.config.allowInsecureHttpUrls)) {
-      throw new SdJwtVcError('The X509 certificate issuer must be a HTTPS URI.')
-    }
-
-    if (!leafCertificate.sanUriNames?.includes(iss) && !leafCertificate.sanDnsNames?.includes(getDomainFromUrl(iss))) {
-      throw new SdJwtVcError(
-        `The 'iss' claim in the payload does not match a 'SAN-URI' name and the domain extracted from the HTTPS URI does not match a 'SAN-DNS' name in the x5c certificate. Either remove the 'iss' claim or make it match with at least one SAN-URI or DNS-URI entry`
-      )
-    }
   }
 
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
@@ -542,8 +540,6 @@ export class SdJwtVcService {
       }
       const alg = supportedSignatureAlgorithms[0]
 
-      this.assertValidX5cJwtIssuer(agentContext, issuer.issuer, leafCertificate)
-
       return {
         publicJwk,
         iss: issuer.issuer,
@@ -644,23 +640,33 @@ export class SdJwtVcService {
   }
 
   private getStatusListFetcher(agentContext: AgentContext) {
+    const sdJwtVcConfig = agentContext.dependencyManager.resolve(SdJwtVcModuleConfig)
+
     return async (uri: string) => {
-      const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri, {
-        headers: {
-          Accept: 'application/statuslist+jwt',
-        },
-      })
-
-      if (!response.ok) {
-        throw new CredoError(
-          `Received invalid response with status ${
-            response.status
-          } when fetching status list from ${uri}. ${await response.text()}`
-        )
-      }
-
-      return await response.text()
+      const defaultFetcher = () => this.fetchStatusListJwt(agentContext, uri)
+      return sdJwtVcConfig.customStatusListFetcher
+        ? await sdJwtVcConfig.customStatusListFetcher(uri, { defaultFetcher })
+        : await defaultFetcher()
     }
+  }
+
+  private async fetchStatusListJwt(agentContext: AgentContext, uri: string): Promise<string> {
+    const response = await agentContext.config.fetch(uri, {
+      headers: {
+        Accept: 'application/statuslist+jwt',
+      },
+      maxResponseBytes: agentContext.resolve(TokenStatusListModuleConfig).maxStatusListBytes,
+    })
+
+    if (!response.ok) {
+      throw new CredoError(
+        `Received invalid response with status ${
+          response.status
+        } when fetching status list JWT from ${uri}. ${await response.text()}`
+      )
+    }
+
+    return await response.text()
   }
 
   /**
@@ -842,11 +848,12 @@ export class SdJwtVcService {
       )
     }
     let firstError: Error | undefined
+    const maxResponseBytes = agentContext.resolve(SdJwtVcModuleConfig).maxTypeMetadataBytes
 
     // Fist try the new type metadata URL
     // We add a catch, so that if e.g. the request fails due to CORS (which throws an error
     // we will still continue trying the legacy url)
-    const firstResponse = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, vct).catch((error) => {
+    const firstResponse = await agentContext.config.fetch(vct, { maxResponseBytes }).catch((error) => {
       firstError = error
       return undefined
     })
@@ -859,9 +866,7 @@ export class SdJwtVcService {
       vctElements.splice(3, 0, '.well-known/vct')
       const legacyVctUrl = vctElements.join('/')
 
-      response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, legacyVctUrl).catch(
-        () => undefined
-      )
+      response = await agentContext.config.fetch(legacyVctUrl, { maxResponseBytes }).catch(() => undefined)
     }
 
     if (!response?.ok) {

@@ -1,8 +1,10 @@
-import { Type } from 'class-transformer'
+import { z } from 'zod'
 import type { TagsBase } from '../../../storage/BaseRecord'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
+import { createRecordEncodingSchema } from '../../../storage/recordEncodingSchema'
 import { uuid } from '../../../utils/uuid'
+import { zMapFromObject } from '../../../utils/zod'
 
 export interface SingleContextLruCacheItem {
   value: unknown
@@ -17,8 +19,20 @@ export interface SingleContextLruCacheProps {
   entries: Map<string, SingleContextLruCacheItem>
 }
 
+const singleContextLruCacheRecordEncodingSchema = createRecordEncodingSchema({
+  entries: zMapFromObject(
+    z.looseObject({
+      value: z.unknown().optional(),
+      expiresAt: z.number().nullish(),
+    })
+  ).nullish(),
+})
+
 export class SingleContextLruCacheRecord extends BaseRecord {
-  @Type(() => Object)
+  public static get encodingSchema(): z.ZodType {
+    return singleContextLruCacheRecordEncodingSchema
+  }
+
   public entries!: Map<string, SingleContextLruCacheItem>
 
   public static readonly type = 'SingleContextLruCacheRecord'

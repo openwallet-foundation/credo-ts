@@ -2,8 +2,12 @@ import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import type { Agent } from '../../../../../../../core/src/index'
 
 import { CREDENTIALS_CONTEXT_V1_URL, TypedArrayEncoder } from '../../../../../../../core/src/index'
-import type { getJsonLdModules } from '../../../../../../../core/tests'
-import { setupJsonLdTests, waitForCredentialRecord, waitForProofExchangeRecord } from '../../../../../../../core/tests'
+import type { EventReplaySubject, getJsonLdModules } from '../../../../../../../core/tests'
+import {
+  setupJsonLdTests,
+  waitForCredentialRecordSubject,
+  waitForProofExchangeRecordSubject,
+} from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommMessageRepository } from '../../../../../repository'
 import { DidCommAutoAcceptCredential, DidCommCredentialState } from '../../../../credentials'
@@ -34,20 +38,26 @@ const jsonld = {
 
 describe('Present Proof', () => {
   let proverAgent: Agent<ReturnType<typeof getJsonLdModules>>
+  let proverReplay: EventReplaySubject
   let issuerAgent: Agent<ReturnType<typeof getJsonLdModules>>
   let verifierAgent: Agent<ReturnType<typeof getJsonLdModules>>
+  let verifierReplay: EventReplaySubject
 
   let issuerProverConnectionId: string
   let proverVerifierConnectionId: string
+  let verifierProverConnectionId: string
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
     ;({
       holderAgent: proverAgent,
+      holderReplay: proverReplay,
       issuerAgent,
       verifierAgent,
+      verifierReplay,
       issuerHolderConnectionId: issuerProverConnectionId,
       holderVerifierConnectionId: proverVerifierConnectionId,
+      verifierHolderConnectionId: verifierProverConnectionId,
     } = await setupJsonLdTests({
       holderName: 'presentation exchange prover agent',
       issuerName: 'presentation exchange issuer agent',
@@ -90,13 +100,13 @@ describe('Present Proof', () => {
       ],
     })
 
-    await issuerAgent.didcomm.credentials.offerCredential({
+    const { threadId } = await issuerAgent.didcomm.credentials.offerCredential({
       connectionId: issuerProverConnectionId,
       protocolVersion: 'v2',
       credentialFormats: { jsonld },
     })
 
-    await waitForCredentialRecord(proverAgent, { state: DidCommCredentialState.Done })
+    await waitForCredentialRecordSubject(proverReplay, { threadId, state: DidCommCredentialState.Done })
   })
 
   afterAll(async () => {
@@ -108,11 +118,7 @@ describe('Present Proof', () => {
   test('Prover Creates and sends Proof Proposal to a Verifier', async () => {
     testLogger.test('Prover sends proof proposal to a Verifier')
 
-    const verifierPresentationRecordPromise = waitForProofExchangeRecord(verifierAgent, {
-      state: DidCommProofState.ProposalReceived,
-    })
-
-    await proverAgent.didcomm.proofs.proposeProof({
+    const { threadId } = await proverAgent.didcomm.proofs.proposeProof({
       connectionId: proverVerifierConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
@@ -127,7 +133,10 @@ describe('Present Proof', () => {
     })
 
     testLogger.test('Verifier waits for presentation from the Prover')
-    const verifierProofExchangeRecord = await verifierPresentationRecordPromise
+    const verifierProofExchangeRecord = await waitForProofExchangeRecordSubject(verifierReplay, {
+      threadId,
+      state: DidCommProofState.ProposalReceived,
+    })
 
     const didCommMessageRepository =
       verifierAgent.dependencyManager.resolve<DidCommMessageRepository>(DidCommMessageRepository)
@@ -184,11 +193,12 @@ describe('Present Proof', () => {
       comment: 'V2 Presentation Exchange propose proof test',
     })
 
-    const verifierPresentationRecordPromise = waitForProofExchangeRecord(verifierAgent, {
+    const verifierPresentationRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
+      threadId: proverProofExchangeRecord.threadId,
       state: DidCommProofState.ProposalReceived,
     })
 
-    const proverPresentationRecordPromise = waitForProofExchangeRecord(proverAgent, {
+    const proverPresentationRecordPromise = waitForProofExchangeRecordSubject(proverReplay, {
       threadId: proverProofExchangeRecord.threadId,
       state: DidCommProofState.RequestReceived,
     })
@@ -267,11 +277,12 @@ describe('Present Proof', () => {
       comment: 'V2 Presentation Exchange propose proof test',
     })
 
-    const verifierProposalReceivedPresentationRecordPromise = waitForProofExchangeRecord(verifierAgent, {
+    const verifierProposalReceivedPresentationRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
+      threadId: proverProofExchangeRecord.threadId,
       state: DidCommProofState.ProposalReceived,
     })
 
-    const proverPresentationRecordPromise = waitForProofExchangeRecord(proverAgent, {
+    const proverPresentationRecordPromise = waitForProofExchangeRecordSubject(proverReplay, {
       threadId: proverProofExchangeRecord.threadId,
       state: DidCommProofState.RequestReceived,
     })
@@ -288,7 +299,7 @@ describe('Present Proof', () => {
     // Prover retrieves the requested credentials and accepts the presentation request
     testLogger.test('Prover accepts presentation request from Verifier')
 
-    const verifierPresentationRecordPromise = waitForProofExchangeRecord(verifierAgent, {
+    const verifierPresentationRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
       threadId: verifierProofExchangeRecord.threadId,
       state: DidCommProofState.PresentationReceived,
     })
@@ -404,11 +415,12 @@ describe('Present Proof', () => {
       comment: 'V2 Presentation Exchange propose proof test',
     })
 
-    const verifierProposalReceivedPresentationRecordPromise = waitForProofExchangeRecord(verifierAgent, {
+    const verifierProposalReceivedPresentationRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
+      threadId: proverProofExchangeRecord.threadId,
       state: DidCommProofState.ProposalReceived,
     })
 
-    const proverPresentationRecordPromise = waitForProofExchangeRecord(proverAgent, {
+    const proverPresentationRecordPromise = waitForProofExchangeRecordSubject(proverReplay, {
       threadId: proverProofExchangeRecord.threadId,
       state: DidCommProofState.RequestReceived,
     })
@@ -425,7 +437,7 @@ describe('Present Proof', () => {
     // Prover retrieves the requested credentials and accepts the presentation request
     testLogger.test('Prover accepts presentation request from Verifier')
 
-    const verifierPresentationRecordPromise = waitForProofExchangeRecord(verifierAgent, {
+    const verifierPresentationRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
       threadId: verifierProofExchangeRecord.threadId,
       state: DidCommProofState.PresentationReceived,
     })
@@ -438,7 +450,7 @@ describe('Present Proof', () => {
     testLogger.test('Verifier waits for presentation from the Prover')
     verifierProofExchangeRecord = await verifierPresentationRecordPromise
 
-    const proverProofExchangeRecordPromise = waitForProofExchangeRecord(proverAgent, {
+    const proverProofExchangeRecordPromise = waitForProofExchangeRecordSubject(proverReplay, {
       threadId: proverProofExchangeRecord.threadId,
       state: DidCommProofState.Done,
     })
@@ -467,5 +479,79 @@ describe('Present Proof', () => {
       connectionId: expect.any(String),
       state: DidCommProofState.Done,
     })
+  })
+
+  test('Verifier sends a proof request with an expiry time', async () => {
+    // Whole seconds, the DIDComm v2 expires_time header has no milliseconds
+    const expiresTime = new Date(Math.floor(Date.now() / 1000 + 30 * 60) * 1000)
+
+    const verifierProofExchangeRecord = await verifierAgent.didcomm.proofs.requestProof({
+      connectionId: verifierProverConnectionId,
+      protocolVersion: 'v2',
+      proofFormats: {
+        presentationExchange: {
+          presentationDefinition: {
+            id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            input_descriptors: [TEST_INPUT_DESCRIPTORS_CITIZENSHIP],
+          },
+        },
+      },
+      expiresTime,
+    })
+
+    testLogger.test('Prover waits for proof request from the Verifier')
+    const proverProofExchangeRecord = await waitForProofExchangeRecordSubject(proverReplay, {
+      threadId: verifierProofExchangeRecord.threadId,
+      state: DidCommProofState.RequestReceived,
+    })
+
+    const receivedRequest = await proverAgent.didcomm.proofs.findRequestMessage(proverProofExchangeRecord.id)
+    expect(receivedRequest?.timing?.expiresTime).toEqual(expiresTime)
+
+    // The verifier's stored copy of the request carries the same expiry
+    const sentRequest = await verifierAgent.didcomm.proofs.findRequestMessage(verifierProofExchangeRecord.id)
+    expect(sentRequest?.timing?.expiresTime).toEqual(expiresTime)
+  })
+
+  test('Verifier creates a connectionless proof request with an expiry time', async () => {
+    const expiresTime = new Date(Date.now() + 30 * 60 * 1000)
+
+    const { message, proofRecord } = await verifierAgent.didcomm.proofs.createRequest({
+      protocolVersion: 'v2',
+      proofFormats: {
+        presentationExchange: {
+          presentationDefinition: {
+            id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            input_descriptors: [TEST_INPUT_DESCRIPTORS_CITIZENSHIP],
+          },
+        },
+      },
+      expiresTime,
+    })
+
+    // Serialised as the RFC 0032 ~timing decorator
+    expect(JSON.parse(JSON.stringify(message.toJSON()))).toMatchObject({
+      '~timing': { expires_time: expiresTime.toISOString() },
+    })
+
+    // Stored before it is returned, so later lookups see the expiry too
+    const storedRequest = await verifierAgent.didcomm.proofs.findRequestMessage(proofRecord.id)
+    expect(storedRequest?.timing?.expiresTime).toEqual(expiresTime)
+  })
+
+  test('A proof request without an expiry time has no timing decorator', async () => {
+    const { message } = await verifierAgent.didcomm.proofs.createRequest({
+      protocolVersion: 'v2',
+      proofFormats: {
+        presentationExchange: {
+          presentationDefinition: {
+            id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            input_descriptors: [TEST_INPUT_DESCRIPTORS_CITIZENSHIP],
+          },
+        },
+      },
+    })
+
+    expect(message.timing).toBeUndefined()
   })
 })

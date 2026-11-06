@@ -4,7 +4,7 @@
     "cli": "./build/index.mjs",
     "import": "./src/index.ts"
   },
-  "version": "0.7.0",
+  "version": "0.7.1",
   "files": [
     "build"
   ],
@@ -30,16 +30,19 @@
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
+    "@stablelib/ed25519": "catalog:",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
     "luxon": "^3.7.2",
     "query-string": "^9.3.1",
-    "rxjs": "catalog:"
+    "rxjs": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@animo-id/pex": "catalog:",
+    "@openwallet-foundation/askar-nodejs": "catalog:",
     "@sphereon/pex-models": "catalog:",
-    "@types/luxon": "^3.7.1",
+    "@types/luxon": "^3.7.6",
     "reflect-metadata": "catalog:",
     "typescript": "catalog:"
   }

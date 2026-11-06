@@ -1,14 +1,18 @@
 import { TypedArrayEncoder } from '@credo-ts/core'
 import type { Express } from 'express'
-import type { Body, ReplyFnContext } from 'nock'
-import nock, { cleanAll } from 'nock'
+import nock from 'nock'
 import request from 'supertest'
 
 // Helper function to forward requests from nock to express
 export function setupNockToExpress(baseUrl: string, app: Express) {
-  async function reply(this: ReplyFnContext, _uri: string, body: Body) {
-    // Get the original request details
-    const { method, path, headers } = this.req
+  // Nock 15 calls reply functions with the intercepted fetch Request. The function must take a single
+  // parameter, as a two-parameter function is treated as a callback-style reply.
+  async function reply(interceptedRequest: Request) {
+    const url = new URL(interceptedRequest.url)
+    const method = interceptedRequest.method
+    const path = `${url.pathname}${url.search}`
+    const headers = Object.fromEntries(interceptedRequest.headers.entries())
+    const body = await interceptedRequest.text()
 
     // Forward the request to our Express app using supertest
     const supertestInstance = request(app)
@@ -66,7 +70,7 @@ export function setupNockToExpress(baseUrl: string, app: Express) {
     .reply(reply)
 
   return () => {
-    cleanAll()
+    nock.cleanAll()
     vi.clearAllMocks()
   }
 }

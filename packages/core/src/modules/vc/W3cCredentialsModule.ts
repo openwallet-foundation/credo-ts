@@ -4,6 +4,7 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../dids'
 import { Ed25519PublicJwk } from '../kms'
+import { JsonLdModuleConfig } from './jsonld'
 import { W3cJwtCredentialService } from './jwt-vc'
 import {
   SignatureSuiteRegistry,
@@ -35,26 +36,40 @@ export class W3cCredentialsModule implements Module {
     dependencyManager.registerSingleton(W3cJsonLdCredentialService)
     dependencyManager.registerSingleton(W3cCredentialRepository)
 
-    dependencyManager.registerSingleton(SignatureSuiteRegistry)
-
     // Register the config
     dependencyManager.registerInstance(W3cCredentialsModuleConfig, this.config)
 
-    // Always register ed25519 signature suite
-    dependencyManager.registerInstance(SignatureSuiteToken, {
-      suiteClass: Ed25519Signature2018,
-      proofType: 'Ed25519Signature2018',
-      verificationMethodTypes: [
-        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-      ],
-      supportedPublicJwkTypes: [Ed25519PublicJwk],
-    } satisfies SuiteInfo)
-    dependencyManager.registerInstance(SignatureSuiteToken, {
-      suiteClass: Ed25519Signature2020,
-      proofType: 'Ed25519Signature2020',
-      verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020],
-      supportedPublicJwkTypes: [Ed25519PublicJwk],
-    } satisfies SuiteInfo)
+    // Guard for shared JsonLdModuleConfig token if no standalone JsonLdModule
+    // registered, would otherwise be silently overwritten
+    if (!dependencyManager.isRegistered(JsonLdModuleConfig)) {
+      dependencyManager.registerInstance(JsonLdModuleConfig, this.config)
+    }
+
+    // Collect any suites registered via the deprecated SignatureSuiteToken for backward compatibility.
+    // External consumers that used registerInstance(SignatureSuiteToken, suite) will still work until
+    // SignatureSuiteToken is removed in 0.8.
+    const tokenRegisteredSuites = dependencyManager.isRegistered(SignatureSuiteToken)
+      ? (dependencyManager.container.resolveAll<SuiteInfo>(SignatureSuiteToken) as SuiteInfo[])
+      : []
+
+    // Always register ed25519 signature suites
+    dependencyManager.registerInstance(
+      SignatureSuiteRegistry,
+      new SignatureSuiteRegistry([
+        ...tokenRegisteredSuites,
+        {
+          suiteClass: Ed25519Signature2018,
+          proofType: 'Ed25519Signature2018',
+          verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018],
+          supportedPublicJwkTypes: [Ed25519PublicJwk],
+        } satisfies SuiteInfo,
+        {
+          suiteClass: Ed25519Signature2020,
+          proofType: 'Ed25519Signature2020',
+          verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020],
+          supportedPublicJwkTypes: [Ed25519PublicJwk],
+        } satisfies SuiteInfo,
+      ])
+    )
   }
 }

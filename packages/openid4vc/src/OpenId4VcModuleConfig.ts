@@ -1,6 +1,10 @@
 import type { Express } from 'express'
 
 import {
+  OpenId4VcHolderModuleConfig,
+  type OpenId4VcHolderModuleConfigOptions,
+} from './openid4vc-holder/OpenId4VcHolderModuleConfig'
+import {
   type InternalOpenId4VcIssuerModuleConfigOptions,
   OpenId4VcIssuerModuleConfig,
 } from './openid4vc-issuer/OpenId4VcIssuerModuleConfig'
@@ -30,6 +34,8 @@ export type OpenId4VcModuleConfigOptions<
    * module ensures only the routes are listened to that are needed.
    */
   app?: Express
+
+  holder?: OpenId4VcHolderModuleConfigOptions
 } & (IssuerConfig extends null
   ? { issuer?: OpenId4VcIssuerModuleConfigOptions }
   : IssuerConfig extends undefined
@@ -59,6 +65,7 @@ export class OpenId4VcModuleConfig<
   public readonly verifier: VerifierConfig extends OpenId4VcVerifierModuleConfigOptions
     ? OpenId4VcVerifierModuleConfig
     : undefined
+  public readonly holder: OpenId4VcHolderModuleConfig
 
   public constructor(options?: OpenId4VcModuleConfigOptions<IssuerConfig, VerifierConfig>) {
     this.options = options ?? ({} as OpenId4VcModuleConfigOptions<IssuerConfig, VerifierConfig>)
@@ -82,5 +89,6 @@ export class OpenId4VcModuleConfig<
           })
         : undefined
     ) as this['verifier']
+    this.holder = new OpenId4VcHolderModuleConfig(this.options.holder)
   }
 }

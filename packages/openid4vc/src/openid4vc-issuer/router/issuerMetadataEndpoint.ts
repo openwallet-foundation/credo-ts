@@ -38,6 +38,7 @@ export function configureIssuerMetadataEndpoint(router: Router, path: string) {
 
       if (issuerMetadata.signedMetadataJwt && mediaTypeToUse === 'application/jwt') {
         response.type('application/jwt').status(200).send(issuerMetadata.signedMetadataJwt)
+        next()
       } else {
         return sendJsonResponse(response, next, transformedMetadata)
       }

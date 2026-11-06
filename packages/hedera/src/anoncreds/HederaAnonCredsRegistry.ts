@@ -14,7 +14,14 @@ import type {
   RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
-import { HederaLedgerService } from '../ledger/HederaLedgerService'
+import { HederaModuleConfig } from '../HederaModuleConfig'
+import { HederaAnonCredsService } from './HederaAnonCredsService'
+
+// The Hedera SDK uses millisecond timestamps, while AnonCreds uses seconds. Flooring maps any
+// millisecond within a second (including the `* 1000 + 999` status list query) back to that second
+function millisecondsToSeconds(milliseconds: number): number {
+  return Math.floor(milliseconds / 1000)
+}
 
 export class HederaAnonCredsRegistry implements AnonCredsRegistry {
   public readonly methodName = 'hedera'
@@ -23,14 +30,16 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
   public allowsCaching = true
   public allowsLocalRecord = true
 
+  private anonCredsService?: HederaAnonCredsService
+
   public async registerSchema(
     agentContext: AgentContext,
     options: RegisterSchemaOptions
   ): Promise<RegisterSchemaReturn> {
     try {
       agentContext.config.logger.trace('Registering schema on Hedera ledger')
-      const ledgerService = agentContext.dependencyManager.resolve(HederaLedgerService)
-      return await ledgerService.registerSchema(agentContext, options)
+      const anonCredsService = this.getAnonCredsService(agentContext)
+      return await anonCredsService.registerSchema(agentContext, options)
     } catch (error) {
       agentContext.config.logger.debug(`Error registering schema for did '${options.schema.issuerId}'`, {
         error,
@@ -52,8 +61,8 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
   public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     try {
       agentContext.config.logger.trace(`Resolving schema '${schemaId}' from Hedera ledger`)
-      const ledgerService = agentContext.dependencyManager.resolve(HederaLedgerService)
-      return await ledgerService.getSchema(agentContext, schemaId)
+      const anonCredsService = this.getAnonCredsService(agentContext)
+      return await anonCredsService.getSchema(agentContext, schemaId)
     } catch (error) {
       agentContext.config.logger.error(`Error retrieving schema '${schemaId}'`, {
         error,
@@ -76,8 +85,8 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
   ): Promise<RegisterCredentialDefinitionReturn> {
     try {
       agentContext.config.logger.trace('Registering credential definition on Hedera ledger')
-      const ledgerService = agentContext.dependencyManager.resolve(HederaLedgerService)
-      return await ledgerService.registerCredentialDefinition(agentContext, options)
+      const anonCredsService = this.getAnonCredsService(agentContext)
+      return await anonCredsService.registerCredentialDefinition(agentContext, options)
     } catch (error) {
       agentContext.config.logger.error(
         `Error registering credential definition for did '${options.credentialDefinition.issuerId}'`,
@@ -105,8 +114,8 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
   ): Promise<GetCredentialDefinitionReturn> {
     try {
       agentContext.config.logger.trace(`Resolving credential definition '${credentialDefinitionId}' from Hedera ledger`)
-      const ledgerService = agentContext.dependencyManager.resolve(HederaLedgerService)
-      return await ledgerService.getCredentialDefinition(agentContext, credentialDefinitionId)
+      const anonCredsService = this.getAnonCredsService(agentContext)
+      return await anonCredsService.getCredentialDefinition(agentContext, credentialDefinitionId)
     } catch (error) {
       agentContext.config.logger.error(`Error retrieving credential definition '${credentialDefinitionId}'`, {
         error,
@@ -131,8 +140,8 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(
         `Registering revocation registry definition for '${options.revocationRegistryDefinition.credDefId}' on Hedera ledger`
       )
-      const ledgerService = agentContext.dependencyManager.resolve(HederaLedgerService)
-      return await ledgerService.registerRevocationRegistryDefinition(agentContext, options)
+      const anonCredsService = this.getAnonCredsService(agentContext)
+      return await anonCredsService.registerRevocationRegistryDefinition(agentContext, options)
     } catch (error) {
       agentContext.config.logger.error(
         `Error registering revocation registry definition for did '${options.revocationRegistryDefinition.issuerId}'`,
@@ -162,8 +171,8 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(
         `Resolving revocation registry definition for '${revocationRegistryDefinitionId}' from Hedera ledger`
       )
-      const ledgerService = agentContext.dependencyManager.resolve(HederaLedgerService)
-      return await ledgerService.getRevocationRegistryDefinition(agentContext, revocationRegistryDefinitionId)
+      const anonCredsService = this.getAnonCredsService(agentContext)
+      return await anonCredsService.getRevocationRegistryDefinition(agentContext, revocationRegistryDefinitionId)
     } catch (error) {
       agentContext.config.logger.error(
         `Error retrieving revocation registry definition '${revocationRegistryDefinitionId}'`,
@@ -191,8 +200,21 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(
         `Registering revocation status list for '${options.revocationStatusList.revRegDefId}' on Hedera ledger`
       )
-      const ledgerService = agentContext.dependencyManager.resolve(HederaLedgerService)
-      return await ledgerService.registerRevocationStatusList(agentContext, options)
+      const anonCredsService = this.getAnonCredsService(agentContext)
+      const result = await anonCredsService.registerRevocationStatusList(agentContext, options)
+      if (result.revocationStatusListState.state !== 'finished') return result
+
+      const { revocationStatusList } = result.revocationStatusListState
+      return {
+        ...result,
+        revocationStatusListState: {
+          ...result.revocationStatusListState,
+          revocationStatusList: {
+            ...revocationStatusList,
+            timestamp: millisecondsToSeconds(revocationStatusList.timestamp),
+          },
+        },
+      }
     } catch (error) {
       agentContext.config.logger.error(
         `Error registering revocation status list for did '${options.revocationStatusList.issuerId}'`,
@@ -223,8 +245,23 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(
         `Resolving revocation status for for '${revocationRegistryId}' from Hedera ledger`
       )
-      const ledgerService = agentContext.dependencyManager.resolve(HederaLedgerService)
-      return await ledgerService.getRevocationStatusList(agentContext, revocationRegistryId, timestamp * 1000)
+      const anonCredsService = this.getAnonCredsService(agentContext)
+      // The timestamp is in seconds and Hedera consensus timestamps in ms, so include the whole second
+      const result = await anonCredsService.getRevocationStatusList(
+        agentContext,
+        revocationRegistryId,
+        timestamp * 1000 + 999
+      )
+      if (!result.revocationStatusList) return result
+
+      const { revocationStatusList } = result
+      return {
+        ...result,
+        revocationStatusList: {
+          ...revocationStatusList,
+          timestamp: millisecondsToSeconds(revocationStatusList.timestamp),
+        },
+      }
     } catch (error) {
       agentContext.config.logger.error(`Error retrieving revocation registry status list '${revocationRegistryId}'`, {
         error,
@@ -238,5 +275,20 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
         revocationStatusListMetadata: {},
       }
     }
+  }
+
+  private getAnonCredsService(agentContext: AgentContext): HederaAnonCredsService {
+    if (!this.anonCredsService) {
+      const dependencyManager = agentContext.dependencyManager
+      if (!dependencyManager.isRegistered(HederaModuleConfig, true)) {
+        throw new Error(
+          'HederaModuleConfig is not registered. Add HederaModule from @credo-ts/hedera to the agent modules.'
+        )
+      }
+
+      this.anonCredsService = new HederaAnonCredsService(dependencyManager.resolve(HederaModuleConfig))
+    }
+
+    return this.anonCredsService
   }
 }

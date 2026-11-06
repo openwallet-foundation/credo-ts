@@ -5,6 +5,27 @@ import { isAskarPostgresStorageConfig, isAskarSqliteStorageConfig } from '../Ask
 import { AskarError } from '../error'
 
 /**
+ * Connection parameters that are derived from the postgres config and credentials, and thus
+ * can't be provided using `connectionParameters`. Duplicate query parameters are resolved by
+ * taking the last value, and query parameters take precedence over the url components.
+ */
+const reservedPostgresConnectionParameters = [
+  // askar parameters
+  'connect_timeout',
+  'idle_timeout',
+  'max_connections',
+  'min_connections',
+  'admin_account',
+  'admin_password',
+  // sqlx parameters that override the url components
+  'host',
+  'port',
+  'user',
+  'password',
+  'dbname',
+]
+
+/**
  * Creates an askar wallet URI value based on store config
  * @param credoDataPath framework data path (used in case walletConfig.storage.path is undefined)
  * @returns string containing the askar wallet URI
@@ -42,6 +63,15 @@ export const uriFromStoreConfig = (
     }
     if (database.credentials.adminPassword !== undefined) {
       urlParams.push(`admin_password=${encodeURIComponent(database.credentials.adminPassword)}`)
+    }
+    for (const [key, value] of Object.entries(database.config.connectionParameters ?? {})) {
+      if (value === undefined) continue
+      if (reservedPostgresConnectionParameters.includes(key)) {
+        throw new AskarError(
+          `Postgres connection parameter '${key}' is not allowed in 'connectionParameters' as it is managed by Credo. Use the dedicated postgres config or credentials option instead.`
+        )
+      }
+      urlParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
     }
 
     uri = `postgres://${encodeURIComponent(database.credentials.account)}:${encodeURIComponent(

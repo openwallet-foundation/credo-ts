@@ -1,5 +1,7 @@
 export * from './ClassValidationError'
 export * from './CredoError'
+export * from './CredoValidationError'
+export * from './RecordDecodingError'
 export * from './RecordDuplicateError'
 export * from './RecordNotFoundError'
 export * from './ZodValidationError'

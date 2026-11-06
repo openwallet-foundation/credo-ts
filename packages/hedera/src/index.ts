@@ -1,4 +1,3 @@
-export * from './anoncreds'
 export * from './dids'
 export * from './HederaModule'
 export * from './HederaModuleConfig'

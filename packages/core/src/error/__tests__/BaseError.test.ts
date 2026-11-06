@@ -30,4 +30,58 @@ describe('BaseError', () => {
     }
     expect.assertions(6)
   })
+
+  test('is a native error', () => {
+    const error = new CustomError('message')
+
+    expect(error).toBeInstanceOf(Error)
+    expect(Object.prototype.toString.call(error)).toBe('[object Error]')
+
+    const errorConstructor = Error as ErrorConstructor & { isError?: (value: unknown) => boolean }
+    if (typeof errorConstructor.isError === 'function') {
+      expect(errorConstructor.isError(error)).toBe(true)
+    }
+  })
+
+  test('uses the class name as name', () => {
+    const error = new CustomError('message')
+
+    expect(error.name).toBe('CustomError')
+    expect(String(error)).toBe('CustomError: message')
+    expect(error.stack).toMatch(/^CustomError: message/)
+  })
+
+  test('keeps name and cause out of the enumerable properties', () => {
+    const cause = new Error('cause')
+    const error = new CustomError('message', { cause })
+
+    expect(Object.keys(error)).toEqual([])
+    expect(JSON.stringify(error)).toBe('{}')
+    expect(error.cause).toBe(cause)
+    expect(Object.getOwnPropertyDescriptor(error, 'cause')).toMatchObject({ writable: false, enumerable: false })
+  })
+
+  test('compares the message in toThrow and toEqual', () => {
+    expect(() => {
+      throw new CustomError('message')
+    }).toThrow(new CustomError('message'))
+
+    expect(() =>
+      expect(() => {
+        throw new CustomError('message')
+      }).toThrow(new CustomError('other message'))
+    ).toThrow()
+
+    expect(new CustomError('message')).toEqual(new CustomError('message'))
+    expect(new CustomError('message')).not.toEqual(new CustomError('other message'))
+  })
+
+  test('inspect returns the full cause chain', () => {
+    const error = new CustomError('outer', { cause: new CustomError('inner') })
+
+    const inspected = error.inspect()
+    expect(inspected).toContain('outer')
+    expect(inspected).toContain('The following exception was the direct cause of the above exception')
+    expect(inspected).toContain('inner')
+  })
 })

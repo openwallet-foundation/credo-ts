@@ -1,20 +1,36 @@
-import {
-  AnonCredsModule,
-  getUnqualifiedRevocationRegistryDefinitionId,
-  parseIndyDid,
-  parseIndyRevocationRegistryId,
-} from '@credo-ts/anoncreds'
+import { AnonCredsModule, parseIndyDid, parseIndySchemaId } from '@credo-ts/anoncreds'
 import { Agent, DidsModule, TypedArrayEncoder } from '@credo-ts/core'
-import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
-import { anoncreds } from '../../anoncreds/tests/helpers'
+import { GetSchemaRequest, indyVdr } from '@hyperledger/indy-vdr-nodejs'
+import { NativeAnoncreds } from '../../anoncreds/tests/helpers'
 import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
 import { IndyVdrIndyDidResolver, IndyVdrModule, IndyVdrSovDidResolver } from '../src'
 import { IndyVdrAnonCredsRegistry } from '../src/anoncreds/IndyVdrAnonCredsRegistry'
+import { getIndyLedgerSchemaId } from '../src/anoncreds/utils/identifiers'
 import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrPoolService } from '../src/pool'
 import { credentialDefinitionValue, revocationRegistryDefinitionValue } from './__fixtures__/anoncreds'
-import { indyVdrModuleConfig } from './helpers'
+import { indyVdrModuleConfig, waitForAllLedgerNodes } from './helpers'
+
+// Reads can be served by a ledger node that hasn't applied a just-written transaction yet
+async function resolveWhenAvailable<T extends { resolutionMetadata: { error?: string } }>(
+  resolve: () => Promise<T>
+): Promise<T> {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const result = await resolve()
+    if (!result.resolutionMetadata.error) return result
+    await new Promise((res) => setTimeout(res, 500))
+  }
+
+  return resolve()
+}
+
+// Registering a credential definition reads the schema again, possibly from another node than the test did
+async function waitForSchemaOnAllNodes(didIndySchemaId: string) {
+  const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(didIndySchemaId)
+  const schemaId = getIndyLedgerSchemaId(namespaceIdentifier, schemaName, schemaVersion)
+  await waitForAllLedgerNodes(() => new GetSchemaRequest({ schemaId }))
+}
 
 const indyVdrAnonCredsRegistry = new IndyVdrAnonCredsRegistry()
 
@@ -25,7 +41,7 @@ const endorser = new Agent(
     {},
     {
       anoncreds: new AnonCredsModule({
-        anoncreds,
+        anoncreds: NativeAnoncreds,
         registries: [indyVdrAnonCredsRegistry],
       }),
       indyVdr: new IndyVdrModule({
@@ -47,7 +63,7 @@ const agent = new Agent(
     {},
     {
       anoncreds: new AnonCredsModule({
-        anoncreds,
+        anoncreds: NativeAnoncreds,
         registries: [indyVdrAnonCredsRegistry],
       }),
       indyVdr: new IndyVdrModule({
@@ -106,7 +122,6 @@ describe('IndyVdrAnonCredsRegistry', () => {
     const didIndyIssuerId = didCreateResult.didState.did
     const { namespaceIdentifier: legacyIssuerId } = parseIndyDid(didIndyIssuerId)
     const dynamicVersion = `1.${Math.random() * 100}`
-    const legacySchemaId = `${legacyIssuerId}:2:test:${dynamicVersion}`
     const didIndySchemaId = `did:indy:pool:localtest:${legacyIssuerId}/anoncreds/v0/SCHEMA/test/${dynamicVersion}`
 
     const schemaResult = await indyVdrAnonCredsRegistry.registerSchema(endorser.context, {
@@ -140,24 +155,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
-    // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, legacySchemaId)
-    expect(legacySchema).toMatchObject({
-      schema: {
-        attrNames: ['age'],
-        name: 'test',
-        version: dynamicVersion,
-        issuerId: legacyIssuerId,
-      },
-      schemaId: legacySchemaId,
-      resolutionMetadata: {},
-      schemaMetadata: {
-        didIndyNamespace: 'pool:localtest',
-        indyLedgerSeqNo: expect.any(Number),
-      },
-    })
+    await waitForSchemaOnAllNodes(didIndySchemaId)
 
     // Resolve using did indy schema id
     const didIndySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
@@ -176,7 +174,6 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
-    const legacyCredentialDefinitionId = `${legacyIssuerId}:3:CL:${schemaSeqNo}:TAG`
     const didIndyCredentialDefinitionId = `did:indy:pool:localtest:${legacyIssuerId}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/TAG`
     const credentialDefinitionResult = await indyVdrAnonCredsRegistry.registerCredentialDefinition(endorser.context, {
       credentialDefinition: {
@@ -208,33 +205,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
       registrationMetadata: {},
     })
 
-    // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      endorser.context,
-      legacyCredentialDefinitionId
-    )
-
-    expect(legacyCredentialDefinition).toMatchObject({
-      credentialDefinitionId: legacyCredentialDefinitionId,
-      credentialDefinition: {
-        issuerId: legacyIssuerId,
-        schemaId: legacySchemaId,
-        tag: 'TAG',
-        type: 'CL',
-        value: credentialDefinitionValue,
-      },
-      credentialDefinitionMetadata: {
-        didIndyNamespace: 'pool:localtest',
-      },
-      resolutionMetadata: {},
-    })
-
     // resolve using did indy credential definition id
-    const didIndyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      endorser.context,
-      didIndyCredentialDefinitionId
+    const didIndyCredentialDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getCredentialDefinition(endorser.context, didIndyCredentialDefinitionId)
     )
 
     expect(didIndyCredentialDefinition).toMatchObject({
@@ -282,53 +255,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
       throw Error('revocation registry definition was not created correctly')
     }
 
-    const { credentialDefinitionTag, revocationRegistryTag } = parseIndyRevocationRegistryId(
-      didIndyRevocationRegistryDefinitionId
-    )
-    const legacyRevocationRegistryDefinitionId = getUnqualifiedRevocationRegistryDefinitionId(
-      legacyIssuerId,
-      schemaSeqNo,
-      credentialDefinitionTag,
-      revocationRegistryTag
-    )
-
-    // Wait some time before resolving revocation registry definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
-      endorser.context,
-      legacyRevocationRegistryDefinitionId
-    )
-
-    expect(legacyRevocationRegistryDefinition).toMatchObject({
-      revocationRegistryDefinitionId: legacyRevocationRegistryDefinitionId,
-      revocationRegistryDefinition: {
-        issuerId: legacyIssuerId,
-        revocDefType: 'CL_ACCUM',
-        value: {
-          maxCredNum: 100,
-          tailsHash: 'HLKresYcDSZYSKogq8wive4zyXNY84669MygftLFBG1i',
-          tailsLocation:
-            '/var/folders/l3/xy8jzyvj4p5_d9g1123rt4bw0000gn/T/HLKresYcDSZYSKogq8wive4zyXNY84669MygftLFBG1i',
-          publicKeys: {
-            accumKey: {
-              z: '1 1812B206EB395D3AEBD4BBF53EBB0FFC3371D8BD6175316AB32C1C5F65452051 1 22A079D49C5351EFDC1410C81A1F6D8B2E3B79CFF20A30690C118FE2050F72CB 1 0FFC28B923A4654E261DB4CB5B9BABEFCB4DB189B20F52412B0CC9CCCBB8A3B2 1 1EE967C43EF1A3F487061D21B07076A26C126AAF7712E7B5CF5A53688DDD5CC0 1 009ED4D65879CA81DA8227D34CEA3B759B4627E1E2FFB273E9645CD4F3B10F19 1 1CF070212E1E213AEB472F56EDFC9D48009796C77B2D8CC16F2836E37B8715C2 1 04954F0B7B468781BAAE3291DD0E6FFA7F1AF66CAA4094D37B24363CC34606FB 1 115367CB755E9DB18781B3825CB1AEE2C334558B2C038E13DF57BB57CE1CF847 1 110D37EC05862EE2757A7DF39E814876FC97376FF8105D2D29619CB575537BDE 1 13C559A9563FCE083B3B39AE7E8FCA4099BEF3A4C8C6672E543D521F9DA88F96 1 137D87CC22ACC1B6B8C20EABE59F6ED456A58FE4CBEEFDFC4FA9B87E3EF32D17 1 00A2A9711737AAF0404F35AE502887AC6172B2B57D236BD4A40B45F659BFC696',
-            },
-          },
-        },
-        tag: 'REV_TAG',
-        credDefId: legacyCredentialDefinitionId,
-      },
-      revocationRegistryDefinitionMetadata: {
-        issuanceType: 'ISSUANCE_BY_DEFAULT',
-        didIndyNamespace: 'pool:localtest',
-      },
-      resolutionMetadata: {},
-    })
-
-    const didIndyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
-      endorser.context,
-      didIndyRevocationRegistryDefinitionId
+    const didIndyRevocationRegistryDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(endorser.context, didIndyRevocationRegistryDefinitionId)
     )
 
     expect(didIndyRevocationRegistryDefinition).toMatchObject({
@@ -373,38 +301,14 @@ describe('IndyVdrAnonCredsRegistry', () => {
     if (registerStatusListResult.revocationStatusListState.state !== 'finished') {
       throw new Error(`Unable to register status list: ${JSON.stringify(registerStatusListResult)}`)
     }
+    const statusListTimestamp = registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp
 
-    // Wait some time before resolving revocation status list object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyRevocationStatusList = await indyVdrAnonCredsRegistry.getRevocationStatusList(
-      endorser.context,
-      legacyRevocationRegistryDefinitionId,
-      registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp
-    )
-
-    expect(legacyRevocationStatusList).toMatchObject({
-      resolutionMetadata: {},
-      revocationStatusList: {
-        issuerId: legacyIssuerId,
-        currentAccumulator: '1',
-        revRegDefId: legacyRevocationRegistryDefinitionId,
-        revocationList: [
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ],
-        timestamp: registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp,
-      },
-      revocationStatusListMetadata: {
-        didIndyNamespace: 'pool:localtest',
-      },
-    })
-
-    const didIndyRevocationStatusList = await indyVdrAnonCredsRegistry.getRevocationStatusList(
-      endorser.context,
-      didIndyRevocationRegistryDefinitionId,
-      registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp
+    const didIndyRevocationStatusList = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationStatusList(
+        endorser.context,
+        didIndyRevocationRegistryDefinitionId,
+        statusListTimestamp
+      )
     )
 
     expect(didIndyRevocationStatusList).toMatchObject({
@@ -418,7 +322,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ],
-        timestamp: registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp,
+        timestamp: statusListTimestamp,
       },
       revocationStatusListMetadata: {
         didIndyNamespace: 'pool:localtest',
@@ -429,9 +333,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
   test('register and resolve a schema and credential definition (internal, issuerDid == endorserDid)', async () => {
     const dynamicVersion = `1.${Math.random() * 100}`
 
-    const legacyIssuerId = 'DJKobikPAaYWAu9vfhEEo5'
     const didIndyIssuerId = 'did:indy:pool:localtest:DJKobikPAaYWAu9vfhEEo5'
-    const legacySchemaId = `DJKobikPAaYWAu9vfhEEo5:2:test:${dynamicVersion}`
     const didIndySchemaId = `did:indy:pool:localtest:DJKobikPAaYWAu9vfhEEo5/anoncreds/v0/SCHEMA/test/${dynamicVersion}`
 
     const schemaResult = await indyVdrAnonCredsRegistry.registerSchema(endorser.context, {
@@ -466,24 +368,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
-    // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, legacySchemaId)
-    expect(legacySchema).toMatchObject({
-      schema: {
-        attrNames: ['age'],
-        name: 'test',
-        version: dynamicVersion,
-        issuerId: legacyIssuerId,
-      },
-      schemaId: legacySchemaId,
-      resolutionMetadata: {},
-      schemaMetadata: {
-        didIndyNamespace: 'pool:localtest',
-        indyLedgerSeqNo: expect.any(Number),
-      },
-    })
+    await waitForSchemaOnAllNodes(didIndySchemaId)
 
     // Resolve using did indy schema id
     const didIndySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
@@ -502,7 +387,6 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
-    const legacyCredentialDefinitionId = `DJKobikPAaYWAu9vfhEEo5:3:CL:${schemaSeqNo}:TAG`
     const didIndyCredentialDefinitionId = `did:indy:pool:localtest:DJKobikPAaYWAu9vfhEEo5/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/TAG`
     const credentialDefinitionResult = await indyVdrAnonCredsRegistry.registerCredentialDefinition(endorser.context, {
       credentialDefinition: {
@@ -534,33 +418,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
       registrationMetadata: {},
     })
 
-    // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      endorser.context,
-      legacyCredentialDefinitionId
-    )
-
-    expect(legacyCredentialDefinition).toMatchObject({
-      credentialDefinitionId: legacyCredentialDefinitionId,
-      credentialDefinition: {
-        issuerId: legacyIssuerId,
-        schemaId: legacySchemaId,
-        tag: 'TAG',
-        type: 'CL',
-        value: credentialDefinitionValue,
-      },
-      credentialDefinitionMetadata: {
-        didIndyNamespace: 'pool:localtest',
-      },
-      resolutionMetadata: {},
-    })
-
     // resolve using did indy credential definition id
-    const didIndyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      endorser.context,
-      didIndyCredentialDefinitionId
+    const didIndyCredentialDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getCredentialDefinition(endorser.context, didIndyCredentialDefinitionId)
     )
 
     expect(didIndyCredentialDefinition).toMatchObject({
@@ -608,53 +468,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
       throw Error('revocation registry definition was not created correctly')
     }
 
-    const { credentialDefinitionTag, revocationRegistryTag } = parseIndyRevocationRegistryId(
-      didIndyRevocationRegistryDefinitionId
-    )
-    const legacyRevocationRegistryDefinitionId = getUnqualifiedRevocationRegistryDefinitionId(
-      legacyIssuerId,
-      schemaSeqNo,
-      credentialDefinitionTag,
-      revocationRegistryTag
-    )
-
-    // Wait some time before resolving revocation registry definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
-      endorser.context,
-      legacyRevocationRegistryDefinitionId
-    )
-
-    expect(legacyRevocationRegistryDefinition).toMatchObject({
-      revocationRegistryDefinitionId: legacyRevocationRegistryDefinitionId,
-      revocationRegistryDefinition: {
-        issuerId: legacyIssuerId,
-        revocDefType: 'CL_ACCUM',
-        value: {
-          maxCredNum: 100,
-          tailsHash: 'HLKresYcDSZYSKogq8wive4zyXNY84669MygftLFBG1i',
-          tailsLocation:
-            '/var/folders/l3/xy8jzyvj4p5_d9g1123rt4bw0000gn/T/HLKresYcDSZYSKogq8wive4zyXNY84669MygftLFBG1i',
-          publicKeys: {
-            accumKey: {
-              z: '1 1812B206EB395D3AEBD4BBF53EBB0FFC3371D8BD6175316AB32C1C5F65452051 1 22A079D49C5351EFDC1410C81A1F6D8B2E3B79CFF20A30690C118FE2050F72CB 1 0FFC28B923A4654E261DB4CB5B9BABEFCB4DB189B20F52412B0CC9CCCBB8A3B2 1 1EE967C43EF1A3F487061D21B07076A26C126AAF7712E7B5CF5A53688DDD5CC0 1 009ED4D65879CA81DA8227D34CEA3B759B4627E1E2FFB273E9645CD4F3B10F19 1 1CF070212E1E213AEB472F56EDFC9D48009796C77B2D8CC16F2836E37B8715C2 1 04954F0B7B468781BAAE3291DD0E6FFA7F1AF66CAA4094D37B24363CC34606FB 1 115367CB755E9DB18781B3825CB1AEE2C334558B2C038E13DF57BB57CE1CF847 1 110D37EC05862EE2757A7DF39E814876FC97376FF8105D2D29619CB575537BDE 1 13C559A9563FCE083B3B39AE7E8FCA4099BEF3A4C8C6672E543D521F9DA88F96 1 137D87CC22ACC1B6B8C20EABE59F6ED456A58FE4CBEEFDFC4FA9B87E3EF32D17 1 00A2A9711737AAF0404F35AE502887AC6172B2B57D236BD4A40B45F659BFC696',
-            },
-          },
-        },
-        tag: 'REV_TAG',
-        credDefId: legacyCredentialDefinitionId,
-      },
-      revocationRegistryDefinitionMetadata: {
-        issuanceType: 'ISSUANCE_BY_DEFAULT',
-        didIndyNamespace: 'pool:localtest',
-      },
-      resolutionMetadata: {},
-    })
-
-    const didIndyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
-      endorser.context,
-      didIndyRevocationRegistryDefinitionId
+    const didIndyRevocationRegistryDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(endorser.context, didIndyRevocationRegistryDefinitionId)
     )
 
     expect(didIndyRevocationRegistryDefinition).toMatchObject({
@@ -699,38 +514,14 @@ describe('IndyVdrAnonCredsRegistry', () => {
     if (registerStatusListResult.revocationStatusListState.state !== 'finished') {
       throw new Error(`Unable to register status list: ${JSON.stringify(registerStatusListResult)}`)
     }
+    const statusListTimestamp = registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp
 
-    // Wait some time before resolving revocation status list object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyRevocationStatusList = await indyVdrAnonCredsRegistry.getRevocationStatusList(
-      endorser.context,
-      legacyRevocationRegistryDefinitionId,
-      registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp
-    )
-
-    expect(legacyRevocationStatusList).toMatchObject({
-      resolutionMetadata: {},
-      revocationStatusList: {
-        issuerId: legacyIssuerId,
-        currentAccumulator: '1',
-        revRegDefId: legacyRevocationRegistryDefinitionId,
-        revocationList: [
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ],
-        timestamp: registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp,
-      },
-      revocationStatusListMetadata: {
-        didIndyNamespace: 'pool:localtest',
-      },
-    })
-
-    const didIndyRevocationStatusList = await indyVdrAnonCredsRegistry.getRevocationStatusList(
-      endorser.context,
-      didIndyRevocationRegistryDefinitionId,
-      registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp
+    const didIndyRevocationStatusList = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationStatusList(
+        endorser.context,
+        didIndyRevocationRegistryDefinitionId,
+        statusListTimestamp
+      )
     )
 
     expect(didIndyRevocationStatusList).toMatchObject({
@@ -744,7 +535,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ],
-        timestamp: registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp,
+        timestamp: statusListTimestamp,
       },
       revocationStatusListMetadata: {
         didIndyNamespace: 'pool:localtest',
@@ -789,13 +580,11 @@ describe('IndyVdrAnonCredsRegistry', () => {
 
     const dynamicVersion = `1.${Math.random() * 100}`
 
-    const legacyIssuerId = namespaceIdentifier
     const didIndyIssuerId = agentDid
 
     // ----
     // CREATE SCHEMA
     // ----
-    const legacySchemaId = `${namespaceIdentifier}:2:test:${dynamicVersion}`
     const didIndySchemaId = `did:indy:pool:localtest:${namespaceIdentifier}/anoncreds/v0/SCHEMA/test/${dynamicVersion}`
 
     const createSchemaTxResult = await indyVdrAnonCredsRegistry.registerSchema(agent.context, {
@@ -843,24 +632,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
-    // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacySchema = await indyVdrAnonCredsRegistry.getSchema(agent.context, legacySchemaId)
-    expect(legacySchema).toMatchObject({
-      schema: {
-        attrNames: ['age'],
-        name: 'test',
-        version: dynamicVersion,
-        issuerId: legacyIssuerId,
-      },
-      schemaId: legacySchemaId,
-      resolutionMetadata: {},
-      schemaMetadata: {
-        didIndyNamespace: 'pool:localtest',
-        indyLedgerSeqNo: expect.any(Number),
-      },
-    })
+    await waitForSchemaOnAllNodes(didIndySchemaId)
 
     // Resolve using did indy schema id
     const didIndySchema = await indyVdrAnonCredsRegistry.getSchema(agent.context, didIndySchemaId)
@@ -882,7 +654,6 @@ describe('IndyVdrAnonCredsRegistry', () => {
     // ----
     // CREATE CREDENTIAL DEFINITION
     // ----
-    const legacyCredentialDefinitionId = `${namespaceIdentifier}:3:CL:${submitSchemaTxResult.schemaMetadata.indyLedgerSeqNo}:TAG`
     const didIndyCredentialDefinitionId = `did:indy:pool:localtest:${namespaceIdentifier}/anoncreds/v0/CLAIM_DEF/${submitSchemaTxResult.schemaMetadata.indyLedgerSeqNo}/TAG`
 
     const createCredDefTxResult = await indyVdrAnonCredsRegistry.registerCredentialDefinition(agent.context, {
@@ -932,33 +703,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
       registrationMetadata: {},
     })
 
-    // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      agent.context,
-      legacyCredentialDefinitionId
-    )
-
-    expect(legacyCredentialDefinition).toMatchObject({
-      credentialDefinitionId: legacyCredentialDefinitionId,
-      credentialDefinition: {
-        issuerId: legacyIssuerId,
-        schemaId: legacySchemaId,
-        tag: 'TAG',
-        type: 'CL',
-        value: credentialDefinitionValue,
-      },
-      credentialDefinitionMetadata: {
-        didIndyNamespace: 'pool:localtest',
-      },
-      resolutionMetadata: {},
-    })
-
     // resolve using did indy credential definition id
-    const didIndyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      agent.context,
-      didIndyCredentialDefinitionId
+    const didIndyCredentialDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getCredentialDefinition(agent.context, didIndyCredentialDefinitionId)
     )
 
     expect(didIndyCredentialDefinition).toMatchObject({
@@ -979,7 +726,6 @@ describe('IndyVdrAnonCredsRegistry', () => {
     // ----
     // CREATE REVOCATION REGISTRY
     // ----
-    const legacyRevocationRegistryDefinitionId = `${namespaceIdentifier}:4:${namespaceIdentifier}:3:CL:${submitSchemaTxResult.schemaMetadata.indyLedgerSeqNo}:TAG:CL_ACCUM:REV_TAG`
     const didIndyRevocationRegistryDefinitionId = `did:indy:pool:localtest:${namespaceIdentifier}/anoncreds/v0/REV_REG_DEF/${submitSchemaTxResult.schemaMetadata.indyLedgerSeqNo}/TAG/REV_TAG`
 
     const createRevRegDefTxResult = await indyVdrAnonCredsRegistry.registerRevocationRegistryDefinition(agent.context, {
@@ -1018,7 +764,10 @@ describe('IndyVdrAnonCredsRegistry', () => {
     })
 
     expect(submitRevRegDefTxResult).toMatchObject({
-      revocationRegistryDefinitionMetadata: {},
+      revocationRegistryDefinitionMetadata: {
+        issuanceType: 'ISSUANCE_BY_DEFAULT',
+        didIndyNamespace: 'pool:localtest',
+      },
       revocationRegistryDefinitionState: {
         revocationRegistryDefinition: {
           credDefId: didIndyCredentialDefinitionId,
@@ -1032,32 +781,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
       registrationMetadata: {},
     })
 
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
-      agent.context,
-      legacyRevocationRegistryDefinitionId
-    )
-
-    expect(legacyRevocationRegistryDefinition).toMatchObject({
-      revocationRegistryDefinitionId: legacyRevocationRegistryDefinitionId,
-      revocationRegistryDefinition: {
-        issuerId: legacyIssuerId,
-        revocDefType: 'CL_ACCUM',
-        value: revocationRegistryDefinitionValue,
-        tag: 'REV_TAG',
-        credDefId: legacyCredentialDefinitionId,
-      },
-      revocationRegistryDefinitionMetadata: {
-        issuanceType: 'ISSUANCE_BY_DEFAULT',
-        didIndyNamespace: 'pool:localtest',
-      },
-      resolutionMetadata: {},
-    })
-
-    const didIndyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
-      agent.context,
-      didIndyRevocationRegistryDefinitionId
+    const didIndyRevocationRegistryDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(agent.context, didIndyRevocationRegistryDefinitionId)
     )
 
     expect(didIndyRevocationRegistryDefinition).toMatchObject({
@@ -1122,33 +847,12 @@ describe('IndyVdrAnonCredsRegistry', () => {
       registrationMetadata: {},
     })
 
-    // Wait some time before resolving status list
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyRevocationStatusList = await indyVdrAnonCredsRegistry.getRevocationStatusList(
-      agent.context,
-      legacyRevocationRegistryDefinitionId,
-      submitRevStatusListTxResult.revocationStatusListState.revocationStatusList?.timestamp as number
-    )
-
-    expect(legacyRevocationStatusList).toMatchObject({
-      resolutionMetadata: {},
-      revocationStatusList: {
-        issuerId: legacyIssuerId,
-        currentAccumulator: '1',
-        revRegDefId: legacyRevocationRegistryDefinitionId,
-        revocationList: revocationStatusListValue.revocationList,
-        timestamp: submitRevStatusListTxResult.revocationStatusListState.revocationStatusList?.timestamp,
-      },
-      revocationStatusListMetadata: {
-        didIndyNamespace: 'pool:localtest',
-      },
-    })
-
-    const didIndyRevocationStatusList = await indyVdrAnonCredsRegistry.getRevocationStatusList(
-      agent.context,
-      didIndyRevocationRegistryDefinitionId,
-      submitRevStatusListTxResult.revocationStatusListState.revocationStatusList?.timestamp as number
+    const didIndyRevocationStatusList = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationStatusList(
+        agent.context,
+        didIndyRevocationRegistryDefinitionId,
+        submitRevStatusListTxResult.revocationStatusListState.revocationStatusList?.timestamp as number
+      )
     )
 
     expect(didIndyRevocationStatusList).toMatchObject({
@@ -1180,7 +884,6 @@ describe('IndyVdrAnonCredsRegistry', () => {
     const didIndyIssuerId = didCreateResult.didState.did
     const { namespaceIdentifier: legacyIssuerId } = parseIndyDid(didIndyIssuerId)
     const dynamicVersion = `1.${Math.random() * 100}`
-    const legacySchemaId = `${legacyIssuerId}:2:test:${dynamicVersion}`
     const didIndySchemaId = `did:indy:pool:localtest:${legacyIssuerId}/anoncreds/v0/SCHEMA/test/${dynamicVersion}`
 
     const schemaResult = await indyVdrAnonCredsRegistry.registerSchema(endorser.context, {
@@ -1212,23 +915,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
         indyLedgerSeqNo: expect.any(Number),
       },
     })
-    // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-    const legacySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, legacySchemaId)
-    expect(legacySchema).toMatchObject({
-      schema: {
-        attrNames: ['age'],
-        name: 'test',
-        version: dynamicVersion,
-        issuerId: legacyIssuerId,
-      },
-      schemaId: legacySchemaId,
-      resolutionMetadata: {},
-      schemaMetadata: {
-        didIndyNamespace: 'pool:localtest',
-        indyLedgerSeqNo: expect.any(Number),
-      },
-    })
+
+    await waitForSchemaOnAllNodes(didIndySchemaId)
+
     // Resolve using did indy schema id
     const didIndySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
     expect(didIndySchema).toMatchObject({
@@ -1258,7 +947,6 @@ describe('IndyVdrAnonCredsRegistry', () => {
     const didIndyAgentIssuerId = agentDidCreateResult.didState.did
     const { namespaceIdentifier: agentLegacyIssuerId } = parseIndyDid(didIndyAgentIssuerId)
 
-    const legacyCredentialDefinitionId = `${agentLegacyIssuerId}:3:CL:${schemaSeqNo}:TAG`
     const didIndyCredentialDefinitionId = `did:indy:pool:localtest:${agentLegacyIssuerId}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/TAG`
 
     const credentialDefinitionResult = await indyVdrAnonCredsRegistry.registerCredentialDefinition(agent.context, {
@@ -1291,31 +979,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
       registrationMetadata: {},
     })
 
-    // // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-    const legacyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      agent.context,
-      legacyCredentialDefinitionId
-    )
-
-    expect(legacyCredentialDefinition).toMatchObject({
-      credentialDefinitionId: legacyCredentialDefinitionId,
-      credentialDefinition: {
-        issuerId: agentLegacyIssuerId,
-        schemaId: legacySchemaId,
-        tag: 'TAG',
-        type: 'CL',
-        value: credentialDefinitionValue,
-      },
-      credentialDefinitionMetadata: {
-        didIndyNamespace: 'pool:localtest',
-      },
-      resolutionMetadata: {},
-    })
     // resolve using did indy credential definition id
-    const didIndyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      agent.context,
-      didIndyCredentialDefinitionId
+    const didIndyCredentialDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getCredentialDefinition(agent.context, didIndyCredentialDefinitionId)
     )
 
     expect(didIndyCredentialDefinition).toMatchObject({

@@ -4,6 +4,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import type { DidCommMessageProcessedEvent } from '../../didcomm/src'
 import { DidCommEventTypes } from '../../didcomm/src'
+import { DidCommBasicMessageEventTypes } from '../../didcomm/src/modules/basic-messages'
 import {
   DidCommConnectionType,
   DidCommDidExchangeState,
@@ -19,7 +20,8 @@ import {
 import { Agent } from '../src/agent/Agent'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
 
-import { firstValueWithStackTrace, getAgentOptions, waitForBasicMessage } from './helpers'
+import { type EventReplaySubject, setupEventReplaySubjects } from './events'
+import { firstValueWithStackTrace, getAgentOptions, waitForBasicMessageSubject } from './helpers'
 
 const faberAgentOptions = getAgentOptions(
   'OOB mediation - Faber Agent',
@@ -59,12 +61,14 @@ describe('out of band with mediation', () => {
     goalCode: 'p2p-messaging',
     label: 'Faber College',
     handshake: true,
+    handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     multiUseInvitation: false,
   }
 
   let faberAgent: Agent<(typeof faberAgentOptions)['modules']>
   let aliceAgent: Agent<(typeof aliceAgentOptions)['modules']>
   let mediatorAgent: Agent<(typeof mediatorAgentOptions)['modules']>
+  let faberReplay: EventReplaySubject
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -80,6 +84,10 @@ describe('out of band with mediation', () => {
     faberAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     faberAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
+    ;[faberReplay] = setupEventReplaySubjects(
+      [faberAgent],
+      [DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged]
+    )
 
     aliceAgent = new Agent(aliceAgentOptions)
     aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
@@ -143,7 +151,10 @@ describe('out of band with mediation', () => {
 
   test(`make a connection with ${DidCommHandshakeProtocol.DidExchange} on OOB invitation encoded in URL`, async () => {
     // ========== Make a connection between Alice and Faber ==========
-    const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ multiUseInvitation: false })
+    const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+      multiUseInvitation: false,
+    })
 
     const { outOfBandInvitation } = outOfBandRecord
     const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
@@ -163,8 +174,8 @@ describe('out of band with mediation', () => {
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
 
-    await aliceAgent.didcomm.basicMessages.sendMessage(aliceFaberConnection.id, 'hello')
-    const basicMessage = await waitForBasicMessage(faberAgent, {})
+    const { threadId } = await aliceAgent.didcomm.basicMessages.sendMessage(aliceFaberConnection.id, 'hello')
+    const basicMessage = await waitForBasicMessageSubject(faberReplay, { threadId })
 
     expect(basicMessage.content).toBe('hello')
   })
@@ -180,7 +191,9 @@ describe('out of band with mediation', () => {
       )
     )
 
-    const outOfBandRecord = await aliceAgent.didcomm.oob.createInvitation({})
+    const outOfBandRecord = await aliceAgent.didcomm.oob.createInvitation({
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+    })
     const { outOfBandInvitation } = outOfBandRecord
 
     const keyAddMessage = await keyAddMessagePromise

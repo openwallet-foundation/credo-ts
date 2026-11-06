@@ -1,12 +1,13 @@
 import type { Logger } from '../logger'
 import { DidsApi } from '../modules/dids'
 import { GenericRecordsApi } from '../modules/generic-records'
-import { KeyManagementApi } from '../modules/kms'
+import { KeyManagementApi, type KeyManagementModule } from '../modules/kms'
 import { MdocApi } from '../modules/mdoc'
 import { SdJwtVcApi } from '../modules/sd-jwt-vc'
 import { TokenStatusListApi } from '../modules/token-status-list'
 import { W3cV2CredentialsApi } from '../modules/vc'
 import { W3cCredentialsApi } from '../modules/vc/W3cCredentialsApi'
+import { W3cDataIntegrityApi } from '../modules/w3c-di'
 import { X509Api } from '../modules/x509'
 import type { DependencyManager, Module } from '../plugins'
 import type { AgentConfig } from './AgentConfig'
@@ -25,11 +26,17 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly mdoc: MdocApi
   public readonly genericRecords: GenericRecordsApi
   public readonly dids: DidsApi
+  public readonly w3cDataIntegrity: W3cDataIntegrityApi
   public readonly w3cCredentials: W3cCredentialsApi
   public readonly w3cV2Credentials: W3cV2CredentialsApi
   public readonly sdJwtVc: SdJwtVcApi
   public readonly x509: X509Api
-  public readonly kms: KeyManagementApi
+  /**
+   * The key management api, typed for the backends of the registered `kms` module
+   */
+  public readonly kms: AgentModules['kms'] extends KeyManagementModule<infer Backends>
+    ? KeyManagementApi<Backends>
+    : KeyManagementApi
   public readonly tokenStatusList: TokenStatusListApi
 
   /**
@@ -64,17 +71,19 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
 
     this.genericRecords = this.dependencyManager.resolve(GenericRecordsApi)
     this.dids = this.dependencyManager.resolve(DidsApi)
+    this.w3cDataIntegrity = this.dependencyManager.resolve(W3cDataIntegrityApi)
     this.w3cCredentials = this.dependencyManager.resolve(W3cCredentialsApi)
     this.w3cV2Credentials = this.dependencyManager.resolve(W3cV2CredentialsApi)
     this.sdJwtVc = this.dependencyManager.resolve(SdJwtVcApi)
     this.x509 = this.dependencyManager.resolve(X509Api)
     this.mdoc = this.dependencyManager.resolve(MdocApi)
-    this.kms = this.dependencyManager.resolve(KeyManagementApi)
+    this.kms = this.dependencyManager.resolve(KeyManagementApi) as this['kms']
     this.tokenStatusList = this.dependencyManager.resolve(TokenStatusListApi)
 
     const defaultApis = [
       this.genericRecords,
       this.dids,
+      this.w3cDataIntegrity,
       this.w3cCredentials,
       this.w3cV2Credentials,
       this.sdJwtVc,

@@ -3,7 +3,7 @@ import { MediaTypes, StatusType } from '@owf/token-status-list'
 import nock from 'nock'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, P256PublicJwk, PublicJwk } from '../../kms'
-import { TokenStatusListApi } from '../../token-status-list'
+import { TokenStatusListApi, TokenStatusListModuleConfig } from '../../token-status-list'
 import { X509ModuleConfig } from '../../x509/X509ModuleConfig'
 import { X509Service } from '../../x509/X509Service'
 import { Mdoc } from '../Mdoc'
@@ -11,7 +11,13 @@ import { MdocDeviceResponse } from '../MdocDeviceResponse'
 import { sprindFunkeTestVectorBase64Url, sprindFunkeX509TrustedCertificate } from './mdoc.fixtures'
 
 const agentConfig = getAgentConfig('mdoc')
-const agentContext = getAgentContext({ registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]], agentConfig })
+const agentContext = getAgentContext({
+  registerInstances: [
+    [X509ModuleConfig, new X509ModuleConfig()],
+    [TokenStatusListModuleConfig, new TokenStatusListModuleConfig()],
+  ],
+  agentConfig,
+})
 
 const getNextMonth = () => {
   const now = new Date()
@@ -117,6 +123,8 @@ describe('mdoc service test', () => {
         bitsPerStatus: 1,
       },
       statusListUri,
+      // ISO 18013-5 12.3.6.3 requires the status list token to have an expiration time
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     })
 
     const { statusList: updatedStatusList } = await tokenStatusList.updateTokenStatusList({
@@ -354,6 +362,7 @@ describe('mdoc service test', () => {
       alg: KnownJwaSignatureAlgorithms.ES256,
       statusList: { statusListLength: 10, bitsPerStatus: 1 },
       statusListUri,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     })
 
     nock('https://example.org')
@@ -393,6 +402,7 @@ describe('mdoc service test', () => {
       alg: KnownJwaSignatureAlgorithms.ES256,
       statusList: { statusListLength: 10, bitsPerStatus: 1 },
       statusListUri,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     })
 
     nock('https://example.org')
@@ -432,6 +442,7 @@ describe('mdoc service test', () => {
       alg: KnownJwaSignatureAlgorithms.ES256,
       statusList: { statusListLength: 10, bitsPerStatus: 1 },
       statusListUri,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     })
 
     nock('https://example.org')
@@ -467,6 +478,7 @@ describe('mdoc service test', () => {
       alg: KnownJwaSignatureAlgorithms.ES256,
       statusList: { statusListLength: 10, bitsPerStatus: 1 },
       statusListUri,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     })
 
     nock('https://example.org')
@@ -498,6 +510,7 @@ describe('mdoc service test', () => {
       alg: KnownJwaSignatureAlgorithms.ES256,
       statusList: { statusListLength: 10, bitsPerStatus: 1 },
       statusListUri,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     })
 
     nock('https://example.org')
@@ -585,6 +598,7 @@ describe('mdoc service test', () => {
       alg: KnownJwaSignatureAlgorithms.ES256,
       statusList: { statusListLength: 10, bitsPerStatus: 1 },
       statusListUri,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     })
 
     nock('https://example.org')
@@ -655,6 +669,7 @@ describe('mdoc service test', () => {
       alg: KnownJwaSignatureAlgorithms.ES256,
       statusList: { statusListLength: 10, bitsPerStatus: 1 },
       statusListUri,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     })
 
     nock('https://example.org')
@@ -730,6 +745,7 @@ describe('mdoc service test', () => {
       alg: KnownJwaSignatureAlgorithms.ES256,
       statusList: { statusListLength: 10, bitsPerStatus: 1 },
       statusListUri,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     })
 
     nock('https://example.org')

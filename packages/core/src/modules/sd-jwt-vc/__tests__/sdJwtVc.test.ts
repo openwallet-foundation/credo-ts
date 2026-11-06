@@ -1,5 +1,5 @@
 import { Agent, DidKey, SdJwtVcRecord, TypedArrayEncoder } from '@credo-ts/core'
-import nock, { cleanAll } from 'nock'
+import nock from 'nock'
 import { transformSeedToPrivateJwk } from '../../../../../askar/src'
 import { getAgentOptions } from '../../../../tests'
 import { PublicJwk } from '../../kms'
@@ -293,6 +293,6 @@ describe('sd-jwt-vc end to end test', () => {
 
     expect(isValid).toBe(true)
 
-    cleanAll()
+    nock.cleanAll()
   })
 })

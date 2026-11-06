@@ -13,6 +13,15 @@ export enum AskarMultiWalletDatabaseScheme {
   ProfilePerWallet = 'ProfilePerWallet',
 }
 
+/**
+ * The `NativeAskar` class exported from `@openwallet-foundation/askar-shared` (and re-exported by the platform packages)
+ * since version 0.6.0. It is typed structurally so older versions of askar-shared, which don't export `NativeAskar`,
+ * remain supported.
+ */
+export interface NativeAskarLike {
+  readonly instance: Askar
+}
+
 export interface AskarModuleConfigStoreOptions {
   /**
    * The id of the store, and also the default profile that will be used for the root agent instance.
@@ -56,18 +65,23 @@ export interface AskarModuleConfigOptions {
   store: AskarModuleConfigStoreOptions
 
   /**
+   * The askar instance to use. You can pass either the `NativeAskar` class (askar 0.6.0+), which resolves the registered
+   * native binding lazily on each access, or an `Askar` instance directly (e.g. the deprecated `askar` export).
+   *
+   * Passing `NativeAskar` is recommended, as the deprecated `askar` export is only populated after the platform package
+   * has been imported, which can result in `undefined` depending on import order (e.g. with ESM or bundlers).
    *
    * ## Node.JS
    *
    * ```ts
-   * import { askar } from '@openwallet-foundation/askar-nodejs'
+   * import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
    *
    * const agent = new Agent({
    *  config: {},
    *  dependencies: agentDependencies,
    *  modules: {
    *   askar: new AskarModule({
-   *      askar,
+   *      askar: NativeAskar,
    *   })
    *  }
    * })
@@ -76,20 +90,20 @@ export interface AskarModuleConfigOptions {
    * ## React Native
    *
    * ```ts
-   * import { askar } from '@openwallet-foundation/askar-react-native'
+   * import { NativeAskar } from '@openwallet-foundation/askar-react-native'
    *
    * const agent = new Agent({
    *  config: {},
    *  dependencies: agentDependencies,
    *  modules: {
    *   askar: new AskarModule({
-   *      askar,
+   *      askar: NativeAskar,
    *   })
    *  }
    * })
    * ```
    */
-  askar: Askar
+  askar: Askar | NativeAskarLike
 
   /**
    * Determine the strategy for storing wallets if multiple wallets are used in a single agent.
@@ -127,8 +141,11 @@ export class AskarModuleConfig {
   }
 
   /** See {@link AskarModuleConfigOptions.askar} */
-  public get askar() {
-    return this.options.askar
+  public get askar(): Askar {
+    const askar = this.options.askar
+
+    // NativeAskar resolves the registered native binding on each access
+    return 'instance' in askar ? askar.instance : askar
   }
 
   /** See {@link AskarModuleConfigOptions.multiWalletDatabaseScheme} */

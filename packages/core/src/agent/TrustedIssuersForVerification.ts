@@ -3,6 +3,7 @@ import type { SdJwtVc } from '../modules/sd-jwt-vc'
 import type {
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
+  W3cV2DataIntegrityVerifiableCredential,
   W3cV2JwtVerifiableCredential,
   W3cV2SdJwtVerifiableCredential,
 } from '../modules/vc'
@@ -67,6 +68,58 @@ export type VerificationTypeCredential = {
     | W3cJwtVerifiableCredential
     | W3cV2JwtVerifiableCredential
     | W3cV2SdJwtVerifiableCredential
+    | W3cV2DataIntegrityVerifiableCredential
+}
+
+/**
+ * Resolves the trusted issuers of a single credential when it is verified, for example to apply a
+ * different trust policy to each credential in a presentation. Return `undefined` to fall through
+ * to the `getTrustedIssuersForVerification` callback.
+ */
+export type GetTrustedIssuersForCredential = (context: {
+  signer: VerificationSignerDid
+  verification: VerificationTypeCredential
+}) => Promise<TrustedIssuerDid[] | undefined>
+
+/**
+ * Reader authentication on an incoming mdoc request.
+ *
+ * The returned trusted issuers are the trust anchors the reader certificate chain of a single doc
+ * request is validated against. Reader authentication is resolved per doc request, as every doc
+ * request carries its own reader certificate chain.
+ *
+ * Return the leaf certificate from `signer.certificateChain` to trust a reader on the certificate
+ * it presented itself, without establishing chain trust.
+ */
+export type VerificationTypeMdocReaderAuth = {
+  type: 'mdocReaderAuth'
+
+  /**
+   * How the request reached the mdoc.
+   *
+   * Only the session transcript differs between mdoc exchanges; the doc request itself is the
+   * same. An ISO/IEC TS 18013-7 Annex C (`org-iso-mdoc`) DC API request always carries the origin
+   * it was received from, where other exchanges (e.g. ISO/IEC 18013-5 proximity) have no origin
+   * and are added here as an additional member once supported.
+   */
+  exchange: {
+    type: 'dcApi'
+
+    /**
+     * The origin the DC API request was received from.
+     */
+    origin: string
+  }
+
+  /**
+   * The doctype of the doc request the reader authentication is for.
+   */
+  docType: string
+
+  /**
+   * Requested elements per namespace, mapped to their `intentToRetain` value.
+   */
+  nameSpaces: Record<string, Record<string, boolean>>
 }
 
 export interface TrustedIssuersForVerificationContext<
@@ -81,7 +134,7 @@ export interface TrustedIssuersForVerificationContext<
   /**
    * The context of the verification object
    */
-  verification: VerificationTypeCredential | AdditionalVerificationTypes
+  verification: VerificationTypeCredential | VerificationTypeMdocReaderAuth | AdditionalVerificationTypes
 }
 
 /**

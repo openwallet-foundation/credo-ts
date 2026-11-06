@@ -1,10 +1,16 @@
 import { Agent, utils } from '@credo-ts/core'
+import { Store } from '@openwallet-foundation/askar-shared'
 import { tmpdir } from 'os'
 import path from 'path'
 
 import { DidCommBasicMessageRecord, DidCommBasicMessageRepository, DidCommBasicMessageRole } from '../../didcomm/src'
 
-import { AskarStoreDuplicateError, AskarStoreInvalidKeyError, AskarStoreNotFoundError } from '../src/error'
+import {
+  AskarStoreDuplicateError,
+  AskarStoreError,
+  AskarStoreInvalidKeyError,
+  AskarStoreNotFoundError,
+} from '../src/error'
 import { getAskarSqliteAgentOptions } from './helpers'
 
 const aliceAgentOptions = getAskarSqliteAgentOptions('AgentsAlice')
@@ -69,6 +75,17 @@ describe('Askar SQLite agents', () => {
     expect(aliceAgent.modules.askar.isStoreOpen).toBe(true)
 
     await aliceAgent.modules.askar.deleteStore()
+  })
+
+  test('fails to provision a store when Askar provisioning fails', async () => {
+    const originalError = new Error('provision failed')
+    vi.spyOn(Store, 'provision').mockRejectedValueOnce(originalError)
+
+    await expect(aliceAgent.modules.askar.provisionStore()).rejects.toMatchObject({
+      message: `Error creating store '${aliceAgent.modules.askar.config.store.id}'`,
+      cause: originalError,
+    } satisfies Partial<AskarStoreError>)
+    expect(aliceAgent.modules.askar.isStoreOpen).toBe(false)
   })
 
   test('when exporting and importing a store, content is copied', async () => {
@@ -257,6 +274,46 @@ describe('Askar SQLite agents', () => {
 
     expect(aliceAgent.isInitialized).toBe(true)
 
+    await aliceAgent.modules.askar.deleteStore()
+  })
+
+  test('fails to rotate a store key when Askar rekey fails', async () => {
+    await aliceAgent.modules.askar.provisionStore()
+    const originalError = new Error('rekey failed')
+    vi.spyOn(aliceAgent.context.resolve(Store), 'rekey').mockRejectedValueOnce(originalError)
+
+    await expect(aliceAgent.modules.askar.rotateStoreKey({ newKey: 'new-key' })).rejects.toMatchObject({
+      message: `Error rotating key for store '${aliceAgent.modules.askar.config.store.id}': rekey failed`,
+      cause: originalError,
+    } satisfies Partial<AskarStoreError>)
+    expect(aliceAgent.modules.askar.isStoreOpen).toBe(true)
+  })
+
+  test('keeps the store open when Askar close fails', async () => {
+    await aliceAgent.modules.askar.provisionStore()
+    const originalError = new Error('close failed')
+    vi.spyOn(aliceAgent.context.resolve(Store), 'close').mockRejectedValueOnce(originalError)
+
+    await expect(aliceAgent.modules.askar.closeStore()).rejects.toMatchObject({
+      message: `Error closing store '${aliceAgent.modules.askar.config.store.id}': close failed`,
+      cause: originalError,
+    } satisfies Partial<AskarStoreError>)
+    expect(aliceAgent.modules.askar.isStoreOpen).toBe(true)
+  })
+
+  test('leaves the store available when Askar removal fails', async () => {
+    await aliceAgent.modules.askar.provisionStore()
+    await aliceAgent.modules.askar.closeStore()
+    const originalError = new Error('remove failed')
+    vi.spyOn(Store, 'remove').mockRejectedValueOnce(originalError)
+
+    await expect(aliceAgent.modules.askar.deleteStore()).rejects.toMatchObject({
+      message: `Error deleting store '${aliceAgent.modules.askar.config.store.id}': remove failed`,
+      cause: originalError,
+    } satisfies Partial<AskarStoreError>)
+
+    await aliceAgent.modules.askar.openStore()
+    await aliceAgent.modules.askar.closeStore()
     await aliceAgent.modules.askar.deleteStore()
   })
 

@@ -4,6 +4,7 @@ import {
   type EncodedX509Certificate,
   Hasher,
   JsonEncoder,
+  JweService,
   JwsService,
   type JwsSignerWithJwk,
   JwtPayload,
@@ -13,6 +14,7 @@ import {
   X509Certificate,
   X509ModuleConfig,
   X509Service,
+  type X509VerificationContext,
   type X509VerificationTrustedCertificates,
 } from '@credo-ts/core'
 import type {
@@ -28,7 +30,95 @@ import { clientAuthenticationDynamic, decodeJwtHeader } from '@openid4vc/oauth2'
 import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 import type { OpenId4VcVerificationTypes } from './OpenId4VcTrustedIssuersVerificationTypes'
 
-import { getPublicJwkFromDid } from './utils'
+import {
+  getPublicJwkFromDid,
+  supportedResponseEncryptionContentAlgorithms,
+  supportedResponseEncryptionKeyAgreementAlgorithms,
+} from './utils'
+
+/**
+ * Normalizes a jwt `typ` header value so it can be compared to the type without the `application/` prefix.
+ * Media types are case-insensitive, and RFC 7515 allows omitting the `application/` prefix in `typ`.
+ */
+function normalizeJwtTyp(typ?: string) {
+  const lowerCaseTyp = typ?.toLowerCase()
+  return lowerCaseTyp?.startsWith('application/') ? lowerCaseTyp.slice('application/'.length) : lowerCaseTyp
+}
+
+/**
+ * Maps the `typ` header of a jwt verified by oid4vc-ts to the trust verification context.
+ *
+ * Two shapes are returned, as the deprecated x509 callback only carries the issuance session id.
+ * Returns `undefined` for jwts that are not bound to a trusted issuer (proofs, dpop, access tokens, ...),
+ * for which only the signature is verified.
+ */
+function getOid4vcJwtVerificationContext(options: {
+  /** normalized with {@link normalizeJwtTyp} */
+  typ?: string
+  compact: string
+  payload: Record<string, unknown>
+  issuanceSession?: OpenId4VcIssuanceSessionRecord
+  isAuthorizationRequestJwt?: boolean
+}):
+  | { verification: OpenId4VcVerificationTypes; legacyVerification: X509VerificationContext['verification'] }
+  | undefined {
+  const { typ, compact, issuanceSession, isAuthorizationRequestJwt } = options
+  const payload = JwtPayload.fromJson(options.payload)
+
+  // oauth2 secured authorization request (JAR)
+  if (typ === 'oauth-authz-req+jwt' || isAuthorizationRequestJwt) {
+    const authorizationRequest = { jwt: compact, payload }
+    return {
+      verification: { type: 'oauth2SecuredAuthorizationRequest', authorizationRequest },
+      legacyVerification: { type: 'oauth2SecuredAuthorizationRequest', authorizationRequest },
+    }
+  }
+
+  // OID4VCI key attestation
+  if ((typ === 'keyattestation+jwt' || typ === 'key-attestation+jwt') && issuanceSession) {
+    const keyAttestation = { jwt: compact, payload }
+    return {
+      verification: {
+        type: 'openId4VciKeyAttestation',
+        openId4VcIssuanceSessionRecord: issuanceSession,
+        keyAttestation,
+      },
+      legacyVerification: {
+        type: 'openId4VciKeyAttestation',
+        openId4VcIssuanceSessionId: issuanceSession.id,
+        keyAttestation,
+      },
+    }
+  }
+
+  // OID4VCI credential issuer metadata
+  if (typ === 'openidvci-issuer-metadata+jwt') {
+    const credentialIssuerMetadata = { jwt: compact, payload }
+    return {
+      verification: { type: 'openId4VciCredentialIssuerMetadata', credentialIssuerMetadata },
+      legacyVerification: { type: 'openId4VciCredentialIssuerMetadata', credentialIssuerMetadata },
+    }
+  }
+
+  // OAuth2 client attestation
+  if (typ === 'oauth-client-attestation+jwt' && issuanceSession) {
+    const clientAttestation = { jwt: compact, payload }
+    return {
+      verification: {
+        type: 'oauth2ClientAttestation',
+        openId4VcIssuanceSessionRecord: issuanceSession,
+        clientAttestation,
+      },
+      legacyVerification: {
+        type: 'oauth2ClientAttestation',
+        openId4VcIssuanceSessionId: issuanceSession.id,
+        clientAttestation,
+      },
+    }
+  }
+
+  return undefined
+}
 
 export function getOid4vcJwtVerifyCallback(
   agentContext: AgentContext,
@@ -50,141 +140,63 @@ export function getOid4vcJwtVerifyCallback(
 
   return async (signer, { compact, header, payload }) => {
     let trustedCertificates = options?.trustedCertificates
+    const typ = normalizeJwtTyp(header.typ)
 
-    // oauth2 secured authorization request (JAR)
-    if (
-      signer.method === 'x5c' &&
-      (header.typ === 'oauth-authz-req+jwt' || options?.isAuthorizationRequestJwt) &&
-      !trustedCertificates
-    ) {
-      const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
-      const certificateChain = signer.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
-      const jwtPayload = JwtPayload.fromJson(payload)
+    // Wallet and key attestations signed with a bare `jwk` can't be checked against the trusted issuers
+    // (there is no `jwk` variant of `VerificationSigner`/`TrustedIssuer`), so any client could sign its own.
+    // This is checked regardless of the issuance session, so it applies to every endpoint.
+    if (signer.method === 'jwk') {
+      if (typ === 'oauth-client-attestation+jwt') {
+        throw new CredoError(
+          `Wallet attestations signed with a 'jwk' header are not supported. Use 'x5c' or 'did' to sign the wallet attestation.`
+        )
+      }
 
-      if (certificateChain) {
-        const genericResult = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
-          signer: { method: 'x509', certificateChain },
-          verification: {
-            type: 'oauth2SecuredAuthorizationRequest',
-            authorizationRequest: { jwt: compact, payload: jwtPayload },
-          } satisfies OpenId4VcVerificationTypes,
+      if (typ === 'keyattestation+jwt' || typ === 'key-attestation+jwt') {
+        throw new CredoError(
+          `Key attestations signed with a 'jwk' header are not supported. Use 'x5c' or 'did' to sign the key attestation.`
+        )
+      }
+    }
+
+    const verificationContext = getOid4vcJwtVerificationContext({
+      typ,
+      compact,
+      payload,
+      issuanceSession: options?.issuanceSession,
+      isAuthorizationRequestJwt: options?.isAuthorizationRequestJwt,
+    })
+
+    if (verificationContext) {
+      if (signer.method === 'x5c' && !trustedCertificates) {
+        const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+        const certificateChain = signer.x5c.map((cert) => X509Certificate.fromEncodedCertificate(cert))
+
+        // NOTE: we can't use `ensureTrustedSigner` here (unlike the did branch below), as `JwsService`
+        // already validates the certificate chain, and falls back to the globally configured trusted
+        // certificates when nothing is resolved here.
+        trustedCertificates =
+          (
+            await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+              signer: { method: 'x509', certificateChain },
+              verification: verificationContext.verification,
+            })
+          )?.trustedIssuers ??
+          (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+            certificateChain,
+            verification: verificationContext.legacyVerification,
+          }))
+      } else if (signer.method === 'did') {
+        // Consistent with did signed credentials, this allows the did when no trusted issuers are
+        // returned, and throws when the signer did is not in the returned list.
+        await TrustedIssuerContext.ensureTrustedSigner(agentContext, {
+          signer: { method: 'did', didUrl: signer.didUrl },
+          verification: verificationContext.verification,
         })
-        if (genericResult !== undefined) {
-          trustedCertificates = genericResult.trustedIssuers
-        } else {
-          trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain,
-            verification: {
-              type: 'oauth2SecuredAuthorizationRequest',
-              authorizationRequest: { jwt: compact, payload: jwtPayload },
-            },
-          })
-        }
       }
-    }
 
-    // OID4VCI key attestation
-    if (
-      signer.method === 'x5c' &&
-      (header.typ === 'keyattestation+jwt' || header.typ === 'key-attestation+jwt') &&
-      options?.issuanceSession &&
-      !trustedCertificates
-    ) {
-      const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
-      const certificateChain = signer.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
-      const jwtPayload = JwtPayload.fromJson(payload)
-
-      if (certificateChain) {
-        if (agentContext.config.getTrustedIssuersForVerification) {
-          const genericResult = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
-            signer: { method: 'x509', certificateChain },
-            verification: {
-              type: 'openId4VciKeyAttestation',
-              openId4VcIssuanceSessionRecord: options.issuanceSession,
-              keyAttestation: { jwt: compact, payload: jwtPayload },
-            } satisfies OpenId4VcVerificationTypes,
-          })
-          if (genericResult !== undefined) {
-            trustedCertificates = genericResult.trustedIssuers
-          }
-        }
-        if (trustedCertificates === undefined) {
-          trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain,
-            verification: {
-              type: 'openId4VciKeyAttestation',
-              openId4VcIssuanceSessionId: options.issuanceSession.id,
-              keyAttestation: { jwt: compact, payload: jwtPayload },
-            },
-          })
-        }
-      }
-    }
-
-    // OID4VCI credential issuer metadata
-    if (signer.method === 'x5c' && header.typ === 'openidvci-issuer-metadata+jwt' && !trustedCertificates) {
-      const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
-      const certificateChain = signer.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
-      const jwtPayload = JwtPayload.fromJson(payload)
-
-      if (certificateChain) {
-        const genericResult = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
-          signer: { method: 'x509', certificateChain },
-          verification: {
-            type: 'openId4VciCredentialIssuerMetadata',
-            credentialIssuerMetadata: { jwt: compact, payload: jwtPayload },
-          } satisfies OpenId4VcVerificationTypes,
-        })
-        if (genericResult !== undefined) {
-          trustedCertificates = genericResult.trustedIssuers
-        } else {
-          trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain,
-            verification: {
-              type: 'openId4VciCredentialIssuerMetadata',
-              credentialIssuerMetadata: { jwt: compact, payload: jwtPayload },
-            },
-          })
-        }
-      }
-    }
-
-    // OAuth2 client attestation
-    if (
-      signer.method === 'x5c' &&
-      header.typ === 'oauth-client-attestation+jwt' &&
-      options?.issuanceSession &&
-      !trustedCertificates
-    ) {
-      const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
-      const certificateChain = signer.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
-      const jwtPayload = JwtPayload.fromJson(payload)
-
-      if (certificateChain) {
-        if (agentContext.config.getTrustedIssuersForVerification) {
-          const genericResult = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
-            signer: { method: 'x509', certificateChain },
-            verification: {
-              type: 'oauth2ClientAttestation',
-              openId4VcIssuanceSessionRecord: options.issuanceSession,
-              clientAttestation: { jwt: compact, payload: jwtPayload },
-            } satisfies OpenId4VcVerificationTypes,
-          })
-          if (genericResult !== undefined) {
-            trustedCertificates = genericResult.trustedIssuers
-          }
-        }
-        if (trustedCertificates === undefined) {
-          trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain,
-            verification: {
-              type: 'oauth2ClientAttestation',
-              openId4VcIssuanceSessionId: options.issuanceSession.id,
-              clientAttestation: { jwt: compact, payload: jwtPayload },
-            },
-          })
-        }
-      }
+      // NOTE: other jwts signed with a bare `jwk` are not checked against a trust list, as there is no
+      // `jwk` variant of `VerificationSigner`/`TrustedIssuer`. Wallet and key attestations are rejected above.
     }
 
     const alg = signer.alg as Kms.KnownJwaSignatureAlgorithm
@@ -234,8 +246,6 @@ export function getOid4vcJwtVerifyCallback(
 }
 
 export function getOid4vcEncryptJweCallback(agentContext: AgentContext): EncryptJweCallback {
-  const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-
   return async (jweEncryptor, compact) => {
     if (jweEncryptor.method !== 'jwk') {
       throw new CredoError(
@@ -250,75 +260,38 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
       throw new CredoError('Expected kid to be defined on the JWK')
     }
 
-    if (jweEncryptor.alg !== 'ECDH-ES') {
-      throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response encryption")
-    }
-
-    if (jweEncryptor.enc !== 'A256GCM' && jweEncryptor.enc !== 'A128GCM' && jweEncryptor.enc !== 'A128CBC-HS256') {
+    if (
+      !supportedResponseEncryptionKeyAgreementAlgorithms.includes(
+        jweEncryptor.alg as (typeof supportedResponseEncryptionKeyAgreementAlgorithms)[number]
+      )
+    ) {
       throw new CredoError(
-        "Only 'A256GCM', 'A128GCM', and 'A128CBC-HS256' is supported as 'enc' value for JARM response encryption"
+        `Only ${supportedResponseEncryptionKeyAgreementAlgorithms.map((alg) => `'${alg}'`).join(', ')} are supported as 'alg' value for response encryption`
       )
     }
 
-    const jwkJson = jwk.toJson()
-    if (jwkJson.kty !== 'EC' && jwkJson.kty !== 'OKP') {
-      throw new CredoError(`Expected EC or OKP jwk for encryption, found ${Kms.getJwkHumanDescription(jwkJson)}`)
+    if (
+      !supportedResponseEncryptionContentAlgorithms.includes(
+        jweEncryptor.enc as (typeof supportedResponseEncryptionContentAlgorithms)[number]
+      )
+    ) {
+      throw new CredoError(
+        `Only ${supportedResponseEncryptionContentAlgorithms.map((alg) => `'${alg}'`).join(', ')} are supported as 'enc' value for response encryption`
+      )
     }
+    const enc = jweEncryptor.enc as (typeof supportedResponseEncryptionContentAlgorithms)[number]
 
-    if (jwkJson.crv === 'Ed25519') {
-      throw new CredoError(`Expected ${jwkJson.kty} with crv X25519, found ${Kms.getJwkHumanDescription(jwkJson)}`)
-    }
-
-    // TODO: create a JWE service that handles this
-    const ephmeralKey = await kms.createKey({
-      type: jwkJson,
+    const jweService = agentContext.dependencyManager.resolve(JweService)
+    const compactJwe = await jweService.encryptJweCompact(agentContext, {
+      keyAgreement: { algorithm: 'ECDH-ES', recipient: { publicJwk: jwk } },
+      enc,
+      apu: jweEncryptor.apu ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apu) : undefined,
+      apv: jweEncryptor.apv ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apv) : undefined,
+      protectedHeaderOptions: { kid: jweEncryptor.publicJwk.kid },
+      data: TypedArrayEncoder.fromUtf8String(compact),
     })
 
-    try {
-      const header = {
-        kid: jweEncryptor.publicJwk.kid,
-        apu: jweEncryptor.apu,
-        apv: jweEncryptor.apv,
-        enc: jweEncryptor.enc,
-        alg: 'ECDH-ES',
-        epk: ephmeralKey.publicJwk,
-      }
-      const encodedHeader = JsonEncoder.toBase64Url(header)
-
-      const encrypted = await kms.encrypt({
-        key: {
-          keyAgreement: {
-            // FIXME: We can make the keyId optional for ECDH-ES
-            // That way we don't have to store the key
-            keyId: ephmeralKey.keyId,
-            algorithm: 'ECDH-ES',
-            apu: jweEncryptor.apu ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apu) : undefined,
-            apv: jweEncryptor.apv ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apv) : undefined,
-            externalPublicJwk: jwkJson,
-          },
-        },
-        data: TypedArrayEncoder.fromUtf8String(compact),
-        encryption: {
-          algorithm: jweEncryptor.enc,
-          aad: TypedArrayEncoder.fromUtf8String(encodedHeader),
-        },
-      })
-
-      if (!encrypted.iv || !encrypted.tag) {
-        throw new CredoError("Expected 'iv' and 'tag' to be defined")
-      }
-
-      const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64Url(encrypted.iv)}.${TypedArrayEncoder.toBase64Url(
-        encrypted.encrypted
-      )}.${TypedArrayEncoder.toBase64Url(encrypted.tag)}`
-
-      return { encryptionJwk: jweEncryptor.publicJwk, jwe: compactJwe }
-    } finally {
-      // Delete the key
-      await kms.deleteKey({
-        keyId: ephmeralKey.keyId,
-      })
-    }
+    return { encryptionJwk: jweEncryptor.publicJwk, jwe: compactJwe }
   }
 }
 
@@ -328,9 +301,16 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
     // TODO: use custom header zod schema to limit which algorithms can be used
     const { header } = decodeJwtHeader({ jwt: jwe })
 
-    let kid = options?.jwk?.kid ?? header.kid
+    // The header kid is chosen by the sender, so only decrypt with the key the caller bound to the session or request
+    let kid = options?.jwk?.kid
     if (!kid) {
-      throw new CredoError('Uanbel to decrypt jwe. No kid or jwk found')
+      agentContext.config.logger.error('Unable to decrypt JWE. No jwk with kid was provided to decrypt with')
+      return {
+        decrypted: false,
+        encryptionJwk: options?.jwk,
+        payload: undefined,
+        header,
+      }
     }
 
     // Previously we used the fingerprint as the kid for JARM
@@ -345,10 +325,6 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
       }
     }
 
-    // TODO: decodeJwe method in oid4vc-ts
-    // encryption key is not used (we don't use key wrapping)
-    const [encodedHeader /* encryptionKey */, , encodedIv, encodedCiphertext, encodedTag] = jwe.split('.')
-
     if (header.alg !== 'ECDH-ES') {
       throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response decryption")
     }
@@ -362,28 +338,9 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
     let decryptedPayload: string
     let publicJwk: Kms.PublicJwk
 
-    const epk = Kms.PublicJwk.fromUnknown(header.epk)
-
     try {
-      const decrypted = await kms.decrypt({
-        encrypted: TypedArrayEncoder.fromBase64Url(encodedCiphertext),
-        decryption: {
-          algorithm: header.enc,
-          // aad is the base64 encoded bytes (not just the bytes)
-          aad: TypedArrayEncoder.fromUtf8String(encodedHeader),
-          iv: TypedArrayEncoder.fromBase64Url(encodedIv),
-          tag: TypedArrayEncoder.fromBase64Url(encodedTag),
-        },
-        key: {
-          keyAgreement: {
-            algorithm: header.alg,
-            externalPublicJwk: epk.toJson() as Kms.KmsJwkPublicEcdh,
-            keyId: kid,
-            apu: typeof header.apu === 'string' ? TypedArrayEncoder.fromBase64Url(header.apu) : undefined,
-            apv: typeof header.apv === 'string' ? TypedArrayEncoder.fromBase64Url(header.apv) : undefined,
-          },
-        },
-      })
+      const jweService = agentContext.dependencyManager.resolve(JweService)
+      const decrypted = await jweService.decryptJwe(agentContext, { jwe, recipientKeyId: kid })
 
       // TODO: decrypt should return the public jwk instance
       publicJwk = Kms.PublicJwk.fromUnknown(

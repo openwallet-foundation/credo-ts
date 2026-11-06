@@ -1,4 +1,4 @@
-FROM bcgovimages/von-image:node-1.12-6
+FROM ghcr.io/bcgov/von-image:node-1.12-6
 
 USER root
 

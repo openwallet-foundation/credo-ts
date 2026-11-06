@@ -1,4 +1,4 @@
-import { AgentContext, joinUriParts, utils } from '@credo-ts/core'
+import { AgentContext, joinUriParts, Kms, utils } from '@credo-ts/core'
 import type { HttpMethod, ParsePushedAuthorizationRequestResult, RequestLike } from '@openid4vc/oauth2'
 import {
   Oauth2ErrorCodes,
@@ -24,7 +24,13 @@ import {
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
-import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../repository'
+import {
+  OpenId4VcIssuanceSessionRecord,
+  OpenId4VcIssuanceSessionRepository,
+  OpenId4VcIssuerRecord,
+} from '../repository'
+import { getPkceFromAuthorizationRequest } from '../util/pkce'
+import { getClientAttestationToVerify } from '../util/walletAttestation'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 export async function handlePushedAuthorizationRequest(
@@ -41,6 +47,8 @@ export async function handlePushedAuthorizationRequest(
 
   const { issuanceSession, parsedAuthorizationRequest, issuer, request } = options
   const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
+  // The first authorization server in the issuer metadata is the internal (Credo) authorization server
+  const internalAuthorizationServerMetadata = issuerMetadata.authorizationServers[0]
 
   if (!parsedAuthorizationRequest.authorizationRequest.scope) {
     throw new Oauth2ServerErrorResponseError({
@@ -51,10 +59,16 @@ export async function handlePushedAuthorizationRequest(
 
   if (!parsedAuthorizationRequest.authorizationRequest.redirect_uri) {
     throw new Oauth2ServerErrorResponseError({
-      error: Oauth2ErrorCodes.InvalidScope,
+      error: Oauth2ErrorCodes.InvalidRequest,
       error_description: `Missing required 'redirect_uri' parameter.`,
     })
   }
+
+  const walletPkce = getPkceFromAuthorizationRequest({
+    authorizationRequest: parsedAuthorizationRequest.authorizationRequest,
+    // First session config, fall back to global config
+    required: issuanceSession.pkce?.required ?? config.pkceRequired,
+  })
 
   const allowedStates = [OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved]
   if (!allowedStates.includes(issuanceSession.state)) {
@@ -85,20 +99,23 @@ export async function handlePushedAuthorizationRequest(
 
   const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, { issuanceSession })
 
+  // First session config, fall back to global config
+  const walletAttestationRequired = issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired
+
   const { clientAttestation, dpop } = await authorizationServer.verifyPushedAuthorizationRequest({
     authorizationRequest: parsedAuthorizationRequest.authorizationRequest,
-    // First authorization server is the internal authorization server
-    authorizationServerMetadata: issuerMetadata.authorizationServers[0],
+    authorizationServerMetadata: internalAuthorizationServerMetadata,
     request,
     clientAttestation: {
-      ...parsedAuthorizationRequest.clientAttestation,
-      // First session config, fall back to global config
-      required: issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired,
+      ...getClientAttestationToVerify(config, parsedAuthorizationRequest.clientAttestation, walletAttestationRequired),
+      required: walletAttestationRequired,
+      expectedConfirmationJwkThumbprint: issuanceSession.walletAttestation?.confirmationJwkThumbprint,
       // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not set. Per draft §7.2/§7.3 the DPoP key
       // only has to match the attestation `cnf.jwk` in DPoP combined mode, which this endpoint doesn't support.
     },
     dpop: {
       ...parsedAuthorizationRequest.dpop,
+      allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
       // First session config, fall back to global config
       required: issuanceSession.dpop?.required ?? config.dpopRequired,
     },
@@ -122,6 +139,16 @@ export async function handlePushedAuthorizationRequest(
     issuanceSession.walletAttestation = {
       // If client attestation is provided at the start, it's required from now on.
       required: true,
+      confirmationJwkThumbprint: clientAttestation.clientAttestation.confirmationJwkThumbprint,
+    }
+  }
+
+  // Bind the pkce code challenge to the session, it will be verified at the token endpoint
+  if (walletPkce) {
+    issuanceSession.pkce = {
+      // If PKCE is provided by the client, it is required for the remainder of this issuance session, even if the session or global config do not require it.
+      required: true,
+      ...walletPkce,
     }
   }
 
@@ -206,30 +233,21 @@ export async function handlePushedAuthorizationRequest(
     additionalRequestPayload = dynamicConfiguration.additionalPayload
     redirectUris = dynamicConfiguration.redirectUris
   } else {
-    for (const scope of requestedScopes) {
-      if (!authorizationServerConfig.scopesMapping) {
-        throw new Oauth2ServerErrorResponseError(
-          {
-            error: Oauth2ErrorCodes.ServerError,
-          },
-          {
-            internalMessage: `Issuer '${issuer.issuerId}' does not have a scope mapping for scope '${scope}' for external authorization server '${authorizationServerConfig.issuer}'`,
-          }
-        )
-      }
-
-      if (scope in authorizationServerConfig.scopesMapping) {
-        scopes.push(...authorizationServerConfig.scopesMapping[scope])
-      } else {
-        throw new Oauth2ServerErrorResponseError(
-          {
-            error: Oauth2ErrorCodes.ServerError,
-          },
-          {
-            internalMessage: `Issuer '${issuer.issuerId}' does not have a scope mapping for scope '${scope}' for external authorization server '${authorizationServerConfig.issuer}'`,
-          }
-        )
-      }
+    try {
+      scopes = openId4VcIssuerService.getStaticChainedAuthorizationScopes({
+        authorizationServerConfig,
+        requestedScopes,
+      })
+    } catch (error) {
+      throw new Oauth2ServerErrorResponseError(
+        {
+          error: Oauth2ErrorCodes.ServerError,
+        },
+        {
+          internalMessage: `Invalid scope mapping for chained authorization server '${authorizationServerConfig.issuer}'.`,
+          cause: error,
+        }
+      )
     }
   }
 
@@ -245,15 +263,54 @@ export async function handlePushedAuthorizationRequest(
     )
   }
 
-  // TODO: add support for DPoP
-  const { authorizationRequestUrl, pkce } = await oauth2Client.initiateAuthorization({
+  const chainedDpop = await openId4VcIssuerService.getChainedDpopOptions(agentContext, {
+    issuanceSession,
+    chainedAuthorizationServerConfig: authorizationServerConfig,
+    authorizationServerMetadata,
+    createKey: true,
+  })
+
+  // Store a new key before calling upstream, so a failed request doesn't orphan it and a retry reuses it
+  if (chainedDpop.session && !issuanceSession.chainedIdentity?.externalDpop) {
+    const externalDpop = chainedDpop.session
+    issuanceSession.chainedIdentity = { ...issuanceSession.chainedIdentity, externalDpop }
+    try {
+      await agentContext.resolve(OpenId4VcIssuanceSessionRepository).update(agentContext, issuanceSession)
+    } catch (error) {
+      if (externalDpop.keyGeneratedForSession) {
+        try {
+          await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: externalDpop.keyId })
+        } catch (cleanupError) {
+          agentContext.config.logger.error(
+            'Failed to delete DPoP key after storing it on the issuance session failed',
+            {
+              keyId: externalDpop.keyId,
+              error: cleanupError,
+            }
+          )
+        }
+      }
+      throw error
+    }
+  }
+
+  const {
+    authorizationRequestUrl,
+    pkce,
+    dpop: initiatedDpop,
+  } = await oauth2Client.initiateAuthorization({
     authorizationServerMetadata,
     clientId: authorizationServerConfig.clientAuthentication.clientId,
     redirectUri,
     state: chainedIdentityState,
     scope: scopes.join(' '),
     additionalRequestPayload,
+    dpop: chainedDpop.dpop,
   })
+
+  if (chainedDpop.session) {
+    chainedDpop.session.nonce = initiatedDpop?.nonce
+  }
 
   issuanceSession.chainedIdentity = {
     ...issuanceSession.chainedIdentity,
@@ -265,6 +322,7 @@ export async function handlePushedAuthorizationRequest(
     state: parsedAuthorizationRequest.authorizationRequest.state,
     redirectUri: parsedAuthorizationRequest.authorizationRequest.redirect_uri,
     externalAuthorizationServerMetadata: authorizationServerMetadata,
+    externalDpop: chainedDpop.session,
   }
 
   const { pushedAuthorizationResponse } = authorizationServer.createPushedAuthorizationResponse({
@@ -391,7 +449,7 @@ export function configurePushedAuthorizationRequestEndpoint(router: Router, conf
           request: requestLike,
         })
 
-        return sendJsonResponse(response, next, pushedAuthorizationResponse)
+        return sendJsonResponse(response, next, pushedAuthorizationResponse, undefined, 201)
       } catch (error) {
         if (error instanceof Oauth2ServerErrorResponseError) {
           return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)

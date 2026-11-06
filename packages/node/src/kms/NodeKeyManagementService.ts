@@ -11,8 +11,9 @@ import {
   createRsaKey,
 } from './crypto/createKey'
 import { performDecrypt } from './crypto/decrypt'
-import { deriveDecryptionKey, deriveEncryptionKey, nodeSupportedKeyAgreementAlgorithms } from './crypto/deriveKey'
+import { deriveDecryptionKey, encryptEcdh, nodeSupportedKeyAgreementAlgorithms } from './crypto/deriveKey'
 import { nodeSupportedEncryptionAlgorithms, performEncrypt } from './crypto/encrypt'
+import { hpkeOpen, hpkeSeal, nodeSupportedHpkeAlgorithms } from './crypto/hpke'
 import { nodeSupportedJwaAlgorithm, performSign } from './crypto/sign'
 import { performVerify } from './crypto/verify'
 import type { NodeKeyManagementStorage } from './NodeKeyManagementStorage'
@@ -82,21 +83,37 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       return nodeSupportedJwaAlgorithm.includes(operation.algorithm)
     }
 
-    if (operation.operation === 'encrypt') {
-      const isSupportedEncryptionAlgorithm = nodeSupportedEncryptionAlgorithms.includes(
-        operation.encryption.algorithm as (typeof nodeSupportedEncryptionAlgorithms)[number]
-      )
-      if (!isSupportedEncryptionAlgorithm) return false
-      if (!operation.keyAgreement) return true
+    if (operation.operation === 'encrypt' || operation.operation === 'decrypt') {
+      const encryption = operation.operation === 'encrypt' ? operation.encryption : operation.decryption
 
-      return nodeSupportedKeyAgreementAlgorithms.includes(
-        operation.keyAgreement.algorithm as (typeof nodeSupportedKeyAgreementAlgorithms)[number]
-      )
-    }
+      // We can only perform key agreement with curves we support. We also can't create the
+      // ephemeral key for e.g. ECDH-ES if the curve is not supported.
+      if (operation.keyAgreement) {
+        const { keyAgreement } = operation
+        for (const publicJwk of Kms.keyAgreementPublicJwks(keyAgreement)) {
+          try {
+            if (publicJwk.kty === 'EC') assertNodeSupportedEcCrv(publicJwk)
+            else assertNodeSupportedOkpCrv(publicJwk)
+          } catch {
+            return false
+          }
 
-    if (operation.operation === 'decrypt') {
+          if (!Kms.supportedKeyDerivationAlgsForKey(publicJwk).includes(keyAgreement.algorithm)) return false
+        }
+      }
+
+      // HPKE is an integrated encryption mode: the suite fixes the AEAD, so the HPKE key agreement
+      // algorithm is all there is to check.
+      if (encryption.algorithm === 'HPKE') {
+        if (!operation.keyAgreement || !Kms.isJwaHpkeAlgorithm(operation.keyAgreement.algorithm)) return false
+
+        return nodeSupportedHpkeAlgorithms.includes(
+          operation.keyAgreement.algorithm as (typeof nodeSupportedHpkeAlgorithms)[number]
+        )
+      }
+
       const isSupportedEncryptionAlgorithm = nodeSupportedEncryptionAlgorithms.includes(
-        operation.decryption.algorithm as (typeof nodeSupportedEncryptionAlgorithms)[number]
+        encryption.algorithm as (typeof nodeSupportedEncryptionAlgorithms)[number]
       )
       if (!isSupportedEncryptionAlgorithm) return false
       if (!operation.keyAgreement) return true
@@ -110,7 +127,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
   }
 
   public randomBytes(_agentContext: AgentContext, options: Kms.KmsRandomBytesOptions): Kms.KmsRandomBytesReturn {
-    return randomBytes(options.length)
+    return new Uint8Array(randomBytes(options.length))
   }
 
   public async getPublicKey(agentContext: AgentContext, keyId: string): Promise<Kms.KmsJwkPublic | null> {
@@ -241,7 +258,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       const signature = await performSign(key, algorithm, data)
 
       return {
-        signature,
+        signature: new Uint8Array(signature),
       }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
@@ -296,34 +313,100 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
   public async encrypt(agentContext: AgentContext, options: Kms.KmsEncryptOptions): Promise<Kms.KmsEncryptReturn> {
     const { data, encryption, key } = options
 
+    if (encryption.algorithm === 'HPKE') {
+      if (!key.keyAgreement || !Kms.isKmsKeyAgreementEncryptHpke(key.keyAgreement)) {
+        throw new Kms.KeyManagementError(
+          `Encryption algorithm 'HPKE' can only be used with an integrated-encryption HPKE key agreement algorithm`
+        )
+      }
+
+      const { keyAgreement } = key
+      Kms.assertAllowedKeyDerivationAlgForKey(keyAgreement.externalPublicJwk, keyAgreement.algorithm)
+      Kms.assertKeyAllowsDerive(keyAgreement.externalPublicJwk)
+
+      try {
+        return await hpkeSeal({
+          algorithm: keyAgreement.algorithm,
+          recipientPublicJwk: keyAgreement.externalPublicJwk,
+          data,
+          info: keyAgreement.info,
+          aad: encryption.aad,
+        })
+      } catch (error) {
+        if (error instanceof Kms.KeyManagementError) throw error
+        throw new Kms.KeyManagementError('Error encrypting', { cause: error })
+      }
+    }
+
     Kms.assertSupportedEncryptionAlgorithm(encryption, nodeSupportedEncryptionAlgorithms, this.backend)
+    const aad = 'aad' in encryption ? encryption.aad : undefined
+
+    if (key.keyAgreement) {
+      const { keyAgreement } = key
+      Kms.assertSupportedKeyAgreementAlgorithm(keyAgreement, nodeSupportedKeyAgreementAlgorithms, this.backend)
+
+      const recipientJwks = Kms.keyAgreementPublicJwks(keyAgreement)
+      for (const recipientJwk of recipientJwks) {
+        Kms.assertAllowedKeyDerivationAlgForKey(recipientJwk, keyAgreement.algorithm)
+        Kms.assertKeyAllowsDerive(recipientJwk)
+      }
+
+      let senderPrivateJwk: Kms.KmsJwkPrivateAsymmetric | undefined
+      if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+        const privateJwk = await this.getKeyAsserted(agentContext, keyAgreement.keyId)
+        Kms.assertJwkAsymmetric(privateJwk, keyAgreement.keyId)
+        Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, keyAgreement.algorithm)
+        Kms.assertKeyAllowsDerive(privateJwk)
+        Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, recipientJwks[0])
+        senderPrivateJwk = privateJwk
+      }
+
+      const recipientPublicJwk = recipientJwks[0]
+      const ephemeral =
+        recipientPublicJwk.kty === 'OKP'
+          ? await createOkpKey({ kty: 'OKP', crv: 'X25519' })
+          : await createEcKey({ kty: 'EC', crv: recipientPublicJwk.crv })
+      const ephemeralPublicJwk = ephemeral.publicJwk as Kms.KmsJwkPublicEcdh
+
+      // Called outside the try below, so errors from the callback reach the caller as they are
+      const contentAad = typeof aad === 'function' ? aad({ ephemeralPublicJwk }) : aad
+      if (contentAad !== undefined && !(contentAad instanceof Uint8Array)) {
+        throw new Kms.KeyManagementError(`'encryption.aad' callback must return a Uint8Array`)
+      }
+
+      try {
+        const { encrypted, iv, tag, encryptedKeys } = await encryptEcdh({
+          keyAgreement,
+          encryption,
+          aad: contentAad,
+          ephemeralPrivateJwk: ephemeral.privateJwk,
+          senderPrivateJwk,
+          data,
+        })
+
+        return {
+          encrypted: new Uint8Array(encrypted),
+          iv: new Uint8Array(iv),
+          tag: tag ? new Uint8Array(tag) : undefined,
+          ephemeralPublicJwk,
+          encryptedKeys,
+        }
+      } catch (error) {
+        if (error instanceof Kms.KeyManagementError) throw error
+
+        throw new Kms.KeyManagementError('Error encrypting', { cause: error })
+      }
+    }
+
+    if (typeof aad === 'function') {
+      throw new Kms.KeyManagementError(`'encryption.aad' can only be a callback with ECDH key agreement`)
+    }
 
     let encryptionKey: Kms.KmsJwkPrivate
-    let encryptedKey: Kms.KmsEncryptedKey | undefined
-
     if (key.keyId) {
       encryptionKey = await this.getKeyAsserted(agentContext, key.keyId)
     } else if (key.privateJwk) {
       encryptionKey = key.privateJwk
-    } else if (key.keyAgreement) {
-      Kms.assertAllowedKeyDerivationAlgForKey(key.keyAgreement.externalPublicJwk, key.keyAgreement.algorithm)
-      Kms.assertKeyAllowsDerive(key.keyAgreement.externalPublicJwk)
-      Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, nodeSupportedKeyAgreementAlgorithms, this.backend)
-
-      const privateJwk = await this.getKeyAsserted(agentContext, key.keyAgreement.keyId)
-      Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
-      Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
-      Kms.assertKeyAllowsDerive(privateJwk)
-      Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.keyAgreement.externalPublicJwk)
-
-      const { contentEncryptionKey, encryptedContentEncryptionKey } = await deriveEncryptionKey({
-        keyAgreement: key.keyAgreement,
-        encryption,
-        privateJwk,
-      })
-
-      encryptionKey = contentEncryptionKey
-      encryptedKey = encryptedContentEncryptionKey
     } else {
       throw new Kms.KeyManagementError('Unexpected key parameter for encrypt')
     }
@@ -341,10 +424,11 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       Kms.assertKeyAllowsEncrypt(encryptionKey)
 
       // 3. Perform the encryption operation
-      const encrypted = await performEncrypt(encryptionKey, options.encryption, data)
+      const { encrypted, iv, tag } = await performEncrypt(encryptionKey, encryption, data, aad)
       return {
-        ...encrypted,
-        encryptedKey,
+        encrypted: new Uint8Array(encrypted),
+        iv: new Uint8Array(iv),
+        tag: tag ? new Uint8Array(tag) : undefined,
       }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
@@ -356,6 +440,37 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
   public async decrypt(agentContext: AgentContext, options: Kms.KmsDecryptOptions): Promise<Kms.KmsDecryptReturn> {
     const { decryption, encrypted, key } = options
 
+    if (decryption.algorithm === 'HPKE') {
+      if (!key.keyAgreement || !Kms.isKmsKeyAgreementDecryptHpke(key.keyAgreement)) {
+        throw new Kms.KeyManagementError(
+          `Decryption algorithm 'HPKE' can only be used with an integrated-encryption HPKE key agreement algorithm`
+        )
+      }
+
+      const { keyAgreement } = key
+      const recipientPrivateJwk = await this.getKeyAsserted(agentContext, keyAgreement.keyId)
+
+      Kms.assertJwkAsymmetric(recipientPrivateJwk, keyAgreement.keyId)
+      Kms.assertAllowedKeyDerivationAlgForKey(recipientPrivateJwk, keyAgreement.algorithm)
+      Kms.assertKeyAllowsDerive(recipientPrivateJwk)
+
+      try {
+        return {
+          data: await hpkeOpen({
+            algorithm: keyAgreement.algorithm,
+            recipientPrivateJwk,
+            encapsulatedKey: keyAgreement.encapsulatedKey,
+            encrypted,
+            info: keyAgreement.info,
+            aad: decryption.aad,
+          }),
+        }
+      } catch (error) {
+        if (error instanceof Kms.KeyManagementError) throw error
+        throw new Kms.KeyManagementError('Error decrypting', { cause: error })
+      }
+    }
+
     Kms.assertSupportedEncryptionAlgorithm(decryption, nodeSupportedEncryptionAlgorithms, this.backend)
 
     let decryptionKey: Kms.KmsJwkPrivate
@@ -365,16 +480,21 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       decryptionKey = key.privateJwk
     } else if (key.keyAgreement) {
       Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, nodeSupportedKeyAgreementAlgorithms, this.backend)
-      Kms.assertAllowedKeyDerivationAlgForKey(key.keyAgreement.externalPublicJwk, key.keyAgreement.algorithm)
-      Kms.assertKeyAllowsDerive(key.keyAgreement.externalPublicJwk)
+      const publicJwks = Kms.keyAgreementPublicJwks(key.keyAgreement)
+      for (const publicJwk of publicJwks) {
+        Kms.assertAllowedKeyDerivationAlgForKey(publicJwk, key.keyAgreement.algorithm)
+        Kms.assertKeyAllowsDerive(publicJwk)
+      }
 
       const privateJwk = await this.getKeyAsserted(agentContext, key.keyAgreement.keyId)
       Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
       Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
       Kms.assertKeyAllowsDerive(privateJwk)
-      Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.keyAgreement.externalPublicJwk)
+      for (const publicJwk of publicJwks) {
+        Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, publicJwk)
+      }
 
-      const { contentEncryptionKey } = await deriveDecryptionKey({
+      const { contentEncryptionKey } = deriveDecryptionKey({
         keyAgreement: key.keyAgreement,
         decryption,
         privateJwk,
@@ -398,7 +518,8 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       Kms.assertKeyAllowsEncrypt(decryptionKey)
 
       // 3. Perform the decryption operation
-      return await performDecrypt(decryptionKey, decryption, encrypted)
+      const { data } = await performDecrypt(decryptionKey, decryption, encrypted)
+      return { data: new Uint8Array(data) }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
 

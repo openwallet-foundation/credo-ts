@@ -1,5 +1,6 @@
 import type { BaseAgent, JsonObject } from '@credo-ts/core'
 import {
+  CredoError,
   DidDocumentRole,
   DidKey,
   DidRecord,
@@ -7,24 +8,94 @@ import {
   DidRepository,
   JsonEncoder,
   JsonTransformer,
+  verkeyToDidKey,
 } from '@credo-ts/core'
+import { DidCommMessage } from '../../DidCommMessage'
 import type { DidCommConnectionRecord } from '../../modules/connections'
 
 import {
-  DidCommConnectionInvitationMessage,
   DidCommConnectionRepository,
-  DidCommConnectionRole,
-  DidCommConnectionState,
   DidCommDidExchangeRole,
   DidCommDidExchangeState,
   DidDoc,
 } from '../../modules/connections'
 import { convertToNewDidDocument } from '../../modules/connections/services/helpers'
-import { convertToNewInvitation } from '../../modules/oob/converters'
 import { DidCommOutOfBandRole } from '../../modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../modules/oob/domain/DidCommOutOfBandState'
+import { OutOfBandDidCommService } from '../../modules/oob/domain/OutOfBandDidCommService'
 import { outOfBandServiceToInlineKeysNumAlgo2Did } from '../../modules/oob/helpers'
+import { DidCommOutOfBandInvitation } from '../../modules/oob/messages'
 import { DidCommOutOfBandRecord, DidCommOutOfBandRepository } from '../../modules/oob/repository'
+
+/**
+ * Connection roles as defined in RFC 0160. The connection protocol is not supported anymore. These
+ * values are only used to migrate connection records that were created with the connection protocol.
+ *
+ * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md#roles
+ */
+export enum LegacyConnectionRole {
+  Inviter = 'inviter',
+  Invitee = 'invitee',
+}
+
+/**
+ * Connection states as defined in RFC 0160. The connection protocol is not supported anymore. These
+ * values are only used to migrate connection records that were created with the connection protocol.
+ *
+ * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md#states
+ */
+export enum LegacyConnectionState {
+  Null = 'null',
+  Invited = 'invited',
+  Requested = 'requested',
+  Responded = 'responded',
+  Complete = 'complete',
+}
+
+interface LegacyConnectionInvitationJson {
+  label?: string
+  imageUrl?: string
+  did?: string
+  recipientKeys?: string[]
+  routingKeys?: string[]
+  serviceEndpoint?: string
+}
+
+/**
+ * Converts a legacy connection invitation message (RFC 0160) into an out of band invitation message.
+ * The connection protocol is not supported anymore, so the resulting out of band invitation can only
+ * be used to migrate the data of existing records.
+ */
+export function legacyConnectionInvitationToOutOfBandInvitation(invitationJson: JsonObject) {
+  const invitation = JsonTransformer.fromJSON(invitationJson, DidCommMessage)
+  const { did, recipientKeys, routingKeys, serviceEndpoint, label, imageUrl } =
+    invitationJson as LegacyConnectionInvitationJson
+
+  let service: string | OutOfBandDidCommService
+  if (did) {
+    service = did
+  } else if (serviceEndpoint && recipientKeys && recipientKeys.length > 0) {
+    service = new OutOfBandDidCommService({
+      id: '#inline',
+      recipientKeys: recipientKeys.map(verkeyToDidKey),
+      routingKeys: routingKeys?.map(verkeyToDidKey),
+      serviceEndpoint,
+    })
+  } else {
+    throw new CredoError('Missing required serviceEndpoint, routingKeys and/or did fields in connection invitation')
+  }
+
+  return new DidCommOutOfBandInvitation({
+    id: invitation.id,
+    label,
+    imageUrl,
+    appendedAttachments: invitation.appendedAttachments,
+    accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
+    services: [service],
+    // NOTE: we hardcode it to 1.0, as the invitation was created for the connection protocol
+    handshakeProtocols: ['https://didcomm.org/connections/1.0'],
+  })
+}
 
 /**
  * Migrates the {@link DidCommConnectionRecord} to 0.2 compatible format. It fetches all records from storage
@@ -70,8 +141,7 @@ export async function migrateConnectionRecordToV0_2<Agent extends BaseAgent>(age
  * With the addition of the did exchange protocol there are now two states and roles related to the connection record; for the did exchange protocol and for the connection protocol.
  * To keep it easy to work with the connection record, all state and role values are updated to those of the {@link DidCommDidExchangeRole} and {@link DidCommDidExchangeState}.
  *
- * This migration method transforms all connection record state and role values to their respective values of the {@link DidCommDidExchangeRole} and {@link DidCommDidExchangeState}. For convenience a getter
- * property `rfc0160ConnectionState` is added to the connection record which returns the {@link DidCommConnectionState} value.
+ * This migration method transforms all connection record state and role values to their respective values of the {@link DidCommDidExchangeRole} and {@link DidCommDidExchangeState}.
  *
  * The following 0.1.0 connection record structure (unrelated keys omitted):
  *
@@ -320,11 +390,9 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
 
   // Only migrate if there is an invitation stored
   if (oldInvitationJson) {
-    const oldInvitation = JsonTransformer.fromJSON(oldInvitationJson, DidCommConnectionInvitationMessage)
-
     agent.config.logger.debug('Found a legacy invitation in connection record. Migrating it to an out of band record.')
 
-    const outOfBandInvitation = convertToNewInvitation(oldInvitation)
+    const outOfBandInvitation = legacyConnectionInvitationToOutOfBandInvitation(oldInvitationJson)
 
     // If both the recipientKeys, the @id and the role match we assume the connection was created using the same invitation.
     const recipientKeyFingerprints = outOfBandInvitation
@@ -339,7 +407,7 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
         ? DidCommOutOfBandRole.Sender
         : DidCommOutOfBandRole.Receiver
     const oobRecords = await oobRepository.findByQuery(agent.context, {
-      invitationId: oldInvitation.id,
+      invitationId: outOfBandInvitation.id,
       recipientKeyFingerprints,
       role: oobRole,
     })
@@ -366,10 +434,10 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
       })
 
       await oobRepository.save(agent.context, oobRecord)
-      agent.config.logger.debug(`Successfully saved out of band record for invitation @id ${oldInvitation.id}`)
+      agent.config.logger.debug(`Successfully saved out of band record for invitation @id ${outOfBandInvitation.id}`)
     } else {
       agent.config.logger.debug(
-        `Found existing out of band record for invitation @id ${oldInvitation.id} and did ${connectionRecord.did}, not creating a new out of band record.`
+        `Found existing out of band record for invitation @id ${outOfBandInvitation.id} and did ${connectionRecord.did}, not creating a new out of band record.`
       )
     }
 
@@ -445,35 +513,35 @@ export function oobStateFromDidExchangeRoleAndState(role: DidCommDidExchangeRole
  * Determine the did exchange state based on the connection/did-exchange role and state.
  */
 export function didExchangeStateAndRoleFromRoleAndState(
-  role: DidCommConnectionRole | DidCommDidExchangeRole,
-  state: DidCommConnectionState | DidCommDidExchangeState
+  role: LegacyConnectionRole | DidCommDidExchangeRole,
+  state: LegacyConnectionState | DidCommDidExchangeState
 ): [DidCommDidExchangeRole, DidCommDidExchangeState] {
   const roleMapping = {
     // Responder / Inviter
     [DidCommDidExchangeRole.Responder]: DidCommDidExchangeRole.Responder,
-    [DidCommConnectionRole.Inviter]: DidCommDidExchangeRole.Responder,
+    [LegacyConnectionRole.Inviter]: DidCommDidExchangeRole.Responder,
 
     // Request / Invitee
     [DidCommDidExchangeRole.Requester]: DidCommDidExchangeRole.Requester,
-    [DidCommConnectionRole.Invitee]: DidCommDidExchangeRole.Requester,
+    [LegacyConnectionRole.Invitee]: DidCommDidExchangeRole.Requester,
   }
 
   const roleStateMapping = {
     [DidCommDidExchangeRole.Requester]: {
       // DidCommDidExchangeRole.Requester
-      [DidCommConnectionState.Invited]: DidCommDidExchangeState.InvitationReceived,
-      [DidCommConnectionState.Requested]: DidCommDidExchangeState.RequestSent,
-      [DidCommConnectionState.Responded]: DidCommDidExchangeState.ResponseReceived,
-      [DidCommConnectionState.Complete]: DidCommDidExchangeState.Completed,
-      [DidCommConnectionState.Null]: DidCommDidExchangeState.Start,
+      [LegacyConnectionState.Invited]: DidCommDidExchangeState.InvitationReceived,
+      [LegacyConnectionState.Requested]: DidCommDidExchangeState.RequestSent,
+      [LegacyConnectionState.Responded]: DidCommDidExchangeState.ResponseReceived,
+      [LegacyConnectionState.Complete]: DidCommDidExchangeState.Completed,
+      [LegacyConnectionState.Null]: DidCommDidExchangeState.Start,
     },
     [DidCommDidExchangeRole.Responder]: {
       // DidCommDidExchangeRole.Responder
-      [DidCommConnectionState.Invited]: DidCommDidExchangeState.InvitationSent,
-      [DidCommConnectionState.Requested]: DidCommDidExchangeState.RequestReceived,
-      [DidCommConnectionState.Responded]: DidCommDidExchangeState.ResponseSent,
-      [DidCommConnectionState.Complete]: DidCommDidExchangeState.Completed,
-      [DidCommConnectionState.Null]: DidCommDidExchangeState.Start,
+      [LegacyConnectionState.Invited]: DidCommDidExchangeState.InvitationSent,
+      [LegacyConnectionState.Requested]: DidCommDidExchangeState.RequestReceived,
+      [LegacyConnectionState.Responded]: DidCommDidExchangeState.ResponseSent,
+      [LegacyConnectionState.Complete]: DidCommDidExchangeState.Completed,
+      [LegacyConnectionState.Null]: DidCommDidExchangeState.Start,
     },
   }
 
@@ -494,6 +562,6 @@ export function didExchangeStateAndRoleFromRoleAndState(
   return [didExchangeRole, state]
 }
 
-function isConnectionState(state: string): state is DidCommConnectionState {
-  return Object.values(DidCommConnectionState).includes(state as DidCommConnectionState)
+function isConnectionState(state: string): state is LegacyConnectionState {
+  return Object.values(LegacyConnectionState).includes(state as LegacyConnectionState)
 }

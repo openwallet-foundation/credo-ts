@@ -16,6 +16,41 @@ type AddMarkAsCritical<T extends Record<string, Record<string, unknown>>> = T & 
  */
 export type EncodedX509Certificate = string
 
+/**
+ * Resource limits applied when parsing DER/ASN.1 input. Intended to bound the work done on
+ * untrusted input, such as certificates from an `x5c` header or a CRL fetched over HTTP.
+ *
+ * These options are always taken as a whole: providing them replaces {@link defaultX509ParseOptions}
+ * instead of being merged with it, so any limit left unset here falls back to the underlying parser
+ * default rather than to Credo's.
+ */
+export interface X509ParseOptions {
+  /**
+   * Maximum ASN.1 nesting depth.
+   *
+   * @default 100
+   */
+  maxDepth?: number
+
+  /**
+   * Maximum number of ASN.1 nodes in the parsed structure.
+   *
+   * NOTE: a CRL entry costs roughly three nodes, so the parser's own default of 10000 rejects CRLs
+   * with more than about 3300 revoked entries. Credo raises this to match the size of the CRLs it
+   * is willing to download, see {@link defaultX509ParseOptions}.
+   *
+   * @default 1500000 (the parser's own default is 10000)
+   */
+  maxNodes?: number
+
+  /**
+   * Maximum length in bytes of a single ASN.1 value.
+   *
+   * @default 16777216 (16 MB)
+   */
+  maxContentLength?: number
+}
+
 export interface X509ValidateCertificateChainOptions {
   certificateChain: EncodedX509Certificate[]
 
@@ -54,14 +89,35 @@ export interface X509ValidateCertificateChainOptions {
    * @default true
    */
   allowNonRootTrustedCertificate?: boolean
+
+  /**
+   * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured
+   * `parseOptions` in full rather than being merged with them. When omitted, the configured
+   * options are used, falling back to {@link defaultX509ParseOptions}.
+   */
+  parseOptions?: X509ParseOptions
 }
 
 export interface X509GetLeafCertificateOptions {
   certificateChain: Array<string>
+
+  /**
+   * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured
+   * `parseOptions` in full rather than being merged with them. When omitted, the configured
+   * options are used, falling back to {@link defaultX509ParseOptions}.
+   */
+  parseOptions?: X509ParseOptions
 }
 
 export interface X509ParseCertificateOptions {
   encodedCertificate: string
+
+  /**
+   * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured
+   * `parseOptions` in full rather than being merged with them. When omitted, the configured
+   * options are used, falling back to {@link defaultX509ParseOptions}.
+   */
+  parseOptions?: X509ParseOptions
 }
 
 export interface X509CheckCertificateRevocationOptions {
@@ -77,10 +133,17 @@ export interface X509CheckCertificateRevocationOptions {
   issuerCertificate: EncodedX509Certificate | X509Certificate
 
   /**
-   * Options controlling how revocation is checked. When omitted, the module's configured
-   * `revocationCheck` options are used, falling back to {@link X509RevocationCheckMode.SoftFail}.
+   * Options controlling how revocation is checked. Options that are not set use the module's
+   * `revocationCheck` options.
    */
   revocationCheckOptions?: X509RevocationCheckOptions
+
+  /**
+   * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured
+   * `parseOptions` in full rather than being merged with them. When omitted, the configured
+   * options are used, falling back to {@link defaultX509ParseOptions}.
+   */
+  parseOptions?: X509ParseOptions
 }
 
 export interface X509FetchCertificateRevocationListOptions {
@@ -99,14 +162,12 @@ export interface X509FetchCertificateRevocationListOptions {
   issuerCertificate?: EncodedX509Certificate | X509Certificate
 
   /**
-   * Timeout in milliseconds for the CRL fetch.
-   * @default 5000
+   * Timeout in milliseconds for the CRL fetch. Defaults to the module's `revocationCheck.timeoutMs`.
    */
   timeoutMs?: number
 
   /**
-   * Maximum size in bytes for the CRL download.
-   * @default 10485760 (10 MB)
+   * Maximum size in bytes for the CRL download. Defaults to the module's `revocationCheck.maxCrlSizeBytes`.
    */
   maxCrlSizeBytes?: number
 
@@ -116,6 +177,13 @@ export interface X509FetchCertificateRevocationListOptions {
    * @default new Date() (current time)
    */
   verificationDate?: Date
+
+  /**
+   * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured
+   * `parseOptions` in full rather than being merged with them. When omitted, the configured
+   * options are used, falling back to {@link defaultX509ParseOptions}.
+   */
+  parseOptions?: X509ParseOptions
 }
 
 export interface X509ParseCertificateRevocationListOptions {
@@ -184,6 +252,12 @@ export type X509CertificateSigningRequestExtensionsOptions = Pick<
 export interface X509CertificateIssuerAndSubjectOptions {
   countryName?: string
   stateOrProvinceName?: string
+  organizationName?: string
+
+  /**
+   * The registered identifier of the organization (OID 2.5.4.97), for example `NTRNL-12345678`
+   */
+  organizationIdentifier?: string
   organizationalUnit?: string
   commonName?: string
 }
@@ -217,6 +291,8 @@ export interface X509CreateCertificateOptions {
    *
    * The issuer information of the X.509 Certificate
    *
+   * A string is used as-is and must already be escaped according to RFC 4514.
+   *
    */
   issuer: string | X509CertificateIssuerAndSubjectOptions
 
@@ -226,6 +302,7 @@ export interface X509CreateCertificateOptions {
    *
    * If the `subject` is not included, the `issuer` will be used
    *
+   * A string is used as-is and must already be escaped according to RFC 4514.
    *
    */
   subject?: string | X509CertificateIssuerAndSubjectOptions
@@ -270,6 +347,8 @@ export interface X509CreateCertificateSigningRequestOptions {
 
   /**
    * The subject information of the certificate signing request
+   *
+   * A string is used as-is and must already be escaped according to RFC 4514.
    */
   subject: string | X509CertificateIssuerAndSubjectOptions
 
@@ -281,6 +360,13 @@ export interface X509CreateCertificateSigningRequestOptions {
 
 export interface X509ParseCertificateSigningRequestOptions {
   encodedCertificateSigningRequest: string
+
+  /**
+   * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured
+   * `parseOptions` in full rather than being merged with them. When omitted, the configured
+   * options are used, falling back to {@link defaultX509ParseOptions}.
+   */
+  parseOptions?: X509ParseOptions
 }
 
 export interface X509CertificateRevocationListEntryOptions {
@@ -314,6 +400,8 @@ export interface X509CertificateRevocationListEntryOptions {
    * The issuer of the revoked certificate, for indirect CRLs (RFC 5280 §5.3.3 `certificateIssuer`
    * CRL entry extension). Only meaningful when the CRL is an indirect CRL
    * (`issuingDistributionPoint.indirectCRL`).
+   *
+   * A string is used as-is and must already be escaped according to RFC 4514.
    */
   issuer?: string | X509CertificateIssuerAndSubjectOptions
 }
@@ -372,6 +460,8 @@ export interface X509CreateCertificateRevocationListOptions {
 
   /**
    * The issuer of the CRL. Must match the issuer certificate's subject.
+   *
+   * A string is used as-is and must already be escaped according to RFC 4514.
    */
   issuer: string | X509CertificateIssuerAndSubjectOptions
 

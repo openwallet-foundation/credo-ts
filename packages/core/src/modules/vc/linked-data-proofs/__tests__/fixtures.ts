@@ -145,3 +145,22 @@ export const Ed25519Signature2018Fixtures = {
     },
   },
 }
+
+export const Ed25519Signature2020Fixtures = {
+  TEST_LD_DOCUMENT: {
+    '@context': [
+      CREDENTIALS_CONTEXT_V1_URL,
+      'https://www.w3.org/2018/credentials/examples/v1',
+      'https://w3id.org/security/suites/ed25519-2020/v1',
+    ],
+    type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+    issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+    issuanceDate: '2017-10-22T12:23:48Z',
+    credentialSubject: {
+      degree: {
+        type: 'BachelorDegree',
+        name: 'Bachelor of Science and Arts',
+      },
+    },
+  },
+}

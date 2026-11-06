@@ -6,10 +6,10 @@ import {
   EventEmitter,
   InjectionSymbols,
   InMemoryLruCache,
+  JsonLdModuleConfig,
   Kms,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   TypedArrayEncoder,
-  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,
@@ -22,7 +22,7 @@ import {
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { anoncreds } from '../../../../anoncreds/tests/helpers'
+import { NativeAnoncreds } from '../../../../anoncreds/tests/helpers'
 import { indyDidFromPublicKeyBase58 } from '../../../../core/src/utils/did'
 import { testLogger } from '../../../../core/tests'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
@@ -47,14 +47,13 @@ import {
   AnonCredsVerifierServiceSymbol,
 } from '../../services'
 import { AnonCredsRegistryService } from '../../services/registry/AnonCredsRegistryService'
-import { getUnqualifiedCredentialDefinitionId, parseIndyCredentialDefinitionId } from '../../utils/indyIdentifiers'
 import { AnonCredsDidCommCredentialFormatService } from '../AnonCredsDidCommCredentialFormatService'
 import { AnonCredsDidCommProofFormatService } from '../AnonCredsDidCommProofFormatService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
-  anoncreds,
+  anoncreds: NativeAnoncreds,
   autoCreateLinkSecret: false,
 })
 
@@ -97,9 +96,9 @@ const agentContext = getAgentContext({
     [AnonCredsCredentialDefinitionPrivateRepository, anonCredsCredentialDefinitionPrivateRepository],
     [AnonCredsCredentialRepository, anonCredsCredentialRepository],
     [AnonCredsKeyCorrectnessProofRepository, anonCredsKeyCorrectnessProofRepository],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [InjectionSymbols.StorageService, storageService],
-    [SignatureSuiteToken, 'default'],
     [
       CacheModuleConfig,
       new CacheModuleConfig({
@@ -115,13 +114,13 @@ const anoncredsProofFormatService = new AnonCredsDidCommProofFormatService()
 const kms = agentContext.resolve(Kms.KeyManagementApi)
 
 describe('Anoncreds format services', () => {
-  test('legacy unqualified did (sov or indy) issuance and verification flow starting from proposal without negotiation and without revocation', async () => {
+  test('did:indy issuance and verification flow starting from proposal without negotiation and without revocation', async () => {
     // This is just so we don't have to register an actual indy did (as we don't have the indy did registrar configured)
     const key = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
-    const unqualifiedIndyDid = indyDidFromPublicKeyBase58(
+    const namespaceIdentifier = indyDidFromPublicKeyBase58(
       TypedArrayEncoder.toBase58(Kms.PublicJwk.fromPublicJwk(key.publicJwk).publicKey.publicKey)
     )
-    const indyDid = `did:indy:pool1:${unqualifiedIndyDid}`
+    const indyDid = `did:indy:pool1:${namespaceIdentifier}`
 
     // Create link secret
     const { linkSecretValue } = await anonCredsHolderService.createLinkSecret(agentContext, {
@@ -336,27 +335,20 @@ describe('Anoncreds format services', () => {
       threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
     })
 
-    const cd = parseIndyCredentialDefinitionId(credentialDefinitionState.credentialDefinitionId)
-    const legacyCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(
-      cd.namespaceIdentifier,
-      cd.schemaSeqNo,
-      cd.tag
-    )
-
     const { attachment: proofProposalAttachment } = await anoncredsProofFormatService.createProposal(agentContext, {
       proofFormats: {
         anoncreds: {
           attributes: [
             {
               name: 'name',
-              credentialDefinitionId: legacyCredentialDefinitionId,
+              credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
               value: 'John',
               referent: '1',
             },
           ],
           predicates: [
             {
-              credentialDefinitionId: legacyCredentialDefinitionId,
+              credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
               name: 'age',
               predicate: '>=',
               threshold: 18,

@@ -1,10 +1,15 @@
 import { ClassValidationError } from '../../../../error/ClassValidationError'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import type { Ed25519PublicJwk } from '../../../kms'
+import { PublicJwk, X25519PublicJwk } from '../../../kms'
 import didExample123Fixture from '../../__tests__/__fixtures__/didExample123.json'
 import didExample456Invalid from '../../__tests__/__fixtures__/didExample456Invalid.json'
-import { DidDocument, findVerificationMethodByKeyType } from '../DidDocument'
+import { DidDocument } from '../DidDocument'
+import { DidDocumentBuilder } from '../DidDocumentBuilder'
 import { DidCommV1Service, DidDocumentService, IndyAgentService } from '../service'
 import { VerificationMethod } from '../verificationMethod'
+import { getEd25519VerificationKey2018 } from '../verificationMethod/Ed25519VerificationKey2018'
+import { getX25519KeyAgreementKey2019 } from '../verificationMethod/X25519KeyAgreementKey2019'
 
 const didDocumentInstance = new DidDocument({
   id: 'did:example:123',
@@ -244,11 +249,221 @@ describe('Did | DidDocument', () => {
     })
   })
 
-  describe('findVerificationMethodByKeyType', () => {
-    it('return first verification method that match key type', async () => {
-      expect(await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocumentInstance)).toBeInstanceOf(
-        VerificationMethod
+  describe('getRecipientKeysWithVerificationMethod', () => {
+    it('returns a key only once when several services reference the same verification method', () => {
+      const publicJwk = PublicJwk.fromFingerprint(
+        'z6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V'
+      ) as PublicJwk<Ed25519PublicJwk>
+      const verificationMethod = getEd25519VerificationKey2018({
+        publicJwk,
+        controller: 'did:example:alice',
+        id: 'did:example:alice#key-1',
+      })
+      const didDocument = new DidDocumentBuilder('did:example:alice')
+        .addVerificationMethod(verificationMethod)
+        .addAuthentication(verificationMethod.id)
+        .addService(
+          new IndyAgentService({
+            id: 'did:example:alice#indy',
+            recipientKeys: [verificationMethod.publicKeyBase58 as string],
+            serviceEndpoint: 'https://example.com/indy',
+          })
+        )
+        .addService(
+          new DidCommV1Service({
+            id: 'did:example:alice#service-0',
+            recipientKeys: [verificationMethod.id],
+            serviceEndpoint: 'https://example.com/0',
+          })
+        )
+        .addService(
+          new DidCommV1Service({
+            id: 'did:example:alice#service-1',
+            recipientKeys: [verificationMethod.id],
+            serviceEndpoint: 'https://example.com/1',
+          })
+        )
+        .build()
+
+      const recipientKeys = didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+
+      expect(recipientKeys).toHaveLength(1)
+      expect(recipientKeys[0].verificationMethod.id).toBe('did:example:alice#key-1')
+      expect(didDocument.recipientKeys.map((key) => key.fingerprint)).toEqual([publicJwk.fingerprint])
+    })
+
+    it('returns a key only once when several verification methods carry the same key', () => {
+      const publicJwk = PublicJwk.fromFingerprint(
+        'z6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V'
+      ) as PublicJwk<Ed25519PublicJwk>
+      const firstVerificationMethod = getEd25519VerificationKey2018({
+        publicJwk,
+        controller: 'did:example:alice',
+        id: 'did:example:alice#key-1',
+      })
+      const secondVerificationMethod = getEd25519VerificationKey2018({
+        publicJwk,
+        controller: 'did:example:alice',
+        id: 'did:example:alice#key-2',
+      })
+      const didDocument = new DidDocumentBuilder('did:example:alice')
+        .addVerificationMethod(firstVerificationMethod)
+        .addVerificationMethod(secondVerificationMethod)
+        .addAuthentication(firstVerificationMethod.id)
+        .addAuthentication(secondVerificationMethod.id)
+        .addService(
+          new DidCommV1Service({
+            id: 'did:example:alice#service-0',
+            recipientKeys: [firstVerificationMethod.id, secondVerificationMethod.id],
+            serviceEndpoint: 'https://example.com/0',
+          })
+        )
+        .build()
+
+      const recipientKeys = didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
+
+      expect(recipientKeys).toHaveLength(1)
+      expect(recipientKeys[0].verificationMethod.id).toBe('did:example:alice#key-1')
+      expect(didDocument.recipientKeys.map((key) => key.fingerprint)).toEqual([publicJwk.fingerprint])
+    })
+
+    it('returns an X25519 key and its Ed25519 counterpart once when mapped to Ed25519', () => {
+      const ed25519PublicJwk = PublicJwk.fromFingerprint(
+        'z6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V'
+      ) as PublicJwk<Ed25519PublicJwk>
+      const x25519PublicJwk = ed25519PublicJwk.convertTo(X25519PublicJwk)
+      const ed25519VerificationMethod = getEd25519VerificationKey2018({
+        publicJwk: ed25519PublicJwk,
+        controller: 'did:example:alice',
+        id: 'did:example:alice#key-1',
+      })
+      const x25519VerificationMethod = getX25519KeyAgreementKey2019({
+        publicJwk: x25519PublicJwk,
+        controller: 'did:example:alice',
+        id: 'did:example:alice#key-agreement-1',
+      })
+      const didDocument = new DidDocumentBuilder('did:example:alice')
+        .addVerificationMethod(ed25519VerificationMethod)
+        .addVerificationMethod(x25519VerificationMethod)
+        .addAuthentication(ed25519VerificationMethod.id)
+        .addKeyAgreement(x25519VerificationMethod.id)
+        .addService(
+          new DidCommV1Service({
+            id: 'did:example:alice#service-0',
+            recipientKeys: [ed25519VerificationMethod.id, x25519VerificationMethod.id],
+            serviceEndpoint: 'https://example.com/0',
+          })
+        )
+        .build()
+
+      // Without the mapping both keys are distinct recipient keys
+      expect(
+        didDocument
+          .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
+          .map((k) => k.publicJwk.fingerprint)
+      ).toEqual([ed25519PublicJwk.fingerprint, x25519PublicJwk.fingerprint])
+
+      // With the mapping the X25519 key maps to the Ed25519 key that is already present
+      const mapped = didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+      expect(mapped).toHaveLength(1)
+      expect(mapped[0].publicJwk.fingerprint).toBe(ed25519PublicJwk.fingerprint)
+    })
+  })
+
+  describe('findVerificationMethodsByTypeAndPurpose', () => {
+    it('matches an inline method by type and relationship', () => {
+      const inlineMethod = new VerificationMethod({
+        id: 'did:example:123#inline-1',
+        type: 'RsaVerificationKey2018',
+        controller: 'did:example:123',
+        publicKeyPem: '-----BEGIN PUBLIC INLINE...',
+      })
+      const didDocument = new DidDocument({
+        id: 'did:example:123',
+        verificationMethod: [inlineMethod],
+        assertionMethod: [inlineMethod],
+      })
+      const method = didDocument.findVerificationMethodsByTypeAndPurpose('RsaVerificationKey2018', ['assertionMethod'])
+
+      expect(method[0]?.id).toBe('did:example:123#inline-1')
+    })
+
+    it('resolves referenced methods and preserves relationship entry order', () => {
+      const method = didDocumentInstance.findVerificationMethodsByTypeAndPurpose('RsaVerificationKey2018', [
+        'authentication',
+      ])
+
+      expect(method[0]?.id).toBe('did:example:123#key-1')
+    })
+
+    it('matches any accepted type without using input type order as preference', () => {
+      const method = didDocumentInstance.findVerificationMethodsByTypeAndPurpose(
+        ['RsaVerificationKey2018', 'Ed25519VerificationKey2018'],
+        ['verificationMethod']
       )
+
+      expect(method[0]?.id).toBe('did:example:123#key-1')
+    })
+
+    it('selects matching types from a mixed assertionMethod relationship', () => {
+      const ed25519Method = new VerificationMethod({
+        id: 'did:example:123#ed25519-2018',
+        type: 'Ed25519VerificationKey2018',
+        controller: 'did:example:123',
+        publicKeyBase58: 'ed25519-public-key',
+      })
+      const multikeyMethod = new VerificationMethod({
+        id: 'did:example:123#multikey',
+        type: 'Multikey',
+        controller: 'did:example:123',
+        publicKeyMultibase: 'z6Mk-multikey-public-key',
+      })
+      const authenticationMethod = new VerificationMethod({
+        id: 'did:example:123#multikey-authentication',
+        type: 'Multikey',
+        controller: 'did:example:123',
+        publicKeyMultibase: 'z6Mk-authentication-public-key',
+      })
+      const didDocument = new DidDocument({
+        id: 'did:example:123',
+        verificationMethod: [ed25519Method, multikeyMethod, authenticationMethod],
+        assertionMethod: [ed25519Method.id, multikeyMethod.id],
+        authentication: [authenticationMethod.id],
+      })
+
+      expect(
+        didDocument
+          .findVerificationMethodsByTypeAndPurpose('Ed25519VerificationKey2018', ['assertionMethod'])
+          .map((method) => method.id)
+      ).toEqual([ed25519Method.id])
+      expect(
+        didDocument.findVerificationMethodsByTypeAndPurpose('Multikey', ['authentication']).map((method) => method.id)
+      ).toEqual([authenticationMethod.id])
+      expect(
+        didDocument.findVerificationMethodsByTypeAndPurpose('Multikey', ['assertionMethod']).map((method) => method.id)
+      ).toEqual([multikeyMethod.id])
+      expect(
+        didDocument
+          .findVerificationMethodsByTypeAndPurpose(['Multikey', 'Ed25519VerificationKey2018'], ['assertionMethod'])
+          .map((method) => method.id)
+      ).toEqual([ed25519Method.id, multikeyMethod.id])
+      expect(didDocument.findVerificationMethodsByTypeAndPurpose('JsonWebKey2020', ['assertionMethod'])).toEqual([])
+    })
+
+    it('matches every type when no type filter is provided', () => {
+      const methods = didDocumentInstance.findVerificationMethodsByPurpose(['verificationMethod'])
+
+      expect(methods.map((method) => method.id)).toEqual([
+        'did:example:123#key-1',
+        'did:example:123#key-2',
+        'did:example:123#key-3',
+      ])
+    })
+
+    it('returns an empty array when no method matches the type and relationship', () => {
+      expect(
+        didDocumentInstance.findVerificationMethodsByTypeAndPurpose('Ed25519VerificationKey2018', ['authentication'])
+      ).toEqual([])
     })
   })
 })

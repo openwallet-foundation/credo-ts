@@ -1,4 +1,4 @@
-FROM node:22
+FROM node:24.22.2-bookworm
 
 # Set working directory
 WORKDIR /www
@@ -12,4 +12,4 @@ RUN corepack enable
 RUN pnpm install --frozen-lockfile \
     && pnpm build
 
-entrypoint ["pnpm", "run-mediator"]
+ENTRYPOINT ["pnpm", "run-mediator"]

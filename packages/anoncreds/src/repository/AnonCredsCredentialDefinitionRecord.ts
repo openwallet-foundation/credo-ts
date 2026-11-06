@@ -1,11 +1,7 @@
 import type { TagsBase } from '@credo-ts/core'
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils, zTypedObject } from '@credo-ts/core'
+import { z } from 'zod'
 import type { AnonCredsCredentialDefinition } from '../models'
-import {
-  getUnqualifiedCredentialDefinitionId,
-  isDidIndyCredentialDefinitionId,
-  parseIndyCredentialDefinitionId,
-} from '../utils/indyIdentifiers'
 import type { AnonCredsCredentialDefinitionRecordMetadata } from './anonCredsCredentialDefinitionRecordMetadataTypes'
 
 export interface AnonCredsCredentialDefinitionRecordProps {
@@ -22,18 +18,23 @@ export type DefaultAnonCredsCredentialDefinitionTags = {
   issuerId: string
   tag: string
   methodName: string
-
-  // Stores the unqualified variant of the credential definition id, which allows issuing credentials using the legacy
-  // credential definition id, even though the credential definition id is stored in the wallet as a qualified id.
-  // This is only added when the credential definition id is an did:indy identifier.
-  unqualifiedCredentialDefinitionId?: string
 }
+
+const anonCredsCredentialDefinitionRecordEncodingSchema = createRecordEncodingSchema({
+  credentialDefinitionId: z.string().nullish(),
+  credentialDefinition: zTypedObject<AnonCredsCredentialDefinition>().nullish(),
+  methodName: z.string().nullish(),
+})
 
 export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
   DefaultAnonCredsCredentialDefinitionTags,
   TagsBase,
   AnonCredsCredentialDefinitionRecordMetadata
 > {
+  public static get encodingSchema(): z.ZodType {
+    return anonCredsCredentialDefinitionRecordEncodingSchema
+  }
+
   public static readonly type = 'AnonCredsCredentialDefinitionRecord'
   public readonly type = AnonCredsCredentialDefinitionRecord.type
 
@@ -59,13 +60,6 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
   }
 
   public getTags() {
-    let unqualifiedCredentialDefinitionId: string | undefined
-    if (isDidIndyCredentialDefinitionId(this.credentialDefinitionId)) {
-      const { namespaceIdentifier, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(this.credentialDefinitionId)
-
-      unqualifiedCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(namespaceIdentifier, schemaSeqNo, tag)
-    }
-
     return {
       ...this._tags,
       credentialDefinitionId: this.credentialDefinitionId,
@@ -73,7 +67,6 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
       issuerId: this.credentialDefinition.issuerId,
       tag: this.credentialDefinition.tag,
       methodName: this.methodName,
-      unqualifiedCredentialDefinitionId,
     }
   }
 }

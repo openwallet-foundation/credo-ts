@@ -9,9 +9,12 @@ import { MdocDeviceResponse, MdocRecord, MdocRepository } from '../../mdoc'
 import { sprindFunkeTestVectorBase64Url } from '../../mdoc/__tests__/mdoc.fixtures'
 import { SdJwtVcRecord, SdJwtVcRepository } from '../../sd-jwt-vc'
 import {
-  SignatureSuiteToken,
+  ClaimFormat,
+  JsonLdModuleConfig,
+  SignatureSuiteRegistry,
   W3cCredentialService,
   W3cCredentialsModuleConfig,
+  W3cJsonLdVerifiableCredential,
   W3cJsonLdVerifiablePresentation,
 } from '../../vc'
 import { DifPresentationExchangeService } from '../DifPresentationExchangeService'
@@ -22,8 +25,9 @@ const agentContext = getAgentContext({
     [InjectionSymbols.StorageService, new InMemoryStorageService()],
     [InjectionSymbols.AgentDependencies, agentDependencies],
     [InjectionSymbols.Stop$, new Subject<boolean>()],
-    [SignatureSuiteToken, 'default'],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig()],
   ],
 })
 
@@ -518,6 +522,63 @@ describe('DifPresentationExchangeService', () => {
       },
     })
     await mdocRepository.deleteById(agentContext, randomMdoc.id)
+  })
+
+  test('selects the anoncreds W3C credential only for LDP presentations', () => {
+    const anoncredsCredentialCredential = JsonTransformer.fromJSON(
+      {
+        '@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/security/data-integrity/v2'],
+        id: 'did:example:vc-1',
+        type: ['VerifiableCredential'],
+        issuer: 'did:example:issuer',
+        issuanceDate: '2025-01-01T00:00:00Z',
+        credentialSubject: {
+          id: 'did:example:subject',
+        },
+        proof: {
+          type: 'DataIntegrityProof',
+          cryptosuite: 'anoncreds-2023',
+          proofPurpose: 'assertionMethod',
+          verificationMethod: 'did:example:issuer#keys-1',
+          proofValue: 'zProofValue',
+        },
+      },
+      W3cJsonLdVerifiableCredential
+    )
+
+    const bridgeEligiblePresentationToCreate = {
+      claimFormat: ClaimFormat.LdpVp,
+      verifiableCredentials: [
+        {
+          credential: {
+            firstCredential: anoncredsCredentialCredential,
+          },
+        },
+      ],
+    }
+
+    expect(
+      (
+        pexService as unknown as {
+          shouldSignWithAnonCredsW3cService: (
+            presentationToCreate: typeof bridgeEligiblePresentationToCreate
+          ) => boolean
+        }
+      ).shouldSignWithAnonCredsW3cService(bridgeEligiblePresentationToCreate)
+    ).toBe(true)
+
+    expect(
+      (
+        pexService as unknown as {
+          shouldSignWithAnonCredsW3cService: (
+            presentationToCreate: typeof bridgeEligiblePresentationToCreate
+          ) => boolean
+        }
+      ).shouldSignWithAnonCredsW3cService({
+        ...bridgeEligiblePresentationToCreate,
+        claimFormat: ClaimFormat.DiVp,
+      })
+    ).toBeUndefined()
   })
 
   test('handles request with request containing optional properties', async () => {

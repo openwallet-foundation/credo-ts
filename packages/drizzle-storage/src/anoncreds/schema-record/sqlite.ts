@@ -16,7 +16,6 @@ export const anonCredsSchema = sqliteTable(
     schemaVersion: text('schema_version').notNull(),
 
     methodName: text('method_name').notNull(),
-    unqualifiedSchemaId: text('unqualified_schema_id'),
   },
   (table) => sqliteBaseRecordIndexes(table, 'anonCredsSchema')
 )
