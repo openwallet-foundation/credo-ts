@@ -16,11 +16,14 @@
     "test:debug": "COLLECT_FAILED_TEST_LOGS=true pnpm test",
     "test:unit": "pnpm test --project unit",
     "test:e2e": "pnpm test --project e2e",
+    "test:e2e:v1": "DIDCOMM_VERSION=v1 pnpm test --project e2e",
+    "test:e2e:v2": "DIDCOMM_VERSION=v2 pnpm test --project e2e",
     "test:drizzle": "pnpm test --project drizzle",
     "test:conformance": "pnpm test --project conformance",
     "test": "vitest",
     "validate": "pnpm types:check && pnpm style:check",
     "run-mediator": "vite-node ./samples/mediator.ts",
+    "run-mediator:v2": "MEDIATION_V2=true vite-node ./samples/mediator.ts",
     "release": "pnpm build && pnpm changeset publish --no-git-tag",
     "changeset-version": "pnpm changeset version && pnpm style:fix"
   },
@@ -50,7 +53,6 @@
     "@types/express": "catalog:",
     "@types/node": "catalog:",
     "@types/supertest": "^7.2.1",
-    "@types/varint": "^6.0.3",
     "@types/ws": "catalog:",
     "@typescript/native": "catalog:",
     "@vitest/coverage-v8": "catalog:",
@@ -66,14 +68,14 @@
     "tsdown": "^0.23.4",
     "tsyringe": "catalog:",
     "typescript": "catalog:",
-    "undici": "^6.28.0",
+    "undici": "^6.29.1",
     "vite": "^8.3.5",
     "vite-node": "^6.0.0",
     "vitest": "catalog:",
     "ws": "catalog:"
   },
   "resolutions": {
-    "undici": "^6.28.0"
+    "undici": "^6.29.1"
   },
   "engines": {
     "node": ">=22"

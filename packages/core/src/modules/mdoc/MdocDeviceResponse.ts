@@ -367,7 +367,12 @@ export class MdocDeviceResponse {
     }
 
     if (options.type === 'openId4VpDraft18') {
-      return await SessionTranscript.forOid4VpDraft18(options, mdocContext)
+      // The draft 18 handover encodes the nonce as a `tstr`, so raw bytes must be valid UTF-8.
+      const mdocGeneratedNonce =
+        typeof options.mdocGeneratedNonce === 'string'
+          ? options.mdocGeneratedNonce
+          : TypedArrayEncoder.toUtf8String(options.mdocGeneratedNonce)
+      return await SessionTranscript.forOid4VpDraft18({ ...options, mdocGeneratedNonce }, mdocContext)
     }
 
     if (options.type === 'openId4Vp') {

@@ -7,6 +7,7 @@ import {
 } from '@credo-ts/core'
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommProtocol } from '../../models'
 import { DidCommOutOfBandService } from '../oob/DidCommOutOfBandService'
 import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
@@ -21,7 +22,9 @@ import {
   DidCommDidRotateAckHandler,
   DidCommDidRotateHandler,
   DidCommDidRotateProblemReportHandler,
+  DidCommEmptyMessageHandler,
   DidCommHangupHandler,
+  DidCommProblemReportV2MessageHandler,
   DidCommTrustPingMessageHandler,
   DidCommTrustPingResponseMessageHandler,
 } from './handlers'
@@ -29,6 +32,7 @@ import { DidCommDidExchangeRole, DidCommDidRotateRole } from './models'
 import { DidCommConnectionRepository } from './repository'
 import { DidCommConnectionService } from './services/DidCommConnectionService'
 import { DidCommDidRotateService } from './services/DidCommDidRotateService'
+import { DidCommDidRotateV2Service } from './services/DidCommDidRotateV2Service'
 import { DidCommTrustPingService } from './services/DidCommTrustPingService'
 
 export class DidCommConnectionsModule implements Module {
@@ -50,6 +54,7 @@ export class DidCommConnectionsModule implements Module {
     dependencyManager.registerSingleton(DidCommConnectionService)
     dependencyManager.registerSingleton(DidExchangeProtocol)
     dependencyManager.registerSingleton(DidCommDidRotateService)
+    dependencyManager.registerSingleton(DidCommDidRotateV2Service)
     dependencyManager.registerSingleton(DidCommTrustPingService)
 
     // Repositories
@@ -99,7 +104,6 @@ export class DidCommConnectionsModule implements Module {
     messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateAckHandler(didRotateService))
     messageHandlerRegistry.registerMessageHandler(new DidCommHangupHandler(didRotateService))
     messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateProblemReportHandler(didRotateService))
-
     featureRegistry.register(
       new DidCommProtocol({
         id: 'https://didcomm.org/didexchange/1.1',
@@ -110,5 +114,14 @@ export class DidCommConnectionsModule implements Module {
         roles: [DidCommDidRotateRole.RotatingParty, DidCommDidRotateRole.ObservingParty],
       })
     )
+
+    // The handlers only accept the message classes; a v1-only agent still validates a misdirected v2 message
+    messageHandlerRegistry.registerMessageHandler(new DidCommEmptyMessageHandler())
+    messageHandlerRegistry.registerMessageHandler(new DidCommProblemReportV2MessageHandler())
+
+    // The empty message only travels in DIDComm v2 envelopes, so only a v2 agent advertises it
+    if (agentContext.resolve(DidCommModuleConfig).isSupported('v2')) {
+      featureRegistry.register(new DidCommProtocol({ id: 'https://didcomm.org/empty/1.0', roles: [] }))
+    }
   }
 }

@@ -10,6 +10,7 @@ import {
   joinUriParts,
   Kms,
   MdocApi,
+  parseDid,
   type Query,
   type QueryOptions,
   SdJwtVcApi,
@@ -1007,6 +1008,26 @@ export class OpenId4VcIssuerService {
       })
     }
 
+    // Without binding methods in the metadata, key binding isn't required, so any signer is accepted.
+    const bindingMethods = credentialConfiguration.cryptographic_binding_methods_supported
+    const assertBindingMethodSupported = (signer: { method: 'jwk' } | { method: 'did'; didUrl: string }) => {
+      if (!bindingMethods) return
+
+      // Same mapping as the holder: a jwk proof key can be bound as 'jwk' or 'cose_key', and 'did' allows any did method.
+      const bindingMethod = signer.method === 'jwk' ? 'jwk' : `did:${parseDid(signer.didUrl).method}`
+      const isSupported =
+        bindingMethod === 'jwk'
+          ? bindingMethods.includes('jwk') || bindingMethods.includes('cose_key')
+          : bindingMethods.includes('did') || bindingMethods.includes(bindingMethod)
+
+      if (!isSupported) {
+        throw new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidProof,
+          error_description: `Binding method '${bindingMethod}' is not supported for credential configuration '${credentialConfigurationId}'. Supported binding methods are ${bindingMethods.join(', ')}`,
+        })
+      }
+    }
+
     if (proofType === 'attestation' && proofValue.length !== 1) {
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.InvalidProof,
@@ -1022,6 +1043,7 @@ export class OpenId4VcIssuerService {
         issuerMetadata,
         keyAttestationJwt,
       })
+      assertBindingMethodSupported({ method: 'jwk' })
 
       if (!supportedProofType.proof_signing_alg_values_supported.includes(keyAttestation.header.alg)) {
         throw new Oauth2ServerErrorResponseError({
@@ -1125,6 +1147,7 @@ export class OpenId4VcIssuerService {
             error_description: "Only 'jwk' and 'did' binding methods supported for jwt proof",
           })
         }
+        assertBindingMethodSupported(signer)
 
         if (proofSigners[0] && signer.method !== proofSigners[0].method) {
           throw new Oauth2ServerErrorResponseError({
@@ -2437,20 +2460,46 @@ function getCredentialResponseEncryptionMetadata(agentContext: AgentContext, iss
   }
 }
 
+function toCredentialRequestEncryptionJwk(jwk: Kms.KmsJwkPublic & { kid: string }) {
+  return { ...Kms.PublicJwk.fromUnknown(jwk).toJson(), kid: jwk.kid, use: 'enc', alg: 'ECDH-ES' }
+}
+
 function getCredentialRequestEncryptionMetadata(issuerRecord: OpenId4VcIssuerRecord) {
   if (!issuerRecord.credentialRequestEncryption) return undefined
 
   return {
     jwks: {
-      keys: issuerRecord.credentialRequestEncryption.jwks.map((jwk) => ({
-        ...Kms.PublicJwk.fromUnknown(jwk).toJson(),
-        kid: jwk.kid,
-        use: 'enc',
-        alg: 'ECDH-ES',
-      })),
+      keys: issuerRecord.credentialRequestEncryption.jwks.map(toCredentialRequestEncryptionJwk),
     },
     enc_values_supported: [...supportedResponseEncryptionContentAlgorithms],
     encryption_required: issuerRecord.credentialRequestEncryption.required ?? false,
+  }
+}
+
+/**
+ * Issuer metadata to parse (deferred) credential requests with. The library only decrypts with keys
+ * from the metadata, so this adds the previous request encryption keys that are not advertised.
+ */
+export function getCredentialRequestDecryptionMetadata(
+  issuerMetadata: OpenId4VciMetadata,
+  issuerRecord: OpenId4VcIssuerRecord
+): OpenId4VciMetadata {
+  const requestEncryption = issuerMetadata.credentialIssuer.credential_request_encryption
+  const previousJwks = issuerRecord.credentialRequestEncryption?.previousJwks
+  if (!requestEncryption || !previousJwks?.length) return issuerMetadata
+
+  return {
+    ...issuerMetadata,
+    credentialIssuer: {
+      ...issuerMetadata.credentialIssuer,
+      credential_request_encryption: {
+        ...requestEncryption,
+        jwks: {
+          ...requestEncryption.jwks,
+          keys: [...requestEncryption.jwks.keys, ...previousJwks.map(toCredentialRequestEncryptionJwk)],
+        },
+      },
+    },
   }
 }
 
@@ -2463,7 +2512,22 @@ export function assertCredentialEncryptionConfiguration(
     )
   }
 
-  const unsupportedKey = options.credentialRequestEncryption?.jwks.find(
+  const requestEncryptionJwks = [
+    ...(options.credentialRequestEncryption?.jwks ?? []),
+    ...(options.credentialRequestEncryption?.previousJwks ?? []),
+  ]
+
+  // Requests are matched to a decryption key by kid, so a kid must identify a single key
+  const duplicateKey = requestEncryptionJwks.find(
+    (jwk, index) => requestEncryptionJwks.findIndex(({ kid }) => kid === jwk.kid) !== index
+  )
+  if (duplicateKey) {
+    throw new CredoError(
+      `Credential request encryption key '${duplicateKey.kid}' must be unique across 'jwks' and 'previousJwks'.`
+    )
+  }
+
+  const unsupportedKey = requestEncryptionJwks.find(
     (jwk) => jwk.kty === 'oct' || !Kms.allowedKeyDerivationAlgsForKey(jwk).includes('ECDH-ES')
   )
   if (unsupportedKey) {

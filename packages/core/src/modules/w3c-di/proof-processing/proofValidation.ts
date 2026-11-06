@@ -1,5 +1,6 @@
 import { asArray, equalsIgnoreOrder } from '../../../utils'
 import { MultiBaseEncoder } from '../../../utils/MultiBaseEncoder'
+import { TypedArrayEncoder } from '../../../utils/TypedArrayEncoder'
 import type { W3cDataIntegrityVerifyFailure } from '../W3cDataIntegrityError'
 import {
   createInvalidResult,
@@ -99,8 +100,7 @@ export function validateProofFieldFormats(
     )
   }
 
-  // Validate proofValue using the shared multibase decoder so prefix and alphabet checks stay consistent.
-  if (!MultiBaseEncoder.isValid(proof.proofValue)) {
+  if (!isValidProofValue(proof.proofValue)) {
     return createInvalidResult(
       createIssue(
         W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
@@ -201,6 +201,24 @@ export function assertCreatedProofPostconditions(
 }
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
+
+function isValidProofValue(value: string): boolean {
+  if (value.startsWith('z')) {
+    return MultiBaseEncoder.isValid(value)
+  }
+
+  if (!value.startsWith('u') || value.length === 1) {
+    return false
+  }
+
+  const payload = value.slice(1)
+  try {
+    const decoded = TypedArrayEncoder.fromBase64Url(payload)
+    return decoded.length > 0 && TypedArrayEncoder.toBase64Url(decoded) === payload
+  } catch {
+    return false
+  }
+}
 
 function isValidAbsoluteUrl(value: string): boolean {
   try {
