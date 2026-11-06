@@ -106,11 +106,11 @@ export function didToNumAlgo4DidDocument(did: string) {
   }
 
   const { data } = MultiBaseEncoder.decode(encodedDocument)
-  const [multiCodecValue] = VarintEncoder.decode(data.subarray(0, 2))
+  const [multiCodecValue, multiCodecByteLength] = VarintEncoder.decode(data)
   if (multiCodecValue !== JSON_MULTICODEC_VARINT) {
     throw new CredoError('Not a JSON multicodec data')
   }
-  const didDocumentJson = JsonEncoder.fromUint8Array(data.subarray(2))
+  const didDocumentJson = JsonEncoder.fromUint8Array(data.subarray(multiCodecByteLength))
 
   didDocumentJson.id = parsed.did
   didDocumentJson.alsoKnownAs = [parsed.did.slice(0, did.lastIndexOf(':'))]

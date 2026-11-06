@@ -1,6 +1,12 @@
 import { OutOfBandDidCommService } from '../../../../../../../didcomm/src/modules/oob'
 import { outOfBandServiceToNumAlgo4Did } from '../../../../../../../didcomm/src/modules/oob/converters'
-import { JsonTransformer } from '../../../../../utils'
+import {
+  JsonTransformer,
+  MultiBaseEncoder,
+  MultiHashEncoder,
+  TypedArrayEncoder,
+  VarintEncoder,
+} from '../../../../../utils'
 import { DidDocument } from '../../../domain'
 import { verkeyToDidKey } from '../../../helpers'
 import {
@@ -16,6 +22,22 @@ describe('peerDidNumAlgo4', () => {
   describe('didToNumAlgo4DidDocument', () => {
     test('transforms method 4 peer did to a did document', async () => {
       expect(didToNumAlgo4DidDocument(didPeer4zQmd8Cp.id).toJSON()).toMatchObject(didPeer4zQmd8Cp)
+    })
+
+    it.each([
+      new Uint8Array([0x80, 0x80, 0x80, 0x80, 0x80, 0x80]),
+      TypedArrayEncoder.concat([VarintEncoder.encode(0x0201), TypedArrayEncoder.fromUtf8String('{}')]),
+      VarintEncoder.encode(0x0200),
+      TypedArrayEncoder.concat([new Uint8Array([0x80, 0x84, 0x00]), TypedArrayEncoder.fromUtf8String('{}')]),
+    ])('rejects malformed JSON multicodec prefix %j', (payload) => {
+      const encodedDocument = MultiBaseEncoder.encode(payload, 'base58btc')
+      const hash = MultiBaseEncoder.encode(
+        MultiHashEncoder.encode(TypedArrayEncoder.fromUtf8String(encodedDocument), 'sha-256'),
+        'base58btc'
+      )
+      const did = `did:peer:4${hash}:${encodedDocument}`
+
+      expect(() => didToNumAlgo4DidDocument(did)).toThrow()
     })
   })
 

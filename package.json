@@ -53,7 +53,6 @@
     "@types/express": "catalog:",
     "@types/node": "catalog:",
     "@types/supertest": "^7.2.1",
-    "@types/varint": "^6.0.3",
     "@types/ws": "catalog:",
     "@typescript/native": "catalog:",
     "@vitest/coverage-v8": "catalog:",
@@ -69,14 +68,14 @@
     "tsdown": "^0.23.4",
     "tsyringe": "catalog:",
     "typescript": "catalog:",
-    "undici": "^6.28.0",
+    "undici": "^6.29.1",
     "vite": "^8.3.5",
     "vite-node": "^6.0.0",
     "vitest": "catalog:",
     "ws": "catalog:"
   },
   "resolutions": {
-    "undici": "^6.28.0"
+    "undici": "^6.29.1"
   },
   "engines": {
     "node": ">=22"

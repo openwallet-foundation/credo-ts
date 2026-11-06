@@ -350,9 +350,6 @@ importers:
       '@types/supertest':
         specifier: ^7.2.1
         version: 7.2.1
-      '@types/varint':
-        specifier: ^6.0.3
-        version: 6.0.3
       '@types/ws':
         specifier: 'catalog:'
         version: 8.18.2
@@ -399,8 +396,8 @@ importers:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'
       undici:
-        specifier: ^6.28.0
-        version: 6.28.1
+        specifier: ^6.29.1
+        version: 6.29.1
       vite:
         specifier: ^8.3.5
         version: 8.3.5(@types/node@22.20.4)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
@@ -720,9 +717,6 @@ importers:
       '@digitalbazaar/vc':
         specifier: ^7.3.0
         version: 7.3.0
-      '@multiformats/base-x':
-        specifier: ^4.0.1
-        version: 4.0.1
       '@noble/curves':
         specifier: ^2.0.1
         version: 2.4.0
@@ -822,9 +816,6 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
-      varint:
-        specifier: ^6.0.0
-        version: 6.0.0
       web-did-resolver:
         specifier: ^3.2.0
         version: 3.2.0
@@ -838,9 +829,6 @@ importers:
       '@types/object-inspect':
         specifier: ^1.13.0
         version: 1.13.0
-      '@types/varint':
-        specifier: ^6.0.3
-        version: 6.0.3
       nock:
         specifier: 'catalog:'
         version: 15.0.5(supports-color@8.1.1)
@@ -3928,9 +3916,6 @@ packages:
 
   '@types/validator@13.15.10':
     resolution: {integrity: sha512-T8L6i7wCuyoK8A/ZeLYt1+q0ty3Zb9+qbSSvrIVitzT3YjZqkTZ40IbRsPanlB4h1QB3JVL1SYCdR6ngtFYcuA==}
-
-  '@types/varint@6.0.3':
-    resolution: {integrity: sha512-DHukoGWdJ2aYkveZJTB2rN2lp6m7APzVsoJQ7j/qy1fQxyamJTPD5xQzCMoJ2Qtgn0mE3wWeNOpbTyBFvF+dyA==}
 
   '@types/ws@8.18.2':
     resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
@@ -7229,8 +7214,8 @@ packages:
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
-  undici@6.28.1:
-    resolution: {integrity: sha512-zWpdTVD54H48CIybL0rWQ3ukpb9d23wM7eH5RtfdmeP70cWHNjtfo7P4vZX+5CoDcO53J4Pu5uXp7lNfjc6DRA==}
+  undici@6.29.1:
+    resolution: {integrity: sha512-EvRlUt/QqAEvXdQeRMYUfwOQsfzpDztykrG2owGEE/rBOBoYv9uF39ZzsNDh4lTFHhTr2XOZjKkYgueD12ZmGA==}
     engines: {node: '>=18.17'}
 
   undici@8.11.2:
@@ -8415,7 +8400,7 @@ snapshots:
   '@digitalbazaar/http-client@4.4.0':
     dependencies:
       ky: 1.14.3
-      undici: 6.28.1
+      undici: 6.29.1
 
   '@digitalbazaar/security-context@1.0.1': {}
 
@@ -10665,10 +10650,6 @@ snapshots:
       '@types/superagent': 8.1.11
 
   '@types/validator@13.15.10': {}
-
-  '@types/varint@6.0.3':
-    dependencies:
-      '@types/node': 26.6.2
 
   '@types/ws@8.18.2':
     dependencies:
@@ -14377,7 +14358,7 @@ snapshots:
 
   undici-types@8.9.0: {}
 
-  undici@6.28.1: {}
+  undici@6.29.1: {}
 
   undici@8.11.2: {}
 
