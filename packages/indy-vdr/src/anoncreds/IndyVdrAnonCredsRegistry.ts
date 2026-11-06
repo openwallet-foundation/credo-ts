@@ -267,7 +267,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       const response = await pool.submitRequest(request)
 
       // We need to fetch the schema to determine the schemaId (we only have the seqNo)
-      const schema = await this.fetchIndySchemaWithSeqNo(agentContext, response.result.ref, namespaceIdentifier)
+      const schema = await this.fetchIndySchemaWithSeqNo(agentContext, response.result.ref, did)
 
       if (!schema || !response.result.data) {
         agentContext.config.logger.error(`Error retrieving credential definition '${credentialDefinitionId}'`)
