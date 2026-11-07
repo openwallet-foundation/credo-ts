@@ -1,5 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
 import { EventEmitter, InjectionSymbols, inject, injectable, Repository, type StorageService } from '@credo-ts/core'
+import { identifierQuery } from '../utils/identifierVariants'
 import type { AnonCredsRevocationRegistryState } from './AnonCredsRevocationRegistryDefinitionPrivateRecord'
 
 import { AnonCredsRevocationRegistryDefinitionPrivateRecord } from './AnonCredsRevocationRegistryDefinitionPrivateRecord'
@@ -15,14 +16,20 @@ export class AnonCredsRevocationRegistryDefinitionPrivateRepository extends Repo
   }
 
   public async getByRevocationRegistryDefinitionId(agentContext: AgentContext, revocationRegistryDefinitionId: string) {
-    return this.getSingleByQuery(agentContext, { revocationRegistryDefinitionId })
+    return this.getSingleByQuery(
+      agentContext,
+      identifierQuery(agentContext, 'revocationRegistryDefinitionId', revocationRegistryDefinitionId)
+    )
   }
 
   public async findByRevocationRegistryDefinitionId(
     agentContext: AgentContext,
     revocationRegistryDefinitionId: string
   ) {
-    return this.findSingleByQuery(agentContext, { revocationRegistryDefinitionId })
+    return this.findSingleByQuery(
+      agentContext,
+      identifierQuery(agentContext, 'revocationRegistryDefinitionId', revocationRegistryDefinitionId)
+    )
   }
 
   public async findAllByCredentialDefinitionIdAndState(
@@ -30,6 +37,8 @@ export class AnonCredsRevocationRegistryDefinitionPrivateRepository extends Repo
     credentialDefinitionId: string,
     state?: AnonCredsRevocationRegistryState
   ) {
-    return this.findByQuery(agentContext, { credentialDefinitionId, state })
+    return this.findByQuery(agentContext, {
+      $and: [identifierQuery(agentContext, 'credentialDefinitionId', credentialDefinitionId), { state }],
+    })
   }
 }

@@ -57,6 +57,17 @@ export interface IndyVdrModuleConfigOptions {
    * ```
    */
   networks: [IndyVdrPoolConfig, ...IndyVdrPoolConfig[]]
+
+  /**
+   * Whether the did:indy ids of new schemas, credential definitions and revocation registries percent-encode
+   * the schema name and tags, as the did:indy spec requires. This also applies to the schema and credential
+   * definition ids in resolved objects. Agents that don't support percent-encoded ids can't resolve these ids.
+   *
+   * Ids in both forms are always accepted.
+   *
+   * @default false
+   */
+  encodeAnonCredsIdentifiers?: boolean
 }
 
 export class IndyVdrModuleConfig {
@@ -69,6 +80,11 @@ export class IndyVdrModuleConfig {
   /** See {@link IndyVdrModuleConfigOptions.networks} */
   public get networks() {
     return this.options.networks
+  }
+
+  /** See {@link IndyVdrModuleConfigOptions.encodeAnonCredsIdentifiers} */
+  public get encodeAnonCredsIdentifiers() {
+    return this.options.encodeAnonCredsIdentifiers ?? false
   }
 
   /** See {@link IndyVdrModuleConfigOptions.indyVdr} */

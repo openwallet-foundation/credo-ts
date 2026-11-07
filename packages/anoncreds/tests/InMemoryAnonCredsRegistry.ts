@@ -2,6 +2,7 @@ import type { AgentContext } from '@credo-ts/core'
 import { Hasher, utils } from '@credo-ts/core'
 import {
   getDidIndyCredentialDefinitionId,
+  getDidIndyIdentifierVariants,
   getDidIndyRevocationRegistryDefinitionId,
   getDidIndySchemaId,
 } from '../../indy-vdr/src/anoncreds/utils/identifiers'
@@ -47,6 +48,10 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
   public readonly allowsCaching = true
   public readonly allowsLocalRecord = true
+
+  public getIdentifierVariants(identifier: string) {
+    return getDidIndyIdentifierVariants(identifier)
+  }
 
   private schemas: Record<string, AnonCredsSchema>
   private credentialDefinitions: Record<string, AnonCredsCredentialDefinition>

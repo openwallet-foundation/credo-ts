@@ -141,7 +141,7 @@ function areRestrictionsEqual(
 
   // Check if all restrictions in A are also in B
   return restrictionsA.every((a) => {
-    const bIndex = restrictionsB.findIndex((b) => areObjectsEqual(a, b))
+    const bIndex = bList.findIndex((b) => areObjectsEqual(a, b))
 
     // Match found
     if (bIndex !== -1) {

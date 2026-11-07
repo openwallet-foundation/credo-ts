@@ -3,6 +3,12 @@ import {
   didIndyRegex,
   didIndyRevocationRegistryIdRegex,
   didIndySchemaIdRegex,
+  isDidIndyCredentialDefinitionId,
+  isDidIndyRevocationRegistryId,
+  isDidIndySchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndyRevocationRegistryId,
+  parseIndySchemaId,
 } from '@credo-ts/anoncreds'
 
 const indyVdrAnonCredsRegexes = [
@@ -23,17 +29,32 @@ export const indyVdrAnonCredsRegistryIdentifierRegex = new RegExp(
   indyVdrAnonCredsRegexes.map((r) => r.source).join('|')
 )
 
-export function getDidIndySchemaId(namespace: string, unqualifiedDid: string, name: string, version: string) {
-  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/SCHEMA/${name}/${version}`
+/**
+ * The did:indy spec percent-encodes the schema name and tags in DID URLs (RFC 3986 section 2). Agents without
+ * support for this can't resolve encoded ids, so encoding is opt-in.
+ */
+function encodeSegment(segment: string, percentEncode: boolean) {
+  return percentEncode ? encodeURIComponent(segment) : segment
+}
+
+export function getDidIndySchemaId(
+  namespace: string,
+  unqualifiedDid: string,
+  name: string,
+  version: string,
+  percentEncode = false
+) {
+  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/SCHEMA/${encodeSegment(name, percentEncode)}/${version}`
 }
 
 export function getDidIndyCredentialDefinitionId(
   namespace: string,
   unqualifiedDid: string,
   schemaSeqNo: string | number,
-  tag: string
+  tag: string,
+  percentEncode = false
 ) {
-  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/${tag}`
+  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/${encodeSegment(tag, percentEncode)}`
 }
 
 export function getDidIndyRevocationRegistryDefinitionId(
@@ -41,9 +62,10 @@ export function getDidIndyRevocationRegistryDefinitionId(
   unqualifiedDid: string,
   schemaSeqNo: string | number,
   credentialDefinitionTag: string,
-  revocationRegistryTag: string
+  revocationRegistryTag: string,
+  percentEncode = false
 ) {
-  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/REV_REG_DEF/${schemaSeqNo}/${credentialDefinitionTag}/${revocationRegistryTag}`
+  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/REV_REG_DEF/${schemaSeqNo}/${encodeSegment(credentialDefinitionTag, percentEncode)}/${encodeSegment(revocationRegistryTag, percentEncode)}`
 }
 
 export function getDidIndyRevocationRegistryEntryId(
@@ -51,9 +73,46 @@ export function getDidIndyRevocationRegistryEntryId(
   unqualifiedDid: string,
   schemaSeqNo: string | number,
   credentialDefinitionTag: string,
-  revocationRegistryTag: string
+  revocationRegistryTag: string,
+  percentEncode = false
 ) {
-  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/REV_REG_ENTRY/${schemaSeqNo}/${credentialDefinitionTag}/${revocationRegistryTag}`
+  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/REV_REG_ENTRY/${schemaSeqNo}/${encodeSegment(credentialDefinitionTag, percentEncode)}/${encodeSegment(revocationRegistryTag, percentEncode)}`
+}
+
+type EncodeSegment = (segment: string) => string
+
+/**
+ * Parses a did:indy schema, credential definition or revocation registry id once, and returns a function that
+ * formats it with `encode` applied to the schema name and tags. Returns `undefined` for other ids.
+ */
+function parseDidIndyIdentifierFormatter(identifier: string): ((encode: EncodeSegment) => string) | undefined {
+  if (isDidIndySchemaId(identifier)) {
+    const { did, schemaName, schemaVersion } = parseIndySchemaId(identifier)
+    return (encode) => `${did}/anoncreds/v0/SCHEMA/${encode(schemaName)}/${schemaVersion}`
+  }
+  if (isDidIndyCredentialDefinitionId(identifier)) {
+    const { did, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(identifier)
+    return (encode) => `${did}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/${encode(tag)}`
+  }
+  if (isDidIndyRevocationRegistryId(identifier)) {
+    const { did, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag } =
+      parseIndyRevocationRegistryId(identifier)
+    return (encode) =>
+      `${did}/anoncreds/v0/REV_REG_DEF/${schemaSeqNo}/${encode(credentialDefinitionTag)}/${encode(revocationRegistryTag)}`
+  }
+
+  return undefined
+}
+
+/**
+ * Returns a did:indy schema, credential definition or revocation registry id in its percent-encoded form (the
+ * canonical form, first), as given and unencoded, as all refer to the same object. Other ids are returned as is.
+ */
+export function getDidIndyIdentifierVariants(identifier: string): string[] {
+  const format = parseDidIndyIdentifierFormatter(identifier)
+  if (!format) return [identifier]
+
+  return [...new Set([format(encodeURIComponent), identifier, format((segment) => segment)])]
 }
 
 /**

@@ -18,6 +18,18 @@ export const didIndyRevocationRegistryIdRegex = new RegExp(
 
 export const didIndyRegex = /^did:indy:((?:[a-z][_a-z0-9-]*)(?::[a-z][_a-z0-9-]*)?):([1-9A-HJ-NP-Za-km-z]{21,22})$/
 
+/**
+ * Decodes a percent-encoded did:indy DID URL path segment. Identifiers created before Credo encoded these
+ * segments are returned as is when they aren't valid percent-encoding.
+ */
+function decodeDidIndyPathSegment(segment: string) {
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return segment
+  }
+}
+
 export function isDidIndySchemaId(schemaId: string) {
   return didIndySchemaIdRegex.test(schemaId)
 }
@@ -60,7 +72,7 @@ export function parseIndySchemaId(schemaId: string): ParsedIndySchemaId {
       did,
       namespace,
       namespaceIdentifier,
-      schemaName,
+      schemaName: decodeDidIndyPathSegment(schemaName),
       schemaVersion,
     }
   }
@@ -86,7 +98,7 @@ export function parseIndyCredentialDefinitionId(credentialDefinitionId: string):
       namespace,
       namespaceIdentifier,
       schemaSeqNo,
-      tag,
+      tag: decodeDidIndyPathSegment(tag),
     }
   }
 
@@ -112,8 +124,8 @@ export function parseIndyRevocationRegistryId(revocationRegistryId: string): Par
       namespace,
       namespaceIdentifier,
       schemaSeqNo,
-      credentialDefinitionTag,
-      revocationRegistryTag,
+      credentialDefinitionTag: decodeDidIndyPathSegment(credentialDefinitionTag),
+      revocationRegistryTag: decodeDidIndyPathSegment(revocationRegistryTag),
     }
   }
 
