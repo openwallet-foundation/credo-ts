@@ -19,6 +19,7 @@ describe('JsonLdModule', () => {
     module.register(dependencyManager)
 
     expect(dependencyManager.resolve(JsonLdModuleConfig)).toBe(module.config)
+    expect(module.config.documentLoader).toBe(defaultDocumentLoader)
   })
 
   test('registers a custom document loader', () => {
@@ -120,7 +121,7 @@ describe('JsonLdModule', () => {
   describe('defaultDocumentLoader remote documents', () => {
     const remoteContext = { '@context': { name: 'https://schema.org/name' } }
 
-    const setup = (jsonLdModuleConfig = new JsonLdModuleConfig()) => {
+    const setup = (jsonLdModuleConfig = new JsonLdModule().config) => {
       const agentContext = getAgentContext({
         agentConfig: getAgentConfig('JsonLdModuleTest'),
         registerInstances: [
@@ -139,7 +140,7 @@ describe('JsonLdModule', () => {
     }
 
     test('fetches with the agent fetch and the configured size limit', async () => {
-      const { documentLoader, fetchSpy } = setup(new JsonLdModuleConfig({ maxDocumentBytes: 1000 }))
+      const { documentLoader, fetchSpy } = setup(new JsonLdModule({ maxDocumentBytes: 1000 }).config)
       fetchSpy.mockResolvedValue(jsonResponse(remoteContext))
 
       await expect(documentLoader('https://example.com/context')).resolves.toEqual({

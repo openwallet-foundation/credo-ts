@@ -10,8 +10,6 @@ import jsonld from './jsonld'
 
 const LINK_HEADER_CONTEXT = 'http://www.w3.org/ns/json-ld#context'
 
-export type DocumentLoaderWithContext = (agentContext: AgentContext) => DocumentLoader
-
 export function defaultDocumentLoader(
   agentContext: AgentContext,
   additionalContexts: Record<string, unknown> = {}

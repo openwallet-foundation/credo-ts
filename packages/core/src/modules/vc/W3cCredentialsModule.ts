@@ -4,7 +4,7 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../dids'
 import { Ed25519PublicJwk } from '../kms'
-import { JsonLdModuleConfig } from './jsonld'
+import { defaultDocumentLoader, JsonLdModuleConfig, type JsonLdModuleOptions } from './jsonld'
 import { W3cJwtCredentialService } from './jwt-vc'
 import {
   SignatureSuiteRegistry,
@@ -16,7 +16,6 @@ import { W3cJsonLdCredentialService } from './linked-data-proofs/W3cJsonLdCreden
 import { W3cCredentialRepository } from './repository/W3cCredentialRepository'
 import { W3cCredentialService } from './W3cCredentialService'
 import { W3cCredentialsApi } from './W3cCredentialsApi'
-import type { W3cCredentialsModuleConfigOptions } from './W3cCredentialsModuleConfig'
 import { W3cCredentialsModuleConfig } from './W3cCredentialsModuleConfig'
 
 /**
@@ -26,8 +25,11 @@ export class W3cCredentialsModule implements Module {
   public readonly config: W3cCredentialsModuleConfig
   public readonly api = W3cCredentialsApi
 
-  public constructor(config?: W3cCredentialsModuleConfigOptions) {
-    this.config = new W3cCredentialsModuleConfig(config)
+  public constructor(config?: JsonLdModuleOptions) {
+    this.config = new W3cCredentialsModuleConfig({
+      ...config,
+      documentLoader: config?.documentLoader ?? defaultDocumentLoader,
+    })
   }
 
   public register(dependencyManager: DependencyManager) {
