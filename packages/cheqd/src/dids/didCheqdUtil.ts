@@ -172,7 +172,8 @@ export class EnglishMnemonic extends _EnglishMnemonic {
 
 export function getCosmosPayerWallet(cosmosPayerSeed?: string) {
   if (!cosmosPayerSeed || cosmosPayerSeed === '') {
-    return DirectSecp256k1HdWallet.generate()
+    // Unfunded placeholder, as only ledger writes use it and they need a funded seed. A fixed key needs no PBKDF2 or randomness.
+    return DirectSecp256k1Wallet.fromKey(new Uint8Array(32).fill(1), 'cheqd')
   }
   return EnglishMnemonic._mnemonicMatcher.test(cosmosPayerSeed)
     ? DirectSecp256k1HdWallet.fromMnemonic(cosmosPayerSeed, { prefix: 'cheqd' })

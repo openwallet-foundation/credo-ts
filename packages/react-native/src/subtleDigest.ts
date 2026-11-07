@@ -1,3 +1,6 @@
+// Before the code below uses globalThis.crypto. Imported here, as bundlers may move this module above the polyfill in index.ts.
+import 'react-native-get-random-values'
+
 import { Hasher } from '@credo-ts/core'
 
 // jsonld and rdf-canonize hash with crypto.subtle.digest, which React Native doesn't provide.

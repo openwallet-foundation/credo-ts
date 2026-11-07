@@ -5,6 +5,7 @@ import { DidDocument } from '@credo-ts/core'
 import {
   createMsgCreateDidDocPayloadToSign,
   createMsgDeactivateDidDocPayloadToSign,
+  getCosmosPayerWallet,
   validateSpecCompliantPayload,
 } from '../src/dids/didCheqdUtil'
 
@@ -44,5 +45,17 @@ describe('Test Cheqd Did Utils', () => {
   it('should create MsgDeactivateDidDocPayloadToSign', async () => {
     const result = createMsgDeactivateDidDocPayloadToSign({ id: validDid }, '2.0')
     expect(result).toBeDefined()
+  })
+
+  it('should create a payer wallet without a seed when crypto.subtle only has digest', async () => {
+    // As on React Native, where @credo-ts/react-native only adds digest
+    vi.stubGlobal('crypto', { subtle: { digest: vi.fn() } })
+
+    try {
+      const [account] = await (await getCosmosPayerWallet()).getAccounts()
+      expect(account.address).toMatch(/^cheqd1/)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
