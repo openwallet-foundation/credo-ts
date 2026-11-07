@@ -91,6 +91,18 @@ export interface X509ValidateCertificateChainOptions {
   allowNonRootTrustedCertificate?: boolean
 
   /**
+   * Key usages the leaf certificate must have. A leaf certificate without a Key Usage extension
+   * passes this check, as the extension is optional and its absence means the key is unrestricted.
+   */
+  requiredKeyUsages?: X509KeyUsage[]
+
+  /**
+   * Extended key usages the leaf certificate must have. `anyExtendedKeyUsage` does not satisfy a
+   * required extended key usage.
+   */
+  requiredExtendedKeyUsages?: X509ExtendedKeyUsage[]
+
+  /**
    * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured
    * `parseOptions` in full rather than being merged with them. When omitted, the configured
    * options are used, falling back to {@link defaultX509ParseOptions}.

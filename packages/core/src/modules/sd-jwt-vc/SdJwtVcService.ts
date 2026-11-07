@@ -12,6 +12,7 @@ import type { JsonObject } from '../../types'
 import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArrayEncoder } from '../../utils'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
+import { assertStatusListSignerKeyPurpose } from '../token-status-list/assertStatusListSignerKeyPurpose'
 import { TokenStatusListModuleConfig } from '../token-status-list/TokenStatusListModuleConfig'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig, X509Service } from '../x509'
@@ -751,6 +752,11 @@ export class SdJwtVcService {
             'The status list signer chain does not match the credential issuer chain, and no dedicated trusted status certificates were configured for the trusted issuer.'
           )
         }
+
+        assertStatusListSignerKeyPurpose(agentContext, {
+          statusListSigner: statusListChain[0],
+          credentialSigner: credentialIssuerCertificateChain[0],
+        })
 
         const signerJwk = statusListChain[0].publicJwk
         setJwkAlgFromJwtHeader(signerJwk, header.alg)

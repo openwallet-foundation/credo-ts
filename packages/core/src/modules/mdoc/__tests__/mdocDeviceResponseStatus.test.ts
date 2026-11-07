@@ -5,9 +5,9 @@ import nock from 'nock'
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { KnownJwaSignatureAlgorithms, PublicJwk } from '../../kms'
-import { TokenStatusListApi } from '../../token-status-list'
+import { TokenStatusListApi, TokenStatusListModuleConfig } from '../../token-status-list'
 import { ClaimFormat } from '../../vc'
-import { X509Certificate, X509Service } from '../../x509'
+import { X509Certificate, type X509CertificateExtensionsOptions, X509ExtendedKeyUsage, X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
 
@@ -65,7 +65,7 @@ describe('mdoc device-response status list verification', () => {
     await agent.shutdown()
   })
 
-  const createRootAndLeaf = async (name: string) => {
+  const createRootAndLeaf = async (name: string, leafExtensions?: X509CertificateExtensionsOptions) => {
     const rootKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
     const leafKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
 
@@ -83,6 +83,7 @@ describe('mdoc device-response status list verification', () => {
       validity: { notBefore: currentDate, notAfter: nextDay },
       issuer: `C=DE,CN=${name}Root`,
       subject: `C=DE,CN=${name}Leaf`,
+      extensions: leafExtensions,
     })
     leafCertificate.keyId = leafKey.keyId
 
@@ -222,6 +223,73 @@ describe('mdoc device-response status list verification', () => {
       })
     ).resolves.toEqual({
       documents: [{ documentIndex: 0, mdoc: expect.any(Mdoc), trustedIssuanceChain: expect.any(Array) }],
+    })
+  })
+
+  describe('with the status signing key purpose required', () => {
+    const verifyWithDedicatedStatusCertificates = async (
+      name: string,
+      statusExtensions?: X509CertificateExtensionsOptions
+    ) => {
+      const { rootCertificate, leafCertificate } = await createRootAndLeaf(`${name}Issuance`)
+      const { rootCertificate: statusRoot, leafCertificate: statusLeaf } = await createRootAndLeaf(
+        `${name}Status`,
+        statusExtensions
+      )
+      const statusListUri = await createStatusList(`device-key-purpose-${name}`, [statusLeaf])
+      const deviceResponse = await createDeviceResponse(await signMdoc(leafCertificate, statusListUri))
+
+      return deviceResponse.verify(agent.context, {
+        trustedCertificates: [
+          {
+            issuance: [rootCertificate.toString('base64')],
+            status: [statusRoot.toString('base64')],
+          },
+        ],
+        sessionTranscriptOptions,
+      })
+    }
+
+    beforeEach(() => {
+      agent.context.dependencyManager.registerInstance(
+        TokenStatusListModuleConfig,
+        new TokenStatusListModuleConfig({ requireStatusSigningKeyPurpose: true })
+      )
+    })
+
+    afterEach(() => {
+      agent.context.dependencyManager.registerInstance(TokenStatusListModuleConfig, new TokenStatusListModuleConfig())
+    })
+
+    test('verify succeeds when the status list signer has the extended key usage', async () => {
+      await expect(
+        verifyWithDedicatedStatusCertificates('Allowed', {
+          extendedKeyUsage: { usages: [X509ExtendedKeyUsage.OauthStatusSigning] },
+        })
+      ).resolves.toEqual({
+        documents: [{ documentIndex: 0, mdoc: expect.any(Mdoc), trustedIssuanceChain: expect.any(Array) }],
+      })
+    })
+
+    test('verify fails when the status list signer does not have the extended key usage', async () => {
+      await expect(verifyWithDedicatedStatusCertificates('Rejected')).rejects.toThrow(
+        X509ExtendedKeyUsage.OauthStatusSigning
+      )
+    })
+
+    test('verify succeeds without the extended key usage when the status list shares the issuance leaf', async () => {
+      const { rootCertificate, leafCertificate } = await createRootAndLeaf('SharedKeyPurpose')
+      const statusListUri = await createStatusList('device-key-purpose-shared', [leafCertificate])
+      const deviceResponse = await createDeviceResponse(await signMdoc(leafCertificate, statusListUri))
+
+      await expect(
+        deviceResponse.verify(agent.context, {
+          trustedCertificates: [{ issuance: [rootCertificate.toString('base64')] }],
+          sessionTranscriptOptions,
+        })
+      ).resolves.toEqual({
+        documents: [{ documentIndex: 0, mdoc: expect.any(Mdoc), trustedIssuanceChain: expect.any(Array) }],
+      })
     })
   })
 })
