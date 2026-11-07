@@ -29,14 +29,14 @@ import { AttribRequest, CustomRequest, NymRequest } from '@hyperledger/indy-vdr-
 import { IndyVdrError } from '../error'
 import type { IndyVdrPool } from '../pool'
 import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
+import type { IndyEndpointAttrib } from './didIndyEndpointUtil'
+import { endpointsAttribFromServices } from './didIndyEndpointUtil'
 import {
   createKeyAgreementKey,
   didDocDiff,
   indyDidDocumentFromDid,
   verificationPublicJwkForIndyDid,
 } from './didIndyUtil'
-import type { IndyEndpointAttrib } from './didSovUtil'
-import { endpointsAttribFromServices } from './didSovUtil'
 
 export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['indy']

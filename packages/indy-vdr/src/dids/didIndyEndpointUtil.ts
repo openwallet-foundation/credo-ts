@@ -1,9 +1,8 @@
 import {
   CredoError,
-  convertPublicKeyToX25519,
   DidCommV1Service,
   DidCommV2Service,
-  DidDocumentBuilder,
+  type DidDocumentBuilder,
   DidDocumentService,
   NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
@@ -57,38 +56,7 @@ export function getFullVerkey(did: string, verkey: string) {
   )
 }
 
-export function sovDidDocumentFromDid(fullDid: string, verkey: string) {
-  const verificationMethodId = `${fullDid}#key-1`
-  const keyAgreementId = `${fullDid}#key-agreement-1`
-
-  const publicKeyBase58 = getFullVerkey(fullDid, verkey)
-  const publicKeyX25519 = TypedArrayEncoder.toBase58(
-    convertPublicKeyToX25519(TypedArrayEncoder.fromBase58(publicKeyBase58))
-  )
-
-  const builder = new DidDocumentBuilder(fullDid)
-    .addContext('https://w3id.org/security/suites/ed25519-2018/v1')
-    .addContext('https://w3id.org/security/suites/x25519-2019/v1')
-    .addVerificationMethod({
-      controller: fullDid,
-      id: verificationMethodId,
-      publicKeyBase58: publicKeyBase58,
-      type: 'Ed25519VerificationKey2018',
-    })
-    .addVerificationMethod({
-      controller: fullDid,
-      id: keyAgreementId,
-      publicKeyBase58: publicKeyX25519,
-      type: 'X25519KeyAgreementKey2019',
-    })
-    .addAuthentication(verificationMethodId)
-    .addAssertionMethod(verificationMethodId)
-    .addKeyAgreement(keyAgreementId)
-
-  return builder
-}
-
-// Process Indy Attrib Endpoint Types according to: https://sovrin-foundation.github.io/sovrin/spec/did-method-spec-template.html > Read (Resolve) > DID Service Endpoint
+// Process the endpoint types of the indy ATTRIB transaction, see https://hyperledger.github.io/indy-did-method/#diddoc-assembly-rules
 function processEndpointTypes(types?: string[]) {
   const expectedTypes = ['endpoint', 'did-communication', 'DIDComm', 'DIDCommMessaging']
   const defaultTypes = ['endpoint', 'did-communication']

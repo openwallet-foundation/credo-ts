@@ -32,7 +32,6 @@ export interface DidCommOutOfBandInvitationV2Options {
  * Wire structure: { type, id, from, body: { goal_code, goal, accept }, attachments? }.
  */
 export class DidCommOutOfBandInvitationV2 extends DidCommMessage {
-  public readonly allowDidSovPrefix = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
   public constructor(options?: DidCommOutOfBandInvitationV2Options) {

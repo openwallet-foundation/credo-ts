@@ -1,11 +1,5 @@
 import type { AgentContext, BaseAgent } from '@credo-ts/core'
-import {
-  CacheModuleConfig,
-  CredoError,
-  DidResolverService,
-  W3cCredentialRecord,
-  W3cCredentialService,
-} from '@credo-ts/core'
+import { CacheModuleConfig, CredoError, W3cCredentialRecord, W3cCredentialService } from '@credo-ts/core'
 import { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
 import { type AnonCredsCredentialRecord, AnonCredsCredentialRepository } from '../../repository'
 import type { AnonCredsHolderService } from '../../services'
@@ -29,24 +23,12 @@ async function getIndyNamespace(agentContext: AgentContext, legacyIssuerId: stri
   const indyCacheKey = `IndyVdrPoolService:${namespaceIdentifier}`
   const sovCacheKey = `IndySdkPoolService:${namespaceIdentifier}`
 
-  const getCachedIndyNamespace = async () => {
-    const cachedNymResponse: Record<string, unknown> | null =
-      (await cache.get(agentContext, indyCacheKey, { scope: 'global' })) ?? (await cache.get(agentContext, sovCacheKey))
+  // Storage version 0.4 wrote the ledger of an unqualified did to the cache when it resolved the did.
+  const cachedNymResponse: Record<string, unknown> | null =
+    (await cache.get(agentContext, indyCacheKey, { scope: 'global' })) ?? (await cache.get(agentContext, sovCacheKey))
 
-    const indyNamespace = cachedNymResponse?.indyNamespace
-    return typeof indyNamespace === 'string' ? indyNamespace : undefined
-  }
-
-  const cachedIndyNamespace = await getCachedIndyNamespace()
-  if (cachedIndyNamespace) return cachedIndyNamespace
-
-  // The indy-vdr pool service looks up the ledger of an unqualified did when it resolves the did:sov did,
-  // and it writes the indy namespace to the cache. We resolve the did and then read the cache again.
-  const didResolverService = agentContext.dependencyManager.resolve(DidResolverService)
-  await didResolverService.resolve(agentContext, `did:sov:${namespaceIdentifier}`)
-
-  const resolvedIndyNamespace = await getCachedIndyNamespace()
-  if (resolvedIndyNamespace) return resolvedIndyNamespace
+  const indyNamespace = cachedNymResponse?.indyNamespace
+  if (typeof indyNamespace === 'string') return indyNamespace
 
   throw new CredoError(
     `Could not determine the indy namespace of issuer '${legacyIssuerId}'. The indy namespace is required to store the anoncreds credential in the new w3c format.`

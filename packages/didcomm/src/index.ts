@@ -34,7 +34,6 @@ export {
   type ParsedMessageType,
   parseDidCommProtocolUri,
   parseMessageType,
-  replaceLegacyDidSovPrefix,
   supportsIncomingDidCommProtocolUri,
   supportsIncomingMessageType,
 } from './util/messageType'

@@ -3,7 +3,7 @@ import { Agent, DidsModule, TypedArrayEncoder } from '@credo-ts/core'
 import { GetSchemaRequest, indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { NativeAnoncreds } from '../../anoncreds/tests/helpers'
 import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
-import { IndyVdrIndyDidResolver, IndyVdrModule, IndyVdrSovDidResolver } from '../src'
+import { IndyVdrIndyDidResolver, IndyVdrModule } from '../src'
 import { IndyVdrAnonCredsRegistry } from '../src/anoncreds/IndyVdrAnonCredsRegistry'
 import { getIndyLedgerSchemaId } from '../src/anoncreds/utils/identifiers'
 import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/dids/IndyVdrIndyDidRegistrar'
@@ -50,7 +50,7 @@ const endorser = new Agent(
       }),
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
-        resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
+        resolvers: [new IndyVdrIndyDidResolver()],
       }),
     }
   )
@@ -72,7 +72,7 @@ const agent = new Agent(
       }),
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
-        resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
+        resolvers: [new IndyVdrIndyDidResolver()],
       }),
     }
   )

@@ -235,7 +235,7 @@ export class DidCommDocumentService {
             didDocument.dereferenceKey(recipientKeyReference, ['authentication', 'keyAgreement'])
           )
 
-          // try to find a matching Ed25519 key (https://sovrin-foundation.github.io/sovrin/spec/did-method-spec-template.html#did-document-notes)
+          // try to find the Ed25519 key that the X25519 key agreement key was derived from (https://hyperledger.github.io/indy-did-method/#diddoc-assembly-rules)
           // FIXME: Now that indy-sdk is deprecated, we should look into the possiblty of using the X25519 key directly
           // removing the need to also include the Ed25519 key in the did document.
           if (publicJwk.is(Kms.X25519PublicJwk)) {
