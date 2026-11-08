@@ -26,7 +26,10 @@ import {
   DidCommMediatorService,
 } from '../../../../didcomm/src/modules/routing'
 import { getAgentOptions } from '../../../tests/helpers'
+import { TestLogger } from '../../../tests/logger'
 import { InjectionSymbols } from '../../constants'
+import { LogLevel } from '../../logger'
+import { CacheModule, InMemoryLruCache } from '../../modules/cache'
 import { JsonLdModule, JsonLdModuleConfig } from '../../modules/vc/jsonld'
 import type { Module } from '../../plugins'
 import { injectable } from '../../plugins'
@@ -91,6 +94,23 @@ describe('Agent', () => {
       // Should be custom module config property, not the default value
       expect(agent.didcomm.mediationRecipient.config.maximumMessagePickup).toBe(42)
       expect(agent.modules.myModule).toEqual(expect.any(MyApi))
+    })
+
+    test('warns only when the default cache is used', () => {
+      const logger = new TestLogger(LogLevel.Off)
+      const warn = vi.spyOn(logger, 'warn')
+      const config = { ...agentOptions.config, logger }
+      const cacheWarning = expect.stringContaining("No 'cache' module configured")
+
+      new Agent({
+        ...agentOptions,
+        config,
+        modules: { ...agentOptions.modules, cache: new CacheModule({ cache: new InMemoryLruCache({ limit: 1 }) }) },
+      })
+      expect(warn).not.toHaveBeenCalledWith(cacheWarning)
+
+      new Agent({ ...agentOptions, config })
+      expect(warn).toHaveBeenCalledWith(cacheWarning)
     })
   })
 

@@ -1,4 +1,4 @@
-import { CacheModule, InMemoryLruCache } from '../modules/cache'
+import { CacheModule, SingleContextStorageLruCache } from '../modules/cache'
 import { DcqlModule } from '../modules/dcql/DcqlModule'
 import { DidsModule } from '../modules/dids'
 import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
@@ -111,7 +111,7 @@ function getDefaultAgentModules() {
     w3cCredentials: () => new W3cCredentialsModule(),
     w3cV2Credentials: () => new W3cV2CredentialsModule(),
     w3cDataIntegrity: () => new W3cDataIntegrityModule(),
-    cache: () => new CacheModule({ cache: new InMemoryLruCache({ limit: 500 }) }),
+    cache: () => new CacheModule({ cache: new SingleContextStorageLruCache({ limit: 500 }) }),
     pex: () => new DifPresentationExchangeModule(),
     sdJwtVc: () => new SdJwtVcModule(),
     x509: () => new X509Module(),
