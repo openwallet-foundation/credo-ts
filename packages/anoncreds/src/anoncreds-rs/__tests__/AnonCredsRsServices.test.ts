@@ -20,6 +20,7 @@ import {
   CacheModuleConfig,
   DidResolverService,
   DidsModuleConfig,
+  defaultDocumentLoader,
   InjectionSymbols,
   InMemoryLruCache,
   JsonLdModuleConfig,
@@ -68,7 +69,7 @@ const agentContext = getAgentContext({
 
     [InjectionSymbols.Logger, testLogger],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
   ],
   agentConfig,

@@ -16,6 +16,7 @@ import type { DidRepository, W3cJsonCredential } from '@credo-ts/core'
 import {
   DidResolverService,
   DidsModuleConfig,
+  defaultDocumentLoader,
   InjectionSymbols,
   JsonLdModuleConfig,
   SignatureSuiteRegistry,
@@ -95,7 +96,7 @@ const agentContext = getAgentContext({
     ],
     [InjectionSymbols.Logger, testLogger],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
   ],
   agentConfig,

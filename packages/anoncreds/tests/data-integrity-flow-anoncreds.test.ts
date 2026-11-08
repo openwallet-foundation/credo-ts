@@ -27,6 +27,7 @@ import {
   CacheModuleConfig,
   DidResolverService,
   DidsModuleConfig,
+  defaultDocumentLoader,
   InjectionSymbols,
   InMemoryLruCache,
   JsonLdModuleConfig,
@@ -97,7 +98,7 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [DidCommDataIntegrityLinkSecretBindingProviderToken, new AnonCredsLinkSecretBindingProvider()],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
       CacheModuleConfig,
