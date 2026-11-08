@@ -12,7 +12,6 @@ import {
   JsonLdModuleConfig,
   SignatureSuiteRegistry,
   W3cCredentialRepository,
-  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,
@@ -86,7 +85,6 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
     [InjectionSymbols.Logger, testLogger],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig({ documentLoader: defaultDocumentLoader })],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [AnonCredsHolderServiceSymbol, new AnonCredsRsHolderService()],
     [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],

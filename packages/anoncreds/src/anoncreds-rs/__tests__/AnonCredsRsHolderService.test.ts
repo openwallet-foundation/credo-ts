@@ -23,7 +23,6 @@ import {
   W3cCredentialRecord,
   W3cCredentialRepository,
   W3cCredentialSubject,
-  W3cCredentialsModuleConfig,
   W3cJsonLdVerifiableCredential,
   w3cDate,
 } from '@credo-ts/core'
@@ -97,7 +96,6 @@ const agentContext = getAgentContext({
     ],
     [InjectionSymbols.Logger, testLogger],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig({ documentLoader: defaultDocumentLoader })],
     [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
   ],

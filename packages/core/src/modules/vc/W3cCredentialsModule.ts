@@ -4,7 +4,6 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../dids'
 import { Ed25519PublicJwk } from '../kms'
-import { defaultDocumentLoader, JsonLdModuleConfig, type JsonLdModuleOptions } from './jsonld'
 import { W3cJwtCredentialService } from './jwt-vc'
 import {
   SignatureSuiteRegistry,
@@ -16,36 +15,18 @@ import { W3cJsonLdCredentialService } from './linked-data-proofs/W3cJsonLdCreden
 import { W3cCredentialRepository } from './repository/W3cCredentialRepository'
 import { W3cCredentialService } from './W3cCredentialService'
 import { W3cCredentialsApi } from './W3cCredentialsApi'
-import { W3cCredentialsModuleConfig } from './W3cCredentialsModuleConfig'
 
 /**
  * @public
  */
 export class W3cCredentialsModule implements Module {
-  public readonly config: W3cCredentialsModuleConfig
   public readonly api = W3cCredentialsApi
-
-  public constructor(config?: JsonLdModuleOptions) {
-    this.config = new W3cCredentialsModuleConfig({
-      ...config,
-      documentLoader: config?.documentLoader ?? defaultDocumentLoader,
-    })
-  }
 
   public register(dependencyManager: DependencyManager) {
     dependencyManager.registerSingleton(W3cCredentialService)
     dependencyManager.registerSingleton(W3cJwtCredentialService)
     dependencyManager.registerSingleton(W3cJsonLdCredentialService)
     dependencyManager.registerSingleton(W3cCredentialRepository)
-
-    // Register the config
-    dependencyManager.registerInstance(W3cCredentialsModuleConfig, this.config)
-
-    // Guard for shared JsonLdModuleConfig token if no standalone JsonLdModule
-    // registered, would otherwise be silently overwritten
-    if (!dependencyManager.isRegistered(JsonLdModuleConfig)) {
-      dependencyManager.registerInstance(JsonLdModuleConfig, this.config)
-    }
 
     // Collect any suites registered via the deprecated SignatureSuiteToken for backward compatibility.
     // External consumers that used registerInstance(SignatureSuiteToken, suite) will still work until

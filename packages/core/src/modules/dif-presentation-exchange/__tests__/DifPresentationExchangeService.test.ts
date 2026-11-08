@@ -14,7 +14,6 @@ import {
   JsonLdModuleConfig,
   SignatureSuiteRegistry,
   W3cCredentialService,
-  W3cCredentialsModuleConfig,
   W3cJsonLdVerifiableCredential,
   W3cJsonLdVerifiablePresentation,
 } from '../../vc'
@@ -27,7 +26,6 @@ const agentContext = getAgentContext({
     [InjectionSymbols.AgentDependencies, agentDependencies],
     [InjectionSymbols.Stop$, new Subject<boolean>()],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig({ documentLoader: defaultDocumentLoader })],
     [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
   ],
 })
