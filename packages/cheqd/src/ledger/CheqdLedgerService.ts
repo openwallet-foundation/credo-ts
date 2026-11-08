@@ -1,5 +1,24 @@
-import type { AbstractCheqdSDKModule, CheqdSDK, DIDDocument, DidFeeOptions, DidStdFee } from '@cheqd/sdk'
-import { CheqdNetwork, createCheqdSDK, DIDModule, ResourceModule } from '@cheqd/sdk'
+import type {
+  AbstractCheqdSDKModule,
+  CheqdSDK,
+  DIDDocument,
+  DIDDocumentWithMetadata,
+  DidExtension,
+  DidFeeOptions,
+  DidStdFee,
+  ResourceExtension,
+} from '@cheqd/sdk'
+import {
+  CheqdNetwork,
+  CheqdQuerier,
+  createCheqdSDK,
+  DIDModule,
+  defaultDidExtensionKey,
+  defaultResourceExtensionKey,
+  ResourceModule,
+  setupDidExtension,
+  setupResourceExtension,
+} from '@cheqd/sdk'
 import type { QueryAllDidDocVersionsMetadataResponse, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import type {
   Metadata,
@@ -7,7 +26,6 @@ import type {
   QueryCollectionResourcesResponse,
   ResourceWithMetadata,
 } from '@cheqd/ts-proto/cheqd/resource/v2'
-import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 import type { DeliverTxResponse } from '@cosmjs/stargate'
 import type { DidDocumentMetadata } from '@credo-ts/core'
 import { CredoError, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
@@ -18,7 +36,8 @@ import { getCosmosPayerWallet } from '../dids/didCheqdUtil'
 export interface ICheqdLedgerConfig {
   network: string
   rpcUrl: string
-  readonly cosmosPayerWallet: Promise<DirectSecp256k1HdWallet | DirectSecp256k1Wallet>
+  cosmosPayerSeed?: string
+  querier?: Promise<CheqdQuerier & DidExtension & ResourceExtension>
   sdk?: Promise<CheqdSDK>
 }
 
@@ -39,18 +58,17 @@ export class CheqdLedgerService {
       return {
         network,
         rpcUrl: rpcUrl ? rpcUrl : network === CheqdNetwork.Mainnet ? DefaultRPCUrl.Mainnet : DefaultRPCUrl.Testnet,
-        cosmosPayerWallet: getCosmosPayerWallet(cosmosPayerSeed),
+        cosmosPayerSeed,
       }
     })
   }
 
+  // Connects only the querier. The SDK needs the payer wallet, so it's created on the first ledger write.
   public async connect() {
     for (const network of this.networks) {
-      if (!network.sdk) {
-        await this.initializeSdkForNetwork(network)
-      } else {
-        this.logger.debug(`Not connecting to network ${network} as SDK already initialized`)
-      }
+      await this.getQuerier(network).catch((error) => {
+        this.logger.error(`Skipping connection for network ${network.network} in cheqd sdk: ${error.message}`)
+      })
     }
   }
 
@@ -65,7 +83,7 @@ export class CheqdLedgerService {
     }
   }
 
-  private async getSdk(did: string) {
+  private getNetwork(did: string) {
     const parsedDid = parseCheqdDid(did)
     if (!parsedDid) {
       throw new Error('Invalid DID')
@@ -79,9 +97,30 @@ export class CheqdLedgerService {
       throw new Error(`Network ${network} not found in cheqd networks configuration`)
     }
 
+    return network
+  }
+
+  private async getQuerier(network: ICheqdLedgerConfig) {
+    network.querier ??= CheqdQuerier.connectWithExtensions(
+      network.rpcUrl,
+      setupDidExtension,
+      setupResourceExtension
+    ) as Promise<CheqdQuerier & DidExtension & ResourceExtension>
+
+    try {
+      return await network.querier
+    } catch (error) {
+      network.querier = undefined
+      throw new CredoError(`Error connecting to cheqd network ${network.network}: ${error.message}`, { cause: error })
+    }
+  }
+
+  private async getSdk(did: string) {
+    const network = this.getNetwork(did)
+
     if (!network.sdk) {
       const sdk = await this.initializeSdkForNetwork(network)
-      if (!sdk) throw new Error(`Cheqd SDK not initialized for network ${parsedDid.network}`)
+      if (!sdk) throw new Error(`Cheqd SDK not initialized for network ${network.network}`)
       return sdk
     }
 
@@ -89,7 +128,7 @@ export class CheqdLedgerService {
       const sdk = await network.sdk
       return sdk
     } catch (error) {
-      throw new Error(`Error initializing cheqd sdk for network ${parsedDid.network}: ${error.message}`)
+      throw new Error(`Error initializing cheqd sdk for network ${network.network}: ${error.message}`)
     }
   }
 
@@ -99,7 +138,7 @@ export class CheqdLedgerService {
       network.sdk = createCheqdSDK({
         modules: [DIDModule as unknown as AbstractCheqdSDKModule, ResourceModule as unknown as AbstractCheqdSDKModule],
         rpcUrl: network.rpcUrl,
-        wallet: await network.cosmosPayerWallet.catch((error) => {
+        wallet: await getCosmosPayerWallet(network.cosmosPayerSeed).catch((error) => {
           throw new CredoError(`Error initializing cosmos payer wallet: ${error.message}`, { cause: error })
         }),
       })
@@ -171,17 +210,29 @@ export class CheqdLedgerService {
     )
   }
 
-  public async resolve(did: string, version?: string) {
-    const sdk = await this.getSdk(did)
-    return version ? sdk.queryDidDocVersion(did, version) : sdk.queryDidDoc(did)
+  public async resolve(did: string, version?: string): Promise<DIDDocumentWithMetadata> {
+    const querier = await this.getQuerier(this.getNetwork(did))
+    const { didDoc, metadata } = version
+      ? await querier[defaultDidExtensionKey].didDocVersion(did, version)
+      : await querier[defaultDidExtensionKey].didDoc(did)
+    if (!didDoc || !metadata) throw new CredoError(`No DID document found for ${did}`)
+
+    return {
+      didDocument: await DIDModule.toSpecCompliantPayload(didDoc),
+      didDocumentMetadata: await DIDModule.toSpecCompliantMetadata(metadata),
+    }
   }
 
   public async resolveMetadata(did: string): Promise<{
     didDocumentVersionsMetadata: DidDocumentMetadata[]
     pagination: QueryAllDidDocVersionsMetadataResponse['pagination']
   }> {
-    const sdk = await this.getSdk(did)
-    return sdk.queryAllDidDocVersionsMetadata(did)
+    const querier = await this.getQuerier(this.getNetwork(did))
+    const { versions, pagination } = await querier[defaultDidExtensionKey].allDidDocVersionsMetadata(did)
+    return {
+      didDocumentVersionsMetadata: await Promise.all(versions.map((m) => DIDModule.toSpecCompliantMetadata(m))),
+      pagination,
+    }
   }
 
   public async createResource(
@@ -203,20 +254,20 @@ export class CheqdLedgerService {
   }
 
   public async resolveResource(did: string, collectionId: string, resourceId: string): Promise<ResourceWithMetadata> {
-    const sdk = await this.getSdk(did)
-    return sdk.queryLinkedResource(collectionId, resourceId)
+    const querier = await this.getQuerier(this.getNetwork(did))
+    return querier[defaultResourceExtensionKey].resource(collectionId, resourceId)
   }
 
   public async resolveCollectionResources(
     did: string,
     collectionId: string
   ): Promise<QueryCollectionResourcesResponse> {
-    const sdk = await this.getSdk(did)
-    return sdk.queryLinkedResources(collectionId)
+    const querier = await this.getQuerier(this.getNetwork(did))
+    return querier[defaultResourceExtensionKey].collectionResources(collectionId)
   }
 
   public async resolveResourceMetadata(did: string, collectionId: string, resourceId: string): Promise<Metadata> {
-    const sdk = await this.getSdk(did)
-    return sdk.queryLinkedResourceMetadata(collectionId, resourceId)
+    const querier = await this.getQuerier(this.getNetwork(did))
+    return querier[defaultResourceExtensionKey].resourceMetadata(collectionId, resourceId)
   }
 }

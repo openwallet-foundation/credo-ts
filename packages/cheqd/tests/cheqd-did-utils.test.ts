@@ -47,15 +47,7 @@ describe('Test Cheqd Did Utils', () => {
     expect(result).toBeDefined()
   })
 
-  it('should create a payer wallet without a seed when crypto.subtle only has digest', async () => {
-    // As on React Native, where @credo-ts/react-native only adds digest
-    vi.stubGlobal('crypto', { subtle: { digest: vi.fn() } })
-
-    try {
-      const [account] = await (await getCosmosPayerWallet()).getAccounts()
-      expect(account.address).toMatch(/^cheqd1/)
-    } finally {
-      vi.unstubAllGlobals()
-    }
+  it('should require a seed for the payer wallet', async () => {
+    await expect(getCosmosPayerWallet()).rejects.toThrow('A cosmosPayerSeed is required to write to the cheqd ledger')
   })
 })
