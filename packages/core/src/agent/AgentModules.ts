@@ -1,15 +1,23 @@
-import { CacheModule, SingleContextStorageLruCache } from '../modules/cache'
+import { CredoError } from '../error'
+import { CacheModule, type CacheModuleOptions, SingleContextStorageLruCache } from '../modules/cache'
 import { DcqlModule } from '../modules/dcql/DcqlModule'
 import { DidsModule } from '../modules/dids'
+import type { DidsModuleConfigOptions } from '../modules/dids/DidsModuleConfig'
 import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
 import { GenericRecordsModule } from '../modules/generic-records'
 import { KeyManagementModule } from '../modules/kms'
+import type { KeyManagementModuleConfigOptions } from '../modules/kms/KeyManagementModuleConfig'
 import { MdocModule } from '../modules/mdoc/MdocModule'
 import { SdJwtVcModule } from '../modules/sd-jwt-vc'
+import type { SdJwtVcModuleConfigOptions } from '../modules/sd-jwt-vc/SdJwtVcModuleConfig'
 import { TokenStatusListModule } from '../modules/token-status-list/TokenStatusListModule'
+import type { TokenStatusListModuleConfigOptions } from '../modules/token-status-list/TokenStatusListModuleConfig'
 import { JsonLdModule, W3cCredentialsModule, W3cV2CredentialsModule } from '../modules/vc'
+import type { JsonLdModuleConfigOptions } from '../modules/vc/jsonld/JsonLdModuleConfig'
+import type { W3cV2CredentialsModuleConfigOptions } from '../modules/vc/W3cV2CredentialsModuleConfig'
 import { W3cDataIntegrityModule } from '../modules/w3c-di'
 import { X509Module } from '../modules/x509'
+import type { X509ModuleConfigOptions } from '../modules/x509/X509ModuleConfig'
 import type { ApiModule, DependencyManager, Module } from '../plugins'
 import type { IsAny } from '../types'
 import type { Constructor } from '../utils/mixins'
@@ -22,11 +30,7 @@ export type ModulesMap = { [key: string]: Module }
 // biome-ignore lint/complexity/noBannedTypes: no explanation
 export type EmptyModuleMap = {}
 
-/**
- * Default modules can be optionally defined to provide custom configuration. This type makes it so that it is not
- * possible to use a different key for the default modules
- */
-export type AgentModulesInput = ModulesMap
+type DefaultAgentModuleFactories = ReturnType<typeof getDefaultAgentModules>
 
 /**
  * Type that represents the default agent modules. This is the {@link ModulesMap} variant for the default modules in the framework.
@@ -34,13 +38,38 @@ export type AgentModulesInput = ModulesMap
  * the agent and in the agent. namespace.
  */
 export type DefaultAgentModules = {
-  [moduleKey in keyof ReturnType<typeof getDefaultAgentModules>]: ReturnType<
-    ReturnType<typeof getDefaultAgentModules>[moduleKey]
-  >
+  [moduleKey in keyof DefaultAgentModuleFactories]: ReturnType<DefaultAgentModuleFactories[moduleKey]>
 }
 
-export type WithoutDefaultModules<Modules extends ModulesMap> = {
-  [moduleKey in Exclude<keyof Modules, keyof DefaultAgentModules>]: Modules[moduleKey]
+/**
+ * The config options of the default modules that can be configured, keyed by module key.
+ */
+type DefaultAgentModuleOptions = {
+  [moduleKey in keyof DefaultAgentModuleFactories as Parameters<DefaultAgentModuleFactories[moduleKey]> extends []
+    ? never
+    : moduleKey]: NonNullable<Parameters<DefaultAgentModuleFactories[moduleKey]>[0]>
+}
+
+/**
+ * Modules provided in the agent constructor. A default module can be provided as module instance or as its config
+ * options, but not as a different module.
+ */
+export type AgentModulesInput = {
+  [moduleKey in keyof DefaultAgentModules]?: moduleKey extends keyof DefaultAgentModuleOptions
+    ? DefaultAgentModules[moduleKey] | DefaultAgentModuleOptions[moduleKey]
+    : DefaultAgentModules[moduleKey]
+} & { [key: string]: Module | DefaultAgentModuleOptions[keyof DefaultAgentModuleOptions] | undefined }
+
+/**
+ * Requires modules that are not a default module to be a module instance, as config options are only accepted for
+ * default modules.
+ */
+export type ValidateAgentModules<Modules> = {
+  [moduleKey in keyof Modules]: moduleKey extends keyof DefaultAgentModules ? unknown : Module
+}
+
+export type WithoutDefaultModules<Modules extends AgentModulesInput> = {
+  [moduleKey in Exclude<keyof Modules, keyof DefaultAgentModules>]: Extract<Modules[moduleKey], Module>
 }
 
 export type ModuleApiInstance<M extends Module> =
@@ -100,52 +129,62 @@ export type CustomOrDefaultApi<CustomModuleType, DefaultModuleType extends ApiMo
         : InstanceType<DefaultModuleType['api']>
 
 /**
- * Method to get the default agent modules to be registered on any agent instance. It doens't configure the modules in any way,
- * and if that's needed the user needs to provide the module in the agent constructor
+ * Method to get the default agent modules to be registered on any agent instance. The config options of a module
+ * are taken from the options provided for its key in the agent constructor.
  */
 function getDefaultAgentModules() {
   return {
     dcql: () => new DcqlModule(),
     genericRecords: () => new GenericRecordsModule(),
-    dids: () => new DidsModule(),
-    jsonLd: () => new JsonLdModule(),
+    dids: (options?: DidsModuleConfigOptions) => new DidsModule(options),
+    jsonLd: (options?: JsonLdModuleConfigOptions) => new JsonLdModule(options),
     w3cCredentials: () => new W3cCredentialsModule(),
-    w3cV2Credentials: () => new W3cV2CredentialsModule(),
+    w3cV2Credentials: (options?: W3cV2CredentialsModuleConfigOptions) => new W3cV2CredentialsModule(options),
     w3cDataIntegrity: () => new W3cDataIntegrityModule(),
-    cache: () => new CacheModule({ cache: new SingleContextStorageLruCache({ limit: 500 }) }),
+    cache: (options: CacheModuleOptions = { cache: new SingleContextStorageLruCache({ limit: 500 }) }) =>
+      new CacheModule(options),
     pex: () => new DifPresentationExchangeModule(),
-    sdJwtVc: () => new SdJwtVcModule(),
-    x509: () => new X509Module(),
+    sdJwtVc: (options?: SdJwtVcModuleConfigOptions) => new SdJwtVcModule(options),
+    x509: (options?: X509ModuleConfigOptions) => new X509Module(options),
     mdoc: () => new MdocModule(),
-    kms: () => new KeyManagementModule({}),
-    tokenStatusList: () => new TokenStatusListModule(),
+    kms: (options: KeyManagementModuleConfigOptions = {}) => new KeyManagementModule(options),
+    tokenStatusList: (options?: TokenStatusListModuleConfigOptions) => new TokenStatusListModule(options),
   } as const
 }
 
+function isModule(value: unknown): value is Module {
+  return typeof value === 'object' && value !== null && typeof (value as Module).register === 'function'
+}
+
 /**
- * Extend the provided modules object with the default agent modules. If the modules property already contains a module with the same
- * name as a default module, the module won't be added to the extended module object. This allows users of the framework to override
- * the modules with custom configuration. The agent constructor type ensures you can't provide a different module for a key that registered
- * on the default agent.
+ * Extend the provided modules object with the default agent modules. A default module provided as module instance is used as is,
+ * and one provided as config options (or not provided) is created with those options. The agent constructor type ensures you can't
+ * provide a different module for a key that registered on the default agent.
  */
-export function extendModulesWithDefaultModules<AgentModules extends AgentModulesInput>(
-  modules?: AgentModules
-): AgentModules & DefaultAgentModules {
-  const defaultAgentModules = getDefaultAgentModules()
+export function extendModulesWithDefaultModules(modules: AgentModulesInput = {}): ModulesMap {
+  // biome-ignore lint/suspicious/noExplicitAny: the options are checked by the AgentModulesInput type
+  const defaultAgentModules: Record<string, (options?: any) => Module> = getDefaultAgentModules()
   const defaultAgentModuleKeys = Object.keys(defaultAgentModules)
 
   const defaultModules: Array<[string, Module]> = []
-  const customModules: Array<[string, Module]> = Object.entries(modules ?? {}).filter(
-    ([key]) => !defaultAgentModuleKeys.includes(key)
-  )
+  const customModules: Array<[string, Module]> = []
 
-  // Register all default modules, if not registered yet
   for (const [moduleKey, getConfiguredModule] of Object.entries(defaultAgentModules)) {
-    // Prefer user-registered module, otherwise initialize the default module
-    defaultModules.push([moduleKey, modules?.[moduleKey] ?? getConfiguredModule()])
+    const moduleOrOptions = modules[moduleKey]
+    defaultModules.push([moduleKey, isModule(moduleOrOptions) ? moduleOrOptions : getConfiguredModule(moduleOrOptions)])
   }
 
-  return Object.fromEntries([...defaultModules, ...customModules]) as AgentModules & DefaultAgentModules
+  for (const [moduleKey, module] of Object.entries(modules)) {
+    if (defaultAgentModuleKeys.includes(moduleKey)) continue
+    if (!isModule(module)) {
+      throw new CredoError(
+        `Module '${moduleKey}' must be a module instance, config options are only supported for default modules.`
+      )
+    }
+    customModules.push([moduleKey, module])
+  }
+
+  return Object.fromEntries([...defaultModules, ...customModules])
 }
 
 /**
