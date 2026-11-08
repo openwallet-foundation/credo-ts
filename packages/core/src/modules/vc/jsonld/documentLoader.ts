@@ -108,11 +108,8 @@ export function defaultDocumentLoader(
       }
     }
 
-    return {
-      contextUrl,
-      documentUrl,
-      document: (await response.json()) as Record<string, unknown>,
-    }
+    const document = (await response.json()) as Record<string, unknown>
+    return { contextUrl, documentUrl, document }
   }
 
   function assertAllowedUrl(url: string) {
