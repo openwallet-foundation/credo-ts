@@ -331,7 +331,7 @@ describe('SdJwtVcService with did:x509 issuers', () => {
       expect((await verify(compact)).isValid).toBe(true)
 
       trustedEntities = trusted(rootB.certificate)
-      expectInvalid(await verify(compact))
+      expectInvalid(await verify(compact), /No trusted certificate was found/)
 
       trustedEntities = undefined
       const x509Config = agent.dependencyManager.resolve(X509ModuleConfig)
@@ -348,11 +348,11 @@ describe('SdJwtVcService with did:x509 issuers', () => {
     })
 
     it('does not accept an explicit list of trusted dids for a did:x509, the chain must be trusted', async () => {
-      expectInvalid(await verify(await sign(), [{ method: 'did', issuance: didA }]))
+      expectInvalid(await verify(await sign(), [{ method: 'did', issuance: didA }]), /No trusted certificate was found/)
     })
 
     it('rejects a chain that anchors in another trusted root only', async () => {
-      expectInvalid(await verify(await sign(), trusted(rootB.certificate)))
+      expectInvalid(await verify(await sign(), trusted(rootB.certificate)), /No trusted certificate was found/)
     })
 
     it('rejects a leaf of the same trusted CA claiming the did:x509 of another organisation', async () => {
@@ -363,7 +363,10 @@ describe('SdJwtVcService with did:x509 issuers', () => {
         key: orgB.key,
       })
 
-      expectInvalid(await verify(compact, trusted(rootA.certificate)), /subject|predicate|did/i)
+      expectInvalid(
+        await verify(compact, trusted(rootA.certificate)),
+        /invalid subject value: O = OrgA, expected: OrgB/
+      )
     })
 
     it('accepts the same credential for the own did of the leaf', async () => {
@@ -385,7 +388,7 @@ describe('SdJwtVcService with did:x509 issuers', () => {
         key: orgA.key,
       })
 
-      expectInvalid(await verify(compact, trusted(rootA.certificate)))
+      expectInvalid(await verify(compact, trusted(rootA.certificate)), /invalid subject value: CN = SomebodyElse/)
     })
 
     it('rejects a did whose CA fingerprint does not match the root of the chain', async () => {
@@ -396,7 +399,7 @@ describe('SdJwtVcService with did:x509 issuers', () => {
         key: orgA.key,
       })
 
-      expectInvalid(await verify(compact, trusted(rootA.certificate, rootB.certificate)))
+      expectInvalid(await verify(compact, trusted(rootA.certificate, rootB.certificate)), /invalid CA fingerprint/)
     })
 
     it('rejects an expired certificate', async () => {
@@ -407,7 +410,7 @@ describe('SdJwtVcService with did:x509 issuers', () => {
         key: expired.key,
       })
 
-      expectInvalid(await verify(compact, trusted(rootA.certificate)))
+      expectInvalid(await verify(compact, trusted(rootA.certificate)), /used after it is allowed/)
     })
 
     it('rejects a credential signed with another key than the key in the did document', async () => {
@@ -419,7 +422,7 @@ describe('SdJwtVcService with did:x509 issuers', () => {
         key: attackerKey,
       })
 
-      expectInvalid(await verify(compact, trusted(rootA.certificate)))
+      expectInvalid(await verify(compact, trusted(rootA.certificate)), /Invalid JWT Signature/)
     })
 
     it('rejects an x5c without kid, instead of falling back to plain x5c verification', async () => {
@@ -465,7 +468,10 @@ describe('SdJwtVcService with did:x509 issuers', () => {
         key: orgB.key,
       })
 
-      expectInvalid(await verify(compact, trusted(rootA.certificate)))
+      expectInvalid(
+        await verify(compact, trusted(rootA.certificate)),
+        /invalid subject value: O = OrgA, expected: OrgB/
+      )
       expect(resolver.calls.length).toBeGreaterThan(0)
     })
   })
@@ -484,7 +490,10 @@ describe('SdJwtVcService with did:x509 issuers', () => {
       expect(payload).toMatchObject({ iss: didA, name: 'Forged' })
 
       // The did bound approach rejects the very same credential
-      expectInvalid(await verify(compact, trusted(rootA.certificate)))
+      expectInvalid(
+        await verify(compact, trusted(rootA.certificate)),
+        /invalid subject value: O = OrgA, expected: OrgB/
+      )
     })
   })
 
