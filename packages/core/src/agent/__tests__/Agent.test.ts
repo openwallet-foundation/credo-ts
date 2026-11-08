@@ -114,7 +114,7 @@ describe('Agent', () => {
       const agent = new Agent({
         ...agentOptions,
         modules: {
-          jsonld: new JsonLdModule({ documentLoader }),
+          jsonLd: new JsonLdModule({ documentLoader }),
           inMemory: new InMemoryWalletModule(),
         },
       })
