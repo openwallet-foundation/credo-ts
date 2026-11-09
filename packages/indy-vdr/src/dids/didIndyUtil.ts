@@ -33,17 +33,7 @@ export function parseIndyDid(did: string) {
   throw new CredoError(`${did} is not a valid did:indy did`)
 }
 
-const didIndyIdentifierWithOptionalAnonCredsObjectRegex = new RegExp(
-  didIndyRegex.source.replace(
-    /\$$/,
-    '(?:\\/anoncreds\\/v0\\/(?:SCHEMA\\/.+\\/[0-9.]+|CLAIM_DEF\\/[1-9][0-9]*\\/.+|REV_REG_DEF\\/[1-9][0-9]*\\/.+\\/.+))?$'
-  )
-)
-
 export function getIndyNamespaceFromIndyDid(identifier: string): string {
-  const match = identifier.match(didIndyIdentifierWithOptionalAnonCredsObjectRegex)
-  if (match) return match[1]
-
   return parseIndyDid(identifier).namespace
 }
 

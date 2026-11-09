@@ -21,22 +21,27 @@ describe('did:indy identifiers', () => {
     expect(() => parseIndyDid('SDqTzbVuCowusqGBNbNDjH')).toThrow('SDqTzbVuCowusqGBNbNDjH is not a valid did:indy did')
   })
 
-  test('getIndyNamespaceFromIndyDid accepts DID and AnonCreds object identifiers', () => {
+  test('getIndyNamespaceFromIndyDid extracts the namespace of a bare DID', () => {
     expect(getIndyNamespaceFromIndyDid('did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH')).toBe('bcovrin:test')
-    expect(
-      getIndyNamespaceFromIndyDid('did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH/anoncreds/v0/SCHEMA/schema-name/1.0')
-    ).toBe('bcovrin:test')
-    expect(
-      getIndyNamespaceFromIndyDid('did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt/anoncreds/v0/CLAIM_DEF/10/TAG')
-    ).toBe('pool:localtest')
-    expect(
-      getIndyNamespaceFromIndyDid('did:indy:sovrin:5nDyJVP1NrcPAttP3xwMB9/anoncreds/v0/REV_REG_DEF/56495/npdb/TAG1')
-    ).toBe('sovrin')
+    expect(getIndyNamespaceFromIndyDid('did:indy:sovrin:5nDyJVP1NrcPAttP3xwMB9')).toBe('sovrin')
+  })
+
+  test.each([
+    '/anoncreds/v0/SCHEMA/schema-name/1.0',
+    '/anoncreds/v0/CLAIM_DEF/10/TAG',
+    '/anoncreds/v0/REV_REG_DEF/56495/npdb/TAG1',
+    '/anoncreds/v0/SCHEMA/name',
+    '/other-path',
+    '?query=value',
+    '#verkey',
+  ])('getIndyNamespaceFromIndyDid rejects a DID URL with suffix %s', (suffix) => {
+    const identifier = `did:indy:sovrin:5nDyJVP1NrcPAttP3xwMB9${suffix}`
+    expect(() => getIndyNamespaceFromIndyDid(identifier)).toThrow(`${identifier} is not a valid did:indy did`)
+  })
+
+  test('getIndyNamespaceFromIndyDid rejects an unqualified identifier', () => {
     expect(() => getIndyNamespaceFromIndyDid('SDqTzbVuCowusqGBNbNDjH:2:schema-name:1.0')).toThrow(
       'SDqTzbVuCowusqGBNbNDjH:2:schema-name:1.0 is not a valid did:indy did'
     )
-    expect(() =>
-      getIndyNamespaceFromIndyDid('did:indy:sovrin:5nDyJVP1NrcPAttP3xwMB9/anoncreds/v0/SCHEMA/name')
-    ).toThrow('is not a valid did:indy did')
   })
 })

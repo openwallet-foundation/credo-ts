@@ -1,3 +1,9 @@
+import { getIndyNamespaceFromIndyDid } from '@credo-ts/indy-vdr'
+import {
+  parseIndyCredentialDefinitionId,
+  parseIndyRevocationRegistryId,
+  parseIndySchemaId,
+} from '@credo-ts/indy-vdr/anoncreds'
 import {
   didIndyCredentialDefinitionIdRegex,
   didIndyRevocationRegistryIdRegex,
@@ -12,12 +18,25 @@ import {
   isDidIndyCredentialDefinitionId,
   isDidIndyRevocationRegistryId,
   isDidIndySchemaId,
-  parseIndyCredentialDefinitionId,
-  parseIndyRevocationRegistryId,
-  parseIndySchemaId,
 } from '../identifiers'
 
 describe('identifiers', () => {
+  test('use the root helper for bare DIDs and the AnonCreds subpath parsers for object ID namespaces', () => {
+    const did = 'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH'
+    const schemaId = `${did}/anoncreds/v0/SCHEMA/example/1.0`
+    const credentialDefinitionId = `${did}/anoncreds/v0/CLAIM_DEF/10/TAG`
+    const revocationRegistryId = `${did}/anoncreds/v0/REV_REG_DEF/10/TAG/REV_TAG`
+
+    expect(getIndyNamespaceFromIndyDid(did)).toBe('bcovrin:test')
+    expect(parseIndySchemaId(schemaId).namespace).toBe('bcovrin:test')
+    expect(parseIndyCredentialDefinitionId(credentialDefinitionId).namespace).toBe('bcovrin:test')
+    expect(parseIndyRevocationRegistryId(revocationRegistryId).namespace).toBe('bcovrin:test')
+
+    for (const objectId of [schemaId, credentialDefinitionId, revocationRegistryId]) {
+      expect(() => getIndyNamespaceFromIndyDid(objectId)).toThrow(`${objectId} is not a valid did:indy did`)
+    }
+  })
+
   test('did:indy object identifier regexes and predicates accept qualified IDs only', () => {
     const schemaId = 'did:indy:sovrin:q7ATwTYbQDgiigVijUAej/anoncreds/v0/SCHEMA/test/1.0'
     const credentialDefinitionId = 'did:indy:sovrin:q7ATwTYbQDgiigVijUAej/anoncreds/v0/CLAIM_DEF/160971/1.0.0'
