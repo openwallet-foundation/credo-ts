@@ -55,7 +55,7 @@ export class X509Service {
    *   - Name Constraints (§4.2.1.10), Policy Constraints (§4.2.1.11), and Certificate Policies
    *     (§4.2.1.4) are not enforced. A certificate carrying one of these as a *critical* extension is
    *     rejected (unrecognized critical extension); a non-critical occurrence is ignored.
-   *   - Extended Key Usage is only enforced on the leaf certificate, for `requiredExtendedKeyUsages`.
+   *   - Extended Key Usage is only enforced on the leaf certificate, for `validation.leaf.requiredExtendedKeyUsages`.
    *   - Key Usage is only enforced when the extension is present (it is optional; absent means
    *     unrestricted).
    *   - Subject/Issuer Alternative Names only surface the URI and DNS GeneralName forms.
@@ -68,11 +68,11 @@ export class X509Service {
       verificationDate = new Date(),
       trustedCertificates,
       allowNonRootTrustedCertificate = true,
-      requiredKeyUsages = [],
-      requiredExtendedKeyUsages = [],
+      validation,
       parseOptions,
     }: X509ValidateCertificateChainOptions
   ) {
+    const { requiredKeyUsages = [], requiredExtendedKeyUsages = [] } = validation?.leaf ?? {}
     const validations: X509ValidationResult['validations'] = {}
     const config = agentContext.dependencyManager.resolve(X509ModuleConfig)
     const effectiveParseOptions = parseOptions ?? config.parseOptions

@@ -736,10 +736,12 @@ export class SdJwtVcService {
           await X509Service.validateCertificateChain(agentContext, {
             certificateChain: header.x5c,
             trustedCertificates: statusCertificates,
-            ...getStatusListSignerKeyPurposeOptions(agentContext, {
-              statusListSigner: statusListChain[0],
-              credentialSigner: credentialIssuerCertificateChain[0],
-            }),
+            validation: {
+              leaf: getStatusListSignerKeyPurposeOptions(agentContext, {
+                statusListSigner: statusListChain[0],
+                credentialSigner: credentialIssuerCertificateChain[0],
+              }),
+            },
           })
         } catch (error) {
           throw new SdJwtVcError(

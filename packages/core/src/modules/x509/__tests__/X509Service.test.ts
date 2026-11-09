@@ -627,7 +627,11 @@ gTqhM3BGMuf+
       await expect(
         X509Service.validateCertificateChain(agentContext, {
           certificateChain,
-          requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning, X509ExtendedKeyUsage.CodeSigning],
+          validation: {
+            leaf: {
+              requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning, X509ExtendedKeyUsage.CodeSigning],
+            },
+          },
         })
       ).resolves.toHaveLength(2)
     })
@@ -641,7 +645,7 @@ gTqhM3BGMuf+
         X509Service.validateCertificateChain(agentContext, {
           certificateChain: [certificateChain[0]],
           trustedCertificates: [certificateChain[0]],
-          requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning],
+          validation: { leaf: { requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning] } },
         })
       ).resolves.toHaveLength(1)
     })
@@ -651,7 +655,7 @@ gTqhM3BGMuf+
 
       const error = await X509Service.validateCertificateChain(agentContext, {
         certificateChain,
-        requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning],
+        validation: { leaf: { requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning] } },
       }).catch((error) => error)
 
       expect(error).toBeInstanceOf(X509ValidationError)
@@ -665,7 +669,11 @@ gTqhM3BGMuf+
       await expect(
         X509Service.validateCertificateChain(agentContext, {
           certificateChain,
-          requiredExtendedKeyUsages: [X509ExtendedKeyUsage.CodeSigning, X509ExtendedKeyUsage.OauthStatusSigning],
+          validation: {
+            leaf: {
+              requiredExtendedKeyUsages: [X509ExtendedKeyUsage.CodeSigning, X509ExtendedKeyUsage.OauthStatusSigning],
+            },
+          },
         })
       ).rejects.toThrow(missingStatusSigningMessage)
     })
@@ -676,7 +684,11 @@ gTqhM3BGMuf+
       await expect(
         X509Service.validateCertificateChain(agentContext, {
           certificateChain,
-          requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning, '1.2.3.4' as X509ExtendedKeyUsage],
+          validation: {
+            leaf: {
+              requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning, '1.2.3.4' as X509ExtendedKeyUsage],
+            },
+          },
         })
       ).rejects.toThrow(
         "Certificate 'CN=Key Purpose Leaf' does not have the required extended key usages: OauthStatusSigning (1.3.6.1.5.5.7.3.45), 1.2.3.4"
@@ -689,7 +701,7 @@ gTqhM3BGMuf+
       await expect(
         X509Service.validateCertificateChain(agentContext, {
           certificateChain,
-          requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning],
+          validation: { leaf: { requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning] } },
         })
       ).rejects.toThrow(missingStatusSigningMessage)
     })
@@ -700,7 +712,7 @@ gTqhM3BGMuf+
       await expect(
         X509Service.validateCertificateChain(agentContext, {
           certificateChain,
-          requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning],
+          validation: { leaf: { requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning] } },
         })
       ).rejects.toThrow(missingStatusSigningMessage)
     })
@@ -710,7 +722,7 @@ gTqhM3BGMuf+
 
       const error = await X509Service.validateCertificateChain(agentContext, {
         certificateChain,
-        requiredKeyUsages: [X509KeyUsage.DigitalSignature],
+        validation: { leaf: { requiredKeyUsages: [X509KeyUsage.DigitalSignature] } },
       }).catch((error) => error)
 
       expect(error).toBeInstanceOf(X509ValidationError)
@@ -724,7 +736,7 @@ gTqhM3BGMuf+
       await expect(
         X509Service.validateCertificateChain(agentContext, {
           certificateChain,
-          requiredKeyUsages: [X509KeyUsage.DigitalSignature],
+          validation: { leaf: { requiredKeyUsages: [X509KeyUsage.DigitalSignature] } },
         })
       ).rejects.toThrow(missingDigitalSignatureMessage)
     })
@@ -737,7 +749,7 @@ gTqhM3BGMuf+
       await expect(
         X509Service.validateCertificateChain(agentContext, {
           certificateChain,
-          requiredKeyUsages: [X509KeyUsage.DigitalSignature],
+          validation: { leaf: { requiredKeyUsages: [X509KeyUsage.DigitalSignature] } },
         })
       ).resolves.toHaveLength(2)
     })
@@ -748,7 +760,7 @@ gTqhM3BGMuf+
       await expect(
         X509Service.validateCertificateChain(agentContext, {
           certificateChain,
-          requiredKeyUsages: [X509KeyUsage.DigitalSignature],
+          validation: { leaf: { requiredKeyUsages: [X509KeyUsage.DigitalSignature] } },
         })
       ).resolves.toHaveLength(2)
     })
