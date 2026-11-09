@@ -1,4 +1,3 @@
-import { didIndyRegex } from '@credo-ts/anoncreds'
 import {
   Agent,
   DidCommV1Service,
@@ -15,7 +14,7 @@ import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
 
 import { getAgentOptions, importExistingIndyDidFromPrivateKey, retryUntilResult } from '../../core/tests/helpers'
-import { IndyVdrModule } from '../src'
+import { didIndyRegex, IndyVdrModule } from '../src'
 import { indyDidFromNamespaceAndInitialKey } from '../src/dids/didIndyUtil'
 import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'

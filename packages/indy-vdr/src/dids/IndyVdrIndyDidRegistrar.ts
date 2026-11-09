@@ -1,4 +1,3 @@
-import { parseIndyDid } from '@credo-ts/anoncreds'
 import type {
   AgentContext,
   DidCreateOptions,
@@ -35,6 +34,7 @@ import {
   createKeyAgreementKey,
   didDocDiff,
   indyDidDocumentFromDid,
+  parseIndyDid,
   verificationPublicJwkForIndyDid,
 } from './didIndyUtil'
 

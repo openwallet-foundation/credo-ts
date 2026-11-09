@@ -1028,13 +1028,13 @@ importers:
 
   packages/indy-vdr:
     dependencies:
-      '@credo-ts/anoncreds':
-        specifier: workspace:*
-        version: link:../anoncreds
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@credo-ts/anoncreds':
+        specifier: workspace:*
+        version: link:../anoncreds
       '@hyperledger/indy-vdr-nodejs':
         specifier: 'catalog:'
         version: 0.3.0
