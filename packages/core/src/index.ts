@@ -5,7 +5,13 @@ export * from './agent'
 export { Agent } from './agent/Agent'
 export { AgentConfig } from './agent/AgentConfig'
 export type { AgentDependencies } from './agent/AgentDependencies'
-export type { AgentApi, DefaultAgentModules, EmptyModuleMap, ModulesMap } from './agent/AgentModules'
+export type {
+  AgentApi,
+  AgentModulesInput,
+  DefaultAgentModules,
+  EmptyModuleMap,
+  ModulesMap,
+} from './agent/AgentModules'
 export { BaseAgent } from './agent/BaseAgent'
 export { EventEmitter } from './agent/EventEmitter'
 export * from './agent/Events'
