@@ -65,11 +65,11 @@
     "rxjs": "catalog:",
     "supertest": "^7.3.1",
     "testcontainers": "^12.2.1",
-    "tsdown": "^0.23.4",
+    "tsdown": "^0.23.5",
     "tsyringe": "catalog:",
     "typescript": "catalog:",
     "undici": "^6.29.1",
-    "vite": "^8.3.5",
+    "vite": "^8.3.6",
     "vite-node": "^6.0.0",
     "vitest": "catalog:",
     "ws": "catalog:"
