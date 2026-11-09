@@ -1,4 +1,7 @@
 import {
+  didIndyCredentialDefinitionIdRegex,
+  didIndyRevocationRegistryIdRegex,
+  didIndySchemaIdRegex,
   getDidIndyCredentialDefinitionId,
   getDidIndyRevocationRegistryDefinitionId,
   getDidIndySchemaId,
@@ -6,9 +9,70 @@ import {
   getIndyLedgerRevocationRegistryDefinitionId,
   getIndyLedgerSchemaId,
   indyVdrAnonCredsRegistryIdentifierRegex,
+  isDidIndyCredentialDefinitionId,
+  isDidIndyRevocationRegistryId,
+  isDidIndySchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndyRevocationRegistryId,
+  parseIndySchemaId,
 } from '../identifiers'
 
 describe('identifiers', () => {
+  test('did:indy object identifier regexes and predicates accept qualified IDs only', () => {
+    const schemaId = 'did:indy:sovrin:q7ATwTYbQDgiigVijUAej/anoncreds/v0/SCHEMA/test/1.0'
+    const credentialDefinitionId = 'did:indy:sovrin:q7ATwTYbQDgiigVijUAej/anoncreds/v0/CLAIM_DEF/160971/1.0.0'
+    const revocationRegistryId =
+      'did:indy:sovrin:q7ATwTYbQDgiigVijUAej/anoncreds/v0/REV_REG_DEF/100669/SCH Employee ID/1-1024'
+
+    expect(didIndySchemaIdRegex.test(schemaId)).toBe(true)
+    expect(didIndyCredentialDefinitionIdRegex.test(credentialDefinitionId)).toBe(true)
+    expect(didIndyRevocationRegistryIdRegex.test(revocationRegistryId)).toBe(true)
+    expect(isDidIndySchemaId(schemaId)).toBe(true)
+    expect(isDidIndyCredentialDefinitionId(credentialDefinitionId)).toBe(true)
+    expect(isDidIndyRevocationRegistryId(revocationRegistryId)).toBe(true)
+    expect(isDidIndySchemaId('q7ATwTYbQDgiigVijUAej:2:test:1.0')).toBe(false)
+    expect(isDidIndyCredentialDefinitionId('q7ATwTYbQDgiigVijUAej:3:CL:160971:1.0.0')).toBe(false)
+    expect(isDidIndyRevocationRegistryId('q7ATwTYbQDgiigVijUAej:4:...')).toBe(false)
+  })
+
+  test('did:indy object identifier parsers return their components', () => {
+    expect(
+      parseIndySchemaId('did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH/anoncreds/v0/SCHEMA/schema-name/1.0')
+    ).toEqual({
+      did: 'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH',
+      namespace: 'bcovrin:test',
+      namespaceIdentifier: 'SDqTzbVuCowusqGBNbNDjH',
+      schemaName: 'schema-name',
+      schemaVersion: '1.0',
+    })
+    expect(
+      parseIndyCredentialDefinitionId('did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt/anoncreds/v0/CLAIM_DEF/10/TAG')
+    ).toEqual({
+      did: 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt',
+      namespace: 'pool:localtest',
+      namespaceIdentifier: 'TL1EaPFCZ8Si5aUrqScBDt',
+      schemaSeqNo: '10',
+      tag: 'TAG',
+    })
+    expect(
+      parseIndyRevocationRegistryId('did:indy:sovrin:5nDyJVP1NrcPAttP3xwMB9/anoncreds/v0/REV_REG_DEF/56495/npdb/TAG1')
+    ).toEqual({
+      did: 'did:indy:sovrin:5nDyJVP1NrcPAttP3xwMB9',
+      namespace: 'sovrin',
+      namespaceIdentifier: '5nDyJVP1NrcPAttP3xwMB9',
+      schemaSeqNo: '56495',
+      credentialDefinitionTag: 'npdb',
+      revocationRegistryTag: 'TAG1',
+    })
+    expect(() => parseIndySchemaId('q7ATwTYbQDgiigVijUAej:2:test:1.0')).toThrow('Invalid did:indy schema id')
+    expect(() => parseIndyCredentialDefinitionId('q7ATwTYbQDgiigVijUAej:3:CL:10:TAG')).toThrow(
+      'Invalid did:indy credential definition id'
+    )
+    expect(() => parseIndyRevocationRegistryId('q7ATwTYbQDgiigVijUAej:4:...')).toThrow(
+      'Invalid did:indy revocation registry id'
+    )
+  })
+
   describe('indyVdrAnonCredsRegistryIdentifierRegex', () => {
     test('does not match against an unqualified did, schema id, credential definition id and revocation registry id', () => {
       const did = '7Tqg6BwSSWapxgUDm9KKgg'

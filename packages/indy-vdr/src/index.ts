@@ -1,4 +1,3 @@
-export * from './anoncreds'
 export {
   type IndyVdrDidCreateOptions,
   type IndyVdrDidCreateResult,
