@@ -1,4 +1,4 @@
-import { type X509Certificate, type X509ExtendedKeyUsage, X509KeyUsage } from '../X509Certificate'
+import { type X509Certificate, X509ExtendedKeyUsage, X509KeyUsage } from '../X509Certificate'
 import { X509Error } from '../X509Error'
 import type { X509CertificateSingleValidationResult } from '../X509ValidationResult'
 import { X509ExtensionIdentifier } from './extensions'
@@ -41,12 +41,20 @@ export function validateRequiredExtendedKeyUsages(
   )
   if (missingExtendedKeyUsages.length === 0) return { isValid: true }
 
-  const oids = missingExtendedKeyUsages.join(', ')
+  const usages = missingExtendedKeyUsages.map(extendedKeyUsageName).join(', ')
   return {
     isValid: false,
     error: new X509Error(
-      `Certificate '${certificate.subject}' does not have the required extended key usages: ${oids}`
+      `Certificate '${certificate.subject}' does not have the required extended key usages: ${usages}`
     ),
-    details: `Missing extended key usages: ${oids}`,
+    details: `Missing extended key usages: ${usages}`,
   }
+}
+
+/**
+ * Formats as `<name> (<oid>)`, or only the OID when {@link X509ExtendedKeyUsage} has no name for it.
+ */
+function extendedKeyUsageName(oid: string) {
+  const name = Object.entries(X509ExtendedKeyUsage).find(([, value]) => value === oid)?.[0]
+  return name ? `${name} (${oid})` : oid
 }

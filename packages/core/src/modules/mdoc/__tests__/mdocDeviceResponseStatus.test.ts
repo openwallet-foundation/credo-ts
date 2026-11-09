@@ -273,7 +273,7 @@ describe('mdoc device-response status list verification', () => {
 
     test('verify fails when the status list signer does not have the extended key usage', async () => {
       await expect(verifyWithDedicatedStatusCertificates('Rejected')).rejects.toThrow(
-        X509ExtendedKeyUsage.OauthStatusSigning
+        "The status list signer certificate does not have the required key purpose. Certificate 'C=DE, CN=RejectedStatusLeaf' does not have the required extended key usages: OauthStatusSigning (1.3.6.1.5.5.7.3.45)"
       )
     })
 

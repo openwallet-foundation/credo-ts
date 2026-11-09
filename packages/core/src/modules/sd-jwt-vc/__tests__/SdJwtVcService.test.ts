@@ -2269,15 +2269,16 @@ describe('SdJwtVcService', () => {
         expect(verificationResult.isValid).toBe(true)
       })
 
+      const statusListChainError =
+        'Status List JWT verification failed: The status list certificate chain could not be validated against the trusted status certificates.'
+      const missingStatusSigningMessage = `${statusListChainError} Certificate 'CN=Status Leaf' does not have the required extended key usages: OauthStatusSigning (1.3.6.1.5.5.7.3.45)`
+
       test('x509: a status leaf without the extended key usage is rejected', async () => {
         const verificationResult = await verifyWithStatusRoot()
 
         expect(verificationResult.isValid).toBe(false)
         if (!verificationResult.isValid) {
-          expect(verificationResult.error?.message).toContain(
-            'The status list certificate chain could not be validated against the trusted status certificates'
-          )
-          expect(verificationResult.error?.message).toContain(X509ExtendedKeyUsage.OauthStatusSigning)
+          expect(verificationResult.error?.message).toBe(missingStatusSigningMessage)
 
           // The key purpose is checked as part of the chain validation.
           const chainValidationError = (verificationResult.error?.cause as Error | undefined)?.cause
@@ -2295,8 +2296,7 @@ describe('SdJwtVcService', () => {
 
         expect(verificationResult.isValid).toBe(false)
         if (!verificationResult.isValid) {
-          expect(verificationResult.error?.message).toContain(X509ExtendedKeyUsage.OauthStatusSigning)
-          expect(verificationResult.error?.message).toContain('Status Leaf')
+          expect(verificationResult.error?.message).toBe(missingStatusSigningMessage)
         }
       })
 
@@ -2307,7 +2307,7 @@ describe('SdJwtVcService', () => {
 
         expect(verificationResult.isValid).toBe(false)
         if (!verificationResult.isValid) {
-          expect(verificationResult.error?.message).toContain(X509ExtendedKeyUsage.OauthStatusSigning)
+          expect(verificationResult.error?.message).toBe(missingStatusSigningMessage)
         }
       })
 
@@ -2321,7 +2321,9 @@ describe('SdJwtVcService', () => {
 
         expect(verificationResult.isValid).toBe(false)
         if (!verificationResult.isValid) {
-          expect(verificationResult.error?.message).toContain('DigitalSignature')
+          expect(verificationResult.error?.message).toBe(
+            `${statusListChainError} Certificate 'CN=Status Leaf' does not have the required key usages: DigitalSignature`
+          )
         }
       })
 

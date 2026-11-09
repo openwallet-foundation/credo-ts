@@ -567,6 +567,10 @@ gTqhM3BGMuf+
 
   describe('required key purpose validation', () => {
     const anyExtendedKeyUsage = '2.5.29.37.0' as X509ExtendedKeyUsage
+    const missingStatusSigningMessage =
+      "Certificate 'CN=Key Purpose Leaf' does not have the required extended key usages: OauthStatusSigning (1.3.6.1.5.5.7.3.45)"
+    const missingDigitalSignatureMessage =
+      "Certificate 'CN=Key Purpose Leaf' does not have the required key usages: DigitalSignature"
 
     async function buildChain({
       leafKeyUsages,
@@ -651,7 +655,7 @@ gTqhM3BGMuf+
       }).catch((error) => error)
 
       expect(error).toBeInstanceOf(X509ValidationError)
-      expect(error.message).toContain(X509ExtendedKeyUsage.OauthStatusSigning)
+      expect(error.message).toBe(missingStatusSigningMessage)
       expect(error.validationResult.validations.extendedKeyUsage.isValid).toBe(false)
     })
 
@@ -663,7 +667,20 @@ gTqhM3BGMuf+
           certificateChain,
           requiredExtendedKeyUsages: [X509ExtendedKeyUsage.CodeSigning, X509ExtendedKeyUsage.OauthStatusSigning],
         })
-      ).rejects.toThrow(X509ExtendedKeyUsage.OauthStatusSigning)
+      ).rejects.toThrow(missingStatusSigningMessage)
+    })
+
+    it('names each missing extended key usage, or shows only the OID when it has no name', async () => {
+      const certificateChain = await buildChain()
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain,
+          requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning, '1.2.3.4' as X509ExtendedKeyUsage],
+        })
+      ).rejects.toThrow(
+        "Certificate 'CN=Key Purpose Leaf' does not have the required extended key usages: OauthStatusSigning (1.3.6.1.5.5.7.3.45), 1.2.3.4"
+      )
     })
 
     it('does not accept anyExtendedKeyUsage in place of a required extended key usage', async () => {
@@ -674,7 +691,7 @@ gTqhM3BGMuf+
           certificateChain,
           requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning],
         })
-      ).rejects.toThrow(X509ExtendedKeyUsage.OauthStatusSigning)
+      ).rejects.toThrow(missingStatusSigningMessage)
     })
 
     it('does not accept the required extended key usage on a CA certificate instead of the leaf', async () => {
@@ -685,7 +702,7 @@ gTqhM3BGMuf+
           certificateChain,
           requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning],
         })
-      ).rejects.toThrow(X509ExtendedKeyUsage.OauthStatusSigning)
+      ).rejects.toThrow(missingStatusSigningMessage)
     })
 
     it('rejects a leaf whose key usage does not include a required key usage', async () => {
@@ -697,7 +714,7 @@ gTqhM3BGMuf+
       }).catch((error) => error)
 
       expect(error).toBeInstanceOf(X509ValidationError)
-      expect(error.message).toContain('DigitalSignature')
+      expect(error.message).toBe(missingDigitalSignatureMessage)
       expect(error.validationResult.validations.keyUsage.isValid).toBe(false)
     })
 
@@ -709,7 +726,7 @@ gTqhM3BGMuf+
           certificateChain,
           requiredKeyUsages: [X509KeyUsage.DigitalSignature],
         })
-      ).rejects.toThrow('DigitalSignature')
+      ).rejects.toThrow(missingDigitalSignatureMessage)
     })
 
     it('accepts a leaf whose key usage includes the required key usage', async () => {

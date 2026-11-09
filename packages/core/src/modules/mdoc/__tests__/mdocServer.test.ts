@@ -855,11 +855,11 @@ describe('mdoc service test', () => {
         ],
       })
 
-      expect(result.isValid).toBe(false)
-      if (!result.isValid) {
-        expect(result.error).toContain('The status list signer certificate does not have the required key purpose')
-        expect(result.error).toContain(X509ExtendedKeyUsage.OauthStatusSigning)
-      }
+      expect(result).toEqual({
+        isValid: false,
+        error:
+          "The status list signer certificate does not have the required key purpose. Certificate 'C=DE' does not have the required extended key usages: OauthStatusSigning (1.3.6.1.5.5.7.3.45)",
+      })
     })
 
     test('verify fails when the key usage of the status list signer excludes signing', async () => {
@@ -875,7 +875,11 @@ describe('mdoc service test', () => {
         ],
       })
 
-      expect(result).toEqual({ isValid: false, error: expect.stringContaining('DigitalSignature') })
+      expect(result).toEqual({
+        isValid: false,
+        error:
+          "The status list signer certificate does not have the required key purpose. Certificate 'C=DE' does not have the required key usages: DigitalSignature",
+      })
     })
 
     test('the identifier list signer needs the extended key usage', async () => {
@@ -891,9 +895,8 @@ describe('mdoc service test', () => {
         })
 
       expect(() => assertIdentifierListSigner(withoutKeyPurpose)).toThrow(
-        'The identifier list signer certificate does not have the required key purpose'
+        "The identifier list signer certificate does not have the required key purpose. Certificate 'C=DE' does not have the required extended key usages: OauthStatusSigning (1.3.6.1.5.5.7.3.45)"
       )
-      expect(() => assertIdentifierListSigner(withoutKeyPurpose)).toThrow(X509ExtendedKeyUsage.OauthStatusSigning)
       expect(() => assertIdentifierListSigner(withKeyPurpose)).not.toThrow()
     })
 
