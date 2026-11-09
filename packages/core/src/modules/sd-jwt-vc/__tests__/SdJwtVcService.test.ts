@@ -19,6 +19,7 @@ import {
   X509KeyUsage,
   X509ModuleConfig,
   X509Service,
+  X509ValidationError,
 } from '@credo-ts/core'
 import { createHeaderAndPayload, SLException, StatusList } from '@owf/token-status-list'
 import { decodeSdJwtSync, getClaimsSync, Jwt, SDJwt } from '@sd-jwt/core'
@@ -2274,9 +2275,16 @@ describe('SdJwtVcService', () => {
         expect(verificationResult.isValid).toBe(false)
         if (!verificationResult.isValid) {
           expect(verificationResult.error?.message).toContain(
-            'The status list signer certificate does not have the required key purpose'
+            'The status list certificate chain could not be validated against the trusted status certificates'
           )
           expect(verificationResult.error?.message).toContain(X509ExtendedKeyUsage.OauthStatusSigning)
+
+          // The key purpose is checked as part of the chain validation.
+          const chainValidationError = (verificationResult.error?.cause as Error | undefined)?.cause
+          expect(chainValidationError).toBeInstanceOf(X509ValidationError)
+          expect(
+            (chainValidationError as X509ValidationError).validationResult.validations.extendedKeyUsage?.isValid
+          ).toBe(false)
         }
       })
 
