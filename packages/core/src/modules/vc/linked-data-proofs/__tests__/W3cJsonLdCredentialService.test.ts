@@ -312,6 +312,29 @@ describe('W3cJsonLdCredentialsService', () => {
           expect(result.isValid).toBe(true)
         }
       )
+
+      it('should reject an empty proofType instead of inferring one', async () => {
+        const issuer = await create2020Identity(
+          agentContext,
+          'did:example:issuer-empty-proof-type',
+          'did:example:issuer-empty-proof-type#key-1'
+        )
+
+        await expect(
+          w3cJsonLdCredentialService.signCredential(agentContext, {
+            format: ClaimFormat.LdpVc,
+            credential: JsonTransformer.fromJSON(
+              { ...Ed25519Signature2020Fixtures.TEST_LD_DOCUMENT, issuer: issuer.did },
+              W3cCredential
+            ),
+            proofType: '',
+            verificationMethod: issuer.verificationMethod,
+          })
+        ).rejects.toMatchObject({
+          name: W3cJsonLdCredentialSigningNotSupportedError.name,
+          reason: 'unsupported-proof-type',
+        })
+      })
     })
   })
 

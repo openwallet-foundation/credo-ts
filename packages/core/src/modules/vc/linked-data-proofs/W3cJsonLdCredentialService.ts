@@ -74,7 +74,8 @@ export class W3cJsonLdCredentialService {
   }
 
   /**
-   * Validate that the agent can prepare to sign a credential with the given proof type and verification method.
+   * Validate that the agent can prepare to sign a credential with the given verification method, and the proof type
+   * if one is given.
    */
   public async assertCanSignCredential(
     agentContext: AgentContext,
@@ -472,7 +473,8 @@ export class W3cJsonLdCredentialService {
       controller?: string
     }
   ) {
-    const requestedSuiteInfo = options.proofType ? this.getSigningSuiteInfo(options.proofType) : undefined
+    // Only an omitted proofType is inferred, so an empty one is still rejected as unsupported
+    const requestedSuiteInfo = options.proofType !== undefined ? this.getSigningSuiteInfo(options.proofType) : undefined
 
     const { verificationMethod: nativeVerificationMethod, publicJwk } = await this.resolveSigningVerificationMethod(
       agentContext,
