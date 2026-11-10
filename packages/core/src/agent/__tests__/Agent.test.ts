@@ -1,3 +1,4 @@
+import { expectTypeOf } from 'vitest'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import {
   DidCommBasicMessageRepository,
@@ -30,10 +31,13 @@ import { TestLogger } from '../../../tests/logger'
 import { InjectionSymbols } from '../../constants'
 import { LogLevel } from '../../logger'
 import { CacheModule, InMemoryLruCache } from '../../modules/cache'
+import { DidsModuleConfig, WebDidResolver } from '../../modules/dids'
+import type { KeyManagementApi, KeyManagementService } from '../../modules/kms'
 import { JsonLdModule, JsonLdModuleConfig } from '../../modules/vc/jsonld'
 import type { Module } from '../../plugins'
 import { injectable } from '../../plugins'
 import { Agent } from '../Agent'
+import type { BaseAgent } from '../BaseAgent'
 
 const agentOptions = getAgentOptions('Agent Class Test', undefined, undefined, undefined, { requireDidcomm: true })
 
@@ -112,6 +116,36 @@ describe('Agent', () => {
       new Agent({ ...agentOptions, config })
       expect(warn).toHaveBeenCalledWith(cacheWarning)
     })
+
+    test('creates a default module from config options', () => {
+      const resolver = new WebDidResolver()
+      const agent = new Agent({
+        ...agentOptions,
+        modules: {
+          dids: { resolvers: [resolver] },
+          inMemory: new InMemoryWalletModule(),
+        },
+      })
+
+      expect(agent.dependencyManager.resolve(DidsModuleConfig).resolvers).toContain(resolver)
+    })
+
+    test('throws if config options are provided for a custom module', () => {
+      expect(
+        () =>
+          new Agent({
+            ...agentOptions,
+            // @ts-expect-error config options are only accepted for default modules
+            modules: { myModule: { resolvers: [] }, inMemory: new InMemoryWalletModule() },
+          })
+      ).toThrow("Module 'myModule' must be a module instance")
+    })
+
+    test('types the kms api from the backends in the kms config options', () => {
+      type TestKms = KeyManagementService & { readonly backend: 'test' }
+
+      expectTypeOf<BaseAgent<{ kms: { backends: TestKms[] } }>['kms']>().toEqualTypeOf<KeyManagementApi<TestKms[]>>()
+    })
   })
 
   describe('Initialization', () => {
@@ -134,7 +168,7 @@ describe('Agent', () => {
       const agent = new Agent({
         ...agentOptions,
         modules: {
-          jsonld: new JsonLdModule({ documentLoader }),
+          jsonLd: new JsonLdModule({ documentLoader }),
           inMemory: new InMemoryWalletModule(),
         },
       })

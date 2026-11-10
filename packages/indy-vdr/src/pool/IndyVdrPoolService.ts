@@ -1,5 +1,5 @@
-import { parseIndyDid } from '@credo-ts/anoncreds'
 import { injectable } from '@credo-ts/core'
+import { parseIndyDid } from '../dids/didIndyUtil'
 import { IndyVdrError, IndyVdrNotConfiguredError } from '../error'
 import { IndyVdrModuleConfig } from '../IndyVdrModuleConfig'
 

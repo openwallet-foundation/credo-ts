@@ -3,7 +3,10 @@ import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
 import { TypedArrayEncoder, utils } from '@credo-ts/core'
 import type { DidCommConnectionRecord, DidCommConnectionStateChangedEvent } from '@credo-ts/didcomm'
 import { DidCommConnectionEventTypes } from '@credo-ts/didcomm'
-import type { IndyVdrRegisterCredentialDefinitionOptions, IndyVdrRegisterSchemaOptions } from '@credo-ts/indy-vdr'
+import type {
+  IndyVdrRegisterCredentialDefinitionOptions,
+  IndyVdrRegisterSchemaOptions,
+} from '@credo-ts/indy-vdr/anoncreds'
 import { BaseAgent, indyNetworkConfig } from './BaseAgent'
 import { Color, greenText, Output, purpleText, redText, writeOutput } from './OutputClass'
 

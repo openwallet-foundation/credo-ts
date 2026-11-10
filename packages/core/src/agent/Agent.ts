@@ -8,7 +8,7 @@ import { StorageUpdateService, StorageVersionRepository, UpdateAssistant } from 
 import type { InitConfig } from '../types'
 import { AgentConfig } from './AgentConfig'
 import type { AgentDependencies } from './AgentDependencies'
-import type { AgentModulesInput } from './AgentModules'
+import type { AgentModulesInput, ValidateAgentModules } from './AgentModules'
 import { extendModulesWithDefaultModules } from './AgentModules'
 import { BaseAgent } from './BaseAgent'
 import { AgentContext, DefaultAgentContextProvider } from './context'
@@ -16,7 +16,7 @@ import { EventEmitter } from './EventEmitter'
 
 interface AgentOptions<AgentModules extends AgentModulesInput> {
   config?: InitConfig
-  modules?: AgentModules
+  modules?: AgentModules & ValidateAgentModules<AgentModules>
   dependencies: AgentDependencies
 }
 
