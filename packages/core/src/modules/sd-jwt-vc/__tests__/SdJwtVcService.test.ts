@@ -2061,13 +2061,7 @@ describe('SdJwtVcService', () => {
       const otherKey = PublicJwk.fromPublicJwk(
         (await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
       )
-      const otherDidDocument = new DidKey(otherKey).didDocument
-      const otherDidUrl = (otherDidDocument.verificationMethod ?? [])[0].id
-      await agent.dids.import({
-        didDocument: otherDidDocument,
-        did: otherDidDocument.id,
-        keys: [{ didDocumentRelativeKeyId: `#${otherDidUrl.split('#')[1]}`, kmsKeyId: otherKey.keyId }],
-      })
+      const otherDidUrl = (new DidKey(otherKey).didDocument.verificationMethod ?? [])[0].id
 
       mockStatusList(await generateStatusList(agent.context, otherKey, issuerDidUrl, 24, [], { kid: otherDidUrl }))
 
@@ -2083,7 +2077,9 @@ describe('SdJwtVcService', () => {
 
       expect(verificationResult.isValid).toBe(false)
       if (!verificationResult.isValid) {
-        expect(verificationResult.error?.message).toContain('Status List JWT verification failed')
+        expect(verificationResult.error?.message).toContain(
+          `kid in header is an absolute DID URL, but the did (${otherDidUrl.split('#')[0]}) does not match with the 'iss' did (${issuerDid()})`
+        )
       }
     })
 
