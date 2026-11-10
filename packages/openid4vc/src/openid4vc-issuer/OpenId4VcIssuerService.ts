@@ -17,7 +17,6 @@ import {
   TypedArrayEncoder,
   utils,
   W3cCredentialService,
-  W3cJsonLdCredentialService,
   W3cV2CredentialService,
 } from '@credo-ts/core'
 import {
@@ -2424,15 +2423,11 @@ export class OpenId4VcIssuerService {
       })
     }
 
-    // Linked data suites only accept their own verification method types, so the key type alone is not enough
-    const proofType = await agentContext
-      .resolve(W3cJsonLdCredentialService)
-      .getProofTypeForSigningCredential(agentContext, { verificationMethod: options.verificationMethod })
+    // No proofType, so signing picks the suite from the verification method type, as the key type alone is not enough
     return await this.w3cCredentialService.signCredential(agentContext, {
       format: ClaimFormat.LdpVc,
       credential: options.credential,
       verificationMethod: options.verificationMethod,
-      proofType: proofType,
     })
   }
 

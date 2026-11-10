@@ -285,30 +285,33 @@ describe('W3cJsonLdCredentialsService', () => {
       })
     })
 
-    describe('getProofTypeForSigningCredential', () => {
-      it('should return the proof type of the suite for the verification method type', async () => {
-        const identity2018 = await create2018Identity(
-          agentContext,
-          'did:example:issuer-2018-proof-type',
-          'did:example:issuer-2018-proof-type#key-1'
-        )
-        const identity2020 = await create2020Identity(
-          agentContext,
-          'did:example:issuer-2020-proof-type',
-          'did:example:issuer-2020-proof-type#key-1'
-        )
+    describe('signCredential without proofType', () => {
+      it.each([
+        ['Ed25519Signature2018', create2018Identity, Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT],
+        ['Ed25519Signature2020', create2020Identity, Ed25519Signature2020Fixtures.TEST_LD_DOCUMENT],
+      ] as const)(
+        'should sign with %s from the verification method type, looking the method up once',
+        async (proofType, createIdentity, document) => {
+          const issuer = await createIdentity(
+            agentContext,
+            `did:example:issuer-inferred-${proofType}`,
+            `did:example:issuer-inferred-${proofType}#key-1`
+          )
+          const spy = vi.spyOn(DidsApi.prototype, 'resolveVerificationMethodFromCreatedDidRecord')
 
-        await expect(
-          w3cJsonLdCredentialService.getProofTypeForSigningCredential(agentContext, {
-            verificationMethod: identity2018.verificationMethod,
+          const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
+            format: ClaimFormat.LdpVc,
+            credential: JsonTransformer.fromJSON({ ...document, issuer: issuer.did }, W3cCredential),
+            verificationMethod: issuer.verificationMethod,
           })
-        ).resolves.toBe('Ed25519Signature2018')
-        await expect(
-          w3cJsonLdCredentialService.getProofTypeForSigningCredential(agentContext, {
-            verificationMethod: identity2020.verificationMethod,
-          })
-        ).resolves.toBe('Ed25519Signature2020')
-      })
+
+          expect(spy).toHaveBeenCalledTimes(1)
+          spy.mockRestore()
+          expect(asArray(vc.proof)[0].type).toBe(proofType)
+          const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+          expect(result.isValid).toBe(true)
+        }
+      )
     })
   })
 

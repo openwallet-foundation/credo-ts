@@ -89,30 +89,6 @@ export class W3cJsonLdCredentialService {
   }
 
   /**
-   * Returns the proof type of the first registered suite that can sign a credential with the given verification method.
-   */
-  public async getProofTypeForSigningCredential(
-    agentContext: AgentContext,
-    options: Pick<W3cJsonLdSignCredentialOptions, 'verificationMethod'>
-  ): Promise<string> {
-    const { verificationMethod } = await this.resolveSigningVerificationMethod(
-      agentContext,
-      options.verificationMethod,
-      ['assertionMethod']
-    )
-
-    const [suiteInfo] = this.signatureSuiteRegistry.getAllByVerificationMethod(verificationMethod)
-    if (!suiteInfo) {
-      throw new W3cJsonLdCredentialSigningNotSupportedError(
-        `No signature suite supports the verification method type '${verificationMethod.type}'`,
-        'unsupported-verification-method-type'
-      )
-    }
-
-    return suiteInfo.proofType
-  }
-
-  /**
    * Verifies the signature(s) of a credential
    *
    * @param credential the credential to be verified
@@ -489,14 +465,14 @@ export class W3cJsonLdCredentialService {
   private async prepareSigningSuite(
     agentContext: AgentContext,
     options: {
-      proofType: string
+      proofType?: string
       verificationMethodId: string
       allowedPurposes: Array<DidPurpose | 'verificationMethod'>
       date?: string
       controller?: string
     }
   ) {
-    const suiteInfo = this.getSigningSuiteInfo(options.proofType)
+    const requestedSuiteInfo = options.proofType ? this.getSigningSuiteInfo(options.proofType) : undefined
 
     const { verificationMethod: nativeVerificationMethod, publicJwk } = await this.resolveSigningVerificationMethod(
       agentContext,
@@ -504,9 +480,19 @@ export class W3cJsonLdCredentialService {
       options.allowedPurposes
     )
 
+    // Without a requested proof type, pick the suite from the method resolved above instead of looking it up again
+    const suiteInfo =
+      requestedSuiteInfo ?? this.signatureSuiteRegistry.getAllByVerificationMethod(nativeVerificationMethod)[0]
+    if (!suiteInfo) {
+      throw new W3cJsonLdCredentialSigningNotSupportedError(
+        `No signature suite supports the verification method type '${nativeVerificationMethod.type}'`,
+        'unsupported-verification-method-type'
+      )
+    }
+
     if (!suiteInfo.verificationMethodTypes.includes(nativeVerificationMethod.type)) {
       throw new W3cJsonLdCredentialSigningNotSupportedError(
-        `Unsupported verification method type '${nativeVerificationMethod.type}' for proof type '${options.proofType}'. Supported types are: ${suiteInfo.verificationMethodTypes.join(', ')}`,
+        `Unsupported verification method type '${nativeVerificationMethod.type}' for proof type '${suiteInfo.proofType}'. Supported types are: ${suiteInfo.verificationMethodTypes.join(', ')}`,
         'unsupported-verification-method-type'
       )
     }
