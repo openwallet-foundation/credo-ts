@@ -284,6 +284,59 @@ describe('W3cJsonLdCredentialsService', () => {
         expect(verificationMethodTypes).toEqual([VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020])
       })
     })
+
+    describe('signCredential without proofType', () => {
+      it.each([
+        ['Ed25519Signature2018', create2018Identity, Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT],
+        ['Ed25519Signature2020', create2020Identity, Ed25519Signature2020Fixtures.TEST_LD_DOCUMENT],
+      ] as const)(
+        'should sign with %s from the verification method type, looking the method up once',
+        async (proofType, createIdentity, document) => {
+          const issuer = await createIdentity(
+            agentContext,
+            `did:example:issuer-inferred-${proofType}`,
+            `did:example:issuer-inferred-${proofType}#key-1`
+          )
+          agentContext.config.setTrustedIssuersForVerification(trustDids(issuer.did))
+          const spy = vi.spyOn(DidsApi.prototype, 'resolveVerificationMethodFromCreatedDidRecord')
+
+          const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
+            format: ClaimFormat.LdpVc,
+            credential: JsonTransformer.fromJSON({ ...document, issuer: issuer.did }, W3cCredential),
+            verificationMethod: issuer.verificationMethod,
+          })
+
+          expect(spy).toHaveBeenCalledTimes(1)
+          spy.mockRestore()
+          expect(asArray(vc.proof)[0].type).toBe(proofType)
+          const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+          expect(result.isValid).toBe(true)
+        }
+      )
+
+      it('should reject an empty proofType instead of inferring one', async () => {
+        const issuer = await create2020Identity(
+          agentContext,
+          'did:example:issuer-empty-proof-type',
+          'did:example:issuer-empty-proof-type#key-1'
+        )
+
+        await expect(
+          w3cJsonLdCredentialService.signCredential(agentContext, {
+            format: ClaimFormat.LdpVc,
+            credential: JsonTransformer.fromJSON(
+              { ...Ed25519Signature2020Fixtures.TEST_LD_DOCUMENT, issuer: issuer.did },
+              W3cCredential
+            ),
+            proofType: '',
+            verificationMethod: issuer.verificationMethod,
+          })
+        ).rejects.toMatchObject({
+          name: W3cJsonLdCredentialSigningNotSupportedError.name,
+          reason: 'unsupported-proof-type',
+        })
+      })
+    })
   })
 
   describe('Ed25519Signature2018', () => {
@@ -503,20 +556,6 @@ describe('W3cJsonLdCredentialsService', () => {
             vcJs: {
               isValid: true,
               results: expect.any(Array),
-              log: [
-                {
-                  id: 'valid_signature',
-                  valid: true,
-                },
-                {
-                  id: 'issuer_did_resolves',
-                  valid: true,
-                },
-                {
-                  id: 'expiration',
-                  valid: true,
-                },
-              ],
             },
           },
         })
@@ -621,6 +660,18 @@ describe('W3cJsonLdCredentialsService', () => {
           },
         })
       })
+
+      it('should reject a credential with a non-did issuer', async () => {
+        const vc = JsonTransformer.fromJSON(
+          { ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED, issuer: 'https://example.com/issuer' },
+          W3cJsonLdVerifiableCredential
+        )
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+
+        expect(result.isValid).toBe(false)
+        expect(result.error?.message).toContain("Credential issuer 'https://example.com/issuer' is not a did")
+      })
     })
 
     describe('verifyCredential with getTrustedIssuersForVerification', () => {
@@ -655,6 +706,40 @@ describe('W3cJsonLdCredentialsService', () => {
 
         expect(result.isValid).toBe(false)
         expect(result.error?.message).toContain('is not trusted')
+      })
+    })
+
+    describe('verifyCredential with expirationDate', () => {
+      const signWithExpirationDate = async (expirationDate: Date) => {
+        const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT
+        const credential = JsonTransformer.fromJSON(
+          { ...credentialJson, expirationDate: expirationDate.toISOString().replace(/\.\d{3}Z$/, 'Z') },
+          W3cCredential
+        )
+
+        return w3cJsonLdCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential,
+          proofType: 'Ed25519Signature2018',
+          verificationMethod,
+        })
+      }
+
+      it('should accept a credential that expired within validitySkewSeconds', async () => {
+        const vc = await signWithExpirationDate(new Date(Date.now() - 10_000))
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+
+        expect(result.isValid).toBe(true)
+      })
+
+      it('should reject a credential that expired before validitySkewSeconds', async () => {
+        const vc = await signWithExpirationDate(new Date(Date.now() - 60_000))
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+
+        expect(result.isValid).toBe(false)
+        expect(result.error?.message).toEqual('Credential has expired.')
       })
     })
 

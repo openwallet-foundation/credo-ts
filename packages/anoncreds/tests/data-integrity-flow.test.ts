@@ -3,6 +3,7 @@ import {
   AgentContext,
   DidResolverService,
   DidsModuleConfig,
+  defaultDocumentLoader,
   Ed25519Signature2018,
   InjectionSymbols,
   JsonLdModuleConfig,
@@ -15,7 +16,6 @@ import {
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
-  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,
@@ -35,6 +35,7 @@ import {
   getAgentConfig,
   getAgentContext,
   testLogger,
+  trustDids,
 } from '../../core/tests'
 import {
   AnonCredsHolderServiceSymbol,
@@ -92,8 +93,7 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [SignatureSuiteRegistry, signatureSuiteRegistry],
   ],
   agentConfig,
@@ -111,6 +111,7 @@ describe('data integrity format service (w3c)', () => {
 
   beforeAll(async () => {
     issuerKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598g')
+    agentContext.config.setTrustedIssuersForVerification(trustDids(issuerKdv.did))
     holderKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598f')
   })
 

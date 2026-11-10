@@ -1,6 +1,5 @@
 import type { DependencyManager, Module } from '../../plugins'
 import { W3cV2DataIntegrityContextValidator, W3cV2DataIntegrityCredentialService } from './data-integrity'
-import { JsonLdModuleConfig } from './jsonld'
 import { W3cV2JwtCredentialService } from './jwt-vc'
 import { W3cV2CredentialRepository } from './repository/W3cV2CredentialRepository'
 import { W3cV2SdJwtCredentialService } from './sd-jwt-vc'
@@ -21,12 +20,6 @@ export class W3cV2CredentialsModule implements Module {
   }
 
   public register(dependencyManager: DependencyManager) {
-    // Guard for shared JsonLdModuleConfig token if no standalone JsonLdModule
-    // registered, would otherwise be silently overwritten
-    if (!dependencyManager.isRegistered(JsonLdModuleConfig)) {
-      dependencyManager.registerInstance(JsonLdModuleConfig, new JsonLdModuleConfig())
-    }
-
     dependencyManager.registerInstance(W3cV2CredentialsModuleConfig, this.config)
     // VC DI context validator (owned at VC layer, not core DI layer)
     dependencyManager.registerSingleton(W3cV2DataIntegrityContextValidator)

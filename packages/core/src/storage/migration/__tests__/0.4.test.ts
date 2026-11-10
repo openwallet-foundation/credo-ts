@@ -6,7 +6,7 @@ import { DidCommModule } from '../../../../../didcomm/src'
 import { agentDependencies } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
-import { W3cCredentialsModule } from '../../../modules/vc'
+import { JsonLdModule } from '../../../modules/vc'
 import { customDocumentLoader } from '../../../modules/vc/linked-data-proofs/__tests__/documentLoader'
 import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
@@ -30,7 +30,7 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
       dependencies: agentDependencies,
       modules: {
         inMemory: new InMemoryWalletModule(),
-        w3cCredentials: new W3cCredentialsModule({
+        jsonLd: new JsonLdModule({
           documentLoader: customDocumentLoader,
         }),
       },

@@ -1,6 +1,6 @@
 export { DidCommApi } from './DidCommApi'
 export { DidCommDispatcher } from './DidCommDispatcher'
-export { DidCommEnvelopeService } from './DidCommEnvelopeService'
+export { type DidCommEnvelopeKey, DidCommEnvelopeService } from './DidCommEnvelopeService'
 export * from './DidCommEvents'
 export { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
 export { DidCommMessage } from './DidCommMessage'
@@ -19,6 +19,7 @@ export { AckDecorator } from './decorators/ack/AckDecorator'
 export { DidCommAttachment, DidCommAttachmentData } from './decorators/attachment/DidCommAttachment'
 export { ServiceDecorator, type ServiceDecoratorOptions } from './decorators/service/ServiceDecorator'
 export { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
+export * from './envelope'
 export * from './errors'
 export { getOutboundDidCommMessageContext } from './getDidCommOutboundMessageContext'
 export * from './handlers'
@@ -29,13 +30,14 @@ export * from './repository'
 export * from './services'
 export * from './transport'
 export * from './types'
+export type { DidCommVersion } from './util/didcommVersion'
+export { assertDidCommV1Connection, isDidCommV2EncryptedMessage } from './util/didcommVersion'
 export { isValidJweStructure } from './util/JWE'
 export {
   IsValidMessageType,
   type ParsedMessageType,
   parseDidCommProtocolUri,
   parseMessageType,
-  replaceLegacyDidSovPrefix,
   supportsIncomingDidCommProtocolUri,
   supportsIncomingMessageType,
 } from './util/messageType'
@@ -45,3 +47,4 @@ export {
   parseInvitationShortUrl,
   parseInvitationUrl,
 } from './util/parseInvitation'
+export * from './v2'

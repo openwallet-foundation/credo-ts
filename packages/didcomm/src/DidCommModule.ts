@@ -1,5 +1,5 @@
 import type { AgentContext, Constructor, DependencyManager, Module, Update } from '@credo-ts/core'
-import { CredoError, EventEmitter, InjectionSymbols } from '@credo-ts/core'
+import { AgentConfig, CredoError, EventEmitter, InjectionSymbols } from '@credo-ts/core'
 import type { Subject } from 'rxjs'
 import { mergeMap, takeUntil } from 'rxjs'
 import { DidCommApi } from './DidCommApi'
@@ -14,6 +14,7 @@ import { DidCommMessageSender } from './DidCommMessageSender'
 import type { DidCommModuleConfigOptions } from './DidCommModuleConfig'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { DidCommTransportService } from './DidCommTransportService'
+import { DidCommEnvelopeRegistry, DidCommV1Envelope, DidCommV2Envelope } from './envelope'
 import {
   type DefaultDidCommMessagePickupProtocols,
   type DefaultDidCommProofProtocols,
@@ -40,6 +41,7 @@ import { DidCommMessageRepository } from './repository'
 import { updateV0_1ToV0_2 } from './updates/0.1-0.2'
 import { updateV0_2ToV0_3 } from './updates/0.2-0.3'
 import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
+import { DidCommV2EnvelopeService, DidCommV2KeyResolver } from './v2'
 
 // biome-ignore lint/complexity/noBannedTypes: no explanation
 type ModuleOrEmpty<Config, Module> = Config extends false ? {} : Module
@@ -112,7 +114,10 @@ function getDidcommModules<Options extends DidCommModuleConfigOptions>(options: 
           ? new DidCommMessagePickupModule(options.messagePickup === true ? {} : options.messagePickup)
           : undefined,
 
-      basicMessages: options.basicMessages !== false ? new DidCommBasicMessagesModule() : undefined,
+      basicMessages:
+        options.basicMessages !== false
+          ? new DidCommBasicMessagesModule(options.basicMessages === true ? undefined : options.basicMessages)
+          : undefined,
     }).filter(([, moduleValue]) => moduleValue !== undefined)
   ) as unknown as DidCommModules<Options>
 }
@@ -132,6 +137,14 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
    * Registers the dependencies of the question answer module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
+    if (this.config.isSupported('v2')) {
+      dependencyManager
+        .resolve(AgentConfig)
+        .logger.warn(
+          'DIDComm V2 support is experimental and could have unexpected breaking changes. When enabling it, make sure to use strict versions for all @credo-ts packages.'
+        )
+    }
+
     // Config
     dependencyManager.registerInstance(DidCommModuleConfig, this.config)
 
@@ -145,6 +158,13 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
     dependencyManager.registerSingleton(DidCommTransportService)
     dependencyManager.registerSingleton(DidCommDispatcher)
     dependencyManager.registerSingleton(DidCommEnvelopeService)
+    dependencyManager.registerSingleton(DidCommV2EnvelopeService)
+    dependencyManager.registerSingleton(DidCommV2KeyResolver)
+
+    // Envelopes: one implementation per DIDComm version, selected by the registry
+    dependencyManager.registerSingleton(DidCommV1Envelope)
+    dependencyManager.registerSingleton(DidCommV2Envelope)
+    dependencyManager.registerSingleton(DidCommEnvelopeRegistry)
 
     // Repositories
     dependencyManager.registerSingleton(DidCommMessageRepository)

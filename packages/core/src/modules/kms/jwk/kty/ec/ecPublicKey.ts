@@ -60,3 +60,14 @@ export function ecPublicKeyToPublicJwk<Crv extends KmsJwkPublicEc['crv']>(public
 
   return jwk
 }
+
+export function ecMulticodecToPublicJwk<Crv extends KmsJwkPublicEc['crv']>(publicKey: Uint8Array, crv: Crv) {
+  const length = ecCrvToCurveParams[crv].coordinateLength + 1
+  if (publicKey.length !== length) {
+    throw new KeyManagementError(
+      `Invalid public key length for multicodec with crv '${crv}': expected ${length} bytes, received ${publicKey.length}`
+    )
+  }
+
+  return ecPublicKeyToPublicJwk(publicKey, crv)
+}

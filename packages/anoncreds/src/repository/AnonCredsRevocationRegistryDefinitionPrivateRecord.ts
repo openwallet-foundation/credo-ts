@@ -11,6 +11,7 @@ export enum AnonCredsRevocationRegistryState {
 
 export interface AnonCredsRevocationRegistryDefinitionPrivateRecordProps {
   id?: string
+  createdAt?: Date
   revocationRegistryDefinitionId: string
   credentialDefinitionId: string
   value: Record<string, unknown>
@@ -52,6 +53,7 @@ export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseReco
 
     if (props) {
       this.id = props.id ?? utils.uuid()
+      this.createdAt = props.createdAt ?? new Date()
       this.revocationRegistryDefinitionId = props.revocationRegistryDefinitionId
       this.credentialDefinitionId = props.credentialDefinitionId
       this.value = props.value

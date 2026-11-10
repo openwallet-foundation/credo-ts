@@ -269,6 +269,7 @@ describe('getOid4vcJwtVerifyCallback', () => {
       'key-attestation+jwt',
       'Application/Key-Attestation+JWT',
       'openidvci-issuer-metadata+jwt',
+      'application/openidvci-issuer-metadata+jwt',
       'oauth-authz-req+jwt',
     ])('is rejected for typ %s when no trusted issuers callback is registered', async (typ) => {
       const jwt = await createJwt(agent.context, { typ, signer: jwkSigner })

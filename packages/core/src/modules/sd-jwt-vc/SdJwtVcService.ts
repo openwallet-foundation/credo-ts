@@ -10,10 +10,10 @@ import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
 import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArrayEncoder } from '../../utils'
-import { getDomainFromUrl } from '../../utils/domain'
-import { fetchWithTimeout } from '../../utils/fetch'
+import { isAllowedHttpUrl } from '../../utils/uri'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
+import { TokenStatusListModuleConfig } from '../token-status-list/TokenStatusListModuleConfig'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509Service } from '../x509'
 import { legacyTrustedCertificatesToTrustedIssuers } from '../x509/utils/convertLegacyTrustedCertificates'
@@ -252,26 +252,6 @@ export class SdJwtVcService {
     })
 
     return compactDerivedSdJwtVc
-  }
-
-  private assertValidX5cJwtIssuer(
-    agentContext: AgentContext,
-    iss: string | undefined,
-    leafCertificate: X509Certificate
-  ) {
-    // No 'iss' is allowed for X509
-    if (!iss) return
-
-    // If iss is present it MUST be an HTTPS url
-    if (!iss.startsWith('https://') && !(iss.startsWith('http://') && agentContext.config.allowInsecureHttpUrls)) {
-      throw new SdJwtVcError('The X509 certificate issuer must be a HTTPS URI.')
-    }
-
-    if (!leafCertificate.sanUriNames?.includes(iss) && !leafCertificate.sanDnsNames?.includes(getDomainFromUrl(iss))) {
-      throw new SdJwtVcError(
-        `The 'iss' claim in the payload does not match a 'SAN-URI' name and the domain extracted from the HTTPS URI does not match a 'SAN-DNS' name in the x5c certificate. Either remove the 'iss' claim or make it match with at least one SAN-URI or DNS-URI entry`
-      )
-    }
   }
 
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
@@ -560,8 +540,6 @@ export class SdJwtVcService {
       }
       const alg = supportedSignatureAlgorithms[0]
 
-      this.assertValidX5cJwtIssuer(agentContext, issuer.issuer, leafCertificate)
-
       return {
         publicJwk,
         iss: issuer.issuer,
@@ -625,17 +603,20 @@ export class SdJwtVcService {
   }
 
   private async fetchStatusListJwt(agentContext: AgentContext, uri: string): Promise<string> {
-    const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri, {
+    if (!isAllowedHttpUrl(uri, agentContext.config.allowInsecureHttpUrls)) {
+      throw new SdJwtVcError(`Unable to fetch status list JWT from '${uri}'. Only https urls are supported.`)
+    }
+
+    const response = await agentContext.config.fetch(uri, {
       headers: {
         Accept: 'application/statuslist+jwt',
       },
+      maxResponseBytes: agentContext.resolve(TokenStatusListModuleConfig).maxStatusListBytes,
     })
 
     if (!response.ok) {
       throw new CredoError(
-        `Received invalid response with status ${
-          response.status
-        } when fetching status list JWT from ${uri}. ${await response.text()}`
+        `Received invalid response with status ${response.status} when fetching status list JWT from ${uri}`
       )
     }
 
@@ -810,11 +791,12 @@ export class SdJwtVcService {
       )
     }
     let firstError: Error | undefined
+    const maxResponseBytes = agentContext.resolve(SdJwtVcModuleConfig).maxTypeMetadataBytes
 
     // Fist try the new type metadata URL
     // We add a catch, so that if e.g. the request fails due to CORS (which throws an error
     // we will still continue trying the legacy url)
-    const firstResponse = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, vct).catch((error) => {
+    const firstResponse = await agentContext.config.fetch(vct, { maxResponseBytes }).catch((error) => {
       firstError = error
       return undefined
     })
@@ -827,9 +809,7 @@ export class SdJwtVcService {
       vctElements.splice(3, 0, '.well-known/vct')
       const legacyVctUrl = vctElements.join('/')
 
-      response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, legacyVctUrl).catch(
-        () => undefined
-      )
+      response = await agentContext.config.fetch(legacyVctUrl, { maxResponseBytes }).catch(() => undefined)
     }
 
     if (!response?.ok) {

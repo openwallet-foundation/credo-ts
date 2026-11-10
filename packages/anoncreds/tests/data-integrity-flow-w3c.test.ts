@@ -1,8 +1,9 @@
-import type { DidRepository, SuiteInfo } from '@credo-ts/core'
+import type { DidRepository, JsonObject, SuiteInfo } from '@credo-ts/core'
 import {
   AgentContext,
   DidResolverService,
   DidsModuleConfig,
+  defaultDocumentLoader,
   Ed25519Signature2018,
   InjectionSymbols,
   JsonLdModuleConfig,
@@ -40,7 +41,9 @@ import {
   getAgentContext,
   getAskarStoreConfig,
   testLogger,
+  trustDids,
 } from '../../core/tests'
+import { getFormatDataAttachment } from '../../didcomm/src/modules/credentials/util/formatData'
 import {
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
@@ -97,7 +100,7 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [X509ModuleConfig, new X509ModuleConfig()],
     [SignatureSuiteRegistry, signatureSuiteRegistry],
     [
@@ -122,6 +125,7 @@ describe('data integrity format service (w3c)', () => {
 
   beforeAll(async () => {
     issuerKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598g')
+    agentContext.config.setTrustedIssuersForVerification(trustDids(issuerKdv.did))
     holderKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598f')
   })
 
@@ -218,6 +222,22 @@ describe('data integrity format service (w3c)', () => {
         },
       }
     )
+
+    // The issuance date is not compared against the offer, so only the proof catches this change
+    const { credential: issuedCredentialJson } = credentialAttachment.getDataAsJson<{ credential: JsonObject }>()
+    const tamperedCredentialAttachment = getFormatDataAttachment(
+      { credential: { ...issuedCredentialJson, issuanceDate: new Date(0).toISOString() } },
+      credentialAttachment.id
+    )
+    await expect(
+      dataIntegrityCredentialFormatService.processCredential(agentContext, {
+        offerAttachment,
+        credentialExchangeRecord: holderCredentialRecord,
+        attachment: tamperedCredentialAttachment,
+        requestAttachment,
+      })
+    ).rejects.toThrow('Failed to validate credential')
+    expect(holderCredentialRecord.credentials).toEqual([])
 
     // Holder processes and accepts credential
     await dataIntegrityCredentialFormatService.processCredential(agentContext, {

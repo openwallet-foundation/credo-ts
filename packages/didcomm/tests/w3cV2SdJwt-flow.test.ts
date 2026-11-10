@@ -5,6 +5,7 @@ import {
   DidResolverService,
   DidsModuleConfig,
   InjectionSymbols,
+  JsonLdModule,
   JsonTransformer,
   KeyDidRegistrar,
   KeyDidResolver,
@@ -62,6 +63,7 @@ const agentContext = getAgentContext({
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
 agentContext.dependencyManager.registerModules({
+  jsonLd: new JsonLdModule(),
   w3cDataIntegrity: new W3cDataIntegrityModule(),
   w3cV2Credentials: new W3cV2CredentialsModule(),
 })
