@@ -1,8 +1,6 @@
 import type { BaseAgent } from '@credo-ts/core'
 import type { DidCommCredentialExchangeRecord } from '@credo-ts/didcomm'
 
-import { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
-
 /**
  * Migrates the {@link DidCommCredentialExchangeRecord} to 0.4 compatible format. It fetches all credential exchange records from
  *  storage and applies the needed updates to the records. After a record has been transformed, it is updated
@@ -14,6 +12,7 @@ import { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
  */
 export async function migrateCredentialExchangeRecordToV0_4<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating credential exchange records to storage version 0.4')
+  const { DidCommCredentialExchangeRepository } = await import('@credo-ts/didcomm')
   const credentialRepository = agent.dependencyManager.resolve(DidCommCredentialExchangeRepository)
 
   agent.config.logger.debug('Fetching all credential records from storage')

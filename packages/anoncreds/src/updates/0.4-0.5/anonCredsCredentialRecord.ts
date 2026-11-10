@@ -1,6 +1,6 @@
 import type { AgentContext, BaseAgent } from '@credo-ts/core'
 import { CacheModuleConfig, CredoError, W3cCredentialRecord, W3cCredentialService } from '@credo-ts/core'
-import { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
+import type { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
 import { type AnonCredsCredentialRecord, AnonCredsCredentialRepository } from '../../repository'
 import type { AnonCredsHolderService } from '../../services'
 import { AnonCredsHolderServiceSymbol } from '../../services'
@@ -36,7 +36,11 @@ async function getIndyNamespace(agentContext: AgentContext, legacyIssuerId: stri
   )
 }
 
-async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRecord: AnonCredsCredentialRecord) {
+async function migrateLegacyToW3cCredential(
+  agentContext: AgentContext,
+  legacyRecord: AnonCredsCredentialRecord,
+  credentialExchangeRepository: DidCommCredentialExchangeRepository
+) {
   const legacyTags = legacyRecord.getTags()
 
   let indyNamespace: string | undefined
@@ -125,7 +129,6 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
   await w3cCredentialService.storeCredential(agentContext, { record: w3cCredentialRecord })
 
   // Find the credential exchange record bound to this anoncreds credential and update it to point to the newly created w3c record
-  const credentialExchangeRepository = agentContext.dependencyManager.resolve(DidCommCredentialExchangeRepository)
   const [relatedCredentialExchangeRecord] = await credentialExchangeRepository.findByQuery(agentContext, {
     credentialIds: [legacyRecord.credentialId],
   })
@@ -166,12 +169,18 @@ export async function storeAnonCredsInW3cFormatV0_5<Agent extends BaseAgent>(age
 
   agent.config.logger.debug(`Found a total of ${records.length} legacy anonCreds credential records to update.`)
 
+  if (records.length === 0) return
+
+  // Resolve the optional integration before writing records or entering the per-record error handler.
+  const { DidCommCredentialExchangeRepository } = await import('@credo-ts/didcomm')
+  const credentialExchangeRepository = agent.context.dependencyManager.resolve(DidCommCredentialExchangeRepository)
+
   for (const record of records) {
     agent.config.logger.debug(
       `Re-saving anonCreds credential record with id ${record.id} in the new w3c format, and deleting the legacy record`
     )
     try {
-      await migrateLegacyToW3cCredential(agent.context, record)
+      await migrateLegacyToW3cCredential(agent.context, record, credentialExchangeRepository)
       await anoncredsRepository.delete(agent.context, record)
       agent.config.logger.debug(
         `Successfully migrated w3c credential record with id ${record.id} to storage version 0.5`
