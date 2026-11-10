@@ -124,7 +124,7 @@ export function getCredentialFromJwtPayload(jwtPayload: JwtPayload) {
       throw new CredoError('JWT vc.issuanceDate must be a string')
     }
 
-    const issuanceDate = Date.parse(jwtVc.issuanceDate) / 1000
+    const issuanceDate = Math.floor(Date.parse(jwtVc.issuanceDate) / 1000)
     if (jwtPayload.nbf !== issuanceDate) {
       throw new CredoError('JWT nbf and vc.issuanceDate do not match')
     }
@@ -136,7 +136,7 @@ export function getCredentialFromJwtPayload(jwtPayload: JwtPayload) {
       throw new CredoError('JWT vc.expirationDate must be a string')
     }
 
-    const expirationDate = Date.parse(jwtVc.expirationDate) / 1000
+    const expirationDate = Math.floor(Date.parse(jwtVc.expirationDate) / 1000)
     if (expirationDate !== jwtPayload.exp) {
       throw new CredoError('JWT exp and vc.expirationDate do not match')
     }
