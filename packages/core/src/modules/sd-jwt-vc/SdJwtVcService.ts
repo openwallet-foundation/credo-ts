@@ -10,6 +10,7 @@ import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
 import { dateToSeconds, IntegrityVerifier, nowInSeconds, TypedArrayEncoder } from '../../utils'
+import { isAllowedHttpUrl } from '../../utils/uri'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
 import { TokenStatusListModuleConfig } from '../token-status-list/TokenStatusListModuleConfig'
@@ -651,6 +652,10 @@ export class SdJwtVcService {
   }
 
   private async fetchStatusListJwt(agentContext: AgentContext, uri: string): Promise<string> {
+    if (!isAllowedHttpUrl(uri, agentContext.config.allowInsecureHttpUrls)) {
+      throw new SdJwtVcError(`Unable to fetch status list JWT from '${uri}'. Only https urls are supported.`)
+    }
+
     const response = await agentContext.config.fetch(uri, {
       headers: {
         Accept: 'application/statuslist+jwt',
@@ -660,9 +665,7 @@ export class SdJwtVcService {
 
     if (!response.ok) {
       throw new CredoError(
-        `Received invalid response with status ${
-          response.status
-        } when fetching status list JWT from ${uri}. ${await response.text()}`
+        `Received invalid response with status ${response.status} when fetching status list JWT from ${uri}`
       )
     }
 

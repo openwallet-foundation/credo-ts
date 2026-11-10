@@ -19,7 +19,7 @@ jobs:
       # Please look up the latest version from
       # https://github.com/amannn/action-semantic-pull-request/releases
       # v6.1.1 - pinned by commit hash for supply-chain safety
-      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50
+      - uses: amannn/action-semantic-pull-request@2252a14e810aa9b85c2d560bd7070c802206ecf6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

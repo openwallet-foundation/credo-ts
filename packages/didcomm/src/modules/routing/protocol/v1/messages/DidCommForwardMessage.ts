@@ -16,7 +16,6 @@ export interface DidCommForwardMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0094-cross-domain-messaging/README.md#corerouting10forward
  */
 export class DidCommForwardMessage extends DidCommMessage {
-  public readonly allowDidSovPrefix = true
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   /**

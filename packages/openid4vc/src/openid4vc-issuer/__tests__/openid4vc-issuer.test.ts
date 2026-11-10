@@ -2,7 +2,6 @@ import '@openwallet-foundation/askar-nodejs'
 import type {
   AgentContext,
   KeyDidCreateOptions,
-  VerificationMethod,
   W3cVerifiableCredential,
   W3cVerifyCredentialResult,
 } from '@credo-ts/core'
@@ -10,9 +9,13 @@ import {
   Agent,
   asArray,
   CredoError,
+  DidDocumentBuilder,
   DidKey,
   DidsApi,
   equalsIgnoreOrder,
+  getEd25519VerificationKey2018,
+  getEd25519VerificationKey2020,
+  getMultikey,
   JsonTransformer,
   JwsService,
   Jwt,
@@ -22,10 +25,12 @@ import {
   SdJwtVcApi,
   TypedArrayEncoder,
   utils,
+  VerificationMethod,
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
   W3cIssuer,
+  W3cJsonLdCredentialSigningNotSupportedError,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
   W3cV2Credential,
@@ -84,6 +89,15 @@ const universityDegreeCredentialLd = {
   credential_definition: {
     '@context': [],
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+  },
+} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
+
+const verifiableCredentialLdpVc = {
+  id: 'verifiableCredentialLdpVc',
+  format: OpenId4VciCredentialFormatProfile.LdpVc,
+  credential_definition: {
+    '@context': ['https://www.w3.org/2018/credentials/v1'],
+    type: ['VerifiableCredential'],
   },
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
@@ -781,6 +795,177 @@ describe('OpenId4VcIssuer', () => {
     await handleCredentialResponse(holder.context, credentialResponse.credential, openBadgeCredential)
   })
 
+  describe('pre authorized code flow (ldp_vc)', () => {
+    type Purpose = 'authentication' | 'assertionMethod'
+
+    // A did:web document can hold any verification method type and resolves from the local did record.
+    // The issuer and holder agents share storage, so the holder resolves it too.
+    const importLdpIssuerDid = async (
+      name: string,
+      getVerificationMethod: (options: {
+        id: string
+        controller: string
+        publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+      }) => VerificationMethod,
+      purposes: Purpose[]
+    ) => {
+      const did = `did:web:${name}.example.com`
+      const kid = `${did}#key-1`
+      const key = await issuer.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const builder = new DidDocumentBuilder(did)
+        .addContext('https://w3id.org/security/suites/ed25519-2018/v1')
+        .addContext('https://w3id.org/security/suites/ed25519-2020/v1')
+        .addVerificationMethod(
+          getVerificationMethod({
+            id: kid,
+            controller: did,
+            publicJwk: Kms.PublicJwk.fromPublicJwk(key.publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk>,
+          })
+        )
+      if (purposes.includes('authentication')) builder.addAuthentication(kid)
+      if (purposes.includes('assertionMethod')) builder.addAssertionMethod(kid)
+      await issuer.dids.import({
+        did,
+        didDocument: builder.build(),
+        keys: [{ didDocumentRelativeKeyId: '#key-1', kmsKeyId: key.keyId }],
+      })
+
+      return { did, kid }
+    }
+
+    const createLdpVcCredentialResponse = async (issuerDid: string, issuerKid: string) => {
+      openId4VcIssuer = await issuer.openid4vc.issuer.createIssuer({
+        credentialConfigurationsSupported: { verifiableCredentialLdpVc },
+      })
+
+      const result = await issuer.openid4vc.issuer.createCredentialOffer({
+        issuerId: openId4VcIssuer.issuerId,
+        credentialConfigurationIds: [verifiableCredentialLdpVc.id],
+        preAuthorizedCodeFlowConfig: { preAuthorizedCode: '1234567890' },
+      })
+
+      const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+      result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+      await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
+
+      const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+      const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
+      const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
+      const parsedCredentialRequest = await parseCredentialRequestAsWallet(
+        await createCredentialRequest(holder.context, {
+          credentialConfiguration: verifiableCredentialLdpVc,
+          issuerMetadata,
+          kid: holderKid,
+          nonce: cNonce,
+        })
+      )
+
+      return issuer.openid4vc.issuer.createCredentialResponse({
+        issuanceSessionId: result.issuanceSession.id,
+        authorization: {
+          authorizationServer: 'https://authorization.com',
+          accessToken: {
+            payload: { active: true, sub: 'something', 'pre-authorized_code': 'some' },
+            value: 'the-access-token',
+          },
+        },
+        credentialRequestToCredentialMapper: () => ({
+          type: 'credentials',
+          format: 'ldp_vc',
+          credentialConfigurationId: verifiableCredentialLdpVc.id,
+          credentials: [
+            {
+              credential: new W3cCredential({
+                context: verifiableCredentialLdpVc.credential_definition['@context'],
+                type: verifiableCredentialLdpVc.credential_definition.type,
+                issuer: new W3cIssuer({ id: issuerDid }),
+                credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+                issuanceDate: w3cDate(Date.now()),
+              }),
+              verificationMethod: issuerKid,
+            },
+          ],
+        }),
+        parsedCredentialRequest,
+      })
+    }
+
+    it.each([
+      [
+        'Ed25519VerificationKey2018',
+        ['authentication', 'assertionMethod'],
+        getEd25519VerificationKey2018,
+        'Ed25519Signature2018',
+      ],
+      [
+        'Ed25519VerificationKey2020',
+        ['authentication', 'assertionMethod'],
+        getEd25519VerificationKey2020,
+        'Ed25519Signature2020',
+      ],
+      // Signing only needs assertionMethod, so suite selection must not require authentication
+      ['Ed25519VerificationKey2020', ['assertionMethod'], getEd25519VerificationKey2020, 'Ed25519Signature2020'],
+    ] as const)(
+      'issues with an %s issuer method under %j',
+      async (verificationMethodType, purposes, getVerificationMethod, proofType) => {
+        const { did, kid } = await importLdpIssuerDid(
+          `${verificationMethodType.toLowerCase()}-${purposes.join('-').toLowerCase()}`,
+          getVerificationMethod,
+          [...purposes]
+        )
+
+        const { credentialResponse } = await createLdpVcCredentialResponse(did, kid)
+
+        const credential = await handleCredentialResponse(
+          holder.context,
+          credentialResponse.credential as Record<string, unknown>,
+          verifiableCredentialLdpVc
+        )
+        expect(credential).toBeInstanceOf(W3cJsonLdVerifiableCredential)
+        expect(asArray((credential as W3cJsonLdVerifiableCredential).proof)).toEqual([
+          expect.objectContaining({ type: proofType, verificationMethod: kid }),
+        ])
+      }
+    )
+
+    it('rejects an issuer did the agent did not create with a typed error', async () => {
+      const didKey = new DidKey(Kms.PublicJwk.fromFingerprint('z6MkvBpZTRb7tjuUF5AkmhG1JDV928hZbg5KAQJcogvhz9ax'))
+
+      await expect(
+        createLdpVcCredentialResponse(didKey.did, `${didKey.did}#${didKey.publicJwk.fingerprint}`)
+      ).rejects.toMatchObject({
+        constructor: W3cJsonLdCredentialSigningNotSupportedError,
+        reason: 'verification-method-not-controlled',
+      })
+    })
+
+    it('rejects an issuer method that is only listed under authentication with a typed error', async () => {
+      const { did, kid } = await importLdpIssuerDid('authentication-only', getEd25519VerificationKey2020, [
+        'authentication',
+      ])
+
+      await expect(createLdpVcCredentialResponse(did, kid)).rejects.toMatchObject({
+        constructor: W3cJsonLdCredentialSigningNotSupportedError,
+        reason: 'verification-method-not-found',
+      })
+    })
+
+    it('rejects an issuer method type no suite supports with a typed error', async () => {
+      const { did, kid } = await importLdpIssuerDid(
+        'multikey',
+        ({ id, controller, publicJwk }) =>
+          new VerificationMethod(getMultikey({ did: controller, verificationMethodId: id, publicJwk })),
+        ['assertionMethod']
+      )
+
+      await expect(createLdpVcCredentialResponse(did, kid)).rejects.toMatchObject({
+        constructor: W3cJsonLdCredentialSigningNotSupportedError,
+        reason: 'unsupported-verification-method-type',
+        message: "No signature suite supports the verification method type 'Multikey'",
+      })
+    })
+  })
+
   it('pre authorized code flow (w3c vc+sd-jwt)', async () => {
     const preAuthorizedCode = '1234567890'
 
@@ -1442,6 +1627,29 @@ describe('OpenId4VcIssuer', () => {
     expect(
       (await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)).signedMetadataJwt
     ).toBeUndefined()
+  })
+
+  it('rejects a jwk metadata signer', async () => {
+    const key = await issuer.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })
+
+    await expect(
+      issuer.openid4vc.issuer.createIssuer({
+        credentialConfigurationsSupported: { openBadgeCredential },
+        // @ts-expect-error a jwk signer is not allowed
+        metadataSigner: { method: 'jwk', jwk: Kms.PublicJwk.fromPublicJwk(key.publicJwk) },
+      })
+    ).rejects.toThrow(`Signing the credential issuer metadata with a 'jwk' signer is not supported.`)
+
+    // Issuer records stored before jwk signers were rejected can still hold one
+    openId4VcIssuer.signedMetadata = { signer: { method: 'jwk', jwk: key.publicJwk }, jwt: 'signed.metadata.jwt' }
+    await issuer.context.dependencyManager.resolve(OpenId4VcIssuerRepository).update(issuer.context, openId4VcIssuer)
+
+    await expect(
+      issuer.openid4vc.issuer.updateIssuerMetadata({
+        issuerId: openId4VcIssuer.issuerId,
+        credentialConfigurationsSupported: { openBadgeCredential },
+      })
+    ).rejects.toThrow(`Signing the credential issuer metadata with a 'jwk' signer is not supported.`)
   })
 
   it('re-signs the metadata with a stored x5c signer', async () => {

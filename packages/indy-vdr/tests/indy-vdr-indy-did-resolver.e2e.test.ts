@@ -3,7 +3,7 @@ import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
 import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
 import { IndyVdrModule } from '../src'
-import { IndyVdrIndyDidRegistrar, IndyVdrIndyDidResolver, IndyVdrSovDidResolver } from '../src/dids'
+import { IndyVdrIndyDidRegistrar, IndyVdrIndyDidResolver } from '../src/dids'
 
 import { createDidOnLedger, indyVdrModuleConfig } from './helpers'
 
@@ -19,7 +19,7 @@ const agent = new Agent(
       }),
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
-        resolvers: [new IndyVdrIndyDidResolver(), new IndyVdrSovDidResolver()],
+        resolvers: [new IndyVdrIndyDidResolver()],
       }),
     }
   )

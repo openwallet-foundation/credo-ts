@@ -142,9 +142,9 @@ export function getOid4vcJwtVerifyCallback(
     let trustedCertificates = options?.trustedCertificates
     const typ = normalizeJwtTyp(header.typ)
 
-    // Wallet and key attestations signed with a bare `jwk` can't be checked against the trusted issuers
-    // (there is no `jwk` variant of `VerificationSigner`/`TrustedIssuer`), so any client could sign its own.
-    // This is checked regardless of the issuance session, so it applies to every endpoint.
+    // Wallet attestations, key attestations and signed issuer metadata signed with a bare `jwk` can't be checked
+    // against the trusted issuers (there is no `jwk` variant of `VerificationSigner`/`TrustedIssuer`), so anyone
+    // could sign their own. This is checked regardless of the issuance session, so it applies to every endpoint.
     if (signer.method === 'jwk') {
       if (typ === 'oauth-client-attestation+jwt') {
         throw new CredoError(
@@ -155,6 +155,12 @@ export function getOid4vcJwtVerifyCallback(
       if (typ === 'keyattestation+jwt' || typ === 'key-attestation+jwt') {
         throw new CredoError(
           `Key attestations signed with a 'jwk' header are not supported. Use 'x5c' or 'did' to sign the key attestation.`
+        )
+      }
+
+      if (typ === 'openidvci-issuer-metadata+jwt') {
+        throw new CredoError(
+          `Credential issuer metadata signed with a 'jwk' header is not supported. Use 'x5c' or 'did' to sign the credential issuer metadata.`
         )
       }
     }
@@ -196,7 +202,8 @@ export function getOid4vcJwtVerifyCallback(
       }
 
       // NOTE: other jwts signed with a bare `jwk` are not checked against a trust list, as there is no
-      // `jwk` variant of `VerificationSigner`/`TrustedIssuer`. Wallet and key attestations are rejected above.
+      // `jwk` variant of `VerificationSigner`/`TrustedIssuer`. Wallet and key attestations and signed issuer
+      // metadata are rejected above.
     }
 
     const alg = signer.alg as Kms.KnownJwaSignatureAlgorithm

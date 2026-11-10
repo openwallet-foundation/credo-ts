@@ -17,6 +17,8 @@ import {
   DidCommProofState,
   DidCommProofV2Protocol,
 } from '@credo-ts/didcomm'
+import { IndyVdrIndyDidRegistrar, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
+import { IndyVdrAnonCredsRegistry } from '@credo-ts/indy-vdr/anoncreds'
 import { randomUUID } from 'crypto'
 import { sleep } from '../../core/src/utils/sleep'
 import type { EventReplaySubject } from '../../core/tests'
@@ -38,13 +40,6 @@ import {
   inMemoryDrizzleSqliteDatabase,
   pushDrizzleSchema,
 } from '../../drizzle-storage/tests/testDatabase'
-import {
-  IndyVdrAnonCredsRegistry,
-  IndyVdrIndyDidRegistrar,
-  IndyVdrIndyDidResolver,
-  IndyVdrModule,
-  IndyVdrSovDidResolver,
-} from '../../indy-vdr/src'
 import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
 import type {
   AnonCredsRegisterCredentialDefinitionOptions,
@@ -129,7 +124,7 @@ export const getAnonCredsIndyModules = <
     }),
     indyVdr: new IndyVdrModule(indyVdrModuleConfig),
     dids: new DidsModule({
-      resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
+      resolvers: [new IndyVdrIndyDidResolver()],
       registrars: [new IndyVdrIndyDidRegistrar()],
     }),
     cache: new CacheModule({

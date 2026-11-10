@@ -7,13 +7,13 @@ import {
 import {
   Agent,
   DidDocument,
+  JsonLdModule,
   JsonTransformer,
   Mdoc,
   MdocRecord,
   SdJwtVcRecord,
   TypedArrayEncoder,
   W3cCredentialRecord,
-  W3cCredentialsModule,
   W3cJsonLdVerifiableCredential,
   W3cV2CredentialRecord,
   W3cV2DataIntegrityVerifiableCredential,
@@ -221,7 +221,7 @@ describe('Askar to Drizzle Migration', () => {
           logger: testLogger,
         },
         modules: {
-          w3cCredentials: new W3cCredentialsModule({
+          jsonLd: new JsonLdModule({
             documentLoader: customDocumentLoader,
           }),
           askar: askarModule,
@@ -296,7 +296,7 @@ describe('Askar to Drizzle Migration', () => {
         logger: testLogger,
       },
       modules: {
-        w3cCredentials: new W3cCredentialsModule({
+        jsonLd: new JsonLdModule({
           documentLoader: customDocumentLoader,
         }),
         askar: askarModule,
