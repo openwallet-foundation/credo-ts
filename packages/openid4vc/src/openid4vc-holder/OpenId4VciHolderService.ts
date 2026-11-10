@@ -69,6 +69,7 @@ import { getDpopOptions } from '../shared/dpop'
 import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
 import {
   getCredentialRequestEncryption,
+  selectCredentialRequestEncryption,
   supportedResponseEncryptionContentAlgorithms,
   supportedResponseEncryptionKeyAgreementAlgorithms,
 } from '../shared/utils'
@@ -94,14 +95,6 @@ import type {
   OpenId4VcParseAndVerifyAuthorizationResponseOptions,
 } from './OpenId4VciHolderServiceOptions'
 import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
-
-function isIssuancePendingError(error: unknown) {
-  return (
-    error instanceof Openid4vciRetrieveCredentialsError &&
-    error.response.credentialErrorResponseResult?.success === true &&
-    error.response.credentialErrorResponseResult.data.error === 'issuance_pending'
-  )
-}
 
 @injectable()
 export class OpenId4VciHolderService {
@@ -519,7 +512,7 @@ export class OpenId4VciHolderService {
       credentialBindingResolver,
       verifyCredentialStatus,
       allowedProofOfPossessionSignatureAlgorithms,
-      encryptCredentialResponse,
+      credentialResponseEncryption: credentialResponseEncryptionMode,
     } = acceptCredentialOfferOptions
     const client = this.getClient(agentContext)
 
@@ -613,7 +606,7 @@ export class OpenId4VciHolderService {
         const credentialResponseEncryption = await this.createCredentialResponseEncryption(
           agentContext,
           metadata,
-          encryptCredentialResponse
+          credentialResponseEncryptionMode
         )
         if (credentialResponseEncryption) responseEncryptions.push(credentialResponseEncryption)
 
@@ -794,9 +787,7 @@ export class OpenId4VciHolderService {
         receivedCredentials.push(credential)
       }
     } catch (error) {
-      if (!isIssuancePendingError(error)) {
-        await this.deleteCredentialResponseEncryptionKey(agentContext, credentialResponseEncryption)
-      }
+      await this.deleteCredentialResponseEncryptionKey(agentContext, credentialResponseEncryption)
       throw error
     }
 
@@ -1643,26 +1634,37 @@ export class OpenId4VciHolderService {
   private async createCredentialResponseEncryption(
     agentContext: AgentContext,
     metadata: IssuerMetadataResult,
-    encryptCredentialResponse?: boolean
+    mode?: 'required' | 'preferred'
   ): Promise<OpenId4VciHolderCredentialResponseEncryption | undefined> {
     const supported = metadata.credentialIssuer.credential_response_encryption
-    if (!supported) {
-      if (encryptCredentialResponse) {
-        throw new CredoError(
-          `Credential issuer '${metadata.credentialIssuer.credential_issuer}' does not support credential response encryption`
-        )
-      }
+    const required = mode === 'required' || supported?.encryption_required === true
+    if (!mode && !required) return undefined
+
+    const issuer = metadata.credentialIssuer.credential_issuer
+    const unsupported = (reason: string) => {
+      if (required) throw new CredoError(reason)
+      this.logger.debug(`${reason}, requesting an unencrypted credential response`)
       return undefined
     }
-    if (!encryptCredentialResponse && !supported.encryption_required) return undefined
+
+    if (!supported) return unsupported(`Credential issuer '${issuer}' does not support credential response encryption`)
 
     const alg = supportedResponseEncryptionKeyAgreementAlgorithms.find((alg) =>
       supported.alg_values_supported.includes(alg)
     )
     const enc = supportedResponseEncryptionContentAlgorithms.find((enc) => supported.enc_values_supported.includes(enc))
     if (!alg || !enc) {
-      throw new CredoError(
-        `Credential issuer '${metadata.credentialIssuer.credential_issuer}' does not support any of the credential response encryption algorithms supported by Credo (alg ${supportedResponseEncryptionKeyAgreementAlgorithms.join(', ')}, enc ${supportedResponseEncryptionContentAlgorithms.join(', ')})`
+      return unsupported(
+        `Credential issuer '${issuer}' does not support any of the credential response encryption algorithms supported by Credo (alg ${supportedResponseEncryptionKeyAgreementAlgorithms.join(', ')}, enc ${supportedResponseEncryptionContentAlgorithms.join(', ')})`
+      )
+    }
+
+    const requiresEncryptedRequest =
+      metadata.credentialIssuer.credential_request_encryption !== undefined ||
+      metadata.originalDraftVersion === Openid4vciVersion.V1
+    if (requiresEncryptedRequest && !selectCredentialRequestEncryption(agentContext, metadata)) {
+      return unsupported(
+        `Credential issuer '${issuer}' does not advertise a credential request encryption key supported by Credo, which credential response encryption requires`
       )
     }
 
@@ -1690,7 +1692,7 @@ export class OpenId4VciHolderService {
       .resolve(Kms.KeyManagementApi)
       .deleteKey({ keyId: encryption.keyId })
       .catch((error) => {
-        this.logger.warn('Unable to delete credential response encryption key', { error })
+        this.logger.error('Unable to delete credential response encryption key', { error })
       })
   }
 

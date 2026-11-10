@@ -341,7 +341,7 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
    */
   credentialBindingResolver: OpenId4VciCredentialBindingResolver
 
-  encryptCredentialResponse?: boolean
+  credentialResponseEncryption?: 'required' | 'preferred'
 }
 
 /**

@@ -35,7 +35,7 @@ export const supportedResponseEncryptionContentAlgorithms = [
  * A verifier can include multiple encryption keys (e.g. `P-256`, `P-384` and `P-521`), and we
  * should only pick a key for which we can perform the key agreement.
  */
-export function getSupportedResponseEncryptionJwks(agentContext: AgentContext, jwks: JwkSet): JwkSet {
+export function getSupportedEncryptionJwks(agentContext: AgentContext, jwks: JwkSet): JwkSet {
   const kms = agentContext.resolve(Kms.KeyManagementApi)
 
   return {
@@ -70,6 +70,28 @@ export function getSupportedResponseEncryptionJwks(agentContext: AgentContext, j
   }
 }
 
+export function selectCredentialRequestEncryption(
+  agentContext: AgentContext,
+  metadata: IssuerMetadataResult
+): CredentialRequestEncryption | undefined {
+  const requestEncryption = metadata.credentialIssuer.credential_request_encryption
+  if (!requestEncryption) return undefined
+
+  const keys = requestEncryption.jwks.keys.filter(
+    (jwk) =>
+      (jwk.use === undefined || jwk.use === 'enc') &&
+      jwk.alg !== undefined &&
+      (supportedResponseEncryptionKeyAgreementAlgorithms as readonly string[]).includes(jwk.alg)
+  )
+  const [jwk] = getSupportedEncryptionJwks(agentContext, { keys }).keys
+  const enc = supportedResponseEncryptionContentAlgorithms.find((enc) =>
+    requestEncryption.enc_values_supported.includes(enc)
+  )
+  if (!jwk?.kid || !enc) return undefined
+
+  return { kid: jwk.kid, enc }
+}
+
 export function getCredentialRequestEncryption(
   agentContext: AgentContext,
   metadata: IssuerMetadataResult,
@@ -78,23 +100,14 @@ export function getCredentialRequestEncryption(
   const requestEncryption = metadata.credentialIssuer.credential_request_encryption
   if (!requestEncryption || (!requestEncryption.encryption_required && !hasResponseEncryption)) return undefined
 
-  const keys = requestEncryption.jwks.keys.filter(
-    (jwk) =>
-      (jwk.use === undefined || jwk.use === 'enc') &&
-      jwk.alg !== undefined &&
-      (supportedResponseEncryptionKeyAgreementAlgorithms as readonly string[]).includes(jwk.alg)
-  )
-  const [jwk] = getSupportedResponseEncryptionJwks(agentContext, { keys }).keys
-  const enc = supportedResponseEncryptionContentAlgorithms.find((enc) =>
-    requestEncryption.enc_values_supported.includes(enc)
-  )
-  if (!jwk?.kid || !enc) {
+  const credentialRequestEncryption = selectCredentialRequestEncryption(agentContext, metadata)
+  if (!credentialRequestEncryption) {
     throw new CredoError(
       `Credential issuer '${metadata.credentialIssuer.credential_issuer}' does not advertise a credential request encryption key and enc value supported by Credo (alg ${supportedResponseEncryptionKeyAgreementAlgorithms.join(', ')}, enc ${supportedResponseEncryptionContentAlgorithms.join(', ')})`
     )
   }
 
-  return { kid: jwk.kid, enc }
+  return credentialRequestEncryption
 }
 
 export async function getPublicJwkFromDid(

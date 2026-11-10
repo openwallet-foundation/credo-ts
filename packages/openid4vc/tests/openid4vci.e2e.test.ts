@@ -973,7 +973,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       resolvedCredentialOffer,
       ...tokenResponse,
       credentialBindingResolver,
-      encryptCredentialResponse: true,
+      credentialResponseEncryption: 'required',
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
@@ -986,6 +986,55 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     createKeySpy.mockRestore()
     deleteKeySpy.mockRestore()
+    await holderTenant.endSession()
+  })
+
+  it('holder falls back to an unencrypted response when encryption is preferred but the issuer does not support it', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const createOffer = async () => {
+      const { credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+        issuerId: openIdIssuerTenant.issuerId,
+        credentialConfigurationIds: ['universityDegree'],
+        preAuthorizedCodeFlowConfig: {},
+        version: 'v1',
+      })
+      const resolvedCredentialOffer =
+        await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+      const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+      return { resolvedCredentialOffer, tokenResponse }
+    }
+
+    const required = await createOffer()
+    await expect(
+      holderTenant.modules.openid4vc.holder.requestCredentials({
+        resolvedCredentialOffer: required.resolvedCredentialOffer,
+        ...required.tokenResponse,
+        credentialBindingResolver,
+        credentialResponseEncryption: 'required',
+      })
+    ).rejects.toThrow('does not support credential response encryption')
+
+    const preferred = await createOffer()
+    const createKeySpy = vi.spyOn(holderTenant.context.resolve(Kms.KeyManagementApi), 'createKey')
+    const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer: preferred.resolvedCredentialOffer,
+      ...preferred.tokenResponse,
+      credentialBindingResolver,
+      credentialResponseEncryption: 'preferred',
+    })
+    expect(credentialResponse.credentials).toHaveLength(1)
+    expect(createKeySpy).not.toHaveBeenCalledWith(expect.objectContaining({ type: { kty: 'EC', crv: 'P-256' } }))
+
+    createKeySpy.mockRestore()
     await holderTenant.endSession()
   })
 

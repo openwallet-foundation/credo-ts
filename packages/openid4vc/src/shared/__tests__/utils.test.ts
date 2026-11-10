@@ -2,7 +2,7 @@ import { generateKeyPairSync } from 'node:crypto'
 import { Kms } from '@credo-ts/core'
 import type { IssuerMetadataResult } from '@openid4vc/openid4vci'
 import { getAgentContext } from '../../../../core/tests'
-import { getCredentialRequestEncryption, getSupportedResponseEncryptionJwks } from '../utils'
+import { getCredentialRequestEncryption, getSupportedEncryptionJwks, selectCredentialRequestEncryption } from '../utils'
 
 const ecJwk = (namedCurve: string) =>
   generateKeyPairSync('ec', { namedCurve }).publicKey.export({ format: 'jwk' }) as Record<string, unknown>
@@ -22,7 +22,7 @@ const p256OnlyBackend = {
   },
 } as unknown as Kms.KeyManagementService
 
-describe('getSupportedResponseEncryptionJwks', () => {
+describe('getSupportedEncryptionJwks', () => {
   test('only returns the jwks that can be used for key agreement by the kms backends', () => {
     const agentContext = getAgentContext({ kmsBackends: [p256OnlyBackend] })
 
@@ -30,7 +30,7 @@ describe('getSupportedResponseEncryptionJwks', () => {
     const p384 = ecJwk('P-384')
     const p521 = ecJwk('P-521')
 
-    expect(getSupportedResponseEncryptionJwks(agentContext, { keys: [p521, p384, p256] as never })).toEqual({
+    expect(getSupportedEncryptionJwks(agentContext, { keys: [p521, p384, p256] as never })).toEqual({
       keys: [p256],
     })
   })
@@ -45,7 +45,7 @@ describe('getSupportedResponseEncryptionJwks', () => {
 
     // The node kms does support P-521, so it should not be filtered out here
     expect(
-      getSupportedResponseEncryptionJwks(agentContext, {
+      getSupportedEncryptionJwks(agentContext, {
         keys: [ed25519, x25519, p256, p521, { kty: 'oct', k: 'aGVsbG8' }] as never,
       })
     ).toEqual({
@@ -109,5 +109,24 @@ describe('getCredentialRequestEncryption', () => {
         true
       )
     ).toThrow("Credential issuer 'https://issuer.example' does not advertise a credential request encryption key")
+  })
+})
+
+describe('selectCredentialRequestEncryption', () => {
+  test('returns undefined instead of throwing when the issuer advertises no usable key', () => {
+    const agentContext = getAgentContext({ kmsBackends: [p256OnlyBackend] })
+
+    expect(
+      selectCredentialRequestEncryption(agentContext, {
+        credentialIssuer: {
+          credential_issuer: 'https://issuer.example',
+          credential_request_encryption: {
+            jwks: { keys: [{ ...ecJwk('P-384'), kid: 'p384', alg: 'ECDH-ES' }] },
+            enc_values_supported: ['A128GCM'],
+            encryption_required: false,
+          },
+        },
+      } as unknown as IssuerMetadataResult)
+    ).toBeUndefined()
   })
 })
