@@ -82,6 +82,7 @@ describe('OpenId4Vci (Deferred)', () => {
     string,
     {
       credentialRequest: CredentialRequest
+      format?: string
     }
   > = {}
 
@@ -97,11 +98,12 @@ describe('OpenId4Vci (Deferred)', () => {
           issuer: {
             baseUrl: issuanceBaseUrl,
             dpopRequired: true,
-            credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding }) => {
+            credentialRequestToCredentialMapper: async ({ credentialRequest, credentialConfiguration }) => {
               const uuid = randomUUID()
 
               storage[uuid] = {
                 credentialRequest,
+                format: credentialConfiguration.format,
               }
 
               return {
@@ -119,7 +121,8 @@ describe('OpenId4Vci (Deferred)', () => {
               if (!storage[deferredCredentialRequest.transaction_id]) {
                 throw new Error('No credential request found for transaction id')
               }
-              const { credentialRequest } = storage[deferredCredentialRequest.transaction_id]
+              const { credentialRequest, format } = storage[deferredCredentialRequest.transaction_id]
+              const credentialFormat = credentialRequest.format ?? format
 
               if (!transaction.holderBinding) {
                 throw new Error('No holder binding found for transaction')
@@ -134,12 +137,18 @@ describe('OpenId4Vci (Deferred)', () => {
                 throw new Error('No verification method found')
               }
 
-              if (credentialRequest.format === 'vc+sd-jwt') {
+              if (credentialFormat === 'vc+sd-jwt') {
                 return {
                   type: 'credentials',
                   format: 'dc+sd-jwt',
                   credentials: transaction.holderBinding.keys.map((holderBinding) => ({
-                    payload: { vct: credentialRequest.vct as string, university: 'innsbruck', degree: 'bachelor' },
+                    payload: {
+                      vct:
+                        (credentialRequest.vct as string | undefined) ??
+                        universityDegreeCredentialConfigurationSupported.vct,
+                      university: 'innsbruck',
+                      degree: 'bachelor',
+                    },
                     holder: holderBinding,
                     issuer: {
                       method: 'did',
@@ -149,7 +158,7 @@ describe('OpenId4Vci (Deferred)', () => {
                   })),
                 }
               }
-              if (credentialRequest.format === 'mso_mdoc') {
+              if (credentialFormat === 'mso_mdoc') {
                 return {
                   type: 'credentials',
                   format: ClaimFormat.MsoMdoc,
@@ -605,6 +614,114 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const firstMdoc = (deferredCredentialResponse.credentials[0].record as MdocRecord).firstCredential
     expect(firstMdoc.docType).toEqual('UniversityDegreeCredential')
 
+    await holderTenant.endSession()
+  })
+
+  it('holder uses a response encryption key per deferred credential and deletes it once that credential is received', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const requestEncryptionKey = await issuerTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+      dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+        otherUniversityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+      credentialRequestEncryption: { required: true, jwks: [requestEncryptionKey.publicJwk] },
+      credentialResponseEncryption: { required: true },
+    })
+
+    const { credentialOffer } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree', 'otherUniversityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    const kms = holderTenant.context.resolve(Kms.KeyManagementApi)
+    const deleteKeySpy = vi.spyOn(kms, 'deleteKey')
+
+    const credentialResponse = await holderTenant.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponse,
+      credentialBindingResolver,
+    })
+    const [first, second] = credentialResponse.deferredCredentials
+    const firstKeyId = first.credentialResponseEncryption?.keyId
+    const secondKeyId = second.credentialResponseEncryption?.keyId
+    expect(firstKeyId).toEqual(expect.any(String))
+    expect(secondKeyId).toEqual(expect.any(String))
+    expect(firstKeyId).not.toEqual(secondKeyId)
+    expect(deleteKeySpy).not.toHaveBeenCalled()
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    const firstResponse = await holderTenant.openid4vc.holder.requestDeferredCredentials({
+      ...tokenResponse,
+      ...first,
+      issuerMetadata: resolvedCredentialOffer.metadata,
+    })
+    expect(firstResponse.credentials).toHaveLength(1)
+    expect(deleteKeySpy).toHaveBeenCalledTimes(1)
+    expect(deleteKeySpy).toHaveBeenCalledWith({ keyId: firstKeyId })
+
+    const secondResponse = await holderTenant.openid4vc.holder.requestDeferredCredentials({
+      ...tokenResponse,
+      ...second,
+      dpop: firstResponse.dpop,
+      issuerMetadata: resolvedCredentialOffer.metadata,
+    })
+    expect(secondResponse.credentials).toHaveLength(1)
+    expect(deleteKeySpy).toHaveBeenLastCalledWith({ keyId: secondKeyId })
+
+    deleteKeySpy.mockRestore()
+    await holderTenant.endSession()
+  })
+
+  it('holder deletes the response encryption key when a deferred credential request fails', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const requestEncryptionKey = await issuerTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+      dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+      credentialRequestEncryption: { required: true, jwks: [requestEncryptionKey.publicJwk] },
+      credentialResponseEncryption: { required: true },
+    })
+
+    const { credentialOffer } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+    const credentialResponse = await holderTenant.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponse,
+      credentialBindingResolver,
+    })
+    const [deferred] = credentialResponse.deferredCredentials
+
+    const deleteKeySpy = vi.spyOn(holderTenant.context.resolve(Kms.KeyManagementApi), 'deleteKey')
+    await expect(
+      holderTenant.openid4vc.holder.requestDeferredCredentials({
+        ...tokenResponse,
+        ...deferred,
+        transactionId: 'unknown-transaction-id',
+        issuerMetadata: resolvedCredentialOffer.metadata,
+      })
+    ).rejects.toThrow()
+    expect(deleteKeySpy).toHaveBeenCalledWith({ keyId: deferred.credentialResponseEncryption?.keyId })
+
+    deleteKeySpy.mockRestore()
     await holderTenant.endSession()
   })
 

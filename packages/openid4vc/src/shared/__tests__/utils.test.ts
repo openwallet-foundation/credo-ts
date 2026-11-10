@@ -1,7 +1,8 @@
 import { generateKeyPairSync } from 'node:crypto'
 import { Kms } from '@credo-ts/core'
+import type { IssuerMetadataResult } from '@openid4vc/openid4vci'
 import { getAgentContext } from '../../../../core/tests'
-import { getSupportedResponseEncryptionJwks } from '../utils'
+import { getCredentialRequestEncryption, getSupportedResponseEncryptionJwks } from '../utils'
 
 const ecJwk = (namedCurve: string) =>
   generateKeyPairSync('ec', { namedCurve }).publicKey.export({ format: 'jwk' }) as Record<string, unknown>
@@ -50,5 +51,63 @@ describe('getSupportedResponseEncryptionJwks', () => {
     ).toEqual({
       keys: [x25519, p256, p521],
     })
+  })
+})
+
+describe('getCredentialRequestEncryption', () => {
+  const metadata = (credentialRequestEncryption: Record<string, unknown>) =>
+    ({
+      credentialIssuer: {
+        credential_issuer: 'https://issuer.example',
+        credential_request_encryption: credentialRequestEncryption,
+      },
+    }) as unknown as IssuerMetadataResult
+
+  test('picks the first issuer key and enc value supported by the agent', () => {
+    const agentContext = getAgentContext({ kmsBackends: [p256OnlyBackend] })
+    const keys = [
+      { ...ecJwk('P-256'), kid: 'signing', use: 'sig', alg: 'ECDH-ES' },
+      { ...ecJwk('P-256'), kid: 'rsa', alg: 'RSA-OAEP-256' },
+      { ...ecJwk('P-384'), kid: 'p384', alg: 'ECDH-ES' },
+      { ...ecJwk('P-256'), kid: 'p256', use: 'enc', alg: 'ECDH-ES' },
+    ]
+
+    expect(
+      getCredentialRequestEncryption(
+        agentContext,
+        metadata({
+          jwks: { keys },
+          enc_values_supported: ['A192GCM', 'A256GCM', 'A128GCM'],
+          encryption_required: true,
+        }),
+        false
+      )
+    ).toEqual({ kid: 'p256', enc: 'A128GCM' })
+  })
+
+  test('does not choose a key when the request is not encrypted', () => {
+    const agentContext = getAgentContext()
+    const keys = [{ ...ecJwk('P-256'), kid: 'p256', alg: 'ECDH-ES' }]
+
+    expect(
+      getCredentialRequestEncryption(
+        agentContext,
+        metadata({ jwks: { keys }, enc_values_supported: ['A128GCM'], encryption_required: false }),
+        false
+      )
+    ).toBeUndefined()
+  })
+
+  test('throws when the issuer advertises no usable key', () => {
+    const agentContext = getAgentContext({ kmsBackends: [p256OnlyBackend] })
+    const keys = [{ ...ecJwk('P-384'), kid: 'p384', alg: 'ECDH-ES' }]
+
+    expect(() =>
+      getCredentialRequestEncryption(
+        agentContext,
+        metadata({ jwks: { keys }, enc_values_supported: ['A128GCM'], encryption_required: false }),
+        true
+      )
+    ).toThrow("Credential issuer 'https://issuer.example' does not advertise a credential request encryption key")
   })
 })

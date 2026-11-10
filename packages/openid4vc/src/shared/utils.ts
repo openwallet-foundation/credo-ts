@@ -11,6 +11,7 @@ import {
   X509Certificate,
 } from '@credo-ts/core'
 import type { Jwk, JwkSet, JwtSigner } from '@openid4vc/oauth2'
+import type { CredentialRequestEncryption, IssuerMetadataResult } from '@openid4vc/openid4vci'
 import type { OpenId4VcJwtIssuer, OpenId4VcJwtIssuerEncoded } from './models'
 
 export const supportedResponseEncryptionKeyAgreementAlgorithms = [
@@ -67,6 +68,33 @@ export function getSupportedResponseEncryptionJwks(agentContext: AgentContext, j
       )
     }),
   }
+}
+
+export function getCredentialRequestEncryption(
+  agentContext: AgentContext,
+  metadata: IssuerMetadataResult,
+  hasResponseEncryption: boolean
+): CredentialRequestEncryption | undefined {
+  const requestEncryption = metadata.credentialIssuer.credential_request_encryption
+  if (!requestEncryption || (!requestEncryption.encryption_required && !hasResponseEncryption)) return undefined
+
+  const keys = requestEncryption.jwks.keys.filter(
+    (jwk) =>
+      (jwk.use === undefined || jwk.use === 'enc') &&
+      jwk.alg !== undefined &&
+      (supportedResponseEncryptionKeyAgreementAlgorithms as readonly string[]).includes(jwk.alg)
+  )
+  const [jwk] = getSupportedResponseEncryptionJwks(agentContext, { keys }).keys
+  const enc = supportedResponseEncryptionContentAlgorithms.find((enc) =>
+    requestEncryption.enc_values_supported.includes(enc)
+  )
+  if (!jwk?.kid || !enc) {
+    throw new CredoError(
+      `Credential issuer '${metadata.credentialIssuer.credential_issuer}' does not advertise a credential request encryption key and enc value supported by Credo (alg ${supportedResponseEncryptionKeyAgreementAlgorithms.join(', ')}, enc ${supportedResponseEncryptionContentAlgorithms.join(', ')})`
+    )
+  }
+
+  return { kid: jwk.kid, enc }
 }
 
 export async function getPublicJwkFromDid(

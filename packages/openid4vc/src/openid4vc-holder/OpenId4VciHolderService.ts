@@ -68,6 +68,7 @@ import { getOid4vcCallbacks } from '../shared/callbacks'
 import { getDpopOptions } from '../shared/dpop'
 import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
 import {
+  getCredentialRequestEncryption,
   supportedResponseEncryptionContentAlgorithms,
   supportedResponseEncryptionKeyAgreementAlgorithms,
 } from '../shared/utils'
@@ -93,6 +94,14 @@ import type {
   OpenId4VcParseAndVerifyAuthorizationResponseOptions,
 } from './OpenId4VciHolderServiceOptions'
 import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
+
+function isIssuancePendingError(error: unknown) {
+  return (
+    error instanceof Openid4vciRetrieveCredentialsError &&
+    error.response.credentialErrorResponseResult?.success === true &&
+    error.response.credentialErrorResponseResult.data.error === 'issuance_pending'
+  )
+}
 
 @injectable()
 export class OpenId4VciHolderService {
@@ -567,14 +576,7 @@ export class OpenId4VciHolderService {
       throw new CredoError('No cNonce provided and unable to acquire cNonce from the credential issuer')
     }
 
-    const credentialResponseEncryption = await this.createCredentialResponseEncryption(
-      agentContext,
-      metadata,
-      encryptCredentialResponse
-    )
-    const credentialResponseEncryptionParameters = credentialResponseEncryption
-      ? await this.getCredentialResponseEncryptionParameters(agentContext, credentialResponseEncryption)
-      : undefined
+    const responseEncryptions: OpenId4VciHolderCredentialResponseEncryption[] = []
 
     try {
       for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationsToRequest) {
@@ -608,6 +610,13 @@ export class OpenId4VciHolderService {
               } as const)
             : undefined
 
+        const credentialResponseEncryption = await this.createCredentialResponseEncryption(
+          agentContext,
+          metadata,
+          encryptCredentialResponse
+        )
+        if (credentialResponseEncryption) responseEncryptions.push(credentialResponseEncryption)
+
         const { credentialResponse, dpop } = await client.retrieveCredentials({
           issuerMetadata: metadata,
           accessToken: options.accessToken,
@@ -622,7 +631,14 @@ export class OpenId4VciHolderService {
           // Only include proofs if we don't add proof
           proofs: !proof ? proofs : undefined,
           proof,
-          credentialResponseEncryption: credentialResponseEncryptionParameters,
+          credentialResponseEncryption: credentialResponseEncryption
+            ? await this.getCredentialResponseEncryptionParameters(agentContext, credentialResponseEncryption)
+            : undefined,
+          credentialRequestEncryption: getCredentialRequestEncryption(
+            agentContext,
+            metadata,
+            credentialResponseEncryption !== undefined
+          ),
         })
 
         // Set new nonce values
@@ -667,12 +683,16 @@ export class OpenId4VciHolderService {
         }
       }
     } catch (error) {
-      await this.deleteCredentialResponseEncryptionKey(agentContext, credentialResponseEncryption)
+      for (const encryption of responseEncryptions) {
+        await this.deleteCredentialResponseEncryptionKey(agentContext, encryption)
+      }
       throw error
     }
 
-    if (deferredCredentials.length === 0) {
-      await this.deleteCredentialResponseEncryptionKey(agentContext, credentialResponseEncryption)
+    for (const encryption of responseEncryptions) {
+      if (!deferredCredentials.some((deferred) => deferred.credentialResponseEncryption === encryption)) {
+        await this.deleteCredentialResponseEncryptionKey(agentContext, encryption)
+      }
     }
 
     return {
@@ -706,67 +726,81 @@ export class OpenId4VciHolderService {
       jwkThumbprintKmsKeyIdMapping,
       credentialResponseEncryption,
     } = options
-    const credentialResponseEncryptionParameters = credentialResponseEncryption
-      ? await this.getCredentialResponseEncryptionParameters(agentContext, credentialResponseEncryption)
-      : undefined
     const client = this.getClient(agentContext)
 
     const receivedCredentials: Array<OpenId4VciCredentialResponse> = []
     const deferredCredentials: Array<OpenId4VciDeferredCredentialResponse> = []
     let dpopNonce = options.dpop?.nonce
 
-    const { deferredCredentialResponse, dpop } = await client.retrieveDeferredCredentials({
-      issuerMetadata,
-      accessToken,
-      transactionId,
-      dpop: options.dpop
-        ? await getDpopOptions(agentContext, {
-            ...options.dpop,
-            nonce: dpopNonce,
-            dpopSigningAlgValuesSupported: [options.dpop.alg],
-          })
-        : undefined,
-      credentialResponseEncryption: credentialResponseEncryptionParameters,
-    })
-
-    // Set new nonce values
-    dpopNonce = dpop?.nonce
-
-    if (deferredCredentialResponse.interval) {
-      const deferredCredential: OpenId4VciDeferredCredentialResponse = {
-        credentialConfigurationId,
-        credentialConfiguration,
+    try {
+      const { deferredCredentialResponse, dpop } = await client.retrieveDeferredCredentials({
+        issuerMetadata,
+        accessToken,
         transactionId,
-        interval: deferredCredentialResponse.interval,
-        notificationId: deferredCredentialResponse.notification_id,
-        jwkThumbprintKmsKeyIdMapping,
-        credentialResponseEncryption,
+        dpop: options.dpop
+          ? await getDpopOptions(agentContext, {
+              ...options.dpop,
+              nonce: dpopNonce,
+              dpopSigningAlgValuesSupported: [options.dpop.alg],
+            })
+          : undefined,
+        credentialResponseEncryption: credentialResponseEncryption
+          ? await this.getCredentialResponseEncryptionParameters(agentContext, credentialResponseEncryption)
+          : undefined,
+        credentialRequestEncryption: getCredentialRequestEncryption(
+          agentContext,
+          issuerMetadata,
+          credentialResponseEncryption !== undefined
+        ),
+      })
+
+      // Set new nonce values
+      dpopNonce = dpop?.nonce
+
+      if (deferredCredentialResponse.interval) {
+        const deferredCredential: OpenId4VciDeferredCredentialResponse = {
+          credentialConfigurationId,
+          credentialConfiguration,
+          transactionId,
+          interval: deferredCredentialResponse.interval,
+          notificationId: deferredCredentialResponse.notification_id,
+          jwkThumbprintKmsKeyIdMapping,
+          credentialResponseEncryption,
+        }
+
+        this.logger.debug('received deferred credential', deferredCredential)
+        deferredCredentials.push(deferredCredential)
+      } else {
+        // Create credential, but we don't store it yet (only after the user has accepted the credential)
+        const credential = await this.handleCredentialResponse(agentContext, deferredCredentialResponse, {
+          verifyCredentialStatus: verifyCredentialStatus ?? false,
+          format: credentialConfiguration.format as OpenId4VciCredentialFormatProfile,
+          credentialConfigurationId: credentialConfigurationId,
+          credentialConfiguration: credentialConfiguration,
+          jwkThumbprintKmsKeyIdMapping,
+        })
+
+        const firstCredential = credential.record.firstCredential
+        this.logger.debug('received credential response', {
+          firstCredential:
+            firstCredential instanceof Mdoc
+              ? {
+                  issuerSignedNamespaces: firstCredential.issuerSignedNamespaces,
+                  base64Url: firstCredential.base64Url,
+                }
+              : firstCredential,
+          totalNumberOfCredentials: credential.record.credentialInstances.length,
+        })
+        receivedCredentials.push(credential)
       }
+    } catch (error) {
+      if (!isIssuancePendingError(error)) {
+        await this.deleteCredentialResponseEncryptionKey(agentContext, credentialResponseEncryption)
+      }
+      throw error
+    }
 
-      this.logger.debug('received deferred credential', deferredCredential)
-      deferredCredentials.push(deferredCredential)
-    } else {
-      // Create credential, but we don't store it yet (only after the user has accepted the credential)
-      const credential = await this.handleCredentialResponse(agentContext, deferredCredentialResponse, {
-        verifyCredentialStatus: verifyCredentialStatus ?? false,
-        format: credentialConfiguration.format as OpenId4VciCredentialFormatProfile,
-        credentialConfigurationId: credentialConfigurationId,
-        credentialConfiguration: credentialConfiguration,
-        jwkThumbprintKmsKeyIdMapping,
-      })
-
-      const firstCredential = credential.record.firstCredential
-      this.logger.debug('received credential response', {
-        firstCredential:
-          firstCredential instanceof Mdoc
-            ? {
-                issuerSignedNamespaces: firstCredential.issuerSignedNamespaces,
-                base64Url: firstCredential.base64Url,
-              }
-            : firstCredential,
-        totalNumberOfCredentials: credential.record.credentialInstances.length,
-      })
-      receivedCredentials.push(credential)
+    if (receivedCredentials.length > 0) {
       await this.deleteCredentialResponseEncryptionKey(agentContext, credentialResponseEncryption)
     }
 
