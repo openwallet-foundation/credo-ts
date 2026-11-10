@@ -74,12 +74,10 @@ export class CheqdLedgerService {
 
   public async disconnect() {
     for (const network of this.networks) {
-      const _a = await network.sdk
-      if (!network.sdk) {
-        await this.initializeSdkForNetwork(network)
-      } else {
-        this.logger.debug(`Not connecting to network ${network} as SDK already initialized`)
-      }
+      const sdk = await network.sdk?.catch(() => undefined)
+      sdk?.signer.disconnect()
+      network.sdk = undefined
+      network.querier = undefined
     }
   }
 
@@ -117,40 +115,24 @@ export class CheqdLedgerService {
 
   private async getSdk(did: string) {
     const network = this.getNetwork(did)
-
-    if (!network.sdk) {
-      const sdk = await this.initializeSdkForNetwork(network)
-      if (!sdk) throw new Error(`Cheqd SDK not initialized for network ${network.network}`)
-      return sdk
-    }
+    network.sdk ??= this.createSdk(network)
 
     try {
-      const sdk = await network.sdk
-      return sdk
+      return await network.sdk
     } catch (error) {
-      throw new Error(`Error initializing cheqd sdk for network ${network.network}: ${error.message}`)
+      network.sdk = undefined
+      throw new CredoError(`Error initializing cheqd sdk for network ${network.network}: ${error.message}`, {
+        cause: error,
+      })
     }
   }
 
-  private async initializeSdkForNetwork(network: ICheqdLedgerConfig) {
-    try {
-      // Initialize cheqd sdk with promise
-      network.sdk = createCheqdSDK({
-        modules: [DIDModule as unknown as AbstractCheqdSDKModule, ResourceModule as unknown as AbstractCheqdSDKModule],
-        rpcUrl: network.rpcUrl,
-        wallet: await getCosmosPayerWallet(network.cosmosPayerSeed).catch((error) => {
-          throw new CredoError(`Error initializing cosmos payer wallet: ${error.message}`, { cause: error })
-        }),
-      })
-
-      return await network.sdk
-    } catch (error) {
-      this.logger.error(
-        `Skipping connection for network ${network.network} in cheqd sdk due to error in initialization: ${error.message}`
-      )
-      network.sdk = undefined
-      return undefined
-    }
+  private async createSdk(network: ICheqdLedgerConfig) {
+    return createCheqdSDK({
+      modules: [DIDModule as unknown as AbstractCheqdSDKModule, ResourceModule as unknown as AbstractCheqdSDKModule],
+      rpcUrl: network.rpcUrl,
+      wallet: await getCosmosPayerWallet(network.cosmosPayerSeed),
+    })
   }
 
   public async create(

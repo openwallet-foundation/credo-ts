@@ -1,4 +1,4 @@
-import { CheqdQuerier, defaultResourceExtensionKey } from '@cheqd/sdk'
+import { CheqdQuerier, type DIDDocument, defaultResourceExtensionKey } from '@cheqd/sdk'
 
 import testLogger from '../../core/tests/logger'
 import { CheqdModuleConfig } from '../src/CheqdModuleConfig'
@@ -25,5 +25,16 @@ describe('CheqdLedgerService', () => {
       id: 'resource-id',
     })
     expect(resourceMetadata).toHaveBeenCalledWith('collection-id', 'resource-id')
+  })
+
+  it('should reject ledger writes without a cosmosPayerSeed', async () => {
+    const ledgerService = new CheqdLedgerService(
+      new CheqdModuleConfig({ networks: [{ network: 'testnet' }] }),
+      testLogger
+    )
+
+    await expect(ledgerService.create({ id: validDid } as DIDDocument, [])).rejects.toThrow(
+      'A cosmosPayerSeed is required to write to the cheqd ledger'
+    )
   })
 })
