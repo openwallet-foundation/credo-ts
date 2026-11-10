@@ -77,7 +77,6 @@ import {
   credoJwtIssuerToOpenId4VcJwtIssuer,
   decodeJwtIssuer,
   encodeJwtIssuer,
-  getProofTypeFromPublicJwk,
   getPublicJwkFromDid,
   supportedResponseEncryptionContentAlgorithms,
   supportedResponseEncryptionKeyAgreementAlgorithms,
@@ -2414,8 +2413,8 @@ export class OpenId4VcIssuerService {
     format: `${ClaimFormat.JwtVc}` | `${ClaimFormat.LdpVc}`,
     options: OpenId4VciSignW3cCredentials['credentials'][number]
   ) {
-    const publicJwk = await getPublicJwkFromDid(agentContext, options.verificationMethod)
     if (format === ClaimFormat.JwtVc) {
+      const publicJwk = await getPublicJwkFromDid(agentContext, options.verificationMethod)
       return await this.w3cCredentialService.signCredential(agentContext, {
         format: ClaimFormat.JwtVc,
         credential: options.credential,
@@ -2424,12 +2423,11 @@ export class OpenId4VcIssuerService {
       })
     }
 
-    const proofType = getProofTypeFromPublicJwk(agentContext, publicJwk)
+    // No proofType, so signing picks the suite from the verification method type, as the key type alone is not enough
     return await this.w3cCredentialService.signCredential(agentContext, {
       format: ClaimFormat.LdpVc,
       credential: options.credential,
       verificationMethod: options.verificationMethod,
-      proofType: proofType,
     })
   }
 

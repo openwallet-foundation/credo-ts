@@ -71,9 +71,10 @@ export interface W3cJsonLdSignCredentialOptions extends W3cSignCredentialOptions
   /**
    * The proofType to be used for signing the credential.
    *
-   * Must be a valid Linked Data Signature suite.
+   * Must be a valid Linked Data Signature suite. When omitted, the first registered suite that supports
+   * the type of the verification method is used.
    */
-  proofType: string
+  proofType?: string
 
   proofPurpose?: ProofPurpose
   created?: string

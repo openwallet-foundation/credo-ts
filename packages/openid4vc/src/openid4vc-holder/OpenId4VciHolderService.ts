@@ -1152,10 +1152,10 @@ export class OpenId4VciHolderService {
             signatureAlgorithms = options.possibleProofOfPossessionSignatureAlgorithms.filter((signatureAlgorithm) => {
               try {
                 const jwkClass = Kms.PublicJwk.supportedPublicJwkClassForSignatureAlgorithm(signatureAlgorithm)
-                const matchingSuites = signatureSuiteRegistry.getAllByPublicJwkType(jwkClass)
-                if (matchingSuites.length === 0) return false
-
-                return proofSigningAlgsSupported.includes(matchingSuites[0].proofType)
+                // The holder doesn't know the verification method here, so any suite for the key type may be used
+                return signatureSuiteRegistry
+                  .getAllByPublicJwkType(jwkClass)
+                  .some((suite) => proofSigningAlgsSupported.includes(suite.proofType))
               } catch {
                 return false
               }
