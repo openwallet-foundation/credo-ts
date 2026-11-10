@@ -40,6 +40,12 @@ function createAgent() {
 }
 
 describe('AnonCreds without DIDComm', () => {
+  test('constructs an agent and resolves a schema without loading DIDComm', async () => {
+    const { agent, schemaId, schema } = createAgent()
+
+    expect(await agent.modules.anoncreds.getSchema(schemaId)).toMatchObject({ schemaId, schema })
+  })
+
   test('does not load DIDComm when there are no legacy credentials to convert', async () => {
     const { agent, module } = createAgent()
 

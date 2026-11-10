@@ -560,9 +560,6 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
-      '@credo-ts/didcomm':
-        specifier: workspace:*
-        version: link:../didcomm
       '@sphereon/pex-models':
         specifier: 'catalog:'
         version: 2.3.2
@@ -579,6 +576,9 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
+      '@credo-ts/didcomm':
+        specifier: workspace:*
+        version: link:../didcomm
       '@credo-ts/node':
         specifier: workspace:*
         version: link:../node

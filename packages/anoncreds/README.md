@@ -48,5 +48,31 @@ Import the AnonCreds DIDComm formats from the DIDComm integration entry point:
 import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService } from '@credo-ts/anoncreds/didcomm'
 ```
 
-The DIDComm APIs are no longer exported from the `@credo-ts/anoncreds` package root. This change only affects
-their import paths; AnonCreds support for DIDComm credential and proof exchanges is unchanged.
+The package root does not load DIDComm. `@credo-ts/didcomm` is an optional peer dependency; install it when
+using the DIDComm integration.
+
+To enable the `anoncreds_link_secret` binding method in the DIDComm Data Integrity credential format,
+pass its provider explicitly. Registering `AnonCredsModule` no longer configures this binding automatically.
+
+```ts
+import { AnonCredsLinkSecretBindingProvider } from '@credo-ts/anoncreds/didcomm'
+import { DidCommDataIntegrityCredentialFormatService } from '@credo-ts/didcomm'
+
+const dataIntegrityFormat = new DidCommDataIntegrityCredentialFormatService({
+  linkSecretBinding: new AnonCredsLinkSecretBindingProvider(),
+})
+```
+
+Without this option, the format's other binding methods remain available. The former
+`DidCommDataIntegrityLinkSecretBindingProviderToken` has been removed.
+
+The auto-accept helpers `composeCredentialAutoAccept` and `composeProofAutoAccept` are available from
+`@credo-ts/anoncreds/didcomm`, not the kernel utilities.
+
+### Legacy storage upgrades
+
+The existing storage upgrade sequence is preserved. Historical DIDComm migrations load
+`@credo-ts/didcomm` on demand rather than when importing the AnonCreds module. Install DIDComm when upgrading
+storage that requires those migrations: the 0.3.1-to-0.4 exchange-record migration, or the 0.4-to-0.5
+conversion of legacy AnonCreds credentials and their exchange-record bindings. A missing dependency fails
+the migration rather than silently skipping the exchange-record updates. Fresh stores do not require it.
