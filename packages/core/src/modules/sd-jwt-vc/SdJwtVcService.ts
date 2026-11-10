@@ -350,7 +350,7 @@ export class SdJwtVcService {
         await sdjwt.verify(compactSdJwtVc, {
           requiredClaimKeys: requiredClaimKeys ? [...requiredClaimKeys, 'vct'] : ['vct'],
           keyBindingNonce: keyBinding?.nonce,
-          currentDate: dateToSeconds(now),
+          currentDate: now ? dateToSeconds(now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
           disableStatusVerification: statusValidationDisabled,
         })
@@ -372,7 +372,7 @@ export class SdJwtVcService {
 
       try {
         JwtPayload.fromJson(returnSdJwtVc.payload).validate({
-          now: dateToSeconds(now),
+          now: now ? dateToSeconds(now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
       } catch (error) {

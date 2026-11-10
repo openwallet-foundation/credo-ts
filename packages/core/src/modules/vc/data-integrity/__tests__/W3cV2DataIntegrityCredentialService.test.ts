@@ -462,6 +462,17 @@ describe('W3cV2DataIntegrityCredentialService', () => {
       expect(result.validations.validityPeriod?.error?.message).toBe('Credential is not valid yet based on validFrom')
     })
 
+    test('fails when validUntil is a leap second that Date cannot parse', async () => {
+      const result = await createService().verifyCredential(createIssuerResolvingAgentContext(), {
+        credential: createCredentialWithIssuer({}, { validUntil: '2016-12-31T23:59:60Z' }),
+      } as unknown as W3cV2DiVerifyCredentialOptions)
+
+      expect(result.isValid).toBe(false)
+      expect(result.validations.validityPeriod?.error?.message).toBe(
+        'Credential validFrom and validUntil must be valid dates'
+      )
+    })
+
     test('checks the validity period and proof against the provided now', async () => {
       const proofService = createProofService()
       const now = new Date('2019-12-31T00:00:00Z')

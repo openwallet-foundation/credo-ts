@@ -3,7 +3,7 @@ import type { ValidationOptions } from 'class-validator'
 import { buildMessage, isString, isURL, ValidateBy } from 'class-validator'
 import { CredoError } from '../../error'
 import { isJsonObject } from '../../types'
-import { dateToSeconds } from '../../utils'
+import { dateToSeconds, nowInSeconds } from '../../utils'
 import {
   CREDENTIALS_CONTEXT_V1_URL,
   CREDENTIALS_CONTEXT_V2_URL,
@@ -173,10 +173,18 @@ export function validateVc2CredentialStatus(options: {
 export function validateVc2CredentialValidityPeriod(
   options: ValidateVc2CredentialValidityPeriodOptions
 ): ValidationResult {
-  const now = dateToSeconds(options.now)
+  const now = options.now ? dateToSeconds(options.now) : nowInSeconds()
 
   const validFromTimestamp = options.validFrom ? dateToSeconds(new Date(options.validFrom)) : undefined
   const validUntilTimestamp = options.validUntil ? dateToSeconds(new Date(options.validUntil)) : undefined
+
+  // RFC 3339 allows a :60 leap second, which Date can't parse.
+  if (Number.isNaN(validFromTimestamp) || Number.isNaN(validUntilTimestamp)) {
+    return {
+      isValid: false,
+      error: new CredoError('Credential validFrom and validUntil must be valid dates'),
+    }
+  }
 
   if (
     validFromTimestamp !== undefined &&

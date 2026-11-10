@@ -148,7 +148,7 @@ export class W3cV2SdJwtCredentialService {
 
         // Validate JWT payload
         JwtPayload.fromJson(credential.sdJwt.payload).validate({
-          now: dateToSeconds(options.now),
+          now: options.now ? dateToSeconds(options.now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
@@ -217,7 +217,7 @@ export class W3cV2SdJwtCredentialService {
 
       try {
         await sdJwt.verify(credential.encoded, {
-          currentDate: dateToSeconds(options.now),
+          currentDate: options.now ? dateToSeconds(options.now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
           keyBindingNonce: options.keyBinding?.nonce,
           expectedKeyBindingAudience: options.keyBinding?.audience,
@@ -336,7 +336,7 @@ export class W3cV2SdJwtCredentialService {
 
         // Validate JWT payload
         JwtPayload.fromJson(presentation.sdJwt.payload).validate({
-          now: dateToSeconds(options.now),
+          now: options.now ? dateToSeconds(options.now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
@@ -387,7 +387,7 @@ export class W3cV2SdJwtCredentialService {
 
       try {
         await sdjwt.verify(presentation.encoded, {
-          currentDate: dateToSeconds(options.now),
+          currentDate: options.now ? dateToSeconds(options.now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 

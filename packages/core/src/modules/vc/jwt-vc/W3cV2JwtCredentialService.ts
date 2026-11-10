@@ -115,7 +115,7 @@ export class W3cV2JwtCredentialService {
 
         // Verify the JWT payload (verifies whether it's not expired, etc...)
         credential.jwt.payload.validate({
-          now: dateToSeconds(options.now),
+          now: options.now ? dateToSeconds(options.now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
@@ -291,7 +291,7 @@ export class W3cV2JwtCredentialService {
 
         // Verify the JWT payload (verifies whether it's not expired, etc...)
         presentation.jwt.payload.validate({
-          now: dateToSeconds(options.now),
+          now: options.now ? dateToSeconds(options.now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 

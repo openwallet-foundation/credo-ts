@@ -1,5 +1,5 @@
 import { CredoError } from '../../../error'
-import { dateToSeconds } from '../../../utils'
+import { nowInSeconds } from '../../../utils'
 
 /**
  * The maximum allowed clock skew time in seconds. If an time based validation
@@ -229,7 +229,7 @@ export class JwtPayload {
 }
 
 function getNowSkewed(now?: number, skewSeconds?: number) {
-  const _now = now ?? dateToSeconds()
+  const _now = now ?? nowInSeconds()
   const _skewSeconds = skewSeconds ?? DEFAULT_SKEW_TIME
 
   return {

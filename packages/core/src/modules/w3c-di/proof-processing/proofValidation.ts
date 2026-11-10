@@ -1,4 +1,4 @@
-import { asArray, dateToSeconds, equalsIgnoreOrder } from '../../../utils'
+import { asArray, dateToSeconds, equalsIgnoreOrder, nowInSeconds } from '../../../utils'
 import { MultiBaseEncoder } from '../../../utils/MultiBaseEncoder'
 import { TypedArrayEncoder } from '../../../utils/TypedArrayEncoder'
 import type { W3cDataIntegrityVerifyFailure } from '../W3cDataIntegrityError'
@@ -121,9 +121,21 @@ export function validateProofTimestamps(
   proof: W3cDataIntegrityCryptosuiteProof,
   options: { skewSeconds: number; now?: Date }
 ): W3cDataIntegrityVerifyFailure | undefined {
-  const now = dateToSeconds(options.now)
+  const now = options.now ? dateToSeconds(options.now) : nowInSeconds()
+  const created = proof.created !== undefined ? dateToSeconds(new Date(proof.created)) : undefined
+  const expires = proof.expires !== undefined ? dateToSeconds(new Date(proof.expires)) : undefined
 
-  if (proof.created !== undefined && dateToSeconds(new Date(proof.created)) - options.skewSeconds > now) {
+  if (Number.isNaN(created) || Number.isNaN(expires)) {
+    return createInvalidResult(
+      createIssue(
+        W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
+        'Proof created and expires must be valid dates',
+        `Proof created '${proof.created}', expires '${proof.expires}'`
+      )
+    )
+  }
+
+  if (created !== undefined && created - options.skewSeconds > now) {
     return createInvalidResult(
       createIssue(
         W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
@@ -133,7 +145,7 @@ export function validateProofTimestamps(
     )
   }
 
-  if (proof.expires !== undefined && dateToSeconds(new Date(proof.expires)) + options.skewSeconds < now) {
+  if (expires !== undefined && expires + options.skewSeconds < now) {
     return createInvalidResult(
       createIssue(
         W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
