@@ -5,7 +5,7 @@ import {
 import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { Agent } from '../../../../../../../core/src/agent/Agent'
 import { CacheModule, InMemoryLruCache } from '../../../../../../../core/src/modules/cache'
-import { W3cCredentialsModule } from '../../../../../../../core/src/modules/vc'
+import { JsonLdModule } from '../../../../../../../core/src/modules/vc'
 import { customDocumentLoader } from '../../../../../../../core/src/modules/vc/linked-data-proofs/__tests__/documentLoader'
 import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
 import { JsonTransformer } from '../../../../../../../core/src/utils/JsonTransformer'
@@ -69,7 +69,7 @@ const getIndyJsonLdModules = (extraDidCommConfig: DidCommModuleConfigOptions) =>
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
-    w3cCredentials: new W3cCredentialsModule({
+    jsonLd: new JsonLdModule({
       documentLoader: customDocumentLoader,
     }),
   }) as const

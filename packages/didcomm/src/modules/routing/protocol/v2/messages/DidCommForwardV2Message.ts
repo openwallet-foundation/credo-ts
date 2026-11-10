@@ -38,7 +38,6 @@ export interface DidCommForwardV2PlaintextOptions {
  * @see https://identity.foundation/didcomm-messaging/spec/v2.1/#routing-protocol
  */
 export class DidCommForwardV2Message extends DidCommMessage {
-  public readonly allowDidSovPrefix = true
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
   public constructor(options?: DidCommForwardV2MessageOptions) {

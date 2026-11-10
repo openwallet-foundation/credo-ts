@@ -11,6 +11,7 @@ import {
   type W3cDataIntegrityVerifyFailure as DataIntegrityVerifyFailure,
   EddsaJcs2022Cryptosuite,
 } from '../../../w3c-di/internal'
+import { defaultDocumentLoader } from '../../jsonld/documentLoader'
 import { JsonLdModuleConfig } from '../../jsonld/JsonLdModuleConfig'
 import { ClaimFormat } from '../../models'
 import type {
@@ -1058,7 +1059,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
       diProofService = new DataIntegrityProofService(cryptosuiteRegistry)
       diContextValidator = new W3cV2DataIntegrityContextValidator(
-        new JsonLdModuleConfig(),
+        new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader }),
         new W3cV2CredentialsModuleConfig()
       )
       diCredentialService = new W3cV2DataIntegrityCredentialService(diProofService, diContextValidator)

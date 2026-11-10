@@ -17,6 +17,15 @@ export interface JsonLd {
   getValues(document: any, key: string): any
   // biome-ignore lint/suspicious/noExplicitAny: no explanation
   addValue(document: any, key: string, value: any): void
+  util: {
+    parseLinkHeader(header: string): Record<string, LinkHeader | LinkHeader[]>
+  }
+}
+
+export interface LinkHeader {
+  target: string
+  rel?: string
+  type?: string
 }
 
 export interface DocumentLoaderResult {

@@ -173,7 +173,6 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     const skidDid = keys.senderKeySkid.startsWith('did:') ? keys.senderKeySkid.split('#')[0] : undefined
 
     return buildV2PlaintextFromMessage(message, {
-      useDidSovPrefixWhereAllowed: this.config.useDidSovPrefixWhereAllowed,
       from:
         connection?.did && skidDid && areEquivalentDidPeer4Forms(connection.did, skidDid) ? connection.did : skidDid,
       to: theirDid ? [theirDid] : undefined,

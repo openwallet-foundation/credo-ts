@@ -26,7 +26,6 @@ export {
   fetchSchema,
 } from './utils/anonCredsObjects'
 export { getCredentialsForAnonCredsProofRequest } from './utils/getCredentialsForAnonCredsRequest'
-export * from './utils/indyIdentifiers'
 export { storeLinkSecret } from './utils/linkSecret'
 export { AnonCredsCredentialMetadataKey, W3cAnonCredsCredentialMetadataKey } from './utils/metadata'
 export { assertBestPracticeRevocationInterval } from './utils/revocationInterval'

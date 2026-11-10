@@ -13,7 +13,7 @@ import {
   DidCommProofEventTypes,
   DidCommProofV2Protocol,
 } from '../../didcomm/src'
-import { Agent, CacheModule, InMemoryLruCache, W3cCredentialsModule } from '../src'
+import { Agent, CacheModule, InMemoryLruCache, JsonLdModule } from '../src'
 import { customDocumentLoader } from '../src/modules/vc/linked-data-proofs/__tests__/documentLoader'
 import type { EventReplaySubject } from './events'
 
@@ -57,7 +57,7 @@ export const getJsonLdModules = ({
       },
     }),
 
-    w3cCredentials: new W3cCredentialsModule({
+    jsonLd: new JsonLdModule({
       documentLoader: customDocumentLoader,
     }),
     cache: new CacheModule({

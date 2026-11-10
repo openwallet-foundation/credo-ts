@@ -1492,7 +1492,6 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "id": "did:peer:1zQmNStEDy8UHJCMFjJPJBJD36esBNX6YPa97y2jpRfCyLvG",
     "tags": {
       "did": "did:peer:1zQmNStEDy8UHJCMFjJPJBJD36esBNX6YPa97y2jpRfCyLvG",
-      "legacyUnqualifiedDid": "YKc7qhYN1TckZAMUf7jgwc",
       "method": "peer",
       "methodSpecificIdentifier": "1zQmNStEDy8UHJCMFjJPJBJD36esBNX6YPa97y2jpRfCyLvG",
       "recipientKeyFingerprints": [
@@ -1563,7 +1562,6 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "id": "did:peer:1zQmNkzNydAs2BdtWxM44sV2gMUtpxUw66nxMVTmswyb9Zhx",
     "tags": {
       "did": "did:peer:1zQmNkzNydAs2BdtWxM44sV2gMUtpxUw66nxMVTmswyb9Zhx",
-      "legacyUnqualifiedDid": "9jTqUnV4k5ucxbyxumAaV7",
       "method": "peer",
       "methodSpecificIdentifier": "1zQmNkzNydAs2BdtWxM44sV2gMUtpxUw66nxMVTmswyb9Zhx",
       "recipientKeyFingerprints": [
@@ -1634,7 +1632,6 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "id": "did:peer:1zQmPZuVfKzdmtdStmwKpaSwRH3sAwaKffNcP9ThfSksmvP4",
     "tags": {
       "did": "did:peer:1zQmPZuVfKzdmtdStmwKpaSwRH3sAwaKffNcP9ThfSksmvP4",
-      "legacyUnqualifiedDid": "WSwJQMBHGZbQsq9LDBTWjX",
       "method": "peer",
       "methodSpecificIdentifier": "1zQmPZuVfKzdmtdStmwKpaSwRH3sAwaKffNcP9ThfSksmvP4",
       "recipientKeyFingerprints": [
@@ -1705,7 +1702,6 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "id": "did:peer:1zQmQCp3iNUVGMDW5zuJQZxSajZQrBeo8jiuq1FPW4ZXVhNr",
     "tags": {
       "did": "did:peer:1zQmQCp3iNUVGMDW5zuJQZxSajZQrBeo8jiuq1FPW4ZXVhNr",
-      "legacyUnqualifiedDid": "3KAjJWF5NjiDTUm6JpPBQD",
       "method": "peer",
       "methodSpecificIdentifier": "1zQmQCp3iNUVGMDW5zuJQZxSajZQrBeo8jiuq1FPW4ZXVhNr",
       "recipientKeyFingerprints": [
@@ -1776,7 +1772,6 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "id": "did:peer:1zQmSL5aqVsh36Ei4r8NkohfkMiaPLjtu3jqzRr9pSqnfTkE",
     "tags": {
       "did": "did:peer:1zQmSL5aqVsh36Ei4r8NkohfkMiaPLjtu3jqzRr9pSqnfTkE",
-      "legacyUnqualifiedDid": "SDqTzbVuCowusqGBNbNDjH",
       "method": "peer",
       "methodSpecificIdentifier": "1zQmSL5aqVsh36Ei4r8NkohfkMiaPLjtu3jqzRr9pSqnfTkE",
       "recipientKeyFingerprints": [
@@ -1847,7 +1842,6 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "id": "did:peer:1zQmVxHfU6ZgzxZfwAm6W5t4HKeupKctxpF6FaHgBmnvhEho",
     "tags": {
       "did": "did:peer:1zQmVxHfU6ZgzxZfwAm6W5t4HKeupKctxpF6FaHgBmnvhEho",
-      "legacyUnqualifiedDid": "3KAjJWF5NjiDTUm6JpPBQD",
       "method": "peer",
       "methodSpecificIdentifier": "1zQmVxHfU6ZgzxZfwAm6W5t4HKeupKctxpF6FaHgBmnvhEho",
       "recipientKeyFingerprints": [
@@ -1918,7 +1912,6 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "id": "did:peer:1zQmYQSKmHhPGGnvcAshQMpTjKA27DTWwGtGtiGkYBiQJT5M",
     "tags": {
       "did": "did:peer:1zQmYQSKmHhPGGnvcAshQMpTjKA27DTWwGtGtiGkYBiQJT5M",
-      "legacyUnqualifiedDid": "YUH4t3KMkEJiXgmqsncrY9",
       "method": "peer",
       "methodSpecificIdentifier": "1zQmYQSKmHhPGGnvcAshQMpTjKA27DTWwGtGtiGkYBiQJT5M",
       "recipientKeyFingerprints": [
@@ -1989,7 +1982,6 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "id": "did:peer:1zQmYfrkcLycyPxZZSrSw3LEMYZNLJLD3HjQ1VpSV692bcZx",
     "tags": {
       "did": "did:peer:1zQmYfrkcLycyPxZZSrSw3LEMYZNLJLD3HjQ1VpSV692bcZx",
-      "legacyUnqualifiedDid": "WewvCdyBi4HL8ogyGviYVS",
       "method": "peer",
       "methodSpecificIdentifier": "1zQmYfrkcLycyPxZZSrSw3LEMYZNLJLD3HjQ1VpSV692bcZx",
       "recipientKeyFingerprints": [
@@ -2060,7 +2052,6 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "id": "did:peer:1zQmc4nkRDFTaXX7DZDbGAuBBmivNV84qh8Ry3pAhVFgXhDy",
     "tags": {
       "did": "did:peer:1zQmc4nkRDFTaXX7DZDbGAuBBmivNV84qh8Ry3pAhVFgXhDy",
-      "legacyUnqualifiedDid": "Ak15GBhMYpdS8XX3QDMv31",
       "method": "peer",
       "methodSpecificIdentifier": "1zQmc4nkRDFTaXX7DZDbGAuBBmivNV84qh8Ry3pAhVFgXhDy",
       "recipientKeyFingerprints": [
@@ -2131,7 +2122,6 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "id": "did:peer:1zQmctp3J5DumzD4DDtirW6LvbEPPLUih2UacpX25wjqvC8e",
     "tags": {
       "did": "did:peer:1zQmctp3J5DumzD4DDtirW6LvbEPPLUih2UacpX25wjqvC8e",
-      "legacyUnqualifiedDid": "Ud6AWCk6WrwfYKZUw5tJmt",
       "method": "peer",
       "methodSpecificIdentifier": "1zQmctp3J5DumzD4DDtirW6LvbEPPLUih2UacpX25wjqvC8e",
       "recipientKeyFingerprints": [
@@ -2202,7 +2192,6 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "id": "did:peer:1zQmdBUroNDMEZX7An4NZWpuPXsmvYoFm6KkNUr6T2FvoKf2",
     "tags": {
       "did": "did:peer:1zQmdBUroNDMEZX7An4NZWpuPXsmvYoFm6KkNUr6T2FvoKf2",
-      "legacyUnqualifiedDid": "XajWZZmHGAWUvYCi7CApaG",
       "method": "peer",
       "methodSpecificIdentifier": "1zQmdBUroNDMEZX7An4NZWpuPXsmvYoFm6KkNUr6T2FvoKf2",
       "recipientKeyFingerprints": [
@@ -2273,7 +2262,6 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "id": "did:peer:1zQmfCM4v4QbeYNWSv48dhxxnB6TmAydwj1G4mcS1TrmhBjT",
     "tags": {
       "did": "did:peer:1zQmfCM4v4QbeYNWSv48dhxxnB6TmAydwj1G4mcS1TrmhBjT",
-      "legacyUnqualifiedDid": "GkEeb96MGT94K1HyQQzpj1",
       "method": "peer",
       "methodSpecificIdentifier": "1zQmfCM4v4QbeYNWSv48dhxxnB6TmAydwj1G4mcS1TrmhBjT",
       "recipientKeyFingerprints": [
@@ -2344,7 +2332,6 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "id": "did:peer:1zQmfLL2K1xoNdBEcjLCuGH7sq5hUF4zgeWH9WhmZwwucqfa",
     "tags": {
       "did": "did:peer:1zQmfLL2K1xoNdBEcjLCuGH7sq5hUF4zgeWH9WhmZwwucqfa",
-      "legacyUnqualifiedDid": "TMnQftvJJJwoYogYkQgVjg",
       "method": "peer",
       "methodSpecificIdentifier": "1zQmfLL2K1xoNdBEcjLCuGH7sq5hUF4zgeWH9WhmZwwucqfa",
       "recipientKeyFingerprints": [
