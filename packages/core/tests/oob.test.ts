@@ -13,6 +13,7 @@ import type { DidCommMessageReceivedEvent } from '../../didcomm/src/DidCommEvent
 import { DidCommEventTypes } from '../../didcomm/src/DidCommEvents'
 import type { DidCommMessage } from '../../didcomm/src/DidCommMessage'
 import {
+  DidCommConnectionRepository,
   DidCommDidExchangeState,
   DidCommHandshakeProtocol,
   DidCommTrustPingV2Message,
@@ -27,6 +28,7 @@ import { DidCommOutOfBandEventTypes } from '../../didcomm/src/modules/oob/domain
 import { DidCommOutOfBandRole } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
 import { OutOfBandDidCommService } from '../../didcomm/src/modules/oob/domain/OutOfBandDidCommService'
+import { outOfBandServiceToInlineKeysNumAlgo2Did } from '../../didcomm/src/modules/oob/helpers'
 import { DidCommOutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { DidCommOutOfBandRecordMetadataKeys } from '../../didcomm/src/modules/oob/repository/outOfBandRecordMetadataTypes'
 import { DidCommRoutingService } from '../../didcomm/src/modules/routing'
@@ -316,6 +318,22 @@ describe('out of band', () => {
   })
 
   describe('receiveInvitation', () => {
+    // Lists the service of `outOfBandInvitation` first and the service of `earlierOutOfBandInvitation` second
+    const withEarlierServiceSecond = (
+      outOfBandInvitation: DidCommOutOfBandInvitation,
+      earlierOutOfBandInvitation: DidCommOutOfBandInvitation
+    ) => {
+      const invitationJson = outOfBandInvitation.toJSON()
+      const [service] = invitationJson.services as Record<string, unknown>[]
+      const [earlierService] = earlierOutOfBandInvitation.toJSON().services as Record<string, unknown>[]
+
+      // The earlier service keeps `#inline-0`, as its id is part of the stored invitationDid
+      return DidCommOutOfBandInvitation.fromJson({
+        ...invitationJson,
+        services: [{ ...service, id: '#inline-1' }, earlierService],
+      })
+    }
+
     test('receive OOB connection invitation', async () => {
       const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
       const { outOfBandInvitation } = outOfBandRecord
@@ -546,6 +564,73 @@ describe('out of band', () => {
           reuseThreadId,
         },
       })
+    })
+
+    test('reuse an existing connection that matches a later service of the invitation', async () => {
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
+      const { connectionRecord: firstAliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
+        outOfBandRecord.outOfBandInvitation,
+        { label: 'alice' }
+      )
+      if (!firstAliceFaberConnection) throw new Error('Connection record is undefined')
+      await aliceAgent.didcomm.connections.returnWhenIsConnected(firstAliceFaberConnection.id)
+
+      const outOfBandRecord2 = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
+      const { connectionRecord: secondAliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
+        withEarlierServiceSecond(outOfBandRecord2.outOfBandInvitation, outOfBandRecord.outOfBandInvitation),
+        { label: 'alice', reuseConnection: true }
+      )
+
+      expect(secondAliceFaberConnection?.id).toEqual(firstAliceFaberConnection.id)
+      expect(await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord2.id)).toHaveLength(0)
+    })
+
+    test('do not reuse a hung-up connection that matches a later service of the invitation', async () => {
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
+      const { connectionRecord: firstAliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
+        outOfBandRecord.outOfBandInvitation,
+        { label: 'alice' }
+      )
+      if (!firstAliceFaberConnection) throw new Error('Connection record is undefined')
+      await aliceAgent.didcomm.connections.returnWhenIsConnected(firstAliceFaberConnection.id)
+      await aliceAgent.didcomm.connections.hangup({ connectionId: firstAliceFaberConnection.id })
+
+      const outOfBandRecord2 = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
+      const { connectionRecord: secondAliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
+        withEarlierServiceSecond(outOfBandRecord2.outOfBandInvitation, outOfBandRecord.outOfBandInvitation),
+        { label: 'alice', reuseConnection: true }
+      )
+      if (!secondAliceFaberConnection) throw new Error('Connection record is undefined')
+      await aliceAgent.didcomm.connections.returnWhenIsConnected(secondAliceFaberConnection.id)
+
+      expect(secondAliceFaberConnection.id).not.toEqual(firstAliceFaberConnection.id)
+      expect(await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord2.id)).toHaveLength(1)
+    })
+
+    test('reuse an existing connection that stores the invitation did in the legacy format', async () => {
+      // The same routing gives both invitations the same service
+      const routing = await faberAgent.didcomm.mediationRecipient.getRouting({})
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ ...makeConnectionConfig, routing })
+      const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(outOfBandRecord.outOfBandInvitation, {
+        label: 'alice',
+      })
+      if (!connectionRecord) throw new Error('Connection record is undefined')
+      const firstAliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(connectionRecord.id)
+
+      // Connections created by Credo 0.5.1 or earlier, or migrated from 0.1, store the invitation did in this format
+      const [service] = outOfBandRecord.outOfBandInvitation.getInlineServices()
+      firstAliceFaberConnection.invitationDid = outOfBandServiceToInlineKeysNumAlgo2Did(service)
+      const connectionRepository = aliceAgent.context.resolve(DidCommConnectionRepository)
+      await connectionRepository.update(aliceAgent.context, firstAliceFaberConnection)
+
+      const outOfBandRecord2 = await faberAgent.didcomm.oob.createInvitation({ ...makeConnectionConfig, routing })
+      const { connectionRecord: secondAliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
+        outOfBandRecord2.outOfBandInvitation,
+        { label: 'alice', reuseConnection: true }
+      )
+
+      expect(secondAliceFaberConnection?.id).toEqual(firstAliceFaberConnection.id)
+      expect(await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord2.id)).toHaveLength(0)
     })
 
     test('create a new connection when connection exists and reuse is false', async () => {
