@@ -70,6 +70,32 @@ describe('credentialTransformer', () => {
       })
     })
 
+    test('accepts millisecond-precision vc.issuanceDate/expirationDate matching floored nbf/exp', () => {
+      // Date#toISOString always emits milliseconds, while nbf/exp are integer
+      // seconds (floored). The vc dates must still be accepted, not rejected on
+      // the sub-second difference.
+      const vc: Record<string, unknown> = {
+        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        type: ['VerifiableCredential'],
+        credentialSubject: {},
+        issuanceDate: '2010-01-01T19:23:24.292Z', // floor -> 1262373804
+        expirationDate: '2010-01-01T19:23:24.292Z', // floor -> 1262373804
+      }
+
+      const jwtPayload = new JwtPayload({
+        iss: 'urn:iss',
+        nbf: 1262373804,
+        exp: 1262373804,
+        sub: 'did:example:123',
+        jti: 'urn:jti',
+        additionalClaims: {
+          vc,
+        },
+      })
+
+      expect(() => getCredentialFromJwtPayload(jwtPayload)).not.toThrow()
+    })
+
     test(`throw error if jwt payload does not contain 'vc' property or it is not an object`, () => {
       const jwtPayload = new JwtPayload({})
 
