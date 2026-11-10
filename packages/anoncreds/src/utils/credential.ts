@@ -1,10 +1,15 @@
 import { CredoError, Hasher, TypedArrayEncoder } from '@credo-ts/core'
-import type { DidCommCredentialPreviewAttributeOptions } from '@credo-ts/didcomm'
 import type { AnonCredsCredentialValues, AnonCredsSchema } from '../models'
 
 import { bytesToBigint } from './bytesToBigint'
 
 export type AnonCredsClaimRecord = Record<string, string | number>
+
+export interface AnonCredsCredentialAttribute {
+  name: string
+  value: string
+  mimeType?: string
+}
 
 export interface AnonCredsCredentialValue {
   raw: string
@@ -104,7 +109,7 @@ export const mapAttributeRawValuesToAnonCredsCredentialValues = (
  * @returns CredValues
  */
 export function convertAttributesToCredentialValues(
-  attributes: DidCommCredentialPreviewAttributeOptions[]
+  attributes: AnonCredsCredentialAttribute[]
 ): AnonCredsCredentialValues {
   return attributes.reduce<AnonCredsCredentialValues>((credentialValues, attribute) => {
     credentialValues[attribute.name] = {
@@ -187,7 +192,7 @@ export function checkValidCredentialValueEncoding(raw: unknown, encoded: string)
   return encoded === encodeCredentialValue(raw)
 }
 
-export function assertAttributesMatch(schema: AnonCredsSchema, attributes: DidCommCredentialPreviewAttributeOptions[]) {
+export function assertAttributesMatch(schema: AnonCredsSchema, attributes: AnonCredsCredentialAttribute[]) {
   const schemaAttributes = schema.attrNames
   const credAttributes = attributes.map((a) => a.name)
 

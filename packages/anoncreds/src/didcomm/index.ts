@@ -3,4 +3,5 @@ export { AnonCredsDidCommCredentialFormatService } from '../formats/AnonCredsDid
 export * from '../formats/AnonCredsDidCommProofFormat'
 export { AnonCredsDidCommProofFormatService } from '../formats/AnonCredsDidCommProofFormatService'
 export { AnonCredsLinkSecretBindingProvider } from '../formats/AnonCredsLinkSecretBindingProvider'
+export { composeCredentialAutoAccept, composeProofAutoAccept } from '../formats/composeAutoAccept'
 export { migrateCredentialExchangeRecordToV0_4 } from '../updates/0.3.1-0.4/credentialExchangeRecord'
