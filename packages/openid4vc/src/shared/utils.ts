@@ -7,7 +7,6 @@ import {
   DidsApi,
   getPublicJwkFromVerificationMethod,
   Kms,
-  SignatureSuiteRegistry,
   X509Certificate,
 } from '@credo-ts/core'
 import type { Jwk, JwkSet, JwtSigner } from '@openid4vc/oauth2'
@@ -159,17 +158,6 @@ export async function credoJwtIssuerToOpenId4VcJwtIssuer(
   }
 
   throw new CredoError(`Unsupported jwt issuer method '${(createJwtIssuer as OpenId4VcJwtIssuer).method}'`)
-}
-
-export function getProofTypeFromPublicJwk(agentContext: AgentContext, key: Kms.PublicJwk) {
-  const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
-
-  const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwkType(key)
-  if (supportedSignatureSuites.length === 0) {
-    throw new CredoError(`Couldn't find a supported signature suite for the given key ${key.jwkTypeHumanDescription}.`)
-  }
-
-  return supportedSignatureSuites[0].proofType
 }
 
 export function parseIfJson<T>(input: T): T | Record<string, unknown> {

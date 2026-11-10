@@ -17,7 +17,6 @@ import { W3cJsonLdCredentialService } from '../linked-data-proofs/W3cJsonLdCrede
 import { W3cCredentialRepository } from '../repository'
 import { W3cCredentialService } from '../W3cCredentialService'
 import { W3cCredentialsModule } from '../W3cCredentialsModule'
-import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
 
 describe('W3cCredentialsModule', () => {
   test('registers dependencies on the dependency manager', () => {
@@ -31,7 +30,6 @@ describe('W3cCredentialsModule', () => {
     expect(dependencyManager.isRegistered(W3cJwtCredentialService)).toBe(true)
     expect(dependencyManager.isRegistered(W3cCredentialRepository)).toBe(true)
     expect(dependencyManager.isRegistered(SignatureSuiteRegistry)).toBe(true)
-    expect(dependencyManager.resolve(W3cCredentialsModuleConfig)).toBe(module.config)
 
     const signatureSuiteRegistry = dependencyManager.resolve(SignatureSuiteRegistry)
     expect(signatureSuiteRegistry.getByProofType('Ed25519Signature2018').suiteClass).toBe(Ed25519Signature2018)

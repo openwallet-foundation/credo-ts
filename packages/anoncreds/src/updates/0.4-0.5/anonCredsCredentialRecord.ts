@@ -4,13 +4,14 @@ import { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
 import { type AnonCredsCredentialRecord, AnonCredsCredentialRepository } from '../../repository'
 import type { AnonCredsHolderService } from '../../services'
 import { AnonCredsHolderServiceSymbol } from '../../services'
-import { getIndyNamespaceFromIndyDid, isIndyDid } from '../../utils/indyIdentifiers'
 import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
 import { getW3cRecordAnonCredsTags } from '../../utils/w3cAnonCredsUtils'
 import {
+  getIndyNamespaceFromIndyDid,
   getQualifiedDidIndyDid,
   getUnqualifiedIndyDidNamespaceIdentifier,
+  isIndyDid,
   isUnqualifiedCredentialDefinitionId,
   isUnqualifiedIndyDid,
 } from './unqualifiedIndyIdentifiers'

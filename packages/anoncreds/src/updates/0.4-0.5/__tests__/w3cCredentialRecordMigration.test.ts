@@ -6,12 +6,12 @@ import {
   CredoError,
   DidResolverService,
   DidsModuleConfig,
+  defaultDocumentLoader,
   EventEmitter,
   InjectionSymbols,
   JsonLdModuleConfig,
   SignatureSuiteRegistry,
   W3cCredentialRepository,
-  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,
@@ -19,8 +19,13 @@ import {
   DidCommCredentialRole,
   DidCommCredentialState,
 } from '@credo-ts/didcomm'
+import {
+  isDidIndyCredentialDefinitionId,
+  isDidIndyRevocationRegistryId,
+  parseIndyCredentialDefinitionId,
+  parseIndyRevocationRegistryId,
+} from '@credo-ts/indy-vdr/anoncreds'
 import { Subject } from 'rxjs'
-
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { agentDependencies, getAgentConfig, getAgentContext, mockFunction, testLogger } from '../../../../../core/tests'
@@ -30,12 +35,6 @@ import { AnonCredsModuleConfig } from '../../../AnonCredsModuleConfig'
 import { AnonCredsRsHolderService } from '../../../anoncreds-rs'
 import { AnonCredsCredentialRecord } from '../../../repository'
 import { AnonCredsHolderServiceSymbol, AnonCredsRegistryService } from '../../../services'
-import {
-  isDidIndyCredentialDefinitionId,
-  isDidIndyRevocationRegistryId,
-  parseIndyCredentialDefinitionId,
-  parseIndyRevocationRegistryId,
-} from '../../../utils/indyIdentifiers'
 import * as testModule from '../anonCredsCredentialRecord'
 import { getQualifiedDidIndyDid, isUnqualifiedIndyDid } from '../unqualifiedIndyIdentifiers'
 
@@ -85,10 +84,9 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
     [InjectionSymbols.Logger, testLogger],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [AnonCredsHolderServiceSymbol, new AnonCredsRsHolderService()],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
   ],
   agentConfig,

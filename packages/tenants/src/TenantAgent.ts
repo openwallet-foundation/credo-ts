@@ -1,8 +1,8 @@
-import type { AgentContext, DefaultAgentModules, ModulesMap } from '@credo-ts/core'
+import type { AgentContext, AgentModulesInput, DefaultAgentModules } from '@credo-ts/core'
 
 import { BaseAgent, CredoError } from '@credo-ts/core'
 
-export class TenantAgent<AgentModules extends ModulesMap = DefaultAgentModules> extends BaseAgent<AgentModules> {
+export class TenantAgent<AgentModules extends AgentModulesInput = DefaultAgentModules> extends BaseAgent<AgentModules> {
   private sessionHasEnded = false
 
   public constructor(agentContext: AgentContext) {

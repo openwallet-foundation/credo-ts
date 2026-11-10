@@ -1,5 +1,7 @@
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
+import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
+import type { VerificationMethod } from '../../dids/domain/verificationMethod'
 import { PublicJwk, type SupportedPublicJwkClass } from '../../kms/jwk/PublicJwk'
 
 import { suites } from './adapters/jsonld-signatures-adapter'
@@ -50,7 +52,7 @@ export class SignatureSuiteRegistry {
   }
 
   /**
-   * @deprecated recommended to always search by key type instead as that will have broader support
+   * @deprecated use {@link getAllByVerificationMethod}, which also checks the key type
    */
   public getByVerificationMethodType(verificationMethodType: string) {
     return this.suiteMapping.find((x) => x.verificationMethodTypes.includes(verificationMethodType))
@@ -59,6 +61,19 @@ export class SignatureSuiteRegistry {
   public getAllByPublicJwkType(publicJwkType: SupportedPublicJwkClass | PublicJwk) {
     const publicJwkClass = publicJwkType instanceof PublicJwk ? publicJwkType.JwkClass : publicJwkType
     return this.suiteMapping.filter((x) => x.supportedPublicJwkTypes.includes(publicJwkClass))
+  }
+
+  /**
+   * Returns the suites that can sign with the given verification method, in registration order.
+   * Matching on key type alone is not enough, as a suite only accepts its own verification method types.
+   */
+  public getAllByVerificationMethod(verificationMethod: VerificationMethod) {
+    const suitesForType = this.suiteMapping.filter((x) => x.verificationMethodTypes.includes(verificationMethod.type))
+    // Checked first so a method type no suite lists returns [] instead of failing to read its key
+    if (suitesForType.length === 0) return []
+
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+    return suitesForType.filter((x) => x.supportedPublicJwkTypes.includes(publicJwk.JwkClass))
   }
 
   public getByProofType(proofType: string) {

@@ -1,4 +1,4 @@
-import type { ModulesMap, UpdateAssistantUpdateOptions } from '@credo-ts/core'
+import type { AgentModulesInput, UpdateAssistantUpdateOptions } from '@credo-ts/core'
 import type { TenantConfig } from './models/TenantConfig'
 import type { TenantAgent } from './TenantAgent'
 
@@ -14,7 +14,7 @@ export interface GetTenantAgentOptions {
   allowInactive?: boolean
 }
 
-export type WithTenantAgentCallback<AgentModules extends ModulesMap, Return> = (
+export type WithTenantAgentCallback<AgentModules extends AgentModulesInput, Return> = (
   tenantAgent: TenantAgent<AgentModules>
 ) => Promise<Return>
 

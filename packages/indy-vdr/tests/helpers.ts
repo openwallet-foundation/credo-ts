@@ -1,12 +1,11 @@
-import { parseIndyDid } from '@credo-ts/anoncreds'
 import type { Agent } from '@credo-ts/core'
 import { DidCommV1Service, DidDocumentService, NewDidCommV2Service, NewDidCommV2ServiceEndpoint } from '@credo-ts/core'
 import type { IndyVdrPool, IndyVdrRequest } from '@hyperledger/indy-vdr-nodejs'
 import { GetAttribRequest, indyVdr, PoolCreate } from '@hyperledger/indy-vdr-nodejs'
 import { sleep } from '../../core/src/utils/sleep'
 import { genesisTransactions } from '../../core/tests/helpers'
+import { IndyVdrModuleConfig, parseIndyDid } from '../src'
 import type { IndyVdrDidCreateOptions } from '../src/dids/IndyVdrIndyDidRegistrar'
-import { IndyVdrModuleConfig } from '../src/IndyVdrModuleConfig'
 
 export const indyVdrModuleConfig = new IndyVdrModuleConfig({
   indyVdr,
