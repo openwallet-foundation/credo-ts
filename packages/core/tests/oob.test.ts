@@ -327,7 +327,7 @@ describe('out of band', () => {
       const [service] = invitationJson.services as Record<string, unknown>[]
       const [earlierService] = earlierOutOfBandInvitation.toJSON().services as Record<string, unknown>[]
 
-      // The earlier service keeps `#inline-0`, as its id is part of the stored invitationDid
+      // Both invitations use `#inline-0`, so the new service gets another id to keep the ids unique
       return DidCommOutOfBandInvitation.fromJson({
         ...invitationJson,
         services: [{ ...service, id: '#inline-1' }, earlierService],
