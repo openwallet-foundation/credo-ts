@@ -1,9 +1,106 @@
-import {
-  didIndyCredentialDefinitionIdRegex,
-  didIndyRegex,
-  didIndyRevocationRegistryIdRegex,
-  didIndySchemaIdRegex,
-} from '@credo-ts/anoncreds'
+import { CredoError } from '@credo-ts/core'
+import { didIndyRegex } from '../../dids/didIndyUtil'
+
+const didIndyAnonCredsBase = new RegExp(`(${didIndyRegex.source.slice(1, -1)})/anoncreds/v0`)
+
+export const didIndySchemaIdRegex = new RegExp(`^${didIndyAnonCredsBase.source}/SCHEMA/(.+)/([0-9.]+)$`)
+
+export const didIndyCredentialDefinitionIdRegex = new RegExp(
+  `^${didIndyAnonCredsBase.source}/CLAIM_DEF/([1-9][0-9]*)/(.+)$`
+)
+
+export const didIndyRevocationRegistryIdRegex = new RegExp(
+  `^${didIndyAnonCredsBase.source}/REV_REG_DEF/([1-9][0-9]*)/(.+)/(.+)$`
+)
+
+export function isDidIndySchemaId(schemaId: string) {
+  return didIndySchemaIdRegex.test(schemaId)
+}
+
+export function isDidIndyCredentialDefinitionId(credentialDefinitionId: string) {
+  return didIndyCredentialDefinitionIdRegex.test(credentialDefinitionId)
+}
+
+export function isDidIndyRevocationRegistryId(revocationRegistryId: string) {
+  return didIndyRevocationRegistryIdRegex.test(revocationRegistryId)
+}
+
+export interface ParsedIndySchemaId {
+  did: string
+  namespace: string
+  namespaceIdentifier: string
+  schemaName: string
+  schemaVersion: string
+}
+
+export function parseIndySchemaId(schemaId: string): ParsedIndySchemaId {
+  const match = schemaId.match(didIndySchemaIdRegex)
+  if (match) {
+    const [, did, namespace, namespaceIdentifier, schemaName, schemaVersion] = match
+
+    return {
+      did,
+      namespace,
+      namespaceIdentifier,
+      schemaName,
+      schemaVersion,
+    }
+  }
+
+  throw new CredoError(`Invalid did:indy schema id: ${schemaId}`)
+}
+
+export interface ParsedIndyCredentialDefinitionId {
+  did: string
+  namespace: string
+  namespaceIdentifier: string
+  schemaSeqNo: string
+  tag: string
+}
+
+export function parseIndyCredentialDefinitionId(credentialDefinitionId: string): ParsedIndyCredentialDefinitionId {
+  const match = credentialDefinitionId.match(didIndyCredentialDefinitionIdRegex)
+  if (match) {
+    const [, did, namespace, namespaceIdentifier, schemaSeqNo, tag] = match
+
+    return {
+      did,
+      namespace,
+      namespaceIdentifier,
+      schemaSeqNo,
+      tag,
+    }
+  }
+
+  throw new CredoError(`Invalid did:indy credential definition id: ${credentialDefinitionId}`)
+}
+
+export interface ParsedIndyRevocationRegistryId {
+  did: string
+  namespace: string
+  namespaceIdentifier: string
+  schemaSeqNo: string
+  credentialDefinitionTag: string
+  revocationRegistryTag: string
+}
+
+export function parseIndyRevocationRegistryId(revocationRegistryId: string): ParsedIndyRevocationRegistryId {
+  const match = revocationRegistryId.match(didIndyRevocationRegistryIdRegex)
+  if (match) {
+    const [, did, namespace, namespaceIdentifier, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag] = match
+
+    return {
+      did,
+      namespace,
+      namespaceIdentifier,
+      schemaSeqNo,
+      credentialDefinitionTag,
+      revocationRegistryTag,
+    }
+  }
+
+  throw new CredoError(`Invalid did:indy revocation registry id: ${revocationRegistryId}`)
+}
 
 const indyVdrAnonCredsRegexes = [
   // issuer id

@@ -17,12 +17,16 @@ import {
   DidCommProofState,
   DidCommProofV2Protocol,
 } from '@credo-ts/didcomm'
+import { IndyVdrIndyDidRegistrar, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
+import { IndyVdrAnonCredsRegistry } from '@credo-ts/indy-vdr/anoncreds'
 import { randomUUID } from 'crypto'
 import { sleep } from '../../core/src/utils/sleep'
 import type { EventReplaySubject } from '../../core/tests'
 import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
 import {
   getAgentOptions,
+  getDefaultDidCommConfigForTests,
+  getDefaultDidCommVersionForTests,
   importExistingIndyDidFromPrivateKey,
   makeConnection,
   publicDidSeed,
@@ -36,13 +40,6 @@ import {
   inMemoryDrizzleSqliteDatabase,
   pushDrizzleSchema,
 } from '../../drizzle-storage/tests/testDatabase'
-import {
-  IndyVdrAnonCredsRegistry,
-  IndyVdrIndyDidRegistrar,
-  IndyVdrIndyDidResolver,
-  IndyVdrModule,
-  IndyVdrSovDidResolver,
-} from '../../indy-vdr/src'
 import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
 import type {
   AnonCredsRegisterCredentialDefinitionOptions,
@@ -98,6 +95,7 @@ export const getAnonCredsIndyModules = <
       connections: {
         autoAcceptConnections: true,
       },
+      ...getDefaultDidCommConfigForTests(),
       ...extraDidCommConfig,
       credentials: {
         autoAcceptCredentials,
@@ -126,7 +124,7 @@ export const getAnonCredsIndyModules = <
     }),
     indyVdr: new IndyVdrModule(indyVdrModuleConfig),
     dids: new DidsModule({
-      resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
+      resolvers: [new IndyVdrIndyDidResolver()],
       registrars: [new IndyVdrIndyDidRegistrar()],
     }),
     cache: new CacheModule({
@@ -313,6 +311,8 @@ export async function setupAnonCredsTests<
   preCreatedDefinition,
   createConnections,
   useDrizzleStorage,
+  extraDidCommConfig: setupExtraDidCommConfig,
+  didCommVersion,
 }: {
   issuerName: string
   holderName: string
@@ -323,7 +323,14 @@ export async function setupAnonCredsTests<
   preCreatedDefinition?: PreCreatedAnonCredsDefinition
   createConnections?: CreateConnections
   useDrizzleStorage?: 'postgres' | 'sqlite'
+  /** Override DidComm config. Default comes from DIDCOMM_VERSION env (v1/v2); set for per-test overrides. */
+  extraDidCommConfig?: DidCommModuleConfigOptions
+  /** DIDComm envelope version for connections. Defaults to DIDCOMM_VERSION env var, else v1. */
+  didCommVersion?: 'v1' | 'v2'
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
+  const resolvedDidCommVersion = didCommVersion ?? getDefaultDidCommVersionForTests()
+  const extraDidCommConfigForVersion: DidCommModuleConfigOptions =
+    resolvedDidCommVersion === 'v2' ? { didcommVersions: ['v1', 'v2'] } : {}
   const issuerPostgresDrizzle = useDrizzleStorage === 'postgres' ? await createDrizzlePostgresTestDatabase() : undefined
   const issuerDrizzle =
     useDrizzleStorage === 'postgres'
@@ -344,6 +351,9 @@ export async function setupAnonCredsTests<
         autoAcceptProofs,
         extraDidCommConfig: {
           endpoints: ['rxjs:issuer'],
+          ...getDefaultDidCommConfigForTests(),
+          ...extraDidCommConfigForVersion,
+          ...setupExtraDidCommConfig,
         },
       }),
       { requireDidcomm: true, drizzle: issuerDrizzle }
@@ -367,6 +377,9 @@ export async function setupAnonCredsTests<
         autoAcceptProofs,
         extraDidCommConfig: {
           endpoints: ['rxjs:holder'],
+          ...getDefaultDidCommConfigForTests(),
+          ...extraDidCommConfigForVersion,
+          ...setupExtraDidCommConfig,
         },
       }),
       { requireDidcomm: true, drizzle: holderDrizzle }
@@ -392,6 +405,9 @@ export async function setupAnonCredsTests<
             autoAcceptProofs,
             extraDidCommConfig: {
               endpoints: ['rxjs:verifier'],
+              ...getDefaultDidCommConfigForTests(),
+              ...extraDidCommConfigForVersion,
+              ...setupExtraDidCommConfig,
             },
           }),
           { requireDidcomm: true, drizzle: verifierDrizzle }
@@ -446,10 +462,14 @@ export async function setupAnonCredsTests<
   let holderVerifierConnection: DidCommConnectionRecord | undefined
 
   if (createConnections ?? true) {
-    ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)
+    ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent, {
+      didCommVersion: resolvedDidCommVersion,
+    })
 
     if (verifierAgent) {
-      ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent)
+      ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent, {
+        didCommVersion: resolvedDidCommVersion,
+      })
     }
   }
 

@@ -38,7 +38,7 @@ export const openid4vcIssuer = pgTable(
     clientAttestationPopSigningAlgValuesSupported: jsonb('client_attestation_pop_signing_alg_values_supported').$type<
       [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
     >(),
-    batchCredentialIssuance: text('batch_credential_issuance').$type<OpenId4VciBatchCredentialIssuanceOptions>(),
+    batchCredentialIssuance: jsonb('batch_credential_issuance').$type<OpenId4VciBatchCredentialIssuanceOptions>(),
     credentialResponseEncryption: jsonb(
       'credential_response_encryption'
     ).$type<OpenId4VciCredentialResponseEncryptionOptions>(),

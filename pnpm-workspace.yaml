@@ -71,8 +71,6 @@ minimumReleaseAgeExclude:
   - '@owf/mdoc@0.9.3'
   - '@owf/token-status-list@0.7.0'
   - '@owf/x509@0.7.0'
-  - '@sd-jwt/core@0.24.2'
-  - '@sd-jwt/sd-jwt-vc@0.24.2'
   - '@peculiar/x509@2.2.0'
   - nock@15.0.2
   - '@animo-id/expo-secure-environment@0.3.0'

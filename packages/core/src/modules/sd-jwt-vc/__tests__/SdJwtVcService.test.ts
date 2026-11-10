@@ -273,24 +273,24 @@ describe('SdJwtVcService', () => {
       vi.mocked(agent.kms.randomBytes).mockImplementation(staticSalt)
     })
 
-    test('Sign (x509) sd-jwt-vc with an invalid certificate issuer should fail', async () => {
-      await expect(
-        sdJwtVcService.sign(agent.context, {
-          payload: {
-            claim: 'some-claim',
-            vct: 'IdentityCredential',
-          },
-          holder: {
-            method: 'jwk',
-            jwk: holderKey,
-          },
-          issuer: {
-            method: 'x5c',
-            x5c: [simpleX509Certificate],
-            issuer: 'some-issuer',
-          },
-        })
-      ).rejects.toThrow()
+    test('Sign (x509) sd-jwt-vc with an issuer claim that does not match the certificate', async () => {
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          claim: 'some-claim',
+          vct: 'IdentityCredential',
+        },
+        holder: {
+          method: 'jwk',
+          jwk: holderKey,
+        },
+        issuer: {
+          method: 'x5c',
+          x5c: [simpleX509Certificate],
+          issuer: 'some-issuer',
+        },
+      })
+
+      expect(sdJwtVcService.fromCompact(compact).payload.iss).toEqual('some-issuer')
     })
 
     test('Sign (x509) sd-jwt-vc from a basic payload without disclosures', async () => {
@@ -2285,6 +2285,28 @@ describe('SdJwtVcService', () => {
       const verificationResult = await verify(await presentWithStatus())
 
       expect(verificationResult.isValid).toBe(true)
+    })
+
+    test('rejects an http status list uri when insecure http urls are not allowed', async () => {
+      const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
+      const fetchSpy = vi.spyOn(agent.context.config, 'fetch')
+      const signed = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          vct: 'IdentityCredential',
+          status: { status_list: { idx: 12, uri: 'http://example.com/status-list' } },
+        } as SdJwtVcPayload,
+        issuer: { method: 'did', didUrl: issuerDidUrl },
+      })
+
+      const verificationResult = await verify(
+        await sdJwtVcService.present(agent.context, { sdJwtVc: signed, presentationFrame: {} })
+      )
+
+      expect(verificationResult.isValid).toBe(false)
+      if (!verificationResult.isValid) {
+        expect(verificationResult.error?.message).toContain('Only https urls are supported')
+      }
+      expect(fetchSpy).not.toHaveBeenCalled()
     })
 
     test("rejects a status list JWT whose 'sub' is not the uri of the status claim", async () => {
