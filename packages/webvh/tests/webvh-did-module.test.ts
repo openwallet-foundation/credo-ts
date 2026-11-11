@@ -63,13 +63,13 @@ vi.mock('didwebvh-ts', async () => {
 describe('WebVH DID module', () => {
   let agent: Agent<ReturnType<typeof getWebVhModules>>
 
-  it('declares global caching without core method defaults', () => {
+  it('uses global caching by default and supports context scope configuration', () => {
     const resolver = new WebVhDidResolver()
     const config = new DidsModuleConfig({ resolvers: [resolver] })
 
     expect(resolver.allowsCaching).toBe(true)
-    expect(resolver.cacheScope).toBe('global')
     expect(config.getCacheScope('webvh')).toBe('global')
+    expect(new DidsModuleConfig({ cacheScope: { webvh: 'context' } }).getCacheScope('webvh')).toBe('context')
   })
 
   beforeAll(async () => {

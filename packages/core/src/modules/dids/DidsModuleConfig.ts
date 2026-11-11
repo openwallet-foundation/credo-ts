@@ -40,11 +40,10 @@ export interface DidsModuleConfigOptions {
   resolvers?: DidResolver[]
 
   /**
-   * Overrides resolver cache scopes: listed methods use global scope, all others use context
-   * scope. An empty list forces context scope for every method.
-   * When omitted, each resolver's cacheScope applies, defaulting to context scope.
+   * Per-method cache scope overrides for cache-enabled resolvers. Unspecified methods use global
+   * scope, shared across agent contexts. Use context scope for tenant-dependent resolution.
    */
-  publicDidMethods?: string[]
+  cacheScope?: Partial<Record<string, 'global' | 'context'>>
 }
 
 export class DidsModuleConfig {
@@ -115,22 +114,13 @@ export class DidsModuleConfig {
     this.resolvers.push(resolver)
   }
 
-  /** See {@link DidsModuleConfigOptions.publicDidMethods} */
-  public get publicDidMethods(): string[] {
-    return (
-      this.options.publicDidMethods ??
-      [...new Set(this.resolvers.flatMap((resolver) => resolver.supportedMethods))].filter(
-        (method) => this.getCacheScope(method) === 'global'
-      )
-    )
+  /** See {@link DidsModuleConfigOptions.cacheScope} */
+  public get cacheScope() {
+    return this.options.cacheScope ?? {}
   }
 
-  /** Uses the first matching resolver, consistent with DID resolution and invalidation. */
   public getCacheScope(method: string): 'global' | 'context' {
-    if (this.options.publicDidMethods !== undefined) {
-      return this.options.publicDidMethods.includes(method) ? 'global' : 'context'
-    }
-
-    return this.resolvers.find((resolver) => resolver.supportedMethods.includes(method))?.cacheScope ?? 'context'
+    const overrides = this.cacheScope
+    return Object.hasOwn(overrides, method) ? (overrides[method] ?? 'global') : 'global'
   }
 }

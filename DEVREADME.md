@@ -6,16 +6,31 @@ This file is intended for developers working on the internals of the framework. 
 
 ## DID resolver caching
 
-Resolvers declare `allowsCaching` and optionally `cacheScope: 'global' | 'context'` on the
-[DidResolver interface](./packages/core/src/modules/dids/domain/DidResolver.ts). Scope defaults to
-`context`, isolating entries by agent context. Use `global` only when resolution is context-independent.
-Core does not maintain a list of public DID methods; Web, Indy, WebVH, Cheqd, and Hedera declare global
-scope in their own resolvers.
+Resolvers declare `allowsCaching` on the
+[DidResolver interface](./packages/core/src/modules/dids/domain/DidResolver.ts). Cache-enabled resolvers
+use global scope by default, sharing resolution results across agent contexts using the same cache.
+Core does not maintain a list of public DID methods, and resolvers do not declare cache scope.
 
-An explicit `DidsModuleConfig.publicDidMethods` list overrides resolver declarations: listed methods
-use global scope and all others use context scope. An empty list forces context scope for every method.
-When the option is omitted, the configuration's `publicDidMethods` getter derives its list from the
-registered resolvers, using the first matching resolver for each method.
+Configure sparse per-method overrides through the agent's DID module options:
+
+```ts
+modules: {
+  dids: {
+    cacheScope: {
+      web: 'context',
+      cheqd: 'global',
+    },
+  },
+}
+```
+
+Unspecified methods still use global scope; an empty map does not force context scope. Set a method
+to `context` whenever its resolution depends on tenant-specific storage, credentials, or policy.
+Scope configuration does not enable caching for resolvers with `allowsCaching: false`.
+
+This replaces `publicDidMethods`. To migrate a previous explicit list, configure `context` for each
+cache-enabled method that was excluded from that list. Custom cache-enabled methods now default to
+global scope too, so review their tenant-isolation requirements.
 
 The same scope applies to cache reads, writes, and invalidation after DID updates or deactivation.
 Existing TTL and per-call cache controls remain unchanged. Key, JWK, and Peer resolvers do not cache.

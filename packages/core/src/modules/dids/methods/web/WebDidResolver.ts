@@ -19,7 +19,6 @@ export class WebDidResolver implements DidResolver {
   public readonly supportedMethods
 
   public readonly allowsCaching = true
-  public readonly cacheScope = 'global'
   public readonly allowsLocalDidRecord = true
 
   private resolver = didWeb.getResolver()

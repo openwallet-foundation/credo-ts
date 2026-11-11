@@ -25,12 +25,12 @@ const agentContext = getAgentContext({
 const resolver = new IndyVdrIndyDidResolver()
 
 describe('IndyVdrIndyDidResolver', () => {
-  it('declares global caching without core method defaults', () => {
+  it('uses global caching by default and supports context scope configuration', () => {
     const config = new DidsModuleConfig({ resolvers: [resolver] })
 
     expect(resolver.allowsCaching).toBe(true)
-    expect(resolver.cacheScope).toBe('global')
     expect(config.getCacheScope('indy')).toBe('global')
+    expect(new DidsModuleConfig({ cacheScope: { indy: 'context' } }).getCacheScope('indy')).toBe('context')
   })
 
   describe('NYMs with diddocContent', () => {
