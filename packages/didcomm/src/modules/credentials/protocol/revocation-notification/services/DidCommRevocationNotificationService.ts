@@ -1,11 +1,23 @@
-import type { AgentContext } from '@credo-ts/core'
-import { CredoError, EventEmitter, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
+import type { AgentContext, Kms } from '@credo-ts/core'
+import {
+  CredoError,
+  EventEmitter,
+  InjectionSymbols,
+  inject,
+  injectable,
+  JsonTransformer,
+  type Logger,
+} from '@credo-ts/core'
+import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import type { DidCommInboundMessageContext } from '../../../../../models'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../repository'
 import { DidCommConnectionRecord } from '../../../../connections'
+import { keyAgreementsEqual } from '../../../../connections/services/helpers'
 import type { DidCommRevocationNotificationReceivedEvent } from '../../../DidCommCredentialEvents'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
+import { DidCommCredentialRole } from '../../../models'
 import { DidCommRevocationNotification } from '../../../models/DidCommRevocationNotification'
-import { DidCommCredentialExchangeRepository } from '../../../repository'
+import { DidCommCredentialExchangeRecord, DidCommCredentialExchangeRepository } from '../../../repository'
 import type { DidCommRevocationNotificationV1Message } from '../messages/DidCommRevocationNotificationV1Message'
 import { DidCommRevocationNotificationV2Message } from '../messages/DidCommRevocationNotificationV2Message'
 import {
@@ -34,21 +46,24 @@ export class DidCommRevocationNotificationService {
   }
 
   private async processRevocationNotification(
-    agentContext: AgentContext,
+    messageContext: DidCommInboundMessageContext,
     anonCredsRevocationRegistryId: string,
     anonCredsCredentialRevocationId: string,
-    connection: DidCommConnectionRecord,
+    connection?: DidCommConnectionRecord,
     comment?: string
   ) {
+    const { agentContext } = messageContext
     // TODO: can we extract support for this revocation notification handler to the anoncreds module?
-    const query = {
-      anonCredsRevocationRegistryId,
-      anonCredsCredentialRevocationId,
-      connectionId: connection.id,
-    }
+    const query = connection
+      ? { anonCredsRevocationRegistryId, anonCredsCredentialRevocationId, connectionId: connection.id }
+      : { anonCredsRevocationRegistryId, anonCredsCredentialRevocationId, role: DidCommCredentialRole.Holder }
 
     this.logger.trace('Getting record by query for revocation notification:', query)
     const credentialExchangeRecord = await this.credentialRepository.getSingleByQuery(agentContext, query)
+
+    if (!connection) {
+      await this.assertSentByConnectionlessIssuer(messageContext, credentialExchangeRecord)
+    }
 
     credentialExchangeRecord.revocationNotification = new DidCommRevocationNotification(comment)
     await this.credentialRepository.update(agentContext, credentialExchangeRecord)
@@ -60,6 +75,48 @@ export class DidCommRevocationNotificationService {
         // Clone record to prevent mutations after emitting event.
         credentialExchangeRecord: credentialExchangeRecord.clone(),
       },
+    })
+  }
+
+  private async assertSentByConnectionlessIssuer(
+    messageContext: DidCommInboundMessageContext,
+    credentialExchangeRecord: DidCommCredentialExchangeRecord
+  ): Promise<void> {
+    if (credentialExchangeRecord.connectionId) {
+      throw new CredoError(
+        `Credential exchange ${credentialExchangeRecord.id} is bound to connection ${credentialExchangeRecord.connectionId}. Its revocation notification must be sent over that connection`
+      )
+    }
+
+    const senderKey = messageContext.senderKeyAgreementKey ?? messageContext.senderKey
+    if (!senderKey) {
+      throw new CredoError('Connection-less revocation notification must be authcrypted by the issuer')
+    }
+
+    const issuerKeys = await this.getConnectionlessIssuerKeys(messageContext.agentContext, credentialExchangeRecord)
+    if (!issuerKeys.some((issuerKey) => keyAgreementsEqual(senderKey, issuerKey))) {
+      throw new CredoError(
+        `Sender key ${senderKey.fingerprint} is not a key of the issuer of credential exchange ${credentialExchangeRecord.id}`
+      )
+    }
+  }
+
+  private async getConnectionlessIssuerKeys(
+    agentContext: AgentContext,
+    credentialExchangeRecord: DidCommCredentialExchangeRecord
+  ): Promise<Kms.PublicJwk[]> {
+    const receivedMessages = await agentContext.dependencyManager
+      .resolve(DidCommMessageRepository)
+      .findByQuery(agentContext, { associatedRecordId: credentialExchangeRecord.id, role: DidCommMessageRole.Receiver })
+
+    return receivedMessages.flatMap(({ message }) => {
+      if (!message['~service']) return []
+      try {
+        return JsonTransformer.fromJSON(message['~service'], ServiceDecorator).resolvedDidCommService.recipientKeys
+      } catch (error) {
+        this.logger.debug(`Skipping unparsable ~service on received message ${message['@id']}`, { error })
+        return []
+      }
     })
   }
 
@@ -87,10 +144,10 @@ export class DidCommRevocationNotificationService {
 
       const [, , anonCredsRevocationRegistryId, anonCredsCredentialRevocationId] = threadIdGroups
       const comment = messageContext.message.comment
-      const connection = messageContext.assertReadyConnection()
+      const connection = messageContext.connection ? messageContext.assertReadyConnection() : undefined
 
       await this.processRevocationNotification(
-        messageContext.agentContext,
+        messageContext,
         anonCredsRevocationRegistryId,
         anonCredsCredentialRevocationId,
         connection,
@@ -151,9 +208,9 @@ export class DidCommRevocationNotificationService {
 
       const [, anonCredsRevocationRegistryId, anonCredsCredentialRevocationId] = credentialIdGroups
       const comment = messageContext.message.comment
-      const connection = messageContext.assertReadyConnection()
+      const connection = messageContext.connection ? messageContext.assertReadyConnection() : undefined
       await this.processRevocationNotification(
-        messageContext.agentContext,
+        messageContext,
         anonCredsRevocationRegistryId,
         anonCredsCredentialRevocationId,
         connection,

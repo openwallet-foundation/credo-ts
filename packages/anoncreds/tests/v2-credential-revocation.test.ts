@@ -235,4 +235,73 @@ describe('IC v2 credential revocation', () => {
       threadId: faberCredentialRecord.threadId,
     })
   })
+
+  test('Alice accepts a revocation notification for a connection-less credential from Faber', async () => {
+    const { message, credentialExchangeRecord } = await faberAgent.didcomm.credentials.createOffer({
+      protocolVersion: 'v2',
+      credentialFormats: {
+        anoncreds: {
+          credentialDefinitionId,
+          attributes: credentialPreview.attributes,
+          revocationRegistryDefinitionId: revocationRegistryDefinitionId ?? undefined,
+          revocationRegistryIndex: 2,
+        },
+      },
+    })
+    const { outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation({
+      handshake: false,
+      messages: [message],
+    })
+    await aliceAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, { label: 'alice' })
+
+    let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
+      threadId: credentialExchangeRecord.threadId,
+      state: DidCommCredentialState.OfferReceived,
+    })
+    await aliceAgent.didcomm.credentials.acceptOffer({ credentialExchangeRecordId: aliceCredentialRecord.id })
+
+    let faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
+      threadId: credentialExchangeRecord.threadId,
+      state: DidCommCredentialState.RequestReceived,
+    })
+    await faberAgent.didcomm.credentials.acceptRequest({ credentialExchangeRecordId: faberCredentialRecord.id })
+
+    aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
+      threadId: credentialExchangeRecord.threadId,
+      state: DidCommCredentialState.CredentialReceived,
+    })
+    await aliceAgent.didcomm.credentials.acceptCredential({ credentialExchangeRecordId: aliceCredentialRecord.id })
+
+    faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
+      threadId: credentialExchangeRecord.threadId,
+      state: DidCommCredentialState.Done,
+    })
+    expect(aliceCredentialRecord.connectionId).toBeUndefined()
+
+    const revocationRegistryId = faberCredentialRecord.getTag('anonCredsRevocationRegistryId') as string
+    const credentialRevocationId = faberCredentialRecord.getTag('anonCredsCredentialRevocationId') as string
+
+    await faberAgent.modules.anoncreds.updateRevocationStatusList({
+      revocationStatusList: {
+        revocationRegistryDefinitionId: revocationRegistryId,
+        revokedCredentialIndexes: [Number(credentialRevocationId)],
+      },
+      options: {},
+    })
+
+    await faberAgent.didcomm.credentials.sendRevocationNotification({
+      credentialExchangeRecordId: faberCredentialRecord.id,
+      revocationFormat: 'anoncreds',
+      revocationId: `${revocationRegistryId}::${credentialRevocationId}`,
+      comment: 'revoked',
+    })
+
+    const revokedRecord = await waitForRevocationNotificationSubject(aliceReplay, {
+      threadId: credentialExchangeRecord.threadId,
+    })
+    expect(revokedRecord.id).toEqual(aliceCredentialRecord.id)
+
+    const storedRecord = await aliceAgent.didcomm.credentials.getById(aliceCredentialRecord.id)
+    expect(storedRecord.revocationNotification).toMatchObject({ comment: 'revoked' })
+  })
 })

@@ -1,8 +1,10 @@
 import { Subject } from 'rxjs'
+import type { Mock } from 'vitest'
 import type { MockedClassConstructor } from '../../../../../../../../../tests/types'
 import type { AnonCredsCredentialMetadata } from '../../../../../../../../anoncreds/src/index'
 import type { AgentContext } from '../../../../../../../../core/src/agent'
 import { EventEmitter } from '../../../../../../../../core/src/agent/EventEmitter'
+import { verkeyToPublicJwk } from '../../../../../../../../core/src/modules/dids/helpers'
 import {
   getAgentConfig,
   getAgentContext,
@@ -10,6 +12,7 @@ import {
   mockFunction,
 } from '../../../../../../../../core/tests/helpers'
 import { DidCommInboundMessageContext } from '../../../../../../models'
+import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../../../../../repository'
 import { DidCommDidExchangeState } from '../../../../../connections'
 import type { DidCommRevocationNotificationReceivedEvent } from '../../../../DidCommCredentialEvents'
 import { DidCommCredentialEventTypes } from '../../../../DidCommCredentialEvents'
@@ -25,6 +28,18 @@ const CredentialRepositoryMock = DidCommCredentialExchangeRepository as MockedCl
 >
 const credentialRepository = new CredentialRepositoryMock()
 
+vi.mock('../../../../../../repository/DidCommMessageRepository')
+const DidCommMessageRepositoryMock = DidCommMessageRepository as MockedClassConstructor<typeof DidCommMessageRepository>
+const didCommMessageRepository = new DidCommMessageRepositoryMock()
+
+const issuerVerkey = 'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'
+const otherVerkey = '5UQ3drtEMMQXaLLmEywbciW92jZaQgRYgfuzXfonV8iz'
+const holderVerkey = '6fioC1zcDPyPEL19pXRS2E4iJ46zH7xP6uSgAaPdwDrx'
+
+const revocationRegistryId =
+  'AsB27X6KRrJFsqZ3unNAH6:4:AsB27X6KRrJFsqZ3unNAH6:3:cl:48187:default:CL_ACCUM:3b24a9b0-a979-41e0-9964-2292f2b1b7e9'
+const credentialRevocationId = '1'
+
 const connection = getMockConnection({
   state: DidCommDidExchangeState.Completed,
 })
@@ -37,7 +52,9 @@ describe('RevocationNotificationService', () => {
   beforeEach(() => {
     const agentConfig = getAgentConfig('RevocationNotificationService')
 
-    agentContext = getAgentContext()
+    agentContext = getAgentContext({
+      registerInstances: [[DidCommMessageRepository, didCommMessageRepository]],
+    })
 
     eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
     revocationNotificationService = new DidCommRevocationNotificationService(
@@ -277,6 +294,179 @@ describe('RevocationNotificationService', () => {
       await revocationNotificationService.v2ProcessRevocationNotification(messageContext)
 
       expect(eventListenerMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('connection-less revocation notification', () => {
+    let eventListenerMock: Mock<(event: DidCommRevocationNotificationReceivedEvent) => void>
+    let credentialRecord: DidCommCredentialExchangeRecord
+
+    beforeEach(() => {
+      eventListenerMock = vi.fn()
+      eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
+        DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
+        eventListenerMock
+      )
+
+      credentialRecord = new DidCommCredentialExchangeRecord({
+        id: 'credential-record-id',
+        threadId: 'thread-id',
+        protocolVersion: 'v2',
+        state: DidCommCredentialState.Done,
+        role: DidCommCredentialRole.Holder,
+      })
+      credentialRecord.setTag('anonCredsRevocationRegistryId', revocationRegistryId)
+      credentialRecord.setTag('anonCredsCredentialRevocationId', credentialRevocationId)
+
+      mockFunction(credentialRepository.getSingleByQuery).mockResolvedValue(credentialRecord)
+      mockFunction(didCommMessageRepository.findByQuery).mockResolvedValue([
+        new DidCommMessageRecord({
+          role: DidCommMessageRole.Receiver,
+          associatedRecordId: credentialRecord.id,
+          message: {
+            '@id': 'credential-message-id',
+            '@type': 'https://didcomm.org/issue-credential/2.0/issue-credential',
+            '~thread': { thid: 'thread-id' },
+            '~service': {
+              recipientKeys: [issuerVerkey],
+              routingKeys: [],
+              serviceEndpoint: 'rxjs:issuer',
+            },
+          },
+        }),
+      ])
+    })
+
+    const v1Message = () =>
+      new DidCommRevocationNotificationV1Message({
+        issueThread: `indy::${revocationRegistryId}::${credentialRevocationId}`,
+        comment: 'Credential has been revoked',
+      })
+    const v2Message = () =>
+      new DidCommRevocationNotificationV2Message({
+        credentialId: `${revocationRegistryId}::${credentialRevocationId}`,
+        revocationFormat: 'anoncreds',
+        comment: 'Credential has been revoked',
+      })
+
+    const process = async (version: 'v1' | 'v2', senderVerkey?: string) => {
+      const options = {
+        agentContext,
+        senderKey: senderVerkey ? verkeyToPublicJwk(senderVerkey) : undefined,
+        recipientKey: verkeyToPublicJwk(holderVerkey),
+      }
+      if (version === 'v1') {
+        await revocationNotificationService.v1ProcessRevocationNotification(
+          new DidCommInboundMessageContext(v1Message(), options)
+        )
+      } else {
+        await revocationNotificationService.v2ProcessRevocationNotification(
+          new DidCommInboundMessageContext(v2Message(), options)
+        )
+      }
+    }
+
+    test.each(['v1', 'v2'] as const)('%s accepts a notification authcrypted with the issuer key', async (version) => {
+      await process(version, issuerVerkey)
+
+      expect(credentialRepository.getSingleByQuery).toHaveBeenCalledWith(agentContext, {
+        anonCredsRevocationRegistryId: revocationRegistryId,
+        anonCredsCredentialRevocationId: credentialRevocationId,
+        role: DidCommCredentialRole.Holder,
+      })
+      expect(didCommMessageRepository.findByQuery).toHaveBeenCalledWith(agentContext, {
+        associatedRecordId: credentialRecord.id,
+        role: DidCommMessageRole.Receiver,
+      })
+      expect(credentialRecord.revocationNotification).toMatchObject({ comment: 'Credential has been revoked' })
+      expect(credentialRepository.update).toHaveBeenCalledWith(agentContext, credentialRecord)
+      expect(eventListenerMock).toHaveBeenCalledTimes(1)
+    })
+
+    test.each(['v1', 'v2'] as const)(
+      '%s skips a ~service it cannot parse and still checks the other received messages',
+      async (version) => {
+        mockFunction(didCommMessageRepository.findByQuery).mockResolvedValue([
+          new DidCommMessageRecord({
+            role: DidCommMessageRole.Receiver,
+            associatedRecordId: credentialRecord.id,
+            message: {
+              '@id': 'offer-message-id',
+              '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
+              '~service': {
+                recipientKeys: ['did:key:z6MkvT2ehR6fhR5ygjGk4ziLr37bPbjKz8dFz3J4XnRCHtmT'],
+                routingKeys: [],
+                serviceEndpoint: 'rxjs:issuer',
+              },
+            },
+          }),
+          new DidCommMessageRecord({
+            role: DidCommMessageRole.Receiver,
+            associatedRecordId: credentialRecord.id,
+            message: {
+              '@id': 'credential-message-id',
+              '@type': 'https://didcomm.org/issue-credential/2.0/issue-credential',
+              '~service': { recipientKeys: [issuerVerkey], routingKeys: [], serviceEndpoint: 'rxjs:issuer' },
+            },
+          }),
+        ])
+
+        await process(version, issuerVerkey)
+
+        expect(credentialRecord.revocationNotification).toMatchObject({ comment: 'Credential has been revoked' })
+        expect(eventListenerMock).toHaveBeenCalledTimes(1)
+      }
+    )
+
+    test.each(['v1', 'v2'] as const)(
+      '%s without a connection refuses a credential received over a connection',
+      async (version) => {
+        credentialRecord.connectionId = connection.id
+
+        await process(version, issuerVerkey)
+
+        expect(didCommMessageRepository.findByQuery).not.toHaveBeenCalled()
+        expect(credentialRecord.revocationNotification).toBeUndefined()
+        expect(credentialRepository.update).not.toHaveBeenCalled()
+        expect(eventListenerMock).not.toHaveBeenCalled()
+      }
+    )
+
+    test.each(['v1', 'v2'] as const)('%s refuses a notification authcrypted with another key', async (version) => {
+      await process(version, otherVerkey)
+
+      expect(credentialRecord.revocationNotification).toBeUndefined()
+      expect(credentialRepository.update).not.toHaveBeenCalled()
+      expect(eventListenerMock).not.toHaveBeenCalled()
+    })
+
+    test.each(['v1', 'v2'] as const)('%s refuses an anoncrypted notification', async (version) => {
+      await process(version)
+
+      expect(credentialRecord.revocationNotification).toBeUndefined()
+      expect(credentialRepository.update).not.toHaveBeenCalled()
+      expect(eventListenerMock).not.toHaveBeenCalled()
+    })
+
+    test.each(['v1', 'v2'] as const)('%s with a connection does not check the sender key', async (version) => {
+      const options = { agentContext, connection, senderKey: verkeyToPublicJwk(otherVerkey) }
+      if (version === 'v1') {
+        await revocationNotificationService.v1ProcessRevocationNotification(
+          new DidCommInboundMessageContext(v1Message(), options)
+        )
+      } else {
+        await revocationNotificationService.v2ProcessRevocationNotification(
+          new DidCommInboundMessageContext(v2Message(), options)
+        )
+      }
+
+      expect(credentialRepository.getSingleByQuery).toHaveBeenCalledWith(agentContext, {
+        anonCredsRevocationRegistryId: revocationRegistryId,
+        anonCredsCredentialRevocationId: credentialRevocationId,
+        connectionId: connection.id,
+      })
+      expect(didCommMessageRepository.findByQuery).not.toHaveBeenCalled()
+      expect(eventListenerMock).toHaveBeenCalledTimes(1)
     })
   })
 })
