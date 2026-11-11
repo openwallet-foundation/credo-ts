@@ -128,6 +128,9 @@ export async function getConnectionlessOutboundMessageContext(
   await addExchangeDataToMessage(agentContext, { message, ourService, outOfBandRecord, associatedRecord })
 
   const senderKey = ourService.recipientKeys[0]
+  if (!senderKey.hasKeyId) {
+    await setSenderKeyIdFromOutOfBandRecord(agentContext, senderKey, outOfBandRecord)
+  }
   const senderKeySkid = toKeyAgreementDidUrl(senderKey)
 
   return new DidCommOutboundMessageContext(message, {
@@ -140,6 +143,27 @@ export async function getConnectionlessOutboundMessageContext(
       senderKeySkid,
     },
   })
+}
+
+// A sent ~service only holds the base58 key. The kms key id lives on the out of band record we created.
+async function setSenderKeyIdFromOutOfBandRecord(
+  agentContext: AgentContext,
+  senderKey: Kms.PublicJwk,
+  outOfBandRecord?: DidCommOutOfBandRecord
+): Promise<void> {
+  const senderOutOfBandRecord =
+    outOfBandRecord?.role === DidCommOutOfBandRole.Sender
+      ? outOfBandRecord
+      : await agentContext.dependencyManager.resolve(DidCommOutOfBandRepository).findSingleByQuery(agentContext, {
+          role: DidCommOutOfBandRole.Sender,
+          recipientKeyFingerprints: [senderKey.fingerprint],
+        })
+
+  const kmsKeyId = senderOutOfBandRecord?.invitationInlineServiceKeys?.find(
+    ({ recipientKeyFingerprint }) => recipientKeyFingerprint === senderKey.fingerprint
+  )?.kmsKeyId
+
+  senderKey.keyId = kmsKeyId ?? senderKey.legacyKeyId
 }
 
 /**
