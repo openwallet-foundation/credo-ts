@@ -14,10 +14,11 @@ import {
   sendUnauthorizedError,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
-import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
+import { OpenId4VcIssuanceSessionStateError } from '../OpenId4VcIssuanceSessionStateError'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { getCredentialRequestDecryptionMetadata, OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
+import { credentialRequestStates } from '../util/issuanceSessionState'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 const recoverableCredentialErrorCodes: string[] = [Oauth2ErrorCodes.InvalidProof, Oauth2ErrorCodes.InvalidNonce]
@@ -112,6 +113,16 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
       )
     }
 
+    // A session bound to another subject gets the same response as an unknown session, so the response doesn't reveal
+    // that the session exists
+    const sendIssuanceSessionNotFound = (internalMessage: string) =>
+      sendOauth2ErrorResponse(
+        response,
+        next,
+        agentContext.config.logger,
+        new Oauth2ServerErrorResponseError({ error: Oauth2ErrorCodes.CredentialRequestDenied }, { internalMessage })
+      )
+
     if (preAuthorizedCode || issuerState) {
       issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, {
         issuerId: issuer.issuerId,
@@ -131,18 +142,8 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
           }
         )
 
-        return sendOauth2ErrorResponse(
-          response,
-          next,
-          agentContext.config.logger,
-          new Oauth2ServerErrorResponseError(
-            {
-              error: Oauth2ErrorCodes.CredentialRequestDenied,
-            },
-            {
-              internalMessage: `No issuance session found for incoming credential request for issuer ${issuer.issuerId} and access token data`,
-            }
-          )
+        return sendIssuanceSessionNotFound(
+          `No issuance session found for incoming credential request for issuer ${issuer.issuerId} and access token data`
         )
       }
 
@@ -166,18 +167,8 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
       // Verify the issuance session subject
       if (issuanceSession.authorization?.subject) {
         if (issuanceSession.authorization.subject !== tokenPayload.sub) {
-          return sendOauth2ErrorResponse(
-            response,
-            next,
-            agentContext.config.logger,
-            new Oauth2ServerErrorResponseError(
-              {
-                error: Oauth2ErrorCodes.CredentialRequestDenied,
-              },
-              {
-                internalMessage: `Issuance session authorization subject does not match with the token payload subject for issuance session '${issuanceSession.id}'. Returning error response`,
-              }
-            )
+          return sendIssuanceSessionNotFound(
+            `Issuance session authorization subject does not match with the token payload subject for issuance session '${issuanceSession.id}'`
           )
         }
       }
@@ -195,11 +186,33 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
           })
         )
       } else {
-        issuanceSession.authorization = {
-          ...issuanceSession.authorization,
-          subject: tokenPayload.sub,
+        // Under a lock, so a concurrent request can't bind another subject or lose the progress of another request
+        let isOtherSubject = false
+        const result = await openId4VcIssuerService.updateIssuanceSessionWithLock(agentContext, issuanceSession, {
+          allowedStates: credentialRequestStates,
+          update: (record) => {
+            isOtherSubject = !!record.authorization?.subject && record.authorization.subject !== tokenPayload.sub
+            if (isOtherSubject) return false
+
+            record.authorization = { ...record.authorization, subject: tokenPayload.sub }
+            return true
+          },
+        })
+        if (isOtherSubject) {
+          return sendIssuanceSessionNotFound(`Issuance session '${issuanceSession.id}' is bound to another subject`)
         }
-        await issuanceSessionRepository.update(agentContext, issuanceSession)
+        if (!result) {
+          return sendOauth2ErrorResponse(
+            response,
+            next,
+            agentContext.config.logger,
+            new Oauth2ServerErrorResponseError({
+              error: Oauth2ErrorCodes.CredentialRequestDenied,
+              error_description: 'The issuance session does not accept credential requests',
+            })
+          )
+        }
+        issuanceSession = result.issuanceSession
       }
     }
 
@@ -314,17 +327,22 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         credentialResponse.transaction_id ? 202 : 200
       )
     } catch (error) {
+      // A request that the session state doesn't allow, such as one for a credential that was already issued,
+      // doesn't end the session
       const canRetry =
         isExistingSession &&
-        error instanceof Oauth2ServerErrorResponseError &&
-        recoverableCredentialErrorCodes.includes(error.errorResponse.error)
+        (error instanceof OpenId4VcIssuanceSessionStateError ||
+          (error instanceof Oauth2ServerErrorResponseError &&
+            recoverableCredentialErrorCodes.includes(error.errorResponse.error)))
 
       if (issuanceSession && !canRetry) {
-        issuanceSession.errorMessage =
+        await openId4VcIssuerService.updateStateToError(
+          agentContext,
+          issuanceSession,
           typeof error.message === 'string' && error.message !== ''
             ? error.message
             : 'Failed to create a credential response'
-        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
+        )
       }
 
       if (error instanceof Oauth2ServerErrorResponseError) {

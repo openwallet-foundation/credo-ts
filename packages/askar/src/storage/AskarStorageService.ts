@@ -90,6 +90,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     id: string,
     updateCallback: (record: T) => Promise<T>
   ): Promise<T> {
+    let callbackError: unknown
     try {
       const updatedRecord = await this.withTransaction(agentContext, async (session) => {
         const record = await session.fetch({ category: recordClass.type, name: id, forUpdate: true })
@@ -101,7 +102,10 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
         }
 
         const recordInstance = recordToInstance(record, recordClass)
-        const updatedRecord = await updateCallback(recordInstance)
+        const updatedRecord = await updateCallback(recordInstance).catch((error) => {
+          callbackError = error
+          throw error
+        })
 
         updatedRecord.updatedAt = new Date()
         const value = JsonTransformer.serialize(updatedRecord)
@@ -113,7 +117,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
       })
       return updatedRecord
     } catch (error) {
-      if (error instanceof CredoError) throw error
+      if (error instanceof CredoError || error === callbackError) throw error
       throw new AskarError('Error updating record', { cause: error })
     }
   }

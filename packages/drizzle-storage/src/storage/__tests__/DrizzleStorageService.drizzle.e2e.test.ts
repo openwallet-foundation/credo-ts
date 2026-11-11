@@ -173,6 +173,25 @@ describe.each(['postgres', 'sqlite'] as const)('DrizzleStorageService with %s', 
       ).rejects.toThrow(RecordNotFoundError)
     })
 
+    test('rethrows an error from the callback as is, without updating the record', async () => {
+      const genericRecordsRepository = agent.context.resolve(GenericRecordsRepository)
+      await genericRecordsRepository.save(
+        agent.context,
+        new GenericRecord({ content: { value: 'original' }, id: 'update-with-lock-error' })
+      )
+      const error = new Error('Not allowed')
+
+      await expect(
+        genericRecordsRepository.updateByIdWithLock(agent.context, 'update-with-lock-error', async (record) => {
+          record.content = { value: 'not-stored' }
+          throw error
+        })
+      ).rejects.toBe(error)
+
+      const record = await genericRecordsRepository.getById(agent.context, 'update-with-lock-error')
+      expect(record.content).toEqual({ value: 'original' })
+    })
+
     test('handles complex update operations in callback', async () => {
       const genericRecordsRepository = agent.context.resolve(GenericRecordsRepository)
 

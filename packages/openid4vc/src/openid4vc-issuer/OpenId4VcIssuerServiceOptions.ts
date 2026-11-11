@@ -38,6 +38,7 @@ import type {
   supportedResponseEncryptionContentAlgorithms,
   supportedResponseEncryptionKeyAgreementAlgorithms,
 } from '../shared/utils'
+import type { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import {
   OpenId4VcIssuanceSessionRecord,
   type OpenId4VcIssuanceSessionRecordTransaction,
@@ -220,6 +221,24 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
   expirationInSeconds?: number
 }
 
+export interface OpenId4VcUpdateIssuanceSessionWithLockOptions {
+  /**
+   * The states of the stored session that allow the update.
+   */
+  allowedStates: OpenId4VcIssuanceSessionState[]
+
+  /**
+   * Applies the changes of the request to the stored session. Returns `false`, or throws, if the stored session
+   * doesn't allow the change. A thrown error is rethrown as is.
+   */
+  update: (issuanceSession: OpenId4VcIssuanceSessionRecord) => boolean
+
+  /**
+   * Thrown when the session isn't updated. Without it, `undefined` is returned.
+   */
+  error?: Error
+}
+
 export interface OpenId4VciCreateCredentialResponseOptions {
   parsedCredentialRequest: OpenId4VciParsedCredentialRequest
   authorization: OpenId4VciCredentialRequestAuthorization
@@ -259,6 +278,10 @@ export type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization = Op
  */
 export type OpenId4VciGetVerificationSession = (options: {
   agentContext: AgentContext
+
+  /**
+   * The issuance session that requires the presentation. Changes to this record are not stored.
+   */
   issuanceSession: OpenId4VcIssuanceSessionRecord
 
   /**
@@ -561,6 +584,11 @@ export type OpenId4VciGetDynamicIssuanceSession = (
 
 export type OpenId4VciGetChainedAuthorizationRequestParameters = (options: {
   agentContext: AgentContext
+
+  /**
+   * The issuance session that is authorized through the chained authorization server. Changes to this record are not
+   * stored.
+   */
   issuanceSession: OpenId4VcIssuanceSessionRecord
 
   /**
@@ -624,7 +652,7 @@ export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
 
   /**
    * The issuance session associated with the credential request. You can extract the
-   * issuance metadata from this record if passed in the offer creation method.
+   * issuance metadata from this record if passed in the offer creation method. Changes to this record are not stored.
    */
   issuanceSession: OpenId4VcIssuanceSessionRecord
 
@@ -682,7 +710,7 @@ export interface OpenId4VciDeferredCredentialRequestToCredentialMapperOptions {
 
   /**
    * The issuance session associated with the credential request. You can extract the
-   * issuance metadata from this record if passed in the offer creation method.
+   * issuance metadata from this record if passed in the offer creation method. Changes to this record are not stored.
    */
   issuanceSession: OpenId4VcIssuanceSessionRecord
 

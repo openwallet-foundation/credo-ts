@@ -9,7 +9,11 @@ import { CredentialMultiInstanceUseMode } from '../../../utils/credentialUseType
 import { PublicJwk } from '../../kms'
 import { type X509Certificate, X509Service, type X509VerificationContext } from '../../x509'
 import { Mdoc } from '../Mdoc'
-import { MdocDeviceRequestNotSatisfiedError, MdocVerificationSessionExpiredError } from '../MdocError'
+import {
+  MdocDeviceRequestNotSatisfiedError,
+  MdocVerificationSessionExpiredError,
+  MdocVerificationSessionFinishedError,
+} from '../MdocError'
 import type {
   MdocDcApiCreateVerificationSessionOptions,
   MdocDeviceRequestMatch,
@@ -202,6 +206,32 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
         },
       ],
     })
+  })
+
+  test('only one of two concurrent responses for a session verifies', async () => {
+    const { verificationSession, request } = await createSession()
+    const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+    const response = await agent.mdoc.createDcApiResponse({
+      resolvedRequest: resolved,
+      credentials: [{ docRequestIndex: 0, record: mdocRecord.id }],
+    })
+
+    const verify = () =>
+      agent.mdoc.verifyDcApiResponse({
+        verificationSessionId: verificationSession.id,
+        response,
+        origin,
+        trustedCertificates: [issuerCertificatePem],
+      })
+    const results = await Promise.allSettled([verify(), verify()])
+
+    expect(results.map((result) => result.status).sort()).toEqual(['fulfilled', 'rejected'])
+    expect(results.find((result) => result.status === 'rejected')?.reason).toBeInstanceOf(
+      MdocVerificationSessionFinishedError
+    )
+
+    const session = await agent.mdoc.getVerificationSessionById(verificationSession.id)
+    expect(session.state).toBe(MdocVerificationSessionState.ResponseVerified)
   })
 
   describe('device request matching', () => {

@@ -82,6 +82,7 @@ import {
   supportedResponseEncryptionKeyAgreementAlgorithms,
 } from '../shared/utils'
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
+import { OpenId4VcIssuanceSessionStateError } from './OpenId4VcIssuanceSessionStateError'
 import { type OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import type {
@@ -101,6 +102,7 @@ import type {
   OpenId4VciPreAuthorizedCodeFlowConfig,
   OpenId4VciSignCredentials,
   OpenId4VciSignW3cCredentials,
+  OpenId4VcUpdateIssuanceSessionWithLockOptions,
   OpenId4VcUpdateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import {
@@ -111,11 +113,18 @@ import {
   OpenId4VcIssuerRepository,
 } from './repository'
 import { offerUsesInternalAuthorizationServer } from './util/authorizationServer'
+import { credentialRequestStates, unfinishedStates } from './util/issuanceSessionState'
 import { generateTxCode } from './util/txCode'
 
 /**
  * @internal
  */
+class IssuanceSessionNotUpdatedError extends CredoError {
+  public constructor() {
+    super('The stored issuance session does not allow the update')
+  }
+}
+
 @injectable()
 export class OpenId4VcIssuerService {
   private w3cCredentialService: W3cCredentialService
@@ -626,14 +635,17 @@ export class OpenId4VcIssuerService {
     credentialResponse: CredentialResponse
     credentialResponseJwt?: string
   }> {
-    options.issuanceSession.assertState([
-      // OfferUriRetrieved is valid when doing auth flow (we should add a check)
-      OpenId4VcIssuanceSessionState.OfferUriRetrieved,
-      OpenId4VcIssuanceSessionState.AccessTokenCreated,
-      OpenId4VcIssuanceSessionState.CredentialRequestReceived,
-      // It is possible to issue multiple credentials in one session
-      OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
-    ])
+    if (!credentialRequestStates.includes(options.issuanceSession.state)) {
+      throw new OpenId4VcIssuanceSessionStateError(
+        {
+          error: Oauth2ErrorCodes.CredentialRequestDenied,
+          error_description: 'The issuance session does not accept credential requests',
+        },
+        {
+          internalMessage: `Issuance session '${options.issuanceSession.id}' has state '${options.issuanceSession.state}' but expected one of ${credentialRequestStates.join(', ')}`,
+        }
+      )
+    }
     const { issuanceSession } = options
     const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
@@ -739,6 +751,7 @@ export class OpenId4VcIssuerService {
 
     let credentialResponse: CredentialResponse
     let credentialResponseJwt: string | undefined
+    let applyResult: (record: OpenId4VcIssuanceSessionRecord) => void
 
     // NOTE: nonce in credential response is deprecated in newer drafts, but for now we keep it in
     const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
@@ -755,26 +768,24 @@ export class OpenId4VcIssuerService {
       credentialResponse = deferralResult.credentialResponse
       credentialResponseJwt = deferralResult.credentialResponseJwt
 
-      // Save transaction data for deferred issuance
-      issuanceSession.transactions.push({
-        transactionId: signOptionsOrDeferral.transactionId,
-        numberOfCredentials: verifiedCredentialRequestProofs.keys.length,
-        deferredUntil: utils.addSecondsToDate(new Date(), signOptionsOrDeferral.interval),
-        credentialConfigurationId,
-        holderBinding: verifiedCredentialRequestProofs,
-      })
+      applyResult = (record) => {
+        // Save transaction data for deferred issuance
+        record.transactions.push({
+          transactionId: signOptionsOrDeferral.transactionId,
+          numberOfCredentials: verifiedCredentialRequestProofs.keys.length,
+          deferredUntil: utils.addSecondsToDate(new Date(), signOptionsOrDeferral.interval),
+          credentialConfigurationId,
+          holderBinding: verifiedCredentialRequestProofs,
+        })
 
-      // Determine new state
-      const newState =
-        issuanceSession.state === OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
-          ? OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
-          : OpenId4VcIssuanceSessionState.CredentialRequestReceived
+        // Update expiry time to allow for re-check
+        this.updateExpiresAt(record, signOptionsOrDeferral.interval)
 
-      // Update expiry time to allow for re-check
-      await this.updateExpiresAt(agentContext, issuanceSession, signOptionsOrDeferral.interval)
-
-      // Update state
-      await this.updateState(agentContext, issuanceSession, newState)
+        record.state =
+          record.state === OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
+            ? OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
+            : OpenId4VcIssuanceSessionState.CredentialRequestReceived
+      }
     } else {
       const credentials = await this.getSignedCredentials(agentContext, signOptionsOrDeferral, {
         issuanceSession,
@@ -802,19 +813,41 @@ export class OpenId4VcIssuerService {
       credentialResponse = immediateResult.credentialResponse
       credentialResponseJwt = immediateResult.credentialResponseJwt
 
-      issuanceSession.issuedCredentials.push(credentialConfigurationId)
-      const newState =
-        issuanceSession.issuedCredentials.length >=
-        issuanceSession.credentialOfferPayload.credential_configuration_ids.length
-          ? OpenId4VcIssuanceSessionState.Completed
-          : OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
-      await this.updateState(agentContext, issuanceSession, newState)
+      applyResult = (record) => {
+        record.issuedCredentials.push(credentialConfigurationId)
+        record.state =
+          record.issuedCredentials.length >= record.credentialOfferPayload.credential_configuration_ids.length
+            ? OpenId4VcIssuanceSessionState.Completed
+            : OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
+      }
     }
+
+    // A concurrent request may have issued or deferred this credential since the checks above
+    const result = await this.updateIssuanceSessionWithLock(agentContext, issuanceSession, {
+      allowedStates: credentialRequestStates,
+      update: (record) => {
+        if (
+          record.issuedCredentials.includes(credentialConfigurationId) ||
+          record.transactions.some((tx) => tx.credentialConfigurationId === credentialConfigurationId)
+        ) {
+          return false
+        }
+
+        applyResult(record)
+        return true
+      },
+      error: new OpenId4VcIssuanceSessionStateError({
+        error: Oauth2ErrorCodes.CredentialRequestDenied,
+        error_description:
+          'Credential request does not match any credential configurations from credential offer that have not been issued yet',
+      }),
+    })
+    this.emitStateChangedEvent(agentContext, result.issuanceSession, result.previousState)
 
     return {
       credentialResponse,
       credentialResponseJwt,
-      issuanceSession,
+      issuanceSession: result.issuanceSession,
     }
   }
 
@@ -829,18 +862,24 @@ export class OpenId4VcIssuerService {
     const { issuanceSession, deferredCredentialRequest, authorization, deferredCredentialRequestToCredentialMapper } =
       options
 
-    issuanceSession.assertState([
+    const allowedStates = [
       OpenId4VcIssuanceSessionState.CredentialRequestReceived,
       OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
-    ])
-
+    ]
     const transaction = issuanceSession.transactions.find(
       (tx) => tx.transactionId === deferredCredentialRequest.transaction_id
     )
     if (!transaction) {
-      throw new Oauth2ServerErrorResponseError({
+      throw new OpenId4VcIssuanceSessionStateError({
         error: Oauth2ErrorCodes.InvalidTransactionId,
         error_description: `No issuance session found for incoming credential request for issuer ${issuanceSession.issuerId}, access token data and transaction id`,
+      })
+    }
+    // The session can no longer issue the credential (OpenID4VCI 1.0 section 9.3)
+    if (!allowedStates.includes(issuanceSession.state)) {
+      throw new OpenId4VcIssuanceSessionStateError({
+        error: Oauth2ErrorCodes.CredentialRequestDenied,
+        error_description: 'The issuance session can no longer issue the credential',
       })
     }
 
@@ -894,6 +933,7 @@ export class OpenId4VcIssuerService {
 
     let deferredCredentialResponse: DeferredCredentialResponse
     let deferredCredentialResponseJwt: string | undefined
+    let applyResult: (record: OpenId4VcIssuanceSessionRecord) => void
 
     if (signOptionsOrDeferral.type === 'deferral') {
       const deferralResult = await vcIssuer.createDeferredCredentialResponse({
@@ -904,20 +944,22 @@ export class OpenId4VcIssuerService {
       deferredCredentialResponse = deferralResult.deferredCredentialResponse
       deferredCredentialResponseJwt = deferralResult.deferredCredentialResponseJwt
 
-      // Update transaction with the new deferredUntil value
-      issuanceSession.transactions = issuanceSession.transactions.map((tx) => {
-        if (tx.transactionId === transaction.transactionId) {
-          return {
-            ...tx,
-            deferredUntil: utils.addSecondsToDate(new Date(), signOptionsOrDeferral.interval),
+      applyResult = (record) => {
+        // Update transaction with the new deferredUntil value
+        record.transactions = record.transactions.map((tx) => {
+          if (tx.transactionId === transaction.transactionId) {
+            return {
+              ...tx,
+              deferredUntil: utils.addSecondsToDate(new Date(), signOptionsOrDeferral.interval),
+            }
           }
-        }
 
-        return tx
-      })
+          return tx
+        })
 
-      // Update expiry time to allow for re-check
-      await this.updateExpiresAt(agentContext, issuanceSession, signOptionsOrDeferral.interval)
+        // Update expiry time to allow for re-check
+        this.updateExpiresAt(record, signOptionsOrDeferral.interval)
+      }
     } else {
       const credentials = await this.getSignedCredentials(agentContext, signOptionsOrDeferral, {
         issuanceSession,
@@ -932,27 +974,42 @@ export class OpenId4VcIssuerService {
       deferredCredentialResponse = immediateResult.deferredCredentialResponse
       deferredCredentialResponseJwt = immediateResult.deferredCredentialResponseJwt
 
-      issuanceSession.issuedCredentials.push(credentialConfigurationId)
+      applyResult = (record) => {
+        record.issuedCredentials.push(credentialConfigurationId)
 
-      // Remove the transaction from the session, as it is now completed
-      issuanceSession.transactions = issuanceSession.transactions?.filter(
-        (tx) => tx.transactionId !== transaction.transactionId
-      )
+        // Remove the transaction from the session, as it is now completed
+        record.transactions = record.transactions.filter((tx) => tx.transactionId !== transaction.transactionId)
 
-      // Determine new state
-      const newState =
-        issuanceSession.issuedCredentials.length >=
-        issuanceSession.credentialOfferPayload.credential_configuration_ids.length
-          ? OpenId4VcIssuanceSessionState.Completed
-          : OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
+        record.state =
+          record.issuedCredentials.length >= record.credentialOfferPayload.credential_configuration_ids.length
+            ? OpenId4VcIssuanceSessionState.Completed
+            : OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
+      }
+    }
 
-      await this.updateState(agentContext, issuanceSession, newState)
+    // A concurrent request may have completed this transaction since the checks above
+    const result = await this.updateIssuanceSessionWithLock(agentContext, issuanceSession, {
+      allowedStates,
+      update: (record) => {
+        if (!record.transactions.some((tx) => tx.transactionId === transaction.transactionId)) return false
+
+        applyResult(record)
+        return true
+      },
+      error: new OpenId4VcIssuanceSessionStateError({
+        error: Oauth2ErrorCodes.InvalidTransactionId,
+        error_description: 'The transaction has already been completed',
+      }),
+    })
+    // A repeated deferral keeps the session state, so it doesn't emit a state changed event
+    if (signOptionsOrDeferral.type !== 'deferral') {
+      this.emitStateChangedEvent(agentContext, result.issuanceSession, result.previousState)
     }
 
     return {
       deferredCredentialResponse,
       deferredCredentialResponseJwt,
-      issuanceSession,
+      issuanceSession: result.issuanceSession,
     }
   }
 
@@ -1034,7 +1091,24 @@ export class OpenId4VcIssuerService {
       })
     }
 
-    await this.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.CredentialRequestReceived)
+    // Under a lock, so it doesn't overwrite the progress of a concurrent credential request, or move a session with
+    // issued credentials back to `CredentialRequestReceived`
+    const result = await this.updateIssuanceSessionWithLock(agentContext, issuanceSession, {
+      allowedStates: credentialRequestStates,
+      update: (record) => {
+        if (record.state !== OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued) {
+          record.state = OpenId4VcIssuanceSessionState.CredentialRequestReceived
+        }
+        return true
+      },
+      error: new OpenId4VcIssuanceSessionStateError({
+        error: Oauth2ErrorCodes.CredentialRequestDenied,
+        error_description: 'The issuance session does not accept credential requests',
+      }),
+    })
+    if (result.issuanceSession.state !== result.previousState) {
+      this.emitStateChangedEvent(agentContext, result.issuanceSession, result.previousState)
+    }
 
     if (proofType === 'attestation') {
       const keyAttestationJwt = proofValue[0]
@@ -2030,11 +2104,7 @@ export class OpenId4VcIssuerService {
    * plus interval and the grace period. This accounts for the chance of multiple
    * deferrals happening, always retaining the longer interval.
    */
-  private async updateExpiresAt(
-    agentContext: AgentContext,
-    issuanceSession: OpenId4VcIssuanceSessionRecord,
-    intervalInSeconds: number
-  ) {
+  private updateExpiresAt(issuanceSession: OpenId4VcIssuanceSessionRecord, intervalInSeconds: number) {
     const expiresAt =
       issuanceSession.expiresAt ??
       utils.addSecondsToDate(
@@ -2053,8 +2123,49 @@ export class OpenId4VcIssuerService {
           .getTime()
       )
     )
+  }
 
-    await this.openId4VcIssuanceSessionRepository.update(agentContext, issuanceSession)
+  /**
+   * Updates the stored copy of `issuanceSession` under a record lock, if it is still in one of `allowedStates`.
+   * `update` applies the changes of the request to the stored record, so changes made by concurrent requests are
+   * kept. When the session isn't updated, nothing is written and `error` is thrown, or `undefined` is returned without
+   * it. Doesn't emit a state changed event.
+   */
+  public async updateIssuanceSessionWithLock(
+    agentContext: AgentContext,
+    issuanceSession: OpenId4VcIssuanceSessionRecord,
+    options: OpenId4VcUpdateIssuanceSessionWithLockOptions & { error: Error }
+  ): Promise<{ issuanceSession: OpenId4VcIssuanceSessionRecord; previousState: OpenId4VcIssuanceSessionState }>
+  public async updateIssuanceSessionWithLock(
+    agentContext: AgentContext,
+    issuanceSession: OpenId4VcIssuanceSessionRecord,
+    options: OpenId4VcUpdateIssuanceSessionWithLockOptions
+  ): Promise<
+    { issuanceSession: OpenId4VcIssuanceSessionRecord; previousState: OpenId4VcIssuanceSessionState } | undefined
+  >
+  public async updateIssuanceSessionWithLock(
+    agentContext: AgentContext,
+    issuanceSession: OpenId4VcIssuanceSessionRecord,
+    { allowedStates, update, error }: OpenId4VcUpdateIssuanceSessionWithLockOptions
+  ) {
+    let previousState = issuanceSession.state
+    try {
+      const updatedIssuanceSession = await this.openId4VcIssuanceSessionRepository.updateByIdWithLock(
+        agentContext,
+        issuanceSession.id,
+        async (record) => {
+          previousState = record.state
+          // Throwing skips the write
+          if (!allowedStates.includes(record.state) || !update(record)) throw new IssuanceSessionNotUpdatedError()
+          return record
+        }
+      )
+      return { issuanceSession: updatedIssuanceSession, previousState }
+    } catch (caughtError) {
+      if (!(caughtError instanceof IssuanceSessionNotUpdatedError)) throw caughtError
+      if (error) throw error
+      return undefined
+    }
   }
 
   /**
@@ -2075,6 +2186,55 @@ export class OpenId4VcIssuerService {
     await this.openId4VcIssuanceSessionRepository.update(agentContext, issuanceSession)
 
     this.emitStateChangedEvent(agentContext, issuanceSession, previousState)
+  }
+
+  /**
+   * Moves the stored copy of `issuanceSession` to `newState` under a record lock, if it is still in one of
+   * `allowedStates`, and emits a state changed event. `update` applies the other changes of the request to the stored
+   * record, and an error it throws is rethrown as is. When the session isn't updated, nothing is written and `error`
+   * is thrown, or `undefined` is returned without it.
+   */
+  public async updateStateWithLock(
+    agentContext: AgentContext,
+    issuanceSession: OpenId4VcIssuanceSessionRecord,
+    options: {
+      newState: OpenId4VcIssuanceSessionState
+      allowedStates: OpenId4VcIssuanceSessionState[]
+      update?: (issuanceSession: OpenId4VcIssuanceSessionRecord) => void
+      error?: Error
+    }
+  ) {
+    const result = await this.updateIssuanceSessionWithLock(agentContext, issuanceSession, {
+      allowedStates: options.allowedStates,
+      error: options.error,
+      update: (record) => {
+        options.update?.(record)
+        record.state = options.newState
+        return true
+      },
+    })
+    if (!result) return undefined
+
+    this.emitStateChangedEvent(agentContext, result.issuanceSession, result.previousState)
+    return result.issuanceSession
+  }
+
+  /**
+   * Moves the stored session to `Error` under a record lock, unless it is already finished. So a failed request
+   * doesn't overwrite changes that concurrent requests made after it read the session.
+   */
+  public async updateStateToError(
+    agentContext: AgentContext,
+    issuanceSession: OpenId4VcIssuanceSessionRecord,
+    errorMessage: string
+  ) {
+    await this.updateStateWithLock(agentContext, issuanceSession, {
+      newState: OpenId4VcIssuanceSessionState.Error,
+      allowedStates: unfinishedStates,
+      update: (record) => {
+        record.errorMessage = errorMessage
+      },
+    })
   }
 
   public emitStateChangedEvent(
@@ -2240,8 +2400,8 @@ export class OpenId4VcIssuerService {
       { ignoreNotFoundIds: true }
     )
     if (Object.keys(configurationsMatchingRequestAndOfferNotIssued).length === 0) {
-      throw new Oauth2ServerErrorResponseError({
-        error: Oauth2ErrorCodes.InvalidCredentialRequest,
+      throw new OpenId4VcIssuanceSessionStateError({
+        error: Oauth2ErrorCodes.CredentialRequestDenied,
         error_description:
           'Credential request does not match any credential configurations from credential offer that have not been issued yet',
       })

@@ -28,6 +28,7 @@ import { TenantsModule } from '../../tenants/src'
 import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessionCoordinator'
 import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciIssuerInfo, OpenId4VciSignMdocCredentials } from '../src'
 import {
+  OpenId4VcIssuanceSessionRepository,
   OpenId4VcIssuanceSessionState,
   OpenId4VcIssuerModuleConfig,
   OpenId4VciCredentialFormatProfile,
@@ -1004,6 +1005,167 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     await holderTenant.endSession()
+  })
+
+  it('responds to a credential request with an access token for another subject as if the session does not exist', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const { credentialOffer, issuanceSession } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+      generateRefreshTokens: true,
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    // A refresh binds the session to the subject of the new access token
+    await holderTenant.modules.openid4vc.holder.refreshToken({
+      issuerMetadata: resolvedCredentialOffer.metadata,
+      authorizationServer: tokenResponse.authorizationServer,
+      dpop: tokenResponse.dpop,
+      refreshToken: tokenResponse.refreshToken as string,
+    })
+
+    const credentialEndpoint = `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/credential`
+    const requestCredentialWithOldToken = async () => {
+      const response = await fetch(credentialEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(await getDpopAuthorizationHeaders(holderTenant.context, credentialEndpoint, tokenResponse)),
+        },
+        body: JSON.stringify({ credential_configuration_id: 'universityDegree' }),
+      })
+      return { status: response.status, headers: Object.fromEntries(response.headers), body: await response.text() }
+    }
+
+    const otherSubjectResponse = await requestCredentialWithOldToken()
+    await issuerTenant.dependencyManager
+      .resolve(OpenId4VcIssuanceSessionRepository)
+      .deleteById(issuerTenant.context, issuanceSession.id)
+    const unknownSessionResponse = await requestCredentialWithOldToken()
+
+    expect(otherSubjectResponse).toMatchObject({ status: 400, body: '{"error":"credential_request_denied"}' })
+    expect({ ...otherSubjectResponse, headers: { ...otherSubjectResponse.headers, date: undefined } }).toEqual({
+      ...unknownSessionResponse,
+      headers: { ...unknownSessionResponse.headers, date: undefined },
+    })
+
+    await holderTenant.endSession()
+    await issuerTenant.endSession()
+  })
+
+  it('issues a credential once for concurrent requests, and keeps the completed session completed', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+        openBadge: {
+          ...universityDegreeCredentialConfigurationSupportedJwkOnly,
+          scope: 'OpenBadgeCredential',
+          vct: 'OpenBadgeCredential',
+        },
+      },
+    })
+
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree', 'openBadge'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    const requestCredential = (credentialConfigurationId: string) =>
+      holderTenant.modules.openid4vc.holder.requestCredentials({
+        resolvedCredentialOffer,
+        ...tokenResponse,
+        credentialConfigurationIds: [credentialConfigurationId],
+        credentialBindingResolver,
+      })
+
+    const results = await Promise.allSettled([
+      requestCredential('universityDegree'),
+      requestCredential('universityDegree'),
+    ])
+    expect(results.map((result) => result.status).sort()).toEqual(['fulfilled', 'rejected'])
+
+    // The rejected duplicate request doesn't end the session, so the other credential can still be issued
+    const partiallyIssuedSession = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
+      issuanceSession.id
+    )
+    expect(partiallyIssuedSession.state).toBe(OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued)
+    await requestCredential('openBadge')
+
+    await expect(requestCredential('universityDegree')).rejects.toThrow('credential_request_denied')
+
+    const completedSession = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(issuanceSession.id)
+    expect(completedSession.state).toBe(OpenId4VcIssuanceSessionState.Completed)
+    expect(completedSession.issuedCredentials.sort()).toEqual(['openBadge', 'universityDegree'])
+
+    await holderTenant.endSession()
+    await issuerTenant.endSession()
+  })
+
+  it('issues one access token for concurrent token requests with the same pre-authorized code', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+    // Hold both requests before they update the session, so both pass the state check before either updates it
+    const issuanceSessionRepository = issuerTenant.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    const updateByIdWithLock = issuanceSessionRepository.updateByIdWithLock.bind(issuanceSessionRepository)
+    let calls = 0
+    let releaseCalls = () => {}
+    const bothCalled = new Promise<void>((resolve) => {
+      releaseCalls = resolve
+    })
+    const updateSpy = vi.spyOn(issuanceSessionRepository, 'updateByIdWithLock').mockImplementation(async (...args) => {
+      calls++
+      if (calls === 2) releaseCalls()
+      if (calls <= 2) await bothCalled
+      return updateByIdWithLock(...args)
+    })
+
+    const requestToken = () => holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+    const results = await Promise.allSettled([requestToken(), requestToken()])
+    updateSpy.mockRestore()
+    expect(results.map((result) => result.status).sort()).toEqual(['fulfilled', 'rejected'])
+    expect(results.find((result) => result.status === 'rejected')?.reason.message).toContain('invalid_grant')
+
+    const sessionAfterToken = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(issuanceSession.id)
+    expect(sessionAfterToken.state).toBe(OpenId4VcIssuanceSessionState.AccessTokenCreated)
+
+    await holderTenant.endSession()
+    await issuerTenant.endSession()
   })
 
   it('accepts a valid tx_code after an invalid one', async () => {

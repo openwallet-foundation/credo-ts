@@ -6,6 +6,7 @@ import {
   sendNotFoundResponse,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
+import { OpenId4VcVerificationSessionFinishedError } from '../OpenId4VcVerificationSessionFinishedError'
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
@@ -87,7 +88,7 @@ export function configureAuthorizationRequestEndpoint(router: Router, config: Op
 
         // It's okay to retrieve the offer multiple times. So we only update the state if it's not already retrieved
         if (verificationSession.state !== OpenId4VcVerificationSessionState.RequestUriRetrieved) {
-          await verifierService.updateState(
+          await verifierService.updatePendingState(
             agentContext,
             verificationSession,
             OpenId4VcVerificationSessionState.RequestUriRetrieved
@@ -97,6 +98,18 @@ export function configureAuthorizationRequestEndpoint(router: Router, config: Op
         response.type('application/oauth-authz-req+jwt').status(200).send(verificationSession.authorizationRequestJwt)
         next()
       } catch (error) {
+        // A response ended the session after it was read above
+        if (error instanceof OpenId4VcVerificationSessionFinishedError) {
+          return sendErrorResponse(
+            response,
+            next,
+            agentContext.config.logger,
+            400,
+            'invalid_request',
+            'Invalid state for authorization request'
+          )
+        }
+
         return sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
       }
     }

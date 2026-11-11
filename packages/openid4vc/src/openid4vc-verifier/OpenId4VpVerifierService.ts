@@ -73,6 +73,7 @@ import type {
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import { credoJwtIssuerToOpenId4VcJwtIssuer, dcqlCredentialQueryToPresentationFormat } from '../shared/utils'
+import { OpenId4VcVerificationSessionFinishedError } from './OpenId4VcVerificationSessionFinishedError'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
 import {
   type OpenId4VcVerificationSessionStateChangedEvent,
@@ -459,18 +460,13 @@ export class OpenId4VpVerifierService {
         verificationSession,
       }
     } catch (error) {
-      if (
-        verificationSession?.state === OpenId4VcVerificationSessionState.RequestUriRetrieved ||
-        verificationSession?.state === OpenId4VcVerificationSessionState.RequestCreated
-      ) {
-        const parsed = zOpenid4vpAuthorizationResponse.safeParse(
-          parsedAuthorizationResponse?.authorizationResponsePayload
-        )
+      const parsed = zOpenid4vpAuthorizationResponse.safeParse(
+        parsedAuthorizationResponse?.authorizationResponsePayload
+      )
 
-        verificationSession.authorizationResponsePayload = parsed.success ? parsed.data : undefined
-        verificationSession.errorMessage = error.message
-        await this.updateState(agentContext, verificationSession, OpenId4VcVerificationSessionState.Error)
-      }
+      verificationSession.authorizationResponsePayload = parsed.success ? parsed.data : undefined
+      verificationSession.errorMessage = error.message
+      await this.updatePendingState(agentContext, verificationSession, OpenId4VcVerificationSessionState.Error)
 
       throw error
     }
@@ -495,15 +491,12 @@ export class OpenId4VpVerifierService {
       verificationSession.state !== OpenId4VcVerificationSessionState.RequestUriRetrieved &&
       verificationSession.state !== OpenId4VcVerificationSessionState.RequestCreated
     ) {
-      throw new Oauth2ServerErrorResponseError({
-        error: Oauth2ErrorCodes.InvalidRequest,
-        error_description: 'Invalid session',
-      })
+      throw new OpenId4VcVerificationSessionFinishedError()
     }
 
     if (verificationSession.expiresAt && Date.now() > verificationSession.expiresAt.getTime()) {
       verificationSession.errorMessage = 'session expired'
-      await this.updateState(agentContext, verificationSession, OpenId4VcVerificationSessionState.Error)
+      await this.updatePendingState(agentContext, verificationSession, OpenId4VcVerificationSessionState.Error)
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.InvalidRequest,
         error_description: 'session expired',
@@ -746,7 +739,7 @@ export class OpenId4VpVerifierService {
       })
     } catch (error) {
       result.verificationSession.errorMessage = error.message
-      await this.updateState(agentContext, result.verificationSession, OpenId4VcVerificationSessionState.Error)
+      await this.updatePendingState(agentContext, result.verificationSession, OpenId4VcVerificationSessionState.Error)
       throw error
     }
 
@@ -757,13 +750,11 @@ export class OpenId4VpVerifierService {
     }
 
     result.verificationSession.authorizationResponsePayload = result.authorizationResponsePayload
-    await this.updateState(
+    await this.updatePendingState(
       agentContext,
       result.verificationSession,
       OpenId4VcVerificationSessionState.ResponseVerified,
-      {
-        verifiedAuthorizationResponse,
-      }
+      { verifiedAuthorizationResponse }
     )
 
     return {
@@ -1490,6 +1481,39 @@ export class OpenId4VpVerifierService {
     const previousState = verificationSession.state
     verificationSession.state = newState
     await this.openId4VcVerificationSessionRepository.update(agentContext, verificationSession)
+
+    this.emitStateChangedEvent(agentContext, verificationSession, previousState, options)
+  }
+
+  /**
+   * Like `updateState`, but only if the stored session is still waiting for a response, checked under a
+   * record lock so concurrent responses can't both complete it. Throws an `OpenId4VcVerificationSessionFinishedError`,
+   * without writing the record, if it no longer is.
+   */
+  public async updatePendingState(
+    agentContext: AgentContext,
+    verificationSession: OpenId4VcVerificationSessionRecord,
+    newState: OpenId4VcVerificationSessionState,
+    options: Pick<OpenId4VcVerificationSessionStateChangedEventPayload, 'verifiedAuthorizationResponse'> = {}
+  ) {
+    const pendingStates = [
+      OpenId4VcVerificationSessionState.RequestCreated,
+      OpenId4VcVerificationSessionState.RequestUriRetrieved,
+    ]
+
+    let previousState = verificationSession.state
+    await this.openId4VcVerificationSessionRepository.updateByIdWithLock(
+      agentContext,
+      verificationSession.id,
+      async (record) => {
+        previousState = record.state
+        // Throwing skips the write
+        if (!pendingStates.includes(record.state)) throw new OpenId4VcVerificationSessionFinishedError()
+
+        verificationSession.state = newState
+        return verificationSession
+      }
+    )
 
     this.emitStateChangedEvent(agentContext, verificationSession, previousState, options)
   }
