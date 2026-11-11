@@ -25,7 +25,14 @@ describe('DidsModuleConfig', () => {
       expect.any(PeerDidResolver),
       expect.any(JwkDidResolver),
     ])
-    expect(config.publicDidMethods).toEqual(['web', 'indy', 'cheqd', 'hedera', 'webvh'])
+    expect(config.publicDidMethods).toEqual(['web'])
+    expect(config.getCacheScope('web')).toBe('global')
+    for (const method of ['key', 'jwk', 'peer', 'external']) {
+      expect(config.getCacheScope(method)).toBe('context')
+    }
+    for (const resolver of config.resolvers) {
+      expect(resolver.allowsCaching).toBe(resolver instanceof WebDidResolver)
+    }
   })
 
   test('sets values', () => {
@@ -72,4 +79,48 @@ describe('DidsModuleConfig', () => {
     expect(config.registrars).toContain(registrar)
     expect(config.resolvers).toContain(resolver)
   })
+
+  test('derives public methods from dynamically registered resolvers without leaking between instances', () => {
+    const config = new DidsModuleConfig()
+    const otherConfig = new DidsModuleConfig()
+    const resolver: DidResolver = {
+      supportedMethods: ['external', 'another', 'external'],
+      allowsCaching: true,
+      cacheScope: 'global',
+      resolve: vi.fn(),
+    }
+
+    config.addResolver(resolver)
+
+    expect(config.publicDidMethods).toEqual(['web', 'external', 'another'])
+    expect(config.getCacheScope('external')).toBe('global')
+    expect(otherConfig.publicDidMethods).toEqual(['web'])
+    expect(otherConfig.getCacheScope('external')).toBe('context')
+  })
+
+  test.each([undefined, 'context', 'global'] as const)('uses the first matching resolver scope (%s)', (cacheScope) => {
+    const firstResolver: DidResolver = {
+      supportedMethods: ['external'],
+      allowsCaching: true,
+      cacheScope,
+      resolve: vi.fn(),
+    }
+    const config = new DidsModuleConfig({
+      resolvers: [firstResolver, { ...firstResolver, cacheScope: 'global' }],
+    })
+
+    expect(config.getCacheScope('external')).toBe(cacheScope ?? 'context')
+    expect(config.publicDidMethods).toEqual(cacheScope === 'global' ? ['external'] : [])
+  })
+
+  test.each([{ publicDidMethods: [] }, { publicDidMethods: ['another'] }])(
+    'explicit public methods $publicDidMethods override resolver scopes',
+    ({ publicDidMethods }) => {
+      const config = new DidsModuleConfig({ publicDidMethods })
+
+      expect(config.getCacheScope('web')).toBe('context')
+      expect(config.getCacheScope('another')).toBe(publicDidMethods.includes('another') ? 'global' : 'context')
+      expect(config.publicDidMethods).toBe(publicDidMethods)
+    }
+  )
 })

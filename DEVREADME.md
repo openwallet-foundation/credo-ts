@@ -4,6 +4,22 @@ This file is intended for developers working on the internals of the framework. 
 
 # Environment Setup
 
+## DID resolver caching
+
+Resolvers declare `allowsCaching` and optionally `cacheScope: 'global' | 'context'` on the
+[DidResolver interface](./packages/core/src/modules/dids/domain/DidResolver.ts). Scope defaults to
+`context`, isolating entries by agent context. Use `global` only when resolution is context-independent.
+Core does not maintain a list of public DID methods; Web, Indy, WebVH, Cheqd, and Hedera declare global
+scope in their own resolvers.
+
+An explicit `DidsModuleConfig.publicDidMethods` list overrides resolver declarations: listed methods
+use global scope and all others use context scope. An empty list forces context scope for every method.
+When the option is omitted, the configuration's `publicDidMethods` getter derives its list from the
+registered resolvers, using the first matching resolver for each method.
+
+The same scope applies to cache reads, writes, and invalidation after DID updates or deactivation.
+Existing TTL and per-call cache controls remain unchanged. Key, JWK, and Peer resolvers do not cache.
+
 ## VSCode devContainer
 
 This project comes with a [.devcontainer](./devcontainer) to make it as easy as possible to setup your dev environment and begin contributing to this project.

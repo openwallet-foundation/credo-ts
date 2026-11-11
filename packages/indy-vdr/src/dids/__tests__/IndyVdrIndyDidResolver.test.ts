@@ -1,5 +1,5 @@
 import '@hyperledger/indy-vdr-nodejs'
-import { JsonTransformer } from '@credo-ts/core'
+import { DidsModuleConfig, JsonTransformer } from '@credo-ts/core'
 import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests/helpers'
 import { IndyVdrPoolService } from '../../pool'
@@ -25,6 +25,14 @@ const agentContext = getAgentContext({
 const resolver = new IndyVdrIndyDidResolver()
 
 describe('IndyVdrIndyDidResolver', () => {
+  it('declares global caching without core method defaults', () => {
+    const config = new DidsModuleConfig({ resolvers: [resolver] })
+
+    expect(resolver.allowsCaching).toBe(true)
+    expect(resolver.cacheScope).toBe('global')
+    expect(config.getCacheScope('indy')).toBe('global')
+  })
+
   describe('NYMs with diddocContent', () => {
     it('should correctly resolve a did:indy document with arbitrary diddocContent', async () => {
       const did = 'did:indy:ns2:LjgpST2rjsoxYegQDRm7EL'

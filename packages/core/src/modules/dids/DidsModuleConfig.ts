@@ -10,8 +10,6 @@ import {
   WebDidResolver,
 } from './methods'
 
-const DEFAULT_PUBLIC_DID_METHODS = ['web', 'indy', 'cheqd', 'hedera', 'webvh']
-
 /**
  * DidsModuleConfigOptions defines the interface for the options of the DidsModuleConfig class.
  * This can contain optional parameters that have default values in the config class itself.
@@ -44,8 +42,7 @@ export interface DidsModuleConfigOptions {
   /**
    * Overrides resolver cache scopes: listed methods use global scope, all others use context
    * scope. An empty list forces context scope for every method.
-   * When omitted, each resolver's cacheScope applies, falling back to the legacy public-method
-   * defaults and then context scope.
+   * When omitted, each resolver's cacheScope applies, defaulting to context scope.
    */
   publicDidMethods?: string[]
 }
@@ -122,9 +119,9 @@ export class DidsModuleConfig {
   public get publicDidMethods(): string[] {
     return (
       this.options.publicDidMethods ??
-      [
-        ...new Set([...DEFAULT_PUBLIC_DID_METHODS, ...this.resolvers.flatMap((resolver) => resolver.supportedMethods)]),
-      ].filter((method) => this.getCacheScope(method) === 'global')
+      [...new Set(this.resolvers.flatMap((resolver) => resolver.supportedMethods))].filter(
+        (method) => this.getCacheScope(method) === 'global'
+      )
     )
   }
 
@@ -134,9 +131,6 @@ export class DidsModuleConfig {
       return this.options.publicDidMethods.includes(method) ? 'global' : 'context'
     }
 
-    return (
-      this.resolvers.find((resolver) => resolver.supportedMethods.includes(method))?.cacheScope ??
-      (DEFAULT_PUBLIC_DID_METHODS.includes(method) ? 'global' : 'context')
-    )
+    return this.resolvers.find((resolver) => resolver.supportedMethods.includes(method))?.cacheScope ?? 'context'
   }
 }

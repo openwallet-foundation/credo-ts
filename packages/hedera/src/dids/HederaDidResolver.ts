@@ -12,6 +12,7 @@ import { HederaLedgerService } from '../ledger'
 export class HederaDidResolver implements DidResolver {
   public readonly supportedMethods = ['hedera']
   public readonly allowsCaching = true
+  public readonly cacheScope = 'global'
   public readonly allowsLocalDidRecord = true
 
   async resolve(

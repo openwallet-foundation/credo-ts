@@ -17,6 +17,7 @@ export interface WebVhDidResolverOptions {
 export class WebVhDidResolver implements DidResolver {
   public readonly supportedMethods = ['webvh']
   public readonly allowsCaching = true
+  public readonly cacheScope = 'global'
   public readonly allowsLocalDidRecord = true
 
   private options: WebVhDidResolverOptions
