@@ -19,6 +19,7 @@ import {
 } from '@credo-ts/core'
 import { createHeaderAndPayload, SLException, StatusList } from '@owf/token-status-list'
 import { decodeSdJwtSync, getClaimsSync, Jwt, SDJwt } from '@sd-jwt/core'
+import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc'
 import { randomUUID } from 'crypto'
 import nock from 'nock'
 import { type Mock, vi } from 'vitest'
@@ -1801,6 +1802,78 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: false,
         error: new CredoError("Expected JWT header 'alg' to be a known JWA signature algorithm, found 'RS1'"),
+        sdJwtVc: expect.any(Object),
+      })
+    })
+
+    test('verify x509 protected sd-jwt-vc with a selectively disclosed iss and fails', async () => {
+      // @sd-jwt/sd-jwt-vc refuses to issue this, so we skip that check to create a non-compliant credential
+      const validateDisclosureFrameSpy = vi
+        .spyOn(SDJwtVcInstance.prototype, 'validateDisclosureFrame')
+        .mockImplementation(() => {})
+
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: { claim: 'some-claim', vct: 'IdentityCredential' },
+        disclosureFrame: { _sd: ['iss'] },
+        issuer: {
+          method: 'x5c',
+          x5c: [simpleX509Certificate],
+          issuer: simpleX509.certificateIssuer,
+        },
+      })
+      validateDisclosureFrameSpy.mockRestore()
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: compact,
+        trustedCertificates: [simpleX509.trustedCertificate],
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        error: expect.objectContaining({
+          name: 'SDJWTException',
+          message: 'Protected claims must not be selectively disclosed: iss',
+          code: 'INVALID_SD_JWT',
+        }),
+        sdJwtVc: expect.objectContaining({
+          prettyClaims: expect.objectContaining({ iss: simpleX509.certificateIssuer }),
+        }),
+      })
+    })
+
+    test('verify sd-jwt-vc with a selectively disclosable status sub-claim that is not disclosed and fails', async () => {
+      // @sd-jwt/sd-jwt-vc refuses to issue this, so we skip that check to create a non-compliant credential
+      const validateDisclosureFrameSpy = vi
+        .spyOn(SDJwtVcInstance.prototype, 'validateDisclosureFrame')
+        .mockImplementation(() => {})
+
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          vct: 'IdentityCredential',
+          status: { status_list: { idx: 0, uri: 'https://example.com/status-list' } },
+        },
+        disclosureFrame: { status: { _sd: ['status_list'] } },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+      })
+      validateDisclosureFrameSpy.mockRestore()
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: compact,
+        presentationFrame: {},
+      })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, { compactSdJwtVc: presentation })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        error: expect.objectContaining({
+          name: 'SDJWTException',
+          message: 'Protected claims must not have selectively disclosable parts: status',
+          code: 'INVALID_SD_JWT',
+        }),
         sdJwtVc: expect.any(Object),
       })
     })
