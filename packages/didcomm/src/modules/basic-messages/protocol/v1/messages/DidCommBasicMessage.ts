@@ -6,8 +6,6 @@ import { IsValidMessageType, parseMessageType } from '../../../../../util/messag
 import { DateParser } from '../../../../../util/transformers'
 
 export class DidCommBasicMessage extends DidCommMessage {
-  public readonly allowDidSovPrefix = true
-
   /**
    * Create new DidCommBasicMessage instance.
    * sentTime will be assigned to new Date if not passed, id will be assigned to uuid/v4 if not passed

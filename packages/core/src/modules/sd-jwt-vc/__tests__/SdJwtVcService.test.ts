@@ -274,24 +274,24 @@ describe('SdJwtVcService', () => {
       vi.mocked(agent.kms.randomBytes).mockImplementation(staticSalt)
     })
 
-    test('Sign (x509) sd-jwt-vc with an invalid certificate issuer should fail', async () => {
-      await expect(
-        sdJwtVcService.sign(agent.context, {
-          payload: {
-            claim: 'some-claim',
-            vct: 'IdentityCredential',
-          },
-          holder: {
-            method: 'jwk',
-            jwk: holderKey,
-          },
-          issuer: {
-            method: 'x5c',
-            x5c: [simpleX509Certificate],
-            issuer: 'some-issuer',
-          },
-        })
-      ).rejects.toThrow()
+    test('Sign (x509) sd-jwt-vc with an issuer claim that does not match the certificate', async () => {
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          claim: 'some-claim',
+          vct: 'IdentityCredential',
+        },
+        holder: {
+          method: 'jwk',
+          jwk: holderKey,
+        },
+        issuer: {
+          method: 'x5c',
+          x5c: [simpleX509Certificate],
+          issuer: 'some-issuer',
+        },
+      })
+
+      expect(sdJwtVcService.fromCompact(compact).payload.iss).toEqual('some-issuer')
     })
 
     test('Sign (x509) sd-jwt-vc from a basic payload without disclosures', async () => {
@@ -1527,6 +1527,31 @@ describe('SdJwtVcService', () => {
       })
     })
 
+    test('Verify sd-jwt-vc with status where the status list is larger than the fetch limit and fails', async () => {
+      const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
+
+      nock('https://example.com')
+        .get('/status-list')
+        .reply(200, 'a'.repeat(agent.config.fetchLimits.maxResponseBytes + 1), {
+          'Content-Type': 'application/statuslist+jwt',
+        })
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleSdJwtVcWithStatus,
+        presentationFrame: {},
+      })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        sdJwtVc: expect.any(Object),
+        error: expect.objectContaining({ message: expect.stringMatching(/too large|exceeded limit/) }),
+      })
+    })
+
     test('Verify sd-jwt-vc with status where credential is revoked and fails', async () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
@@ -2335,6 +2360,28 @@ describe('SdJwtVcService', () => {
       expect(verificationResult.isValid).toBe(true)
     })
 
+    test('rejects an http status list uri when insecure http urls are not allowed', async () => {
+      const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
+      const fetchSpy = vi.spyOn(agent.context.config, 'fetch')
+      const signed = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          vct: 'IdentityCredential',
+          status: { status_list: { idx: 12, uri: 'http://example.com/status-list' } },
+        } as SdJwtVcPayload,
+        issuer: { method: 'did', didUrl: issuerDidUrl },
+      })
+
+      const verificationResult = await verify(
+        await sdJwtVcService.present(agent.context, { sdJwtVc: signed, presentationFrame: {} })
+      )
+
+      expect(verificationResult.isValid).toBe(false)
+      if (!verificationResult.isValid) {
+        expect(verificationResult.error?.message).toContain('Only https urls are supported')
+      }
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
     test("rejects a status list JWT whose 'sub' is not the uri of the status claim", async () => {
       const otherUri = 'https://example.com/other-status-list'
       mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [], { sub: otherUri }))
@@ -2615,6 +2662,35 @@ describe('SdJwtVcService', () => {
       ).rejects.toThrow(
         "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful response."
       )
+    })
+
+    test('Fetch type metadata throws error when the response is larger than the fetch limit', async () => {
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      })
+
+      nock('https://example.com')
+        .get('/credentials/identity')
+        .reply(200, {
+          vct: 'https://example.com/credentials/identity',
+          name: 'a'.repeat(agent.config.fetchLimits.maxResponseBytes),
+        })
+
+      nock('https://example.com').get('/.well-known/vct/credentials/identity').reply(404)
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'https://example.com/credentials/identity',
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toMatchObject({
+        message:
+          "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful response.",
+        cause: expect.objectContaining({ message: expect.stringMatching(/too large|exceeded limit/) }),
+      })
     })
 
     test('Fetch type metadata with valid vct#integrity (sha256) should succeed', async () => {

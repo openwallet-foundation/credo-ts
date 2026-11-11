@@ -1,4 +1,5 @@
 import 'react-native-get-random-values'
+import './subtleDigest'
 
 import type { AgentDependencies } from '@credo-ts/core'
 

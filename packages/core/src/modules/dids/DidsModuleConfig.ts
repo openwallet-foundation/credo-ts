@@ -10,7 +10,7 @@ import {
   WebDidResolver,
 } from './methods'
 
-const DEFAULT_PUBLIC_DID_METHODS = ['web', 'indy', 'sov', 'cheqd', 'hedera', 'webvh']
+const DEFAULT_PUBLIC_DID_METHODS = ['web', 'indy', 'cheqd', 'hedera', 'webvh']
 
 /**
  * DidsModuleConfigOptions defines the interface for the options of the DidsModuleConfig class.
@@ -47,7 +47,7 @@ export interface DidsModuleConfigOptions {
    * scope shared across all agent contexts (when the resolver allows caching). Documents of
    * other did methods are cached per agent context.
    *
-   * @default ['web', 'indy', 'sov', 'cheqd', 'hedera', 'webvh']
+   * @default ['web', 'indy', 'cheqd', 'hedera', 'webvh']
    */
   publicDidMethods?: string[]
 }

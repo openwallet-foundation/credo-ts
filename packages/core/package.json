@@ -26,12 +26,6 @@
       }
     }
   },
-  "browser": {
-    "./build/modules/vc/jsonld/nativeDocumentLoader.mjs": "./build/modules/vc/jsonld/nativeDocumentLoader.native.mjs"
-  },
-  "react-native": {
-    "./build/modules/vc/jsonld/nativeDocumentLoader.mjs": "./build/modules/vc/jsonld/nativeDocumentLoader.native.mjs"
-  },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/core",
   "repository": {
     "type": "git",
@@ -45,10 +39,7 @@
   "dependencies": {
     "@animo-id/pex": "catalog:",
     "@astronautlabs/jsonpath": "catalog:",
-    "@digitalcredentials/jsonld": "^9.0.0",
-    "@digitalcredentials/jsonld-signatures": "^12.0.1",
-    "@digitalcredentials/vc": "^10.0.2",
-    "@multiformats/base-x": "^4.0.1",
+    "@digitalbazaar/vc": "^7.3.0",
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
     "@owf/cose": "^0.7.0",
@@ -74,20 +65,20 @@
     "did-resolver": "^6.0.0",
     "ec-compression": "^2.0.0",
     "json-canonicalize": "^3.0.0",
+    "jsonld": "^9.0.0",
+    "jsonld-signatures": "^11.6.0",
     "lru_map": "^0.4.1",
     "object-inspect": "^1.13.4",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "tsyringe": "catalog:",
     "uuid": "^14.0.3",
-    "varint": "^6.0.0",
     "web-did-resolver": "^3.2.0",
     "webcrypto-core": "^1.9.2",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@types/object-inspect": "^1.13.0",
-    "@types/varint": "^6.0.3",
     "nock": "catalog:",
     "tslog": "^4.10.2",
     "typescript": "catalog:"

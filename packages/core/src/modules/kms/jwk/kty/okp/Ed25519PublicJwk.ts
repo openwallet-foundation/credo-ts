@@ -6,7 +6,7 @@ import {
 } from '../../jwa'
 import type { PublicJwkType } from '../PublicJwk'
 import type { KmsJwkPublicOkp } from './okpJwk'
-import { okpPublicJwkToPublicKey, okpPublicKeyToPublicJwk } from './okpPublicKey'
+import { okpMulticodecToPublicJwk, okpPublicJwkToPublicKey, okpPublicKeyToPublicJwk } from './okpPublicKey'
 import { X25519PublicJwk } from './X25519PublicJwk'
 
 type Jwk = KmsJwkPublicOkp & { crv: 'Ed25519' }
@@ -17,7 +17,7 @@ export class Ed25519PublicJwk implements PublicJwkType<Jwk> {
     KnownJwaSignatureAlgorithms.Ed25519,
   ]
   public static supportedEncryptionKeyAgreementAlgorithms: KnownJwaKeyAgreementAlgorithm[] = []
-  public static multicodecPrefix = 237
+  public static multicodecPrefix = 0xed
 
   public supportedEncryptionKeyAgreementAlgorithms = Ed25519PublicJwk.supportedEncryptionKeyAgreementAlgorithms
   public supportedSignatureAlgorithms = Ed25519PublicJwk.supportedSignatureAlgorithms
@@ -50,7 +50,7 @@ export class Ed25519PublicJwk implements PublicJwkType<Jwk> {
   }
 
   public static fromMulticodec(multicodec: Uint8Array) {
-    const jwk = okpPublicKeyToPublicJwk(multicodec, 'Ed25519')
+    const jwk = okpMulticodecToPublicJwk(multicodec, 'Ed25519')
     return new Ed25519PublicJwk(jwk)
   }
 

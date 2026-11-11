@@ -3,10 +3,6 @@ import {
   canHandleMessageType,
   parseDidCommProtocolUri,
   parseMessageType,
-  replaceLegacyDidSovPrefix,
-  replaceLegacyDidSovPrefixOnMessage,
-  replaceNewDidCommPrefixWithLegacyDidSov,
-  replaceNewDidCommPrefixWithLegacyDidSovOnMessage,
   supportsIncomingDidCommProtocolUri,
   supportsIncomingMessageType,
 } from '../messageType'
@@ -23,82 +19,6 @@ export class TestMessage extends DidCommMessage {
 }
 
 describe('messageType', () => {
-  describe('replaceLegacyDidSovPrefixOnMessage()', () => {
-    it('should replace the message type prefix with https://didcomm.org if it starts with did:sov:BzCbsNYhMrjHiqZDTUASHg;spec', () => {
-      const message = {
-        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/basicmessage/1.0/message',
-      }
-
-      replaceLegacyDidSovPrefixOnMessage(message)
-
-      expect(message['@type']).toBe('https://didcomm.org/basicmessage/1.0/message')
-    })
-
-    it("should not replace the message type prefix with https://didcomm.org if it doesn't start with did:sov:BzCbsNYhMrjHiqZDTUASHg;spec", () => {
-      const messageOtherDidSov = {
-        '@type': 'did:sov:another_did;spec/basicmessage/1.0/message',
-      }
-      replaceLegacyDidSovPrefixOnMessage(messageOtherDidSov)
-      expect(messageOtherDidSov['@type']).toBe('did:sov:another_did;spec/basicmessage/1.0/message')
-
-      const messageDidComm = {
-        '@type': 'https://didcomm.org/basicmessage/1.0/message',
-      }
-      replaceLegacyDidSovPrefixOnMessage(messageDidComm)
-      expect(messageDidComm['@type']).toBe('https://didcomm.org/basicmessage/1.0/message')
-    })
-  })
-
-  describe('replaceLegacyDidSovPrefix()', () => {
-    it('should replace the message type prefix with https://didcomm.org if it starts with did:sov:BzCbsNYhMrjHiqZDTUASHg;spec', () => {
-      const type = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/basicmessage/1.0/message'
-
-      expect(replaceLegacyDidSovPrefix(type)).toBe('https://didcomm.org/basicmessage/1.0/message')
-    })
-
-    it("should not replace the message type prefix with https://didcomm.org if it doesn't start with did:sov:BzCbsNYhMrjHiqZDTUASHg;spec", () => {
-      const messageTypeOtherDidSov = 'did:sov:another_did;spec/basicmessage/1.0/message'
-
-      expect(replaceLegacyDidSovPrefix(messageTypeOtherDidSov)).toBe(
-        'did:sov:another_did;spec/basicmessage/1.0/message'
-      )
-
-      const messageTypeDidComm = 'https://didcomm.org/basicmessage/1.0/message'
-
-      expect(replaceLegacyDidSovPrefix(messageTypeDidComm)).toBe('https://didcomm.org/basicmessage/1.0/message')
-    })
-  })
-
-  describe('replaceNewDidCommPrefixWithLegacyDidSovOnMessage()', () => {
-    it('should replace the message type prefix with did:sov:BzCbsNYhMrjHiqZDTUASHg;spec if it starts with https://didcomm.org', () => {
-      const message = {
-        '@type': 'https://didcomm.org/basicmessage/1.0/message',
-      }
-
-      replaceNewDidCommPrefixWithLegacyDidSovOnMessage(message)
-
-      expect(message['@type']).toBe('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/basicmessage/1.0/message')
-    })
-  })
-
-  describe('replaceNewDidCommPrefixWithLegacyDidSov()', () => {
-    it('should replace the message type prefix with did:sov:BzCbsNYhMrjHiqZDTUASHg;spec if it starts with https://didcomm.org', () => {
-      const type = 'https://didcomm.org/basicmessage/1.0/message'
-
-      expect(replaceNewDidCommPrefixWithLegacyDidSov(type)).toBe(
-        'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/basicmessage/1.0/message'
-      )
-    })
-
-    it("should not replace the message type prefix with did:sov:BzCbsNYhMrjHiqZDTUASHg;spec if it doesn't start with https://didcomm.org", () => {
-      const messageTypeOtherDidSov = 'did:sov:another_did;spec/basicmessage/1.0/message'
-
-      expect(replaceNewDidCommPrefixWithLegacyDidSov(messageTypeOtherDidSov)).toBe(
-        'did:sov:another_did;spec/basicmessage/1.0/message'
-      )
-    })
-  })
-
   describe('parseMessageType()', () => {
     test('correctly parses the message type', () => {
       expect(parseMessageType('https://didcomm.org/connections/1.0/request')).toEqual({
@@ -177,24 +97,6 @@ describe('messageType', () => {
       expect(supportsIncomingDidCommProtocolUri(incomingProtocolUri, expectedProtocolUri)).toBe(true)
     })
 
-    test('returns true when the protocol name, major version and minor version all match and the incoming protocol uri is using the legacy did sov prefix', () => {
-      const incomingProtocolUri = parseDidCommProtocolUri('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.4')
-      const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
-
-      expect(supportsIncomingDidCommProtocolUri(incomingProtocolUri, expectedProtocolUri)).toBe(true)
-    })
-
-    test('returns false when the protocol name, major version and minor version all match and the incoming protocol uri is using the legacy did sov prefix but allowLegacyDidSovPrefixMismatch is set to false', () => {
-      const incomingProtocolUri = parseDidCommProtocolUri('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.4')
-      const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
-
-      expect(
-        supportsIncomingDidCommProtocolUri(expectedProtocolUri, incomingProtocolUri, {
-          allowLegacyDidSovPrefixMismatch: false,
-        })
-      ).toBe(false)
-    })
-
     test('returns false when the major version does not match', () => {
       const incomingProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/2.4')
       const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
@@ -242,24 +144,6 @@ describe('messageType', () => {
       const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
 
       expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(true)
-    })
-
-    test('returns true when the protocol name, major version and minor version all match and the incoming message type is using the legacy did sov prefix', () => {
-      const incomingMessageType = parseMessageType('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.4/request')
-      const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
-
-      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(true)
-    })
-
-    test('returns false when the protocol name, major version and minor version all match and the incoming message type is using the legacy did sov prefix but allowLegacyDidSovPrefixMismatch is set to false', () => {
-      const incomingMessageType = parseMessageType('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.4/request')
-      const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
-
-      expect(
-        supportsIncomingMessageType(expectedMessageType, incomingMessageType, {
-          allowLegacyDidSovPrefixMismatch: false,
-        })
-      ).toBe(false)
     })
 
     test('returns false when the major version does not match', () => {

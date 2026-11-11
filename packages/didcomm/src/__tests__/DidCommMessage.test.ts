@@ -10,35 +10,13 @@ class CustomProtocolMessage extends DidCommMessage {
   public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/message')
 }
 
-class LegacyDidSovPrefixMessage extends DidCommMessage {
-  public readonly allowDidSovPrefix = true
-
-  @IsValidMessageType(LegacyDidSovPrefixMessage.type)
-  public readonly type = LegacyDidSovPrefixMessage.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/another-message')
-}
-
 describe('DidCommMessage', () => {
   describe('toJSON', () => {
-    it('should only use did:sov message prefix if useDidSovPrefixWhereAllowed and allowDidSovPrefix are both true', () => {
+    it('serializes the message type', () => {
       const message = new TestMessage()
-      const legacyPrefixMessage = new LegacyDidSovPrefixMessage()
 
-      // useDidSovPrefixWhereAllowed & allowDidSovPrefix are both false
-      let testMessageJson = message.toJSON()
+      const testMessageJson = message.toJSON()
       expect(testMessageJson['@type']).toBe('https://didcomm.org/fake-protocol/1.5/invitation')
-
-      // useDidSovPrefixWhereAllowed is true, but allowDidSovPrefix is false
-      testMessageJson = message.toJSON({ useDidSovPrefixWhereAllowed: true })
-      expect(testMessageJson['@type']).toBe('https://didcomm.org/fake-protocol/1.5/invitation')
-
-      // useDidSovPrefixWhereAllowed is false, but allowDidSovPrefix is true
-      testMessageJson = legacyPrefixMessage.toJSON()
-      expect(testMessageJson['@type']).toBe('https://didcomm.org/fake-protocol/1.5/another-message')
-
-      // useDidSovPrefixWhereAllowed & allowDidSovPrefix are both true
-      testMessageJson = legacyPrefixMessage.toJSON({ useDidSovPrefixWhereAllowed: true })
-      expect(testMessageJson['@type']).toBe('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/fake-protocol/1.5/another-message')
     })
   })
 
@@ -111,6 +89,19 @@ describe('DidCommMessage', () => {
             },
           },
         ])
+      }
+    })
+  })
+
+  describe('@id', () => {
+    it('accepts DIDComm v2 and urn:uuid message ids', () => {
+      for (const id of ['a', 'a~b', 'urn:uuid:d61c7e3d-d4af-469b-8d42-33fd14262e17']) {
+        const message = JsonTransformer.fromJSON(
+          { '@id': id, '@type': 'https://didcomm.org/fake-protocol/1.5/message' },
+          CustomProtocolMessage
+        )
+
+        expect(message.id).toBe(id)
       }
     })
   })

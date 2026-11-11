@@ -1,3 +1,4 @@
+import { AgentConfig } from '@credo-ts/core'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { WebVhDidResolver } from '../WebVhDidResolver'
 
@@ -111,39 +112,31 @@ describe('WebVhDidResolver Integration Tests', () => {
     // Create a real resolver instance (no mocks in this file!)
     resolver = new WebVhDidResolver()
 
-    // Create a fresh agent context
-    const agentConfig = getAgentConfig('WebVhDidResolverIntegrationTest')
-    agentContext = getAgentContext({ agentConfig })
-
-    // Mock the agentContext's fetch method
-    agentContext.config.agentDependencies.fetch = vi.fn(async (input: string | URL | Request): Promise<Response> => {
+    // Mock the agent's fetch method
+    const fetch = vi.fn(async (input: string | URL | Request): Promise<Response> => {
       const url = typeof input === 'string' ? input : String(input)
       const stub = createStubContent(url)
 
       if (!stub) {
         // Simulate a 404 for unknown resources
-        return {
-          ok: false,
+        return new Response(JSON.stringify({ error: 'notFound' }), {
           status: 404,
           statusText: 'Not Found',
-          headers: new Headers({
-            'Content-Type': 'application/json',
-          }),
-          json: async () => ({ error: 'notFound' }),
-          text: async () => JSON.stringify({ error: 'notFound' }),
-        } as Response
+          headers: { 'Content-Type': 'application/json' },
+        })
       }
 
-      return {
-        ok: true,
+      return new Response(JSON.stringify(stub), {
         status: 200,
         statusText: 'OK',
-        headers: new Headers({
-          'Content-Type': 'application/json',
-        }),
-        json: async () => stub,
-        text: async () => JSON.stringify(stub),
-      } as Response
+        headers: { 'Content-Type': 'application/json' },
+      })
+    })
+
+    // Create a fresh agent context
+    const { agentDependencies } = getAgentConfig('WebVhDidResolverIntegrationTest')
+    agentContext = getAgentContext({
+      agentConfig: new AgentConfig({}, { ...agentDependencies, fetch: fetch as typeof globalThis.fetch }),
     })
   })
 

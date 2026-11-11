@@ -3,6 +3,7 @@ import {
   ClaimFormat,
   CredoError,
   DidsApi,
+  JsonEncoder,
   JwsService,
   Jwt,
   JwtPayload,
@@ -28,6 +29,8 @@ import { TenantsModule } from '../../tenants/src'
 import {
   OpenId4VcIssuanceSessionRepository,
   OpenId4VcIssuanceSessionState,
+  type OpenId4VcIssuanceSessionStateChangedEvent,
+  OpenId4VcIssuerEvents,
   OpenId4VcIssuerModuleConfig,
   type OpenId4VcIssuerModuleConfigOptions,
   type OpenId4VciSignMdocCredentials,
@@ -330,7 +333,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         authorizationServerUrl: 'http://localhost:4747',
         issuerState: 'dbf99eea-0131-48b0-9022-17f7ebe25ea7',
       },
-      version: 'v1.draft15',
+      version: 'v1',
       generateRefreshTokens: true,
     })
 
@@ -444,6 +447,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       issuerId: openIdIssuerTenant.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
+      // The other tests use v1
       version: 'v1.draft15',
       generateRefreshTokens: true,
     })
@@ -604,6 +608,198 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     await holderTenant.endSession()
   })
 
+  it('refresh token can be used before the first credential request, only with its DPoP key', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+      dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+    })
+
+    const { credentialOffer, issuanceSession } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+      generateRefreshTokens: true,
+    })
+
+    const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+    expect(tokenResponse.dpop).toBeDefined()
+
+    // Simulate a session created before refresh tokens required DPoP. The refresh token's DPoP binding still applies
+    const issuanceSessionRepository = issuerTenant.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    const issuanceSessionRecord = await issuanceSessionRepository.getById(issuerTenant.context, issuanceSession.id)
+    issuanceSessionRecord.dpop = { required: false }
+    await issuanceSessionRepository.update(issuerTenant.context, issuanceSessionRecord)
+
+    const refreshOptions = {
+      issuerMetadata: resolvedCredentialOffer.metadata,
+      authorizationServer: tokenResponse.authorizationServer,
+      refreshToken: tokenResponse.refreshToken as string,
+    }
+
+    await expect(holderTenant.openid4vc.holder.refreshToken(refreshOptions)).rejects.toThrow(
+      'Missing required DPoP proof'
+    )
+
+    const otherDpopKey = await holderTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    await expect(
+      holderTenant.openid4vc.holder.refreshToken({
+        ...refreshOptions,
+        dpop: {
+          alg: Kms.KnownJwaSignatureAlgorithms.ES256,
+          jwk: Kms.PublicJwk.fromPublicJwk(otherDpopKey.publicJwk),
+        },
+      })
+    ).rejects.toThrow('invalid_dpop_proof')
+
+    const refreshedToken = await holderTenant.openid4vc.holder.refreshToken({
+      ...refreshOptions,
+      dpop: tokenResponse.dpop,
+    })
+    expect(refreshedToken.accessToken).toEqual(expect.any(String))
+
+    // A refresh keeps the session state and doesn't emit a state changed event
+    const eventsFromAccessTokenCreated: OpenId4VcIssuanceSessionStateChangedEvent[] = []
+    issuer.replaySubject
+      .subscribe((event) => {
+        const { payload } = event as OpenId4VcIssuanceSessionStateChangedEvent
+        if (
+          event.type === OpenId4VcIssuerEvents.IssuanceSessionStateChanged &&
+          payload.issuanceSession.id === issuanceSession.id &&
+          payload.previousState === OpenId4VcIssuanceSessionState.AccessTokenCreated
+        ) {
+          eventsFromAccessTokenCreated.push(event as OpenId4VcIssuanceSessionStateChangedEvent)
+        }
+      })
+      .unsubscribe()
+    expect(eventsFromAccessTokenCreated).toHaveLength(0)
+
+    await holderTenant.endSession()
+  })
+
+  it('refresh token is verified before the session lookup, and an expired session is not changed', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+      dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+    })
+
+    const { credentialOffer, issuanceSession } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+      generateRefreshTokens: true,
+    })
+
+    const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    const refreshOptions = {
+      issuerMetadata: resolvedCredentialOffer.metadata,
+      authorizationServer: tokenResponse.authorizationServer,
+      dpop: tokenResponse.dpop,
+    }
+
+    // Unsigned token that only knows the pre-authorized code from the offer
+    const credentialIssuer = resolvedCredentialOffer.metadata.credentialIssuer.credential_issuer
+    const forgedRefreshToken = [
+      { typ: 'credo+refresh_token', alg: 'ES256' },
+      {
+        iss: credentialIssuer,
+        aud: credentialIssuer,
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        'pre-authorized_code': issuanceSession.preAuthorizedCode,
+      },
+    ]
+      .map((part) => JsonEncoder.toBase64Url(part))
+      .concat('c2lnbmF0dXJl')
+      .join('.')
+
+    await expect(
+      holderTenant.openid4vc.holder.refreshToken({ ...refreshOptions, refreshToken: forgedRefreshToken })
+    ).rejects.toThrow('Invalid refresh token')
+
+    const issuanceSessionRepository = issuerTenant.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    const sessionRecord = await issuanceSessionRepository.getById(issuerTenant.context, issuanceSession.id)
+    sessionRecord.expiresAt = new Date(Date.now() - 1000)
+    await issuanceSessionRepository.update(issuerTenant.context, sessionRecord)
+
+    await expect(
+      holderTenant.openid4vc.holder.refreshToken({ ...refreshOptions, refreshToken: forgedRefreshToken })
+    ).rejects.toThrow('Invalid refresh token')
+    await expect(
+      holderTenant.openid4vc.holder.refreshToken({
+        ...refreshOptions,
+        refreshToken: tokenResponse.refreshToken as string,
+      })
+    ).rejects.toThrow('Session expired')
+
+    const sessionAfterRefresh = await issuanceSessionRepository.getById(issuerTenant.context, issuanceSession.id)
+    expect(sessionAfterRefresh.state).toEqual(OpenId4VcIssuanceSessionState.AccessTokenCreated)
+    expect(sessionAfterRefresh.errorMessage).toBeUndefined()
+
+    await holderTenant.endSession()
+  })
+
+  it('deferred credential request for an expired session is rejected without changing the session', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+      dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+    })
+
+    const { credentialOffer, issuanceSession } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+
+    const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+    const credentialResponse = await holderTenant.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponse,
+      credentialBindingResolver,
+    })
+    expect(credentialResponse.deferredCredentials).toHaveLength(1)
+
+    const issuanceSessionRepository = issuerTenant.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    const sessionRecord = await issuanceSessionRepository.getById(issuerTenant.context, issuanceSession.id)
+    const stateBeforeExpiry = sessionRecord.state
+    sessionRecord.expiresAt = new Date(Date.now() - 1000)
+    await issuanceSessionRepository.update(issuerTenant.context, sessionRecord)
+
+    await expect(
+      holderTenant.openid4vc.holder.requestDeferredCredentials({
+        ...tokenResponse,
+        ...credentialResponse.deferredCredentials[0],
+        issuerMetadata: resolvedCredentialOffer.metadata,
+      })
+    ).rejects.toThrow('Session expired')
+
+    const sessionAfterRequest = await issuanceSessionRepository.getById(issuerTenant.context, issuanceSession.id)
+    expect(sessionAfterRequest.state).toEqual(stateBeforeExpiry)
+    expect(sessionAfterRequest.errorMessage).toBeUndefined()
+
+    await holderTenant.endSession()
+  })
+
   it('refresh tokens are only issued with DPoP', async () => {
     const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
 
@@ -627,7 +823,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       issuerId: openIdIssuerTenant.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
-      version: 'v1.draft15',
+      version: 'v1',
       generateRefreshTokens: true,
     })
 

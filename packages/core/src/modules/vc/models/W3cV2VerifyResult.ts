@@ -119,8 +119,9 @@ export type W3cV2PresentationCredentialEntryResult = W3cV2VerifyResult<
     credentialSubjectAuthentication: SingleValidationResult
 
     /**
-     * Whether a credential bound to a key with `cnf` is presented with that key. Valid when the
-     * credential has no `cnf`, which includes an SD-JWT credential whose `cnf` disclosure was left out.
+     * Whether a credential bound to a key with `cnf` is presented with that key, and for a `cnf.kid` by the
+     * DID of that kid. Valid when the credential has no `cnf`, which includes an SD-JWT credential whose
+     * `cnf` disclosure was left out.
      * Callers that require holder binding must check that the credential has a `cnf`.
      */
     holderBinding: SingleValidationResult

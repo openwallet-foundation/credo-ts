@@ -27,7 +27,7 @@ const invalid = {
   },
   invalidThreadId: {
     return_route: 'thread',
-    return_route_thread: 'invalid',
+    return_route_thread: 'invalid id',
   },
   missingThreadId: {
     return_route: 'thread',
