@@ -1,7 +1,7 @@
 import type { Logger } from '../logger'
 import { DidsApi } from '../modules/dids'
 import { GenericRecordsApi } from '../modules/generic-records'
-import { KeyManagementApi } from '../modules/kms'
+import { KeyManagementApi, type KeyManagementModule, type KeyManagementModuleConfigOptions } from '../modules/kms'
 import { MdocApi } from '../modules/mdoc'
 import { SdJwtVcApi } from '../modules/sd-jwt-vc'
 import { TokenStatusListApi } from '../modules/token-status-list'
@@ -11,13 +11,19 @@ import { W3cDataIntegrityApi } from '../modules/w3c-di'
 import { X509Api } from '../modules/x509'
 import type { DependencyManager, Module } from '../plugins'
 import type { AgentConfig } from './AgentConfig'
-import type { AgentApi, EmptyModuleMap, ModuleApiInstance, ModulesMap, WithoutDefaultModules } from './AgentModules'
+import type {
+  AgentApi,
+  AgentModulesInput,
+  EmptyModuleMap,
+  ModuleApiInstance,
+  WithoutDefaultModules,
+} from './AgentModules'
 
 import { getAgentApi } from './AgentModules'
 import { AgentContext } from './context'
 import { EventEmitter } from './EventEmitter'
 
-export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap> {
+export abstract class BaseAgent<AgentModules extends AgentModulesInput = EmptyModuleMap> {
   protected logger: Logger
   protected eventEmitter: EventEmitter
   protected _isInitialized = false
@@ -31,7 +37,14 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly w3cV2Credentials: W3cV2CredentialsApi
   public readonly sdJwtVc: SdJwtVcApi
   public readonly x509: X509Api
-  public readonly kms: KeyManagementApi
+  /**
+   * The key management api, typed for the backends of the registered `kms` module
+   */
+  public readonly kms: AgentModules['kms'] extends KeyManagementModule<infer Backends>
+    ? KeyManagementApi<Backends>
+    : AgentModules['kms'] extends KeyManagementModuleConfigOptions<infer Backends>
+      ? KeyManagementApi<Backends>
+      : KeyManagementApi
   public readonly tokenStatusList: TokenStatusListApi
 
   /**
@@ -72,7 +85,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.sdJwtVc = this.dependencyManager.resolve(SdJwtVcApi)
     this.x509 = this.dependencyManager.resolve(X509Api)
     this.mdoc = this.dependencyManager.resolve(MdocApi)
-    this.kms = this.dependencyManager.resolve(KeyManagementApi)
+    this.kms = this.dependencyManager.resolve(KeyManagementApi) as this['kms']
     this.tokenStatusList = this.dependencyManager.resolve(TokenStatusListApi)
 
     const defaultApis = [

@@ -97,13 +97,13 @@ describe('Decorators | AckDecoratorExtension', () => {
     } catch (e) {
       const caughtError = e as ClassValidationError
       expect(caughtError.message).toEqual(
-        'TestMessage: Failed to validate class.\nAn instance of TestMessage has failed the validation:\n - property id has failed the following constraints: id must match /[-_./a-zA-Z0-9]{8,64}/ regular expression \n\nAn instance of TestMessage has failed the validation:\n - property type has failed the following constraints: type must match /(.*?)([a-zA-Z0-9._-]+)\\/(\\d[^/]*)\\/([a-zA-Z0-9._-]+)$/ regular expression \n'
+        'TestMessage: Failed to validate class.\nAn instance of TestMessage has failed the validation:\n - property id has failed the following constraints: id must match /[-_./a-zA-Z0-9]{8,64}|^[-_./~a-zA-Z0-9]{1,64}$/ regular expression \n\nAn instance of TestMessage has failed the validation:\n - property type has failed the following constraints: type must match /(.*?)([a-zA-Z0-9._-]+)\\/(\\d[^/]*)\\/([a-zA-Z0-9._-]+)$/ regular expression \n'
       )
       expect(caughtError.validationErrors).toMatchObject([
         {
           children: [],
           constraints: {
-            matches: 'id must match /[-_./a-zA-Z0-9]{8,64}/ regular expression',
+            matches: 'id must match /[-_./a-zA-Z0-9]{8,64}|^[-_./~a-zA-Z0-9]{1,64}$/ regular expression',
           },
           property: 'id',
           target: {

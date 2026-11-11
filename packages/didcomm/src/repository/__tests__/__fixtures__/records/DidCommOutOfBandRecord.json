@@ -1,0 +1,85 @@
+{
+  "_tags": {
+    "custom": "tag",
+    "recipientKeyFingerprints": ["z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th"],
+    "recipientRoutingKeyFingerprint": "z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv"
+  },
+  "alias": "Faber",
+  "autoAcceptConnection": true,
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "id": "out-of-band-record-id",
+  "invitationInlineServiceKeys": [
+    {
+      "kmsKeyId": "kms-key-id",
+      "recipientKeyFingerprint": "z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th"
+    }
+  ],
+  "mediatorId": "mediator-id",
+  "metadata": {
+    "_internal/legacyInvitation": {
+      "legacyInvitationType": "connectionless"
+    },
+    "_internal/recipientRouting": {
+      "endpoints": ["https://example.com/ssi"],
+      "mediatorId": "mediator-id",
+      "recipientKeyFingerprint": "z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th",
+      "recipientKeyId": "recipient-key-id",
+      "routingKeyFingerprints": ["z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv"]
+    }
+  },
+  "outOfBandInvitation": {
+    "@id": "69212a3a-d068-4f9d-a2dd-4741bca89af3",
+    "@type": "https://didcomm.org/out-of-band/1.1/invitation",
+    "~attach": [
+      {
+        "@id": "appended-attachment-id",
+        "byte_count": 17,
+        "data": {
+          "json": {
+            "key": "value"
+          }
+        },
+        "description": "Appended attachment",
+        "filename": "attachment.json",
+        "lastmod_time": "2026-01-01T00:00:00.000Z",
+        "mime-type": "application/json"
+      }
+    ],
+    "~l10n": {
+      "locale": "en"
+    },
+    "~thread": {
+      "pthid": "c4b5e8f2-3d1a-4b6c-9e7f-1a2b3c4d5e6f"
+    },
+    "accept": ["didcomm/aip1", "didcomm/aip2;env=rfc19"],
+    "goal": "To issue a Faber College Graduate credential",
+    "goal_code": "issue-vc",
+    "handshake_protocols": ["https://didcomm.org/didexchange/1.x", "https://didcomm.org/connections/1.x"],
+    "imageUrl": "https://example.com/faber.png",
+    "label": "Faber College",
+    "requests~attach": [
+      {
+        "@id": "request-attachment-id",
+        "data": {
+          "base64": "eyJAdHlwZSI6Imh0dHBzOi8vZGlkY29tbS5vcmcvaXNzdWUtY3JlZGVudGlhbC8yLjAvb2ZmZXItY3JlZGVudGlhbCIsIkBpZCI6ImYxZWQ1YmU1LTdiMmItNGUwYy1hMWQ4LTZiM2U4YzBlOGQxYSIsImNvbW1lbnQiOiJPZmZlciBmb3IgdGhlIEZhYmVyIENvbGxlZ2UgR3JhZHVhdGUgY3JlZGVudGlhbCIsImNyZWRlbnRpYWxfcHJldmlldyI6eyJAdHlwZSI6Imh0dHBzOi8vZGlkY29tbS5vcmcvaXNzdWUtY3JlZGVudGlhbC8yLjAvY3JlZGVudGlhbC1wcmV2aWV3IiwiYXR0cmlidXRlcyI6W3sibmFtZSI6Im5hbWUiLCJtaW1lLXR5cGUiOiJ0ZXh0L3BsYWluIiwidmFsdWUiOiJBbGljZSJ9XX0sImZvcm1hdHMiOlt7ImF0dGFjaF9pZCI6Im9mZmVyLWF0dGFjaG1lbnQtaWQiLCJmb3JtYXQiOiJobGluZHkvY3JlZC1hYnN0cmFjdEB2Mi4wIn1dLCJvZmZlcnN+YXR0YWNoIjpbeyJAaWQiOiJvZmZlci1hdHRhY2htZW50LWlkIiwibWltZS10eXBlIjoiYXBwbGljYXRpb24vanNvbiIsImRhdGEiOnsiYmFzZTY0IjoiZXlKelkyaGxiV0ZmYVdRaU9pSnpZMmhsYldFdGFXUWlmUT09In19XSwifnRocmVhZCI6eyJ0aGlkIjoiZWEyNGUxNGEtNGZjNC00MGY0LTg1YTAtZjZmY2YwMmJmYzFjIn19"
+        },
+        "mime-type": "application/json"
+      }
+    ],
+    "services": [
+      {
+        "accept": ["didcomm/aip1"],
+        "id": "#inline",
+        "recipientKeys": ["did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th"],
+        "routingKeys": ["did:key:z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv"],
+        "serviceEndpoint": "https://example.com/ssi",
+        "type": "did-communication"
+      }
+    ]
+  },
+  "reusable": true,
+  "reuseConnectionId": "reuse-connection-id",
+  "role": "receiver",
+  "state": "prepare-response",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

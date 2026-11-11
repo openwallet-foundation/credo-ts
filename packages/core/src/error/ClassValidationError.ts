@@ -1,8 +1,8 @@
 import type { ValidationError } from 'class-validator'
 
-import { CredoError } from './CredoError'
+import { CredoValidationError } from './CredoValidationError'
 
-export class ClassValidationError extends CredoError {
+export class ClassValidationError extends CredoValidationError {
   public validationErrors: ValidationError[]
 
   public validationErrorsToString() {

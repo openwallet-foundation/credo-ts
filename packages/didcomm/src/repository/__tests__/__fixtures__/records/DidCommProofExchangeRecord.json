@@ -1,0 +1,22 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "autoAcceptProof": "always",
+  "connectionId": "connection-id",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "errorMessage": "error message",
+  "id": "proof-exchange-record-id",
+  "isVerified": true,
+  "metadata": {
+    "meta": {
+      "key": "value"
+    }
+  },
+  "parentThreadId": "parent-thread-id",
+  "protocolVersion": "v2",
+  "role": "verifier",
+  "state": "done",
+  "threadId": "thread-id",
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

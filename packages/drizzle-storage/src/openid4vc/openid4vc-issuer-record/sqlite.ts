@@ -5,6 +5,7 @@ import type {
   OpenId4VciBatchCredentialIssuanceOptions,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
+  OpenId4VciCredentialRequestEncryptionOptions,
   OpenId4VciCredentialResponseEncryptionOptions,
   OpenId4VciIssuerInfo,
 } from '@credo-ts/openid4vc'
@@ -47,10 +48,15 @@ export const openid4vcIssuer = sqliteTable(
     clientAttestationPopSigningAlgValuesSupported: text('client_attestation_pop_signing_alg_values_supported', {
       mode: 'json',
     }).$type<[Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]>(),
-    batchCredentialIssuance: text('batch_credential_issuance').$type<OpenId4VciBatchCredentialIssuanceOptions>(),
+    batchCredentialIssuance: text('batch_credential_issuance', {
+      mode: 'json',
+    }).$type<OpenId4VciBatchCredentialIssuanceOptions>(),
     credentialResponseEncryption: text('credential_response_encryption', {
       mode: 'json',
     }).$type<OpenId4VciCredentialResponseEncryptionOptions>(),
+    credentialRequestEncryption: text('credential_request_encryption', {
+      mode: 'json',
+    }).$type<OpenId4VciCredentialRequestEncryptionOptions>(),
   },
   (table) => sqliteBaseRecordIndexes(table, 'openid4vcIssuer')
 )

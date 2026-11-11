@@ -21,6 +21,7 @@ import { X509Certificate } from '../X509Certificate'
 import { X509Error } from '../X509Error'
 import { X509ModuleConfig } from '../X509ModuleConfig'
 import { X509Service } from '../X509Service'
+import { X509RevocationCheckMode } from '../X509ValidationOptions'
 
 /**
  *
@@ -64,8 +65,8 @@ const kmsApi = new KeyManagementApi(
 )
 agentContext.dependencyManager.registerInstance(KeyManagementApi, kmsApi)
 
-// Register X509ModuleConfig
-const x509ModuleConfig = new X509ModuleConfig({})
+// Revocation is tested in X509Service.revocation.test.ts, and the test vectors reference live CRLs
+const x509ModuleConfig = new X509ModuleConfig({ revocationCheck: { mode: X509RevocationCheckMode.Disabled } })
 agentContext.dependencyManager.registerInstance(X509ModuleConfig, x509ModuleConfig)
 
 describe('X509Service', () => {
@@ -206,6 +207,49 @@ describe('X509Service', () => {
         Hasher.hash((certificate.publicJwk as PublicJwk<P256PublicJwk>).publicKey.publicKey, 'SHA-1')
       )
     )
+  })
+
+  it('should create a certificate with organization attributes and subject alternative names', async () => {
+    const authorityKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const subjectKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+    const certificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(authorityKey.publicJwk),
+      subjectPublicKey: PublicJwk.fromPublicJwk(subjectKey.publicJwk),
+      issuer: { commonName: 'Example Root', organizationName: 'Example Org, Inc.' },
+      subject: {
+        commonName: 'Example Service',
+        countryName: 'NL',
+        organizationName: 'Example Org, Inc.',
+        organizationIdentifier: 'NTRNL-12345678',
+        organizationalUnit: 'R+D',
+      },
+      extensions: {
+        subjectAlternativeName: {
+          name: [
+            { type: 'dns', value: 'example.com' },
+            { type: 'email', value: 'info@example.com' },
+            { type: 'url', value: 'https://example.com' },
+          ],
+        },
+      },
+    })
+
+    expect(certificate.getSubjectNameField('CN')).toStrictEqual(['Example Service'])
+    expect(certificate.getSubjectNameField('C')).toStrictEqual(['NL'])
+    expect(certificate.getSubjectNameField('O')).toStrictEqual(['Example Org, Inc.'])
+    expect(certificate.getSubjectNameField('2.5.4.97')).toStrictEqual(['NTRNL-12345678'])
+    expect(certificate.getSubjectNameField('OU')).toStrictEqual(['R+D'])
+    expect(certificate.getIssuerNameField('O')).toStrictEqual(['Example Org, Inc.'])
+    expect(certificate.subject).toStrictEqual(
+      'CN=Example Service, C=NL, O=Example Org\\, Inc., 2.5.4.97=NTRNL-12345678, OU=R\\+D'
+    )
+
+    expect(certificate.subjectAlternativeNames).toEqual([
+      { type: 'dns', value: 'example.com' },
+      { type: 'email', value: 'info@example.com' },
+      { type: 'url', value: 'https://example.com' },
+    ])
   })
 
   it('should create a valid self-signed certificate as IACA Root + DCS for mDoc', async () => {
@@ -646,6 +690,72 @@ gTqhM3BGMuf+
           certificateChain: [certificateChain[1], certificateChain[2], certificateChain[0]],
         })
     ).rejects.toThrow(X509Error)
+  })
+
+  describe('provided chain must match the built chain', () => {
+    async function createCa(commonName: string) {
+      const key = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+      const certificate = await X509Service.createCertificate(agentContext, {
+        authorityKey: key,
+        issuer: { commonName },
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: { basicConstraints: { ca: true }, subjectKeyIdentifier: { include: true } },
+      })
+      return { key, certificate }
+    }
+
+    async function createIssued(commonName: string, issuer: { key: PublicJwk; certificate: X509Certificate }) {
+      const key = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+      const certificate = await X509Service.createCertificate(agentContext, {
+        authorityKey: issuer.key,
+        subjectPublicKey: key,
+        issuer: issuer.certificate.subject,
+        subject: { commonName },
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: { basicConstraints: { ca: true }, authorityKeyIdentifier: { include: true } },
+      })
+      return { key, certificate }
+    }
+
+    it('accepts a chain without the trusted root', async () => {
+      const root = await createCa('Root')
+      const intermediate = await createIssued('Intermediate', root)
+      const leaf = await createIssued('Leaf', intermediate)
+
+      const validatedChain = await X509Service.validateCertificateChain(agentContext, {
+        certificateChain: [leaf.certificate, intermediate.certificate].map((c) => c.toString('base64')),
+        trustedCertificates: [root.certificate.toString('base64')],
+      })
+      expect(validatedChain.length).toBe(3)
+    })
+
+    it('rejects a chain with an appended certificate that is not part of the chain', async () => {
+      const root = await createCa('Root')
+      const leaf = await createIssued('Leaf', root)
+      const unrelatedIntermediate = await createIssued('Unrelated Intermediate', await createCa('Unrelated Root'))
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain: [leaf.certificate, unrelatedIntermediate.certificate].map((c) => c.toString('base64')),
+          trustedCertificates: [root.certificate.toString('base64')],
+        })
+      ).rejects.toThrow('contains certificates that are not part of the chain')
+    })
+
+    it('rejects a chain that is not ordered leaf first', async () => {
+      const root = await createCa('Root')
+      const intermediate = await createIssued('Intermediate', root)
+      const leaf = await createIssued('Leaf', intermediate)
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain: [leaf.certificate, root.certificate, intermediate.certificate].map((c) =>
+            c.toString('base64')
+          ),
+          trustedCertificates: [root.certificate.toString('base64')],
+        })
+      ).rejects.toThrow('not ordered leaf first')
+    })
   })
 
   it('should correctly parse test vector from verifier.eudiw.dev', async () => {

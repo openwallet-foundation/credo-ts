@@ -27,6 +27,7 @@ import {
   CacheModuleConfig,
   DidResolverService,
   DidsModuleConfig,
+  defaultDocumentLoader,
   InjectionSymbols,
   InMemoryLruCache,
   JsonLdModuleConfig,
@@ -36,7 +37,6 @@ import {
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
-  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import type { DataIntegrityCredentialRequest } from '@credo-ts/didcomm'
 import {
@@ -60,6 +60,7 @@ import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifier
 import { AnonCredsLinkSecretBindingProvider } from '../src/formats/AnonCredsLinkSecretBindingProvider'
 import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
+import { trackNativeAnonCredsObjects } from './nativeAnonCredsObjects'
 
 const registry = new InMemoryAnonCredsRegistry()
 const tailsFileService = new InMemoryTailsFileService()
@@ -96,9 +97,8 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [DidCommDataIntegrityLinkSecretBindingProviderToken, new AnonCredsLinkSecretBindingProvider()],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
       CacheModuleConfig,
@@ -118,6 +118,13 @@ const anoncredsProofFormatService = new AnonCredsDidCommProofFormatService()
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
 describe('data integrity format service (anoncreds)', () => {
+  // Credo frees every native AnonCreds object it creates
+  const nativeAnonCredsObjects = trackNativeAnonCredsObjects()
+  afterEach(() => {
+    expect(nativeAnonCredsObjects.takeOpen()).toEqual([])
+  })
+  afterAll(() => nativeAnonCredsObjects.stop())
+
   afterEach(async () => {
     inMemoryStorageService.contextCorrelationIdToRecords = {}
   })

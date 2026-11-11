@@ -1,4 +1,4 @@
-import type { TrustedIssuerDid } from '../../agent/TrustedIssuersForVerification'
+import type { GetTrustedIssuersForCredential, TrustedIssuerDid } from '../../agent/TrustedIssuersForVerification'
 import type { SingleOrArray } from '../../types'
 import type { KnownJwaSignatureAlgorithm } from '../kms'
 import type { W3cJwtVerifiableCredential } from './jwt-vc/W3cJwtVerifiableCredential'
@@ -71,9 +71,10 @@ export interface W3cJsonLdSignCredentialOptions extends W3cSignCredentialOptions
   /**
    * The proofType to be used for signing the credential.
    *
-   * Must be a valid Linked Data Signature suite.
+   * Must be a valid Linked Data Signature suite. When omitted, the first registered suite that supports
+   * the type of the verification method is used.
    */
-  proofType: string
+  proofType?: string
 
   proofPurpose?: ProofPurpose
   created?: string
@@ -88,9 +89,9 @@ interface W3cVerifyCredentialOptionsBase {
   verifyCredentialStatus?: boolean
 
   /**
-   * Trusted issuers for the verification.
+   * Trusted issuers for the verification, or a callback that resolves them for each credential.
    */
-  trustedIssuers?: TrustedIssuerDid[]
+  trustedIssuers?: TrustedIssuerDid[] | GetTrustedIssuersForCredential
 }
 
 export interface W3cJwtVerifyCredentialOptions extends W3cVerifyCredentialOptionsBase {
@@ -185,9 +186,9 @@ interface W3cVerifyPresentationOptionsBase {
   verifyCredentialStatus?: boolean
 
   /**
-   * Trusted issuers for the verification.
+   * Trusted issuers for the verification, or a callback that resolves them for each credential.
    */
-  trustedIssuers?: TrustedIssuerDid[]
+  trustedIssuers?: TrustedIssuerDid[] | GetTrustedIssuersForCredential
 }
 
 export interface W3cJwtVerifyPresentationOptions extends W3cVerifyPresentationOptionsBase {

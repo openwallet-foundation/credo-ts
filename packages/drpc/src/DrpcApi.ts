@@ -29,7 +29,7 @@ export class DrpcApi {
    * sends the request object to the connection and returns a function that will resolve to the response
    * @param connectionId the connection to send the request to
    * @param request the request object
-   * @returns curried function that waits for the response with an optional timeout in seconds
+   * @returns curried function that waits for the response with an optional timeout in milliseconds
    */
   public async sendRequest(
     connectionId: string,
@@ -53,6 +53,7 @@ export class DrpcApi {
    */
   private async recvResponse(messageId: string, timeoutMs?: number): Promise<DrpcResponse | undefined> {
     return new Promise((resolve) => {
+      let timeoutHandle: ReturnType<typeof setTimeout> | undefined
       const listener = ({
         drpcMessageRecord,
         removeListener,
@@ -62,6 +63,7 @@ export class DrpcApi {
       }) => {
         const response = drpcMessageRecord.response
         if (drpcMessageRecord.threadId === messageId) {
+          clearTimeout(timeoutHandle)
           removeListener()
           resolve(response)
         }
@@ -69,8 +71,7 @@ export class DrpcApi {
 
       const cancelListener = this.drpcMessageService.createResponseListener(listener)
       if (timeoutMs) {
-        const handle = setTimeout(() => {
-          clearTimeout(handle)
+        timeoutHandle = setTimeout(() => {
           cancelListener()
           resolve(undefined)
         }, timeoutMs)
@@ -80,7 +81,7 @@ export class DrpcApi {
 
   /**
    * Listen for a request and returns the request object and a function to send the response
-   * @param timeoutMs the time in seconds to wait for a request
+   * @param timeoutMs the time in milliseconds to wait for a request
    * @returns the request object and a function to send the response
    */
   public async recvRequest(timeoutMs?: number): Promise<
@@ -91,6 +92,7 @@ export class DrpcApi {
     | undefined
   > {
     return new Promise((resolve) => {
+      let timeoutHandle: ReturnType<typeof setTimeout> | undefined
       const listener = ({
         drpcMessageRecord,
         removeListener,
@@ -100,6 +102,7 @@ export class DrpcApi {
       }) => {
         const request = drpcMessageRecord.request
         if (request && drpcMessageRecord.role === DrpcRole.Server) {
+          clearTimeout(timeoutHandle)
           removeListener()
           resolve({
             sendResponse: async (response: DrpcResponse) => {
@@ -117,8 +120,7 @@ export class DrpcApi {
       const cancelListener = this.drpcMessageService.createRequestListener(listener)
 
       if (timeoutMs) {
-        const handle = setTimeout(() => {
-          clearTimeout(handle)
+        timeoutHandle = setTimeout(() => {
           cancelListener()
           resolve(undefined)
         }, timeoutMs)

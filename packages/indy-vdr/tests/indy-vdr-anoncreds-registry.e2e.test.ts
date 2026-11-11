@@ -1,15 +1,16 @@
-import { AnonCredsModule, parseIndyDid } from '@credo-ts/anoncreds'
+import { AnonCredsModule } from '@credo-ts/anoncreds'
 import { Agent, DidsModule, TypedArrayEncoder } from '@credo-ts/core'
-import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
+import { parseIndyDid } from '@credo-ts/indy-vdr'
+import { getIndyLedgerSchemaId, IndyVdrAnonCredsRegistry, parseIndySchemaId } from '@credo-ts/indy-vdr/anoncreds'
+import { GetSchemaRequest, indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { NativeAnoncreds } from '../../anoncreds/tests/helpers'
 import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
-import { IndyVdrIndyDidResolver, IndyVdrModule, IndyVdrSovDidResolver } from '../src'
-import { IndyVdrAnonCredsRegistry } from '../src/anoncreds/IndyVdrAnonCredsRegistry'
+import { IndyVdrIndyDidResolver, IndyVdrModule } from '../src'
 import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrPoolService } from '../src/pool'
 import { credentialDefinitionValue, revocationRegistryDefinitionValue } from './__fixtures__/anoncreds'
-import { indyVdrModuleConfig } from './helpers'
+import { indyVdrModuleConfig, waitForAllLedgerNodes } from './helpers'
 
 // Reads can be served by a ledger node that hasn't applied a just-written transaction yet
 async function resolveWhenAvailable<T extends { resolutionMetadata: { error?: string } }>(
@@ -22,6 +23,13 @@ async function resolveWhenAvailable<T extends { resolutionMetadata: { error?: st
   }
 
   return resolve()
+}
+
+// Registering a credential definition reads the schema again, possibly from another node than the test did
+async function waitForSchemaOnAllNodes(didIndySchemaId: string) {
+  const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(didIndySchemaId)
+  const schemaId = getIndyLedgerSchemaId(namespaceIdentifier, schemaName, schemaVersion)
+  await waitForAllLedgerNodes(() => new GetSchemaRequest({ schemaId }))
 }
 
 const indyVdrAnonCredsRegistry = new IndyVdrAnonCredsRegistry()
@@ -42,7 +50,7 @@ const endorser = new Agent(
       }),
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
-        resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
+        resolvers: [new IndyVdrIndyDidResolver()],
       }),
     }
   )
@@ -64,7 +72,7 @@ const agent = new Agent(
       }),
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
-        resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
+        resolvers: [new IndyVdrIndyDidResolver()],
       }),
     }
   )
@@ -147,10 +155,10 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
+    await waitForSchemaOnAllNodes(didIndySchemaId)
+
     // Resolve using did indy schema id
-    const didIndySchema = await resolveWhenAvailable(() =>
-      indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
-    )
+    const didIndySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
     expect(didIndySchema).toMatchObject({
       schema: {
         attrNames: ['age'],
@@ -360,10 +368,10 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
+    await waitForSchemaOnAllNodes(didIndySchemaId)
+
     // Resolve using did indy schema id
-    const didIndySchema = await resolveWhenAvailable(() =>
-      indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
-    )
+    const didIndySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
     expect(didIndySchema).toMatchObject({
       schema: {
         attrNames: ['age'],
@@ -624,10 +632,10 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
+    await waitForSchemaOnAllNodes(didIndySchemaId)
+
     // Resolve using did indy schema id
-    const didIndySchema = await resolveWhenAvailable(() =>
-      indyVdrAnonCredsRegistry.getSchema(agent.context, didIndySchemaId)
-    )
+    const didIndySchema = await indyVdrAnonCredsRegistry.getSchema(agent.context, didIndySchemaId)
     expect(didIndySchema).toMatchObject({
       schema: {
         attrNames: ['age'],
@@ -907,10 +915,11 @@ describe('IndyVdrAnonCredsRegistry', () => {
         indyLedgerSeqNo: expect.any(Number),
       },
     })
+
+    await waitForSchemaOnAllNodes(didIndySchemaId)
+
     // Resolve using did indy schema id
-    const didIndySchema = await resolveWhenAvailable(() =>
-      indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
-    )
+    const didIndySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
     expect(didIndySchema).toMatchObject({
       schema: {
         attrNames: ['age'],

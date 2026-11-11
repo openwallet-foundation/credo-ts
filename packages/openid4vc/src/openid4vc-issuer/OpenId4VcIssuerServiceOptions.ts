@@ -24,8 +24,10 @@ import type {
   OpenId4VciCredentialRequestFormatSpecific,
   OpenId4VciDeferredCredentialRequest,
   OpenId4VciIssuerInfo,
+  OpenId4VciParsedCredentialRequest,
   OpenId4VciTxCode,
-  OpenId4VcJwtIssuer,
+  OpenId4VcJwtIssuerDid,
+  OpenId4VcJwtIssuerX5c,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
 import type {
@@ -203,7 +205,8 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
   issuanceMetadata?: Record<string, unknown>
 
   /**
-   * Whether this issuance session allows to generate refresh tokens.
+   * Whether this issuance session allows to generate refresh tokens. If not provided, the global config value is
+   * used. Refresh tokens are bound to the DPoP key of the wallet, so this requires DPoP to be required for the session.
    */
   generateRefreshTokens?: boolean
 
@@ -218,7 +221,7 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {
-  credentialRequest: OpenId4VciCredentialRequest
+  parsedCredentialRequest: OpenId4VciParsedCredentialRequest
   authorization: OpenId4VciCredentialRequestAuthorization
 
   /**
@@ -369,7 +372,8 @@ interface OpenId4VciInternalDynamicIssuanceSessionOptionsBase extends OpenId4Vci
   requirePkce?: boolean
 
   /**
-   * Whether this issuance session allows to generate refresh tokens.
+   * Whether this issuance session allows to generate refresh tokens. If not provided, the global config value is
+   * used. Refresh tokens are bound to the DPoP key of the wallet, so this requires DPoP to be required for the session.
    */
   generateRefreshTokens?: boolean
 }
@@ -761,6 +765,19 @@ export interface OpenId4VciCredentialResponseEncryptionOptions {
   ]
 }
 
+export interface OpenId4VciCredentialRequestEncryptionOptions {
+  required?: boolean
+
+  // each `kid` must be the KMS key id, it's used to find the private key when decrypting
+  jwks: [Kms.KmsJwkPublic & { kid: string }, ...Array<Kms.KmsJwkPublic & { kid: string }>]
+
+  /**
+   * Keys that are no longer advertised but still decrypt credential requests, so issuance sessions that
+   * started before a key was rotated out can still finish.
+   */
+  previousJwks?: Array<Kms.KmsJwkPublic & { kid: string }>
+}
+
 export type OpenId4VciCreateIssuerOptions = {
   /**
    * Id of the issuer, not the id of the issuer record. Will be exposed publicly
@@ -792,6 +809,12 @@ export type OpenId4VciCreateIssuerOptions = {
    */
   issuerInfo?: OpenId4VciIssuerInfo
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
+
+  /**
+   * The DPoP signing algorithms supported by this issuer.
+   * If not provided, `dpopSigningAlgValuesSupported` from the issuer module config is used, or else all
+   * signature algorithms supported by the agent's KMS.
+   */
   dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   clientAttestationSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   clientAttestationPopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
@@ -805,14 +828,18 @@ export type OpenId4VciCreateIssuerOptions = {
 
   credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
 
+  credentialRequestEncryption?: OpenId4VciCredentialRequestEncryptionOptions
+
   /**
    * When provided, allows wallets to fetch signed metadata.
    *
    * Currently the metadata is signed when the issuer metadata is created or updated, but
    * it won't be updated for each wallet that resolves the metadata. This also mean that no exp
    * is added to the signed metadata.
+   *
+   * A `jwk` signer is not supported, as wallets can't establish trust in it.
    */
-  metadataSigner?: OpenId4VcJwtIssuer
+  metadataSigner?: OpenId4VcJwtIssuerDid | OpenId4VcJwtIssuerX5c
 }
 
 export interface OpenId4VcUpdateIssuerOptions {
@@ -827,7 +854,7 @@ export interface OpenId4VcUpdateIssuerOptions {
    *
    * See {@link OpenId4VciCreateIssuerOptions.metadataSigner} for the signing behaviour.
    */
-  metadataSigner?: OpenId4VcJwtIssuer | null
+  metadataSigner?: OpenId4VcJwtIssuerDid | OpenId4VcJwtIssuerX5c | null
 }
 
 export type OpenId4VcUpdateIssuerRecordOptions = Pick<
@@ -841,6 +868,7 @@ export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   | 'credentialConfigurationsSupported'
   | 'batchCredentialIssuance'
   | 'credentialResponseEncryption'
+  | 'credentialRequestEncryption'
   | 'authorizationServerConfigs'
 > &
   OpenId4VcUpdateIssuerOptions

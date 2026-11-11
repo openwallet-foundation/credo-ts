@@ -140,6 +140,7 @@ function buildResolvedPresentationWithoutHolder(entries: ReadonlyArray<unknown>,
 function buildOuterJwtVp(entries: ReadonlyArray<unknown>, mutable: MutableVpMetadata) {
   return {
     __proto__: W3cV2JwtVerifiablePresentation.prototype,
+    jwt: jwtVpWithoutHolder.jwt,
     resolvedPresentation: buildResolvedPresentation(entries, mutable),
   } as const
 }
@@ -147,6 +148,7 @@ function buildOuterJwtVp(entries: ReadonlyArray<unknown>, mutable: MutableVpMeta
 function buildOuterSdJwtVp(entries: ReadonlyArray<unknown>, mutable: MutableVpMetadata) {
   return {
     __proto__: W3cV2SdJwtVerifiablePresentation.prototype,
+    sdJwt: sdJwtVpWithoutHolder.sdJwt,
     resolvedPresentation: buildResolvedPresentation(entries, mutable),
   } as const
 }

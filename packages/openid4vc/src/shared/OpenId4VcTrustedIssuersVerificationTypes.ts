@@ -5,6 +5,7 @@ import type {
   SdJwtVcWithTypeMetadataChain,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
+  W3cV2DataIntegrityVerifiableCredential,
   W3cV2JwtVerifiableCredential,
   W3cV2SdJwtVerifiableCredential,
 } from '@credo-ts/core'
@@ -85,6 +86,7 @@ export type OpenId4VcVerificationTypeOid4VpCredential = {
     | W3cJwtVerifiableCredential
     | W3cV2JwtVerifiableCredential
     | W3cV2SdJwtVerifiableCredential
+    | W3cV2DataIntegrityVerifiableCredential
 }
 
 /**

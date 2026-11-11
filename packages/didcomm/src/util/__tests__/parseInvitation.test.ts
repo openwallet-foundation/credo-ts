@@ -1,14 +1,19 @@
-import { JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
+import { JsonEncoder, JsonTransformer, MessageValidator, TypedArrayEncoder } from '@credo-ts/core'
 
 import { agentDependencies } from '../../../../core/tests'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from '../../modules/oob'
-import { oobInvitationFromShortUrl, parseInvitationShortUrl, parseInvitationUrl } from '../parseInvitation'
+import {
+  oobInvitationFromShortUrl,
+  parseInvitationJson,
+  parseInvitationShortUrl,
+  parseInvitationUrl,
+} from '../parseInvitation'
 
 const mockOobInvite = {
-  '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/out-of-band/1.0/invitation',
+  '@type': 'https://didcomm.org/out-of-band/1.0/invitation',
   '@id': '764af259-8bb4-4546-b91a-924c912d0bb8',
-  label: 'Alice',
-  handshake_protocols: ['did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0'],
+  label: 'Alice A',
+  handshake_protocols: ['https://didcomm.org/connections/1.0'],
   services: ['did:sov:MvTqVXCEmJ87usL9uQTo7v'],
 }
 
@@ -33,10 +38,10 @@ const mockedResponseOobJson = {
   ok: true,
   headers: header,
   json: async () => ({
-    '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/out-of-band/1.0/invitation',
+    '@type': 'https://didcomm.org/out-of-band/1.0/invitation',
     '@id': '764af259-8bb4-4546-b91a-924c912d0bb8',
-    label: 'Alice',
-    handshake_protocols: ['did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0'],
+    label: 'Alice A',
+    handshake_protocols: ['https://didcomm.org/connections/1.0'],
     services: ['did:sov:MvTqVXCEmJ87usL9uQTo7v'],
   }),
 } as Response
@@ -45,7 +50,7 @@ const mockedResponseOobUrl = {
   status: 200,
   ok: true,
   headers: dummyHeader,
-  url: 'https://wonderful-rabbit-5.tun2.indiciotech.io?oob=eyJAdHlwZSI6ICJkaWQ6c292OkJ6Q2JzTlloTXJqSGlxWkRUVUFTSGc7c3BlYy9vdXQtb2YtYmFuZC8xLjAvaW52aXRhdGlvbiIsICJAaWQiOiAiNzY0YWYyNTktOGJiNC00NTQ2LWI5MWEtOTI0YzkxMmQwYmI4IiwgImxhYmVsIjogIkFsaWNlIiwgImhhbmRzaGFrZV9wcm90b2NvbHMiOiBbImRpZDpzb3Y6QnpDYnNOWWhNcmpIaXFaRFRVQVNIZztzcGVjL2Nvbm5lY3Rpb25zLzEuMCJdLCAic2VydmljZXMiOiBbImRpZDpzb3Y6TXZUcVZYQ0VtSjg3dXNMOXVRVG83diJdfQ',
+  url: 'https://wonderful-rabbit-5.tun2.indiciotech.io?oob=eyJAdHlwZSI6Imh0dHBzOi8vZGlkY29tbS5vcmcvb3V0LW9mLWJhbmQvMS4wL2ludml0YXRpb24iLCJAaWQiOiI3NjRhZjI1OS04YmI0LTQ1NDYtYjkxYS05MjRjOTEyZDBiYjgiLCJsYWJlbCI6IkFsaWNlIEEiLCJoYW5kc2hha2VfcHJvdG9jb2xzIjpbImh0dHBzOi8vZGlkY29tbS5vcmcvY29ubmVjdGlvbnMvMS4wIl0sInNlcnZpY2VzIjpbImRpZDpzb3Y6TXZUcVZYQ0VtSjg3dXNMOXVRVG83diJdfQ',
 } as Response
 
 dummyHeader.forEach(mockedResponseOobUrl.headers.append)
@@ -177,7 +182,7 @@ describe('unsupported invitations', () => {
         'http://sour-cow-15.tun1.indiciotech.io?c_i=eyJAdHlwZSI6ICJkaWQ6c292OkJ6Q2JzTlloTXJqSGlxWkRUVUFTSGc7c3BlYy9jb25uZWN0aW9ucy8xLjAvaW52aXRhdGlvbiIsICJAaWQiOiAiMjA5NzFlZjAtMTAyOS00NmRiLWEyNWItYWY0YzQ2NWRkMTZiIiwgImxhYmVsIjogInRlc3QiLCAic2VydmljZUVuZHBvaW50IjogImh0dHA6Ly9zb3VyLWNvdy0xNS50dW4xLmluZGljaW90ZWNoLmlvIiwgInJlY2lwaWVudEtleXMiOiBbIjVHdnBmOU00ajd2V3BIeWVUeXZCS2JqWWU3cVdjNzJrR282cVphTEhrTHJkIl19'
       )
     ).toThrow(
-      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob` or `d_m`.'
+      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `_oob`, `oob` or `d_m`.'
     )
   })
 
@@ -186,7 +191,7 @@ describe('unsupported invitations', () => {
       status: 200,
       ok: true,
       json: async () => ({
-        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation',
+        '@type': 'https://didcomm.org/connections/1.0/invitation',
         '@id': '20971ef0-1029-46db-a25b-af4c465dd16b',
         label: 'test',
         serviceEndpoint: 'http://sour-cow-15.tun1.indiciotech.io',
@@ -196,7 +201,7 @@ describe('unsupported invitations', () => {
     } as Response
 
     await expect(oobInvitationFromShortUrl(mockedResponseConnectionJson)).rejects.toThrow(
-      "Invitation with '@type' did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation not supported."
+      "Invitation with '@type' https://didcomm.org/connections/1.0/invitation not supported."
     )
   })
 })
@@ -237,5 +242,19 @@ describe('invitation url encoding', () => {
 
   test('throws for an invitation that is not valid base64url or base64', () => {
     expect(() => parseInvitationUrl('https://example.com?oob=not*valid*base64')).toThrow()
+  })
+})
+
+describe('v2 out-of-band invitations', () => {
+  test('parse an invitation with an attachment that is not JSON', () => {
+    const base64 = TypedArrayEncoder.toBase64Url(Uint8Array.from([0xff]))
+    const invitation = parseInvitationJson({
+      type: 'https://didcomm.org/out-of-band/2.0/invitation',
+      id: 'invitation-1',
+      from: 'did:example:alice',
+      attachments: [{ id: 'attachment-1', data: { base64 } }],
+    })
+
+    expect(invitation.toJSON()['requests~attach']).toMatchObject([{ '@id': 'attachment-1', data: { base64 } }])
   })
 })

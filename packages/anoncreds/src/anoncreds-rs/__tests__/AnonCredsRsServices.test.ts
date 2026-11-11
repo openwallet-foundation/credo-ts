@@ -20,11 +20,11 @@ import {
   CacheModuleConfig,
   DidResolverService,
   DidsModuleConfig,
+  defaultDocumentLoader,
   InjectionSymbols,
   InMemoryLruCache,
   JsonLdModuleConfig,
   SignatureSuiteRegistry,
-  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
@@ -32,6 +32,7 @@ import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageServ
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { testLogger } from '../../../../core/tests'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
+import { trackNativeAnonCredsObjects } from '../../../tests/nativeAnonCredsObjects'
 import { encodeCredentialValue } from '../../utils/credential'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
 import { AnonCredsRsIssuerService } from '../AnonCredsRsIssuerService'
@@ -68,14 +69,20 @@ const agentContext = getAgentContext({
 
     [InjectionSymbols.Logger, testLogger],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
   ],
   agentConfig,
 })
 
 describe('AnonCredsRsServices', () => {
+  // Credo frees every native AnonCreds object it creates
+  const nativeAnonCredsObjects = trackNativeAnonCredsObjects()
+  afterEach(() => {
+    expect(nativeAnonCredsObjects.takeOpen()).toEqual([])
+  })
+  afterAll(() => nativeAnonCredsObjects.stop())
+
   test('issuance flow without revocation', async () => {
     const issuerId = 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt'
 

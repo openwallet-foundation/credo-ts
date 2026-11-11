@@ -1,13 +1,13 @@
 import { CredoError } from '@credo-ts/core'
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import { DidCommTrustPingMessage } from '../messages'
+import { DidCommTrustPingMessage, DidCommTrustPingV2Message } from '../messages'
 import { DidCommDidExchangeState } from '../models'
 import type { DidCommConnectionService, DidCommTrustPingService } from '../services'
 
 export class DidCommTrustPingMessageHandler implements DidCommMessageHandler {
   private trustPingService: DidCommTrustPingService
   private connectionService: DidCommConnectionService
-  public supportedMessages = [DidCommTrustPingMessage]
+  public supportedMessages = [DidCommTrustPingMessage, DidCommTrustPingV2Message]
 
   public constructor(trustPingService: DidCommTrustPingService, connectionService: DidCommConnectionService) {
     this.trustPingService = trustPingService
@@ -19,6 +19,8 @@ export class DidCommTrustPingMessageHandler implements DidCommMessageHandler {
     if (!connection) {
       throw new CredoError(`Connection for verkey ${recipientKey?.fingerprint} not found!`)
     }
+
+    this.trustPingService.assertSupportedDidCommVersion(messageContext, connection)
 
     // TODO: This is better addressed in a middleware of some kind because
     // any message can transition the state to complete, not just an ack or trust ping

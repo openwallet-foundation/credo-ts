@@ -99,6 +99,7 @@ describe('DCQL selective disclosure', () => {
   let issuerDidUrl: string
   let issuerKeyId: string
   let holderKey: PublicJwk
+  let holderDid: string
 
   const challenge = 'challenge'
   const domain = 'https://verifier.example.com'
@@ -132,6 +133,14 @@ describe('DCQL selective disclosure', () => {
     holderKey = PublicJwk.fromPublicJwk(
       (await agent.kms.importKey({ privateJwk: { ...holderPrivateJwk, kid: holderKid } })).publicJwk
     )
+
+    const holderDidKey = new DidKey(holderKey)
+    holderDid = holderDidKey.did
+    await agent.dids.import({
+      did: holderDid,
+      didDocument: holderDidKey.didDocument,
+      keys: [{ didDocumentRelativeKeyId: `#${holderKey.fingerprint}`, kmsKeyId: holderKey.keyId }],
+    })
   })
 
   afterAll(async () => {
@@ -784,6 +793,7 @@ describe('DCQL selective disclosure', () => {
           type: ['VerifiableCredential', type],
           issuer: issuerDid,
           credentialSubject: {
+            id: holderDid,
             given_name: sd('Erika'),
             family_name: sd('Mustermann'),
             nationalities: [sd('DE'), decoy(), sd('NL')],
@@ -826,13 +836,47 @@ describe('DCQL selective disclosure', () => {
       const claimSet = getClaimSet(queryResult)
 
       expect(credential.envelopedCredential.sdJwt.prettyClaims.credentialSubject).toStrictEqual({
+        id: holderDid,
         nationalities: ['NL'],
         degrees: [{ name: 'MSc' }],
       })
       expect((claimSet.output as Record<string, unknown>).credentialSubject).toStrictEqual({
+        id: holderDid,
         nationalities: ['NL'],
         degrees: [{ name: 'MSc' }],
       })
+    })
+
+    test('presents a W3C VC SD-JWT as its subject, not its schema', async () => {
+      const type = `urn:type:${randomUUID()}`
+      const compact = await signSdJwt(
+        {
+          '@context': ['https://www.w3.org/ns/credentials/v2'],
+          type: ['VerifiableCredential', type],
+          issuer: issuerDid,
+          credentialSchema: { id: 'https://example.com/schema.json', type: 'JsonSchema' },
+          credentialSubject: { id: holderDid, given_name: sd('Erika') },
+        },
+        'vc+sd-jwt'
+      )
+      await agent.w3cV2Credentials.store({
+        record: new W3cV2CredentialRecord({ credentialInstances: [{ credential: compact }] }),
+      })
+
+      const dcqlQuery = {
+        credentials: [{ id: 'credential', format: 'vc+sd-jwt', meta: { type_values: [[type]] } }],
+      } as unknown as DcqlQuery
+      const queryResult = await dcqlService.getCredentialsForRequest(agent.context, dcqlQuery)
+
+      const { dcqlPresentation } = await dcqlService.createPresentation(agent.context, {
+        credentialQueryToCredential: dcqlService.selectCredentialsForRequest(queryResult),
+        challenge,
+        domain,
+      })
+      await dcqlService.assertValidDcqlPresentation(agent.context, dcqlPresentation, dcqlQuery)
+
+      const presentation = dcqlPresentation.credential[0] as W3cV2SdJwtVerifiablePresentation
+      expect(presentation.resolvedPresentation.holderId).toBe(holderDid)
     })
   })
 })

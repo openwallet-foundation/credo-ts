@@ -1,9 +1,18 @@
 import type { BaseRecord, BaseRecordConstructor, Query, TagsBase } from '@credo-ts/core'
-import { JsonTransformer } from '@credo-ts/core'
+import { JsonTransformer, RecordDecodingError } from '@credo-ts/core'
 import type { EntryObject } from '@openwallet-foundation/askar-shared'
 
 export function recordToInstance<T extends BaseRecord>(record: EntryObject, recordClass: BaseRecordConstructor<T>): T {
-  const instance = JsonTransformer.deserialize<T>(record.value as string, recordClass)
+  let instance: T
+  try {
+    instance = JsonTransformer.deserialize<T>(record.value as string, recordClass)
+  } catch (error) {
+    throw new RecordDecodingError('Error decoding record', {
+      recordType: recordClass.type,
+      recordId: record.name,
+      cause: error,
+    })
+  }
   instance.id = record.name
 
   const tags = record.tags ? transformToRecordTagValues(record.tags) : {}

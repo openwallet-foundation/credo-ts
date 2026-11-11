@@ -1,6 +1,7 @@
 import type { TagsBase } from '@credo-ts/core'
-import { BaseRecord, CredoError, utils } from '@credo-ts/core'
-import { Transform } from 'class-transformer'
+import { BaseRecord, CredoError, createRecordEncodingSchema, utils, zWithUpgrade } from '@credo-ts/core'
+import { z } from 'zod'
+import type { DidCommVersion } from '../../../util/didcommVersion'
 import type { DidCommConnectionType } from '../models'
 import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from '../models'
 import type { DidCommConnectionMetadata } from './DidCommConnectionMetadataTypes'
@@ -26,6 +27,8 @@ export interface DidCommConnectionRecordProps {
   connectionTypes?: Array<DidCommConnectionType | string>
   previousDids?: Array<string>
   previousTheirDids?: Array<string>
+  /** DIDComm envelope version. V2 OOB uses v2; handshake protocols use v1. Defaults to v1. */
+  didcommVersion?: DidCommVersion
 }
 
 export type CustomDidCommConnectionTags = TagsBase
@@ -38,16 +41,49 @@ export type DefaultDidCommConnectionTags = {
   theirDid?: string
   outOfBandId?: string
   invitationDid?: string
+  didcommVersion?: DidCommVersion
   connectionTypes?: Array<DidCommConnectionType | string>
   previousDids?: Array<string>
   previousTheirDids?: Array<string>
 }
+
+const didCommConnectionRecordEncodingSchema = createRecordEncodingSchema({
+  state: z.string().nullish(),
+  role: z.string().nullish(),
+  did: z.string().nullish(),
+  theirDid: z.string().nullish(),
+  theirLabel: z.string().nullish(),
+  alias: z.string().nullish(),
+  autoAcceptConnection: z.boolean().nullish(),
+  imageUrl: z.string().nullish(),
+  threadId: z.string().nullish(),
+  mediatorId: z.string().nullish(),
+  errorMessage: z.string().nullish(),
+
+  // We used to store connection record using major.minor version, but we now
+  // only store the major version, storing .x for the minor version. We have this
+  // transformation so we don't have to migrate the data in the database.
+  protocol: zWithUpgrade(z.string(), (value) => {
+    if (!value || typeof value !== 'string' || !value.includes('.') || value.endsWith('.x')) return value
+    return `${value.split('.').slice(0, -1).join('.')}.x`
+  }).nullish(),
+  outOfBandId: z.string().nullish(),
+  invitationDid: z.string().nullish(),
+  connectionTypes: z.array(z.string()).nullish(),
+  previousDids: z.array(z.string()).nullish(),
+  previousTheirDids: z.array(z.string()).nullish(),
+  didcommVersion: z.enum(['v1', 'v2']).nullish(),
+})
 
 export class DidCommConnectionRecord extends BaseRecord<
   DefaultDidCommConnectionTags,
   CustomDidCommConnectionTags,
   DidCommConnectionMetadata
 > {
+  public static get encodingSchema(): z.ZodType {
+    return didCommConnectionRecordEncodingSchema
+  }
+
   public state!: DidCommDidExchangeState
   public role!: DidCommDidExchangeRole
 
@@ -64,17 +100,6 @@ export class DidCommConnectionRecord extends BaseRecord<
   public mediatorId?: string
   public errorMessage?: string
 
-  // We used to store connection record using major.minor version, but we now
-  // only store the major version, storing .x for the minor version. We have this
-  // transformation so we don't have to migrate the data in the database.
-  @Transform(
-    ({ value }) => {
-      if (!value || typeof value !== 'string' || value.endsWith('.x')) return value
-      return `${value.split('.').slice(0, -1).join('.')}.x`
-    },
-
-    { toClassOnly: true }
-  )
   public protocol?: DidCommHandshakeProtocol
   public outOfBandId?: string
   public invitationDid?: string
@@ -82,6 +107,9 @@ export class DidCommConnectionRecord extends BaseRecord<
   public connectionTypes: string[] = []
   public previousDids: string[] = []
   public previousTheirDids: string[] = []
+
+  /** DIDComm envelope version for this connection. V2 OOB uses v2; handshake protocols use v1. Defaults to v1. */
+  public didcommVersion?: DidCommVersion
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = DidCommConnectionRecord.type
@@ -113,6 +141,7 @@ export class DidCommConnectionRecord extends BaseRecord<
       this.connectionTypes = props.connectionTypes ?? []
       this.previousDids = props.previousDids ?? []
       this.previousTheirDids = props.previousTheirDids ?? []
+      this.didcommVersion = props.didcommVersion
     }
   }
 
@@ -127,6 +156,7 @@ export class DidCommConnectionRecord extends BaseRecord<
       theirDid: this.theirDid,
       outOfBandId: this.outOfBandId,
       invitationDid: this.invitationDid,
+      didcommVersion: this.didcommVersion,
       connectionTypes: this.connectionTypes,
       previousDids: this.previousDids,
       previousTheirDids: this.previousTheirDids,

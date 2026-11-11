@@ -2,6 +2,7 @@ import { joinUriParts, utils } from '@credo-ts/core'
 import type { HttpMethod } from '@openid4vc/oauth2'
 import { Oauth2ErrorCodes, Oauth2ResourceUnauthorizedError, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import type { Response, Router } from 'express'
+import type { OpenId4VciParsedDeferredCredentialRequest } from '../../shared'
 import {
   getRequestContext,
   sendJsonResponse,
@@ -11,7 +12,7 @@ import {
 } from '../../shared/router'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import { getCredentialRequestDecryptionMetadata, OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
@@ -51,14 +52,14 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
       if (!resourceRequestResult) return
       const { tokenPayload, accessToken, scheme, authorizationServer } = resourceRequestResult
 
-      const deferredCredentialRequest = request.body
       const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
 
-      let parsedCredentialRequest: ReturnType<typeof vcIssuer.parseDeferredCredentialRequest>
+      let parsedCredentialRequest: OpenId4VciParsedDeferredCredentialRequest
       try {
-        parsedCredentialRequest = vcIssuer.parseDeferredCredentialRequest({
-          deferredCredentialRequest,
-          issuerMetadata,
+        parsedCredentialRequest = await vcIssuer.parseDeferredCredentialRequest({
+          deferredCredentialRequest: request.body,
+          contentType: request.headers['content-type'],
+          issuerMetadata: getCredentialRequestDecryptionMetadata(issuerMetadata, issuer),
         })
       } catch (error) {
         if (error instanceof Oauth2ServerErrorResponseError) {
@@ -171,8 +172,6 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
         utils.addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
 
       if (Date.now() > expiresAt.getTime()) {
-        issuanceSession.errorMessage = 'Credential offer has expired'
-        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
         return sendOauth2ErrorResponse(
           response,
           next,

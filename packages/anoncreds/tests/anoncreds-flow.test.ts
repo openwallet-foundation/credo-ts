@@ -29,11 +29,11 @@ import {
   CacheModuleConfig,
   DidResolverService,
   DidsModuleConfig,
+  defaultDocumentLoader,
   InjectionSymbols,
   InMemoryLruCache,
   JsonLdModuleConfig,
   SignatureSuiteRegistry,
-  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,
@@ -53,6 +53,7 @@ import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
 import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
+import { trackNativeAnonCredsObjects } from './nativeAnonCredsObjects'
 
 const registry = new InMemoryAnonCredsRegistry()
 const tailsFileService = new InMemoryTailsFileService()
@@ -82,8 +83,7 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
       CacheModuleConfig,
@@ -101,6 +101,13 @@ const anoncredsProofFormatService = new AnonCredsDidCommProofFormatService()
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
 describe('AnonCreds format services using anoncreds-rs', () => {
+  // Credo frees every native AnonCreds object it creates
+  const nativeAnonCredsObjects = trackNativeAnonCredsObjects()
+  afterEach(() => {
+    expect(nativeAnonCredsObjects.takeOpen()).toEqual([])
+  })
+  afterAll(() => nativeAnonCredsObjects.stop())
+
   afterEach(() => {
     inMemoryStorageService.contextCorrelationIdToRecords = {}
   })

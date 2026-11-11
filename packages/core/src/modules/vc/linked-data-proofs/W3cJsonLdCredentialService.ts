@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../agent/context'
 import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
-import type { TrustedIssuerDid } from '../../../agent/TrustedIssuersForVerification'
+import type { GetTrustedIssuersForCredential, TrustedIssuerDid } from '../../../agent/TrustedIssuersForVerification'
 import { createKmsKeyPairClass } from '../../../crypto/KmsKeyPair'
 import { CredoError, RecordNotFoundError } from '../../../error'
 import { injectable } from '../../../plugins'
@@ -8,10 +8,12 @@ import type { SingleOrArray } from '../../../types'
 import { asArray, JsonTransformer } from '../../../utils'
 import { type DidPurpose, DidsApi, parseDid } from '../../dids'
 import { ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE } from '../anoncreds-w3c-credential'
+import { CREDENTIALS_CREDENTIAL_SUBJECT_URL } from '../constants'
 import { JsonLdModuleConfig } from '../jsonld'
 import jsonld from '../jsonld/jsonld'
 import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
+import { assertControlledByDid } from '../resolveSigner'
 import { validateCredentialSubjectAuthentication, w3cDate } from '../util'
 import type {
   W3cJsonLdSignCredentialOptions,
@@ -72,7 +74,8 @@ export class W3cJsonLdCredentialService {
   }
 
   /**
-   * Validate that the agent can prepare to sign a credential with the given proof type and verification method.
+   * Validate that the agent can prepare to sign a credential with the given verification method, and the proof type
+   * if one is given.
    */
   public async assertCanSignCredential(
     agentContext: AgentContext,
@@ -109,6 +112,7 @@ export class W3cJsonLdCredentialService {
         credential: JsonTransformer.toJSON(options.credential),
         suite: suites,
         documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
+        maxClockSkew: agentContext.config.validitySkewSeconds,
         checkStatus: ({ credential }: { credential: W3cJsonCredential }) => {
           // Only throw error if credentialStatus is present
           if (verifyCredentialStatus && 'credentialStatus' in credential) {
@@ -248,6 +252,7 @@ export class W3cJsonLdCredentialService {
         challenge: options.challenge,
         domain: options.domain,
         documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
+        maxClockSkew: agentContext.config.validitySkewSeconds,
       }
 
       // this is a hack because vcjs throws if purpose is passed as undefined or null
@@ -266,30 +271,34 @@ export class W3cJsonLdCredentialService {
       // own key and have it accepted. Enforce the binding here, mirroring the jwt_vp and sd-jwt paths
       // (see validateCredentialSubjectAuthentication).
       //
-      // The holder identity is derived from the verificationMethod of the presentation's
-      // authentication proof(s), which vc-js has already cryptographically verified and authorized
-      // for the authentication purpose. validateCredentialSubjectAuthentication normalizes the DID
-      // URL to its bare DID before comparison; for the DID methods used with linked-data proofs the
-      // verificationMethod's DID equals its controller.
-      const holderProofPurpose = options.purpose?.term ?? 'authentication'
-      const holderVerificationMethods = asArray(options.presentation.proof)
-        .filter((proof) => proof.proofPurpose === holderProofPurpose)
-        .map((proof) => proof.verificationMethod)
+      // The holders are the signers of the presentation proofs that vc-js verified for their proof
+      // purpose. A proof set passes when one proof verifies, so the other proofs don't count.
+      const holderVerificationMethods = new Set(
+        (result.presentationResult?.results ?? []).flatMap((proofResult) =>
+          proofResult.verified === true ? [proofResult.proof.verificationMethod] : []
+        )
+      )
+
+      // The subject ids come from the expanded credential, as the signed data is the same for `id`,
+      // `@id` or another alias of `@id`.
+      const [holders, credentialsSubjectIds] = await Promise.all([
+        Promise.all(
+          Array.from(holderVerificationMethods, (verificationMethod) =>
+            this.resolveSigner(agentContext, verificationMethod)
+          )
+        ),
+        Promise.all(credentials.map((credential) => this.getExpandedCredentialSubjectIds(agentContext, credential))),
+      ])
 
       // Surfaced per credential under `credentials[]` to mirror the jwt_vp result shape. The
       // library-level signature/status validations remain lumped in `vcJs`, so each entry here
       // only carries the credentialSubjectAuthentication check.
-      const credentialValidations = credentials.map((credential) => {
-        const credentialSubjectIds = credential.credentialSubjectIds
-
+      const credentialValidations = credentialsSubjectIds.map((credentialSubjectIds) => {
         // A credential without subject identifiers is treated as a bearer credential,
         // so there is no subject to authenticate.
         const isAuthenticated =
           credentialSubjectIds.length === 0 ||
-          holderVerificationMethods.some(
-            (verificationMethod) =>
-              validateCredentialSubjectAuthentication(credentialSubjectIds, verificationMethod).isValid
-          )
+          holders.some((holder) => validateCredentialSubjectAuthentication(credentialSubjectIds, holder).isValid)
 
         const credentialSubjectAuthentication: SingleValidationResult = isAuthenticated
           ? { isValid: true }
@@ -338,37 +347,58 @@ export class W3cJsonLdCredentialService {
   }
 
   public async getExpandedTypesForCredential(agentContext: AgentContext, credential: W3cJsonLdVerifiableCredential) {
-    // Get the expanded types
-    const expandedTypes: SingleOrArray<string> = (
-      await jsonld.expand(JsonTransformer.toJSON(credential), {
-        documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
-      })
-    )[0]['@type']
+    const expandedTypes: SingleOrArray<string> = (await this.expandCredential(agentContext, credential))['@type']
 
     return asArray(expandedTypes)
+  }
+
+  /**
+   * Returns the credential subject ids from the expanded credential. This includes ids under `@id` or
+   * another alias of `@id`, which `credentialSubjectIds` doesn't read.
+   */
+  private async getExpandedCredentialSubjectIds(
+    agentContext: AgentContext,
+    credential: W3cJsonLdVerifiableCredential
+  ): Promise<string[]> {
+    const expandedSubjects: Array<{ '@id'?: string }> =
+      (await this.expandCredential(agentContext, credential))[CREDENTIALS_CREDENTIAL_SUBJECT_URL] ?? []
+
+    return expandedSubjects.flatMap((subject) => (typeof subject['@id'] === 'string' ? [subject['@id']] : []))
+  }
+
+  private async expandCredential(agentContext: AgentContext, credential: W3cJsonLdVerifiableCredential) {
+    const [expandedCredential] = await jsonld.expand(JsonTransformer.toJSON(credential), {
+      documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
+    })
+
+    return expandedCredential
   }
 
   private async ensureCredentialIssuerTrusted(
     agentContext: AgentContext,
     credential: W3cJsonLdVerifiableCredential,
-    trustedIssuers?: TrustedIssuerDid[]
+    trustedIssuers?: TrustedIssuerDid[] | GetTrustedIssuersForCredential
   ): Promise<void> {
     const issuerId = credential.issuerId
 
-    // Only enforced for did-based issuers
-    if (!issuerId.startsWith('did:')) return
+    if (!issuerId.startsWith('did:')) {
+      throw new CredoError(`Credential issuer '${issuerId}' is not a did. Only did issuers are supported.`)
+    }
 
     const issuerDid = parseDid(issuerId).did
 
     for (const proof of asArray(credential.proof)) {
       const verificationMethod = proof.verificationMethod
-      if (!verificationMethod.startsWith('did:') || parseDid(verificationMethod).did !== issuerDid) {
+      if (
+        !verificationMethod.startsWith('did:') ||
+        (await this.resolveSigner(agentContext, verificationMethod)) !== issuerDid
+      ) {
         throw new CredoError(
           `The proof verification method '${verificationMethod}' does not match the credential issuer did '${issuerDid}'.`
         )
       }
 
-      await TrustedIssuerContext.ensureTrustedSigner(
+      await TrustedIssuerContext.ensureTrustedCredentialSigner(
         agentContext,
         {
           signer: { method: 'did', didUrl: verificationMethod },
@@ -377,6 +407,18 @@ export class W3cJsonLdCredentialService {
         trustedIssuers
       )
     }
+  }
+
+  /**
+   * Resolves the DID that signed with a verification method, loading it through the configured
+   * document loader like vc-js does. vc-js has already validated its proof purpose.
+   */
+  private async resolveSigner(agentContext: AgentContext, verificationMethodId: string) {
+    const did = parseDid(verificationMethodId).did
+    const { document } = await this.jsonLdModuleConfig.documentLoader(agentContext)(verificationMethodId)
+    assertControlledByDid({ id: verificationMethodId, controller: document.controller }, did)
+
+    return did
   }
 
   private getSigningSuiteInfo(proofType: string) {
@@ -390,25 +432,18 @@ export class W3cJsonLdCredentialService {
     return this.signatureSuiteRegistry.getByProofType(proofType)
   }
 
-  private async prepareSigningSuite(
+  /**
+   * Resolves a verification method of a did created by this agent, mapping the lookup failures to typed errors.
+   */
+  private async resolveSigningVerificationMethod(
     agentContext: AgentContext,
-    options: {
-      proofType: string
-      verificationMethodId: string
-      allowedPurposes: Array<DidPurpose | 'verificationMethod'>
-      date?: string
-      controller?: string
-    }
+    verificationMethodId: string,
+    allowedPurposes: Array<DidPurpose | 'verificationMethod'>
   ) {
-    const suiteInfo = this.getSigningSuiteInfo(options.proofType)
-
-    const dids = agentContext.resolve(DidsApi)
-    let resolved: Awaited<ReturnType<typeof dids.resolveVerificationMethodFromCreatedDidRecord>>
     try {
-      resolved = await dids.resolveVerificationMethodFromCreatedDidRecord(
-        options.verificationMethodId,
-        options.allowedPurposes
-      )
+      return await agentContext
+        .resolve(DidsApi)
+        .resolveVerificationMethodFromCreatedDidRecord(verificationMethodId, allowedPurposes)
     } catch (error) {
       if (error instanceof RecordNotFoundError) {
         throw new W3cJsonLdCredentialSigningNotSupportedError(
@@ -420,18 +455,46 @@ export class W3cJsonLdCredentialService {
       if (
         error instanceof CredoError &&
         error.message ===
-          `Unable to locate verification method with id '${options.verificationMethodId}' in purposes ${options.allowedPurposes}`
+          `Unable to locate verification method with id '${verificationMethodId}' in purposes ${allowedPurposes}`
       ) {
         throw new W3cJsonLdCredentialSigningNotSupportedError(error.message, 'verification-method-not-found', error)
       }
       throw error
     }
+  }
 
-    const { verificationMethod: nativeVerificationMethod, publicJwk } = resolved
+  private async prepareSigningSuite(
+    agentContext: AgentContext,
+    options: {
+      proofType?: string
+      verificationMethodId: string
+      allowedPurposes: Array<DidPurpose | 'verificationMethod'>
+      date?: string
+      controller?: string
+    }
+  ) {
+    // Only an omitted proofType is inferred, so an empty one is still rejected as unsupported
+    const requestedSuiteInfo = options.proofType !== undefined ? this.getSigningSuiteInfo(options.proofType) : undefined
+
+    const { verificationMethod: nativeVerificationMethod, publicJwk } = await this.resolveSigningVerificationMethod(
+      agentContext,
+      options.verificationMethodId,
+      options.allowedPurposes
+    )
+
+    // Without a requested proof type, pick the suite from the method resolved above instead of looking it up again
+    const suiteInfo =
+      requestedSuiteInfo ?? this.signatureSuiteRegistry.getAllByVerificationMethod(nativeVerificationMethod)[0]
+    if (!suiteInfo) {
+      throw new W3cJsonLdCredentialSigningNotSupportedError(
+        `No signature suite supports the verification method type '${nativeVerificationMethod.type}'`,
+        'unsupported-verification-method-type'
+      )
+    }
 
     if (!suiteInfo.verificationMethodTypes.includes(nativeVerificationMethod.type)) {
       throw new W3cJsonLdCredentialSigningNotSupportedError(
-        `Unsupported verification method type '${nativeVerificationMethod.type}' for proof type '${options.proofType}'. Supported types are: ${suiteInfo.verificationMethodTypes.join(', ')}`,
+        `Unsupported verification method type '${nativeVerificationMethod.type}' for proof type '${suiteInfo.proofType}'. Supported types are: ${suiteInfo.verificationMethodTypes.join(', ')}`,
         'unsupported-verification-method-type'
       )
     }

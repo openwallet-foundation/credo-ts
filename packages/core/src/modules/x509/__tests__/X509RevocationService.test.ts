@@ -949,6 +949,22 @@ describe('X509RevocationService', () => {
       }
     })
 
+    it('uses the module-config options that per-call options omit', async () => {
+      const config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+      const leaf = await createLeaf({ serialNumber: '5f0a', crlDistributionPoints: { urls: [FULL_URL] } })
+      mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+
+      try {
+        config.setRevocationCheck({ maxCrlSizeBytes: 10 })
+
+        const result = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+        expect(result.isValid).toBe(false)
+        expect(result.error?.message).toContain('Failed to fetch CRL')
+      } finally {
+        config.setRevocationCheck(undefined)
+      }
+    })
+
     it('revalidates a stale summary by hash without re-parsing when the CRL bytes are unchanged', async () => {
       const leaf = await createLeaf({ serialNumber: '500f', crlDistributionPoints: { urls: [FULL_URL] } })
       // Two interceptors: the initial fetch and the revalidation fetch; the third check must not fetch.

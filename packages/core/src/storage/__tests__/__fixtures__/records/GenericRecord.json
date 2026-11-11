@@ -1,0 +1,19 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "content": {
+    "name": "value",
+    "nested": {
+      "list": [1, "two", null, true]
+    }
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "id": "generic-record-id",
+  "metadata": {
+    "meta": {
+      "key": "value"
+    }
+  },
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

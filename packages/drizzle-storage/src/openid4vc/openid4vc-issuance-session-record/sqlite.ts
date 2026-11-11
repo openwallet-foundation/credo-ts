@@ -8,6 +8,7 @@ import type {
   OpenId4VcIssuanceSessionState,
   OpenId4VcIssuanceSessionWalletAttestation,
   OpenId4VciCredentialOfferPayload,
+  OpenId4VciVersion,
 } from '@credo-ts/openid4vc'
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
@@ -30,6 +31,7 @@ export const openId4VcIssuanceSession = sqliteTable(
     // Pre-authorized flow
     preAuthorizedCode: text('pre_authorized_code'),
     userPin: text('user_pin'),
+    failedTxCodeAttempts: integer('failed_tx_code_attempts'),
 
     // Client and authentication
     clientId: text('client_id'),
@@ -59,6 +61,7 @@ export const openId4VcIssuanceSession = sqliteTable(
       .notNull(),
 
     generateRefreshTokens: integer('generate_refresh_tokens', { mode: 'boolean' }),
+    openId4VciVersion: text('openid4vci_version').$type<OpenId4VciVersion>(),
 
     errorMessage: text('error_message'),
   },

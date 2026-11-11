@@ -1,6 +1,12 @@
 import type { AgentContext, TagsBase } from '@credo-ts/core'
 
-import { RecordDuplicateError, RecordNotFoundError, TypedArrayEncoder } from '@credo-ts/core'
+import {
+  GenericRecord,
+  RecordDecodingError,
+  RecordDuplicateError,
+  RecordNotFoundError,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
@@ -324,6 +330,53 @@ describe('AskarStorageService', () => {
 
       const records = await storageService.getAll(agentContext, TestRecord)
       expect(records).toEqual(expect.arrayContaining(createdRecords))
+    })
+  })
+
+  describe('decoding errors', () => {
+    let genericStorageService: AskarStorageService<GenericRecord>
+
+    beforeEach(async () => {
+      genericStorageService = new AskarStorageService<GenericRecord>(storeManager)
+
+      await storeManager.withSession(agentContext, (session) =>
+        session.insert({
+          category: GenericRecord.type,
+          name: 'invalid-id',
+          value: JSON.stringify({ content: 'not-an-object' }),
+          tags: { myTag: 'foobar' },
+        })
+      )
+    })
+
+    const expectDecodingError = async (promise: Promise<unknown>) => {
+      const error = await promise.catch((error) => error)
+      expect(error).toBeInstanceOf(RecordDecodingError)
+      expect(error).toMatchObject({ recordType: 'GenericRecord', recordId: 'invalid-id' })
+    }
+
+    it('save() should not store a record that fails to encode', async () => {
+      const record = new GenericRecord({
+        id: 'invalid-save',
+        content: 'not-an-object' as unknown as Record<string, unknown>,
+      })
+
+      await expect(genericStorageService.save(agentContext, record)).rejects.toThrow()
+      await expect(genericStorageService.getById(agentContext, GenericRecord, 'invalid-save')).rejects.toThrow(
+        RecordNotFoundError
+      )
+    })
+
+    it('getById() should throw RecordDecodingError for a record that fails to decode', async () => {
+      await expectDecodingError(genericStorageService.getById(agentContext, GenericRecord, 'invalid-id'))
+    })
+
+    it('getAll() should throw RecordDecodingError for a record that fails to decode', async () => {
+      await expectDecodingError(genericStorageService.getAll(agentContext, GenericRecord))
+    })
+
+    it('findByQuery() should throw RecordDecodingError for a record that fails to decode', async () => {
+      await expectDecodingError(genericStorageService.findByQuery(agentContext, GenericRecord, { myTag: 'foobar' }))
     })
   })
 

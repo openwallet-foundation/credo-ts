@@ -37,7 +37,13 @@ export interface KeyManagementService {
    */
   createKey<Type extends KmsCreateKeyType>(
     agentContext: AgentContext,
-    options: KmsCreateKeyOptions<Type>
+    options: KmsCreateKeyOptions<Type> & {
+      /**
+       * The `backendOptions` of the `createKey` call, when it named this backend. Backends that accept options narrow
+       * this type in their `createKey`, which types `backendOptions` of `createKey` for that backend, and validate them.
+       */
+      backendOptions?: unknown
+    }
   ): Promise<KmsCreateKeyReturn<Type>>
 
   /**

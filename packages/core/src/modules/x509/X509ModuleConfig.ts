@@ -8,7 +8,11 @@ import type { W3cJwtVerifiablePresentation } from '../vc/jwt-vc/W3cJwtVerifiable
 import { defaultX509ParseOptions } from './utils/parseOptions'
 import { X509Certificate } from './X509Certificate'
 import type { X509ParseOptions } from './X509ServiceOptions'
-import { type X509RevocationCheckOptions } from './X509ValidationOptions'
+import {
+  withX509RevocationCheckDefaults,
+  type X509RevocationCheckOptions,
+  type X509RevocationCheckOptionsWithDefaults,
+} from './X509ValidationOptions'
 
 export type X509VerificationTrustedCertificates = {
   issuance: string[]
@@ -141,17 +145,9 @@ export interface X509ModuleConfigOptions {
     | undefined
 
   /**
-   * Configuration for certificate revocation checking
-   * @default
-   * ```
-   * {
-   *  mode: X509RevocationCheckMode.SoftFail, // do not fail on network error
-   *  checkFullChain: true, // check the leaf and all intermediate CAs
-   *  timeoutMs: 5000, // 5 seconds
-   *  maxCrlSizeBytes: 10485760, // 10MB
-   *  crlCacheExpirySeconds: 3600 // 1 hour
-   * }
-   * ```
+   * Configuration for certificate revocation checking. Options that are not set use
+   * {@link defaultX509RevocationCheckOptions}: `SoftFail` (do not fail on network error) for the
+   * leaf and all intermediate CAs, a 5 second timeout, a 10 MB CRL size limit and a 1 hour cache.
    */
   revocationCheck?: X509RevocationCheckOptions
 
@@ -208,8 +204,8 @@ export class X509ModuleConfig {
     this.#getTrustedCertificatesForVerification = fn
   }
 
-  public get revocationCheck(): X509RevocationCheckOptions | undefined {
-    return this.#revocationCheck
+  public get revocationCheck(): X509RevocationCheckOptionsWithDefaults {
+    return withX509RevocationCheckDefaults(this.#revocationCheck)
   }
 
   public setRevocationCheck(options?: X509RevocationCheckOptions) {

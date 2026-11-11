@@ -1,3 +1,4 @@
+export type { KmsBackendName, KmsCreateKeyBackendOptionsOf } from './backend'
 export type {
   KmsCreateKeyForSignatureAlgorithmOptions,
   KmsCreateKeyOptions,

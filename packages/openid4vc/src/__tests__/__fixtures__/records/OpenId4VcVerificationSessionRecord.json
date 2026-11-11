@@ -1,0 +1,111 @@
+{
+  "_tags": {
+    "custom": "tag"
+  },
+  "authorizationRequestId": "authorization-request-id",
+  "authorizationRequestJwt": "eyJhbGciOiJFUzI1NiIsInR5cCI6Im9hdXRoLWF1dGh6LXJlcStqd3QiLCJ4NWMiOlsiTUlJQkV6Q0J1NkFEQWdFQ0FoQnduYVI1amJvUTRSN05lL2src2ZoQ01Bb0dDQ3FHU000OUJBTUNNQTB4Q3pBSkJnTlZCQVlUQWs1TU1CNFhEVGN3TURFd01UQXdNREF3TUZvWERUSTFNVEV5TWpBNE1qSXhNbG93RFRFTE1Ba0dBMVVFQmhNQ1Rrd3dPVEFUQmdjcWhrak9QUUlCQmdncWhrak9QUU1CQndNaUFBTGNEMVh6S2VwRnhXTUFPcVYrbG4xZnliQnQ3RFJPNUNWMGY5QTZtUnAyeGFNZE1Cc3dHUVlEVlIwUkJCSXdFSUlPWm5WdWEyVXVZVzVwYlc4dWFXUXdDZ1lJS29aSXpqMEVBd0lEUndBd1JBSWdQTTVJVGZVRDZWV0xnUm04RXUxZ3c1M09mK1NVZGpTK3lSQ2xSNjhtLy80Q0lEeG5uZzdObkp5R25wc0tEdVVxU0lsL0EwclJRQ3dUTEJadzlIeDNNWm5aIl19.eyJyZXNwb25zZV90eXBlIjoidnBfdG9rZW4iLCJjbGllbnRfaWQiOiJ4NTA5X3Nhbl9kbnM6dmVyaWZpZXIuZXhhbXBsZS5jb20iLCJyZXNwb25zZV91cmkiOiJodHRwczovL3ZlcmlmaWVyLmV4YW1wbGUuY29tL29pZDR2cC92ZXJpZmllci1pZC9hdXRob3JpemUiLCJyZXNwb25zZV9tb2RlIjoiZGlyZWN0X3Bvc3Quand0Iiwibm9uY2UiOiJyZXF1ZXN0LW5vbmNlIiwic3RhdGUiOiJyZXF1ZXN0LXN0YXRlIiwiYXVkIjoiaHR0cHM6Ly9zZWxmLWlzc3VlZC5tZS92MiIsImlhdCI6MTc2NzIyNTYwMCwiZXhwIjoxNzY3MjI5MjAwLCJkY3FsX3F1ZXJ5Ijp7ImNyZWRlbnRpYWxzIjpbeyJpZCI6InBpZCIsImZvcm1hdCI6ImRjK3NkLWp3dCIsIm1ldGEiOnsidmN0X3ZhbHVlcyI6WyJ1cm46ZXVkaTpwaWQ6MSJdfSwiY2xhaW1zIjpbeyJwYXRoIjpbImdpdmVuX25hbWUiXX0seyJwYXRoIjpbImZhbWlseV9uYW1lIl19LHsicGF0aCI6WyJhZGRyZXNzIiwiY291bnRyeSJdfV19LHsiaWQiOiJtZGwiLCJmb3JtYXQiOiJtc29fbWRvYyIsIm1ldGEiOnsiZG9jdHlwZV92YWx1ZSI6Im9yZy5pc28uMTgwMTMuNS4xLm1ETCJ9LCJjbGFpbXMiOlt7InBhdGgiOlsib3JnLmlzby4xODAxMy41LjEiLCJkcml2aW5nX3ByaXZpbGVnZXMiXSwiaW50ZW50X3RvX3JldGFpbiI6ZmFsc2V9XX1dLCJjcmVkZW50aWFsX3NldHMiOlt7Im9wdGlvbnMiOltbInBpZCJdLFsibWRsIl1dLCJyZXF1aXJlZCI6dHJ1ZX1dfSwiY2xpZW50X21ldGFkYXRhIjp7ImNsaWVudF9uYW1lIjoiRXhhbXBsZSBWZXJpZmllciIsImxvZ29fdXJpIjoiaHR0cHM6Ly92ZXJpZmllci5leGFtcGxlLmNvbS9sb2dvLnBuZyIsImp3a3MiOnsia2V5cyI6W3sia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiJ0V3ppSzFqWHBBZjlodTdmY3l0QzhDWS1ld00tN1NzeWNTWGdnZnNzMi0wIiwieSI6InQtdXJaT2NBOHpOVWN4aWR5U1cwMWllUTBtVXlzTGRETW5acmJKR05hWTQiLCJraWQiOiJhdHRlc3RlZC1rZXktaWQiLCJ1c2UiOiJlbmMiLCJhbGciOiJFQ0RILUVTIn1dfSwiZW5jcnlwdGVkX3Jlc3BvbnNlX2VuY192YWx1ZXNfc3VwcG9ydGVkIjpbIkExMjhHQ00iLCJBMjU2R0NNIl0sInZwX2Zvcm1hdHNfc3VwcG9ydGVkIjp7ImRjK3NkLWp3dCI6eyJzZC1qd3RfYWxnX3ZhbHVlcyI6WyJFUzI1NiJdLCJrYi1qd3RfYWxnX3ZhbHVlcyI6WyJFUzI1NiJdfSwibXNvX21kb2MiOnsiaXNzdWVyYXV0aF9hbGdfdmFsdWVzIjpbLTddLCJkZXZpY2VhdXRoX2FsZ192YWx1ZXMiOlstN119fX0sInRyYW5zYWN0aW9uX2RhdGEiOlsiZXlKMGVYQmxJam9pY0dGNWJXVnVkQ0lzSW1OeVpXUmxiblJwWVd4ZmFXUnpJanBiSW5CcFpDSmRMQ0poYlc5MWJuUWlPaUl4TUM0d01DSjkiXX0.c2lnbmF0dXJl",
+  "authorizationRequestPayload": {
+    "aud": "https://self-issued.me/v2",
+    "client_id": "x509_san_dns:verifier.example.com",
+    "client_metadata": {
+      "client_name": "Example Verifier",
+      "encrypted_response_enc_values_supported": ["A128GCM", "A256GCM"],
+      "jwks": {
+        "keys": [
+          {
+            "alg": "ECDH-ES",
+            "crv": "P-256",
+            "kid": "attested-key-id",
+            "kty": "EC",
+            "use": "enc",
+            "x": "tWziK1jXpAf9hu7fcytC8CY-ewM-7SsycSXggfss2-0",
+            "y": "t-urZOcA8zNUcxidySW01ieQ0mUysLdDMnZrbJGNaY4"
+          }
+        ]
+      },
+      "logo_uri": "https://verifier.example.com/logo.png",
+      "vp_formats_supported": {
+        "dc+sd-jwt": {
+          "kb-jwt_alg_values": ["ES256"],
+          "sd-jwt_alg_values": ["ES256"]
+        },
+        "mso_mdoc": {
+          "deviceauth_alg_values": [-7],
+          "issuerauth_alg_values": [-7]
+        }
+      }
+    },
+    "dcql_query": {
+      "credential_sets": [
+        {
+          "options": [["pid"], ["mdl"]],
+          "required": true
+        }
+      ],
+      "credentials": [
+        {
+          "claims": [
+            {
+              "path": ["given_name"]
+            },
+            {
+              "path": ["family_name"]
+            },
+            {
+              "path": ["address", "country"]
+            }
+          ],
+          "format": "dc+sd-jwt",
+          "id": "pid",
+          "meta": {
+            "vct_values": ["urn:eudi:pid:1"]
+          }
+        },
+        {
+          "claims": [
+            {
+              "intent_to_retain": false,
+              "path": ["org.iso.18013.5.1", "driving_privileges"]
+            }
+          ],
+          "format": "mso_mdoc",
+          "id": "mdl",
+          "meta": {
+            "doctype_value": "org.iso.18013.5.1.mDL"
+          }
+        }
+      ]
+    },
+    "exp": 1767229200,
+    "iat": 1767225600,
+    "nonce": "request-nonce",
+    "response_mode": "direct_post.jwt",
+    "response_type": "vp_token",
+    "response_uri": "https://verifier.example.com/oid4vp/verifier-id/authorize",
+    "state": "request-state",
+    "transaction_data": ["eyJ0eXBlIjoicGF5bWVudCIsImNyZWRlbnRpYWxfaWRzIjpbInBpZCJdLCJhbW91bnQiOiIxMC4wMCJ9"]
+  },
+  "authorizationRequestUri": "openid4vp://?client_id=x509_san_dns%3Averifier.example.com&request_uri=https%3A%2F%2Fverifier.example.com%2Foid4vp%2Fverifier-id%2Fauthorization-requests%2Fauthorization-request-id",
+  "authorizationResponsePayload": {
+    "state": "request-state",
+    "vp_token": {
+      "mdl": ["o2d2ZXJzaW9uYzEuMGlkb2N1bWVudHOBomdkb2NUeXBldW9yZy5pc28uMTgwMTMuNS4xLm1ETA"],
+      "pid": ["eyJhbGciOiJFUzI1NiIsInR5cCI6ImRjK3NkLWp3dCJ9.eyJ2Y3QiOiJ1cm46ZXVkaTpwaWQ6MSJ9.c2lnbmF0dXJl~"]
+    }
+  },
+  "authorizationResponseRedirectUri": "https://verifier.example.com/done",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "errorMessage": "Presentation verification failed",
+  "expiresAt": "2026-01-03T00:00:00.000Z",
+  "id": "verification-session-id",
+  "metadata": {
+    "meta": {
+      "key": "value"
+    }
+  },
+  "openId4VpVersion": "v1",
+  "presentationDuringIssuanceSession": "presentation-during-issuance-session",
+  "state": "Error",
+  "updatedAt": "2026-01-02T00:00:00.000Z",
+  "verifierId": "verifier-id"
+}

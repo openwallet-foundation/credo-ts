@@ -1,6 +1,7 @@
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsProofRequest,
+  AnonCredsRevocationRegistryDefinition,
   AnonCredsRevocationStatusList,
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
@@ -15,13 +16,13 @@ import type { DidRepository, W3cJsonCredential } from '@credo-ts/core'
 import {
   DidResolverService,
   DidsModuleConfig,
+  defaultDocumentLoader,
   InjectionSymbols,
   JsonLdModuleConfig,
   SignatureSuiteRegistry,
   W3cCredentialRecord,
   W3cCredentialRepository,
   W3cCredentialSubject,
-  W3cCredentialsModuleConfig,
   W3cJsonLdVerifiableCredential,
   w3cDate,
 } from '@credo-ts/core'
@@ -35,6 +36,7 @@ import { AnonCredsLinkSecretRepository } from '../../../../anoncreds/src/reposit
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { testLogger } from '../../../../core/tests'
 import { agentDependencies, getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
+import { trackNativeAnonCredsObjects } from '../../../tests/nativeAnonCredsObjects'
 import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
 import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
@@ -94,14 +96,20 @@ const agentContext = getAgentContext({
     ],
     [InjectionSymbols.Logger, testLogger],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
   ],
   agentConfig,
 })
 
 describe('AnonCredsRsHolderService', () => {
+  // Credo frees every native AnonCreds object it creates
+  const nativeAnonCredsObjects = trackNativeAnonCredsObjects()
+  afterEach(() => {
+    expect(nativeAnonCredsObjects.takeOpen()).toEqual([])
+  })
+  afterAll(() => nativeAnonCredsObjects.stop())
+
   const getByCredentialIdMock = vi.spyOn(anoncredsCredentialRepositoryMock, 'getByCredentialId')
   const findByIdMock = vi.spyOn(w3cCredentialRepositoryMock, 'findById')
   const findByQueryMock = vi.spyOn(w3cCredentialRepositoryMock, 'findByQuery')
@@ -286,12 +294,12 @@ describe('AnonCredsRsHolderService', () => {
     const revocationRegistries = {
       'personrevregid:uri': {
         tailsFilePath: personTailsPath,
-        definition: JSON.parse(NativeAnoncreds.instance.getJson({ objectHandle: personRevRegDef })),
+        definition: personRevRegDef as unknown as AnonCredsRevocationRegistryDefinition,
         revocationStatusLists: { '1': {} as AnonCredsRevocationStatusList },
       },
       'phonerevregid:uri': {
         tailsFilePath: phoneTailsPath,
-        definition: JSON.parse(NativeAnoncreds.instance.getJson({ objectHandle: phoneRevRegDef })),
+        definition: phoneRevRegDef as unknown as AnonCredsRevocationRegistryDefinition,
         revocationStatusLists: { '1': {} as AnonCredsRevocationStatusList },
       },
     }

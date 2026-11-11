@@ -1,3 +1,4 @@
+import type { Kms } from '@credo-ts/core'
 import type { Express } from 'express'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
@@ -14,6 +15,7 @@ const DEFAULT_REFRESH_TOKEN_EXPIRES_IN = 90 * 24 * 60 * 60 // 90 days
 const DEFAULT_DEFERRAL_INTERVAL_GRACE_PERIOD = 7 * 24 * 60 * 60 // 7 days
 const DEFAULT_STATEFUL_CREDENTIAL_OFFER_EXPIRES_IN = 3 * 60 // 3 minutes
 const DEFAULT_REQUEST_URI_EXPIRES_IN = 1 * 60 // 1 minute
+const DEFAULT_TX_CODE_MAX_ATTEMPTS = 5
 
 export interface InternalOpenId4VcIssuerModuleConfigOptions {
   /**
@@ -74,6 +76,18 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   refreshTokenExpiresInSeconds?: number
 
   /**
+   * Whether refresh tokens are generated for all issuance sessions. Refresh tokens are bound to the DPoP key of
+   * the wallet, so this can't be enabled when DPoP isn't required (`dpopRequired`, or `requireDpop` for the
+   * session). Creating an issuance session with that combination throws an error.
+   *
+   * This value can be overridden per issuance session when creating a credential offer (`generateRefreshTokens`)
+   * or in the `getDynamicIssuanceSession` callback (`generateRefreshTokens`).
+   *
+   * @default false
+   */
+  generateRefreshTokens?: boolean
+
+  /**
    * The time after which a pushed authorization request URI will expire.
    *
    * @default 60 (1 minute)
@@ -87,9 +101,17 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
    * This value can be overridden per issuance session when creating a credential offer (`authorization.requireDpop`)
    * or in the `getDynamicIssuanceSession` callback (`requireDpop`).
    *
-   * @default false
+   * @default true
    */
   dpopRequired?: boolean
+
+  /**
+   * The DPoP signing algorithms supported by all issuers. Can be overridden per issuer with
+   * `dpopSigningAlgValuesSupported` on the issuer record.
+   *
+   * If not provided, all signature algorithms supported by the agent's KMS are used.
+   */
+  dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
 
   /**
    * Whether PKCE is required for authorization requests (pushed authorization requests and authorization
@@ -104,6 +126,14 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
    * @default true
    */
   pkceRequired?: boolean
+
+  /**
+   * Invalid `tx_code` attempts before the issuance session moves to `Error`, enforced across concurrent
+   * requests only with storage that supports locking (e.g. Postgres).
+   *
+   * @default 5
+   */
+  txCodeMaxAttempts?: number
 
   /**
    * Whether wallet attestations are required for all issuance sessions. If wallet attestations are not required
@@ -393,6 +423,20 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
+   * Whether refresh tokens are generated for all issuance sessions. Refresh tokens are bound to the DPoP key of
+   * the wallet, so this can't be enabled when DPoP isn't required (`dpopRequired`, or `requireDpop` for the
+   * session). Creating an issuance session with that combination throws an error.
+   *
+   * This value can be overridden per issuance session when creating a credential offer (`generateRefreshTokens`)
+   * or in the `getDynamicIssuanceSession` callback (`generateRefreshTokens`).
+   *
+   * @default false
+   */
+  public get generateRefreshTokens(): boolean {
+    return this.options.generateRefreshTokens ?? false
+  }
+
+  /**
    * The time after which a pushed authorization request URI will expire.
    *
    * @default 60 (1 minute)
@@ -408,10 +452,20 @@ export class OpenId4VcIssuerModuleConfig {
    * This value can be overridden per issuance session when creating a credential offer (`authorization.requireDpop`)
    * or in the `getDynamicIssuanceSession` callback (`requireDpop`).
    *
-   * @default false
+   * @default true
    */
   public get dpopRequired(): boolean {
-    return this.options.dpopRequired ?? false
+    return this.options.dpopRequired ?? true
+  }
+
+  /**
+   * The DPoP signing algorithms supported by all issuers. Can be overridden per issuer with
+   * `dpopSigningAlgValuesSupported` on the issuer record.
+   *
+   * If not provided, all signature algorithms supported by the agent's KMS are used.
+   */
+  public get dpopSigningAlgValuesSupported() {
+    return this.options.dpopSigningAlgValuesSupported
   }
 
   /**
@@ -422,6 +476,15 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get pkceRequired(): boolean {
     return this.options.pkceRequired ?? true
+  }
+
+  /**
+   * The number of invalid `tx_code` values a wallet can send for an issuance session.
+   *
+   * @default 5
+   */
+  public get txCodeMaxAttempts(): number {
+    return this.options.txCodeMaxAttempts ?? DEFAULT_TX_CODE_MAX_ATTEMPTS
   }
 
   /**
