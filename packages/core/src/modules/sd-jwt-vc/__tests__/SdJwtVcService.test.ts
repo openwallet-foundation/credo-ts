@@ -108,7 +108,7 @@ const generateStatusList = async (
   length: number,
   revokedIndexes: number[],
   // `createHeaderAndPayload` always sets the `typ`, so a wrong `typ` is set on the JWS header instead
-  overrides: { typ?: string; sub?: string } = {}
+  overrides: { typ?: string; sub?: string; kid?: string } = {}
 ): Promise<string> => {
   const statusList = new StatusList(
     Array.from({ length }, (_, i) => (revokedIndexes.includes(i) ? 1 : 0)),
@@ -126,7 +126,7 @@ const generateStatusList = async (
     {
       alg: 'EdDSA',
       typ: 'statuslist+jwt',
-      kid: `#${keyId}`,
+      kid: overrides.kid ?? `#${keyId}`,
     }
   )
 
@@ -2054,6 +2054,32 @@ describe('SdJwtVcService', () => {
       expect(verificationResult.isValid).toBe(false)
       if (!verificationResult.isValid) {
         expect(verificationResult.error?.message).toContain('Status List JWT verification failed')
+      }
+    })
+
+    test('did: status list with the trusted issuer did as iss but an absolute kid of a different did is rejected', async () => {
+      const otherKey = PublicJwk.fromPublicJwk(
+        (await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      )
+      const otherDidUrl = (new DidKey(otherKey).didDocument.verificationMethod ?? [])[0].id
+
+      mockStatusList(await generateStatusList(agent.context, otherKey, issuerDidUrl, 24, [], { kid: otherDidUrl }))
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleSdJwtVcWithStatus,
+        presentationFrame: {},
+      })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
+      })
+
+      expect(verificationResult.isValid).toBe(false)
+      if (!verificationResult.isValid) {
+        expect(verificationResult.error?.message).toContain(
+          `kid in header is an absolute DID URL, but the did (${otherDidUrl.split('#')[0]}) does not match with the 'iss' did (${issuerDid()})`
+        )
       }
     })
 

@@ -229,37 +229,40 @@ export function parseIssuerFromCredential(
   }
 
   if (iss?.startsWith('did:')) {
-    // If `did` is used, we require a relative KID to be present to identify
-    // the key used by issuer to sign the sd-jwt-vc
-    if (!header.kid) {
-      throw new SdJwtVcError('Credential does not contain a kid in the header')
-    }
-
-    const issuerKid = header.kid as string
-
-    let didUrl: string
-    if (issuerKid.startsWith('#')) {
-      didUrl = `${iss}${issuerKid}`
-    } else if (issuerKid.startsWith('did:')) {
-      const didFromKid = parseDid(issuerKid)
-      if (didFromKid.did !== iss) {
-        throw new SdJwtVcError(
-          `kid in header is an absolute DID URL, but the did (${didFromKid.did}) does not match with the 'iss' did (${iss})`
-        )
-      }
-
-      didUrl = issuerKid
-    } else {
-      throw new SdJwtVcError(
-        'Invalid issuer kid for did. Only absolute or relative (starting with #) did urls are supported.'
-      )
-    }
-
     return {
       method: 'did',
-      didUrl,
+      didUrl: getIssuerDidUrl(iss, header.kid),
     }
   }
 
   throw new SdJwtVcError('Unsupported signing method for SD-JWT VC. Only did and x5c are supported at the moment.')
+}
+
+/**
+ * Returns the did url of the issuer key from the `iss` did and the `kid` header. An absolute `kid` must belong to the `iss` did.
+ */
+export function getIssuerDidUrl(iss: string, kid: unknown): string {
+  if (!kid) {
+    throw new SdJwtVcError('JWT does not contain a kid in the header')
+  }
+
+  const issuerKid = kid as string
+  if (issuerKid.startsWith('#')) {
+    return `${iss}${issuerKid}`
+  }
+
+  if (issuerKid.startsWith('did:')) {
+    const didFromKid = parseDid(issuerKid)
+    if (didFromKid.did !== iss) {
+      throw new SdJwtVcError(
+        `kid in header is an absolute DID URL, but the did (${didFromKid.did}) does not match with the 'iss' did (${iss})`
+      )
+    }
+
+    return issuerKid
+  }
+
+  throw new SdJwtVcError(
+    'Invalid issuer kid for did. Only absolute or relative (starting with #) did urls are supported.'
+  )
 }
