@@ -2,45 +2,6 @@ import { agentDependencies } from '../../../tests/helpers'
 import { AgentConfig } from '../AgentConfig'
 
 describe('AgentConfig', () => {
-  describe('extend()', () => {
-    it('extends the existing AgentConfig', () => {
-      const agentConfig = new AgentConfig(
-        {
-          allowInsecureHttpUrls: true,
-          autoUpdateStorageOnStartup: true,
-        },
-        agentDependencies
-      )
-
-      const newAgentConfig = agentConfig.extend({})
-
-      expect(newAgentConfig).toMatchObject({
-        allowInsecureHttpUrls: true,
-        autoUpdateStorageOnStartup: true,
-      })
-    })
-
-    it('takes the init config from the extend method', () => {
-      const agentConfig = new AgentConfig(
-        {
-          allowInsecureHttpUrls: false,
-          autoUpdateStorageOnStartup: false,
-        },
-        agentDependencies
-      )
-
-      const newAgentConfig = agentConfig.extend({
-        allowInsecureHttpUrls: false,
-        autoUpdateStorageOnStartup: true,
-      })
-
-      expect(newAgentConfig).toMatchObject({
-        allowInsecureHttpUrls: false,
-        autoUpdateStorageOnStartup: true,
-      })
-    })
-  })
-
   describe('fetch', () => {
     const fetch = vi.fn(async () => new Response(new Blob([new Uint8Array(1000)])))
     const dependencies = { ...agentDependencies, fetch: fetch as unknown as typeof globalThis.fetch }
@@ -61,15 +22,6 @@ describe('AgentConfig', () => {
       const agentConfig = new AgentConfig({ fetchLimits: { maxResponseBytes: 100 } }, dependencies)
 
       const response = await agentConfig.fetch('https://example.com', { maxResponseBytes: 1000 })
-      expect((await response.arrayBuffer()).byteLength).toBe(1000)
-    })
-
-    it('does not apply the fetch limits of the original config after extending', async () => {
-      const agentConfig = new AgentConfig({ fetchLimits: { maxResponseBytes: 100 } }, dependencies)
-
-      const response = await agentConfig
-        .extend({ fetchLimits: { maxResponseBytes: 1000 } })
-        .agentDependencies.fetch('https://example.com')
       expect((await response.arrayBuffer()).byteLength).toBe(1000)
     })
   })

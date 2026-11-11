@@ -41,6 +41,7 @@ import {
   getAgentContext,
   getAskarStoreConfig,
   testLogger,
+  trustDids,
 } from '../../core/tests'
 import { getFormatDataAttachment } from '../../didcomm/src/modules/credentials/util/formatData'
 import {
@@ -124,6 +125,7 @@ describe('data integrity format service (w3c)', () => {
 
   beforeAll(async () => {
     issuerKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598g')
+    agentContext.config.setTrustedIssuersForVerification(trustDids(issuerKdv.did))
     holderKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598f')
   })
 

@@ -1,7 +1,7 @@
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
 import { transformPrivateKeyToPrivateJwk } from '../../../../../../askar/src'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
+import { agentDependencies, getAgentConfig, getAgentContext, trustDids } from '../../../../../tests/helpers'
 import type { AgentContext } from '../../../../agent/context/AgentContext'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
@@ -297,6 +297,7 @@ describe('W3cJsonLdCredentialsService', () => {
             `did:example:issuer-inferred-${proofType}`,
             `did:example:issuer-inferred-${proofType}#key-1`
           )
+          agentContext.config.setTrustedIssuersForVerification(trustDids(issuer.did))
           const spy = vi.spyOn(DidsApi.prototype, 'resolveVerificationMethodFromCreatedDidRecord')
 
           const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
@@ -366,6 +367,7 @@ describe('W3cJsonLdCredentialsService', () => {
 
       issuerDidKey = new DidKey(issuerKey)
       verificationMethod = `${issuerDidKey.did}#${issuerDidKey.publicJwk.fingerprint}`
+      agentContext.config.setTrustedIssuersForVerification(trustDids(issuerDidKey.did))
     })
 
     describe('signCredential', () => {
@@ -586,7 +588,12 @@ describe('W3cJsonLdCredentialsService', () => {
           Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_BAD_SIGNED,
           W3cJsonLdVerifiableCredential
         )
+        // Trust the issuer, so the credential fails on its signature
+        agentContext.config.setTrustedIssuersForVerification(
+          trustDids(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_BAD_SIGNED.issuer)
+        )
         const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+        agentContext.config.setTrustedIssuersForVerification(trustDids(issuerDidKey.did))
 
         expect(result).toEqual({
           isValid: false,
@@ -669,7 +676,7 @@ describe('W3cJsonLdCredentialsService', () => {
 
     describe('verifyCredential with getTrustedIssuersForVerification', () => {
       afterEach(() => {
-        agentContext.config.setTrustedIssuersForVerification(undefined)
+        agentContext.config.setTrustedIssuersForVerification(trustDids(issuerDidKey.did))
       })
 
       it('should accept a credential whose issuer did is trusted', async () => {
@@ -879,7 +886,7 @@ describe('W3cJsonLdCredentialsService', () => {
           challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
         })
 
-        agentContext.config.setTrustedIssuersForVerification(undefined)
+        agentContext.config.setTrustedIssuersForVerification(trustDids(issuerDidKey.did))
 
         expect(result.isValid).toBe(false)
         expect(result.error?.message).toContain('is not trusted')
@@ -1089,6 +1096,7 @@ describe('W3cJsonLdCredentialsService', () => {
         'did:example:issuer-2020-other-controller',
         'did:example:issuer-2020-other-controller#key-1'
       )
+      agentContext.config.setTrustedIssuersForVerification(trustDids(issuer.did))
       const controllerDid = 'did:example:controller-2020'
 
       const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
@@ -1124,6 +1132,7 @@ describe('W3cJsonLdCredentialsService', () => {
         'did:example:issuer-2020-roundtrip',
         'did:example:issuer-2020-roundtrip#key-1'
       )
+      agentContext.config.setTrustedIssuersForVerification(trustDids(issuer.did))
 
       const credential = JsonTransformer.fromJSON(
         {
@@ -1165,6 +1174,7 @@ describe('W3cJsonLdCredentialsService', () => {
         'did:example:issuer-2020-presentation',
         'did:example:issuer-2020-presentation#key-1'
       )
+      agentContext.config.setTrustedIssuersForVerification(trustDids(issuer.did))
 
       const credential = JsonTransformer.fromJSON(
         {
@@ -1219,6 +1229,7 @@ describe('W3cJsonLdCredentialsService', () => {
         'did:example:issuer-2018-for-2020-vp',
         'did:example:issuer-2018-for-2020-vp#key-1'
       )
+      agentContext.config.setTrustedIssuersForVerification(trustDids(issuer2018.did))
       const holder2020 = await create2020Identity(
         agentContext,
         'did:example:holder-2020-for-2018-vc',
@@ -1279,6 +1290,7 @@ describe('W3cJsonLdCredentialsService', () => {
         'did:example:issuer-2020-for-2018-vp',
         'did:example:issuer-2020-for-2018-vp#key-1'
       )
+      agentContext.config.setTrustedIssuersForVerification(trustDids(issuer2020.did))
       const holder2018 = await create2018Identity(
         agentContext,
         'did:example:holder-2018-for-2020-vc',
@@ -1343,6 +1355,7 @@ describe('W3cJsonLdCredentialsService', () => {
         'did:example:issuer-2020-mixed',
         'did:example:issuer-2020-mixed#key-1'
       )
+      agentContext.config.setTrustedIssuersForVerification(trustDids(issuer2018.did, issuer2020.did))
       const holder = await create2020Identity(
         agentContext,
         'did:example:holder-mixed',

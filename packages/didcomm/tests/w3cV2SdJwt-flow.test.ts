@@ -26,6 +26,7 @@ import {
   getAgentConfig,
   getAgentContext,
   testLogger,
+  trustDids,
 } from '../../core/tests'
 import {
   DidCommAttachment,
@@ -76,6 +77,7 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
   beforeAll(async () => {
     issuerKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598g')
     holderKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598f')
+    agentContext.config.setTrustedIssuersForVerification(trustDids(issuerKdv.did))
   })
 
   test('issuance flow without binding (bearer credential)', async () => {

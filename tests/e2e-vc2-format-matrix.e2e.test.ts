@@ -17,7 +17,7 @@ import { anoncredsBundle } from '@credo-ts/drizzle-storage/anoncreds'
 import { coreBundle } from '@credo-ts/drizzle-storage/core'
 import { didcommBundle } from '@credo-ts/drizzle-storage/didcomm'
 
-import { createDidKidVerificationMethod, getAgentOptions } from '../packages/core/tests/helpers'
+import { createDidKidVerificationMethod, getAgentOptions, trustDids } from '../packages/core/tests/helpers'
 import {
   createDrizzlePostgresTestDatabase,
   type DrizzlePostgresTestDatabase,
@@ -268,6 +268,10 @@ describe('W3C VC 2.0 format e2e matrix (transport-agnostic)', () => {
 
     issuerDidRef = await createDidKidVerificationMethod(issuerAgent.context)
     holderDidRef = await createDidKidVerificationMethod(holderAgent.context)
+
+    // The holder verifies the credential, and the issuer verifies it again inside the presentation
+    issuerAgent.config.setTrustedIssuersForVerification(trustDids(issuerDidRef.did))
+    holderAgent.config.setTrustedIssuersForVerification(trustDids(issuerDidRef.did))
   })
 
   afterEach(async () => {

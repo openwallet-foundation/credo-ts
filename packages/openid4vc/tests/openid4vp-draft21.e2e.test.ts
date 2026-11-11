@@ -12,6 +12,7 @@ import {
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
+import { trustDids } from '../../core/tests'
 import { TenantsModule } from '../../tenants/src'
 import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
 import type { AgentType } from './utils'
@@ -69,6 +70,8 @@ describe('OpenID4VP Draft 21', () => {
       '96213c3d7fc8d4d6754c7a0fd969598f',
       global.fetch
     )) as unknown as typeof verifier
+    // The verifier also issues the credentials used in the tests
+    verifier.agent.config.setTrustedIssuersForVerification(trustDids(verifier.did))
 
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })

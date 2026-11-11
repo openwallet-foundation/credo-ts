@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
+import { trustDids } from '../../core/tests'
 import { TenantsModule } from '../../tenants/src'
 import type {
   OpenId4VcIssuerModuleConfigOptions,
@@ -313,6 +314,7 @@ describe('OpenId4Vc (Wallet Initiated Issuance)', () => {
 
     const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
     const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+    holderTenant.config.setTrustedIssuersForVerification(trustDids(issuer1.did))
 
     const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
       issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',

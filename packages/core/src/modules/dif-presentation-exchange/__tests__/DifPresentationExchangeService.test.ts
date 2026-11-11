@@ -2,7 +2,7 @@ import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
-import { agentDependencies, getAgentContext } from '../../../../tests'
+import { agentDependencies, getAgentContext, trustDids } from '../../../../tests'
 import type { AgentContext } from '../../../agent'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
@@ -1200,6 +1200,7 @@ describe('DifPresentationExchangeService', () => {
       const issuerKey = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
       const issuerDid = (await agent.dids.create({ method: 'key', options: { keyId: issuerKey.keyId } })).didState
         .did as string
+      agent.config.setTrustedIssuersForVerification(trustDids(issuerDid))
       const credential = await agent.w3cCredentials.signCredential({
         format: ClaimFormat.LdpVc,
         credential: new W3cCredential({

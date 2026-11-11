@@ -336,11 +336,13 @@ describe('OpenId4Vc', () => {
       const certificateTwo = await createCertificate()
 
       // Only the issuer of doc type 'two' is trusted for doc type 'two'
-      verifier.agent.x509.config.setTrustedCertificatesForVerification((_agentContext, { verification }) => {
-        if (verification.type !== 'credential' || !(verification.credential instanceof Mdoc)) return []
-        return verification.credential.docType === 'one'
-          ? [certificateOne.toString('pem')]
-          : [certificateTwo.toString('pem')]
+      verifier.agent.config.setTrustedIssuersForVerification(async (_agentContext, { signer, verification }) => {
+        if (signer.method !== 'x509') return undefined
+        if (verification.type !== 'openId4VpCredential' || !(verification.credential instanceof Mdoc)) {
+          return { trustedIssuers: [] }
+        }
+        const certificate = verification.credential.docType === 'one' ? certificateOne : certificateTwo
+        return { trustedIssuers: [{ method: 'x509', issuance: [certificate.toString('pem')] }] }
       })
 
       const mdocOne = await verifier.agent.mdoc.sign({

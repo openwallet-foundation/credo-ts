@@ -43,6 +43,7 @@ import {
 import type { Jwk } from '@openid4vc/oauth2'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
+import { trustDids } from '../../../../core/tests'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcModule } from '../../OpenId4VcModule'
 import type {
@@ -242,6 +243,7 @@ describe('OpenId4VcIssuer', () => {
     })
 
     issuerDid = issuerDidCreateResult.didState.did as string
+    holder.context.config.setTrustedIssuersForVerification(trustDids(issuerDid))
 
     const issuerDidKey = DidKey.fromDid(issuerDid)
     const issuerKid = `${issuerDid}#${issuerDidKey.publicJwk.fingerprint}`
@@ -913,6 +915,7 @@ describe('OpenId4VcIssuer', () => {
           getVerificationMethod,
           [...purposes]
         )
+        holder.context.config.setTrustedIssuersForVerification(trustDids(did))
 
         const { credentialResponse } = await createLdpVcCredentialResponse(did, kid)
 
