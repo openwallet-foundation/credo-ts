@@ -26,6 +26,7 @@ const recordResolverMock = {
 
 const webResolverMock = {
   allowsCaching: true,
+  cacheScope: 'global',
   allowsLocalDidRecord: false,
   supportedMethods: ['web'],
   resolve: vi.fn(),
@@ -246,6 +247,128 @@ describe('DidResolverService', () => {
     const result = await didResolverService.resolve(agentContext, 'did:key:invalidated')
     expect(result.didResolutionMetadata.servedFromCache).toBe(false)
     expect(didResolverMock.resolve).toHaveBeenCalledTimes(2)
+  })
+
+  describe('resolver-owned cache scope', () => {
+    const cases: {
+      name: string
+      cacheScope?: DidResolver['cacheScope']
+      publicDidMethods?: string[]
+      expectedScope: 'global' | 'context'
+    }[] = [
+      { name: 'global declaration', cacheScope: 'global', expectedScope: 'global' },
+      { name: 'context declaration', cacheScope: 'context', expectedScope: 'context' },
+      { name: 'undeclared resolver', expectedScope: 'context' },
+      { name: 'empty override', cacheScope: 'global', publicDidMethods: [], expectedScope: 'context' },
+      {
+        name: 'unlisted method override',
+        cacheScope: 'global',
+        publicDidMethods: ['another'],
+        expectedScope: 'context',
+      },
+      {
+        name: 'listed method override',
+        cacheScope: 'context',
+        publicDidMethods: ['external'],
+        expectedScope: 'global',
+      },
+    ]
+
+    it.each(cases)(
+      'uses $name for reads, writes, and cross-context invalidation',
+      async ({ cacheScope, publicDidMethods, expectedScope }) => {
+        const scopedCache = new InMemoryLruCache({ limit: 10 })
+        const contexts = ['tenant-a', 'tenant-b'].map((contextCorrelationId) =>
+          getAgentContext({
+            contextCorrelationId,
+            registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache: scopedCache })]],
+          })
+        )
+        const did = 'did:external:cache-scope'
+        const resolve = vi.fn().mockResolvedValue({
+          didDocument: createDidDocument(did),
+          didDocumentMetadata: { versionId: '1' },
+          didResolutionMetadata: {},
+        })
+        const resolver: DidResolver = {
+          supportedMethods: ['external'],
+          allowsCaching: true,
+          cacheScope,
+          resolve,
+        }
+        const service = new DidResolverService(
+          agentConfig.logger,
+          new DidsModuleConfig({ resolvers: [resolver], publicDidMethods }),
+          didRepositoryMock
+        )
+
+        await service.resolve(contexts[0], did)
+        expect(await scopedCache.get(contexts[0], `did:resolver:${did}`, { scope: expectedScope })).not.toBeNull()
+        expect(
+          await scopedCache.get(contexts[0], `did:resolver:${did}`, {
+            scope: expectedScope === 'global' ? 'context' : 'global',
+          })
+        ).toBeNull()
+
+        const otherResult = await service.resolve(contexts[1], did)
+        expect(otherResult.didResolutionMetadata.servedFromCache).toBe(expectedScope === 'global')
+        expect(resolve).toHaveBeenCalledTimes(expectedScope === 'global' ? 1 : 2)
+
+        await service.invalidateCacheForDid(contexts[1], did)
+        expect(await scopedCache.get(contexts[1], `did:resolver:${did}`, { scope: expectedScope })).toBeNull()
+
+        const originalResult = await service.resolve(contexts[0], did)
+        expect(originalResult.didResolutionMetadata.servedFromCache).toBe(expectedScope === 'context')
+        await service.resolve(contexts[1], did)
+        expect(resolve).toHaveBeenCalledTimes(expectedScope === 'global' ? 2 : 3)
+      }
+    )
+
+    it('preserves TTL and cache controls for an external global resolver', async () => {
+      vi.useFakeTimers()
+      try {
+        const did = 'did:external:expiry'
+        const scopedCache = new InMemoryLruCache({ limit: 10 })
+        const context = getAgentContext({
+          registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache: scopedCache })]],
+        })
+        const resolve = vi.fn().mockResolvedValue({
+          didDocument: createDidDocument(did),
+          didDocumentMetadata: {},
+          didResolutionMetadata: {},
+        })
+        const resolver: DidResolver = {
+          supportedMethods: ['external'],
+          allowsCaching: true,
+          cacheScope: 'global',
+          resolve,
+        }
+        const service = new DidResolverService(
+          agentConfig.logger,
+          new DidsModuleConfig({ resolvers: [resolver] }),
+          didRepositoryMock
+        )
+
+        await service.resolve(context, did, { cacheDurationInSeconds: 2 })
+        vi.advanceTimersByTime(2000)
+        expect((await service.resolve(context, did)).didResolutionMetadata.servedFromCache).toBe(true)
+        vi.advanceTimersByTime(1)
+        expect(
+          (await service.resolve(context, did, { persistInCache: false })).didResolutionMetadata.servedFromCache
+        ).toBe(false)
+        expect(await scopedCache.get(context, `did:resolver:${did}`, { scope: 'global' })).toBeNull()
+
+        await service.resolve(context, did)
+        expect(
+          (await service.resolve(context, did, { useCache: false, persistInCache: false })).didResolutionMetadata
+            .servedFromCache
+        ).toBe(false)
+        expect((await service.resolve(context, did)).didResolutionMetadata.servedFromCache).toBe(true)
+        expect(resolve).toHaveBeenCalledTimes(4)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
   })
 
   it('should return local did document from did record when enabled on resolver and present in storage', async () => {

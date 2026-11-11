@@ -42,12 +42,10 @@ export interface DidsModuleConfigOptions {
   resolvers?: DidResolver[]
 
   /**
-   * Did methods whose documents live in public, context-independent sources: resolving them
-   * yields the same result in any agent context, so their documents can be cached in the global
-   * scope shared across all agent contexts (when the resolver allows caching). Documents of
-   * other did methods are cached per agent context.
-   *
-   * @default ['web', 'indy', 'cheqd', 'hedera', 'webvh']
+   * Overrides resolver cache scopes: listed methods use global scope, all others use context
+   * scope. An empty list forces context scope for every method.
+   * When omitted, each resolver's cacheScope applies, falling back to the legacy public-method
+   * defaults and then context scope.
    */
   publicDidMethods?: string[]
 }
@@ -122,6 +120,23 @@ export class DidsModuleConfig {
 
   /** See {@link DidsModuleConfigOptions.publicDidMethods} */
   public get publicDidMethods(): string[] {
-    return this.options.publicDidMethods ?? DEFAULT_PUBLIC_DID_METHODS
+    return (
+      this.options.publicDidMethods ??
+      [
+        ...new Set([...DEFAULT_PUBLIC_DID_METHODS, ...this.resolvers.flatMap((resolver) => resolver.supportedMethods)]),
+      ].filter((method) => this.getCacheScope(method) === 'global')
+    )
+  }
+
+  /** Uses the first matching resolver, consistent with DID resolution and invalidation. */
+  public getCacheScope(method: string): 'global' | 'context' {
+    if (this.options.publicDidMethods !== undefined) {
+      return this.options.publicDidMethods.includes(method) ? 'global' : 'context'
+    }
+
+    return (
+      this.resolvers.find((resolver) => resolver.supportedMethods.includes(method))?.cacheScope ??
+      (DEFAULT_PUBLIC_DID_METHODS.includes(method) ? 'global' : 'context')
+    )
   }
 }

@@ -6,6 +6,14 @@ export interface DidResolver {
   readonly allowsCaching: boolean
 
   /**
+   * Default cache scope; use global only for context-independent resolution.
+   * Explicit DidsModuleConfig.publicDidMethods overrides this value.
+   *
+   * @default 'context'
+   */
+  readonly cacheScope?: 'global' | 'context'
+
+  /**
    * Whether the resolver allows using a local created did document from
    * a did record to resolve the did document.
    *
