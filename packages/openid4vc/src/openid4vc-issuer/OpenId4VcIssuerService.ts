@@ -82,7 +82,11 @@ import {
   supportedResponseEncryptionKeyAgreementAlgorithms,
 } from '../shared/utils'
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
-import { type OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
+import {
+  type OpenId4VcIssuanceSessionNotificationReceivedEvent,
+  type OpenId4VcIssuanceSessionStateChangedEvent,
+  OpenId4VcIssuerEvents,
+} from './OpenId4VcIssuerEvents'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import type {
   OpenId4VciAuthorizationCodeFlowConfig,
@@ -99,12 +103,14 @@ import type {
   OpenId4VciGetDynamicIssuanceSessionCredentialOptions,
   OpenId4VciGetDynamicIssuanceSessionOptions,
   OpenId4VciPreAuthorizedCodeFlowConfig,
+  OpenId4VciReceiveNotificationOptions,
   OpenId4VciSignCredentials,
   OpenId4VciSignW3cCredentials,
   OpenId4VcUpdateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import {
   type OpenId4VcIssuanceSessionChainedIdentityDpop,
+  type OpenId4VcIssuanceSessionNotification,
   OpenId4VcIssuanceSessionRecord,
   OpenId4VcIssuanceSessionRepository,
   OpenId4VcIssuerRecord,
@@ -787,6 +793,7 @@ export class OpenId4VcIssuerService {
         issuanceSession.openId4VciVersion ??
         (parsedCredentialRequest.credentialConfigurationId ? 'v1' : 'v1.draft11-14')
 
+      const notificationId = this.openId4VcIssuerConfig.enableNotificationEndpoint ? utils.uuid() : undefined
       const immediateResult = await vcIssuer.createCredentialResponse({
         credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
         credentials: credentialRequest.proofs
@@ -798,11 +805,13 @@ export class OpenId4VcIssuerService {
         cNonceExpiresInSeconds,
         credentialRequest: parsedCredentialRequest,
         credentialResponseEncryption: parsedCredentialRequest.credentialResponseEncryption,
+        notificationId,
       })
       credentialResponse = immediateResult.credentialResponse
       credentialResponseJwt = immediateResult.credentialResponseJwt
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)
+      if (notificationId) issuanceSession.notifications.push({ notificationId, credentialConfigurationId })
       const newState =
         issuanceSession.issuedCredentials.length >=
         issuanceSession.credentialOfferPayload.credential_configuration_ids.length
@@ -925,14 +934,17 @@ export class OpenId4VcIssuerService {
         expectedLength: transaction.numberOfCredentials,
       })
 
+      const notificationId = this.openId4VcIssuerConfig.enableNotificationEndpoint ? utils.uuid() : undefined
       const immediateResult = await vcIssuer.createDeferredCredentialResponse({
         credentials: credentials.credentials.map((c) => ({ credential: c })),
         credentialResponseEncryption: deferredCredentialRequest.credential_response_encryption,
+        notificationId,
       })
       deferredCredentialResponse = immediateResult.deferredCredentialResponse
       deferredCredentialResponseJwt = immediateResult.deferredCredentialResponseJwt
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)
+      if (notificationId) issuanceSession.notifications.push({ notificationId, credentialConfigurationId })
 
       // Remove the transaction from the session, as it is now completed
       issuanceSession.transactions = issuanceSession.transactions?.filter(
@@ -954,6 +966,67 @@ export class OpenId4VcIssuerService {
       deferredCredentialResponseJwt,
       issuanceSession,
     }
+  }
+
+  /**
+   * Store a notification the wallet sent for a credential response of the issuance session,
+   * and emit an {@link OpenId4VcIssuerEvents.IssuanceSessionNotificationReceived} event.
+   * Only the first notification per notification id is stored, as the event is the outcome of the issuance. According to OpenID4VCI, the notification from the Wallet is idempotent. When multiple identical calls from the Wallet for the same notification_id are received it should return a successful response.
+   *
+   * @throws Oauth2ServerErrorResponseError - with `invalid_notification_id` if the issuance session
+   *  did not return the notification id, or `invalid_notification_request` if a different event was already received
+   */
+  public async receiveNotification(
+    agentContext: AgentContext,
+    options: OpenId4VciReceiveNotificationOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
+  ) {
+    const findNotification = (issuanceSession: OpenId4VcIssuanceSessionRecord) =>
+      issuanceSession.notifications.find((notification) => notification.notificationId === options.notificationId)
+
+    if (!findNotification(options.issuanceSession)) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidNotificationId,
+      })
+    }
+
+    // Locked, so concurrent retries from the wallet don't both store the notification and emit the event
+    let isFirstNotification = false
+    const issuanceSession = await this.openId4VcIssuanceSessionRepository.updateByIdWithLock(
+      agentContext,
+      options.issuanceSession.id,
+      async (record) => {
+        const notification = findNotification(record)
+        if (notification && !notification.event) {
+          notification.event = options.event
+          notification.eventDescription = options.eventDescription
+          isFirstNotification = true
+        }
+        return record
+      }
+    )
+    const notification = findNotification(issuanceSession) as OpenId4VcIssuanceSessionNotification
+
+    if (!isFirstNotification) {
+      // Thrown after the lock, as storage services wrap errors thrown in the update callback
+      if (notification.event !== options.event) {
+        throw new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidNotificationRequest,
+          error_description: `Event '${notification.event}' was already received for notification id '${options.notificationId}'`,
+        })
+      }
+      return { issuanceSession, notification }
+    }
+
+    const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
+    eventEmitter.emit<OpenId4VcIssuanceSessionNotificationReceivedEvent>(agentContext, {
+      type: OpenId4VcIssuerEvents.IssuanceSessionNotificationReceived,
+      payload: {
+        issuanceSession: issuanceSession.clone(),
+        notification: { ...notification },
+      },
+    })
+
+    return { issuanceSession, notification }
   }
 
   private async verifyCredentialRequestProofs(
@@ -1511,6 +1584,9 @@ export class OpenId4VcIssuerService {
       credential_issuer: issuerUrl,
       credential_endpoint: joinUriParts(issuerUrl, [config.credentialEndpointPath]),
       deferred_credential_endpoint: joinUriParts(issuerUrl, [config.deferredCredentialEndpointPath]),
+      notification_endpoint: config.enableNotificationEndpoint
+        ? joinUriParts(issuerUrl, [config.notificationEndpointPath])
+        : undefined,
       credential_configurations_supported: issuerRecord.credentialConfigurationsSupported ?? {},
       authorization_servers: authorizationServers,
       display: issuerRecord.display,

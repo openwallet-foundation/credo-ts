@@ -2,6 +2,7 @@ import type {
   OpenId4VcIssuanceSessionAuthorization,
   OpenId4VcIssuanceSessionChainedIdentity,
   OpenId4VcIssuanceSessionDpop,
+  OpenId4VcIssuanceSessionNotification,
   OpenId4VcIssuanceSessionPresentation,
   OpenId4VcIssuanceSessionRecord,
   OpenId4VcIssuanceSessionRecordTransaction,
@@ -48,6 +49,8 @@ export const openId4VcIssuanceSession = sqliteTable(
     issuanceMetadata: text('issuance_metadata', { mode: 'json' }).$type<Record<string, unknown>>(),
 
     transactions: text({ mode: 'json' }).$type<OpenId4VcIssuanceSessionRecordTransaction[]>(),
+    notifications: text({ mode: 'json' }).$type<OpenId4VcIssuanceSessionNotification[]>(),
+    notificationIds: text('notification_ids', { mode: 'json' }).$type<string[]>(),
 
     chainedIdentity: text({ mode: 'json' }).$type<
       Omit<OpenId4VcIssuanceSessionChainedIdentity, 'requestUriExpiresAt'> & { requestUriExpiresAt?: string }

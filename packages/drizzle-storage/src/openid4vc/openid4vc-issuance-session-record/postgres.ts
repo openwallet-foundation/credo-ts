@@ -2,6 +2,7 @@ import type {
   OpenId4VcIssuanceSessionAuthorization,
   OpenId4VcIssuanceSessionChainedIdentity,
   OpenId4VcIssuanceSessionDpop,
+  OpenId4VcIssuanceSessionNotification,
   OpenId4VcIssuanceSessionPkce,
   OpenId4VcIssuanceSessionPresentation,
   OpenId4VcIssuanceSessionRecordTransaction,
@@ -69,6 +70,8 @@ export const openId4VcIssuanceSession = pgTable(
     issuanceMetadata: jsonb('issuance_metadata').$type<Record<string, unknown>>(),
 
     transactions: jsonb().$type<OpenId4VcIssuanceSessionRecordTransaction[]>(),
+    notifications: jsonb().$type<OpenId4VcIssuanceSessionNotification[]>(),
+    notificationIds: text('notification_ids').array(),
 
     chainedIdentity: jsonb().$type<
       Omit<OpenId4VcIssuanceSessionChainedIdentity, 'requestUriExpiresAt'> & { requestUriExpiresAt?: string }

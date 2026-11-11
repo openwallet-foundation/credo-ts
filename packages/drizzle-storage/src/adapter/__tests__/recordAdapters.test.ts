@@ -618,6 +618,14 @@ const testCases: AdapterTestCase[] = [
             },
           },
         ],
+        notifications: [
+          {
+            notificationId: 'notification-id',
+            credentialConfigurationId: 'credential',
+            event: 'credential_accepted',
+            eventDescription: 'description',
+          },
+        ],
         credentialOfferUri: 'https://issuer.example.com/offer',
         credentialOfferId: 'offer-id',
         credentialOfferPayload: {

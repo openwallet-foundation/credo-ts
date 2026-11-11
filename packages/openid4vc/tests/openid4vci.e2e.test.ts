@@ -29,9 +29,11 @@ import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessio
 import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciIssuerInfo, OpenId4VciSignMdocCredentials } from '../src'
 import {
   OpenId4VcIssuanceSessionState,
+  OpenId4VcIssuerEvents,
   OpenId4VcIssuerModuleConfig,
   OpenId4VciCredentialFormatProfile,
   OpenId4VcModule,
+  Openid4vciSendNotificationError,
 } from '../src'
 import type { OpenId4VciCredentialBindingResolver, OpenId4VciDpopRequestOptions } from '../src/openid4vc-holder'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
@@ -527,6 +529,66 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(firstSdJwtVcTenant1.kmsKeyId).toBeDefined()
 
     expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
+
+    const notificationId = credentialResponse.credentials[0].notificationId
+    expect(notificationId).toEqual(expect.any(String))
+    if (!notificationId) throw new Error('Expected notification id')
+
+    const notificationListener = vi.fn()
+    issuer.agent.events.on(OpenId4VcIssuerEvents.IssuanceSessionNotificationReceived, notificationListener)
+
+    // A retry succeeds, a different event is rejected, and only the first notification is stored and emitted
+    const sendNotification = (notificationEvent: 'credential_accepted' | 'credential_failure') =>
+      holderTenant.modules.openid4vc.holder.sendNotification({
+        accessToken: tokenResponseTenant.accessToken,
+        dpop: credentialResponse.dpop,
+        metadata: resolvedCredentialOffer.metadata,
+        notificationId,
+        notificationEvent,
+      })
+    await sendNotification('credential_accepted')
+    await sendNotification('credential_accepted')
+    await expect(sendNotification('credential_failure')).rejects.toMatchObject({
+      response: { notificationErrorResponseResult: { data: { error: 'invalid_notification_request' } } },
+    })
+    issuer.agent.events.off(OpenId4VcIssuerEvents.IssuanceSessionNotificationReceived, notificationListener)
+    expect(notificationListener).toHaveBeenCalledTimes(1)
+
+    const notifiedIssuanceSession = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
+      issuanceSession.id
+    )
+    expect(notifiedIssuanceSession.notifications).toEqual([
+      { notificationId, credentialConfigurationId: 'universityDegree', event: 'credential_accepted' },
+    ])
+
+    await expect(
+      holderTenant.modules.openid4vc.holder.sendNotification({
+        accessToken: tokenResponseTenant.accessToken,
+        dpop: credentialResponse.dpop,
+        metadata: resolvedCredentialOffer.metadata,
+        notificationId: 'unknown-notification-id',
+        notificationEvent: 'credential_accepted',
+      })
+    ).rejects.toMatchObject({
+      response: { notificationErrorResponseResult: { data: { error: 'invalid_notification_id' } } },
+    })
+
+    // Once the issuer deletes the issuance session, its notification ids are unknown
+    await issuerTenant.modules.openid4vc.issuer.deleteIssuanceSessionById(issuanceSession.id)
+    const deletedSessionError = await holderTenant.modules.openid4vc.holder
+      .sendNotification({
+        accessToken: tokenResponseTenant.accessToken,
+        dpop: credentialResponse.dpop,
+        metadata: resolvedCredentialOffer.metadata,
+        notificationId,
+        notificationEvent: 'credential_deleted',
+      })
+      .catch((error) => error)
+    expect(deletedSessionError).toBeInstanceOf(Openid4vciSendNotificationError)
+    expect(deletedSessionError.response.response.status).toEqual(400)
+    expect(deletedSessionError.response.notificationErrorResponseResult.data).toEqual({
+      error: 'invalid_notification_id',
+    })
 
     clearNock()
   })

@@ -15,6 +15,9 @@ const issuanceSessionJson = {
   issuerId: 'issuer-id',
   state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
   issuedCredentials: [],
+  notifications: [
+    { notificationId: 'notification-id', credentialConfigurationId: 'credential', event: 'credential_accepted' },
+  ],
   credentialOfferId: 'offer-id',
   credentialOfferPayload: {
     credential_issuer: 'https://issuer.example.com',

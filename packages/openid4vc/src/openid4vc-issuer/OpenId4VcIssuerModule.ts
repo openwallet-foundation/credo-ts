@@ -26,6 +26,7 @@ import {
   configureIssuerMetadataEndpoint,
   configureJwksEndpoint,
   configureNonceEndpoint,
+  configureNotificationEndpoint,
   configureOAuthAuthorizationServerMetadataEndpoint,
   configurePushedAuthorizationRequestEndpoint,
   configureRedirectEndpoint,
@@ -205,6 +206,7 @@ export class OpenId4VcIssuerModule implements Module {
     )
     configureCredentialEndpoint(issuerEndpointsRouter, this.config)
     configureDeferredCredentialEndpoint(issuerEndpointsRouter, this.config)
+    if (this.config.enableNotificationEndpoint) configureNotificationEndpoint(issuerEndpointsRouter, this.config)
     configurePushedAuthorizationRequestEndpoint(issuerEndpointsRouter, this.config)
     configureAuthorizationEndpoint(issuerEndpointsRouter, this.config)
     configureRedirectEndpoint(issuerEndpointsRouter, this.config)
