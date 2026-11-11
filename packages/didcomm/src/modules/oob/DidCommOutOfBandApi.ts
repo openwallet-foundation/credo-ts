@@ -1071,9 +1071,9 @@ export class DidCommOutOfBandApi {
     ]
 
     for (const invitationDid of invitationDids) {
-      // Hung-up and unanswered connections keep their invitationDid, but can't be reused
+      // Hangup clears did or theirDid but keeps the state, and a v2 connection can't take a v1 handshake-reuse
       const connections = (await this.connectionsApi.findByInvitationDid(invitationDid)).filter(
-        ({ did, theirDid }) => did && theirDid
+        ({ did, theirDid, didcommVersion, isReady }) => isReady && did && theirDid && didcommVersion !== 'v2'
       )
 
       this.logger.debug(`Retrieved ${connections.length} connections for invitation did ${invitationDid}`)
