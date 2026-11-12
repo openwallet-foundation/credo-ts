@@ -14,6 +14,11 @@ export interface CacheOptions {
   scope?: 'context' | 'global'
 }
 
+/**
+ * A cache is an optimization, so `get` and `set` should not throw when the cache can't be reached:
+ * `get` returns `null` and `set` does nothing. `remove` must throw, as the entry would otherwise
+ * stay in the cache.
+ */
 export interface Cache {
   get<CacheValue>(agentContext: AgentContext, key: string, options?: CacheOptions): Promise<CacheValue | null>
   set<CacheValue>(
