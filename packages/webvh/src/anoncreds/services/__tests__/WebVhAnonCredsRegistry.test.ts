@@ -113,6 +113,35 @@ describe('WebVhAnonCredsRegistry', () => {
       })
     })
 
+    it('should reject a resource signed by a verification method from a different DID before verifying the proof', async () => {
+      const schemaId = mockSchemaResource.id
+      const resource = {
+        ...mockSchemaResource,
+        proof: {
+          ...mockSchemaResource.proof,
+          verificationMethod: 'did:webvh:QmAttackerSCID:attacker.example.com#key-1',
+        },
+      }
+      mockResolveResource.mockResolvedValue({
+        content: resource,
+        contentMetadata: {},
+        dereferencingMetadata: {},
+      })
+      const verifyProof = vi.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof')
+      verifyProof.mockClear()
+
+      const result = await registry.getSchema(agentContext, schemaId)
+
+      expect(result.schema).toBeUndefined()
+      expect(result.resolutionMetadata).toMatchObject({
+        error: 'invalid',
+        message: expect.stringContaining(
+          `Proof verification method DID mismatch for ${schemaId}. Expected: ${issuerId}, Actual: did:webvh:QmAttackerSCID:attacker.example.com`
+        ),
+      })
+      expect(verifyProof).not.toHaveBeenCalled()
+    })
+
     it('should return resolutionMetadata with error if schemaId does not match supported pattern', async () => {
       const invalidSchemaId = 'invalid-schema-id'
       const result = await registry.getSchema(agentContext, invalidSchemaId)
@@ -208,10 +237,11 @@ describe('WebVhAnonCredsRegistry', () => {
       const verifyProofSpy = vi.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof')
       verifyProofSpy.mockResolvedValueOnce(false)
 
-      const schemaContent = { attrNames: ['a'], name: 'N', version: 'V' }
+      const schemaDid = 'did:webvh:QmExampleSCID:example.com'
+      const schemaContent = { issuerId: schemaDid, attrNames: ['a'], name: 'N', version: 'V' }
       const digestBuffer = TypedArrayEncoder.fromUtf8String(canonicalize(schemaContent))
       const multibaseHash = MultiBaseEncoder.encode(MultiHashEncoder.encode(digestBuffer, 'sha-256'), 'base58btc')
-      const schemaId = `did:webvh:example.com:resource:badproof/${multibaseHash}`
+      const schemaId = `${schemaDid}/resources/${multibaseHash}`
 
       const mockWebResource = {
         type: ['AttestedResource'],
@@ -221,7 +251,7 @@ describe('WebVhAnonCredsRegistry', () => {
           cryptosuite: 'dummy-suite',
           proofPurpose: 'assertionMethod',
           proofValue: 'dummy-value',
-          verificationMethod: 'dummy-vm',
+          verificationMethod: `${schemaDid}#key-1`,
         },
         content: schemaContent,
         id: schemaId,
@@ -250,9 +280,10 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return resolutionMetadata with error if content hash does not match schemaId', async () => {
-      const schemaContent = { attrNames: ['a'], name: 'N', version: 'V' }
+      const schemaDid = 'did:webvh:QmExampleSCID:example.com'
+      const schemaContent = { issuerId: schemaDid, attrNames: ['a'], name: 'N', version: 'V' }
       const wrongMultibaseHash = 'zQmWrongHash123' // Keep this wrong hash
-      const schemaId = `did:webvh:example.com:resource:wronghash/${wrongMultibaseHash}`
+      const schemaId = `${schemaDid}/resources/${wrongMultibaseHash}`
 
       const mockWebResource = {
         type: ['AttestedResource'],
@@ -262,7 +293,7 @@ describe('WebVhAnonCredsRegistry', () => {
           cryptosuite: 'eddsa-jcs-2022',
           proofPurpose: 'assertionMethod',
           proofValue: 'z4RCLxRSVeTM4UnZ6vDmDjEX9pbpdUptXuDTy7h8Fij2npReHXmCUzzb5jTEUg1dFtpjH7tiKNJwXztwSktdjaMtX',
-          verificationMethod: 'did:webvh:example#key-1',
+          verificationMethod: `${schemaDid}#key-1`,
         },
         content: schemaContent,
         id: schemaId, // Use the ID with the wrong hash
@@ -290,15 +321,16 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return resolutionMetadata with error if parsed content is missing required fields', async () => {
+      const schemaDid = 'did:webvh:QmExampleSCID:example.com'
       const incompleteContent = {
-        issuerId: 'did:webvh:example.com:resource:incomplete',
+        issuerId: schemaDid,
         name: 'TestSchema',
         version: '1.0',
       }
       const contentString = canonicalize(incompleteContent)
       const contentBuffer = TypedArrayEncoder.fromUtf8String(contentString)
       const multibaseHash = MultiBaseEncoder.encode(MultiHashEncoder.encode(contentBuffer, 'sha-256'), 'base58btc')
-      const schemaId = `did:webvh:example.com:resource:incomplete/${multibaseHash}`
+      const schemaId = `${schemaDid}/resources/${multibaseHash}`
 
       const mockWebResource = {
         type: ['AttestedResource'],
@@ -308,7 +340,7 @@ describe('WebVhAnonCredsRegistry', () => {
           cryptosuite: 'eddsa-jcs-2022',
           proofPurpose: 'assertionMethod',
           proofValue: 'z4RCLxRSVeTM4UnZ6vDmDjEX9pbpdUptXuDTy7h8Fij2npReHXmCUzzb5jTEUg1dFtpjH7tiKNJwXztwSktdjaMtX',
-          verificationMethod: 'did:webvh:example#key-1',
+          verificationMethod: `${schemaDid}#key-1`,
         },
         content: incompleteContent, // Provide the incomplete content
         id: schemaId,
@@ -569,6 +601,32 @@ describe('WebVhAnonCredsRegistry', () => {
       expect(result.resolutionMetadata).toEqual(mockResolverResponse.dereferencingMetadata)
 
       verifyProofSpy.mockRestore()
+    })
+
+    it('should reject a resource whose content issuer differs from its resource DID', async () => {
+      const revRegDefId = mockRevRegDefResource.id
+      const resource = {
+        ...mockRevRegDefResource,
+        content: {
+          ...mockRevRegDefResource.content,
+          issuerId: 'did:webvh:QmAttackerSCID:attacker.example.com',
+        },
+      }
+      mockResolveResource.mockResolvedValue({
+        content: resource,
+        contentMetadata: resource.metadata || {},
+        dereferencingMetadata: {},
+      })
+
+      const result = await registry.getRevocationRegistryDefinition(agentContext, revRegDefId)
+
+      expect(result.revocationRegistryDefinition).toBeUndefined()
+      expect(result.resolutionMetadata).toMatchObject({
+        error: 'invalid',
+        message: expect.stringContaining(
+          `Issuer ID mismatch for ${revRegDefId}. Expected: ${issuerId}, Actual: did:webvh:QmAttackerSCID:attacker.example.com`
+        ),
+      })
     })
 
     // Add more tests for error cases (invalid ID, not found, hash mismatch, invalid content etc.)
