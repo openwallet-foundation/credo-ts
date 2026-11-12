@@ -1,7 +1,7 @@
+import type { AgentContext } from '../../agent'
 import type { Jwt } from '../../crypto'
+import { X509Service } from './X509Service'
 
-import { X509Certificate } from './X509Certificate'
-
-export function extractX509CertificatesFromJwt(jwt: Jwt) {
-  return jwt.header.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
+export function extractX509CertificatesFromJwt(agentContext: AgentContext, jwt: Jwt) {
+  return jwt.header.x5c?.map((cert) => X509Service.parseCertificate(agentContext, { encodedCertificate: cert }))
 }

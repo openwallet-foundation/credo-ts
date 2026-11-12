@@ -471,7 +471,9 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+    const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).getFirstCredential(
+      holderTenant.context
+    )
 
     // KMS key id should not be defined for did-based credentials
     expect(firstSdJwtVcTenant1.holder?.method).toEqual('did')
@@ -520,7 +522,9 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+    const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).getFirstCredential(
+      holderTenant.context
+    )
 
     // KMS key id Must be defined for jwk-based credentials
     expect(firstSdJwtVcTenant1.holder?.method).toEqual('jwk')

@@ -11,6 +11,7 @@ import {
 } from '../modules/kms'
 import { isKnownJwaSignatureAlgorithm } from '../modules/kms/jwk/jwa'
 import { convertLegacyTrustedCertificates } from '../modules/x509/utils/convertLegacyTrustedCertificates'
+import type { X509Certificate } from '../modules/x509/X509Certificate'
 import { X509ModuleConfig, type X509VerificationTrustedCertificates } from '../modules/x509/X509ModuleConfig'
 import { X509Service } from './../modules/x509/X509Service'
 import { type EncodedX509Certificate } from '../modules/x509/X509ServiceOptions'
@@ -276,7 +277,7 @@ export class JwsService {
     agentContext: AgentContext,
     options: {
       jwsSigner: JwsSignerWithJwk
-      trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
+      trustedCertificates?: Array<EncodedX509Certificate | X509Certificate> | X509VerificationTrustedCertificates[]
     }
   ) {
     const { jwsSigner } = options
@@ -417,7 +418,7 @@ export interface VerifyJwsOptions {
    */
   resolveJwsSigner?: JwsSignerResolver
 
-  trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
+  trustedCertificates?: Array<EncodedX509Certificate | X509Certificate> | X509VerificationTrustedCertificates[]
 }
 
 export type JwsSignerResolver = (options: {

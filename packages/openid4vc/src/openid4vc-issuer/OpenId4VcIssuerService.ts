@@ -1363,7 +1363,7 @@ export class OpenId4VcIssuerService {
       options?.metadataSigner !== undefined
         ? options.metadataSigner
         : issuer.signedMetadata
-          ? decodeJwtIssuer(issuer.signedMetadata.signer)
+          ? decodeJwtIssuer(agentContext, issuer.signedMetadata.signer)
           : undefined
 
     if (metadataSigner) {

@@ -1,6 +1,8 @@
 export * from './CertificateSigningRequest'
 export * from './extraction'
 export * from './utils'
+// Not in the utils index, as it imports `X509Certificate`, which imports that index
+export * from './utils/convertLegacyTrustedCertificates'
 export * from './X509Api'
 export * from './X509Certificate'
 export * from './X509CertificateRevocationList'

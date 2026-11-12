@@ -11,7 +11,7 @@ import {
   Kms,
   TrustedIssuerContext,
   TypedArrayEncoder,
-  X509Certificate,
+  type X509Certificate,
   X509ModuleConfig,
   X509Service,
   type X509VerificationContext,
@@ -123,7 +123,7 @@ function getOid4vcJwtVerificationContext(options: {
 export function getOid4vcJwtVerifyCallback(
   agentContext: AgentContext,
   options?: {
-    trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
+    trustedCertificates?: Array<EncodedX509Certificate | X509Certificate> | X509VerificationTrustedCertificates[]
 
     issuanceSession?: OpenId4VcIssuanceSessionRecord
 
@@ -173,10 +173,15 @@ export function getOid4vcJwtVerifyCallback(
       isAuthorizationRequestJwt: options?.isAuthorizationRequestJwt,
     })
 
+    // Parsed once, for both resolving the trusted certificates and the key of the signer
+    const certificateChain =
+      signer.method === 'x5c'
+        ? signer.x5c.map((cert) => X509Service.parseCertificate(agentContext, { encodedCertificate: cert }))
+        : undefined
+
     if (verificationContext) {
-      if (signer.method === 'x5c' && !trustedCertificates) {
+      if (certificateChain && !trustedCertificates) {
         const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
-        const certificateChain = signer.x5c.map((cert) => X509Certificate.fromEncodedCertificate(cert))
 
         // NOTE: we can't use `ensureTrustedSigner` here (unlike the did branch below), as `JwsService`
         // already validates the certificate chain, and falls back to the globally configured trusted
@@ -225,11 +230,11 @@ export function getOid4vcJwtVerifyCallback(
         method: 'jwk',
         jwk: Kms.PublicJwk.fromUnknown(signer.publicJwk),
       }
-    } else if (signer.method === 'x5c') {
+    } else if (signer.method === 'x5c' && certificateChain) {
       jwsSigner = {
         method: 'x5c',
         x5c: signer.x5c,
-        jwk: X509Certificate.fromEncodedCertificate(signer.x5c[0]).publicJwk,
+        jwk: certificateChain[0].publicJwk,
       }
     }
 
@@ -427,7 +432,7 @@ export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCal
 export function getOid4vcCallbacks(
   agentContext: AgentContext,
   options?: {
-    trustedCertificates?: string[]
+    trustedCertificates?: Array<EncodedX509Certificate | X509Certificate>
     isVerifyOpenId4VpAuthorizationRequest?: boolean
     issuanceSession?: OpenId4VcIssuanceSessionRecord
   }

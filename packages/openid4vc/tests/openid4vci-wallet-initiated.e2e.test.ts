@@ -377,7 +377,9 @@ describe('OpenId4Vc (Wallet Initiated Issuance)', () => {
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    const firstSdJwtVc = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+    const firstSdJwtVc = (credentialResponse.credentials[0].record as SdJwtVcRecord).getFirstCredential(
+      holderTenant.context
+    )
     expect(firstSdJwtVc.payload.vct).toEqual('UniversityDegreeCredential')
 
     await holderTenant.endSession()

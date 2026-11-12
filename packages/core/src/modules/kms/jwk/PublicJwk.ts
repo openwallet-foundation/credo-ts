@@ -107,6 +107,15 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     >
   }
 
+  /**
+   * A copy with its own jwk object, so setting the `keyId` or `alg` of the copy leaves this instance as is.
+   * Nested values of the jwk are shared.
+   */
+  public clone(): PublicJwk<Jwk> {
+    const JwkClass = this.jwk.constructor as new (jwk: Jwk['jwk']) => Jwk
+    return new PublicJwk(new JwkClass({ ...this.jwk.jwk }))
+  }
+
   public toJson({ includeKid = true }: { includeKid?: boolean } = {}): Jwk['jwk'] {
     if (includeKid) return this.jwk.jwk
 

@@ -239,7 +239,7 @@ describe('DCQL selective disclosure', () => {
 
     // The SD-JWT is valid, so it has no disclosure without the disclosure of the claim above it
     const verification = await sdJwtVcService.verify(agent.context, {
-      compactSdJwtVc: encodedDcqlPresentation.credential[0] as string,
+      sdJwtVc: encodedDcqlPresentation.credential[0] as string,
       keyBinding: { audience: domain, nonce: challenge },
     })
     expect(verification.isValid).toBe(true)

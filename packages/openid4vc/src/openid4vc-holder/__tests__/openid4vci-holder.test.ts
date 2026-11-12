@@ -251,7 +251,7 @@ describe('OpenId4VcHolder', () => {
       })
 
       expect(credentialResponse.credentials).toHaveLength(1)
-      const credential = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+      const credential = (credentialResponse.credentials[0].record as SdJwtVcRecord).getFirstCredential(holder.context)
       expect(credential).toEqual({
         claimFormat: 'dc+sd-jwt',
         compact:

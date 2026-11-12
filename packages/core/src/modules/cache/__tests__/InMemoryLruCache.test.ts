@@ -10,6 +10,17 @@ describe('InMemoryLruCache', () => {
     cache = new InMemoryLruCache({ limit: 2 })
   })
 
+  it.each([-1, 1.5, Number.POSITIVE_INFINITY])('rejects %s as limit', (limit) => {
+    expect(() => new InMemoryLruCache({ limit })).toThrow('The limit of an LRU cache must be 0 or a positive integer')
+  })
+
+  it('keeps nothing when the limit is 0', async () => {
+    const disabledCache = new InMemoryLruCache({ limit: 0 })
+
+    await disabledCache.set(agentContext, 'item', 'somevalue')
+    expect(await disabledCache.get(agentContext, 'item')).toBeNull()
+  })
+
   it('should set, get and remove a value', async () => {
     expect(await cache.get(agentContext, 'item')).toBeNull()
 

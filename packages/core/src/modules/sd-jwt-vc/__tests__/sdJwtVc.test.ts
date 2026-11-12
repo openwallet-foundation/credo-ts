@@ -223,7 +223,7 @@ describe('sd-jwt-vc end to end test', () => {
 
     // Verify SD-JWT (does not require key binding)
     const verificationResult = await holder.sdJwtVc.verify({
-      compactSdJwtVc: compact,
+      sdJwtVc: compact,
       fetchTypeMetadata: true,
     })
     expect(verificationResult.isValid).toBe(true)
@@ -272,7 +272,7 @@ describe('sd-jwt-vc end to end test', () => {
     })
 
     const { isValid } = await verifier.sdJwtVc.verify({
-      compactSdJwtVc: presentation,
+      sdJwtVc: presentation,
       keyBinding: { audience: verifierDid, nonce: verifierMetadata.nonce },
       requiredClaimKeys: [
         'is_over_65',

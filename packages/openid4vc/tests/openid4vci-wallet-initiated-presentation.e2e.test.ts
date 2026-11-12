@@ -285,7 +285,9 @@ describe('OpenId4Vc (Wallet Initiated Presentation During Issuance)', () => {
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    const firstSdJwtVc = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+    const firstSdJwtVc = (credentialResponse.credentials[0].record as SdJwtVcRecord).getFirstCredential(
+      holder.agent.context
+    )
     expect(firstSdJwtVc.payload.vct).toEqual(universityDegreeCredentialConfigurationSupported.vct)
     expect(firstSdJwtVc.prettyClaims.full_name).toEqual('Erika Powerstar')
   })
