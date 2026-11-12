@@ -3,6 +3,7 @@ import {
   Agent,
   DependencyManager,
   InjectionSymbols,
+  W3cCredentialRepository,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
 } from '@credo-ts/core'
@@ -52,7 +53,7 @@ describe('AnonCreds without DIDComm', () => {
     await expect(migrateCredentialExchangeRecordToV0_4(agent)).resolves.toBeUndefined()
 
     expect(warn).toHaveBeenCalledWith(
-      'Skipping credential exchange record migration to storage version 0.4 because @credo-ts/didcomm is not installed.'
+      'Skipping credential exchange record migration to storage version 0.4 because no AnonCreds migration provider is configured.'
     )
   })
 
@@ -94,14 +95,18 @@ describe('AnonCreds without DIDComm', () => {
         },
       })
     )
-    const storeCredential = vi
-      .spyOn(agent.dependencyManager.resolve(W3cCredentialService), 'storeCredential')
-      .mockImplementation(async (_agentContext, { record }) => record)
+    const storeCredential = vi.spyOn(agent.dependencyManager.resolve(W3cCredentialService), 'storeCredential')
     const warn = vi.spyOn(agent.config.logger, 'warn')
 
     await expect(storeAnonCredsInW3cFormatV0_5(agent)).resolves.toBeUndefined()
 
     expect(storeCredential).toHaveBeenCalledTimes(1)
+    const records = await agent.dependencyManager.resolve(W3cCredentialRepository).getAll(agent.context)
+    expect(records).toHaveLength(1)
+    expect(records[0].getTags()).toMatchObject({
+      anonCredsLinkSecretId: 'link-secret',
+      anonCredsSchemaId: 'urn:example:schema',
+    })
     await expect(anonCredsRepository.getAll(agent.context)).resolves.toHaveLength(0)
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('legacy AnonCreds credential record legacy-record'))
   })

@@ -6,7 +6,7 @@ import { AnonCredsHolderServiceSymbol } from '../../services'
 import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
 import { getW3cRecordAnonCredsTags } from '../../utils/w3cAnonCredsUtils'
-import { resolveDidCommCredentialExchangeRepository } from '../optionalDependencies'
+import { resolveAnonCredsMigrationProvider } from '../optionalDependencies'
 import {
   getIndyNamespaceFromIndyDid,
   getQualifiedDidIndyDid,
@@ -151,39 +151,23 @@ export async function storeAnonCredsInW3cFormatV0_5<Agent extends BaseAgent>(age
 
   if (records.length === 0) return
 
-  const { repository: credentialExchangeRepository, unavailableReason } =
-    await resolveDidCommCredentialExchangeRepository(agent.dependencyManager)
+  const { provider, unavailableReason } = resolveAnonCredsMigrationProvider(agent.dependencyManager)
 
-  const relinkCredentialExchangeRecord = credentialExchangeRepository
+  const relinkCredentialExchangeRecord = provider
     ? async (
         legacyRecord: AnonCredsCredentialRecord,
         w3cCredentialRecord: W3cCredentialRecord,
         legacyTags: ReturnType<AnonCredsCredentialRecord['getTags']>,
         indyNamespace: string | undefined
       ) => {
-        const [relatedCredentialExchangeRecord] = await credentialExchangeRepository.findByQuery(agent.context, {
-          credentialIds: [legacyRecord.credentialId],
+        await provider.relinkCredentialExchangeRecord(agent.context, {
+          legacyCredentialId: legacyRecord.credentialId,
+          w3cCredentialRecordId: w3cCredentialRecord.id,
+          qualifiedRevocationRegistryId:
+            legacyTags.revocationRegistryId && indyNamespace
+              ? getQualifiedDidIndyDid(legacyTags.revocationRegistryId, indyNamespace)
+              : undefined,
         })
-
-        if (relatedCredentialExchangeRecord) {
-          const credentialBindingIndex = relatedCredentialExchangeRecord.credentials.findIndex(
-            (binding) => binding.credentialRecordId === legacyRecord.credentialId
-          )
-          if (credentialBindingIndex !== -1) {
-            relatedCredentialExchangeRecord.credentials[credentialBindingIndex] = {
-              credentialRecordType: 'w3c',
-              credentialRecordId: w3cCredentialRecord.id,
-            }
-
-            if (legacyTags.revocationRegistryId && indyNamespace) {
-              relatedCredentialExchangeRecord.setTags({
-                anonCredsRevocationRegistryId: getQualifiedDidIndyDid(legacyTags.revocationRegistryId, indyNamespace),
-              })
-            }
-
-            await credentialExchangeRepository.update(agent.context, relatedCredentialExchangeRecord)
-          }
-        }
       }
     : undefined
 

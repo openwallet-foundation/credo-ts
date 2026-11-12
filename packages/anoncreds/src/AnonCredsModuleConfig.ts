@@ -1,8 +1,8 @@
 import type { Anoncreds } from '@hyperledger/anoncreds-shared'
 import type { AnonCredsRegistry } from './services'
 import type { TailsFileService } from './services/tails'
-
 import { BasicTailsFileService } from './services/tails'
+import type { AnonCredsMigrationProvider } from './updates/AnonCredsMigrationProvider'
 
 /**
  * The `NativeAnoncreds` class exported from `@hyperledger/anoncreds-shared` (and re-exported by the platform packages).
@@ -74,6 +74,9 @@ export interface AnonCredsModuleConfigOptions {
    * @defaultValue true
    */
   autoCreateLinkSecret?: boolean
+
+  /** Optional integration for preserving DIDComm exchange records during legacy storage upgrades. */
+  migrationProvider?: AnonCredsMigrationProvider
 }
 
 /**
@@ -107,5 +110,9 @@ export class AnonCredsModuleConfig {
   /** See {@link AnonCredsModuleConfigOptions.autoCreateLinkSecret} */
   public get autoCreateLinkSecret() {
     return this.options.autoCreateLinkSecret ?? true
+  }
+
+  public get migrationProvider() {
+    return this.options.migrationProvider
   }
 }

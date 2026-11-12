@@ -33,6 +33,7 @@ import { NativeAnoncreds } from './../../../../tests/helpers'
 import { InMemoryAnonCredsRegistry } from '../../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../../AnonCredsModuleConfig'
 import { AnonCredsRsHolderService } from '../../../anoncreds-rs'
+import { AnonCredsDidCommMigrationProvider } from '../../../didcomm/AnonCredsDidCommMigrationProvider'
 import { AnonCredsCredentialRecord } from '../../../repository'
 import { AnonCredsHolderServiceSymbol, AnonCredsRegistryService } from '../../../services'
 import * as testModule from '../anonCredsCredentialRecord'
@@ -43,6 +44,7 @@ const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   anoncreds: NativeAnoncreds,
   registries: [registry],
+  migrationProvider: new AnonCredsDidCommMigrationProvider(),
 })
 
 const stop = new Subject<boolean>()
@@ -107,6 +109,9 @@ vi.mock('../../../../../core/src/agent/Agent', () => {
           isRegistered: vi.fn((token) => agentContext.dependencyManager.isRegistered(token, true)),
           // biome-ignore lint/suspicious/noExplicitAny: no explanation
           resolve: vi.fn(function (repo: any) {
+            if (repo === AnonCredsModuleConfig) {
+              return anonCredsModuleConfig
+            }
             if (repo === DidCommCredentialExchangeRepository) {
               return credentialExchangeRepo
             }

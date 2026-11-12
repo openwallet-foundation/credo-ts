@@ -48,12 +48,8 @@ Import the AnonCreds DIDComm formats from the DIDComm integration entry point:
 import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService } from '@credo-ts/anoncreds/didcomm'
 ```
 
-The AnonCreds package root has no static runtime import or public type dependency on DIDComm. Legacy migrations
-attempt to load `@credo-ts/didcomm` lazily, then check whether the DIDComm credentials repository is registered.
-`@credo-ts/didcomm` is an optional peer dependency; install it when using the DIDComm integration.
-Bundlers such as Metro may still resolve or include the optional module because of the dynamic import.
-Runtime error handling cannot prevent bundle-time resolution failures or guarantee a DIDComm-free React Native
-bundle. React Native bundling without DIDComm has not been validated.
+The AnonCreds package root has no static or dynamic import or public type dependency on DIDComm.
+`@credo-ts/didcomm` is an optional peer dependency; install it only when using the DIDComm integration.
 
 To enable the `anoncreds_link_secret` binding method in the DIDComm Data Integrity credential format,
 pass its provider explicitly. Registering `AnonCredsModule` no longer configures this binding automatically.
@@ -75,8 +71,27 @@ The auto-accept helpers `composeCredentialAutoAccept` and `composeProofAutoAccep
 
 ### Legacy storage upgrades
 
-The existing storage upgrade sequence is preserved. Historical migrations attempt to load
-`@credo-ts/didcomm` on demand rather than when importing the AnonCreds module. If the package is missing or
+The existing storage upgrade sequence is preserved. Applications upgrading from storage version 0.3.1
+run the 0.3.1-to-0.4 and 0.4-to-0.5 migrations; applications at storage version 0.4 run only the latter.
+Storage versions are independent of package versions. Fresh stores and stores already at version 0.5
+do not need this integration.
+
+To preserve historical DIDComm exchange records during these upgrades, explicitly supply the migration
+provider and register the DIDComm credentials module before upgrading:
+
+```ts
+import { AnonCredsModule } from '@credo-ts/anoncreds'
+import { AnonCredsDidCommMigrationProvider } from '@credo-ts/anoncreds/didcomm'
+
+const anoncreds = new AnonCredsModule({
+  anoncreds: NativeAnoncreds,
+  registries: [registry],
+  migrationProvider: new AnonCredsDidCommMigrationProvider(),
+})
+```
+
+This configuration works for both manual `UpdateAssistant` upgrades and automatic startup upgrades.
+Migrations never load or discover DIDComm automatically. If no provider is configured or
 the DIDComm credentials repository is not registered:
 
 - The 0.3.1-to-0.4 migration skips DIDComm exchange-record updates with a warning; other AnonCreds migration
@@ -85,6 +100,6 @@ the DIDComm credentials repository is not registered:
   credentials, but skips exchange-record relinking with warnings identifying the affected legacy records.
 
 Storage versioning advances after a successful upgrade. Skipped exchange-record updates are not automatically
-retried if DIDComm is enabled later. To preserve exchange-record bindings, install DIDComm and register its
-credentials module before upgrading. Unexpected import, dependency resolution, conversion, or storage errors
-still fail the migration. Fresh stores do not require DIDComm.
+retried if DIDComm is enabled later. The migrated credentials remain usable through the standalone AnonCreds APIs,
+but historical exchange references may be stale. Standalone applications can omit the provider and DIDComm entirely.
+Unexpected dependency resolution, conversion, or storage errors still fail the migration.

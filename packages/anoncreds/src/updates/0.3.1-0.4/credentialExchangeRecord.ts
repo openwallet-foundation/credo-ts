@@ -1,5 +1,5 @@
 import type { BaseAgent } from '@credo-ts/core'
-import { resolveDidCommCredentialExchangeRepository } from '../optionalDependencies'
+import { resolveAnonCredsMigrationProvider } from '../optionalDependencies'
 
 interface CredentialExchangeRecord {
   id: string
@@ -25,35 +25,15 @@ interface CredentialExchangeRecord {
  */
 export async function migrateCredentialExchangeRecordToV0_4<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating credential exchange records to storage version 0.4')
-  const { repository: credentialRepository, unavailableReason } = await resolveDidCommCredentialExchangeRepository(
-    agent.dependencyManager
-  )
-  if (!credentialRepository) {
+  const { provider, unavailableReason } = resolveAnonCredsMigrationProvider(agent.dependencyManager)
+  if (!provider) {
     agent.config.logger.warn(
       `Skipping credential exchange record migration to storage version 0.4 because ${unavailableReason}.`
     )
     return
   }
 
-  agent.config.logger.debug('Fetching all credential records from storage')
-  const credentialRecords = await credentialRepository.getAll(agent.context)
-
-  agent.config.logger.debug(`Found a total of ${credentialRecords.length} credential exchange records to update.`)
-  for (const credentialRecord of credentialRecords) {
-    agent.config.logger.debug(
-      `Migrating credential exchange record with id ${credentialRecord.id} to storage version 0.4`
-    )
-
-    migrateIndyCredentialTypeToAnonCredsCredential(agent, credentialRecord)
-    migrateIndyCredentialMetadataToAnonCredsMetadata(agent, credentialRecord)
-
-    // Save updated record
-    await credentialRepository.update(agent.context, credentialRecord)
-
-    agent.config.logger.debug(
-      `Successfully migrated credential exchange record with id ${credentialRecord.id} to storage version 0.4`
-    )
-  }
+  await provider.migrateCredentialExchangeRecordsToV0_4(agent)
 }
 
 /**

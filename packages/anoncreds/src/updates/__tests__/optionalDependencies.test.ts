@@ -1,72 +1,72 @@
 import { DependencyManager } from '@credo-ts/core'
 import { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
+import { getAgentContext } from '../../../../core/tests/helpers'
+import { NativeAnoncreds } from '../../../tests/helpers'
+import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
+import { AnonCredsModuleConfig } from '../../AnonCredsModuleConfig'
+import { AnonCredsDidCommMigrationProvider } from '../../didcomm/AnonCredsDidCommMigrationProvider'
+import { resolveAnonCredsMigrationProvider } from '../optionalDependencies'
 
-describe('resolveDidCommCredentialExchangeRepository', () => {
-  beforeEach(() => {
-    vi.resetModules()
-    vi.doMock('@credo-ts/didcomm', () => ({ DidCommCredentialExchangeRepository }))
-  })
-
-  afterEach(() => {
-    vi.doUnmock('@credo-ts/didcomm')
-  })
-
-  test('resolves a registered repository using the supplied dependency manager', async () => {
+describe('resolveAnonCredsMigrationProvider', () => {
+  function createDependencyManager(provider?: AnonCredsDidCommMigrationProvider) {
     const dependencyManager = new DependencyManager()
+    dependencyManager.registerInstance(
+      AnonCredsModuleConfig,
+      new AnonCredsModuleConfig({
+        anoncreds: NativeAnoncreds,
+        registries: [new InMemoryAnonCredsRegistry()],
+        migrationProvider: provider,
+      })
+    )
+    return dependencyManager
+  }
+
+  test('does not discover DIDComm when no provider is configured, even if its repository is registered', () => {
+    const dependencyManager = createDependencyManager()
     dependencyManager.registerSingleton(DidCommCredentialExchangeRepository)
-    const repository = { findByQuery: vi.fn(), update: vi.fn() }
-    const resolve = vi.spyOn(dependencyManager, 'resolve').mockReturnValue(repository)
-    const { resolveDidCommCredentialExchangeRepository } = await import('../optionalDependencies')
-
-    await expect(resolveDidCommCredentialExchangeRepository(dependencyManager)).resolves.toEqual({
-      repository,
-      unavailableReason: undefined,
-    })
-    expect(resolve).toHaveBeenCalledWith(DidCommCredentialExchangeRepository)
-  })
-
-  test('distinguishes an unregistered credentials module from a missing package', async () => {
-    const { resolveDidCommCredentialExchangeRepository } = await import('../optionalDependencies')
-
-    await expect(resolveDidCommCredentialExchangeRepository(new DependencyManager())).resolves.toEqual({
-      repository: undefined,
-      unavailableReason: 'the DIDComm credentials module is not registered',
+    expect(resolveAnonCredsMigrationProvider(dependencyManager)).toEqual({
+      provider: undefined,
+      unavailableReason: 'no AnonCreds migration provider is configured',
     })
   })
 
-  test.each(['MODULE_NOT_FOUND', 'ERR_MODULE_NOT_FOUND'])('handles a missing DIDComm package (%s)', async (code) => {
-    vi.doMock('@credo-ts/didcomm', () => {
-      throw Object.assign(new Error("Cannot find package '@credo-ts/didcomm'"), { code })
-    })
-    const { resolveDidCommCredentialExchangeRepository } = await import('../optionalDependencies')
-
-    await expect(resolveDidCommCredentialExchangeRepository(new DependencyManager())).resolves.toEqual({
-      repository: undefined,
-      unavailableReason: '@credo-ts/didcomm is not installed',
-    })
+  test('skips an explicit provider when the credentials module is not registered', () => {
+    expect(resolveAnonCredsMigrationProvider(createDependencyManager(new AnonCredsDidCommMigrationProvider()))).toEqual(
+      {
+        provider: undefined,
+        unavailableReason: 'the DIDComm credentials module is not registered',
+      }
+    )
   })
 
-  test.each([
-    new Error('DIDComm initialization failed'),
-    Object.assign(new Error("Cannot find package 'transitive-dependency'"), { code: 'ERR_MODULE_NOT_FOUND' }),
-  ])('propagates unexpected import errors: %s', async (error) => {
-    vi.doMock('@credo-ts/didcomm', () => {
+  test('uses the explicit provider when the credentials repository is registered', () => {
+    const provider = new AnonCredsDidCommMigrationProvider()
+    const dependencyManager = createDependencyManager(provider)
+    dependencyManager.registerSingleton(DidCommCredentialExchangeRepository)
+    expect(resolveAnonCredsMigrationProvider(dependencyManager)).toEqual({ provider, unavailableReason: undefined })
+  })
+
+  test('propagates unexpected availability failures', () => {
+    const provider = new AnonCredsDidCommMigrationProvider()
+    const error = new Error('Dependency manager failure')
+    vi.spyOn(provider, 'isAvailable').mockImplementation(() => {
       throw error
     })
-    const { resolveDidCommCredentialExchangeRepository } = await import('../optionalDependencies')
-
-    await expect(resolveDidCommCredentialExchangeRepository(new DependencyManager())).rejects.toBeDefined()
+    expect(() => resolveAnonCredsMigrationProvider(createDependencyManager(provider))).toThrow(error)
   })
 
   test('propagates repository resolution failures', async () => {
-    const dependencyManager = new DependencyManager()
-    dependencyManager.registerSingleton(DidCommCredentialExchangeRepository)
+    const provider = new AnonCredsDidCommMigrationProvider()
+    const dependencyManager = createDependencyManager(provider)
     const error = new Error('Repository dependency is unavailable')
     vi.spyOn(dependencyManager, 'resolve').mockImplementation(() => {
       throw error
     })
-    const { resolveDidCommCredentialExchangeRepository } = await import('../optionalDependencies')
-
-    await expect(resolveDidCommCredentialExchangeRepository(dependencyManager)).rejects.toBe(error)
+    await expect(
+      provider.relinkCredentialExchangeRecord(getAgentContext({ dependencyManager }), {
+        legacyCredentialId: 'legacy',
+        w3cCredentialRecordId: 'w3c',
+      })
+    ).rejects.toBe(error)
   })
 })
