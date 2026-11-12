@@ -30,6 +30,8 @@ export class DidCommTransportService {
         }
       }
     }
+    // Removed first, so a session that is saved again becomes the most recent one
+    delete this.transportSessionTable[session.id]
     this.transportSessionTable[session.id] = session
 
     this.eventEmitter.emit<DidCommTransportSessionSavedEvent>(this.agentContext, {
@@ -41,27 +43,26 @@ export class DidCommTransportService {
   }
 
   /**
-   * The most recently saved session of the connection that is still open. Closed sessions are removed,
-   * also those of other connections.
+   * The most recently saved session of the connection that is still open. A long-lived session goes
+   * before one that answers a single request, so the response to that request is left for its own
+   * reply. Closed sessions are removed, also those of other connections.
    *
    * @param options.includeSingleResponse set to false to skip sessions that answer a single request
    */
   public findSessionByConnectionId(connectionId: string, { includeSingleResponse = true } = {}) {
-    let found: DidCommTransportSession | undefined
+    let longLived: DidCommTransportSession | undefined
+    let singleResponse: DidCommTransportSession | undefined
     for (const session of Object.values(this.transportSessionTable).reverse()) {
       if (!session) continue
 
       // Clean up old sessions that were not removed by their transport
       if (session.isClosed) this.removeSession(session)
-      else if (
-        !found &&
-        session.connectionId === connectionId &&
-        (includeSingleResponse || !session.isSingleResponse)
-      ) {
-        found = session
+      else if (session.connectionId === connectionId) {
+        if (session.isSingleResponse) singleResponse ??= session
+        else longLived ??= session
       }
     }
-    return found
+    return longLived ?? (includeSingleResponse ? singleResponse : undefined)
   }
 
   public setConnectionIdForSession(sessionId: string, connectionId: string) {

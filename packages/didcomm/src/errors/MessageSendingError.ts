@@ -11,9 +11,9 @@ export enum MessageSendingErrorCategory {
 }
 
 export enum MessageSendingSessionResult {
-  /** The session of the inbound message no longer exists, and the connection has no session that can take over. */
+  /** The session of the inbound message is gone or closing, and the connection has no session that can take over. */
   NotFound = 'NotFound',
-  /** The session of the inbound message was already closed or answered. */
+  /** The single response session of the inbound message was already answered. */
   Closed = 'Closed',
   /** Sending over the session failed. */
   Failed = 'Failed',
@@ -68,8 +68,8 @@ export function categorizeMessageSendingAttempts(attempts: MessageSendingAttempt
   const sessionResults = attempts.flatMap((a) => (a.type === 'session' ? [a.result] : []))
   const serviceResults = attempts.flatMap((a) => (a.type === 'service' ? [a.result] : []))
 
-  // A closed session counts as ours: only the reply to its inbound message is sent to a session by id,
-  // so something else answered on it first.
+  // A closed single response session counts as ours: only the reply to its inbound message is sent to
+  // a session by id, so something else answered on it first.
   if (
     sessionResults.includes(MessageSendingSessionResult.InternalError) ||
     sessionResults.includes(MessageSendingSessionResult.Closed) ||

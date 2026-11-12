@@ -255,10 +255,7 @@ export class DidCommMessageSender {
           type: 'service',
           serviceId: service.id,
           endpoint: service.serviceEndpoint,
-          result:
-            outboundTransports.length === 0
-              ? MessageSendingServiceResult.InternalError
-              : MessageSendingServiceResult.TransportError,
+          result: MessageSendingServiceResult.TransportError,
           error,
         })
         agentContext.config.logger.debug(
@@ -726,7 +723,10 @@ export class DidCommMessageSender {
           ? this.transportService.findSessionByConnectionId(connectionId, { includeSingleResponse: false })
           : undefined
         if (!session) {
-          const result = inboundSession ? MessageSendingSessionResult.Closed : MessageSendingSessionResult.NotFound
+          // A long-lived session only closes when the other side goes away
+          const result = inboundSession?.isSingleResponse
+            ? MessageSendingSessionResult.Closed
+            : MessageSendingSessionResult.NotFound
           return { attempt: { type: 'session', sessionId, result } }
         }
       }

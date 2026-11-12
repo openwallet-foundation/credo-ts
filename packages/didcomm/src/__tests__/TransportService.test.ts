@@ -55,6 +55,14 @@ describe('DidCommTransportService', () => {
       expect(transportService.findSessionByConnectionId('connection-1')).toBe(second)
     })
 
+    test('returns a session that was saved again over one that was first saved later', () => {
+      const first = saveSession('socket-a', 'connection-1')
+      saveSession('socket-b', 'connection-1')
+      transportService.saveSession(first)
+
+      expect(transportService.findSessionByConnectionId('connection-1')).toBe(first)
+    })
+
     test('skips and removes sessions that are closed', () => {
       const first = saveSession('request-a', 'connection-1')
       const second = saveSession('request-b', 'connection-1')
@@ -70,15 +78,22 @@ describe('DidCommTransportService', () => {
       expect(transportService.findSessionByConnectionId('connection-1')).toBeUndefined()
     })
 
-    test('skips single response sessions when asked to', () => {
+    test('returns a long-lived session over a more recent single response session', () => {
       const longLived = saveSession('socket', 'connection-1')
       const singleResponse = saveSession('request-a', 'connection-1')
       singleResponse.isSingleResponse = true
 
+      expect(transportService.findSessionByConnectionId('connection-1')).toBe(longLived)
+    })
+
+    test('returns a single response session only when there is no long-lived one and it is not skipped', () => {
+      const singleResponse = saveSession('request-a', 'connection-1')
+      singleResponse.isSingleResponse = true
+
       expect(transportService.findSessionByConnectionId('connection-1')).toBe(singleResponse)
-      expect(transportService.findSessionByConnectionId('connection-1', { includeSingleResponse: false })).toBe(
-        longLived
-      )
+      expect(
+        transportService.findSessionByConnectionId('connection-1', { includeSingleResponse: false })
+      ).toBeUndefined()
     })
   })
 

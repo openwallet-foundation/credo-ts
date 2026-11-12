@@ -622,6 +622,7 @@ describe('DidCommMessageSender', () => {
         const answeredSession = new DummyTransportSession('request-a')
         answeredSession.inboundMessage = inboundMessage
         answeredSession.isClosed = true
+        answeredSession.isSingleResponse = true
         answeredSession.send = vi.fn()
         transportServiceFindSessionByIdMock.mockReturnValue(answeredSession)
         didResolverServiceResolveDidServicesMock.mockResolvedValue([queueService])
@@ -642,6 +643,30 @@ describe('DidCommMessageSender', () => {
 
         expect(answeredSession.send).not.toHaveBeenCalled()
         expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('undeliverable'), expect.anything())
+      })
+
+      test('logs at info level when the long-lived session of the inbound message is closing', async () => {
+        const closingSession = new DummyTransportSession('socket-a')
+        closingSession.inboundMessage = inboundMessage
+        closingSession.isClosed = true
+        closingSession.send = vi.fn()
+        transportServiceFindSessionByIdMock.mockReturnValue(closingSession)
+        didResolverServiceResolveDidServicesMock.mockResolvedValue([])
+        const logger = spyOnLogger()
+
+        await expect(messageSender.sendMessage(replyTo('socket-a'))).rejects.toMatchObject({
+          reason: {
+            category: MessageSendingErrorCategory.RecipientUnreachable,
+            attempts: [
+              { type: 'session', sessionId: 'socket-a', result: MessageSendingSessionResult.NotFound },
+              { type: 'queue', result: MessageSendingQueueResult.NotAvailable },
+            ],
+          },
+        } satisfies Partial<MessageSendingError>)
+
+        expect(closingSession.send).not.toHaveBeenCalled()
+        expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('undeliverable'), expect.anything())
+        expect(logger.error).not.toHaveBeenCalled()
       })
 
       test('logs at info level when the recipient only has a queue and the message cannot be queued', async () => {
