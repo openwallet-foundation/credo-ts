@@ -242,7 +242,7 @@ describe('Askar to Drizzle Migration', () => {
       await migrator.deleteStorageRecords()
 
       // It should not have deleted the keys
-      expect(await askarAgent.kms.getPublicKey({ keyId: 'consistent-kid' })).toEqual({
+      expect((await askarAgent.kms.getPublicKey({ keyId: 'consistent-kid' })).publicKey).toEqual({
         crv: 'Ed25519',
         kid: 'consistent-kid',
         kty: 'OKP',
@@ -368,7 +368,7 @@ describe('Askar to Drizzle Migration', () => {
     await migrator.deleteStorageRecords()
 
     // It should not have deleted the keys
-    expect(await askarAgent.kms.getPublicKey({ keyId: 'consistent-kid' })).toEqual({
+    expect((await askarAgent.kms.getPublicKey({ keyId: 'consistent-kid' })).publicKey).toEqual({
       crv: 'Ed25519',
       kid: 'consistent-kid',
       kty: 'OKP',

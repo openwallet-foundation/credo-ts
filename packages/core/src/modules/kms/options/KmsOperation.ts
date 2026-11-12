@@ -23,11 +23,18 @@ export type KmsOperationDeleteKey = {
 export type KmsOperationSign = {
   operation: 'sign'
   algorithm: KnownJwaSignatureAlgorithm
+  /**
+   * The key the operation runs with, when it is a key in a backend. A backend that knows the key
+   * is not its own can report the operation as unsupported, without the key being looked up.
+   */
+  keyId?: string
 }
 
 export type KmsOperationVerify = {
   operation: 'verify'
   algorithm: KnownJwaSignatureAlgorithm
+  /** See {@link KmsOperationSign.keyId}. */
+  keyId?: string
 }
 
 /**
@@ -45,6 +52,8 @@ export type KmsOperationEncrypt = {
    */
   encryption: KmsEncryptDataEncryption
   keyAgreement?: WithOptionalKeyId<KmsKeyAgreementEncryptOptions>
+  /** See {@link KmsOperationSign.keyId}. */
+  keyId?: string
 }
 
 export type KmsOperationDecrypt = {
@@ -54,6 +63,8 @@ export type KmsOperationDecrypt = {
    */
   decryption: KmsDecryptDataDecryption
   keyAgreement?: WithOptionalKeyId<KmsKeyAgreementDecryptOptions>
+  /** See {@link KmsOperationSign.keyId}. */
+  keyId?: string
 }
 
 /**
@@ -85,6 +96,11 @@ export type KmsOperation =
   | KmsOperationDecrypt
   | KmsOperationRandomBytes
 
+// A backend can decline an operation for its key, so the key is part of what is not supported.
+function keyDescription(operation: { keyId?: string }) {
+  return operation.keyId ? ` and key '${operation.keyId}'` : ''
+}
+
 export function getKmsOperationHumanDescription(operation: KmsOperation) {
   if (operation.operation === 'deleteKey') {
     return "'deleteKey' operation"
@@ -113,7 +129,7 @@ export function getKmsOperationHumanDescription(operation: KmsOperation) {
   }
 
   if (operation.operation === 'sign' || operation.operation === 'verify') {
-    return `'${operation.operation}' operation with algorithm '${operation.algorithm}'`
+    return `'${operation.operation}' operation with algorithm '${operation.algorithm}'${keyDescription(operation)}`
   }
 
   if (operation.operation === 'encrypt' || operation.operation === 'decrypt') {
@@ -123,7 +139,7 @@ export function getKmsOperationHumanDescription(operation: KmsOperation) {
     if (operation.keyAgreement) {
       message += ` and key agreement algorithm '${operation.keyAgreement.algorithm}'`
     }
-    return message
+    return message + keyDescription(operation)
   }
 
   if (operation.operation === 'randomBytes') {

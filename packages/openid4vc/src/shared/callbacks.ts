@@ -303,14 +303,14 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
 }
 
 export function getOid4vcDecryptJweCallback(agentContext: AgentContext): DecryptJweCallback {
-  const kms = agentContext.resolve(Kms.KeyManagementApi)
   return async (jwe, options) => {
     // TODO: use custom header zod schema to limit which algorithms can be used
     const { header } = decodeJwtHeader({ jwt: jwe })
 
     // The header kid is chosen by the sender, so only decrypt with the key the caller bound to the session or request
-    let kid = options?.jwk?.kid
-    if (!kid) {
+    const decryptionJwk = options?.jwk
+    let kid = decryptionJwk?.kid
+    if (!decryptionJwk || !kid) {
       agentContext.config.logger.error('Unable to decrypt JWE. No jwk with kid was provided to decrypt with')
       return {
         decrypted: false,
@@ -343,18 +343,10 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
     }
 
     let decryptedPayload: string
-    let publicJwk: Kms.PublicJwk
 
     try {
       const jweService = agentContext.dependencyManager.resolve(JweService)
       const decrypted = await jweService.decryptJwe(agentContext, { jwe, recipientKeyId: kid })
-
-      // TODO: decrypt should return the public jwk instance
-      publicJwk = Kms.PublicJwk.fromUnknown(
-        await kms.getPublicKey({
-          keyId: kid,
-        })
-      )
 
       decryptedPayload = TypedArrayEncoder.toUtf8String(decrypted.data)
     } catch (error) {
@@ -371,7 +363,8 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
 
     return {
       decrypted: true,
-      decryptionJwk: publicJwk.toJson() as Jwk,
+      // The key that was decrypted with, without reading it from the kms again
+      decryptionJwk,
       payload: decryptedPayload,
       header,
     }

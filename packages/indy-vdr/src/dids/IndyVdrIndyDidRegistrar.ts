@@ -122,7 +122,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
     const _verificationKey = options.options.keyId
-      ? await kms.getPublicKey({ keyId: options.options.keyId })
+      ? (await kms.getPublicKey({ keyId: options.options.keyId })).publicKey
       : (
           await kms.createKey({
             type: {
