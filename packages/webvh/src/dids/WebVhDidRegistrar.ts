@@ -8,264 +8,218 @@ import type {
   DidRegistrar,
   DidUpdateOptions,
   DidUpdateResult,
-  VerificationMethod,
 } from '@credo-ts/core'
 
+import { CredoError, DidDocument, DidDocumentRole, DidRecord, DidRepository, parseDid } from '@credo-ts/core'
 import {
-  DidDocument,
-  DidDocumentRole,
-  DidRecord,
-  DidRepository,
-  getKmsKeyIdForVerifiacationMethod,
-  JsonTransformer,
-  Kms,
-} from '@credo-ts/core'
-import {
+  type CreateDIDOptions,
   createDID,
-  type DIDLog,
-  MultibaseEncoding,
-  multibaseEncode,
+  type DeactivateDIDOptions,
+  deactivateDID,
+  type UpdateDIDOptions,
+  type UpdateDIDResult,
   updateDID,
-  type ServiceEndpoint as WebVhServiceEndpoint,
-  type VerificationMethod as WebVhVerificationMethod,
+  type WitnessProofFileEntry,
 } from 'didwebvh-ts'
 
 import { WebVhDidCrypto } from './WebVhDidCrypto'
-import { WebVhDidCryptoSigner } from './WebVhDidCryptoSigner'
-import { WebVhDidRecordMetadataKeys } from './webVhDidRecordMetadataTypes'
+import {
+  failedWebVhRegistration,
+  getWebVhDidLog,
+  getWebVhDidRecord,
+  persistWebVhDocumentWrite,
+  prepareWebVhDocumentWrite,
+  resolveWebVhControllerState,
+  selectWebVhControllerSigner,
+  validateWebVhControllerKeys,
+  validateWebVhDocumentKeys,
+} from './webVhDidController'
+import { WebVhDidRecordMetadataKeys, type WebVhUpdateKeyKmsKeyIds } from './webVhDidRecordMetadataTypes'
 
 export interface WebVhDidCreateOptions extends DidCreateOptions {
-  domain: string
-  path?: string
+  method: 'webvh'
+  didDocument: DidDocument
+  options: Omit<CreateDIDOptions, 'didDocument' | 'signer' | 'verifier' | 'address'> & {
+    address: string
+    keys: DidDocumentKey[]
+    updateKeyKmsKeyIds: WebVhUpdateKeyKmsKeyIds
+  }
 }
 
 export interface WebVhDidUpdateOptions extends DidUpdateOptions {
   didDocument: DidDocument
+  options?: Omit<UpdateDIDOptions, 'didDocument' | 'signer' | 'verifier' | 'fetch' | 'log'> & {
+    keys?: DidDocumentKey[]
+    updateKeyKmsKeyIds?: WebVhUpdateKeyKmsKeyIds
+  }
 }
 
-const normalizeMethodArray = (arr?: (string | { id: string })[]) =>
-  arr?.map((item) => (typeof item === 'string' ? item : item.id))
+export interface WebVhDidDeactivateOptions extends DidDeactivateOptions {
+  options?: Pick<DeactivateDIDOptions, 'updateKeys' | 'witnessProofs'>
+}
 
-/**
- * DID Registrar implementation for the 'webvh' method.
- * Handles creation, update, and (future) deactivation of DIDs using the webvh method.
- */
 export class WebVhDidRegistrar implements DidRegistrar {
   public readonly supportedMethods: string[] = ['webvh']
 
   /**
-   * Creates a new DID document and saves it in the repository.
-   * Handles crypto setup, DID generation, and persistence.
-   * The `paths` option (string with `/` or array of segments) allows adding sub-identifiers
-   * after the domain, joined with `:` in the resulting DID.
-   * @param agentContext The agent context.
-   * @param options The creation options, including domain, optional paths, endpoints, controller, signer, and verifier.
-   * @returns The result of the DID creation, with error handling.
+   * Creates and stores a complete caller-authored document using existing KMS keys; publication is caller-managed.
+   *
+   * @param agentContext Agent context providing storage and KMS.
+   * @param options Complete document, upstream create options, and KMS mappings.
+   * @returns Finished registration with upstream metadata, or a failed registration with its reason.
    */
   public async create(agentContext: AgentContext, options: WebVhDidCreateOptions): Promise<DidCreateResult> {
     try {
-      const { domain, path } = options
-      const paths = path?.replace(/^\/|\/$/g, '').split('/')
-      const domainKey = paths?.length ? [domain, ...paths].join(':') : domain
-      const keys: DidDocumentKey[] = []
-      const didRepository = agentContext.dependencyManager.resolve(DidRepository)
-      const record = await didRepository.findSingleByQuery(agentContext, {
+      this.assertCompleteDocument(options.didDocument)
+      const { keys, updateKeyKmsKeyIds, ...upstreamOptions } = options.options
+      const { address, paths, updateKeys } = upstreamOptions
+      if (!Array.isArray(keys) || !updateKeyKmsKeyIds || !Array.isArray(updateKeys)) {
+        throw new CredoError('Create options require keys, updateKeyKmsKeyIds, and updateKeys')
+      }
+      const domain = [address, ...(paths ?? [])].join(':')
+      const repository = agentContext.dependencyManager.resolve(DidRepository)
+      const existing = await repository.findSingleByQuery(agentContext, {
         role: DidDocumentRole.Created,
-        domain: domainKey,
+        domain,
         method: 'webvh',
       })
-      if (record) return this.handleError(`A record with domain "${domain}" already exists.`)
+      if (existing) throw new CredoError(`A record with domain "${address}" already exists.`)
 
-      // Create crypto instance
-      const { publicKeyMultibase, keyId } = await this.generatePublicKey(agentContext)
-      const signer = new WebVhDidCryptoSigner(agentContext, publicKeyMultibase, keyId)
-      const verifier = new WebVhDidCrypto(agentContext)
-      const baseDid = `did:webvh:{SCID}:${encodeURIComponent(domain)}`
-
-      // didwebvh-ts derives verification method ids as `<did>#<last 8 chars of publicKeyMultibase>`.
-      // We reference the key relatively, as the full id is only known once the SCID has been
-      // derived, and a relative reference is unaffected by the {SCID} substitution that happens
-      // while the initial log entry is hashed.
-      const verificationMethodFragment = `#${publicKeyMultibase.slice(-8)}`
-
-      // Create DID
-      const { did, doc, log } = await createDID({
-        domain,
-        paths,
+      await validateWebVhDocumentKeys(agentContext, options.didDocument, keys)
+      await validateWebVhControllerKeys(agentContext, updateKeyKmsKeyIds)
+      const signer = await selectWebVhControllerSigner(agentContext, updateKeys, updateKeyKmsKeyIds)
+      const result = await createDID({
+        ...upstreamOptions,
+        didDocument: { ...options.didDocument.toJSON(), id: options.didDocument.id },
         signer,
-        updateKeys: [publicKeyMultibase],
-        verificationMethods: [
-          {
-            controller: baseDid,
-            type: 'Multikey',
-            publicKeyMultibase,
-          },
-        ],
-        // didwebvh-ts places verification methods without a purpose in `authentication` only, and
-        // emits an empty `assertionMethod`. Without this, every attested resource signed by this
-        // did would be unverifiable. Setting `purpose: 'assertionMethod'` on the verification
-        // method is not an alternative, as that would empty `authentication` instead.
-        assertionMethod: [verificationMethodFragment],
-        verifier,
+        verifier: new WebVhDidCrypto(agentContext),
       })
-
-      const didDocument = JsonTransformer.fromJSON(doc, DidDocument)
-
-      // Derive the fragment from the actual DID document verificationMethod. didwebvh-ts
-      // is responsible for incorporating and signing over fragments in the log
-      // so we read back what the library produced
-      const matchedVm = didDocument.verificationMethod?.find((vm) => vm.publicKeyMultibase === publicKeyMultibase)
-      const vmIdFragment = matchedVm?.id.split('#')[1]
-      keys.push({
-        kmsKeyId: keyId,
-        didDocumentRelativeKeyId: `#${vmIdFragment}`,
-      })
-      const didRecord = new DidRecord({
-        did,
+      const didDocument = DidDocument.fromJSON(result.doc)
+      await validateWebVhDocumentKeys(agentContext, didDocument, keys)
+      const returnedDomain = this.domainTag(result.did)
+      if (
+        returnedDomain !== domain &&
+        (await repository.findSingleByQuery(agentContext, {
+          role: DidDocumentRole.Created,
+          domain: returnedDomain,
+          method: 'webvh',
+        }))
+      ) {
+        throw new CredoError(`A record with domain "${returnedDomain}" already exists.`)
+      }
+      const record = new DidRecord({
+        did: result.did,
         didDocument,
         role: DidDocumentRole.Created,
         keys,
+        tags: { domain: returnedDomain },
       })
-      didRecord.metadata.set(WebVhDidRecordMetadataKeys.DidLog, log)
-      didRecord.metadata.set(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds, { [publicKeyMultibase]: keyId })
-      didRecord.setTags({ domain: domainKey })
-      await didRepository.save(agentContext, didRecord)
-
-      return {
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'finished',
-          did,
-          didDocument,
-        },
-      }
+      this.persistResult(record, result, updateKeyKmsKeyIds)
+      await repository.save(agentContext, record)
+      return this.finished(result, didDocument)
     } catch (error) {
-      return this.handleError(error instanceof Error ? error.message : 'Unknown error occurred.')
+      return this.failed(agentContext, 'create', error)
     }
   }
 
   /**
-   * Updates an existing DID document and its log in the repository.
-   * Uses internal logic to validate verification methods and handle errors.
-   * @param agentContext The agent context.
-   * @param options The update options, including DID, log, signer, verifier, and services.
-   * @returns The result of the DID update, with error handling and validation.
+   * Replaces the complete document using authenticated controller keys, retaining matching document-key mappings when omitted.
+   *
+   * @param agentContext Agent context providing storage, KMS, and configured fetch.
+   * @param options Controlled DID, replacement document, and optional upstream options and KMS mappings.
+   * @returns Finished registration with upstream metadata, or a failed registration with its reason.
    */
   public async update(agentContext: AgentContext, options: WebVhDidUpdateOptions): Promise<DidUpdateResult> {
     try {
-      const { did, didDocument: inputDidDocument } = options
-      const didRepository = agentContext.dependencyManager.resolve(DidRepository)
-      const didRecord = await didRepository.findSingleByQuery(agentContext, {
-        role: DidDocumentRole.Created,
-        did,
-        method: 'webvh',
-      })
-      if (!didRecord) return this.handleError('DID not found')
-
-      const log = didRecord.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as DIDLog
-      const domain = didRecord.getTag('domain') as string
-      const activeUpdateKey = log[log.length - 1]?.parameters?.updateKeys?.[0] ?? log[0]?.parameters?.updateKeys?.[0]
-      const vm = didRecord.didDocument?.verificationMethod?.find((v) => v.publicKeyMultibase === activeUpdateKey)
-      let keyId = vm ? getKmsKeyIdForVerifiacationMethod(vm, didRecord.keys) : undefined
-      if (!keyId && activeUpdateKey)
-        keyId = didRecord.metadata.get(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds)?.[activeUpdateKey]
-
-      if (!log) return this.handleError('The log registry must be created before it can be edited.')
-      if (!keyId) return this.handleError('The key ID must be present before the log can be edited.')
-
-      const {
-        controller,
-        authentication,
-        assertionMethod,
-        keyAgreement,
-        service: services,
-        verificationMethod: inputVerificationMethod,
-      } = inputDidDocument
-      const lastState = log[log.length - 1].state
-      const verificationMethods = inputVerificationMethod ?? (lastState.verificationMethod as VerificationMethod[])
-      // didwebvh-ts resets the verification relationships whenever verification methods are
-      // supplied, so we fall back to the last log state to avoid dropping `assertionMethod` for
-      // callers that only intend to update e.g. the services. References to keys that the update
-      // removes are left behind, as carrying them over would publish a dangling reference.
-      const assertionMethodRefs =
-        normalizeMethodArray(assertionMethod) ??
-        (lastState.assertionMethod as string[] | undefined)?.filter((reference) =>
-          verificationMethods?.some((vm) => vm.id.endsWith(reference))
-        )
-      const { updateKeys } = log[log.length - 1].parameters
-      const verificationMethod = verificationMethods?.find((vm) => vm.publicKeyMultibase)
-      if (!verificationMethod?.publicKeyMultibase)
-        return this.handleError('At least one verification method with publicKeyMultibase must be provided.')
-
-      // Get signer/verifier
-      const signer = new WebVhDidCryptoSigner(agentContext, verificationMethod.publicKeyMultibase, keyId)
-      const verifier = new WebVhDidCrypto(agentContext)
-
-      const { log: logResult, doc } = await updateDID({
-        log,
-        signer,
-        verifier,
-        domain,
-        updateKeys,
-        ...inputDidDocument,
-        verificationMethods: verificationMethods as unknown as WebVhVerificationMethod[],
-        controller: Array.isArray(controller) ? controller[0] : controller,
-        authentication: normalizeMethodArray(authentication),
-        assertionMethod: assertionMethodRefs,
-        keyAgreement: normalizeMethodArray(keyAgreement),
-        services: services as unknown as WebVhServiceEndpoint[],
-      })
-      didRecord.metadata.set(WebVhDidRecordMetadataKeys.DidLog, logResult)
-      didRecord.didDocument = JsonTransformer.fromJSON(doc, DidDocument)
-      await didRepository.update(agentContext, didRecord)
-
-      return {
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'finished',
-          did,
-          didDocument: didRecord.didDocument,
-        },
+      this.assertCompleteDocument(options.didDocument)
+      if (options.didDocumentOperation && options.didDocumentOperation !== 'setDidDocument') {
+        throw new CredoError('notSupported: WebVH update requires setDidDocument with a complete DID document')
       }
+      const prepared = await prepareWebVhDocumentWrite(
+        agentContext,
+        options.did,
+        options.didDocument,
+        options.options ?? {}
+      )
+      const result = await updateDID(prepared.writerOptions)
+      const didDocument = await persistWebVhDocumentWrite(agentContext, prepared, result)
+      return this.finished(result, didDocument)
     } catch (error) {
-      return this.handleError(error instanceof Error ? error.message : 'Unknown error occurred.')
+      return this.failed(agentContext, 'update', error)
     }
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public deactivate(_agentContext: AgentContext, _options: DidDeactivateOptions): Promise<DidDeactivateResult> {
-    throw new Error('Method not implemented.')
   }
 
   /**
-   * Generates a new Ed25519 public key in multibase format and stores the private key in the wallet.
-   * @param agentContext The agent context.
-   * @returns The public key in multibase format.
+   * Stores a signed deactivation entry; active pre-rotation must first be cleared by a separate update.
+   *
+   * @param agentContext Agent context providing storage, KMS, and configured fetch.
+   * @param options Controlled DID and optional update keys and witness proofs.
+   * @returns Finished deactivation with upstream metadata, or a failed registration with its reason.
    */
-  private async generatePublicKey(agentContext: AgentContext): Promise<{ publicKeyMultibase: string; keyId: string }> {
-    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-    const key = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
-    const publicKeyBytes = Kms.PublicJwk.fromPublicJwk(key.publicJwk).publicKey.publicKey
-
-    return {
-      publicKeyMultibase: multibaseEncode(
-        new Uint8Array([0xed, 0x01, ...publicKeyBytes]),
-        MultibaseEncoding.BASE58_BTC
-      ),
-      keyId: key.keyId,
+  public async deactivate(
+    agentContext: AgentContext,
+    options: WebVhDidDeactivateOptions
+  ): Promise<DidDeactivateResult> {
+    try {
+      const record = await getWebVhDidRecord(agentContext, options.did)
+      const state = await resolveWebVhControllerState(agentContext, record, options.options?.witnessProofs)
+      const updateKeys = state.didDocumentMetadata.updateKeys
+      if (!Array.isArray(updateKeys) || !updateKeys.every((key): key is string => typeof key === 'string')) {
+        throw new CredoError(`unknownError: controlled DID '${options.did}' has no authenticated update keys`)
+      }
+      const controllerKeys =
+        record.metadata.get<WebVhUpdateKeyKmsKeyIds>(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds) ?? {}
+      const signer = await selectWebVhControllerSigner(agentContext, updateKeys, controllerKeys)
+      const result = await deactivateDID({
+        log: getWebVhDidLog(record),
+        updateKeys: options.options?.updateKeys,
+        witnessProofs:
+          options.options?.witnessProofs ??
+          record.metadata.get<WitnessProofFileEntry[]>(WebVhDidRecordMetadataKeys.WitnessProofs) ??
+          undefined,
+        signer,
+        verifier: new WebVhDidCrypto(agentContext),
+        fetch: agentContext.config.fetch.bind(agentContext.config),
+      })
+      const didDocument = DidDocument.fromJSON(result.doc)
+      this.persistResult(record, result, controllerKeys)
+      if (options.options?.witnessProofs)
+        record.metadata.set(WebVhDidRecordMetadataKeys.WitnessProofs, options.options.witnessProofs)
+      await agentContext.dependencyManager.resolve(DidRepository).update(agentContext, record)
+      return this.finished(result, didDocument)
+    } catch (error) {
+      return this.failed(agentContext, 'deactivate', error)
     }
   }
 
-  private handleError(reason: string): DidUpdateResult | DidCreateResult {
-    return {
-      didDocumentMetadata: {},
-      didRegistrationMetadata: {},
-      didState: {
-        state: 'failed',
-        reason,
-      },
+  private assertCompleteDocument(document: DidDocument) {
+    if (!(document instanceof DidDocument) || !document.id) {
+      throw new CredoError('notSupported: WebVH requires a complete DidDocument with an id')
     }
+  }
+
+  private domainTag(did: string) {
+    // Preserve the legacy domain[:path] tag using the location upstream actually returned.
+    return parseDid(did).id.split(':').slice(1).map(decodeURIComponent).join(':')
+  }
+
+  private persistResult(record: DidRecord, result: UpdateDIDResult, controllerKeys: WebVhUpdateKeyKmsKeyIds) {
+    record.did = result.did
+    record.didDocument = DidDocument.fromJSON(result.doc)
+    record.metadata.set(WebVhDidRecordMetadataKeys.DidLog, result.log)
+    record.metadata.set(WebVhDidRecordMetadataKeys.ControllerMetadata, result.meta)
+    record.metadata.set(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds, controllerKeys)
+  }
+
+  private finished(result: UpdateDIDResult, didDocument: DidDocument): DidCreateResult {
+    return {
+      didDocumentMetadata: result.meta,
+      didRegistrationMetadata: {},
+      didState: { state: 'finished', did: result.did, didDocument },
+    }
+  }
+
+  private failed(agentContext: AgentContext, operation: string, error: unknown): DidCreateResult {
+    return failedWebVhRegistration(agentContext, operation, error)
   }
 }

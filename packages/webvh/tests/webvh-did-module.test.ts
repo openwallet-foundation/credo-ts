@@ -5,7 +5,7 @@ import { getAgentOptions } from '../../core/tests/helpers'
 import { WebVhDidResolver } from '../src/dids/WebVhDidResolver'
 
 import { getWebVhModules } from './setupWebVhModule'
-import { validDid } from './utils'
+import { createWebVhTestOptions, validDid } from './utils'
 
 // Simplified partial mock. Keep unmocked exports (e.g. multibaseEncode) for registrar internals.
 vi.mock('didwebvh-ts', async () => {
@@ -28,25 +28,6 @@ vi.mock('didwebvh-ts', async () => {
         authentication: ['did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1'],
       },
       did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
-    }),
-    createDID: vi.fn().mockResolvedValue({
-      doc: {
-        '@context': ['https://www.w3.org/ns/did/v1'],
-        id: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
-        verificationMethod: [
-          {
-            id: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1',
-            type: 'Multikey',
-            controller: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
-            publicKeyMultibase: 'z6MkkBaWtQKyx7Mr54XaXyMAEpNKqphK4x7ztuBpSfR6Wqwr',
-          },
-        ],
-        authentication: ['did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1'],
-        assertionMethod: ['did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1'],
-        keyAgreement: ['did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1'],
-      },
-      did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
-      log: [],
     }),
     updateDID: vi.fn().mockResolvedValue({
       did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
@@ -94,14 +75,12 @@ describe('WebVH DID module', () => {
   })
 
   it('should register a webvh DID through the configured registrar', async () => {
-    const didCreateResult = await agent.dids.create({ method: 'webvh', domain: 'domain.example' })
+    const didCreateResult = await agent.dids.create(await createWebVhTestOptions(agent.context, 'domain.example'))
 
     expect(didCreateResult.didState.state).toBe('finished')
 
     if (didCreateResult.didState.state === 'finished') {
-      expect(didCreateResult.didState.did).toBe(
-        'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example'
-      )
+      expect(didCreateResult.didState.did).toMatch(/^did:webvh:[^:]+:domain\.example$/)
     }
 
     const createdDids = await agent.dids.getCreatedDids({ method: 'webvh' })

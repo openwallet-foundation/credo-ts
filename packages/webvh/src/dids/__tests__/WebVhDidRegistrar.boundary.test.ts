@@ -1,327 +1,118 @@
-/**
- * Boundary contract tests for the WebVhDidRegistrar.
- *
- * These tests verify that the Credo WebVH integration layer remains behaviorally
- * aligned with the upstream `didwebvh-ts` library. Specifically:
- *
- * 1. The DID log produced by Credo's registrar conforms to the `DIDLogEntry`
- *    interface defined in `didwebvh-ts` — no reimplementation drift.
- * 2. Log state transitions (create → update) produce entries with monotonically
- *    increasing version indices and valid timestamps.
- * 3. A log produced by Credo's create/update operations can be resolved by the
- *    upstream `resolveDIDFromLog` function directly, proving structural parity.
- * 4. Resource URL parsing in the Credo resources module aligns with the URL
- *    format that `didwebvh-ts` produces when creating DIDs.
- */
-
 import {
   CacheModuleConfig,
-  DidDocument,
   DidDocumentService,
   DidRepository,
   InjectionSymbols,
   InMemoryLruCache,
-  VerificationMethod,
 } from '@credo-ts/core'
-import { resolveDIDFromLog } from 'didwebvh-ts'
+import * as webvh from 'didwebvh-ts'
 import { Subject } from 'rxjs'
-import { vi } from 'vitest'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
-import type { WebVhDidLog, WebVhDidLogEntry } from '../../resources'
-import { parseResourceId } from '../../resources'
-import { WebVhDidCrypto } from '../WebVhDidCrypto'
+import { createWebVhTestOptions } from '../../../tests/utils'
 import { WebVhDidRegistrar } from '../WebVhDidRegistrar'
 import { WebVhDidRecordMetadataKeys } from '../webVhDidRecordMetadataTypes'
 
-// didwebvh-ts calls fetchWitnessProofs during resolve/update. In this offline unit-test
-// environment those HTTP requests fail (ENOTFOUND) and generate stderr noise even when
-// the operation succeeds. We stub global fetch to return an empty witness-proof list,
-// which preserves behavior (witness proofs are optional here) while keeping output clean.
-vi.stubGlobal(
-  'fetch',
-  vi.fn(async () => new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } }))
-)
+vi.mock('didwebvh-ts', { spy: true })
 
-const inMemoryStorageService = new InMemoryStorageService()
-
-describe('WebVhDidRegistrar boundary contracts', () => {
-  let registrar: WebVhDidRegistrar
+describe('WebVhDidRegistrar adapter boundary', () => {
   let agentContext: ReturnType<typeof getAgentContext>
-  let repository: DidRepository
+  const registrar = new WebVhDidRegistrar()
 
   beforeEach(() => {
-    registrar = new WebVhDidRegistrar()
-    const agentConfig = getAgentConfig('WebVhDidRegistrarBoundaryTest')
+    vi.clearAllMocks()
     agentContext = getAgentContext({
-      agentConfig,
+      agentConfig: getAgentConfig('WebVhDidBoundary'),
       registerInstances: [
         [InjectionSymbols.Stop$, new Subject<boolean>()],
         [InjectionSymbols.AgentDependencies, agentDependencies],
-        [InjectionSymbols.StorageService, inMemoryStorageService],
+        [InjectionSymbols.StorageService, new InMemoryStorageService()],
         [CacheModuleConfig, new CacheModuleConfig({ cache: new InMemoryLruCache({ limit: 500 }) })],
       ],
     })
-    repository = agentContext.dependencyManager.resolve(DidRepository)
   })
 
-  afterEach(() => {
-    inMemoryStorageService.contextCorrelationIdToRecords = {}
-  })
+  afterEach(() => vi.restoreAllMocks())
 
-  describe('DID log shape conformance', () => {
-    it('stores a valid WebVhDidLog in DidRecord metadata after create', async () => {
-      const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      expect(result.didState.state).toBe('finished')
-
-      const did = result.didState.did
-      if (!did) throw new Error('create failed')
-      const record = await repository.findSingleByQuery(agentContext, { did })
-      expect(record).toBeDefined()
-
-      const log = record?.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
-      expect(Array.isArray(log)).toBe(true)
-      expect(log).toHaveLength(1)
-
-      const entry: WebVhDidLogEntry = log[0]
-      expect(typeof entry.versionId).toBe('string')
-      expect(entry.versionId).toMatch(/^1-/)
-      expect(typeof entry.versionTime).toBe('string')
-      // ISO 8601 datetime
-      expect(() => new Date(entry.versionTime).toISOString()).not.toThrow()
-      expect(entry.parameters).toBeDefined()
-      expect(typeof entry.parameters).toBe('object')
-      expect(entry.state).toBeDefined()
-      expect(entry.state.id).toBe(did)
-    })
-
-    it('each log entry has updateKeys in parameters after create', async () => {
-      const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      const did = result.didState.did
-      if (!did) throw new Error('create failed')
-      const record = await repository.findSingleByQuery(agentContext, { did })
-      const log = record?.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
-
-      expect(Array.isArray(log[0].parameters.updateKeys)).toBe(true)
-      expect(log[0].parameters.updateKeys?.length).toBeGreaterThan(0)
-    })
-  })
-
-  describe('DID log state transitions', () => {
-    it('log grows by one entry after update', async () => {
-      const createResult = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      expect(createResult.didState.state).toBe('finished')
-      const { did, didDocument } = createResult.didState
-      if (!did || !didDocument) throw new Error('create failed')
-
-      didDocument.service = [
-        new DidDocumentService({ id: '#test', type: 'TestService', serviceEndpoint: 'https://example.com' }),
-      ]
-      const updateResult = await registrar.update(agentContext, { did, didDocument })
-      expect(updateResult.didState.state).toBe('finished')
-
-      const record = await repository.findSingleByQuery(agentContext, { did })
-      const log = record?.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
-
-      expect(log).toHaveLength(2)
-    })
-
-    it('version indices are monotonically increasing across log entries', async () => {
-      const createResult = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      const { did, didDocument } = createResult.didState
-      if (!did || !didDocument) throw new Error('create failed')
-
-      didDocument.service = [
-        new DidDocumentService({ id: '#test', type: 'TestService', serviceEndpoint: 'https://example.com' }),
-      ]
-      await registrar.update(agentContext, { did, didDocument })
-
-      const record = await repository.findSingleByQuery(agentContext, { did })
-      const log = record?.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
-
-      const indices = log.map((e) => parseInt(e.versionId.split('-')[0], 10))
-      for (let i = 1; i < indices.length; i++) {
-        expect(indices[i]).toBeGreaterThan(indices[i - 1])
-      }
-    })
-  })
-
-  describe('upstream resolveDIDFromLog round-trip', () => {
-    it('a log produced by create can be resolved by the upstream resolveDIDFromLog', async () => {
-      const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      expect(result.didState.state).toBe('finished')
-      const did = result.didState.did
-      if (!did) throw new Error('create failed')
-
-      const record = await repository.findSingleByQuery(agentContext, { did })
-      const log = record?.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
-
-      // Delegate directly to the upstream library — no Credo resolver involved.
-      const verifier = new WebVhDidCrypto(agentContext)
-      const resolved = await resolveDIDFromLog(log, { verifier })
-
-      expect(resolved.did).toBe(did)
-      expect(resolved.meta.error).toBeUndefined()
-      expect(resolved.doc).toBeDefined()
-      expect(resolved.doc.id).toBe(did)
-    })
-
-    it('a log produced by create+update can be resolved by the upstream resolveDIDFromLog', async () => {
-      const createResult = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      const { did, didDocument } = createResult.didState
-      if (!did || !didDocument) throw new Error('create failed')
-
-      didDocument.service = [
-        new DidDocumentService({ id: '#test', type: 'TestService', serviceEndpoint: 'https://example.com' }),
-      ]
-      const updateResult = await registrar.update(agentContext, { did, didDocument })
-      expect(updateResult.didState.state).toBe('finished')
-
-      const record = await repository.findSingleByQuery(agentContext, { did })
-      const log = record?.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
-
-      const verifier = new WebVhDidCrypto(agentContext)
-      const resolved = await resolveDIDFromLog(log, { verifier })
-
-      expect(resolved.did).toBe(did)
-      expect(resolved.meta.error).toBeUndefined()
-      expect(resolved.doc.service).toBeDefined()
-    })
-  })
-
-  describe('assertionMethod conformance', () => {
-    it('references the created key from assertionMethod, and the log still resolves upstream', async () => {
-      const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app', path: 'credo/01' })
-      const { did, didDocument } = result.didState
-      if (!did || !didDocument) throw new Error('create failed')
-
-      // Without an explicit assertionMethod, didwebvh-ts emits an empty array here, which makes
-      // every attested resource signed by this did unverifiable.
-      expect(didDocument.assertionMethod).toHaveLength(1)
-      const verificationMethod = didDocument.dereferenceKey(didDocument.assertionMethod?.[0] as string, [
-        'assertionMethod',
-      ])
-      expect(verificationMethod.publicKeyMultibase).toBe(didDocument.verificationMethod?.[0].publicKeyMultibase)
-
-      // The relative reference must not disturb the {SCID} substitution the initial entry is hashed over
-      const record = await repository.findSingleByQuery(agentContext, { did })
-      const log = record?.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
-      const resolved = await resolveDIDFromLog(log, { verifier: new WebVhDidCrypto(agentContext) })
-
-      expect(resolved.meta.error).toBeUndefined()
-      expect(resolved.doc.assertionMethod).toEqual(didDocument.assertionMethod)
-    })
-
-    it('preserves assertionMethod across an update that does not set it', async () => {
-      const createResult = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      const { did, didDocument } = createResult.didState
-      if (!did || !didDocument) throw new Error('create failed')
-      const assertionMethod = didDocument.assertionMethod
-
-      // didwebvh-ts resets the verification relationships whenever verification methods are
-      // supplied, so an update that only changes the services must not drop assertionMethod.
-      didDocument.assertionMethod = undefined
-      didDocument.service = [
-        new DidDocumentService({ id: '#test', type: 'TestService', serviceEndpoint: 'https://example.com' }),
-      ]
-      const updateResult = await registrar.update(agentContext, { did, didDocument })
-
-      expect(updateResult.didState.state).toBe('finished')
-      expect(updateResult.didState.didDocument?.assertionMethod).toEqual(assertionMethod)
-    })
-
-    it('drops assertionMethod references to verification methods an update removes', async () => {
-      const createResult = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      const { did, didDocument } = createResult.didState
-      if (!did || !didDocument) throw new Error('create failed')
-
-      // The update key must stay first, as the registrar signs the log entry with it
-      const updateKeyVerificationMethod = didDocument.verificationMethod?.[0] as VerificationMethod
-      const extraVerificationMethod = new VerificationMethod({
-        id: `${did}#extrakey1`,
-        type: 'Multikey',
-        controller: did,
-        publicKeyMultibase: 'z6MkukEa8GPVCEPy7EzRSbeHPXD1vsuPy3eD13CkDKQsoCGS',
+  test('passes authored create input and persists upstream results', async () => {
+    const createDID = vi.spyOn(webvh, 'createDID')
+    const options = await createWebVhTestOptions(agentContext)
+    options.options.watchers = ['https://watcher.example']
+    options.options.alsoKnownAsWeb = false
+    const result = await registrar.create(agentContext, options)
+    expect(result.didState.state).toBe('finished')
+    expect(createDID).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address: options.options.address,
+        didDocument: options.didDocument.toJSON(),
+        updateKeys: options.options.updateKeys,
+        watchers: options.options.watchers,
+        alsoKnownAsWeb: false,
+        signer: expect.any(Object),
+        verifier: expect.any(Object),
       })
-
-      didDocument.verificationMethod = [updateKeyVerificationMethod, extraVerificationMethod]
-      didDocument.assertionMethod = [updateKeyVerificationMethod.id, extraVerificationMethod.id]
-      const withExtraKey = await registrar.update(agentContext, { did, didDocument })
-      expect(withExtraKey.didState.didDocument?.assertionMethod).toHaveLength(2)
-
-      // Removing the extra key without restating assertionMethod must not carry its reference over
-      const rotated = withExtraKey.didState.didDocument as DidDocument
-      rotated.verificationMethod = [updateKeyVerificationMethod]
-      rotated.assertionMethod = undefined
-      const updateResult = await registrar.update(agentContext, { did, didDocument: rotated })
-
-      expect(updateResult.didState.state).toBe('finished')
-      expect(updateResult.didState.didDocument?.assertionMethod).toEqual([updateKeyVerificationMethod.id])
-    })
+    )
+    expect(createDID.mock.calls[0][0]).not.toHaveProperty('keys')
+    expect(createDID.mock.calls[0][0]).not.toHaveProperty('updateKeyKmsKeyIds')
+    const returned = await createDID.mock.results[0].value
+    const record = await agentContext.resolve(DidRepository).getSingleByQuery(agentContext, { did: returned.did })
+    expect(record.metadata.get(WebVhDidRecordMetadataKeys.DidLog)).toEqual(returned.log)
+    expect(result.didDocumentMetadata).toEqual(returned.meta)
   })
 
-  describe('key fragment conformance', () => {
-    it('stored didDocumentRelativeKeyId matches the actual fragment in the DID document verificationMethod', async () => {
-      const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      expect(result.didState.state).toBe('finished')
-      const did = result.didState.did
-      if (!did) throw new Error('create failed')
-
-      const record = await repository.findSingleByQuery(agentContext, { did })
-      expect(record?.keys).toBeDefined()
-      expect(record?.keys?.length).toBeGreaterThan(0)
-
-      const storedFragment = record?.keys?.[0].didDocumentRelativeKeyId
-      if (!storedFragment) throw new Error('Missing didDocumentRelativeKeyId')
-
-      // The stored fragment must start with '#' and must match the actual VM id
-      // in the resolved DID document
-      expect(storedFragment).toMatch(/^#/)
-
-      const vmId = record?.didDocument?.verificationMethod?.[0]?.id
-      if (!vmId) throw new Error('Missing verificationMethod id')
-      expect(vmId.endsWith(storedFragment)).toBe(true)
+  test('update forwards the complete document, options and agent fetch without merging', async () => {
+    const options = await createWebVhTestOptions(agentContext)
+    const created = await registrar.create(agentContext, options)
+    if (created.didState.state !== 'finished') throw new Error('Fixture create failed')
+    const { did, didDocument } = created.didState
+    didDocument.service = [new DidDocumentService({ id: '#new', type: 'Test', serviceEndpoint: 'https://example.com' })]
+    didDocument.assertionMethod = undefined
+    const updateDID = vi.spyOn(webvh, 'updateDID')
+    const result = await registrar.update(agentContext, {
+      did,
+      didDocument,
+      options: {
+        watchers: ['https://watcher.example'],
+        keys: options.options.keys,
+        updateKeyKmsKeyIds: options.options.updateKeyKmsKeyIds,
+      },
     })
-
-    it('didDocumentRelativeKeyId matches via endsWith semantics as used in Credo core', async () => {
-      const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      const did = result.didState.did
-      if (!did) throw new Error('create failed')
-
-      const record = await repository.findSingleByQuery(agentContext, { did })
-      const storedFragment = record?.keys?.[0].didDocumentRelativeKeyId
-      if (!storedFragment) throw new Error('Missing didDocumentRelativeKeyId')
-      const vmId = record?.didDocument?.verificationMethod?.[0]?.id
-      if (!vmId) throw new Error('Missing verificationMethod id')
-
-      // This mirrors the lookup logic used by Credo core (DidsApi line ~208) and the
-      // corrected cryptosuite: verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-      expect(vmId.endsWith(storedFragment)).toBe(true)
-    })
+    expect(result.didState.state).toBe('finished')
+    expect(updateDID).toHaveBeenCalledWith(
+      expect.objectContaining({
+        didDocument: didDocument.toJSON(),
+        watchers: ['https://watcher.example'],
+        fetch: expect.any(Function),
+      })
+    )
+    expect(updateDID.mock.calls[0][0]).not.toHaveProperty('keys')
+    expect(updateDID.mock.calls[0][0]).not.toHaveProperty('updateKeyKmsKeyIds')
+    expect(webvh.migrateDID).not.toHaveBeenCalled()
   })
 
-  describe('resource URL parsing alignment', () => {
-    it('parseResourceId correctly handles URLs in the format produced by didwebvh-ts DIDs', async () => {
-      const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      const did = result.didState.did
-      if (!did) throw new Error('create failed')
+  test('deactivate injects fetch and persists its returned log and metadata', async () => {
+    const options = await createWebVhTestOptions(agentContext)
+    const created = await registrar.create(agentContext, options)
+    if (created.didState.state !== 'finished') throw new Error('Fixture create failed')
+    const deactivateDID = vi.spyOn(webvh, 'deactivateDID')
+    const result = await registrar.deactivate(agentContext, { did: created.didState.did })
+    expect(result.didState.state).toBe('finished')
+    expect(deactivateDID).toHaveBeenCalledWith(expect.objectContaining({ fetch: expect.any(Function) }))
+    const returned = await deactivateDID.mock.results[0].value
+    const record = await agentContext.resolve(DidRepository).getSingleByQuery(agentContext, { did: returned.did })
+    expect(record.metadata.get(WebVhDidRecordMetadataKeys.DidLog)).toEqual(returned.log)
+    expect(result.didDocumentMetadata).toEqual(returned.meta)
+  })
 
-      // Simulate a resource URL derived from a real did:webvh DID
-      const resourceId = `${did}/resources/zQmSomeFakeHash`
-      const parsed = parseResourceId(resourceId)
-
-      expect(parsed).not.toBeNull()
-      expect(parsed?.did).toBe(did)
-      expect(parsed?.resourceId).toBe('zQmSomeFakeHash')
-    })
-
-    it('parseResourceId rejects a plain DID without a resource path', async () => {
-      const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      const did = result.didState.did
-      if (!did) throw new Error('create failed')
-
-      expect(parseResourceId(did)).toBeNull()
-    })
+  test('retains thrown upstream detail and stringifies non-Error failures', async () => {
+    const options = await createWebVhTestOptions(agentContext)
+    vi.spyOn(webvh, 'createDID')
+      .mockRejectedValueOnce(new Error('specific upstream validation detail'))
+      .mockRejectedValueOnce(42)
+    const first = await registrar.create(agentContext, options)
+    expect(first.didState).toEqual({ state: 'failed', reason: 'unknownError: specific upstream validation detail' })
+    const second = await registrar.create(agentContext, options)
+    expect(second.didState).toEqual({ state: 'failed', reason: 'unknownError: 42' })
   })
 })
