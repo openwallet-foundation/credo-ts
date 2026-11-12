@@ -1,4 +1,4 @@
-import type { AgentContext, Constructable, SdJwtVc } from '@credo-ts/core'
+import type { AgentContext, Constructable, SdJwtVc, X509CertificateExtensionsOptions } from '@credo-ts/core'
 import {
   Agent,
   CredoError,
@@ -12,10 +12,14 @@ import {
   KeyDidRegistrar,
   KeyDidResolver,
   parseDid,
+  TokenStatusListModuleConfig,
   TypedArrayEncoder,
   X509Certificate,
+  X509ExtendedKeyUsage,
+  X509KeyUsage,
   X509ModuleConfig,
   X509Service,
+  X509ValidationError,
 } from '@credo-ts/core'
 import { createHeaderAndPayload, SLException, StatusList } from '@owf/token-status-list'
 import { decodeSdJwtSync, getClaimsSync, Jwt, SDJwt } from '@sd-jwt/core'
@@ -2286,6 +2290,217 @@ describe('SdJwtVcService', () => {
       if (!verificationResult.isValid) {
         expect(verificationResult.error?.message).toContain('Status List JWT verification failed')
       }
+    })
+
+    describe('with the status signing key purpose required', () => {
+      type StatusExtensions = {
+        leafExtensions?: X509CertificateExtensionsOptions
+        rootExtensions?: X509CertificateExtensionsOptions
+      }
+
+      const createStatusRootAndLeaf = async ({ leafExtensions, rootExtensions }: StatusExtensions) => {
+        const rootKey = PublicJwk.fromPublicJwk(
+          (await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+        )
+        const leafKey = PublicJwk.fromPublicJwk(
+          (await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+        )
+        const validity = { notBefore: new Date('2020-01-01'), notAfter: new Date('2035-01-01') }
+
+        const rootCertificate = await X509Service.createCertificate(agent.context, {
+          authorityKey: rootKey,
+          issuer: { commonName: 'Status Root' },
+          validity,
+          extensions: { basicConstraints: { ca: true }, ...rootExtensions },
+        })
+        const leafCertificate = await X509Service.createCertificate(agent.context, {
+          authorityKey: rootKey,
+          subjectPublicKey: leafKey,
+          issuer: { commonName: 'Status Root' },
+          subject: { commonName: 'Status Leaf' },
+          validity,
+          extensions: leafExtensions,
+        })
+        leafCertificate.keyId = leafKey.keyId
+
+        return { rootCertificate, leafKey, leafCertificate }
+      }
+
+      // Only the status root is trusted, so a check on the wrong end of the chain fails these tests.
+      const verifyWithStatusRoot = async (statusExtensions: StatusExtensions = {}) => {
+        const issuance = await createSigningCertificate('Issuance')
+        const status = await createStatusRootAndLeaf(statusExtensions)
+
+        const presentation = await signX509CredentialWithStatus(issuance.certificate)
+        mockStatusList(await generateX509StatusList(agent.context, status.leafKey, status.leafCertificate, 24, []))
+
+        return sdJwtVcService.verify(agent.context, {
+          compactSdJwtVc: presentation,
+          trustedIssuers: [
+            {
+              method: 'x509',
+              issuance: [issuance.certificate.toString('base64')],
+              status: [status.rootCertificate.toString('base64')],
+            },
+          ],
+        })
+      }
+
+      beforeEach(() => {
+        agent.context.dependencyManager.registerInstance(
+          TokenStatusListModuleConfig,
+          new TokenStatusListModuleConfig({ requireStatusSigningKeyPurpose: true })
+        )
+      })
+
+      afterEach(() => {
+        agent.context.dependencyManager.registerInstance(TokenStatusListModuleConfig, new TokenStatusListModuleConfig())
+      })
+
+      test('x509: a status leaf with the extended key usage is accepted', async () => {
+        const verificationResult = await verifyWithStatusRoot({
+          leafExtensions: {
+            extendedKeyUsage: { usages: [X509ExtendedKeyUsage.OauthStatusSigning] },
+            keyUsage: { usages: [X509KeyUsage.DigitalSignature] },
+          },
+        })
+
+        expect(verificationResult.isValid).toBe(true)
+      })
+
+      const statusListChainError =
+        'Status List JWT verification failed: The status list certificate chain could not be validated against the trusted status certificates.'
+      const missingStatusSigningMessage = `${statusListChainError} Certificate 'CN=Status Leaf' does not have the required extended key usages: OauthStatusSigning (1.3.6.1.5.5.7.3.45)`
+
+      test('x509: a status leaf without the extended key usage is rejected', async () => {
+        const verificationResult = await verifyWithStatusRoot()
+
+        expect(verificationResult.isValid).toBe(false)
+        if (!verificationResult.isValid) {
+          expect(verificationResult.error?.message).toBe(missingStatusSigningMessage)
+
+          // The key purpose is checked as part of the chain validation.
+          const chainValidationError = (verificationResult.error?.cause as Error | undefined)?.cause
+          expect(chainValidationError).toBeInstanceOf(X509ValidationError)
+          expect(
+            (chainValidationError as X509ValidationError).validationResult.validations.extendedKeyUsage?.isValid
+          ).toBe(false)
+        }
+      })
+
+      test('x509: the extended key usage only on the trusted status root is rejected', async () => {
+        const verificationResult = await verifyWithStatusRoot({
+          rootExtensions: { extendedKeyUsage: { usages: [X509ExtendedKeyUsage.OauthStatusSigning] } },
+        })
+
+        expect(verificationResult.isValid).toBe(false)
+        if (!verificationResult.isValid) {
+          expect(verificationResult.error?.message).toBe(missingStatusSigningMessage)
+        }
+      })
+
+      test('x509: a status leaf with a different extended key usage is rejected', async () => {
+        const verificationResult = await verifyWithStatusRoot({
+          leafExtensions: { extendedKeyUsage: { usages: [X509ExtendedKeyUsage.CodeSigning] } },
+        })
+
+        expect(verificationResult.isValid).toBe(false)
+        if (!verificationResult.isValid) {
+          expect(verificationResult.error?.message).toBe(missingStatusSigningMessage)
+        }
+      })
+
+      test('x509: a status leaf whose key usage excludes signing is rejected', async () => {
+        const verificationResult = await verifyWithStatusRoot({
+          leafExtensions: {
+            extendedKeyUsage: { usages: [X509ExtendedKeyUsage.OauthStatusSigning] },
+            keyUsage: { usages: [X509KeyUsage.KeyEncipherment] },
+          },
+        })
+
+        expect(verificationResult.isValid).toBe(false)
+        if (!verificationResult.isValid) {
+          expect(verificationResult.error?.message).toBe(
+            `${statusListChainError} Certificate 'CN=Status Leaf' does not have the required key usages: DigitalSignature`
+          )
+        }
+      })
+
+      test('x509: the credential issuer certificate does not need the extended key usage', async () => {
+        const issuance = await createSigningCertificate('Issuance')
+
+        const presentation = await signX509CredentialWithStatus(issuance.certificate)
+        mockStatusList(await generateX509StatusList(agent.context, issuance.key, issuance.certificate, 24, []))
+
+        const verificationResult = await sdJwtVcService.verify(agent.context, {
+          compactSdJwtVc: presentation,
+          trustedIssuers: [{ method: 'x509', issuance: [issuance.certificate.toString('base64')] }],
+        })
+
+        expect(verificationResult.isValid).toBe(true)
+      })
+
+      test('x509: the credential issuer certificate as a dedicated status certificate does not need the extended key usage', async () => {
+        const issuance = await createSigningCertificate('Issuance')
+
+        const presentation = await signX509CredentialWithStatus(issuance.certificate)
+        mockStatusList(await generateX509StatusList(agent.context, issuance.key, issuance.certificate, 24, []))
+
+        const verificationResult = await sdJwtVcService.verify(agent.context, {
+          compactSdJwtVc: presentation,
+          trustedIssuers: [
+            {
+              method: 'x509',
+              issuance: [issuance.certificate.toString('base64')],
+              status: [issuance.certificate.toString('base64')],
+            },
+          ],
+        })
+
+        expect(verificationResult.isValid).toBe(true)
+      })
+
+      test('x509: a renewed credential issuer certificate with the same key does not need the extended key usage', async () => {
+        const issuance = await createSigningCertificate('Issuance')
+        const renewedCertificate = await X509Service.createCertificate(agent.context, {
+          authorityKey: issuance.key,
+          issuer: { commonName: 'Issuance' },
+          validity: { notBefore: new Date('2021-01-01'), notAfter: new Date('2036-01-01') },
+        })
+        renewedCertificate.keyId = issuance.key.keyId
+
+        const presentation = await signX509CredentialWithStatus(issuance.certificate)
+        mockStatusList(await generateX509StatusList(agent.context, issuance.key, renewedCertificate, 24, []))
+
+        const verificationResult = await sdJwtVcService.verify(agent.context, {
+          compactSdJwtVc: presentation,
+          trustedIssuers: [
+            {
+              method: 'x509',
+              issuance: [issuance.certificate.toString('base64')],
+              status: [renewedCertificate.toString('base64')],
+            },
+          ],
+        })
+
+        expect(verificationResult.isValid).toBe(true)
+      })
+
+      test('did: a status list is not affected', async () => {
+        mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, []))
+
+        const presentation = await sdJwtVcService.present(agent.context, {
+          sdJwtVc: simpleSdJwtVcWithStatus,
+          presentationFrame: {},
+        })
+
+        const verificationResult = await sdJwtVcService.verify(agent.context, {
+          compactSdJwtVc: presentation,
+          trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
+        })
+
+        expect(verificationResult.isValid).toBe(true)
+      })
     })
   })
 
