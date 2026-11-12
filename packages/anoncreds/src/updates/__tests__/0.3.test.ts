@@ -1,4 +1,5 @@
 import { Agent, DependencyManager, InjectionSymbols, UpdateAssistant, utils } from '@credo-ts/core'
+import { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
 import { readFileSync } from 'fs'
 import path from 'path'
 
@@ -7,6 +8,7 @@ import { agentDependencies } from '../../../../core/tests'
 import { NativeAnoncreds } from '../../../tests/helpers'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModule } from '../../AnonCredsModule'
+import { AnonCredsDidCommMigrationProvider } from '../../didcomm/AnonCredsDidCommMigrationProvider'
 import {
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
@@ -34,6 +36,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
     dependencyManager.registerInstance(AnonCredsIssuerServiceSymbol, {})
     dependencyManager.registerInstance(AnonCredsHolderServiceSymbol, {})
     dependencyManager.registerInstance(AnonCredsVerifierServiceSymbol, {})
+    dependencyManager.registerSingleton(DidCommCredentialExchangeRepository)
 
     const agent = new Agent(
       {
@@ -44,6 +47,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
           anoncreds: new AnonCredsModule({
             registries: [new InMemoryAnonCredsRegistry()],
             anoncreds: NativeAnoncreds,
+            migrationProvider: new AnonCredsDidCommMigrationProvider(),
           }),
         },
       },
@@ -104,6 +108,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
     dependencyManager.registerInstance(AnonCredsIssuerServiceSymbol, {})
     dependencyManager.registerInstance(AnonCredsHolderServiceSymbol, {})
     dependencyManager.registerInstance(AnonCredsVerifierServiceSymbol, {})
+    dependencyManager.registerSingleton(DidCommCredentialExchangeRepository)
 
     const agent = new Agent(
       {
@@ -113,6 +118,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
           // We need to include the AnonCredsModule to run the updates
           anoncreds: new AnonCredsModule({
             anoncreds: NativeAnoncreds,
+            migrationProvider: new AnonCredsDidCommMigrationProvider(),
             registries: [
               // We need to be able to resolve the credential definition so we can correctly
               new InMemoryAnonCredsRegistry({

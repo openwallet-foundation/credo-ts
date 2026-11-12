@@ -39,7 +39,6 @@
   "dependencies": {
     "@astronautlabs/jsonpath": "catalog:",
     "@credo-ts/core": "workspace:*",
-    "@credo-ts/didcomm": "workspace:*",
     "@sphereon/pex-models": "catalog:",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
@@ -47,6 +46,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@credo-ts/didcomm": "workspace:*",
     "@credo-ts/node": "workspace:*",
     "@hyperledger/anoncreds-nodejs": "catalog:",
     "@hyperledger/anoncreds-shared": "catalog:dev",
@@ -54,6 +54,12 @@
     "typescript": "catalog:"
   },
   "peerDependencies": {
+    "@credo-ts/didcomm": "workspace:*",
     "@hyperledger/anoncreds-shared": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "@credo-ts/didcomm": {
+      "optional": true
+    }
   }
 }
