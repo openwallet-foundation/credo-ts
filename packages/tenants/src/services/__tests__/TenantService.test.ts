@@ -67,6 +67,21 @@ describe('TenantRecordService', () => {
       expect(tenantRepository.getById).toHaveBeenCalledTimes(4)
     })
 
+    test('updates and deletes the tenant when removing it from the cache fails, and logs an error', async () => {
+      const { cache, cachedContext } = getCachedContext()
+      vi.spyOn(cache, 'remove').mockRejectedValue(new Error('cache unavailable'))
+      const errorSpy = vi.spyOn(cachedContext.config.logger, 'error')
+      mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
+      mockFunction(tenantRoutingRepository.findByQuery).mockResolvedValue([])
+
+      await expect(tenantRecordService.updateTenant(cachedContext, tenantRecord)).resolves.toBeUndefined()
+      await expect(tenantRecordService.deleteTenantById(cachedContext, 'tenant-id')).resolves.toBeUndefined()
+
+      expect(errorSpy).toHaveBeenCalledTimes(2)
+      expect(errorSpy.mock.calls[0][0]).toContain("tenant 'tenant-id'")
+      expect(errorSpy.mock.calls[0][0]).toContain('30 seconds')
+    })
+
     test('caches only the id, status and storage version of the tenant record', async () => {
       const { cache, cachedContext } = getCachedContext()
       const recordWithStoreKey = new TenantRecord({

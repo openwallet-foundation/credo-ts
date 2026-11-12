@@ -10,6 +10,6 @@ new TenantsModule({
 })
 ```
 
-When running multiple instances, use a cache that is shared between them, such as `RedisCache` from `@credo-ts/redis-cache`. A tenant that is deactivated, deleted or updated is removed from the cache, so with a shared cache the change takes effect on every instance at once. With a cache per instance, such as `InMemoryLruCache`, the other instances keep opening sessions for a deactivated or deleted tenant until the entry expires.
+When running multiple instances, use a cache that is shared between them, such as `RedisCache` from `@credo-ts/redis-cache`. A tenant that is deactivated, deleted or updated is removed from the cache, so with a shared cache the change takes effect on every instance at once. With a cache per instance, such as `InMemoryLruCache`, the other instances keep opening sessions for a deactivated or deleted tenant until the entry expires. The same goes for every instance when removing the tenant from the cache fails. The update or delete still succeeds and an error is logged.
 
 The cache is not used when the agent's cache is the `SingleContextStorageLruCache`, which is the default when no `CacheModule` is registered. A warning is logged once in that case.

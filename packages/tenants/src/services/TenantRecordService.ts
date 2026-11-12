@@ -101,12 +101,12 @@ export class TenantRecordService {
 
     // Delete tenant record
     await this.tenantRepository.delete(agentContext, tenantRecord)
-    await this.getCache(agentContext)?.cache.remove(agentContext, this.getCacheKey(tenantId))
+    await this.removeFromCache(agentContext, tenantId)
   }
 
   public async updateTenant(agentContext: AgentContext, tenantRecord: TenantRecord) {
     await this.tenantRepository.update(agentContext, tenantRecord)
-    await this.getCache(agentContext)?.cache.remove(agentContext, this.getCacheKey(tenantRecord.id))
+    await this.removeFromCache(agentContext, tenantRecord.id)
   }
 
   public async findTenantsByQuery(agentContext: AgentContext, query: Query<TenantRecord>, queryOptions?: QueryOptions) {
@@ -137,6 +137,21 @@ export class TenantRecordService {
 
   private getCacheKey(tenantId: string) {
     return `tenants:tenant-record:${tenantId}`
+  }
+
+  // Does not throw, as the change to the tenant record is already stored when this is called
+  private async removeFromCache(agentContext: AgentContext, tenantId: string) {
+    const cache = this.getCache(agentContext)
+    if (!cache) return
+
+    try {
+      await cache.cache.remove(agentContext, this.getCacheKey(tenantId))
+    } catch (error) {
+      agentContext.config.logger.error(
+        `Error removing tenant record for tenant '${tenantId}' from the cache. Sessions can be opened with the outdated record until it expires after ${cache.expiryInSeconds} seconds.`,
+        { error }
+      )
+    }
   }
 
   private getCache(agentContext: AgentContext) {
