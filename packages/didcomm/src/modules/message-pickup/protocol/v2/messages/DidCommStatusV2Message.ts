@@ -59,14 +59,15 @@ export class DidCommStatusV2Message extends DidCommMessage {
   @Expose({ name: 'longest_waited_seconds' })
   public longestWaitedSeconds?: number
 
+  // DateParser turns an unset value into the current time
   @Expose({ name: 'newest_received_time' })
-  @Transform(({ value }) => DateParser(value))
+  @Transform(({ value }) => (value === undefined ? undefined : DateParser(value)))
   @IsDate()
   @IsOptional()
   public newestReceivedTime?: Date
 
   @IsOptional()
-  @Transform(({ value }) => DateParser(value))
+  @Transform(({ value }) => (value === undefined ? undefined : DateParser(value)))
   @IsDate()
   @Expose({ name: 'oldest_received_time' })
   public oldestReceivedTime?: Date

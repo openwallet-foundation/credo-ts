@@ -26,7 +26,19 @@ import type { DidCommTransportSession } from './DidCommTransportService'
 import { DidCommTransportService } from './DidCommTransportService'
 import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 import { DidCommEnvelopeRegistry } from './envelope'
-import { MessageSendingError } from './errors'
+import {
+  MessageSendingError,
+  MessageSendingErrorCategory,
+  MessageSendingQueueResult,
+  MessageSendingServiceResult,
+  MessageSendingSessionResult,
+} from './errors'
+import {
+  categorizeMessageSendingAttempts,
+  describeMessageSendingAttempt,
+  type MessageSendingAttempt,
+  type MessageSendingErrorReason,
+} from './errors/MessageSendingError'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import { DidCommConnectionRepository } from './modules/connections/repository'
@@ -42,6 +54,24 @@ export interface TransportPriorityOptions {
   schemes: string[]
   restrictive?: boolean
 }
+
+// Marks a failure to hand the message to the other side, as opposed to a failure on our side such as packing
+class RemoteDeliveryError extends CredoError {}
+
+function isRemoteDeliveryError(error: Error): error is RemoteDeliveryError {
+  return error instanceof RemoteDeliveryError
+}
+
+// The error of the session or transport itself, without the marker around it
+function deliveryError(error: Error): Error {
+  return isRemoteDeliveryError(error) && error.cause instanceof Error ? error.cause : error
+}
+
+const logLevelByCategory = {
+  [MessageSendingErrorCategory.RecipientUnreachable]: 'info',
+  [MessageSendingErrorCategory.RemoteError]: 'warn',
+  [MessageSendingErrorCategory.InternalError]: 'error',
+} as const
 
 @injectable()
 export class DidCommMessageSender {
@@ -145,7 +175,11 @@ export class DidCommMessageSender {
     })
 
     agentContext.config.logger.debug('Sending message')
-    await session.send(agentContext, encryptedMessage)
+    try {
+      await session.send(agentContext, encryptedMessage)
+    } catch (error) {
+      throw new RemoteDeliveryError(error.message, { cause: error })
+    }
   }
 
   public async sendPackage(
@@ -162,7 +196,7 @@ export class DidCommMessageSender {
       options?: { transportPriority?: TransportPriorityOptions }
     }
   ) {
-    const errors: Error[] = []
+    const attempts: MessageSendingAttempt[] = []
 
     // Try to send to already open session
     const session = this.transportService.findSessionByConnectionId(connection.id)
@@ -171,7 +205,7 @@ export class DidCommMessageSender {
         await session.send(agentContext, encryptedMessage)
         return
       } catch (error) {
-        errors.push(error)
+        attempts.push({ type: 'session', sessionId: session.id, result: MessageSendingSessionResult.Failed, error })
         agentContext.config.logger.debug(
           `Sending packed message via session failed with error: ${error.message}.`,
           error
@@ -186,8 +220,12 @@ export class DidCommMessageSender {
       options?.transportPriority
     )
 
-    if (this.didCommModuleConfig.outboundTransports.length === 0 && !queueService) {
-      throw new CredoError('Agent has no outbound transport!')
+    const { outboundTransports } = this.didCommModuleConfig
+    if (outboundTransports.length === 0 && !queueService) {
+      agentContext.config.logger.error(
+        `Unable to send packed message to connection ${connection.id}. Agent has no outbound transport.`
+      )
+      throw new CredoError('Agent has no outbound transport')
     }
 
     // Loop trough all available services and try to send the message
@@ -202,18 +240,27 @@ export class DidCommMessageSender {
       })
       try {
         const protocolScheme = utils.getProtocolScheme(service.serviceEndpoint)
-        for (const transport of this.didCommModuleConfig.outboundTransports) {
-          if (transport.supportedSchemes.includes(protocolScheme)) {
-            await transport.sendMessage({
-              payload: encryptedMessage,
-              endpoint: service.serviceEndpoint,
-              connectionId: connection.id,
-            })
-            break
-          }
+        const transport = outboundTransports.find((t) => t.supportedSchemes.includes(protocolScheme))
+        if (!transport) {
+          throw new CredoError(`Unable to send message to service: ${service.serviceEndpoint}`)
         }
+        await transport.sendMessage({
+          payload: encryptedMessage,
+          endpoint: service.serviceEndpoint,
+          connectionId: connection.id,
+        })
         return
       } catch (error) {
+        attempts.push({
+          type: 'service',
+          serviceId: service.id,
+          endpoint: service.serviceEndpoint,
+          result:
+            outboundTransports.length === 0
+              ? MessageSendingServiceResult.InternalError
+              : MessageSendingServiceResult.TransportError,
+          error,
+        })
         agentContext.config.logger.debug(
           `Sending outbound message to service with id ${service.id} failed with the following error:`,
           {
@@ -239,11 +286,13 @@ export class DidCommMessageSender {
     }
 
     // Message is undeliverable
-    agentContext.config.logger.error(
+    attempts.push({ type: 'queue', result: MessageSendingQueueResult.NotAvailable })
+    const category = categorizeMessageSendingAttempts(attempts)
+    agentContext.config.logger[logLevelByCategory[category]](
       `Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`,
       {
         message: encryptedMessage,
-        errors,
+        reason: { category, attempts },
         connection,
       }
     )
@@ -284,18 +333,21 @@ export class DidCommMessageSender {
     }
   ) {
     const { agentContext, connection, outOfBand, message } = outboundMessageContext
-    const errors: Error[] = []
+    const attempts: MessageSendingAttempt[] = []
+    const internalError = (errorMessage: string, cause?: Error) =>
+      this.undeliverable(
+        outboundMessageContext,
+        errorMessage,
+        { category: MessageSendingErrorCategory.InternalError, attempts },
+        cause
+      )
 
-    if (outboundMessageContext.isOutboundServiceMessage()) {
-      return this.sendMessageToService(outboundMessageContext)
+    if (outboundMessageContext.serviceParams) {
+      return this.sendMessageToService(outboundMessageContext, outboundMessageContext.serviceParams.service)
     }
 
     if (!connection) {
-      agentContext.config.logger.error('Outbound message has no associated connection')
-      this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
-      throw new MessageSendingError('Outbound message has no associated connection', {
-        outboundMessageContext,
-      })
+      throw internalError('Outbound message has no associated connection')
     }
 
     agentContext.config.logger.debug('Send outbound message', {
@@ -303,25 +355,7 @@ export class DidCommMessageSender {
       connectionId: connection.id,
     })
 
-    const session = this.findSessionForOutboundContext(outboundMessageContext)
-
-    if (session) {
-      agentContext.config.logger.debug(
-        `Found session with return routing for message '${message.id}' (connection '${connection.id}'`
-      )
-
-      try {
-        await this.sendMessageToSession(agentContext, session, message, connection)
-        this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
-        return
-      } catch (error) {
-        errors.push(error)
-        agentContext.config.logger.debug(
-          `Sending an outbound message via session failed with error: ${error.message}.`,
-          error
-        )
-      }
-    }
+    if (await this.trySendMessageToSession(outboundMessageContext, attempts)) return
 
     // Retrieve DIDComm services
     let services: ResolvedDidCommService[] = []
@@ -335,31 +369,21 @@ export class DidCommMessageSender {
         outOfBand
       ))
     } catch (error) {
-      this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
-      throw new MessageSendingError(`Unable to retrieve services for connection '${connection.id}`, {
+      throw this.undeliverable(
         outboundMessageContext,
-        cause: error,
-      })
+        `Unable to retrieve services for connection '${connection.id}`,
+        { category: MessageSendingErrorCategory.RemoteError, attempts },
+        error
+      )
     }
 
     if (!connection.did) {
-      agentContext.config.logger.error(
-        `Unable to send message using connection '${connection.id}' that doesn't have a did`
-      )
-      this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
-      throw new MessageSendingError(
-        `Unable to send message using connection '${connection.id}' that doesn't have a did`,
-        { outboundMessageContext }
-      )
+      throw internalError(`Unable to send message using connection '${connection.id}' that doesn't have a did`)
     }
 
     const dids = agentContext.resolve(DidsApi)
     const { didDocument, keys } = await dids.resolveCreatedDidDocumentWithKeys(connection.did).catch((error) => {
-      this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
-      throw new MessageSendingError(
-        `Unable to send message using connection '${connection.id}'. Unble to resolve did`,
-        { outboundMessageContext, cause: error }
-      )
+      throw internalError(`Unable to send message using connection '${connection.id}'. Unble to resolve did`, error)
     })
 
     const authentication = didDocument
@@ -380,12 +404,7 @@ export class DidCommMessageSender {
     // We take the first one with a kms key id. Otherwise we pick the first
     const senderVerificationMethod = authentication?.find((a) => a.kmsKeyId !== undefined) ?? authentication?.[0]
     if (!senderVerificationMethod) {
-      throw new MessageSendingError(
-        `Unable to determine sender key for did ${connection.did}, no available Ed25519 keys`,
-        {
-          outboundMessageContext,
-        }
-      )
+      throw internalError(`Unable to determine sender key for did ${connection.did}, no available Ed25519 keys`)
     }
 
     // For DIDComm v2 authcrypt (ECDH-1PU): resolve the independent keyAgreement key
@@ -425,10 +444,7 @@ export class DidCommMessageSender {
           }
         })
       if (!kaVm && useV2ForServiceOrder) {
-        throw new MessageSendingError(
-          `Unable to determine DIDComm v2 sender key for did ${connection.did}, no keyAgreement key`,
-          { outboundMessageContext }
-        )
+        throw internalError(`Unable to determine DIDComm v2 sender key for did ${connection.did}, no keyAgreement key`)
       }
       return toAbsoluteDidUrl(didDocument.id, kaVm?.id ?? senderVerificationMethod.verificationMethod.id)
     })()
@@ -446,7 +462,7 @@ export class DidCommMessageSender {
       }
       throw new MessageSendingError(
         `Unable to send DIDComm v2 message to service ${service.id}, did ${connection.did} has no keyAgreement key on the curve of a service recipient key`,
-        { outboundMessageContext }
+        { outboundMessageContext, reason: { category: MessageSendingErrorCategory.InternalError, attempts } }
       )
     }
 
@@ -470,7 +486,7 @@ export class DidCommMessageSender {
         this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToTransport)
         return
       } catch (error) {
-        errors.push(error)
+        attempts.push(serviceAttempt(service, error))
         agentContext.config.logger.debug(
           `Sending outbound message to service with id ${service.id} failed with the following error:`,
           {
@@ -505,60 +521,107 @@ export class DidCommMessageSender {
     }
 
     // Message is undeliverable
-    agentContext.config.logger.error(
+    attempts.push({
+      type: 'queue',
+      result: queueService ? MessageSendingQueueResult.MessageNotQueueable : MessageSendingQueueResult.NotAvailable,
+    })
+    throw this.undeliverable(
+      outboundMessageContext,
       `Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`,
-      {
-        message,
-        errors,
-        connection,
-      }
-    )
-    this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
-
-    throw new MessageSendingError(
-      `Message is undeliverable to connection ${connection.id} (${connection.theirLabel}). \n\nReasons:\n\t- ${errors.map((e) => e.message).join('\n\t-')}`,
-      { outboundMessageContext }
+      { category: categorizeMessageSendingAttempts(attempts), attempts }
     )
   }
 
-  private async sendMessageToService(outboundMessageContext: DidCommOutboundMessageContext) {
-    const session = this.findSessionForOutboundContext(outboundMessageContext)
-
-    if (session) {
-      outboundMessageContext.agentContext.config.logger.debug(
-        `Found session with return routing for message '${outboundMessageContext.message.id}'`
-      )
-      try {
-        await this.sendMessageToSession(outboundMessageContext.agentContext, session, outboundMessageContext.message)
-        this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
-        return
-      } catch (error) {
-        outboundMessageContext.agentContext.config.logger.debug(
-          `Sending an outbound message via session failed with error: ${error.message}.`,
-          error
-        )
-      }
-    }
+  private async sendMessageToService(
+    outboundMessageContext: DidCommOutboundMessageContext,
+    service: ResolvedDidCommService
+  ) {
+    const attempts: MessageSendingAttempt[] = []
+    if (await this.trySendMessageToSession(outboundMessageContext, attempts)) return
 
     // If there is no session try sending to service instead
     try {
       await this.sendToService(outboundMessageContext)
       this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToTransport)
     } catch (error) {
-      outboundMessageContext.agentContext.config.logger.error(
-        `Message is undeliverable to service with id ${outboundMessageContext.serviceParams?.service.id}: ${error.message}`,
-        {
-          message: outboundMessageContext.message,
-          error,
-        }
-      )
-      this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
-
-      throw new MessageSendingError(
-        `Message is undeliverable to service with id ${outboundMessageContext.serviceParams?.service.id}: ${error.message}`,
-        { outboundMessageContext }
-      )
+      attempts.push(serviceAttempt(service, error))
+      throw this.undeliverable(outboundMessageContext, `Message is undeliverable to service with id ${service.id}`, {
+        category: categorizeMessageSendingAttempts(attempts),
+        attempts,
+      })
     }
+  }
+
+  /**
+   * Send the message over the return route session, when there is one.
+   *
+   * @returns whether the message was sent. A failure is added to `attempts`.
+   */
+  private async trySendMessageToSession(
+    outboundMessageContext: DidCommOutboundMessageContext,
+    attempts: MessageSendingAttempt[]
+  ): Promise<boolean> {
+    const { agentContext, message, connection } = outboundMessageContext
+    const { session, attempt } = this.findSessionForOutboundContext(outboundMessageContext)
+
+    if (attempt) {
+      attempts.push(attempt)
+      agentContext.config.logger.debug(`${describeMessageSendingAttempt(attempt)}, not replying over it`, {
+        messageId: message.id,
+      })
+    }
+    if (!session) return false
+
+    agentContext.config.logger.debug(`Found session with return routing for message '${message.id}'`, {
+      connectionId: connection?.id,
+    })
+    try {
+      await this.sendMessageToSession(agentContext, session, message, connection)
+      this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
+      return true
+    } catch (error) {
+      attempts.push({
+        type: 'session',
+        sessionId: session.id,
+        result: isRemoteDeliveryError(error)
+          ? MessageSendingSessionResult.Failed
+          : MessageSendingSessionResult.InternalError,
+        error: deliveryError(error),
+      })
+      agentContext.config.logger.debug(
+        `Sending an outbound message via session failed with error: ${error.message}.`,
+        error
+      )
+      return false
+    }
+  }
+
+  /**
+   * Log the failure at the level of its category and emit the undeliverable event.
+   *
+   * @returns the error to throw
+   */
+  private undeliverable(
+    outboundMessageContext: DidCommOutboundMessageContext,
+    errorMessage: string,
+    reason: MessageSendingErrorReason,
+    cause?: Error
+  ) {
+    const { agentContext, message, connection } = outboundMessageContext
+    agentContext.config.logger[logLevelByCategory[reason.category]](errorMessage, {
+      message,
+      reason,
+      error: cause,
+      connection,
+    })
+    this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
+
+    const reasons = reason.attempts.map((attempt) => `\n\t- ${describeMessageSendingAttempt(attempt)}`).join('')
+    return new MessageSendingError(reasons ? `${errorMessage}. \n\nReasons:${reasons}` : errorMessage, {
+      outboundMessageContext,
+      reason,
+      cause,
+    })
   }
 
   private async sendToService(outboundMessageContext: DidCommOutboundMessageContext) {
@@ -617,13 +680,15 @@ export class DidCommMessageSender {
       if (!protocolScheme) {
         agentContext.config.logger.warn('Service does not have a protocol scheme.')
       } else if (transport.supportedSchemes.includes(protocolScheme)) {
-        await transport.sendMessage(outboundPackage)
+        try {
+          await transport.sendMessage(outboundPackage)
+        } catch (error) {
+          throw new RemoteDeliveryError(error.message, { cause: error })
+        }
         return
       }
     }
-    throw new MessageSendingError(`Unable to send message to service: ${service.serviceEndpoint}`, {
-      outboundMessageContext,
-    })
+    throw new RemoteDeliveryError(`Unable to send message to service: ${service.serviceEndpoint}`)
   }
 
   // https://identity.foundation/didcomm-messaging/spec/v2.1/#invitation
@@ -639,23 +704,37 @@ export class DidCommMessageSender {
     return true
   }
 
-  private findSessionForOutboundContext(outboundContext: DidCommOutboundMessageContext) {
+  private findSessionForOutboundContext(outboundContext: DidCommOutboundMessageContext): {
+    session?: DidCommTransportSession
+    attempt?: MessageSendingAttempt
+  } {
     let session: DidCommTransportSession | undefined
 
     // Use session id from outbound context if present, or use the session from the inbound message context
     const sessionId = outboundContext.sessionId ?? outboundContext.inboundMessageContext?.sessionId
 
-    // Try to find session by id
+    const connectionId = outboundContext.connection?.id
+
     if (sessionId) {
-      session = this.transportService.findSessionById(sessionId)
+      const inboundSession = this.transportService.findSessionById(sessionId)
+      session = inboundSession
+
+      if (!inboundSession || inboundSession.isClosed) {
+        // The other side may have reconnected, so a long-lived session of the connection takes over.
+        // A session that answers a single request is left for the reply to its own request.
+        session = connectionId
+          ? this.transportService.findSessionByConnectionId(connectionId, { includeSingleResponse: false })
+          : undefined
+        if (!session) {
+          const result = inboundSession ? MessageSendingSessionResult.Closed : MessageSendingSessionResult.NotFound
+          return { attempt: { type: 'session', sessionId, result } }
+        }
+      }
+    } else if (connectionId) {
+      session = this.transportService.findSessionByConnectionId(connectionId)
     }
 
-    // Try to find session by connection id
-    if (!session && outboundContext.connection?.id) {
-      session = this.transportService.findSessionByConnectionId(outboundContext.connection.id)
-    }
-
-    return session?.inboundMessage?.hasAnyReturnRoute() ? session : null
+    return { session: session?.inboundMessage?.hasAnyReturnRoute() ? session : undefined }
   }
 
   private async retrieveServicesByConnection(
@@ -875,6 +954,18 @@ export class DidCommMessageSender {
         status,
       },
     })
+  }
+}
+
+function serviceAttempt(service: ResolvedDidCommService, error: Error): MessageSendingAttempt {
+  return {
+    type: 'service',
+    serviceId: service.id,
+    endpoint: service.serviceEndpoint,
+    result: isRemoteDeliveryError(error)
+      ? MessageSendingServiceResult.TransportError
+      : MessageSendingServiceResult.InternalError,
+    error: deliveryError(error),
   }
 }
 

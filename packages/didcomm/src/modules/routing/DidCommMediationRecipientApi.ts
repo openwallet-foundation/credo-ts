@@ -255,6 +255,22 @@ export class DidCommMediationRecipientApi {
   }
 
   /**
+   * One polling round. A round that is still sending when the next one is due is not overlapped, so
+   * the mediator doesn't get concurrent status requests.
+   */
+  private async pollMessages(connectionId: string, protocolVersion: 'v1' | 'v2' | 'v4') {
+    try {
+      await this.messagePickupApi.pickupMessages({
+        connectionId,
+        batchSize: this.config.maximumMessagePickup,
+        protocolVersion,
+      })
+    } catch (error) {
+      this.logger.warn(`Unable to pickup messages from mediator connection '${connectionId}'`, { error })
+    }
+  }
+
+  /**
    * Start a Message Pickup flow with a registered Mediator.
    *
    * @param mediator optional {MediationRecord} corresponding to the mediator to pick messages from. It will use
@@ -293,15 +309,11 @@ export class DidCommMediationRecipientApi {
           `Starting explicit pickup of messages from mediator '${mediatorRecord.id}' using ${protocolVersion}`
         )
         const subscription = interval(mediatorPollingInterval)
-          .pipe(takeUntil(stopConditions$))
+          .pipe(
+            exhaustMap(() => this.pollMessages(mediatorConnection.id, protocolVersion)),
+            takeUntil(stopConditions$)
+          )
           .subscribe({
-            next: async () => {
-              await this.messagePickupApi.pickupMessages({
-                connectionId: mediatorConnection.id,
-                batchSize: this.config.maximumMessagePickup,
-                protocolVersion,
-              })
-            },
             complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediatorRecord.id}'`),
           })
         return subscription
@@ -311,15 +323,11 @@ export class DidCommMediationRecipientApi {
 
         this.logger.info(`Starting explicit pickup of messages from mediator '${mediatorRecord.id}' using v4`)
         const subscription = interval(mediatorPollingInterval)
-          .pipe(takeUntil(stopConditions$))
+          .pipe(
+            exhaustMap(() => this.pollMessages(mediatorConnection.id, 'v4')),
+            takeUntil(stopConditions$)
+          )
           .subscribe({
-            next: async () => {
-              await this.messagePickupApi.pickupMessages({
-                connectionId: mediatorConnection.id,
-                batchSize: this.config.maximumMessagePickup,
-                protocolVersion: 'v4',
-              })
-            },
             complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediatorRecord.id}'`),
           })
         return subscription
