@@ -43,6 +43,8 @@ export enum X509ExtendedKeyUsage {
   EmailProtection = '1.3.6.1.5.5.7.3.4',
   TimeStamping = '1.3.6.1.5.5.7.3.8',
   OcspSigning = '1.3.6.1.5.5.7.3.9',
+  // The draft specification still says TBD, the value is from the IANA PKIX Extended Key Purpose registry.
+  OauthStatusSigning = '1.3.6.1.5.5.7.3.45',
   MdlDs = '1.0.18013.5.1.2',
 }
 
@@ -296,6 +298,10 @@ export class X509Certificate {
     }
 
     return result
+  }
+
+  public hasExtension(id: X509ExtensionIdentifier | string): boolean {
+    return this.x509Certificate.extensions.some((extension) => extension.type === id)
   }
 
   public isExtensionCritical(id: X509ExtensionIdentifier | string): boolean {

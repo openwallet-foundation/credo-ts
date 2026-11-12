@@ -196,7 +196,7 @@ export class DidResolverService {
   private getCacheKeyAndScope(parsed: ParsedDid): { cacheKey: string; cacheScope: 'context' | 'global' } {
     return {
       cacheKey: `did:resolver:${parsed.did}`,
-      cacheScope: this.didsModuleConfig.publicDidMethods.includes(parsed.method) ? 'global' : 'context',
+      cacheScope: this.didsModuleConfig.getCacheScope(parsed.method),
     }
   }
 
