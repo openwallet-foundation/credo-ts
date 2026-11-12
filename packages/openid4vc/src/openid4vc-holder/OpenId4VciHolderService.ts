@@ -82,7 +82,6 @@ import type {
   OpenId4VciDeferredCredentialRequestOptions,
   OpenId4VciDeferredCredentialResponse,
   OpenId4VciDpopRequestOptions,
-  OpenId4VciHolderCredentialResponseEncryption,
   OpenId4VciProofOfPossessionRequirements,
   OpenId4VciResolvedAuthorizationRequest,
   OpenId4VciResolvedCredentialOffer,
@@ -95,6 +94,11 @@ import type {
   OpenId4VcParseAndVerifyAuthorizationResponseOptions,
 } from './OpenId4VciHolderServiceOptions'
 import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
+
+interface CredentialResponseEncryptionKey {
+  keyId: string
+  enc: string
+}
 
 @injectable()
 export class OpenId4VciHolderService {
@@ -569,7 +573,12 @@ export class OpenId4VciHolderService {
       throw new CredoError('No cNonce provided and unable to acquire cNonce from the credential issuer')
     }
 
-    const responseEncryptions: OpenId4VciHolderCredentialResponseEncryption[] = []
+    const responseEncryptionEnc = this.getCredentialResponseEncryptionEnc(
+      agentContext,
+      metadata,
+      credentialResponseEncryptionMode
+    )
+    const responseEncryptions: CredentialResponseEncryptionKey[] = []
 
     try {
       for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationsToRequest) {
@@ -603,11 +612,9 @@ export class OpenId4VciHolderService {
               } as const)
             : undefined
 
-        const credentialResponseEncryption = await this.createCredentialResponseEncryption(
-          agentContext,
-          metadata,
-          credentialResponseEncryptionMode
-        )
+        const credentialResponseEncryption = responseEncryptionEnc
+          ? await this.createCredentialResponseEncryption(agentContext, responseEncryptionEnc)
+          : undefined
         if (credentialResponseEncryption) responseEncryptions.push(credentialResponseEncryption)
 
         const { credentialResponse, dpop } = await client.retrieveCredentials({
@@ -646,7 +653,7 @@ export class OpenId4VciHolderService {
             interval: credentialResponse.interval,
             notificationId: credentialResponse.notification_id,
             jwkThumbprintKmsKeyIdMapping,
-            credentialResponseEncryption,
+            credentialResponseEncryption: credentialResponseEncryptionMode,
           }
 
           this.logger.debug('received deferred credential', deferredCredential)
@@ -675,15 +682,8 @@ export class OpenId4VciHolderService {
           receivedCredentials.push(credential)
         }
       }
-    } catch (error) {
+    } finally {
       for (const encryption of responseEncryptions) {
-        await this.deleteCredentialResponseEncryptionKey(agentContext, encryption)
-      }
-      throw error
-    }
-
-    for (const encryption of responseEncryptions) {
-      if (!deferredCredentials.some((deferred) => deferred.credentialResponseEncryption === encryption)) {
         await this.deleteCredentialResponseEncryptionKey(agentContext, encryption)
       }
     }
@@ -717,13 +717,28 @@ export class OpenId4VciHolderService {
       verifyCredentialStatus,
       accessToken,
       jwkThumbprintKmsKeyIdMapping,
-      credentialResponseEncryption,
+      credentialResponseEncryption: credentialResponseEncryptionMode,
     } = options
     const client = this.getClient(agentContext)
 
     const receivedCredentials: Array<OpenId4VciCredentialResponse> = []
     const deferredCredentials: Array<OpenId4VciDeferredCredentialResponse> = []
     let dpopNonce = options.dpop?.nonce
+
+    // Before OpenID4VCI 1.0 the deferred credential response is never encrypted. From 1.0 on each deferred
+    // credential request carries its own response encryption key, so a failed request can be retried.
+    const isV1 = issuerMetadata.originalDraftVersion === Openid4vciVersion.V1
+    if (!isV1 && credentialResponseEncryptionMode === 'required') {
+      throw new CredoError(
+        `Credential response encryption is required, but credential issuer '${issuerMetadata.credentialIssuer.credential_issuer}' uses an OpenID4VCI version before 1.0, in which the deferred credential response can't be encrypted`
+      )
+    }
+    const responseEncryptionEnc = isV1
+      ? this.getCredentialResponseEncryptionEnc(agentContext, issuerMetadata, credentialResponseEncryptionMode)
+      : undefined
+    const credentialResponseEncryption = responseEncryptionEnc
+      ? await this.createCredentialResponseEncryption(agentContext, responseEncryptionEnc)
+      : undefined
 
     try {
       const { deferredCredentialResponse, dpop } = await client.retrieveDeferredCredentials({
@@ -758,7 +773,7 @@ export class OpenId4VciHolderService {
           interval: deferredCredentialResponse.interval,
           notificationId: deferredCredentialResponse.notification_id,
           jwkThumbprintKmsKeyIdMapping,
-          credentialResponseEncryption,
+          credentialResponseEncryption: credentialResponseEncryptionMode,
         }
 
         this.logger.debug('received deferred credential', deferredCredential)
@@ -786,12 +801,7 @@ export class OpenId4VciHolderService {
         })
         receivedCredentials.push(credential)
       }
-    } catch (error) {
-      await this.deleteCredentialResponseEncryptionKey(agentContext, credentialResponseEncryption)
-      throw error
-    }
-
-    if (receivedCredentials.length > 0) {
+    } finally {
       await this.deleteCredentialResponseEncryptionKey(agentContext, credentialResponseEncryption)
     }
 
@@ -1631,11 +1641,15 @@ export class OpenId4VciHolderService {
     })
   }
 
-  private async createCredentialResponseEncryption(
+  /**
+   * Returns the `enc` value to request an encrypted credential response with, or undefined when the
+   * response is not encrypted.
+   */
+  private getCredentialResponseEncryptionEnc(
     agentContext: AgentContext,
     metadata: IssuerMetadataResult,
     mode?: 'required' | 'preferred'
-  ): Promise<OpenId4VciHolderCredentialResponseEncryption | undefined> {
+  ): string | undefined {
     const supported = metadata.credentialIssuer.credential_response_encryption
     const required = mode === 'required' || supported?.encryption_required === true
     if (!mode && !required) return undefined
@@ -1668,13 +1682,20 @@ export class OpenId4VciHolderService {
       )
     }
 
+    return enc
+  }
+
+  private async createCredentialResponseEncryption(
+    agentContext: AgentContext,
+    enc: string
+  ): Promise<CredentialResponseEncryptionKey> {
     const { keyId } = await agentContext.resolve(Kms.KeyManagementApi).createKey({ type: { kty: 'EC', crv: 'P-256' } })
     return { keyId, enc }
   }
 
   private async getCredentialResponseEncryptionParameters(
     agentContext: AgentContext,
-    encryption: OpenId4VciHolderCredentialResponseEncryption
+    encryption: CredentialResponseEncryptionKey
   ): Promise<CredentialResponseEncryption> {
     const publicJwk = await agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId: encryption.keyId })
     return {
@@ -1685,7 +1706,7 @@ export class OpenId4VciHolderService {
 
   private async deleteCredentialResponseEncryptionKey(
     agentContext: AgentContext,
-    encryption: OpenId4VciHolderCredentialResponseEncryption | undefined
+    encryption: CredentialResponseEncryptionKey | undefined
   ) {
     if (!encryption) return
     await agentContext

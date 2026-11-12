@@ -100,12 +100,11 @@ export interface OpenId4VciDeferredCredentialResponse {
    */
   jwkThumbprintKmsKeyIdMapping?: Record<string, string>
 
-  credentialResponseEncryption?: OpenId4VciHolderCredentialResponseEncryption
-}
-
-export interface OpenId4VciHolderCredentialResponseEncryption {
-  keyId: string
-  enc: string
+  /**
+   * The `credentialResponseEncryption` value of the credential request. Pass it on when retrieving the
+   * deferred credentials.
+   */
+  credentialResponseEncryption?: 'required' | 'preferred'
 }
 
 export interface OpenId4VciResolvedCredentialOffer {
@@ -341,6 +340,11 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
    */
   credentialBindingResolver: OpenId4VciCredentialBindingResolver
 
+  /**
+   * Whether to request an encrypted credential response. With `required` the request fails when the
+   * issuer can't encrypt the response, with `preferred` the response is then not encrypted. When the
+   * issuer requires response encryption it is requested regardless of this value.
+   */
   credentialResponseEncryption?: 'required' | 'preferred'
 }
 
@@ -363,7 +367,12 @@ export interface OpenId4VciDeferredCredentialRequestOptions {
    */
   jwkThumbprintKmsKeyIdMapping?: Record<string, string>
 
-  credentialResponseEncryption?: OpenId4VciHolderCredentialResponseEncryption
+  /**
+   * Whether to request an encrypted deferred credential response, see the `credentialResponseEncryption`
+   * option of the credential request. Before OpenID4VCI 1.0 the deferred credential response is never
+   * encrypted, so `required` fails and `preferred` is ignored.
+   */
+  credentialResponseEncryption?: 'required' | 'preferred'
 }
 
 /**
