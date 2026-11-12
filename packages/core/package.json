@@ -52,7 +52,7 @@
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
     "@owf/cose": "^0.4.1",
-    "@owf/mdoc": "^0.8.1",
+    "@owf/mdoc": ">=0.8.1 <0.8.3",
     "@owf/token-status-list": "^0.4.1",
     "@peculiar/asn1-ecc": "^2.6.0",
     "@peculiar/asn1-rsa": "^2.6.0",

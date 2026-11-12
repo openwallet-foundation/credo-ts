@@ -572,7 +572,7 @@ importers:
         specifier: ^0.4.1
         version: 0.4.1
       '@owf/mdoc':
-        specifier: ^0.8.1
+        specifier: '>=0.8.1 <0.8.3'
         version: 0.8.1
       '@owf/token-status-list':
         specifier: ^0.4.1
