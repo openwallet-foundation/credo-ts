@@ -104,8 +104,12 @@ vi.mock('../../../../../core/src/agent/Agent', () => {
         config: agentConfig,
         context: agentContext,
         dependencyManager: {
+          isRegistered: vi.fn((token) => agentContext.dependencyManager.isRegistered(token, true)),
           // biome-ignore lint/suspicious/noExplicitAny: no explanation
           resolve: vi.fn(function (repo: any) {
+            if (repo === DidCommCredentialExchangeRepository) {
+              return credentialExchangeRepo
+            }
             if (repo.prototype.constructor.name === 'AnonCredsCredentialRepository') {
               return anonCredsRepo
             }
@@ -377,15 +381,17 @@ async function testMigration(
 
   mockFunction(credentialExchangeRepo.findByQuery).mockResolvedValue([initialCredentialExchangeRecord])
 
-  await testModule.storeAnonCredsInW3cFormatV0_5(agent)
-
   if (expectFailure) {
-    // The migration logs the error and keeps the legacy record
+    await expect(testModule.storeAnonCredsInW3cFormatV0_5(agent)).rejects.toThrow(
+      'Could not determine the indy namespace of issuer'
+    )
     expect(inMemoryLruCache.get).toHaveBeenCalledTimes(2)
     expect(w3cRepo.save).toHaveBeenCalledTimes(0)
     expect(anonCredsRepo.delete).toHaveBeenCalledTimes(0)
     return
   }
+
+  await testModule.storeAnonCredsInW3cFormatV0_5(agent)
 
   if (!isUnqualifiedIndyDid(issuerId)) {
     expect(inMemoryLruCache.get).toHaveBeenCalledTimes(0)

@@ -1,31 +1,36 @@
 import { EventEmitter } from 'node:events'
-import { Agent, DependencyManager, InjectionSymbols, JsonTransformer, W3cCredentialRepository } from '@credo-ts/core'
+import {
+  Agent,
+  DependencyManager,
+  InjectionSymbols,
+  W3cCredentialService,
+  W3cJsonLdVerifiableCredential,
+} from '@credo-ts/core'
 import { WebSocket } from 'ws'
 import { InMemoryStorageService } from '../../../../tests/InMemoryStorageService'
 import { NodeFileSystem } from '../../../node/src/NodeFileSystem'
 import { NativeAnoncreds } from '../../tests/helpers'
 import { InMemoryAnonCredsRegistry } from '../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsCredentialRecord, AnonCredsCredentialRepository, AnonCredsModule } from '../index'
+import { type AnonCredsHolderService, AnonCredsHolderServiceSymbol } from '../services'
+import { migrateCredentialExchangeRecordToV0_4 } from '../updates/0.3.1-0.4/credentialExchangeRecord'
+import { storeAnonCredsInW3cFormatV0_5 } from '../updates/0.4-0.5/anonCredsCredentialRecord'
 
 vi.mock('@credo-ts/didcomm', () => {
-  throw new Error('DIDComm is not installed')
+  const error = Object.assign(new Error("Cannot find package '@credo-ts/didcomm'"), {
+    code: 'ERR_MODULE_NOT_FOUND',
+  })
+  throw error
 })
 
 function createAgent() {
-  const schemaId = 'urn:example:schema'
-  const schema = {
-    name: 'Example',
-    version: '1.0',
-    issuerId: 'did:example:issuer',
-    attrNames: ['name'],
-  }
-  const storage = new InMemoryStorageService()
   const dependencyManager = new DependencyManager()
+  const storage = new InMemoryStorageService()
   dependencyManager.registerInstance(InjectionSymbols.StorageService, storage)
 
   const module = new AnonCredsModule({
     anoncreds: NativeAnoncreds,
-    registries: [new InMemoryAnonCredsRegistry({ existingSchemas: { [schemaId]: schema } })],
+    registries: [new InMemoryAnonCredsRegistry()],
   })
   const agent = new Agent(
     {
@@ -36,43 +41,68 @@ function createAgent() {
   )
   storage.createRecordsForContext(agent.context)
 
-  return { agent, module, schemaId, schema }
+  return { agent }
 }
 
 describe('AnonCreds without DIDComm', () => {
-  test('constructs an agent and resolves a schema without loading DIDComm', async () => {
-    const { agent, schemaId, schema } = createAgent()
+  test('skips the DIDComm-only 0.3.1 to 0.4 migration when DIDComm is not installed', async () => {
+    const { agent } = createAgent()
+    const warn = vi.spyOn(agent.config.logger, 'warn')
 
-    expect(await agent.modules.anoncreds.getSchema(schemaId)).toMatchObject({ schemaId, schema })
+    await expect(migrateCredentialExchangeRecordToV0_4(agent)).resolves.toBeUndefined()
+
+    expect(warn).toHaveBeenCalledWith(
+      'Skipping credential exchange record migration to storage version 0.4 because @credo-ts/didcomm is not installed.'
+    )
   })
 
-  test('does not load DIDComm when there are no legacy credentials to convert', async () => {
-    const { agent, module } = createAgent()
-
-    await expect(module.updates[1].doUpdate(agent)).resolves.toBeUndefined()
-  })
-
-  test('requires DIDComm on demand for the legacy exchange-record migration', async () => {
-    const { agent, module } = createAgent()
-
-    await expect(module.updates[0].doUpdate(agent)).rejects.toMatchObject({
-      cause: expect.objectContaining({ message: 'DIDComm is not installed' }),
+  test('converts legacy AnonCreds credentials when DIDComm is not installed', async () => {
+    const { agent } = createAgent()
+    const legacyRecord = new AnonCredsCredentialRecord({
+      id: 'legacy-record',
+      credentialId: 'legacy-credential',
+      credential: {
+        schema_id: 'urn:example:schema',
+        cred_def_id: 'urn:example:credential-definition',
+        values: { name: { raw: 'Alice', encoded: '123' } },
+        signature: {},
+        signature_correctness_proof: {},
+      },
+      linkSecretId: 'link-secret',
+      methodName: 'indy',
+      schemaName: 'example',
+      schemaVersion: '1.0',
+      schemaIssuerId: 'did:example:issuer',
+      issuerId: 'did:example:issuer',
     })
-  })
+    const anonCredsRepository = agent.dependencyManager.resolve(AnonCredsCredentialRepository)
+    await anonCredsRepository.save(agent.context, legacyRecord)
 
-  test('fails before writing or deleting legacy credentials if DIDComm cannot load', async () => {
-    const { agent, module } = createAgent()
-    const repository = agent.dependencyManager.resolve(AnonCredsCredentialRepository)
-    agent.dependencyManager.registerInstance(AnonCredsCredentialRepository, repository)
-    const record = JsonTransformer.fromJSON({ id: 'legacy' }, AnonCredsCredentialRecord)
-    vi.spyOn(repository, 'getAll').mockResolvedValue([record])
-    const deleteRecord = vi.spyOn(repository, 'delete')
-    const save = vi.spyOn(agent.dependencyManager.resolve(W3cCredentialRepository), 'save')
+    const holderService = agent.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
+    vi.spyOn(holderService, 'legacyToW3cCredential').mockResolvedValue(
+      new W3cJsonLdVerifiableCredential({
+        issuer: 'did:example:issuer',
+        type: ['VerifiableCredential'],
+        issuanceDate: '2024-01-01T00:00:00Z',
+        credentialSubject: { claims: { name: 'Alice' } },
+        proof: {
+          type: 'Ed25519Signature2018',
+          proofPurpose: 'assertionMethod',
+          verificationMethod: 'did:example:issuer#key-1',
+          created: '2024-01-01T00:00:00Z',
+          proofValue: 'z',
+        },
+      })
+    )
+    const storeCredential = vi
+      .spyOn(agent.dependencyManager.resolve(W3cCredentialService), 'storeCredential')
+      .mockImplementation(async (_agentContext, { record }) => record)
+    const warn = vi.spyOn(agent.config.logger, 'warn')
 
-    await expect(module.updates[1].doUpdate(agent)).rejects.toMatchObject({
-      cause: expect.objectContaining({ message: 'DIDComm is not installed' }),
-    })
-    expect(deleteRecord).not.toHaveBeenCalled()
-    expect(save).not.toHaveBeenCalled()
+    await expect(storeAnonCredsInW3cFormatV0_5(agent)).resolves.toBeUndefined()
+
+    expect(storeCredential).toHaveBeenCalledTimes(1)
+    await expect(anonCredsRepository.getAll(agent.context)).resolves.toHaveLength(0)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('legacy AnonCreds credential record legacy-record'))
   })
 })

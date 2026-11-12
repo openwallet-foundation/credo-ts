@@ -1,12 +1,12 @@
 import type { AgentContext, BaseAgent } from '@credo-ts/core'
 import { CacheModuleConfig, CredoError, W3cCredentialRecord, W3cCredentialService } from '@credo-ts/core'
-import type { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
 import { type AnonCredsCredentialRecord, AnonCredsCredentialRepository } from '../../repository'
 import type { AnonCredsHolderService } from '../../services'
 import { AnonCredsHolderServiceSymbol } from '../../services'
 import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
 import { getW3cRecordAnonCredsTags } from '../../utils/w3cAnonCredsUtils'
+import { resolveDidCommCredentialExchangeRepository } from '../optionalDependencies'
 import {
   getIndyNamespaceFromIndyDid,
   getQualifiedDidIndyDid,
@@ -39,7 +39,12 @@ async function getIndyNamespace(agentContext: AgentContext, legacyIssuerId: stri
 async function migrateLegacyToW3cCredential(
   agentContext: AgentContext,
   legacyRecord: AnonCredsCredentialRecord,
-  credentialExchangeRepository: DidCommCredentialExchangeRepository
+  relinkCredentialExchangeRecord?: (
+    legacyRecord: AnonCredsCredentialRecord,
+    w3cCredentialRecord: W3cCredentialRecord,
+    legacyTags: ReturnType<AnonCredsCredentialRecord['getTags']>,
+    indyNamespace: string | undefined
+  ) => Promise<void>
 ) {
   const legacyTags = legacyRecord.getTags()
 
@@ -128,32 +133,7 @@ async function migrateLegacyToW3cCredential(
 
   await w3cCredentialService.storeCredential(agentContext, { record: w3cCredentialRecord })
 
-  // Find the credential exchange record bound to this anoncreds credential and update it to point to the newly created w3c record
-  const [relatedCredentialExchangeRecord] = await credentialExchangeRepository.findByQuery(agentContext, {
-    credentialIds: [legacyRecord.credentialId],
-  })
-
-  if (relatedCredentialExchangeRecord) {
-    // Replace the related binding by the new one
-    const credentialBindingIndex = relatedCredentialExchangeRecord.credentials.findIndex(
-      (binding) => binding.credentialRecordId === legacyRecord.credentialId
-    )
-    if (credentialBindingIndex !== -1) {
-      relatedCredentialExchangeRecord.credentials[credentialBindingIndex] = {
-        credentialRecordType: 'w3c',
-        credentialRecordId: w3cCredentialRecord.id,
-      }
-
-      // Store the qualified revocation registry id, so the revocation notification service can find the record
-      if (legacyTags.revocationRegistryId && indyNamespace) {
-        relatedCredentialExchangeRecord.setTags({
-          anonCredsRevocationRegistryId: getQualifiedDidIndyDid(legacyTags.revocationRegistryId, indyNamespace),
-        })
-      }
-
-      await credentialExchangeRepository.update(agentContext, relatedCredentialExchangeRecord)
-    }
-  }
+  await relinkCredentialExchangeRecord?.(legacyRecord, w3cCredentialRecord, legacyTags, indyNamespace)
 }
 
 /**
@@ -171,17 +151,54 @@ export async function storeAnonCredsInW3cFormatV0_5<Agent extends BaseAgent>(age
 
   if (records.length === 0) return
 
-  // Resolve the optional integration before writing records or entering the per-record error handler.
-  const { DidCommCredentialExchangeRepository } = await import('@credo-ts/didcomm')
-  const credentialExchangeRepository = agent.context.dependencyManager.resolve(DidCommCredentialExchangeRepository)
+  const { repository: credentialExchangeRepository, unavailableReason } =
+    await resolveDidCommCredentialExchangeRepository(agent.dependencyManager)
+
+  const relinkCredentialExchangeRecord = credentialExchangeRepository
+    ? async (
+        legacyRecord: AnonCredsCredentialRecord,
+        w3cCredentialRecord: W3cCredentialRecord,
+        legacyTags: ReturnType<AnonCredsCredentialRecord['getTags']>,
+        indyNamespace: string | undefined
+      ) => {
+        const [relatedCredentialExchangeRecord] = await credentialExchangeRepository.findByQuery(agent.context, {
+          credentialIds: [legacyRecord.credentialId],
+        })
+
+        if (relatedCredentialExchangeRecord) {
+          const credentialBindingIndex = relatedCredentialExchangeRecord.credentials.findIndex(
+            (binding) => binding.credentialRecordId === legacyRecord.credentialId
+          )
+          if (credentialBindingIndex !== -1) {
+            relatedCredentialExchangeRecord.credentials[credentialBindingIndex] = {
+              credentialRecordType: 'w3c',
+              credentialRecordId: w3cCredentialRecord.id,
+            }
+
+            if (legacyTags.revocationRegistryId && indyNamespace) {
+              relatedCredentialExchangeRecord.setTags({
+                anonCredsRevocationRegistryId: getQualifiedDidIndyDid(legacyTags.revocationRegistryId, indyNamespace),
+              })
+            }
+
+            await credentialExchangeRepository.update(agent.context, relatedCredentialExchangeRecord)
+          }
+        }
+      }
+    : undefined
 
   for (const record of records) {
     agent.config.logger.debug(
       `Re-saving anonCreds credential record with id ${record.id} in the new w3c format, and deleting the legacy record`
     )
     try {
-      await migrateLegacyToW3cCredential(agent.context, record, credentialExchangeRepository)
+      await migrateLegacyToW3cCredential(agent.context, record, relinkCredentialExchangeRecord)
       await anoncredsRepository.delete(agent.context, record)
+      if (!relinkCredentialExchangeRecord) {
+        agent.config.logger.warn(
+          `Could not relink a DIDComm credential exchange record for legacy AnonCreds credential record ${record.id} because ${unavailableReason}.`
+        )
+      }
       agent.config.logger.debug(
         `Successfully migrated w3c credential record with id ${record.id} to storage version 0.5`
       )
@@ -190,6 +207,7 @@ export async function storeAnonCredsInW3cFormatV0_5<Agent extends BaseAgent>(age
         `Failed to migrate w3c credential record with id ${record.id} to storage version 0.5`,
         error
       )
+      throw error
     }
   }
 }

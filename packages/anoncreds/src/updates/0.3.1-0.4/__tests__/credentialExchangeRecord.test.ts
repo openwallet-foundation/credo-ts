@@ -27,6 +27,9 @@ vi.mock('../../../../../core/src/agent/Agent', () => {
         config: agentConfig,
         context: agentContext,
         dependencyManager: {
+          isRegistered: vi.fn(function () {
+            return true
+          }),
           resolve: vi.fn(function () {
             return credentialRepository
           }),
