@@ -1,6 +1,10 @@
+// Before the code below uses globalThis.crypto. Imported here, as bundlers may move this module above the polyfill in index.ts.
+import 'react-native-get-random-values'
+
 import { Hasher } from '@credo-ts/core'
 
 // jsonld and rdf-canonize hash with crypto.subtle.digest, which React Native doesn't provide.
+// Libraries that see crypto.subtle then skip their own fallback for other methods, so those need e.g. react-native-quick-crypto.
 if (typeof globalThis.crypto.subtle?.digest !== 'function') {
   Object.assign(globalThis.crypto, {
     subtle: {
