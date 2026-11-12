@@ -13,22 +13,25 @@ vi.mock('didwebvh-ts', async () => {
 
   return {
     ...actual,
-    resolveDID: vi.fn().mockResolvedValue({
-      doc: {
-        '@context': ['https://www.w3.org/ns/did/v1'],
-        id: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
-        verificationMethod: [
-          {
-            id: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1',
-            type: 'Ed25519VerificationKey2020',
-            controller: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
-            publicKeyMultibase: 'z6MkkBaWtQKyx7Mr54XaXyMAEpNKqphK4x7ztuBpSfR6Wqwr',
-          },
-        ],
-        authentication: ['did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1'],
-      },
-      did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
-    }),
+    getResolver: vi.fn(() => ({
+      webvh: vi.fn().mockResolvedValue({
+        didDocument: {
+          '@context': ['https://www.w3.org/ns/did/v1'],
+          id: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
+          verificationMethod: [
+            {
+              id: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1',
+              type: 'Ed25519VerificationKey2020',
+              controller: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
+              publicKeyMultibase: 'z6MkkBaWtQKyx7Mr54XaXyMAEpNKqphK4x7ztuBpSfR6Wqwr',
+            },
+          ],
+          authentication: ['did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1'],
+        },
+        didDocumentMetadata: {},
+        didResolutionMetadata: {},
+      }),
+    })),
     updateDID: vi.fn().mockResolvedValue({
       did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
     }),
@@ -44,11 +47,12 @@ vi.mock('didwebvh-ts', async () => {
 describe('WebVH DID module', () => {
   let agent: Agent<ReturnType<typeof getWebVhModules>>
 
-  it('uses global caching by default and supports context scope configuration', () => {
+  it('disables resolver shortcuts regardless of cache scope configuration', () => {
     const resolver = new WebVhDidResolver()
     const config = new DidsModuleConfig({ resolvers: [resolver] })
 
-    expect(resolver.allowsCaching).toBe(true)
+    expect(resolver.allowsCaching).toBe(false)
+    expect(resolver.allowsLocalDidRecord).toBe(false)
     expect(config.getCacheScope('webvh')).toBe('global')
     expect(new DidsModuleConfig({ cacheScope: { webvh: 'context' } }).getCacheScope('webvh')).toBe('context')
   })
@@ -102,10 +106,10 @@ describe('WebVH DID module', () => {
     } as unknown as Response)
 
     const result = await agent.modules.webvhSdk.resolveResource(
-      'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:localhost/resources/1234'
+      'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:localhost.example.com%3A8443:some%20path/resources/1234'
     )
 
-    expect(mockFetch).toHaveBeenCalledWith('http://localhost/resources/1234', expect.anything())
+    expect(mockFetch).toHaveBeenCalledWith('https://localhost.example.com:8443/some%20path/resources/1234')
     expect(result).toMatchObject({
       content: { resourceType: 'schema', id: '1234' },
       contentMetadata: { contentType: 'application/json' },

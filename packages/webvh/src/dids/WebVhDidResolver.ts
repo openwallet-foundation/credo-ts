@@ -1,101 +1,89 @@
-import type { AgentContext, DidResolutionResult, DidResolver } from '@credo-ts/core'
+import type { AgentContext, DidResolutionResult, DidResolver, ParsedDid } from '@credo-ts/core'
 
-import { DidDocument } from '@credo-ts/core'
-import { resolveDID } from 'didwebvh-ts'
+import { DidDocument, parseDid } from '@credo-ts/core'
+import { Resolver } from 'did-resolver'
+import { getResolver } from 'didwebvh-ts'
 
 import { WebVhDidCrypto } from './WebVhDidCrypto'
 
-export interface WebVhDidResolverOptions {
-  /**
-   * Maximum size in bytes of a fetched resource.
-   *
-   * @default the `maxResponseBytes` of the agent's `fetchLimits`
-   */
-  maxResourceBytes?: number
-}
-
 export class WebVhDidResolver implements DidResolver {
   public readonly supportedMethods = ['webvh']
-  public readonly allowsCaching = true
-  public readonly allowsLocalDidRecord = true
+  // Core caches/local documents bypass log validation and do not distinguish version selectors.
+  public readonly allowsCaching = false
+  public readonly allowsLocalDidRecord = false
 
-  private options: WebVhDidResolverOptions
-
-  public constructor(options: WebVhDidResolverOptions = {}) {
-    this.options = options
-  }
-
-  public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
-    const didDocumentMetadata = {}
-
+  /**
+   * Resolves published logs through upstream's dispatcher, parser hook, and version-selector handling.
+   *
+   * @param agentContext Agent context providing storage, KMS, and configured fetch.
+   * @param did Bare WebVH DID supplied by Credo.
+   * @param parsed Credo-parsed original DID URL, including any version query.
+   * @returns DID document and upstream metadata, or resolution error metadata.
+   */
+  public async resolve(agentContext: AgentContext, did: string, parsed: ParsedDid): Promise<DidResolutionResult> {
     try {
-      return await this.resolveDidDoc(agentContext, did)
+      const resolver = new Resolver(
+        getResolver({
+          verifier: new WebVhDidCrypto(agentContext),
+          fetch: agentContext.config.fetch.bind(agentContext.config),
+        }),
+        { cache: false }
+      )
+      const result = await resolver.resolve(parsed.didUrl)
+      return {
+        didDocument: result.didDocument ? DidDocument.fromJSON(result.didDocument) : null,
+        didDocumentMetadata: result.didDocumentMetadata,
+        didResolutionMetadata: result.didResolutionMetadata,
+      }
     } catch (error) {
-      agentContext.config.logger.error(`Error resolving DID ${did}: ${error}`)
+      agentContext.config.logger.error(`Error resolving DID ${did}`, error)
       return {
         didDocument: null,
-        didDocumentMetadata,
+        didDocumentMetadata: {},
         didResolutionMetadata: {
-          error: 'notFound',
-          message: `resolver_error: Unable to resolve did '${did}': ${error}`,
+          error: 'internalError',
+          message: `Unable to resolve DID '${did}': ${error instanceof Error ? error.message : String(error)}`,
         },
       }
     }
   }
 
+  /**
+   * Converts a WebVH DID resource URL to HTTPS, decoding its authority and preserving encoded path segments and query.
+   *
+   * @param id WebVH DID URL identifying a resource.
+   * @returns Corresponding HTTPS resource URL.
+   */
   public getBaseUrl = (id: string) => {
-    // Handle DID URL paths - split on first slash to separate DID from URL path
-    const slashIndex = id.indexOf('/')
-    let didPart = id
-    let urlPath = ''
-
-    if (slashIndex !== -1) {
-      didPart = id.substring(0, slashIndex)
-      urlPath = id.substring(slashIndex)
-    }
-
-    const parts = didPart.split(':')
-    if (!didPart.startsWith('did:webvh:') || parts.length < 4) {
+    const parsed = parseDid(id)
+    const [scid, domain, ...paths] = parsed.id.split(':')
+    if (parsed.method !== 'webvh' || !scid || !domain) {
       throw new Error(`${id} is not a valid did:webvh identifier`)
     }
-
-    // Extract domain and path parts from the DID (after did:webvh:CID)
-    const domainAndPathParts = parts.slice(3)
-    const protocol = domainAndPathParts.join(':').includes('localhost') ? 'http' : 'https'
-
-    // First part is domain, rest are path components
-    const domain = domainAndPathParts[0]
-    const pathComponents = domainAndPathParts.slice(1)
-
-    // Check if domain has port
-    const [host, port] = domain.split(':')
-    const normalizedHost = port ? `${host}:${port}` : host
-
-    // Build the base URL
-    let baseUrl = `${protocol}://${normalizedHost}`
-    if (pathComponents.length > 0) {
-      baseUrl += `/${pathComponents.join('/')}`
+    const authority = new URL(`https://${decodeURIComponent(domain)}`)
+    if (authority.username || authority.password || authority.pathname !== '/' || authority.search || authority.hash) {
+      throw new Error(`${id} has an invalid resource host`)
     }
-
-    // Append the URL path if present
-    if (urlPath) {
-      baseUrl += urlPath
-    }
-
-    return baseUrl
+    const path = paths.map((segment) => encodeURIComponent(decodeURIComponent(segment))).join('/')
+    return `https://${authority.host}${path ? `/${path}` : ''}${parsed.path ?? ''}${parsed.query ? `?${parsed.query}` : ''}`
   }
 
+  /**
+   * Fetches a WebVH resource with the agent's fetch limits, returning dereferencing metadata or an explicit error.
+   *
+   * @param agentContext Agent context providing configured fetch and logging.
+   * @param resourceUrl WebVH DID URL identifying the resource.
+   * @returns Resource content and retrieval metadata, or a resolution error and message.
+   */
   public async resolveResource(agentContext: AgentContext, resourceUrl: string) {
     try {
       agentContext.config.logger.debug(`Attempting to resolve resource: ${resourceUrl}`)
 
-      // Use the getBaseUrl method to parse the did:webvh resource URL
       const httpsUrl = this.getBaseUrl(resourceUrl)
 
       agentContext.config.logger.debug(`Fetching resource from: ${httpsUrl}`)
 
-      // Fetch the resource using agent dependencies fetch
-      const response = await agentContext.config.fetch(httpsUrl, { maxResponseBytes: this.options.maxResourceBytes })
+      const response = await agentContext.config.fetch(httpsUrl)
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
@@ -113,13 +101,13 @@ export class WebVhDidResolver implements DidResolver {
       agentContext.config.logger.debug(`Successfully fetched resource, content type: ${contentType}`)
 
       return {
-        content: content,
+        content,
         contentMetadata: {
-          contentType: contentType,
+          contentType,
           retrieved: new Date().toISOString(),
         },
         dereferencingMetadata: {
-          contentType: contentType,
+          contentType,
         },
       }
     } catch (error) {
@@ -128,28 +116,6 @@ export class WebVhDidResolver implements DidResolver {
         error: 'notFound',
         message: `resolver_error: Unable to resolve resource '${resourceUrl}': ${error instanceof Error ? error.message : String(error)}`,
       }
-    }
-  }
-
-  private async resolveDidDoc(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
-    const crypto = new WebVhDidCrypto(agentContext)
-    const { doc, meta } = await resolveDID(did, { verifier: crypto })
-
-    if (!doc) {
-      return {
-        didDocument: null,
-        didDocumentMetadata: {},
-        didResolutionMetadata: {
-          error: meta.error && /not_?found/i.test(meta.error) ? 'notFound' : 'invalidDid',
-          message: `resolver_error: Unable to resolve did '${did}': ${meta.problemDetails?.detail ?? meta.error ?? 'no did document returned'}`,
-        },
-      }
-    }
-
-    return {
-      didDocument: DidDocument.fromJSON(doc),
-      didDocumentMetadata: {},
-      didResolutionMetadata: {},
     }
   }
 }

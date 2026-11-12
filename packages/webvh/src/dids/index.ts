@@ -6,7 +6,7 @@ export {
   WebVhDidRegistrar,
   type WebVhDidUpdateOptions,
 } from './WebVhDidRegistrar'
-export { WebVhDidResolver, type WebVhDidResolverOptions } from './WebVhDidResolver'
+export { WebVhDidResolver } from './WebVhDidResolver'
 export {
   type WebVhDidRecordMetadata,
   WebVhDidRecordMetadataKeys,
