@@ -798,9 +798,9 @@ importers:
       jsonld-signatures:
         specifier: ^11.6.0
         version: 11.6.0
-      lru_map:
-        specifier: ^0.4.1
-        version: 0.4.1
+      lru-cache:
+        specifier: ^11.2.5
+        version: 11.2.5
       object-inspect:
         specifier: ^1.13.4
         version: 1.13.4
@@ -5972,9 +5972,6 @@ packages:
   lru-cache@6.0.0:
     resolution: {integrity: sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==}
     engines: {node: '>=10'}
-
-  lru_map@0.4.1:
-    resolution: {integrity: sha512-I+lBvqMMFfqaV8CJCISjI3wbjmwVu/VyOoU7+qtu9d7ioW5klMgsTTiUOUp+DJvfTTzKXoPbyC6YfgkNcyPSOg==}
 
   luxon@3.7.2:
     resolution: {integrity: sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==}
@@ -12760,8 +12757,6 @@ snapshots:
   lru-cache@6.0.0:
     dependencies:
       yallist: 4.0.0
-
-  lru_map@0.4.1: {}
 
   luxon@3.7.2: {}
 

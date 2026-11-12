@@ -402,7 +402,9 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(deferredCredentialResponse.deferredCredentials).toHaveLength(0)
     expect(deferredCredentialResponse.credentials).toHaveLength(1)
 
-    const firstSdJwtVcTenant1 = (deferredCredentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+    const firstSdJwtVcTenant1 = (deferredCredentialResponse.credentials[0].record as SdJwtVcRecord).getFirstCredential(
+      holderTenant.context
+    )
     expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 
     await holderTenant.endSession()

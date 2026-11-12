@@ -1,6 +1,6 @@
-import LRUMap from 'lru_map'
 import type { AgentContext } from '../../agent/context'
 import type { Cache, CacheOptions } from './Cache'
+import { LruCache } from './LruCache'
 
 export interface InMemoryLruCacheOptions {
   /** The maximum number of entries allowed in the cache */
@@ -19,10 +19,10 @@ export interface InMemoryLruCacheOptions {
  * busy context can evict entries of other contexts. `clear()` also clears all scopes and contexts.
  */
 export class InMemoryLruCache implements Cache {
-  private readonly cache: LRUMap.LRUMap<string, CacheItem>
+  private readonly cache: LruCache<CacheItem>
 
   public constructor({ limit }: InMemoryLruCacheOptions) {
-    this.cache = new LRUMap.LRUMap<string, CacheItem>(limit)
+    this.cache = new LruCache({ limit })
   }
 
   private getNamespacedKey(agentContext: AgentContext, key: string, options?: CacheOptions) {
@@ -77,11 +77,11 @@ export class InMemoryLruCache implements Cache {
   }
 
   private removeExpiredItems() {
-    this.cache.forEach((value, key) => {
+    for (const [key, value] of this.cache.entries()) {
       if (value.expiresAt && Date.now() > value.expiresAt) {
         this.cache.delete(key)
       }
-    })
+    }
   }
 }
 

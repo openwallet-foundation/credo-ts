@@ -22,7 +22,7 @@ import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { TypedArrayEncoder } from './../../utils'
 import { PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc'
-import { X509Certificate } from '../x509'
+import { X509Service } from '../x509'
 import { Mdoc } from './Mdoc'
 import { MdocError } from './MdocError'
 import type {
@@ -310,7 +310,7 @@ export class MdocDeviceResponse {
       category: 'DOCUMENT_FORMAT',
     })
 
-    const trustedCertificates = convertMdocTrustedCertificates(options.trustedCertificates ?? [])
+    const trustedCertificates = convertMdocTrustedCertificates(agentContext, options.trustedCertificates ?? [])
 
     const verificationResult = await this.deviceResponse
       .verify(
@@ -339,7 +339,7 @@ export class MdocDeviceResponse {
     } of verificationResult.documents) {
       if (!trustedIssuanceChain) continue
 
-      assertMdocStatusListChainsMatchIssuanceChain(trustedCertificates, {
+      assertMdocStatusListChainsMatchIssuanceChain(agentContext, trustedCertificates, {
         trustedIssuanceChain,
         trustedStatusListChain,
         trustedIdentifierListChain,
@@ -352,7 +352,7 @@ export class MdocDeviceResponse {
         // biome-ignore lint/style/noNonNullAssertion: the verification result has one entry per document
         mdoc: new Mdoc(this.deviceResponse.documents![documentIndex].issuerSigned),
         trustedIssuanceChain: trustedIssuanceChain?.map((certificate) =>
-          X509Certificate.fromRawCertificate(certificate)
+          X509Service.parseCertificate(agentContext, { encodedCertificate: certificate })
         ),
       })),
     }

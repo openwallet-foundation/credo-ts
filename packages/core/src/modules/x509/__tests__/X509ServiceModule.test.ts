@@ -1,5 +1,4 @@
 import type { DependencyManager } from '../../../plugins'
-
 import {
   X509Module,
   X509ModuleConfig,
@@ -7,6 +6,7 @@ import {
   X509RevocationService,
   X509Service,
 } from './../index'
+import { X509CertificateCache } from '../X509CertificateCache'
 
 const dependencyManager = {
   registerInstance: vi.fn(),
@@ -42,13 +42,16 @@ q8mKCA9J8k/+zh//yKbN1bLAtdqPx7dnrDqV3Lg+
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(X509ModuleConfig, new X509ModuleConfig(options))
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(X509Service)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(X509CertificateCache)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(X509RevocationService)
 
     expect(x509Module.config.trustedCertificates).toBeDefined()
     expect(x509Module.config.trustedCertificates).toHaveLength(1)
-    expect(x509Module.config.trustedCertificates).toContain(`-----BEGIN CERTIFICATE-----
+    expect(
+      x509Module.config.trustedCertificates?.map((certificate) => certificate.toString('pem'))
+    ).toContain(`-----BEGIN CERTIFICATE-----
 MIICKjCCAdCgAwIBAgIUV8bM0wi95D7KN0TyqHE42ru4hOgwCgYIKoZIzj0EAwIw
 UzELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE5ldyBZb3JrMQ8wDQYDVQQHDAZBbGJh
 bnkxDzANBgNVBAoMBk5ZIERNVjEPMA0GA1UECwwGTlkgRE1WMB4XDTIzMDkxNDE0

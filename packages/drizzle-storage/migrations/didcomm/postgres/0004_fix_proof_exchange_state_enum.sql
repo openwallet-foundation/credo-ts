@@ -1,0 +1,1 @@
+ALTER TABLE "DidcommProofExchange" ALTER COLUMN "state" SET DATA TYPE "public"."DidcommProofExchangeState" USING "state"::text::"public"."DidcommProofExchangeState";

@@ -1,4 +1,5 @@
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/core'
+import type { AgentContext } from '../../agent'
 import { Hasher } from '../../crypto'
 import { ClaimFormat } from '../vc/index'
 import type { SdJwtVcHeader, SdJwtVcPayload } from './SdJwtVcOptions'
@@ -13,7 +14,7 @@ export function sdJwtVcHasher(data: string | ArrayBufferLike, alg: string) {
 export function decodeSdJwtVc<
   Header extends SdJwtVcHeader = SdJwtVcHeader,
   Payload extends SdJwtVcPayload = SdJwtVcPayload,
->(compactSdJwtVc: string, typeMetadata?: SdJwtVcTypeMetadata): SdJwtVc<Header, Payload> {
+>(agentContext: AgentContext, compactSdJwtVc: string, typeMetadata?: SdJwtVcTypeMetadata): SdJwtVc<Header, Payload> {
   // NOTE: we use decodeSdJwtSync so we can make this method sync
   const { jwt, disclosures, kbJwt } = decodeSdJwtSync(compactSdJwtVc, sdJwtVcHasher)
   const prettyClaims = getClaimsSync(jwt.payload, disclosures, sdJwtVcHasher)
@@ -22,7 +23,7 @@ export function decodeSdJwtVc<
     compact: compactSdJwtVc,
     header: jwt.header as Header,
     payload: jwt.payload as Payload,
-    issuer: parseIssuerFromCredential(jwt.header, jwt.payload),
+    issuer: parseIssuerFromCredential(agentContext, jwt.header, jwt.payload),
     holder: parseHolderBindingFromCredential(jwt.payload) ?? undefined,
     prettyClaims: prettyClaims as Payload,
     claimFormat: ClaimFormat.SdJwtDc,

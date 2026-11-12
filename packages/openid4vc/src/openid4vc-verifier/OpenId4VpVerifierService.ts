@@ -46,7 +46,6 @@ import {
   W3cJwtVerifiablePresentation,
   W3cV2CredentialService,
   W3cV2SdJwtVerifiablePresentation,
-  X509Certificate,
   X509ModuleConfig,
   X509Service,
 } from '@credo-ts/core'
@@ -1263,7 +1262,7 @@ export class OpenId4VpVerifierService {
         }
 
         const verificationResult = await sdJwtVcApi.verify({
-          compactSdJwtVc: presentation,
+          sdJwtVc,
           keyBinding: {
             audience: options.audience,
             nonce: options.nonce,
@@ -1288,7 +1287,7 @@ export class OpenId4VpVerifierService {
           const mdoc = new Mdoc(documentResponse.deviceResponse.documents![0].issuerSigned)
 
           const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
-            X509Certificate.fromRawCertificate(cert)
+            X509Service.parseCertificate(agentContext, { encodedCertificate: cert })
           )
 
           const trustedCertificates =

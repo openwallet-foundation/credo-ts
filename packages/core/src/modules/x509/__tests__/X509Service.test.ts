@@ -486,7 +486,10 @@ gTqhM3BGMuf+
       'MIICaTCCAg+gAwIBAgIUShyxcIZGiPV3wBRp4YOlNp1I13YwCgYIKoZIzj0EAwIwgYkxCzAJBgNVBAYTAkRFMQ8wDQYDVQQIDAZiZHIuZGUxDzANBgNVBAcMBkJlcmxpbjEMMAoGA1UECgwDQkRSMQ8wDQYDVQQLDAZNYXVyZXIxHTAbBgNVBAMMFGlzc3VhbmNlLXRlc3QuYmRyLmRlMRowGAYJKoZIhvcNAQkBFgt0ZXN0QGJkci5kZTAeFw0yNDA1MjgwODIyMjdaFw0zNDA0MDYwODIyMjdaMIGJMQswCQYDVQQGEwJERTEPMA0GA1UECAwGYmRyLmRlMQ8wDQYDVQQHDAZCZXJsaW4xDDAKBgNVBAoMA0JEUjEPMA0GA1UECwwGTWF1cmVyMR0wGwYDVQQDDBRpc3N1YW5jZS10ZXN0LmJkci5kZTEaMBgGCSqGSIb3DQEJARYLdGVzdEBiZHIuZGUwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASygZ1Ma0m9uif4n8g3CiCP+E1r2KWFxVmS6LRWqUBMgn5fODKIBftdzVSbv/38gujy5qxh/q5bLcT+yLilazCao1MwUTAdBgNVHQ4EFgQUMGdPNMIdo3iHfqt2jlTnBNCfRNAwHwYDVR0jBBgwFoAUMGdPNMIdo3iHfqt2jlTnBNCfRNAwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNIADBFAiAu2h5xulXReb5IhgpkYiYR1BONTtsjT7nfzQAhL4ISOQIhAK6jKwwf6fTTSZwvJUOAu7dz1Dy/DmH19Lef0zqaNNht',
     ]
 
-    const chain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
+    const chain = await X509Service.validateCertificateChain(agentContext, {
+      certificateChain,
+      trustedCertificates: certificateChain.slice(-1),
+    })
 
     expect(chain.length).toStrictEqual(1)
     expect(chain[0].sanDnsNames).toEqual([])
@@ -494,7 +497,10 @@ gTqhM3BGMuf+
   })
 
   it('should validate a valid certificate chain', async () => {
-    const validatedChain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
+    const validatedChain = await X509Service.validateCertificateChain(agentContext, {
+      certificateChain,
+      trustedCertificates: certificateChain.slice(-1),
+    })
 
     expect(validatedChain.length).toStrictEqual(3)
 
@@ -545,22 +551,31 @@ gTqhM3BGMuf+
     it('rejects a chain whose issuing CA has key usage without keyCertSign', async () => {
       const certificateChain = await buildChain([X509KeyUsage.DigitalSignature])
 
-      await expect(X509Service.validateCertificateChain(agentContext, { certificateChain })).rejects.toThrow(
-        'keyCertSign'
-      )
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain,
+          trustedCertificates: certificateChain.slice(-1),
+        })
+      ).rejects.toThrow('keyCertSign')
     })
 
     it('accepts a chain whose issuing CA has key usage including keyCertSign', async () => {
       const certificateChain = await buildChain([X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign])
 
-      const validatedChain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
+      const validatedChain = await X509Service.validateCertificateChain(agentContext, {
+        certificateChain,
+        trustedCertificates: certificateChain.slice(-1),
+      })
       expect(validatedChain.length).toBe(3)
     })
 
     it('accepts a chain whose issuing CA has no key usage extension (unrestricted)', async () => {
       const certificateChain = await buildChain()
 
-      const validatedChain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
+      const validatedChain = await X509Service.validateCertificateChain(agentContext, {
+        certificateChain,
+        trustedCertificates: certificateChain.slice(-1),
+      })
       expect(validatedChain.length).toBe(3)
     })
   })
@@ -658,6 +673,7 @@ gTqhM3BGMuf+
       async () =>
         await X509Service.validateCertificateChain(agentContext, {
           certificateChain: [certificate],
+          trustedCertificates: [certificate],
         })
     ).rejects.toThrow(X509Error)
   })
@@ -679,6 +695,7 @@ gTqhM3BGMuf+
       async () =>
         await X509Service.validateCertificateChain(agentContext, {
           certificateChain: [certificate],
+          trustedCertificates: [certificate],
         })
     ).rejects.toThrow(X509Error)
   })
@@ -688,11 +705,12 @@ gTqhM3BGMuf+
       async () =>
         await X509Service.validateCertificateChain(agentContext, {
           certificateChain: [certificateChain[1], certificateChain[2], certificateChain[0]],
+          trustedCertificates: [certificateChain[2]],
         })
     ).rejects.toThrow(X509Error)
   })
 
-  describe('provided chain must match the built chain', () => {
+  describe('every certificate in the provided chain must be issued by the next', () => {
     async function createCa(commonName: string) {
       const key = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
       const certificate = await X509Service.createCertificate(agentContext, {
@@ -739,7 +757,7 @@ gTqhM3BGMuf+
           certificateChain: [leaf.certificate, unrelatedIntermediate.certificate].map((c) => c.toString('base64')),
           trustedCertificates: [root.certificate.toString('base64')],
         })
-      ).rejects.toThrow('contains certificates that are not part of the chain')
+      ).rejects.toThrow('is not issued by the next certificate in the chain')
     })
 
     it('rejects a chain that is not ordered leaf first', async () => {
@@ -754,7 +772,7 @@ gTqhM3BGMuf+
           ),
           trustedCertificates: [root.certificate.toString('base64')],
         })
-      ).rejects.toThrow('not ordered leaf first')
+      ).rejects.toThrow('is not issued by the next certificate in the chain')
     })
   })
 
@@ -764,21 +782,14 @@ gTqhM3BGMuf+
       'MIIC3TCCAoOgAwIBAgIUEwybFc9Jw+az3r188OiHDaxCfHEwCgYIKoZIzj0EAwMwXDEeMBwGA1UEAwwVUElEIElzc3VlciBDQSAtIFVUIDAyMS0wKwYDVQQKDCRFVURJIFdhbGxldCBSZWZlcmVuY2UgSW1wbGVtZW50YXRpb24xCzAJBgNVBAYTAlVUMB4XDTI1MDMyNDIwMjYxNFoXDTM0MDYyMDIwMjYxM1owXDEeMBwGA1UEAwwVUElEIElzc3VlciBDQSAtIFVUIDAyMS0wKwYDVQQKDCRFVURJIFdhbGxldCBSZWZlcmVuY2UgSW1wbGVtZW50YXRpb24xCzAJBgNVBAYTAlVUMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEesDKj9rCIcrGj0wbSXYvCV953bOPSYLZH5TNmhTz2xa7VdlvQgQeGZRg1PrF5AFwt070wvL9qr1DUDdvLp6a1qOCASEwggEdMBIGA1UdEwEB/wQIMAYBAf8CAQAwHwYDVR0jBBgwFoAUYseURyi9D6IWIKeawkmURPEB08cwEwYDVR0lBAwwCgYIK4ECAgAAAQcwQwYDVR0fBDwwOjA4oDagNIYyaHR0cHM6Ly9wcmVwcm9kLnBraS5ldWRpdy5kZXYvY3JsL3BpZF9DQV9VVF8wMi5jcmwwHQYDVR0OBBYEFGLHlEcovQ+iFiCnmsJJlETxAdPHMA4GA1UdDwEB/wQEAwIBBjBdBgNVHRIEVjBUhlJodHRwczovL2dpdGh1Yi5jb20vZXUtZGlnaXRhbC1pZGVudGl0eS13YWxsZXQvYXJjaGl0ZWN0dXJlLWFuZC1yZWZlcmVuY2UtZnJhbWV3b3JrMAoGCCqGSM49BAMDA0gAMEUCIQCe4R9rO4JhFp821kO8Gkb8rXm4qGG/e5/Oi2XmnTQqOQIgfFs+LDbnP2/j1MB4rwZ1FgGdpr4oyrFB9daZyRIcP90=',
     ]
 
-    // Works without trusted certificates
+    // Works with root certificate as trusted certificate
     const chain = await X509Service.validateCertificateChain(agentContext, {
       certificateChain: x5c,
+      trustedCertificates: [x5c[1]],
     })
     expect(chain.length).toStrictEqual(2)
     expect((chain[0].publicJwk.toJson() as KmsJwkPublicEc).crv).toStrictEqual('P-256')
     expect((chain[1].publicJwk.toJson() as KmsJwkPublicEc).crv).toStrictEqual('P-256')
-
-    // Works with root certificate as trusted certificate
-    await expect(
-      X509Service.validateCertificateChain(agentContext, {
-        certificateChain: x5c,
-        trustedCertificates: [x5c[1]],
-      })
-    ).resolves.toHaveLength(2)
 
     // Errors when trusted certificates is empty
     await expect(
@@ -805,6 +816,7 @@ gTqhM3BGMuf+
 
     const chain = await X509Service.validateCertificateChain(agentContext, {
       certificateChain: x5c,
+      trustedCertificates: [x5c[1]],
       verificationDate: new Date('2025-03-21T22:30Z'),
     })
 
@@ -858,7 +870,12 @@ gTqhM3BGMuf+
 
       expect(() => X509Service.parseCertificate(agentContext, { encodedCertificate })).toThrow()
       expect(() => X509Service.getLeafCertificate(agentContext, { certificateChain })).toThrow()
-      await expect(X509Service.validateCertificateChain(agentContext, { certificateChain })).rejects.toThrow()
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain,
+          trustedCertificates: certificateChain.slice(-1),
+        })
+      ).rejects.toThrow()
     })
 
     it('lets the per-call parse options override the module config', async () => {

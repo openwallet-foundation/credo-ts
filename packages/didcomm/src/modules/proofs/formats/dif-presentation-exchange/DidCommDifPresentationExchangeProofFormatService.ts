@@ -2,13 +2,11 @@ import type {
   AgentContext,
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeSubmission,
-  EncodedX509Certificate,
   IAnonCredsW3cCredentialService,
   JsonValue,
   W3cJsonPresentation,
   W3cVerifiablePresentation,
   W3cVerifyPresentationResult,
-  X509VerificationTrustedCertificates,
 } from '@credo-ts/core'
 import {
   ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE,
@@ -18,14 +16,12 @@ import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
   deepEquality,
-  extractX509CertificatesFromJwt,
   JsonTransformer,
   Kms,
   TypedArrayEncoder,
   W3cCredentialService,
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
-  X509ModuleConfig,
 } from '@credo-ts/core'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../../decorators/attachment/DidCommAttachment'
 import { DidCommProofFormatSpec } from '../../models'
@@ -307,25 +303,6 @@ export class DidCommDifPresentationExchangeProofFormatService
       // whether it's a JWT or JSON-LD VP even though the input is the same.
       // Not sure how to fix
       if (parsedPresentation.claimFormat === ClaimFormat.JwtVp) {
-        const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
-
-        const certificateChain = extractX509CertificatesFromJwt(parsedPresentation.jwt)
-        let trustedCertificates: EncodedX509Certificate[] | X509VerificationTrustedCertificates[] | undefined
-        if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
-          trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain,
-            verification: {
-              type: 'credential',
-              credential: parsedPresentation,
-              didcommProofRecordId: proofRecord.id,
-            },
-          })
-        }
-
-        if (!trustedCertificates) {
-          trustedCertificates = x509Config.trustedCertificates ?? []
-        }
-
         verificationResult = await w3cCredentialService.verifyPresentation(agentContext, {
           presentation: parsedPresentation,
           challenge: request.options.challenge,

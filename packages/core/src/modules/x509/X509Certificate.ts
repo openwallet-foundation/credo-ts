@@ -48,18 +48,15 @@ export enum X509ExtendedKeyUsage {
 
 export type X509CertificateOptions = {
   publicJwk: PublicJwk
-  privateKey?: Uint8Array
   x509Certificate: x509.X509Certificate
 }
 
 export class X509Certificate {
   public publicJwk: PublicJwk
-  public privateKey?: Uint8Array
   private x509Certificate: x509.X509Certificate
 
   private constructor(options: X509CertificateOptions) {
     this.publicJwk = options.publicJwk
-    this.privateKey = options.privateKey
     this.x509Certificate = options.x509Certificate
   }
 
@@ -91,15 +88,23 @@ export class X509Certificate {
     return X509Certificate.parseCertificate(certificate, parseOptions)
   }
 
+  /**
+   * A copy with its own `publicJwk`, so setting the key id on the copy leaves this instance as is.
+   */
+  public clone(): X509Certificate {
+    return new X509Certificate({
+      publicJwk: this.publicJwk.clone(),
+      x509Certificate: this.x509Certificate,
+    })
+  }
+
   private static parseCertificate(certificate: x509.X509Certificate, parseOptions?: X509ParseOptions): X509Certificate {
     const spki = AsnParser.parse(certificate.publicKey.rawData, SubjectPublicKeyInfo, { berOptions: parseOptions })
-    const privateKey = certificate.privateKey ? new Uint8Array(certificate.privateKey.rawData) : undefined
 
     const publicJwk = spkiToPublicJwk(spki)
 
     return new X509Certificate({
       publicJwk,
-      privateKey,
       x509Certificate: certificate,
     })
   }
@@ -109,7 +114,8 @@ export class X509Certificate {
   }
 
   public get rawCertificate() {
-    return new Uint8Array(this.x509Certificate.rawData)
+    // A copy, as the parsed certificate is shared with clones
+    return new Uint8Array(this.x509Certificate.rawData.slice(0))
   }
 
   public get subjectAlternativeNames() {
@@ -209,6 +215,17 @@ export class X509Certificate {
     }
 
     return basicConstraints?.[0]?.ca ?? false
+  }
+
+  /**
+   * The first Basic Constraints extension, or `undefined` when the certificate has none.
+   */
+  public get basicConstraints(): { ca: boolean; pathLength?: number } | undefined {
+    return this.getMatchingExtensions<x509.BasicConstraintsExtension>(X509ExtensionIdentifier.BasicConstraints)?.[0]
+  }
+
+  public get extensions(): ReadonlyArray<{ type: string; critical: boolean }> {
+    return this.x509Certificate.extensions
   }
 
   /**
@@ -430,19 +447,7 @@ export class X509Certificate {
     },
     webCrypto: CredoWebCrypto
   ) {
-    let publicCryptoKey: CredoWebCryptoKey | undefined
-    if (publicJwk) {
-      const cryptoKeyAlgorithm = publicJwkToCryptoKeyAlgorithm(publicJwk, {
-        alg: publicJwk.kty === 'RSA' ? x509SignatureAlgorithmToJwa(this.x509Certificate.signatureAlgorithm) : undefined,
-      })
-
-      publicCryptoKey = new CredoWebCryptoKey(publicJwk, cryptoKeyAlgorithm, true, 'public', ['verify'])
-    }
-
-    // We use the library to validate the signature, but the date is manually verified
-    const isSignatureValid = skipSignatureVerification
-      ? true
-      : await this.x509Certificate.verify({ signatureOnly: true, publicKey: publicCryptoKey }, webCrypto)
+    const isSignatureValid = skipSignatureVerification ? true : await this.verifySignature(publicJwk, webCrypto)
     const time = verificationDate.getTime()
 
     const isNotBeforeValid = this.x509Certificate.notBefore.getTime() <= time
@@ -459,6 +464,37 @@ export class X509Certificate {
     if (!isNotAfterValid) {
       throw new X509Error(`Certificate: '${this.x509Certificate.subject}' used after it is allowed`)
     }
+  }
+
+  /**
+   * Whether the issuer name and the key identifier in the authority key identifier of this certificate
+   * point to `candidate`. Chain validation uses this to skip candidates before it verifies the signature.
+   */
+  public isPossiblyIssuedBy(candidate: X509Certificate): boolean {
+    const issuer = candidate.x509Certificate
+    if (issuer.subject !== this.x509Certificate.issuer) return false
+
+    const authorityKeyId = this.x509Certificate.getExtension(x509.AuthorityKeyIdentifierExtension)?.keyId
+    const subjectKeyId = issuer.getExtension(x509.SubjectKeyIdentifierExtension)?.keyId
+
+    return !authorityKeyId || !subjectKeyId || authorityKeyId === subjectKeyId
+  }
+
+  /**
+   * Whether the signature on this certificate was made by `publicJwk`, or by its own key when omitted.
+   */
+  public async verifySignature(publicJwk: PublicJwk | undefined, webCrypto: CredoWebCrypto): Promise<boolean> {
+    let publicCryptoKey: CredoWebCryptoKey | undefined
+    if (publicJwk) {
+      const cryptoKeyAlgorithm = publicJwkToCryptoKeyAlgorithm(publicJwk, {
+        alg: publicJwk.kty === 'RSA' ? x509SignatureAlgorithmToJwa(this.x509Certificate.signatureAlgorithm) : undefined,
+      })
+
+      publicCryptoKey = new CredoWebCryptoKey(publicJwk, cryptoKeyAlgorithm, true, 'public', ['verify'])
+    }
+
+    // We use the library to validate the signature, but the date is manually verified
+    return await this.x509Certificate.verify({ signatureOnly: true, publicKey: publicCryptoKey }, webCrypto)
   }
 
   /**
@@ -482,8 +518,9 @@ export class X509Certificate {
       subject: this.x509Certificate.subject,
       serialNumber: this.x509Certificate.serialNumber,
       pem: this.x509Certificate.toString(),
-      notBefore: this.x509Certificate.notBefore,
-      notAfter: this.x509Certificate.notAfter,
+      // Copies, as the parsed certificate is shared with clones
+      notBefore: new Date(this.x509Certificate.notBefore),
+      notAfter: new Date(this.x509Certificate.notAfter),
     }
   }
 

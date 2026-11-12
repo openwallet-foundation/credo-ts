@@ -13,6 +13,7 @@ import {
   type X509CrlSummary,
 } from './utils/crlSummary'
 import { X509Certificate, X509KeyUsage } from './X509Certificate'
+import { X509CertificateCache } from './X509CertificateCache'
 import { X509CertificateRevocationList, type X509CertificateRevocationListEntry } from './X509CertificateRevocationList'
 import { ALL_REVOCATION_REASONS_MASK, X509RevocationReason } from './X509CrlDistributionPoint'
 import { X509CrlUnavailableError, X509Error } from './X509Error'
@@ -62,11 +63,11 @@ export class X509RevocationService {
     const parsedCertificate =
       certificate instanceof X509Certificate
         ? certificate
-        : X509Certificate.fromEncodedCertificate(certificate, effectiveParseOptions)
+        : X509CertificateCache.parseCertificate(agentContext, certificate, effectiveParseOptions)
     const parsedIssuerCertificate =
       issuerCertificate instanceof X509Certificate
         ? issuerCertificate
-        : X509Certificate.fromEncodedCertificate(issuerCertificate, effectiveParseOptions)
+        : X509CertificateCache.parseCertificate(agentContext, issuerCertificate, effectiveParseOptions)
 
     const options = withX509RevocationCheckDefaults(revocationCheckOptions, config.revocationCheck)
 
@@ -811,7 +812,7 @@ export class X509RevocationService {
     const parsedIssuerCertificate =
       issuerCertificate instanceof X509Certificate
         ? issuerCertificate
-        : X509Certificate.fromEncodedCertificate(issuerCertificate, effectiveParseOptions)
+        : X509CertificateCache.parseCertificate(agentContext, issuerCertificate, effectiveParseOptions)
 
     const result = await X509RevocationService.fetchParseVerifyAndCacheCrl(
       agentContext,

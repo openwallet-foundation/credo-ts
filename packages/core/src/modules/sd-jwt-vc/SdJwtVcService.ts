@@ -1,5 +1,5 @@
 import type { NonEmptyArray } from '@animo-id/pex'
-import type { DisclosureFrame, PresentationFrame, SDJwt, Verifier } from '@sd-jwt/core'
+import type { DisclosureFrame, PresentationFrame, Verifier } from '@sd-jwt/core'
 import { type SDJWTVCConfig, SDJwtVcInstance, type VCTFetcher } from '@sd-jwt/sd-jwt-vc'
 import { AgentContext } from '../../agent'
 import { TrustedIssuerContext } from '../../agent/TrustedIssuerContext'
@@ -8,7 +8,6 @@ import { JwtPayload } from '../../crypto'
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
-import type { JsonObject } from '../../types'
 import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArrayEncoder } from '../../utils'
 import { isAllowedHttpUrl } from '../../utils/uri'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
@@ -18,7 +17,6 @@ import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig, X509Service } from '../x509'
 import { legacyTrustedCertificatesToTrustedIssuers } from '../x509/utils/convertLegacyTrustedCertificates'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
-import { applyDisclosuresForPaths, applyDisclosuresForPayload, type ClaimPath } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcError } from './SdJwtVcError'
 import { SdJwtVcModuleConfig } from './SdJwtVcModuleConfig'
@@ -40,7 +38,6 @@ import {
   getSdJwtSigner,
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
-  parseIssuerFromCredential,
   resolveDidUrl,
   resolveSigningPublicJwkFromDidUrl,
   setJwkAlgFromJwtHeader,
@@ -191,25 +188,11 @@ export class SdJwtVcService {
   }
 
   public fromCompact<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
+    agentContext: AgentContext,
     compactSdJwtVc: string,
     typeMetadata?: SdJwtVcTypeMetadata
   ): SdJwtVc<Header, Payload> {
-    return decodeSdJwtVc(compactSdJwtVc, typeMetadata)
-  }
-
-  /**
-   * @deprecated use `applyDisclosuresForPaths` instead
-   */
-  public applyDisclosuresForPayload(compactSdJwtVc: string, requestedPayload: JsonObject): SdJwtVc {
-    const sdJwt = applyDisclosuresForPayload(compactSdJwtVc, requestedPayload)
-    const disclosedDecoded = decodeSdJwtVc(sdJwt)
-    return disclosedDecoded
-  }
-
-  public applyDisclosuresForPaths(compactSdJwtVc: string, disclosedPaths: ClaimPath[]): SdJwtVc {
-    const { compact } = applyDisclosuresForPaths(compactSdJwtVc, disclosedPaths)
-    const disclosedDecoded = decodeSdJwtVc(compact)
-    return disclosedDecoded
+    return decodeSdJwtVc(agentContext, compactSdJwtVc, typeMetadata)
   }
 
   public async present<Payload extends SdJwtVcPayload = SdJwtVcPayload>(
@@ -257,17 +240,7 @@ export class SdJwtVcService {
 
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
-    {
-      compactSdJwtVc,
-      keyBinding,
-      requiredClaimKeys,
-      fetchTypeMetadata,
-      trustedCertificates,
-      trustedIssuers: _trustedIssuers,
-      disableStatusValidation,
-      verifyCredentialStatus,
-      now,
-    }: SdJwtVcVerifyOptions
+    options: SdJwtVcVerifyOptions
   ): Promise<
     | {
         isValid: true
@@ -287,9 +260,19 @@ export class SdJwtVcService {
       // We manually fetch later
       loadTypeMetadataFormat: false,
     })
-    let sdJwtVc: SDJwt<Header, Payload>
-    let holderBinding: SdJwtVcHolderBinding | undefined
-    let issuer: SdJwtVcIssuer
+    const {
+      keyBinding,
+      requiredClaimKeys,
+      fetchTypeMetadata,
+      trustedCertificates,
+      trustedIssuers: _trustedIssuers,
+      disableStatusValidation,
+      verifyCredentialStatus,
+      now,
+    } = options
+    const decodedSdJwtVc = typeof options.sdJwtVc === 'string' ? undefined : options.sdJwtVc
+    const compactSdJwtVc = typeof options.sdJwtVc === 'string' ? options.sdJwtVc : options.sdJwtVc.compact
+    let returnSdJwtVc: SdJwtVc<Header, Payload>
 
     let trustedIssuers = _trustedIssuers
     if (trustedCertificates) {
@@ -297,33 +280,17 @@ export class SdJwtVcService {
     }
 
     try {
-      sdJwtVc = (await sdjwt.decode(compactSdJwtVc)) as SDJwt<Header, Payload>
-      if (!sdJwtVc.jwt) throw new CredoError('Invalid sd-jwt-vc')
-      holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt.payload) ?? undefined
-      issuer = parseIssuerFromCredential(sdJwtVc.jwt.header, sdJwtVc.jwt.payload)
+      returnSdJwtVc = decodedSdJwtVc
+        ? // A copy, as the type metadata is set on it below
+          ({ ...decodedSdJwtVc } as SdJwtVc<Header, Payload>)
+        : decodeSdJwtVc<Header, Payload>(agentContext, compactSdJwtVc)
     } catch (error) {
       return {
         isValid: false,
         error,
       }
     }
-
-    const returnSdJwtVc: SdJwtVc<Header, Payload> = {
-      payload: sdJwtVc.jwt.payload as Payload,
-      header: sdJwtVc.jwt.header as Header,
-      compact: compactSdJwtVc,
-      prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
-      holder: holderBinding,
-      issuer,
-      kbJwt: sdJwtVc.kbJwt
-        ? {
-            payload: sdJwtVc.kbJwt.payload as Record<string, unknown>,
-            header: sdJwtVc.kbJwt.header as Record<string, unknown>,
-          }
-        : undefined,
-      claimFormat: ClaimFormat.SdJwtDc,
-      encoded: compactSdJwtVc,
-    } satisfies SdJwtVc<Header, Payload>
+    const issuer = returnSdJwtVc.issuer
 
     let typeMetadataChain: NonEmptyArray<SdJwtVcTypeMetadata> | undefined
     try {
@@ -335,8 +302,8 @@ export class SdJwtVcService {
 
       const statusValidationDisabled = disableStatusValidation === true || verifyCredentialStatus === false
 
-      setJwkAlgFromJwtHeader(issuerWithKey.publicJwk, sdJwtVc.jwt.header?.alg)
-      if (holder && sdJwtVc.kbJwt) setJwkAlgFromJwtHeader(holder.publicJwk, sdJwtVc.kbJwt.header?.alg)
+      setJwkAlgFromJwtHeader(issuerWithKey.publicJwk, returnSdJwtVc.header.alg)
+      if (holder && returnSdJwtVc.kbJwt) setJwkAlgFromJwtHeader(holder.publicJwk, returnSdJwtVc.kbJwt.header.alg)
 
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, issuerWithKey.publicJwk),
@@ -364,7 +331,7 @@ export class SdJwtVcService {
         }
       }
 
-      if (sdJwtVc.jwt.header?.typ !== 'vc+sd-jwt' && sdJwtVc.jwt.header?.typ !== 'dc+sd-jwt') {
+      if (returnSdJwtVc.header.typ !== 'vc+sd-jwt' && returnSdJwtVc.header.typ !== 'dc+sd-jwt') {
         return {
           error: new SdJwtVcError(`SD-JWT VC header 'typ' must be 'dc+sd-jwt' or 'vc+sd-jwt'`),
           isValid: false,
@@ -388,16 +355,16 @@ export class SdJwtVcService {
       // If keyBinding is present, verify the key binding
       try {
         if (keyBinding) {
-          if (!sdJwtVc.kbJwt?.payload) {
+          if (!returnSdJwtVc.kbJwt?.payload) {
             throw new SdJwtVcError('Keybinding is required for verification of the sd-jwt-vc')
           }
 
           // Assert `aud` and `nonce` claims
-          if (sdJwtVc.kbJwt.payload.aud !== keyBinding.audience) {
+          if (returnSdJwtVc.kbJwt.payload.aud !== keyBinding.audience) {
             throw new SdJwtVcError('The key binding JWT does not contain the expected audience')
           }
 
-          if (sdJwtVc.kbJwt.payload.nonce !== keyBinding.nonce) {
+          if (returnSdJwtVc.kbJwt.payload.nonce !== keyBinding.nonce) {
             throw new SdJwtVcError('The key binding JWT does not contain the expected nonce')
           }
         }
@@ -731,10 +698,15 @@ export class SdJwtVcService {
           )
         }
 
+        let statusListChain: X509Certificate[]
         try {
+          statusListChain = header.x5c.map((certificate) =>
+            X509Service.parseCertificate(agentContext, { encodedCertificate: certificate })
+          )
+
           // Trust check only: ensure the status list certificate chain anchors in the status certificates.
           await X509Service.validateCertificateChain(agentContext, {
-            certificateChain: header.x5c,
+            certificateChain: statusListChain,
             trustedCertificates: statusCertificates,
           })
         } catch (error) {
@@ -746,7 +718,6 @@ export class SdJwtVcService {
 
         // Mirror mdoc: when no dedicated status certificate is configured, the status list must
         // be signed by the exact same key as the credential issuer.
-        const statusListChain = header.x5c.map((certificate) => X509Certificate.fromEncodedCertificate(certificate))
         const chainMatchesCredentialIssuer =
           statusListChain.length === credentialIssuerCertificateChain.length &&
           statusListChain.every((certificate, index) => certificate.equal(credentialIssuerCertificateChain[index]))

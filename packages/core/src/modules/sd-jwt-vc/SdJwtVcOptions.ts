@@ -130,7 +130,12 @@ export type SdJwtVcPresentOptions<_Payload extends SdJwtVcPayload = SdJwtVcPaylo
 }
 
 export type SdJwtVcVerifyOptions = {
-  compactSdJwtVc: string
+  /**
+   * The compact SD-JWT VC, or an SD-JWT VC that was already decoded with `fromCompact`, which is
+   * then not decoded again. The issuer and holder of a decoded SD-JWT VC are used as they are, so
+   * only pass what `fromCompact` returned.
+   */
+  sdJwtVc: string | SdJwtVc
 
   /**
    * If the key binding object is present, the sd-jwt is required to have a key binding jwt attached
@@ -184,7 +189,7 @@ export type SdJwtVcVerifyOptions = {
    *
    * @deprecated use `trustedIssuers` instead.
    */
-  trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
+  trustedCertificates?: Array<EncodedX509Certificate | X509Certificate> | X509VerificationTrustedCertificates[]
 
   /**
    * Trusted issuers for the verification. Only entries whose `method` matches the credential signer

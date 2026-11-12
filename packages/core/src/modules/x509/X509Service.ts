@@ -1,23 +1,22 @@
-import * as x509 from '@peculiar/x509'
 import { AgentContext } from '../../agent'
 import { CredoWebCrypto } from '../../crypto/webcrypto'
 import { injectable } from '../../plugins'
 import { CertificateSigningRequest } from './CertificateSigningRequest'
-import { X509ExtensionIdentifier } from './utils'
 import { validateCriticalExtensionsForChain } from './utils/criticalExtensions'
 import { X509Certificate, X509KeyUsage } from './X509Certificate'
+import { X509CertificateCache } from './X509CertificateCache'
 import { X509CertificateRevocationList } from './X509CertificateRevocationList'
 import { X509Error, X509ValidationError } from './X509Error'
 import { X509ModuleConfig } from './X509ModuleConfig'
 import { X509RevocationService } from './X509RevocationService'
 import type {
+  EncodedX509Certificate,
   X509CreateCertificateOptions,
   X509CreateCertificateRevocationListOptions,
   X509CreateCertificateSigningRequestOptions,
   X509GetLeafCertificateOptions,
   X509ParseCertificateOptions,
   X509ParseCertificateSigningRequestOptions,
-  X509ParseOptions,
   X509ValidateCertificateChainOptions,
 } from './X509ServiceOptions'
 import { X509RevocationCheckMode } from './X509ValidationOptions'
@@ -30,15 +29,11 @@ export class X509Service {
    *
    * Validate a chain of X.509 certificates according to RFC 5280
    *
-   * This function requires a list of base64 encoded certificates and, optionally, a certificate that should be found in the chain.
-   * If no certificate is provided, it will just assume the leaf certificate
-   *
    * The leaf certificate should be the 0th index and the root the last
    *
-   * The Issuer of the certificate is found with the following algorithm:
-   * - Check if there is an AuthorityKeyIdentifierExtension
-   * - Go through all the other certificates and see if the SubjectKeyIdentifier is equal to the AuthorityKeyIdentifier
-   * - If they are equal, the certificate signature is verified and returned as the issuer
+   * Every certificate in the chain must be issued by the next one: the issuer name and, when present,
+   * the AuthorityKeyIdentifier must match the next certificate, and its key must verify the signature.
+   * The chain is then completed with trusted certificates in the same way.
    *
    * Validation checks performed:
    *   - Chain validation (structure, signatures, validity, trust anchor)
@@ -62,7 +57,6 @@ export class X509Service {
     agentContext: AgentContext,
     {
       certificateChain,
-      certificate = certificateChain[0],
       verificationDate = new Date(),
       trustedCertificates,
       allowNonRootTrustedCertificate = true,
@@ -82,101 +76,60 @@ export class X509Service {
       }
       const webCrypto = new CredoWebCrypto(agentContext)
 
-      let parsedLeafCertificate: x509.X509Certificate
-      let certificatesToBuildChain: x509.X509Certificate[]
+      const toCertificate = (certificate: EncodedX509Certificate | Uint8Array | X509Certificate) =>
+        X509CertificateCache.parseCertificate(agentContext, certificate, effectiveParseOptions)
+
+      let providedChain: X509Certificate[]
+      let parsedTrustedCertificates: X509Certificate[]
       try {
-        parsedLeafCertificate = new x509.X509Certificate(certificate, { berOptions: effectiveParseOptions })
-        certificatesToBuildChain = [...certificateChain, ...(trustedCertificates ?? [])].map(
-          (c) => new x509.X509Certificate(c, { berOptions: effectiveParseOptions })
-        )
+        providedChain = certificateChain.map(toCertificate)
+        parsedTrustedCertificates = trustedCertificates.map(toCertificate)
       } catch (error) {
         throw new X509Error('Error during parsing of x509 certificate', { cause: error })
       }
 
-      const certificateChainBuilder = new x509.X509ChainBuilder({
-        certificates: certificatesToBuildChain,
-      })
-
-      const chain = await certificateChainBuilder.build(parsedLeafCertificate, webCrypto)
+      // Signatures: every certificate is signed by the next one, from the leaf up to a self-signed root
+      // or to a certificate whose issuer is not known
+      const { chain, endsInSelfSignedRoot } = await X509Service.buildCertificateChain(
+        providedChain,
+        parsedTrustedCertificates,
+        verificationDate,
+        webCrypto
+      )
 
       // The chain is reversed here as the `x5c` header (the expected input),
-      // has the leaf certificate as the first entry, while the `x509` library expects this as the last
-      parsedChain = chain
-        .map((c) => X509Certificate.fromRawCertificate(new Uint8Array(c.rawData), effectiveParseOptions))
-        .reverse()
+      // has the leaf certificate as the first entry, while validation runs from the root down
+      parsedChain = chain.reverse()
 
-      // The built chain must start with the presented chain, so [leaf, intermediate] can't build [leaf, root].
-      // It may continue with trusted certificates that weren't presented, such as the root.
-      const providedChainMatchesBuiltChain =
-        certificateChain.length <= chain.length &&
-        certificatesToBuildChain
-          .slice(0, certificateChain.length)
-          .every((providedCertificate, index) => providedCertificate.equal(chain[index]))
-      if (!providedChainMatchesBuiltChain) {
+      // Trust: the chain must contain a trusted certificate
+      const trustAnchorIndex = parsedChain.findIndex((cert) =>
+        parsedTrustedCertificates.some((tCert) => cert.equal(tCert))
+      )
+      if (trustAnchorIndex === -1) {
+        throw new X509Error('No trusted certificate was found while validating the X.509 chain')
+      }
+
+      // The chain starts at the trust anchor, the certificates above it are not relevant for validation
+      parsedChain = parsedChain.slice(trustAnchorIndex)
+
+      // Trust anchor: its own signature is verified when it is a self-signed root, or by the certificate above it.
+      // Otherwise it is a directly trusted intermediate or leaf whose issuer is not known.
+      //
+      // Scenario: For ISO 18013-5 mDL, the root cert MUST NOT be in the chain. If the intermediate/signer
+      // certificate is directly trusted, we can't verify its signature without the root certificate.
+      // See also https://github.com/openid/OpenID4VCI/issues/62
+      const isTrustAnchorSignatureVerified = endsInSelfSignedRoot || trustAnchorIndex > 0
+      if (!isTrustAnchorSignatureVerified && !allowNonRootTrustedCertificate) {
         throw new X509Error(
-          'The certificate chain is not ordered leaf first, or contains certificates that are not part of the chain'
+          'Unable to verify the certificate chain. A trusted non-self-signed certificate is the first certificate in the chain, ' +
+            'but no parent certificate was found to verify its signature. Either provide the parent certificate in trustedCertificates, ' +
+            'or set allowNonRootTrustedCertificate to true to allow trusting intermediate certificates without signature verification.'
         )
       }
 
-      let previousCertificate: X509Certificate | undefined
-
-      if (trustedCertificates) {
-        const parsedTrustedCertificates = trustedCertificates.map((trustedCertificate) =>
-          X509Certificate.fromEncodedCertificate(trustedCertificate, effectiveParseOptions)
-        )
-
-        const trustedCertificateIndex = parsedChain.findIndex((cert) =>
-          parsedTrustedCertificates.some((tCert) => cert.equal(tCert))
-        )
-
-        if (trustedCertificateIndex === -1) {
-          throw new X509Error('No trusted certificate was found while validating the X.509 chain')
-        }
-
-        if (trustedCertificateIndex > 0) {
-          // When we trust a certificate other than the first certificate in the provided chain we keep a reference to the
-          // previous certificate as we need the key of this certificate to verify the first certificate in the chain as
-          // it's not self-signed.
-          previousCertificate = parsedChain[trustedCertificateIndex - 1]
-
-          // Pop everything off before the index of the trusted certificate (those are more root) as it is not relevant for validation
-          parsedChain = parsedChain.slice(trustedCertificateIndex)
-        }
-      }
-
-      // Verify signatures and validity for all certificates in the chain
-      for (let i = 0; i < parsedChain.length; i++) {
-        const cert = parsedChain[i]
-        const publicJwk = previousCertificate ? previousCertificate.publicJwk : undefined
-
-        // When a trusted certificate is the first in the chain and we don't have its parent certificate's public key,
-        // we may need to skip signature verification based on configuration.
-        //
-        // Scenario: For ISO 18013-5 mDL, the root cert MUST NOT be in the chain. If the intermediate/signer
-        // certificate is directly trusted, we can't verify its signature without the root certificate.
-        // See also https://github.com/openid/OpenID4VCI/issues/62
-        //
-        // If allowNonRootTrustedCertificate is false, we require the signature to be verifiable.
-        const skipSignatureVerification = i === 0 && trustedCertificates && !publicJwk && allowNonRootTrustedCertificate
-
-        // If we don't allow non-root trusted certificates and can't verify the signature, throw an error
-        if (i === 0 && trustedCertificates && !publicJwk && !allowNonRootTrustedCertificate) {
-          throw new X509Error(
-            'Unable to verify the certificate chain. A trusted non-self-signed certificate is the first certificate in the chain, ' +
-              'but no parent certificate was found to verify its signature. Either provide the parent certificate in trustedCertificates, ' +
-              'or set allowNonRootTrustedCertificate to true to allow trusting intermediate certificates without signature verification.'
-          )
-        }
-
-        await cert.verify(
-          {
-            publicJwk,
-            verificationDate,
-            skipSignatureVerification,
-          },
-          webCrypto
-        )
-        previousCertificate = cert
+      // Dates: every certificate from the trust anchor down to the leaf is valid on the verification date
+      for (const cert of parsedChain) {
+        await cert.verify({ verificationDate, skipSignatureVerification: true }, webCrypto)
       }
 
       validations.chain = { isValid: true }
@@ -187,7 +140,7 @@ export class X509Service {
     }
 
     // Phase 2: Basic constraints validation for CA certificates
-    validations.basicConstraints = X509Service.validateBasicConstraintsForChain(parsedChain, effectiveParseOptions)
+    validations.basicConstraints = X509Service.validateBasicConstraintsForChain(parsedChain)
     if (!validations.basicConstraints.isValid) {
       throw new X509ValidationError(
         validations.basicConstraints.error?.message ?? 'Basic constraints validation failed',
@@ -206,7 +159,7 @@ export class X509Service {
     }
 
     // Phase 3: Path length constraint validation
-    validations.pathLength = X509Service.validatePathLengthConstraints(parsedChain, effectiveParseOptions)
+    validations.pathLength = X509Service.validatePathLengthConstraints(parsedChain)
     if (!validations.pathLength.isValid) {
       throw new X509ValidationError(
         validations.pathLength.error?.message ?? 'Path length constraint validation failed',
@@ -215,10 +168,7 @@ export class X509Service {
     }
 
     // Phase 4: Critical extension validation
-    const peculiarChain = parsedChain.map(
-      (cert) => new x509.X509Certificate(cert.rawCertificate, { berOptions: effectiveParseOptions })
-    )
-    validations.criticalExtensions = validateCriticalExtensionsForChain(peculiarChain)
+    validations.criticalExtensions = validateCriticalExtensionsForChain(parsedChain)
     if (!validations.criticalExtensions.isValid) {
       throw new X509ValidationError(
         validations.criticalExtensions.error?.message ?? 'Critical extension validation failed',
@@ -250,18 +200,86 @@ export class X509Service {
   }
 
   /**
+   * Builds the chain from the leaf up and verifies every signature in it: first the presented certificates,
+   * then trusted certificates until a self-signed root, or until no issuer is found. It does not decide
+   * whether the chain is trusted.
+   */
+  private static async buildCertificateChain(
+    presentedChain: X509Certificate[],
+    trustedCertificates: X509Certificate[],
+    verificationDate: Date,
+    webCrypto: CredoWebCrypto
+  ) {
+    // The issuer name and key identifier of `certificate` point to `issuer`, and the key of `issuer` made its signature
+    const isSignedBy = async (certificate: X509Certificate, issuer: X509Certificate) =>
+      certificate.isPossiblyIssuedBy(issuer) &&
+      (await certificate.verifySignature(issuer.publicJwk, webCrypto).catch(() => false))
+
+    // Root: a certificate that is signed with its own key
+    const isSelfSigned = (certificate: X509Certificate) => isSignedBy(certificate, certificate)
+
+    const isValidOnVerificationDate = (certificate: X509Certificate) =>
+      certificate.verify({ verificationDate, skipSignatureVerification: true }, webCrypto).then(
+        () => true,
+        () => false
+      )
+
+    // A valid issuer wins over the first match, so an expired trusted certificate does not hide
+    // its renewal with the same name and key
+    const findTrustedIssuer = async (certificate: X509Certificate) => {
+      let firstIssuer: X509Certificate | undefined
+      for (const trustedCertificate of trustedCertificates) {
+        if (!(await isSignedBy(certificate, trustedCertificate))) continue
+        if (await isValidOnVerificationDate(trustedCertificate)) return trustedCertificate
+
+        firstIssuer ??= trustedCertificate
+      }
+      return firstIssuer
+    }
+
+    // Leaf: the first presented certificate
+    const chain = [presentedChain[0]]
+    const addIssuer = (issuer: X509Certificate) => {
+      if (chain.some((chainCertificate) => chainCertificate.equal(issuer))) {
+        throw new X509Error('Cannot build a certificate chain. Circular dependency.')
+      }
+      chain.push(issuer)
+    }
+
+    // Presented certificates: each one must have signed the certificate before it
+    for (const issuer of presentedChain.slice(1)) {
+      const certificate = chain[chain.length - 1]
+      if (!(await isSignedBy(certificate, issuer))) {
+        throw new X509Error(
+          `Certificate: '${certificate.subject}' is not issued by the next certificate in the chain: '${issuer.subject}'`
+        )
+      }
+      addIssuer(issuer)
+    }
+
+    // Trusted certificates: complete the chain until a self-signed root
+    while (true) {
+      const lastCertificate = chain[chain.length - 1]
+      if (await isSelfSigned(lastCertificate)) return { chain, endsInSelfSignedRoot: true }
+
+      const trustedIssuer = await findTrustedIssuer(lastCertificate)
+      // No issuer is known, so the signature on the last certificate is not verified
+      if (!trustedIssuer) return { chain, endsInSelfSignedRoot: false }
+
+      addIssuer(trustedIssuer)
+    }
+  }
+
+  /**
    *
-   * Parses a base64-encoded X.509 certificate into a {@link X509Certificate}
+   * Parses a base64/PEM-encoded or DER X.509 certificate into a {@link X509Certificate}
    *
    */
   public static parseCertificate(
     agentContext: AgentContext,
     { encodedCertificate, parseOptions }: X509ParseCertificateOptions
   ): X509Certificate {
-    const config = agentContext.dependencyManager.resolve(X509ModuleConfig)
-    const certificate = X509Certificate.fromEncodedCertificate(encodedCertificate, parseOptions ?? config.parseOptions)
-
-    return certificate
+    return X509CertificateCache.parseCertificate(agentContext, encodedCertificate, parseOptions)
   }
 
   public static getLeafCertificate(
@@ -270,10 +288,7 @@ export class X509Service {
   ): X509Certificate {
     if (certificateChain.length === 0) throw new X509Error('Certificate chain is empty')
 
-    const config = agentContext.dependencyManager.resolve(X509ModuleConfig)
-    const certificate = X509Certificate.fromEncodedCertificate(certificateChain[0], parseOptions ?? config.parseOptions)
-
-    return certificate
+    return X509Service.parseCertificate(agentContext, { encodedCertificate: certificateChain[0], parseOptions })
   }
 
   public static async createCertificate(agentContext: AgentContext, options: X509CreateCertificateOptions) {
@@ -334,8 +349,7 @@ export class X509Service {
    * Per RFC 5280 Section 4.2.1.9
    */
   private static validatePathLengthConstraints(
-    certificateChain: X509Certificate[],
-    parseOptions?: X509ParseOptions
+    certificateChain: X509Certificate[]
   ): X509CertificateSingleValidationResult {
     let currentPathLength = 0
 
@@ -344,19 +358,10 @@ export class X509Service {
     // the number of CAs that follow it toward the leaf.
     for (let i = certificateChain.length - 1; i >= 0; i--) {
       const cert = certificateChain[i]
-      const peculiarCert = new x509.X509Certificate(cert.rawCertificate, { berOptions: parseOptions })
-      const basicConstraintsExt = peculiarCert.getExtension(X509ExtensionIdentifier.BasicConstraints)
+      const basicConstraints = cert.basicConstraints
 
-      if (!basicConstraintsExt) {
-        // Leaf certificates don't need basicConstraints
-        if (i === 0) continue
-        // But CA certificates should have it
-        continue
-      }
-
-      const basicConstraints = new x509.BasicConstraintsExtension(basicConstraintsExt.rawData, {
-        berOptions: parseOptions,
-      })
+      // Certificates without basicConstraints are not a CA
+      if (!basicConstraints) continue
 
       // Skip leaf certificates (not CA)
       if (!basicConstraints.ca) {
@@ -389,17 +394,15 @@ export class X509Service {
    * Per RFC 5280 Section 4.2.1.9
    */
   private static validateBasicConstraintsForChain(
-    certificateChain: X509Certificate[],
-    parseOptions?: X509ParseOptions
+    certificateChain: X509Certificate[]
   ): X509CertificateSingleValidationResult {
     // Check all certificates except the last one (which is typically the end-entity/leaf)
     // In a properly ordered chain, CA certificates will be before the leaf
     for (let i = 0; i < certificateChain.length - 1; i++) {
       const cert = certificateChain[i]
-      const peculiarCert = new x509.X509Certificate(cert.rawCertificate, { berOptions: parseOptions })
-      const basicConstraintsExt = peculiarCert.getExtension(X509ExtensionIdentifier.BasicConstraints)
+      const basicConstraints = cert.basicConstraints
 
-      if (!basicConstraintsExt) {
+      if (!basicConstraints) {
         return {
           isValid: false,
           error: new X509Error(
@@ -407,10 +410,6 @@ export class X509Service {
           ),
         }
       }
-
-      const basicConstraints = new x509.BasicConstraintsExtension(basicConstraintsExt.rawData, {
-        berOptions: parseOptions,
-      })
 
       // Intermediate and root CAs MUST have ca=true
       if (!basicConstraints.ca) {
