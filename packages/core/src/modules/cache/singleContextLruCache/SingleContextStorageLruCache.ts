@@ -39,22 +39,29 @@ export class SingleContextStorageLruCache implements Cache {
   public async get<CacheValue>(agentContext: AgentContext, key: string, _options?: CacheOptions) {
     this.assertContextCorrelationId(agentContext)
 
-    const cache = await this.getCache(agentContext)
-    this.removeExpiredItems(cache)
+    try {
+      const cache = await this.getCache(agentContext)
+      this.removeExpiredItems(cache)
 
-    const item = cache.get(key)
+      const item = cache.get(key)
 
-    // Does not exist
-    if (!item) return null
+      // Does not exist
+      if (!item) return null
 
-    // Expired
-    if (item.expiresAt && Date.now() > item.expiresAt) {
-      cache.delete(key)
-      await this.persistCache(agentContext)
+      // Expired
+      if (item.expiresAt && Date.now() > item.expiresAt) {
+        cache.delete(key)
+        await this.persistCache(agentContext)
+        return null
+      }
+
+      return item.value as CacheValue
+    } catch (error) {
+      agentContext.config.logger.warn(`Error getting key '${key}' from the cache. Treating it as not cached.`, {
+        error,
+      })
       return null
     }
-
-    return item.value as CacheValue
   }
 
   public async set<CacheValue>(
@@ -73,16 +80,21 @@ export class SingleContextStorageLruCache implements Cache {
       expiresDate.setSeconds(expiresDate.getSeconds() + expiresInSeconds)
     }
 
-    const cache = await this.getCache(agentContext)
-    this.removeExpiredItems(cache)
+    try {
+      const cache = await this.getCache(agentContext)
+      this.removeExpiredItems(cache)
 
-    cache.set(key, {
-      expiresAt: expiresDate?.getTime(),
-      value,
-    })
-    await this.persistCache(agentContext)
+      cache.set(key, {
+        expiresAt: expiresDate?.getTime(),
+        value,
+      })
+      await this.persistCache(agentContext)
+    } catch (error) {
+      agentContext.config.logger.warn(`Error setting key '${key}' in the cache. The value is not stored.`, { error })
+    }
   }
 
+  // Unlike get and set this throws on failure, as the entry would otherwise stay in the cache
   public async remove(agentContext: AgentContext, key: string, _options?: CacheOptions): Promise<void> {
     this.assertContextCorrelationId(agentContext)
 
