@@ -1,7 +1,8 @@
-import { Agent } from '@credo-ts/core'
+import { Agent, DidsModuleConfig } from '@credo-ts/core'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { getAgentOptions } from '../../core/tests/helpers'
+import { WebVhDidResolver } from '../src/dids/WebVhDidResolver'
 
 import { getWebVhModules } from './setupWebVhModule'
 import { validDid } from './utils'
@@ -61,6 +62,15 @@ vi.mock('didwebvh-ts', async () => {
 
 describe('WebVH DID module', () => {
   let agent: Agent<ReturnType<typeof getWebVhModules>>
+
+  it('uses global caching by default and supports context scope configuration', () => {
+    const resolver = new WebVhDidResolver()
+    const config = new DidsModuleConfig({ resolvers: [resolver] })
+
+    expect(resolver.allowsCaching).toBe(true)
+    expect(config.getCacheScope('webvh')).toBe('global')
+    expect(new DidsModuleConfig({ cacheScope: { webvh: 'context' } }).getCacheScope('webvh')).toBe('context')
+  })
 
   beforeAll(async () => {
     const agentOptions = getAgentOptions('WebVH DID Module Test', {}, {}, getWebVhModules())

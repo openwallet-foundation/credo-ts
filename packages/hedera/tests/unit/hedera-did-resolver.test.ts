@@ -1,4 +1,4 @@
-import { AgentContext, DidDocument, JsonTransformer } from '@credo-ts/core'
+import { AgentContext, DidDocument, DidsModuleConfig, JsonTransformer } from '@credo-ts/core'
 import { mockFunction } from '../../../core/tests/helpers'
 import { HederaDidResolver } from '../../src/dids/HederaDidResolver'
 import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
@@ -25,6 +25,14 @@ const mockAgentContext = {
 const resolver = new HederaDidResolver()
 
 describe('HederaDidResolver', () => {
+  it('uses global caching by default and supports context scope configuration', () => {
+    const config = new DidsModuleConfig({ resolvers: [resolver] })
+
+    expect(resolver.allowsCaching).toBe(true)
+    expect(config.getCacheScope('hedera')).toBe('global')
+    expect(new DidsModuleConfig({ cacheScope: { hedera: 'context' } }).getCacheScope('hedera')).toBe('context')
+  })
+
   it('should successfully resolve DID', async () => {
     const resolutionResult = {
       didDocument,

@@ -35,6 +35,7 @@ import type {
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 import {
   extractKeyFromHolderBinding,
+  getIssuerDidUrl,
   getSdJwtHashingAlgorithm,
   getSdJwtSigner,
   getSdJwtVerifier,
@@ -351,7 +352,7 @@ export class SdJwtVcService {
         await sdjwt.verify(compactSdJwtVc, {
           requiredClaimKeys: requiredClaimKeys ? [...requiredClaimKeys, 'vct'] : ['vct'],
           keyBindingNonce: keyBinding?.nonce,
-          currentDate: dateToSeconds(now ?? new Date()),
+          currentDate: now ? dateToSeconds(now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
           disableStatusVerification: statusValidationDisabled,
         })
@@ -373,7 +374,7 @@ export class SdJwtVcService {
 
       try {
         JwtPayload.fromJson(returnSdJwtVc.payload).validate({
-          now: dateToSeconds(now ?? new Date()),
+          now: now ? dateToSeconds(now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
       } catch (error) {
@@ -761,8 +762,7 @@ export class SdJwtVcService {
       }
 
       // did: require the status list signer did to equal the trusted issuer did. The signer did is the
-      // `iss` of the status list payload; the `kid` header is typically a relative reference (e.g.
-      // `#key-1`) that has to be resolved against that did.
+      // `iss` of the status list payload, and the `kid` header has to belong to it like for the credential.
       let statusListIssuerDid: unknown
       try {
         statusListIssuerDid = JsonEncoder.fromBase64Url(data.split('.')[1]).iss
@@ -781,11 +781,7 @@ export class SdJwtVcService {
         )
       }
 
-      const didUrl = header.kid?.startsWith('#') ? `${statusListIssuerDid}${header.kid}` : header.kid
-      if (!didUrl) {
-        throw new SdJwtVcError('Unable to resolve the status list signer: the status list JWT has no `kid` header.')
-      }
-
+      const didUrl = getIssuerDidUrl(statusListIssuerDid, header.kid)
       const { verificationMethod } = await resolveDidUrl(agentContext, didUrl)
       const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
       setJwkAlgFromJwtHeader(publicJwk, header.alg)
