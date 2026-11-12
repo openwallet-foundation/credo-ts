@@ -17,7 +17,11 @@ import type { W3cV2VerifiablePresentation } from '../models/presentation/W3cV2Ve
 import type { W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models/W3cV2VerifyResult'
 import type { SingleValidationResult } from '../models/W3cVerifyResult'
 import { type ResolvedSigner, validateSignerIsExpectedParty } from '../resolveSigner'
-import { validateVc2ContextBaseline, validateVc2CredentialStatus } from '../validators'
+import {
+  validateVc2ContextBaseline,
+  validateVc2CredentialStatus,
+  validateVc2CredentialValidityPeriod,
+} from '../validators'
 import type {
   W3cV2DiSignCredentialOptions,
   W3cV2DiSignPresentationOptions,
@@ -85,9 +89,11 @@ export class W3cV2DataIntegrityCredentialService {
     const verificationResult = Array.isArray(securedCredential.proof)
       ? await this.dataIntegrityProofService.verifyProofSetAndChain(agentContext, securedCredential as never, {
           expectedProofPurpose: 'assertionMethod',
+          now: options.now,
         })
       : await this.dataIntegrityProofService.verifyProof(agentContext, securedCredential as never, {
           expectedProofPurpose: 'assertionMethod',
+          now: options.now,
         })
 
     if (!verificationResult.verified) {
@@ -98,6 +104,13 @@ export class W3cV2DataIntegrityCredentialService {
     if (!contextResult.validated) {
       return this.invalidResult(contextResult.errors as DataIntegrityIssueList, 'credential')
     }
+
+    const validityPeriod = validateVc2CredentialValidityPeriod({
+      validFrom: options.credential.resolvedCredential.validFrom,
+      validUntil: options.credential.resolvedCredential.validUntil,
+      skewSeconds: agentContext.config.validitySkewSeconds,
+      now: options.now,
+    })
 
     const credentialStatus = validateVc2CredentialStatus({
       credentialStatus: securedCredential.credentialStatus,
@@ -115,6 +128,7 @@ export class W3cV2DataIntegrityCredentialService {
 
     const validations = {
       dataModel: { isValid: true },
+      validityPeriod,
       signature: { isValid: true },
       credentialStatus,
       issuerIsSigner,
@@ -136,7 +150,7 @@ export class W3cV2DataIntegrityCredentialService {
     }
 
     return {
-      isValid: credentialStatus.isValid && issuerIsSigner.isValid,
+      isValid: Object.values(validations).every((validation) => validation.isValid),
       validations,
     }
   }
@@ -194,11 +208,13 @@ export class W3cV2DataIntegrityCredentialService {
           expectedProofPurpose: 'authentication',
           challenge: options.challenge,
           domain: options.domain,
+          now: options.now,
         })
       : await this.dataIntegrityProofService.verifyProof(agentContext, securedPresentation as never, {
           expectedProofPurpose: 'authentication',
           challenge: options.challenge,
           domain: options.domain,
+          now: options.now,
         })
 
     if (!verificationResult.verified) {

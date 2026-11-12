@@ -4,6 +4,37 @@ This file is intended for developers working on the internals of the framework. 
 
 # Environment Setup
 
+## DID resolver caching
+
+Resolvers declare `allowsCaching` on the
+[DidResolver interface](./packages/core/src/modules/dids/domain/DidResolver.ts). Cache-enabled resolvers
+use global scope by default, sharing resolution results across agent contexts using the same cache.
+Core does not maintain a list of public DID methods, and resolvers do not declare cache scope.
+
+Configure sparse per-method overrides through the agent's DID module options:
+
+```ts
+modules: {
+  dids: {
+    cacheScope: {
+      web: 'context',
+      cheqd: 'global',
+    },
+  },
+}
+```
+
+Unspecified methods still use global scope; an empty map does not force context scope. Set a method
+to `context` whenever its resolution depends on tenant-specific storage, credentials, or policy.
+Scope configuration does not enable caching for resolvers with `allowsCaching: false`.
+
+This replaces `publicDidMethods`. To migrate a previous explicit list, configure `context` for each
+cache-enabled method that was excluded from that list. Custom cache-enabled methods now default to
+global scope too, so review their tenant-isolation requirements.
+
+The same scope applies to cache reads, writes, and invalidation after DID updates or deactivation.
+Existing TTL and per-call cache controls remain unchanged. Key, JWK, and Peer resolvers do not cache.
+
 ## VSCode devContainer
 
 This project comes with a [.devcontainer](./devcontainer) to make it as easy as possible to setup your dev environment and begin contributing to this project.
