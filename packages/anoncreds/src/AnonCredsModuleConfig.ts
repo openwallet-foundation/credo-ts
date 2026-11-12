@@ -75,7 +75,10 @@ export interface AnonCredsModuleConfigOptions {
    */
   autoCreateLinkSecret?: boolean
 
-  /** Optional integration for preserving DIDComm exchange records during legacy storage upgrades. */
+  /**
+   * Preserves DIDComm exchange links when upgrading from Credo TS before v0.5.x.
+   * Not needed for stores created with v0.5.x or later, or already migrated to storage version 0.5.
+   */
   migrationProvider?: AnonCredsMigrationProvider
 }
 

@@ -71,12 +71,18 @@ The auto-accept helpers `composeCredentialAutoAccept` and `composeProofAutoAccep
 
 ### Legacy storage upgrades
 
+**Only users upgrading from a version of Credo TS before v0.5.x whose stores still need legacy
+migration need to configure `AnonCredsDidCommMigrationProvider`, and only to preserve their historical
+DIDComm exchange-record links.** Applications whose stores were created with v0.5.x or later do not
+need this provider, even when using DIDComm. Older stores that have already completed migration to
+storage version 0.5 do not need it either.
+
 The existing storage upgrade sequence is preserved. Applications upgrading from storage version 0.3.1
 run the 0.3.1-to-0.4 and 0.4-to-0.5 migrations; applications at storage version 0.4 run only the latter.
 Storage versions are independent of package versions. Fresh stores and stores already at version 0.5
 do not need this integration.
 
-To preserve historical DIDComm exchange records during these upgrades, explicitly supply the migration
+When upgrading from Credo TS before v0.5.x, to preserve historical DIDComm exchange records, supply the migration
 provider and register the DIDComm credentials module before upgrading:
 
 ```ts
@@ -91,6 +97,7 @@ const anoncreds = new AnonCredsModule({
 ```
 
 This configuration works for both manual `UpdateAssistant` upgrades and automatic startup upgrades.
+It is not required for normal AnonCreds or DIDComm operation after the migrations have completed.
 Migrations never load or discover DIDComm automatically. If no provider is configured or
 the DIDComm credentials repository is not registered:
 

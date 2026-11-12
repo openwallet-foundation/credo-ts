@@ -6,6 +6,9 @@ import {
 } from '../updates/0.3.1-0.4/credentialExchangeRecord'
 import type { AnonCredsMigrationProvider } from '../updates/AnonCredsMigrationProvider'
 
+/**
+ * Preserves exchange links when upgrading from Credo TS before v0.5.x; not needed once storage is at version 0.5.
+ */
 export class AnonCredsDidCommMigrationProvider implements AnonCredsMigrationProvider {
   public isAvailable(dependencyManager: DependencyManager): boolean {
     return dependencyManager.isRegistered(DidCommCredentialExchangeRepository, true)
