@@ -189,11 +189,8 @@ catalogs:
       specifier: ^0.36.2
       version: 0.36.2
     '@hyperledger/anoncreds-nodejs':
-      specifier: ^0.4.1
-      version: 0.4.1
-    '@hyperledger/anoncreds-shared':
-      specifier: ^0.4.1
-      version: 0.4.1
+      specifier: 0.5.0
+      version: 0.5.0
     '@hyperledger/indy-vdr-nodejs':
       specifier: ^0.3.0
       version: 0.3.0
@@ -201,8 +198,8 @@ catalogs:
       specifier: ^0.3.0
       version: 0.3.0
     '@openwallet-foundation/askar-nodejs':
-      specifier: 0.6.1
-      version: 0.6.1
+      specifier: 0.7.0
+      version: 0.7.0
     '@panva/hpke-noble':
       specifier: ^1.1.8
       version: 1.1.8
@@ -267,9 +264,12 @@ catalogs:
       specifier: ^4.6.7
       version: 4.6.7
   dev:
+    '@hyperledger/anoncreds-shared':
+      specifier: 0.5.0
+      version: 0.5.0
     '@openwallet-foundation/askar-shared':
-      specifier: 0.6.1
-      version: 0.6.1
+      specifier: 0.7.0
+      version: 0.7.0
 
 importers:
 
@@ -337,7 +337,7 @@ importers:
         version: link:packages/webvh
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.6.1
+        version: 0.7.0
       '@types/cors':
         specifier: ^2.8.19
         version: 2.8.19
@@ -415,13 +415,13 @@ importers:
     dependencies:
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.4.1
+        version: 0.5.0
       '@hyperledger/indy-vdr-nodejs':
         specifier: 'catalog:'
         version: 0.3.0
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.6.1
+        version: 0.7.0
       inquirer:
         specifier: ^14.2.5
         version: 14.2.5(@types/node@22.20.4)
@@ -470,7 +470,7 @@ importers:
     dependencies:
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.4.1
+        version: 0.5.0
       '@hyperledger/indy-vdr-nodejs':
         specifier: 'catalog:'
         version: 0.3.0
@@ -479,7 +479,7 @@ importers:
         version: 6.1.0(koa@3.2.1)
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.6.1
+        version: 0.7.0
       express:
         specifier: 'catalog:'
         version: 5.3.0(supports-color@8.1.1)
@@ -584,10 +584,10 @@ importers:
         version: link:../node
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.4.1
+        version: 0.5.0
       '@hyperledger/anoncreds-shared':
-        specifier: 'catalog:'
-        version: 0.4.1
+        specifier: catalog:dev
+        version: 0.5.0
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
@@ -627,10 +627,10 @@ importers:
         version: link:../tenants
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.6.1
+        version: 0.7.0
       '@openwallet-foundation/askar-shared':
         specifier: catalog:dev
-        version: 0.6.1
+        version: 0.7.0
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -655,7 +655,7 @@ importers:
     devDependencies:
       '@openwallet-foundation/askar-shared':
         specifier: catalog:dev
-        version: 0.6.1
+        version: 0.7.0
       typescript:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'
@@ -871,7 +871,7 @@ importers:
         version: 6.1.1(supports-color@8.1.1)
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.6.1
+        version: 0.7.0
       '@sphereon/pex-models':
         specifier: 'catalog:'
         version: 2.3.2
@@ -1021,7 +1021,7 @@ importers:
         version: 0.1.8(bn.js@5.2.3)(expo-crypto@15.0.8)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.1)(supports-color@8.1.1))(supports-color@8.1.1)
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.4.1
+        version: 0.5.0
       zstd-napi:
         specifier: ^0.0.13
         version: 0.0.13
@@ -1272,7 +1272,7 @@ importers:
         version: link:../../packages/node
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.6.1
+        version: 0.7.0
       class-validator:
         specifier: 'catalog:'
         version: 0.14.3
@@ -2691,12 +2691,12 @@ packages:
     resolution: {integrity: sha512-P7q223JlO/BuZkZ2Ifkyqdul0O0ywa8xm88yJ0BmAIFBE0j4ft6Iw8Zg3kRMzYZX25vjl0ZssHJIA5LVUnBETg==}
     engines: {node: '>=20'}
 
-  '@hyperledger/anoncreds-nodejs@0.4.1':
-    resolution: {integrity: sha512-2H7gbQDt/SJ6T2nnWJjpHfjE6rt2MWlBskC6Ktyour8zSa5cwKu8ZxQK5XfNMXzcikiKGvU9qhaJJrucPkpPCw==}
-    engines: {node: '>= 20'}
+  '@hyperledger/anoncreds-nodejs@0.5.0':
+    resolution: {integrity: sha512-g2LYOrdw/6LqqQ3nW1Nw3uSxeGJXrzWzo/JwaXP9V6pU3Bpb9jd0Bthle1+YetSFazj7DuNA/usFUdWdPYBKQQ==}
+    engines: {node: '>= 22.12'}
 
-  '@hyperledger/anoncreds-shared@0.4.1':
-    resolution: {integrity: sha512-B26j9CNDDoiBd4YgxsYwSH68Z/QmMeBLF/PGbzxyEn8JaS6/yN/1v39XOhghJvCaJriMA6gqGqSQquE/8sUqtg==}
+  '@hyperledger/anoncreds-shared@0.5.0':
+    resolution: {integrity: sha512-dduy1EqIYyxGC3/oTlrC7kqdAy0CJXpGklB8i4U4BMHjn91EvNvBmLLOwNvPqNIwaTDvpfJM4uY1933HvRPH1A==}
 
   '@hyperledger/indy-vdr-nodejs@0.3.0':
     resolution: {integrity: sha512-yx6hPlTXwirouAkMwaLmowU1mfBwRjTFQUQCH7Mgd4/C6Zp0taw/KUclhB83LpbjHBZiGsV/bILeLYD+HNpHfA==}
@@ -2898,6 +2898,106 @@ packages:
     peerDependencies:
       koa: '>=2'
 
+  '@koromix/koffi-android-arm64@3.3.7':
+    resolution: {integrity: sha512-330J8SnMF48DwADEbPYb5gAIM0mo3dZAsLUkuhyEPTPF49h73hRO7LMVXPkUmeXkK/J5Uvgsaem6Lx86Uev3GA==}
+    cpu: [arm64]
+    os: [android]
+
+  '@koromix/koffi-android-x64@3.3.7':
+    resolution: {integrity: sha512-CE1LEAsMyChQQNjGVDy56lBEdU70zOOD709mdKtxM6Rn2I7srT8Jyj66kSwnl4gO4+2BlTBXMyEIAEyYiNXNEA==}
+    cpu: [x64]
+    os: [android]
+
+  '@koromix/koffi-darwin-arm64@3.3.7':
+    resolution: {integrity: sha512-xg1nqqhHRo6QxxYZJtYhhEGAbkHCQxvjoId3BCkhIJhRLi7+dDBRpLEi8x/5xrhqjCp+c/XhMrkAvxWy0NEYBg==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@koromix/koffi-darwin-x64@3.3.7':
+    resolution: {integrity: sha512-8KeSrHrxzj+SEvaSMc1ufpgn66AdtorKGGb8HNJN5A435stXZ35oxg2+rsAyhTduvEZ9DkCuU94A0crA8KQ0UA==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@koromix/koffi-freebsd-arm64@3.3.7':
+    resolution: {integrity: sha512-UTo2xw46ctQdcz55I3b5pP1Gs0mGcYZLGAJg7MpEdr8ZEMmmclTzU/WUwWw/lyj5x2Ld2fscjCt69elqfrUBOQ==}
+    cpu: [arm64]
+    os: [freebsd]
+
+  '@koromix/koffi-freebsd-ia32@3.3.7':
+    resolution: {integrity: sha512-5vgirS+XISQHzXiad3KYhZYGvuSbAtyrIm2etO118IjpWi87wbKP8xEdf8s4F+vU0HxGs9hcx5a+blwFMe9TFA==}
+    cpu: [ia32]
+    os: [freebsd]
+
+  '@koromix/koffi-freebsd-x64@3.3.7':
+    resolution: {integrity: sha512-R2POCHtQ46cyhCFtYuq3Uo4MEiMstwLi49fwUgu6Vl38XvqKeje5up5e72LTCXf+ks/y3nua3TYM5oXTBqYAUA==}
+    cpu: [x64]
+    os: [freebsd]
+
+  '@koromix/koffi-linux-arm64@3.3.7':
+    resolution: {integrity: sha512-7ttM8GE2gowelTTyTY0+t79rWaoilZMmW4MYgrIXx5NNShLiHtUNfyGGaNzCd1MD+j+bnNZLJ2lh3lkBS9stfw==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@koromix/koffi-linux-arm@3.3.7':
+    resolution: {integrity: sha512-zUb+N1CvsRikXKs93jNdHTAVFt3Njr7ShIA8QwOh2IH/8aV8bkQnkt7AOJvOK/uP0CHd7bxn82YgGUAcZW/pVw==}
+    cpu: [arm]
+    os: [linux]
+
+  '@koromix/koffi-linux-ia32@3.3.7':
+    resolution: {integrity: sha512-hM6CtBgyWGkYzXIl+ciCWSCWnYh/6ft2FRi17aw345lK3Syl2OH06PPMxMd+AHkNrnYWT3nyrzl2Rcun9IeAiw==}
+    cpu: [ia32]
+    os: [linux]
+
+  '@koromix/koffi-linux-loong64@3.3.7':
+    resolution: {integrity: sha512-plmvZGrC2F02AIDNx3+QcjU39Y9XVgHAHMOM17HJCmxc3f5VpKO0d7aln3/Re6TchBW1h2ldFgI6pp/7vN7IQQ==}
+    cpu: [loong64]
+    os: [linux]
+
+  '@koromix/koffi-linux-ppc64@3.3.7':
+    resolution: {integrity: sha512-bmVe2k1v7tiOGcuX22+HIyOT39bRBrIJd2v6qzSN9Er/f7XI61cbJUnFYWdXpYecU2Ww1LDSkgIifcRyfpipqw==}
+    cpu: [ppc64]
+    os: [linux]
+
+  '@koromix/koffi-linux-riscv64@3.3.7':
+    resolution: {integrity: sha512-IG1cp7agL1Od03NrKy8B0UGHomco0sygtWhWIXTTbjkJZkjE9Ic79IWzA5d16XbVtob+247XYBDcaeJJ644Xiw==}
+    cpu: [riscv64]
+    os: [linux]
+
+  '@koromix/koffi-linux-x64@3.3.7':
+    resolution: {integrity: sha512-1cxuG2zsO71wB3RwYt6AjJD9xQW0lUVw4TX4e3Q2DeffEqrVtE3g4IbQsnijTcSeZmmec1kDuuk4CSHUfhAEJQ==}
+    cpu: [x64]
+    os: [linux]
+
+  '@koromix/koffi-openbsd-arm64@3.3.7':
+    resolution: {integrity: sha512-8qqafiMgdmOTEeZsLSnuKdg82Id8IwcxG8MowVtk0zJ4iNObmg2Ygd1dTtWRwpMBW0gfXoodwRdRqnUur3R/aA==}
+    cpu: [arm64]
+    os: [openbsd]
+
+  '@koromix/koffi-openbsd-ia32@3.3.7':
+    resolution: {integrity: sha512-ZG06vAX5YUyUGAg9brg4maex7uGj1fybhlMrWt5FlocMBlrY05pn84vlCKavHsCficecAVq7yEzU8f+4FC2T7A==}
+    cpu: [ia32]
+    os: [openbsd]
+
+  '@koromix/koffi-openbsd-x64@3.3.7':
+    resolution: {integrity: sha512-jnBD84VCXRmOeJniInO8g5xH2XwVnifp2w35+UbAx8coMIS99YAW9uDNg/U7ooJIyL9hfbatfeNkjNhYhhNpKw==}
+    cpu: [x64]
+    os: [openbsd]
+
+  '@koromix/koffi-win32-arm64@3.3.7':
+    resolution: {integrity: sha512-Sal267u6Mi+UK/Lbu5vECQDtvZCfK57BO1zmc+Tar7Kdy+hHZ8Eqx7SyxTP6js4ofavQ83pVp1SWQqK8XJVpcg==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@koromix/koffi-win32-ia32@3.3.7':
+    resolution: {integrity: sha512-kOPimggBxcLjHM/rHOWZp8fyxu+UjeEkWM26Gb9XCnirmM76xDu+GXCSDoBPPqF8s+XkY3NrhUdgfIXcwmWiPA==}
+    cpu: [ia32]
+    os: [win32]
+
+  '@koromix/koffi-win32-x64@3.3.7':
+    resolution: {integrity: sha512-yVrh4Yzyjm+fH7CGIa8Ts+DSGeU8QrwEtECXxNswh3i86hwZTOKkqojaDFAYJov0B3w4BFcjR4TOKkPOB0ZpZA==}
+    cpu: [x64]
+    os: [win32]
+
   '@kwsites/file-exists@1.1.1':
     resolution: {integrity: sha512-m9/5YGR18lIwxSFDwfE3oA7bWuq9kdau6ugN4H2rJeyhFQZcG9AgSHkQtSD15a8WvTgfz9aikZMrKPHvbpqFiw==}
 
@@ -3046,12 +3146,12 @@ packages:
   '@openid4vc/utils@0.9.1':
     resolution: {integrity: sha512-Dt0v/WMmGVpnp2MNIF2j2TZib8IP5AfVxK4pSz+r+hM4d3qILJOvdF9SKL4KYrICkR21FR3BlHB8zszbISqLFg==}
 
-  '@openwallet-foundation/askar-nodejs@0.6.1':
-    resolution: {integrity: sha512-9cAXjAA9vHyUJ/wKZUCFpJZghcopR1DCEc98OdihY7X/RGSevuxA+twArLDgJSzasqINPNLMuGpp3FCJjVIlGg==}
-    engines: {node: '>= 18'}
+  '@openwallet-foundation/askar-nodejs@0.7.0':
+    resolution: {integrity: sha512-KF6XGPvmYyfhaP5RqADSynY7g5pn1NqJMALX483HJHVM7aZBSAmsY7vqpfXTUdgSHM7nLhVMqegWfKhTcAg5Gw==}
+    engines: {node: '>= 22.12'}
 
-  '@openwallet-foundation/askar-shared@0.6.1':
-    resolution: {integrity: sha512-xjFYyK5Zk/uTFKfTn2BnnldmBLGWBkVfPhOoXQl122YcRVPN7BadAvFUi6Ad+zu7Nk3axj416+fvXtUUQm1Vig==}
+  '@openwallet-foundation/askar-shared@0.7.0':
+    resolution: {integrity: sha512-+LOynK372ETeqwpsPb4idHVQekG26nBCkKR44Q8ycoQn4bwBPVyi7jWMHOcFBudIh3yEDJmdjoTR2hbb1tlIqQ==}
 
   '@owf/cose@0.7.0':
     resolution: {integrity: sha512-A4KV1KUo+/k+WMpmIH8t2a/7cG/yWa9ErtK3HrYZWUcqCmHpIjSD/itzoKDySnHepsBA5W9Wxk+XHoQmLlJs6Q==}
@@ -5712,6 +5812,9 @@ packages:
 
   koffi@2.16.3:
     resolution: {integrity: sha512-E9y1AsgYGlaxMhcZzHr8y96QF2U5XzA12GGVAfbWqIubTwPNMXQarfBzePNXHe0xtIEtNd6ifAv3GAKYGUeBAQ==}
+
+  koffi@3.3.7:
+    resolution: {integrity: sha512-Vrq4UwAE19HPLMou8m7HGCELiTE3l9D+r1nA7XwVHUTNaRdymPM+kzkkD2VGxlyjI2qZTb9tMDaFn7kfZ72v3Q==}
 
   ky@1.14.3:
     resolution: {integrity: sha512-9zy9lkjac+TR1c2tG+mkNSVlyOpInnWdSMiue4F+kq8TwJSgv6o8jhLRg8Ho6SnZ9wOYUq/yozts9qQCfk7bIw==}
@@ -9414,12 +9517,12 @@ snapshots:
 
   '@hiero-did-sdk/zstd@0.1.8': {}
 
-  '@hyperledger/anoncreds-nodejs@0.4.1':
+  '@hyperledger/anoncreds-nodejs@0.5.0':
     dependencies:
-      '@hyperledger/anoncreds-shared': 0.4.1
-      koffi: 2.16.3
+      '@hyperledger/anoncreds-shared': 0.5.0
+      koffi: 3.3.7
 
-  '@hyperledger/anoncreds-shared@0.4.1':
+  '@hyperledger/anoncreds-shared@0.5.0':
     dependencies:
       tar: 7.5.22
 
@@ -9621,6 +9724,66 @@ snapshots:
       lodash.merge: 4.6.2
       type-is: 2.0.1
 
+  '@koromix/koffi-android-arm64@3.3.7':
+    optional: true
+
+  '@koromix/koffi-android-x64@3.3.7':
+    optional: true
+
+  '@koromix/koffi-darwin-arm64@3.3.7':
+    optional: true
+
+  '@koromix/koffi-darwin-x64@3.3.7':
+    optional: true
+
+  '@koromix/koffi-freebsd-arm64@3.3.7':
+    optional: true
+
+  '@koromix/koffi-freebsd-ia32@3.3.7':
+    optional: true
+
+  '@koromix/koffi-freebsd-x64@3.3.7':
+    optional: true
+
+  '@koromix/koffi-linux-arm64@3.3.7':
+    optional: true
+
+  '@koromix/koffi-linux-arm@3.3.7':
+    optional: true
+
+  '@koromix/koffi-linux-ia32@3.3.7':
+    optional: true
+
+  '@koromix/koffi-linux-loong64@3.3.7':
+    optional: true
+
+  '@koromix/koffi-linux-ppc64@3.3.7':
+    optional: true
+
+  '@koromix/koffi-linux-riscv64@3.3.7':
+    optional: true
+
+  '@koromix/koffi-linux-x64@3.3.7':
+    optional: true
+
+  '@koromix/koffi-openbsd-arm64@3.3.7':
+    optional: true
+
+  '@koromix/koffi-openbsd-ia32@3.3.7':
+    optional: true
+
+  '@koromix/koffi-openbsd-x64@3.3.7':
+    optional: true
+
+  '@koromix/koffi-win32-arm64@3.3.7':
+    optional: true
+
+  '@koromix/koffi-win32-ia32@3.3.7':
+    optional: true
+
+  '@koromix/koffi-win32-x64@3.3.7':
+    optional: true
+
   '@kwsites/file-exists@1.1.1(supports-color@8.1.1)':
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
@@ -9781,12 +9944,12 @@ snapshots:
       zod: 4.6.7
       zod-validation-error: 5.0.0(zod@4.6.7)
 
-  '@openwallet-foundation/askar-nodejs@0.6.1':
+  '@openwallet-foundation/askar-nodejs@0.7.0':
     dependencies:
-      '@openwallet-foundation/askar-shared': 0.6.1
-      koffi: 2.16.3
+      '@openwallet-foundation/askar-shared': 0.7.0
+      koffi: 3.3.7
 
-  '@openwallet-foundation/askar-shared@0.6.1':
+  '@openwallet-foundation/askar-shared@0.7.0':
     dependencies:
       buffer: 6.0.3
       tar: 7.5.22
@@ -12439,6 +12602,29 @@ snapshots:
       vary: 1.1.2
 
   koffi@2.16.3: {}
+
+  koffi@3.3.7:
+    optionalDependencies:
+      '@koromix/koffi-android-arm64': 3.3.7
+      '@koromix/koffi-android-x64': 3.3.7
+      '@koromix/koffi-darwin-arm64': 3.3.7
+      '@koromix/koffi-darwin-x64': 3.3.7
+      '@koromix/koffi-freebsd-arm64': 3.3.7
+      '@koromix/koffi-freebsd-ia32': 3.3.7
+      '@koromix/koffi-freebsd-x64': 3.3.7
+      '@koromix/koffi-linux-arm': 3.3.7
+      '@koromix/koffi-linux-arm64': 3.3.7
+      '@koromix/koffi-linux-ia32': 3.3.7
+      '@koromix/koffi-linux-loong64': 3.3.7
+      '@koromix/koffi-linux-ppc64': 3.3.7
+      '@koromix/koffi-linux-riscv64': 3.3.7
+      '@koromix/koffi-linux-x64': 3.3.7
+      '@koromix/koffi-openbsd-arm64': 3.3.7
+      '@koromix/koffi-openbsd-ia32': 3.3.7
+      '@koromix/koffi-openbsd-x64': 3.3.7
+      '@koromix/koffi-win32-arm64': 3.3.7
+      '@koromix/koffi-win32-ia32': 3.3.7
+      '@koromix/koffi-win32-x64': 3.3.7
 
   ky@1.14.3: {}
 
