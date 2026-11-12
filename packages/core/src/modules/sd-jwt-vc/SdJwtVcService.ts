@@ -12,6 +12,7 @@ import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArray
 import { isAllowedHttpUrl } from '../../utils/uri'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
+import { getStatusListSignerKeyPurposeOptions } from '../token-status-list/assertStatusListSignerKeyPurpose'
 import { TokenStatusListModuleConfig } from '../token-status-list/TokenStatusListModuleConfig'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig, X509Service } from '../x509'
@@ -319,7 +320,7 @@ export class SdJwtVcService {
         await sdjwt.verify(compactSdJwtVc, {
           requiredClaimKeys: requiredClaimKeys ? [...requiredClaimKeys, 'vct'] : ['vct'],
           keyBindingNonce: keyBinding?.nonce,
-          currentDate: dateToSeconds(now ?? new Date()),
+          currentDate: now ? dateToSeconds(now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
           disableStatusVerification: statusValidationDisabled,
         })
@@ -341,7 +342,7 @@ export class SdJwtVcService {
 
       try {
         JwtPayload.fromJson(returnSdJwtVc.payload).validate({
-          now: dateToSeconds(now ?? new Date()),
+          now: now ? dateToSeconds(now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
       } catch (error) {
@@ -704,14 +705,20 @@ export class SdJwtVcService {
             X509Service.parseCertificate(agentContext, { encodedCertificate: certificate })
           )
 
-          // Trust check only: ensure the status list certificate chain anchors in the status certificates.
+          // Ensures the status list certificate chain anchors in the status certificates.
           await X509Service.validateCertificateChain(agentContext, {
             certificateChain: statusListChain,
             trustedCertificates: statusCertificates,
+            validation: {
+              leaf: getStatusListSignerKeyPurposeOptions(agentContext, {
+                statusListSigner: statusListChain[0],
+                credentialSigner: credentialIssuerCertificateChain[0],
+              }),
+            },
           })
         } catch (error) {
           throw new SdJwtVcError(
-            'The status list certificate chain could not be validated against the trusted status certificates.',
+            `The status list certificate chain could not be validated against the trusted status certificates. ${error.message}`,
             { cause: error }
           )
         }

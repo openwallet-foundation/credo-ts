@@ -3,6 +3,7 @@ import { CredoWebCrypto } from '../../crypto/webcrypto'
 import { injectable } from '../../plugins'
 import { CertificateSigningRequest } from './CertificateSigningRequest'
 import { validateCriticalExtensionsForChain } from './utils/criticalExtensions'
+import { validateRequiredExtendedKeyUsages, validateRequiredKeyUsages } from './utils/keyPurpose'
 import { X509Certificate, X509KeyUsage } from './X509Certificate'
 import { X509CertificateCache } from './X509CertificateCache'
 import { X509CertificateRevocationList } from './X509CertificateRevocationList'
@@ -39,6 +40,7 @@ export class X509Service {
    *   - Chain validation (structure, signatures, validity, trust anchor)
    *   - Basic constraints are valid for CA certificates
    *   - Key usage of issuing CA certificates includes `keyCertSign` (when the extension is present)
+   *   - Leaf certificate has the required key usages and extended key usages - if provided
    *   - Path length constraints are satisfied
    *   - All critical extensions are understood and valid
    *   - Certificates have not been revoked (CRL) - if enabled
@@ -48,7 +50,7 @@ export class X509Service {
    *   - Name Constraints (§4.2.1.10), Policy Constraints (§4.2.1.11), and Certificate Policies
    *     (§4.2.1.4) are not enforced. A certificate carrying one of these as a *critical* extension is
    *     rejected (unrecognized critical extension); a non-critical occurrence is ignored.
-   *   - Extended Key Usage is parsed but not enforced.
+   *   - Extended Key Usage is only enforced on the leaf certificate, for `validation.leaf.requiredExtendedKeyUsages`.
    *   - Key Usage is only enforced when the extension is present (it is optional; absent means
    *     unrestricted).
    *   - Subject/Issuer Alternative Names only surface the URI and DNS GeneralName forms.
@@ -60,9 +62,11 @@ export class X509Service {
       verificationDate = new Date(),
       trustedCertificates,
       allowNonRootTrustedCertificate = true,
+      validation,
       parseOptions,
     }: X509ValidateCertificateChainOptions
   ) {
+    const { requiredKeyUsages = [], requiredExtendedKeyUsages = [] } = validation?.leaf ?? {}
     const validations: X509ValidationResult['validations'] = {}
     const config = agentContext.dependencyManager.resolve(X509ModuleConfig)
     const effectiveParseOptions = parseOptions ?? config.parseOptions
@@ -148,14 +152,26 @@ export class X509Service {
       )
     }
 
-    // Phase 2.5: Key usage validation for issuing CA certificates
-    validations.keyUsage = X509Service.validateKeyUsageForChain(parsedChain)
+    // Phase 2.5: Key usage validation for issuing CA certificates and the leaf certificate
+    validations.keyUsage = X509Service.validateKeyUsageForChain(parsedChain, requiredKeyUsages)
     if (!validations.keyUsage.isValid) {
       throw new X509ValidationError(validations.keyUsage.error?.message ?? 'Key usage validation failed', {
         isValid: false,
         validations,
         error: validations.keyUsage.error,
       })
+    }
+
+    // Phase 2.6: Extended key usage validation for the leaf certificate
+    validations.extendedKeyUsage = validateRequiredExtendedKeyUsages(
+      parsedChain[parsedChain.length - 1],
+      requiredExtendedKeyUsages
+    )
+    if (!validations.extendedKeyUsage.isValid) {
+      throw new X509ValidationError(
+        validations.extendedKeyUsage.error?.message ?? 'Extended key usage validation failed',
+        { isValid: false, validations, error: validations.extendedKeyUsage.error }
+      )
     }
 
     // Phase 3: Path length constraint validation
@@ -426,15 +442,18 @@ export class X509Service {
   }
 
   /**
-   * Validates the Key Usage extension of the issuing CA certificates in the chain.
+   * Validates the Key Usage extension of the certificates in the chain.
    * Per RFC 5280 §4.2.1.3 / §6.1.4(n): a certificate used to sign other certificates MUST, when it
-   * asserts a Key Usage extension, include the `keyCertSign` bit.
+   * asserts a Key Usage extension, include the `keyCertSign` bit. The leaf certificate is checked
+   * against `requiredKeyUsages`.
    *
    * Key Usage is optional in a certificate; when the extension is absent, all usages are permitted
-   * and no constraint is enforced. Only the issuing certificates (every certificate except the leaf)
-   * are checked.
+   * and no constraint is enforced.
    */
-  private static validateKeyUsageForChain(certificateChain: X509Certificate[]): X509CertificateSingleValidationResult {
+  private static validateKeyUsageForChain(
+    certificateChain: X509Certificate[],
+    requiredKeyUsages: X509KeyUsage[]
+  ): X509CertificateSingleValidationResult {
     // Every certificate except the last one (the leaf/end-entity) issues the next certificate in the
     // chain, mirroring the set checked by validateBasicConstraintsForChain.
     for (let i = 0; i < certificateChain.length - 1; i++) {
@@ -454,6 +473,6 @@ export class X509Service {
       }
     }
 
-    return { isValid: true }
+    return validateRequiredKeyUsages(certificateChain[certificateChain.length - 1], requiredKeyUsages)
   }
 }

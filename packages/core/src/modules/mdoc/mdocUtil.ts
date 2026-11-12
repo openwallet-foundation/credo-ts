@@ -2,6 +2,7 @@ import { DeviceNamespaces, DeviceSignedItems } from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
 import { TypedArrayEncoder } from '../../utils/TypedArrayEncoder'
 import type { PublicJwk } from '../kms'
+import { assertStatusListSignerKeyPurpose } from '../token-status-list/assertStatusListSignerKeyPurpose'
 import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
 import type { X509Certificate } from '../x509/X509Certificate'
 import { X509CertificateCache } from '../x509/X509CertificateCache'
@@ -137,6 +138,35 @@ export function assertMdocStatusListChainsMatchIssuanceChain(
     throw new MdocError(
       'Trusted status list chain does not match the trusted issuance chain, and no trusted status certificates were provided for the trusted issuance certificate'
     )
+  }
+}
+
+/**
+ * The mdoc library validates all chains through the same callback, without saying what a chain is
+ * for, so the key purpose can only be checked on the chains it resolved for the status and identifier
+ * lists. ISO 18013-5 (second edition draft, clause 12.3.6.3) allows the extended key usage for both.
+ */
+export function assertMdocStatusSignerKeyPurpose(
+  agentContext: AgentContext,
+  chains: {
+    trustedIssuanceChain: Uint8Array[]
+    trustedStatusListChain?: Uint8Array[]
+    trustedIdentifierListChain?: Uint8Array[]
+  }
+) {
+  const signerChains = [
+    ['status list', chains.trustedStatusListChain],
+    ['identifier list', chains.trustedIdentifierListChain],
+  ] as const
+
+  for (const [list, signerChain] of signerChains) {
+    if (!signerChain) continue
+
+    assertStatusListSignerKeyPurpose(agentContext, {
+      list,
+      statusListSigner: X509CertificateCache.parseCertificate(agentContext, signerChain[0]),
+      credentialSigner: X509CertificateCache.parseCertificate(agentContext, chains.trustedIssuanceChain[0]),
+    })
   }
 }
 

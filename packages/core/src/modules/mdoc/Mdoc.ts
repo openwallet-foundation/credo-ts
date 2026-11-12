@@ -20,6 +20,7 @@ import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocO
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
 import {
   assertMdocStatusListChainsMatchIssuanceChain,
+  assertMdocStatusSignerKeyPurpose,
   convertMdocTrustedCertificates,
   mdocTrustedCertificatesToRaw,
 } from './mdocUtil'
@@ -258,6 +259,11 @@ export class Mdoc {
       }
 
       assertMdocStatusListChainsMatchIssuanceChain(agentContext, convertedTrustedCertificates, {
+        trustedIssuanceChain,
+        trustedStatusListChain,
+        trustedIdentifierListChain,
+      })
+      assertMdocStatusSignerKeyPurpose(agentContext, {
         trustedIssuanceChain,
         trustedStatusListChain,
         trustedIdentifierListChain,
