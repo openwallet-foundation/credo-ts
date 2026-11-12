@@ -5,6 +5,7 @@ import { WebVhAnonCredsRegistry } from '../../anoncreds/services/WebVhAnonCredsR
 import { WebVhApi } from '../../WebVhApi'
 import { WebVhModule } from '../../WebVhModule'
 import { getWebVhDidResolver } from '../getWebVhDidResolver'
+import { WebVhDidRegistrar } from '../WebVhDidRegistrar'
 import { WebVhDidResolver } from '../WebVhDidResolver'
 
 function registerModules(didsModule: DidsModule, agentConfig?: AgentConfig) {
@@ -14,6 +15,23 @@ function registerModules(didsModule: DidsModule, agentConfig?: AgentConfig) {
 }
 
 describe('getWebVhDidResolver', () => {
+  test('registers the API once and scopes its instance to each agent context', () => {
+    const dependencyManager = new DependencyManager()
+    const registerContextScoped = vi.spyOn(dependencyManager, 'registerContextScoped')
+    dependencyManager.registerModules({ dids: new DidsModule(), webvh: new WebVhModule() })
+    expect(registerContextScoped.mock.calls.filter(([token]) => token === WebVhApi)).toHaveLength(1)
+
+    const firstContext = getAgentContext({ dependencyManager: dependencyManager.createChild() })
+    const secondContext = getAgentContext({ dependencyManager: dependencyManager.createChild() })
+    const firstApi = firstContext.resolve(WebVhApi)
+    const secondApi = secondContext.resolve(WebVhApi)
+    expect(firstApi).toBeInstanceOf(WebVhApi)
+    expect(secondApi).toBeInstanceOf(WebVhApi)
+    expect(firstContext.resolve(WebVhApi)).toBe(firstApi)
+    expect(secondContext.resolve(WebVhApi)).toBe(secondApi)
+    expect(firstApi).not.toBe(secondApi)
+  })
+
   test('returns the resolver configured on the DidsModule', () => {
     const resolver = new WebVhDidResolver()
     const agentContext = registerModules(new DidsModule({ resolvers: [resolver] }))
@@ -48,6 +66,19 @@ describe('getWebVhDidResolver', () => {
 
     const resolver = getWebVhDidResolver(agentContext)
     expect(agentContext.resolve(DidsModuleConfig).resolvers).toContain(resolver)
+    expect(
+      agentContext.resolve(DidsModuleConfig).registrars.filter((r) => r instanceof WebVhDidRegistrar)
+    ).toHaveLength(1)
+  })
+
+  test('preserves configured WebVH adapters and does not duplicate them when registering again', () => {
+    const registrar = new WebVhDidRegistrar()
+    const resolver = new WebVhDidResolver()
+    const context = registerModules(new DidsModule({ registrars: [registrar], resolvers: [resolver] }))
+    new WebVhModule().register(context.dependencyManager)
+    const config = context.resolve(DidsModuleConfig)
+    expect(config.registrars.filter((r) => r.supportedMethods.includes('webvh'))).toEqual([registrar])
+    expect(config.resolvers.filter((r) => r instanceof WebVhDidResolver)).toEqual([resolver])
   })
 
   test('throws when no WebVhDidResolver is registered', () => {

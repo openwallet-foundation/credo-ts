@@ -9,6 +9,7 @@ import {
   type DIDLog,
   type DIDResolutionMeta,
   deriveNextKeyHash,
+  getWitnessRequirements,
   resolveDIDFromLog,
 } from 'didwebvh-ts'
 import { Subject } from 'rxjs'
@@ -16,6 +17,7 @@ import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { createWebVhTestKey, createWebVhTestOptions } from '../../../tests/utils'
+import { WebVhApi } from '../../WebVhApi'
 import { WebVhDidCrypto } from '../WebVhDidCrypto'
 import { WebVhDidRegistrar } from '../WebVhDidRegistrar'
 import { WebVhDidRecordMetadataKeys } from '../webVhDidRecordMetadataTypes'
@@ -232,6 +234,53 @@ describe('WebVhDidRegistrar integration', () => {
     expect(record.metadata.get<DIDResolutionMeta>(WebVhDidRecordMetadataKeys.ControllerMetadata)?.updateKeys).toEqual(
       []
     )
+  })
+
+  test('bridges a witnessed create and update with application-collected proofs, without witness requests', async () => {
+    const fetch = vi.spyOn(agentContext.config, 'fetch')
+    const witness = await createWebVhTestKey(agentContext)
+    const options = await createWebVhTestOptions(agentContext)
+    options.options.witness = { threshold: 1, witnesses: [{ id: `did:key:${witness.multikey}` }] }
+    const { did, didDocument } = await create(options)
+    const api = new WebVhApi(agentContext)
+    const genesis = await api.getPublicationData(did)
+    const genesisProof = await api.signWitnessProof({
+      trustedLog: [],
+      candidateLog: genesis.log,
+      witnessProofs: [],
+      kmsKeyId: witness.keyId,
+    })
+    await api.storeWitnessProofs(did, [genesisProof])
+    const update = await registrar.update(agentContext, { did, didDocument })
+    expect(update.didState.state).toBe('finished')
+    const candidate = await api.getPublicationData(did)
+    const updateProof = await api.signWitnessProof({
+      trustedLog: genesis.log,
+      candidateLog: candidate.log,
+      witnessProofs: [genesisProof],
+      kmsKeyId: witness.keyId,
+    })
+    await api.storeWitnessProofs(did, [genesisProof, updateProof])
+    expect(getWitnessRequirements(candidate.log).map((requirement) => requirement.threshold)).toEqual([1, 1])
+    expect(await api.verifyWitnessProofs({ log: candidate.log, witnessProofs: [genesisProof] })).toMatchObject({
+      verified: false,
+      requirements: [{ satisfied: true }, { satisfied: false }],
+    })
+    expect(
+      await api.verifyWitnessProofs({ log: candidate.log, witnessProofs: [genesisProof, updateProof] })
+    ).toMatchObject({
+      verified: true,
+      requirements: [
+        { satisfied: true, approvals: 1 },
+        { satisfied: true, approvals: 1 },
+      ],
+      rejectedProofs: [expect.objectContaining({ code: 'duplicate-witness' })],
+    })
+    const resolved = await api.resolveDIDFromLog(candidate.log, { witnessProofs: [genesisProof, updateProof] })
+    expect(resolved.didResolutionMetadata.error).toBeUndefined()
+    expect(resolved.didDocumentMetadata.witness.threshold).toBe('1')
+    expect(fetch).not.toHaveBeenCalled()
+    fetch.mockRestore()
   })
 
   test('persists returned DID and document when moving a portable DID', async () => {
