@@ -188,6 +188,7 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
         const { deferredCredentialResponse, deferredCredentialResponseJwt } =
           await openId4VcIssuerService.createDeferredCredentialResponse(agentContext, {
             issuanceSession,
+            issuer,
             deferredCredentialRequest: parsedCredentialRequest.deferredCredentialRequest,
             authorization: {
               authorizationServer,

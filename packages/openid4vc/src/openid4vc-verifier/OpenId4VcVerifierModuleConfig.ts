@@ -1,4 +1,5 @@
 import type { Express } from 'express'
+import type { OpenId4VpVerifiedAuthorizationResponseHandler } from './OpenId4VpVerifierServiceOptions'
 
 export interface InternalOpenId4VcVerifierModuleConfigOptions {
   /**
@@ -20,6 +21,15 @@ export interface InternalOpenId4VcVerifierModuleConfigOptions {
    * @default 300
    */
   authorizationRequestExpirationInSeconds?: number
+
+  /**
+   * Called with the verified authorization response, after verification and before the session is
+   * updated and the wallet gets its response. When it throws, the session moves to `Error` and the
+   * wallet gets an error response.
+   *
+   * It holds the wallet's request, and no timeout is applied.
+   */
+  verifiedAuthorizationResponseHandler?: OpenId4VpVerifiedAuthorizationResponseHandler
 
   endpoints?: {
     /**
@@ -47,6 +57,10 @@ export class OpenId4VcVerifierModuleConfig {
 
   public get app() {
     return this.options.app
+  }
+
+  public get verifiedAuthorizationResponseHandler() {
+    return this.options.verifiedAuthorizationResponseHandler
   }
 
   /**

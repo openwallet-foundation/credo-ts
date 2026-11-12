@@ -111,6 +111,19 @@ describe('OpenId4VcVerifier', () => {
       )
     })
 
+    it('stores the verification session metadata with the session', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        requestSigner: { method: 'did', didUrl: verifier.kid },
+        verifierId: openIdVerifier.verifierId,
+        dcql: { query: openBadgeDcqlQuery },
+        recordMetadata: { 'custom/key': { templateId: 'abc' } },
+      })
+
+      const storedSession = await verifier.agent.openid4vc.verifier.getVerificationSessionById(verificationSession.id)
+      expect(storedSession.metadata.get('custom/key')).toEqual({ templateId: 'abc' })
+    })
+
     it('deletes a verification session by id', async () => {
       const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
       const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({

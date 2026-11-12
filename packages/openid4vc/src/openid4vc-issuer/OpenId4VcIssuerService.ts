@@ -620,7 +620,11 @@ export class OpenId4VcIssuerService {
 
   public async createCredentialResponse(
     agentContext: AgentContext,
-    options: OpenId4VciCreateCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
+    options: OpenId4VciCreateCredentialResponseOptions & {
+      issuanceSession: OpenId4VcIssuanceSessionRecord
+      /** The issuer of the session, when the caller already has it. */
+      issuer?: OpenId4VcIssuerRecord
+    }
   ): Promise<{
     issuanceSession: OpenId4VcIssuanceSessionRecord
     credentialResponse: CredentialResponse
@@ -635,7 +639,7 @@ export class OpenId4VcIssuerService {
       OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
     ])
     const { issuanceSession } = options
-    const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
+    const issuer = options.issuer ?? (await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId))
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
@@ -820,7 +824,11 @@ export class OpenId4VcIssuerService {
 
   public async createDeferredCredentialResponse(
     agentContext: AgentContext,
-    options: OpenId4VciCreateDeferredCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
+    options: OpenId4VciCreateDeferredCredentialResponseOptions & {
+      issuanceSession: OpenId4VcIssuanceSessionRecord
+      /** The issuer of the session, when the caller already has it. */
+      issuer?: OpenId4VcIssuerRecord
+    }
   ): Promise<{
     issuanceSession: OpenId4VcIssuanceSessionRecord
     deferredCredentialResponse: DeferredCredentialResponse
@@ -844,7 +852,7 @@ export class OpenId4VcIssuerService {
       })
     }
 
-    const issuer = await this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
+    const issuer = options.issuer ?? (await this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId))
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
 
     // Optimization: if the deferral interval hasn't passed yet, we immediately
