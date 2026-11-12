@@ -256,6 +256,18 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       }
       agentContext.config.logger.trace(`Resource ${resourceId} attestation found.`)
 
+      const parsedResourceId = parseResourceId(resourceId)
+      if (!parsedResourceId) {
+        throw new CredoError(`Could not extract DID from resource ID: ${resourceId}`)
+      }
+
+      const verificationMethodDid = parseDid(resourceObject.proof.verificationMethod).did
+      if (verificationMethodDid !== parsedResourceId.did) {
+        throw new CredoError(
+          `Proof verification method DID mismatch for ${resourceId}. Expected: ${parsedResourceId.did}, Actual: ${verificationMethodDid}`
+        )
+      }
+
       // 2. DataIntegrityProof Verification
       const verified = await this.verifyProof(agentContext, resourceObject)
       if (!verified) {
@@ -263,6 +275,13 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         throw new CredoError('Resolved resource proof is invalid.')
       }
       agentContext.config.logger.trace(`Resource ${resourceId} proof validated.`)
+
+      const contentIssuerId = (resourceObject.content as { issuerId?: unknown }).issuerId
+      if (contentIssuerId !== parsedResourceId.did) {
+        throw new CredoError(
+          `Issuer ID mismatch for ${resourceId}. Expected: ${parsedResourceId.did}, Actual: ${String(contentIssuerId)}`
+        )
+      }
 
       // 3. Resource Digest Multibase Verification
       if (resourceObject.id !== resourceId) {
