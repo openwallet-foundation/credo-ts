@@ -15,7 +15,7 @@ export async function getDpopOptions(
   const publicJwk = options.jwk
     ? options.jwk
     : options.keyId
-      ? await kms.getPublicKey({ keyId: options.keyId }).then((key) => {
+      ? await kms.getPublicKey({ keyId: options.keyId }).then(({ publicKey: key }) => {
           if (!key || key.kty === 'oct') throw new CredoError(`Unable to resolve DPoP key '${options.keyId}'.`)
           return Kms.PublicJwk.fromPublicJwk(key)
         })
