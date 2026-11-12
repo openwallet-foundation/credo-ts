@@ -1,5 +1,15 @@
 # @credo-ts/webvh
 
+## 0.7.5
+
+### Patch Changes
+
+- 66d84d6: Reject attested resources when the proof signer or content issuer does not match the DID in the resource ID.
+- Updated dependencies [493480f]
+- Updated dependencies [64dd1db]
+  - @credo-ts/core@0.7.5
+  - @credo-ts/anoncreds@0.7.5
+
 ## 0.7.4
 
 ### Patch Changes

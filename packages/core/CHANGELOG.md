@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.5
+
+### Patch Changes
+
+- 493480f: Fix DCQL LDP credential retrieval to filter expanded types using `ldp_vc` queries instead of `jwt_vc_json` queries.
+- 64dd1db: Pin `@owf/mdoc` to `<0.8.3`. `@owf/mdoc@0.8.3` depends on `@owf/cose@0.5.0` while core uses `@owf/cose@0.4.x`; the two copies register different COSE tag decoders on the shared `cbor-x`, which made `updateTokenStatusList({ format: 'cwt' })` fail to decode its own token.
+
 ## 0.7.4
 
 ### Patch Changes
