@@ -3,17 +3,18 @@ import { CredoError, EventEmitter, InjectionSymbols, inject, injectable, type Lo
 import type {
   DidCommConnectionRecord,
   DidCommInboundMessageContext,
-  DidCommRevocationNotificationProcessor,
   DidCommRevocationNotificationReceivedEvent,
-  DidCommRevocationNotificationV1Message,
 } from '@credo-ts/didcomm'
 import {
   DidCommCredentialEventTypes,
   DidCommCredentialExchangeRecord,
   DidCommCredentialExchangeRepository,
   DidCommRevocationNotification,
-  DidCommRevocationNotificationV2Message,
 } from '@credo-ts/didcomm'
+import type {
+  DidCommRevocationNotificationV1Message,
+  DidCommRevocationNotificationV2Message,
+} from './revocation-notification/messages'
 import {
   v1ThreadRegex,
   v2AnonCredsRevocationFormat,
@@ -23,7 +24,7 @@ import {
 } from './revocationIdentifier'
 
 @injectable()
-export class AnonCredsRevocationNotificationProcessor implements DidCommRevocationNotificationProcessor {
+export class AnonCredsRevocationNotificationProcessor {
   private credentialRepository: DidCommCredentialExchangeRepository
   private eventEmitter: EventEmitter
   private logger: Logger

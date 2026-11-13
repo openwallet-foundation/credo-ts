@@ -10,13 +10,15 @@ import {
   DidCommDidExchangeState,
   DidCommInboundMessageContext,
   DidCommRevocationNotification,
-  DidCommRevocationNotificationV1Message,
-  DidCommRevocationNotificationV2Message,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { getAgentConfig, getAgentContext, getMockConnection } from '../../../../core/tests/helpers'
 import { AnonCredsRevocationNotificationProcessor } from '../AnonCredsRevocationNotificationProcessor'
+import {
+  DidCommRevocationNotificationV1Message,
+  DidCommRevocationNotificationV2Message,
+} from '../revocation-notification/messages'
 
 const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
 

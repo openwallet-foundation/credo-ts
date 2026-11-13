@@ -1,4 +1,4 @@
-import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
 import { DidCommRevocationNotificationV1Message } from '../messages/DidCommRevocationNotificationV1Message'
 import type { DidCommRevocationNotificationService } from '../services'
 

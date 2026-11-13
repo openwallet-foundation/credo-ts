@@ -52,7 +52,7 @@ describe('v1 discover features', () => {
     await aliceAgent.shutdown()
   })
 
-  test('Faber asks Alice for revocation notification protocol support', async () => {
+  test('Faber asks Alice for issue credential protocol support', async () => {
     const faberReplay = new ReplaySubject<DidCommDiscoverFeaturesDisclosureReceivedEvent>()
     const aliceReplay = new ReplaySubject<DidCommDiscoverFeaturesQueryReceivedEvent>()
 
@@ -66,40 +66,34 @@ describe('v1 discover features', () => {
     await faberAgent.didcomm.discovery.queryFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v1',
-      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],
+      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/issue-credential/*' }],
     })
 
     const query = await waitForQuerySubject(aliceReplay, { timeoutMs: 10000 })
 
     expect(query).toMatchObject({
       protocolVersion: 'v1',
-      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],
+      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/issue-credential/*' }],
     })
 
     const disclosure = await waitForDisclosureSubject(faberReplay, { timeoutMs: 10000 })
 
     expect(disclosure).toMatchObject({
       protocolVersion: 'v1',
-      disclosures: [
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/1.0', roles: ['holder'] },
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/2.0', roles: ['holder'] },
-      ],
+      disclosures: [{ type: 'protocol', id: 'https://didcomm.org/issue-credential/2.0', roles: ['holder', 'issuer'] }],
     })
   })
 
-  test('Faber asks Alice for revocation notification protocol support synchronously', async () => {
+  test('Faber asks Alice for issue credential protocol support synchronously', async () => {
     const matchingFeatures = await faberAgent.didcomm.discovery.queryFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v1',
-      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],
+      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/issue-credential/*' }],
       awaitDisclosures: true,
     })
 
     expect(matchingFeatures).toMatchObject({
-      features: [
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/1.0', roles: ['holder'] },
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/2.0', roles: ['holder'] },
-      ],
+      features: [{ type: 'protocol', id: 'https://didcomm.org/issue-credential/2.0', roles: ['holder', 'issuer'] }],
     })
   })
 })

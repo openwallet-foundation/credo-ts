@@ -69,13 +69,16 @@ Without this option, the format's other binding methods remain available. The fo
 The auto-accept helpers `composeCredentialAutoAccept` and `composeProofAutoAccept` are available from
 `@credo-ts/anoncreds/didcomm`, not the kernel utilities.
 
-To process AnonCreds DIDComm revocation notifications, include `AnonCredsDidCommRevocationNotificationModule`
-alongside `AnonCredsModule` and the DIDComm module. This module owns AnonCreds-specific notification
-parsing and record matching:
+### Revocation notifications
+
+Register `AnonCredsDidCommRevocationNotificationModule` alongside `AnonCredsModule` and the DIDComm module
+with credentials enabled. This optional extension owns the complete Revocation Notification protocol:
+V1/V2 messages, handlers, feature discovery, V2 sending, and AnonCreds-specific parsing and record updates.
 
 ```ts
 import { AnonCredsModule } from '@credo-ts/anoncreds'
 import { AnonCredsDidCommRevocationNotificationModule } from '@credo-ts/anoncreds/didcomm'
+import { DidCommModule } from '@credo-ts/didcomm'
 
 const modules = {
   anoncreds: new AnonCredsModule({ anoncreds: NativeAnoncreds, registries: [registry] }),
@@ -84,11 +87,28 @@ const modules = {
 }
 ```
 
-The DIDComm package only dispatches notification messages through a protocol-neutral processor
-interface. Registering `AnonCredsDidCommRevocationNotificationModule` supplies the AnonCreds processor; without a
-processor, incoming revocation notifications are ignored with a warning.
+Send notifications through the extension API instead of `agent.didcomm.credentials`:
 
-Existing AnonCreds holders must register this module to continue processing revocation notifications.
+```ts
+await agent.modules.anoncredsDidCommRevocationNotification.sendRevocationNotification({
+  connectionId,
+  revocationFormat: 'anoncreds',
+  revocationId: `${revocationRegistryId}::${credentialRevocationIndex}`,
+})
+```
+
+`credentialExchangeRecordId` can be supplied instead of `connectionId` to use the exchange's existing
+connection or connectionless routing. `comment` and `requestAck` remain supported.
+
+Existing applications must register this module to continue sending and receiving revocation notifications.
+Without it, DIDComm neither registers handlers nor advertises this protocol. Import notification messages,
+their option types, and `SendRevocationNotificationOptions` from `@credo-ts/anoncreds/didcomm` instead of
+`@credo-ts/didcomm`.
+
+The existing credential exchange `revocationNotification` field and
+`DidCommCredentialEventTypes.DidCommRevocationNotificationReceived` event remain unchanged in
+`@credo-ts/didcomm` for storage and event compatibility. Identifier matching remains exact.
+Indy-VDR is not required by this extension; configure it separately when using an Indy registry.
 
 ### Legacy storage upgrades
 

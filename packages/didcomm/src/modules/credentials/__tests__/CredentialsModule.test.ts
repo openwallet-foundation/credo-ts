@@ -2,12 +2,10 @@ import type { DependencyManager } from '../../../../../core/src/plugins/Dependen
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
-import { DidCommProtocol } from '../../../models'
 import { DidCommCredentialsModule } from '../DidCommCredentialsModule'
 import { DidCommCredentialsModuleConfig } from '../DidCommCredentialsModuleConfig'
 import { DidCommCredentialV2Protocol } from '../protocol'
 import type { DidCommCredentialProtocol } from '../protocol/DidCommCredentialProtocol'
-import { DidCommRevocationNotificationService } from '../protocol/revocation-notification/services'
 import { DidCommCredentialExchangeRepository } from '../repository'
 
 const featureRegistry = {
@@ -34,9 +32,7 @@ describe('CredentialsModule', () => {
       credentialsModule.config
     )
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
-
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommRevocationNotificationService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommCredentialExchangeRepository)
   })
 
@@ -63,7 +59,6 @@ describe('CredentialsModule', () => {
       registerInstances: [
         [DidCommMessageHandlerRegistry, messageHandlerRegistry],
         [DidCommFeatureRegistry, featureRegistry],
-        [DidCommRevocationNotificationService, {} as DidCommRevocationNotificationService],
       ],
     })
     await credentialsModule.initialize(agentContext)
@@ -71,16 +66,7 @@ describe('CredentialsModule', () => {
     expect(registerMock).toHaveBeenCalledTimes(1)
     expect(registerMock).toHaveBeenCalledWith(messageHandlerRegistry, featureRegistry)
 
-    expect(featureRegistry.register).toHaveBeenCalledTimes(1)
-    expect(featureRegistry.register).toHaveBeenCalledWith(
-      new DidCommProtocol({
-        id: 'https://didcomm.org/revocation_notification/1.0',
-        roles: ['holder'],
-      }),
-      new DidCommProtocol({
-        id: 'https://didcomm.org/revocation_notification/2.0',
-        roles: ['holder'],
-      })
-    )
+    expect(featureRegistry.register).not.toHaveBeenCalled()
+    expect(messageHandlerRegistry.supportedMessageTypes).toHaveLength(0)
   })
 })

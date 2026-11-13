@@ -32,6 +32,11 @@ Base DIDComm package for [Credo](https://github.com/openwallet-foundation/credo-
 
 DIDComm v1 is the default. [DIDComm v2](https://identity.foundation/didcomm-messaging/spec/v2.0/) support is **opt-in** and experimental. See [DIDComm v2 Usage](../../docs/DIDCOMM-V2-USAGE.md) for how to enable it.
 
+Revocation Notification V1/V2 is an optional extension provided by
+`AnonCredsDidCommRevocationNotificationModule` from `@credo-ts/anoncreds/didcomm`, not by the credentials
+module. See [AnonCreds revocation notifications](../anoncreds/README.md#revocation-notifications) for
+registration and the replacement for `agent.didcomm.credentials.sendRevocationNotification`.
+
 ### Quick start
 
 In order for this module to work, we have to inject it into the agent to access agent functionality. See the example for more information.

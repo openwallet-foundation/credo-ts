@@ -1,9 +1,6 @@
+import { AckDecorator, DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
-
-import { DidCommMessage } from '../../../../../DidCommMessage'
-import { AckDecorator } from '../../../../../decorators/ack/AckDecorator'
-import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface DidCommRevocationNotificationV1MessageOptions {
   issueThread: string
