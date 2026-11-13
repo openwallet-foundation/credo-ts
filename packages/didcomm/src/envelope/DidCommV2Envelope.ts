@@ -268,7 +268,8 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
   }
 
   /**
-   * Verify a standalone DIDComm v2 signed message and return the payload in v1 shape.
+   * Verify a standalone DIDComm v2 signed message and return the payload in v1 shape, with the DID
+   * of the signer as the authenticated sender.
    *
    * Signed envelopes exist only in v2, so this is not part of the shared envelope contract. The
    * message receiver resolves this class directly for that path.
@@ -276,12 +277,12 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
   public async unpackSigned(
     agentContext: AgentContext,
     signedMessage: DidCommV2SignedMessageWire
-  ): Promise<DidCommPlaintextMessage> {
-    const { plaintext } = await this.verifySignedPlaintext(agentContext, signedMessage)
+  ): Promise<{ plaintextMessage: DidCommPlaintextMessage; signerDid: string }> {
+    const { plaintext, signerDid } = await this.verifySignedPlaintext(agentContext, signedMessage)
     agentContext.config.logger.info(
       `Verified DIDComm v2 signed message of type '${plaintext.type}' from '${plaintext.from}'`
     )
-    return normalizeV2PlaintextToV1(plaintext, agentContext.config.logger)
+    return { plaintextMessage: normalizeV2PlaintextToV1(plaintext, agentContext.config.logger), signerDid }
   }
 
   /**
