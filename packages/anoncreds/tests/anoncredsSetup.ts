@@ -57,6 +57,7 @@ import type { AnonCredsDidCommOfferCredentialFormat } from '../src/didcomm'
 import {
   AnonCredsDidCommCredentialFormatService,
   AnonCredsDidCommProofFormatService,
+  AnonCredsDidCommRevocationNotificationModule,
   AnonCredsLinkSecretBindingProvider,
 } from '../src/didcomm'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
@@ -133,6 +134,7 @@ export const getAnonCredsModules = ({
       tailsFileService: new InMemoryTailsFileService(),
       anoncreds: NativeAnoncreds,
     }),
+    anoncredsDidCommRevocationNotification: new AnonCredsDidCommRevocationNotificationModule(),
     dids: new DidsModule({
       resolvers: cheqd ? [new CheqdDidResolver()] : [new LocalDidResolver()],
       registrars: cheqd ? [new CheqdDidRegistrar()] : undefined,

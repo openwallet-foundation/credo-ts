@@ -49,16 +49,32 @@ describe('DidCommRevocationNotificationService', () => {
     expect(processor.processV2).toHaveBeenCalledWith(messageContext)
   })
 
-  test('fails explicitly when no notification processor is registered', async () => {
+  test.each(['v1', 'v2'])('warns and ignores %s notifications when no processor is registered', async (version) => {
     const agentContext = getAgentContext()
-    const messageContext = new DidCommInboundMessageContext(
-      new DidCommRevocationNotificationV1Message({ issueThread: 'opaque-thread' }),
-      { agentContext }
-    )
+    const warnSpy = vi.spyOn(logger, 'warn')
     const service = new DidCommRevocationNotificationService(logger)
 
-    await expect(service.v1ProcessRevocationNotification(messageContext)).rejects.toThrow(
-      'No revocation notification processor is registered'
+    const processing =
+      version === 'v1'
+        ? service.v1ProcessRevocationNotification(
+            new DidCommInboundMessageContext(
+              new DidCommRevocationNotificationV1Message({ issueThread: 'opaque-thread' }),
+              { agentContext }
+            )
+          )
+        : service.v2ProcessRevocationNotification(
+            new DidCommInboundMessageContext(
+              new DidCommRevocationNotificationV2Message({
+                credentialId: 'opaque-identifier',
+                revocationFormat: 'example',
+              }),
+              { agentContext }
+            )
+          )
+
+    await expect(processing).resolves.toBeUndefined()
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Ignoring revocation notification: no revocation notification processor is registered'
     )
   })
 

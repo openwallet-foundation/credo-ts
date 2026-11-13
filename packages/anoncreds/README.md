@@ -86,7 +86,9 @@ const modules = {
 
 The DIDComm package only dispatches notification messages through a protocol-neutral processor
 interface. Registering `AnonCredsDidCommRevocationNotificationModule` supplies the AnonCreds processor; without a
-processor, incoming revocation notifications fail explicitly.
+processor, incoming revocation notifications are ignored with a warning.
+
+Existing AnonCreds holders must register this module to continue processing revocation notifications.
 
 ### Legacy storage upgrades
 

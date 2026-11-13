@@ -1,4 +1,4 @@
-import { CredoError, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
+import { InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
 import type { DidCommInboundMessageContext } from '../../../../../models'
 import type { DidCommRevocationNotificationV1Message } from '../messages/DidCommRevocationNotificationV1Message'
 import { DidCommRevocationNotificationV2Message } from '../messages/DidCommRevocationNotificationV2Message'
@@ -18,7 +18,8 @@ export class DidCommRevocationNotificationService {
 
   private getProcessor(agentContext: DidCommInboundMessageContext['agentContext']) {
     if (!agentContext.dependencyManager.isRegistered(DidCommRevocationNotificationProcessorToken, true)) {
-      throw new CredoError('No revocation notification processor is registered')
+      this.logger.warn('Ignoring revocation notification: no revocation notification processor is registered')
+      return
     }
 
     return agentContext.dependencyManager.resolve<DidCommRevocationNotificationProcessor>(
@@ -35,7 +36,7 @@ export class DidCommRevocationNotificationService {
     messageContext: DidCommInboundMessageContext<DidCommRevocationNotificationV1Message>
   ): Promise<void> {
     this.logger.info('Dispatching revocation notification v1', { message: messageContext.message })
-    await this.getProcessor(messageContext.agentContext).processV1(messageContext)
+    await this.getProcessor(messageContext.agentContext)?.processV1(messageContext)
   }
 
   /**
@@ -67,6 +68,6 @@ export class DidCommRevocationNotificationService {
     messageContext: DidCommInboundMessageContext<DidCommRevocationNotificationV2Message>
   ): Promise<void> {
     this.logger.info('Dispatching revocation notification v2', { message: messageContext.message })
-    await this.getProcessor(messageContext.agentContext).processV2(messageContext)
+    await this.getProcessor(messageContext.agentContext)?.processV2(messageContext)
   }
 }
