@@ -138,6 +138,15 @@ describe('buildV2PlaintextFromMessage', () => {
     expect(v2.body).not.toHaveProperty('~transport')
   })
 
+  it('lifts ~transport return_route_thread to a top-level v2 return_route_thread header', () => {
+    const message = new DidCommTrustPingMessage({ comment: 'hi' })
+    message.setReturnRouting(ReturnRouteTypes.thread, 'thread-1')
+    const v2 = buildV2PlaintextFromMessage(message)
+    expect(v2.return_route).toBe('thread')
+    expect(v2.return_route_thread).toBe('thread-1')
+    expect(v2.body).not.toHaveProperty('~transport')
+  })
+
   it('maps ~please_ack to a please_ack header for the current message', () => {
     const message = new DidCommTrustPingMessage({ comment: 'hi' })
     message.setPleaseAck()
