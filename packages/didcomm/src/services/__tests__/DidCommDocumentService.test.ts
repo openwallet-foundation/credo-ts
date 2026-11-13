@@ -275,6 +275,30 @@ describe('DidCommDocumentService', () => {
       expect(resolved[0].routingKeys[0].equals(ed25519Key)).toBe(true)
     })
 
+    test('resolves one service per serviceEndpoint entry of a DIDComm v2 service, in order', async () => {
+      const aliceDoc = new DidDocument({
+        id: 'did:example:alice',
+        service: [
+          new NewDidCommV2Service({
+            id: 'did:example:alice#dm',
+            serviceEndpoint: [
+              new NewDidCommV2ServiceEndpoint({ uri: 'https://primary.example/didcomm' }),
+              new NewDidCommV2ServiceEndpoint({ uri: 'wss://fallback.example/didcomm' }),
+            ],
+          }),
+        ],
+      })
+      mockFunction(didResolverService.resolveDidDocument).mockResolvedValue(aliceDoc)
+
+      const resolved = await didCommDocumentService.resolveServicesFromDid(agentContext, 'did:example:alice')
+
+      expect(resolved.map((service) => service.serviceEndpoint)).toEqual([
+        'https://primary.example/didcomm',
+        'wss://fallback.example/didcomm',
+      ])
+      expect(resolved.map((service) => service.id)).toEqual(['did:example:alice#dm', 'did:example:alice#dm'])
+    })
+
     test('resolves keyAgreement routing keys for a DIDComm v2 service', async () => {
       const mediatorKeyAgreementKey = Kms.PublicJwk.fromPublicKey({
         kty: 'OKP',

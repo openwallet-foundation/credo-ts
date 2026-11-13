@@ -295,25 +295,29 @@ export class DidCommDocumentService {
           recipientKeys.push(publicJwk)
         }
 
-        let routingKeyRefs: string[] = []
+        // Every serviceEndpoint entry becomes a service to try, in order of preference, so the sender
+        // can fail over between them: https://identity.foundation/didcomm-messaging/spec/v2.1/#service-endpoint
+        let endpoints: Array<{ uri?: string; routingKeys?: string[] }>
         if (didCommService.type === NewDidCommV2Service.type) {
-          const v2 = didCommService as NewDidCommV2Service
-          const se = v2.serviceEndpoint
-          const first = Array.isArray(se) ? se[0] : se
-          routingKeyRefs = first?.routingKeys ?? []
+          const serviceEndpoint = (didCommService as NewDidCommV2Service).serviceEndpoint
+          endpoints = Array.isArray(serviceEndpoint) ? serviceEndpoint : [serviceEndpoint]
         } else {
-          routingKeyRefs = (didCommService as DidCommV2Service).routingKeys ?? []
+          endpoints = [
+            {
+              uri:
+                typeof didCommService.serviceEndpoint === 'string'
+                  ? didCommService.serviceEndpoint
+                  : (didCommService.serviceEndpoint as { uri?: string })?.uri,
+              routingKeys: (didCommService as DidCommV2Service).routingKeys,
+            },
+          ]
         }
-        const endpoint =
-          'firstServiceEndpointUri' in didCommService
-            ? (didCommService as NewDidCommV2Service).firstServiceEndpointUri
-            : typeof didCommService.serviceEndpoint === 'string'
-              ? didCommService.serviceEndpoint
-              : (didCommService.serviceEndpoint as { uri?: string })?.uri
-        if (endpoint) {
-          const routingKeys = await this.resolveRoutingKeyReferences(agentContext, routingKeyRefs)
-          const expanded = this.expandV2EndpointIfRoutingDid(agentContext, endpoint, routingKeys, true) ?? {
-            endpoint,
+
+        for (const { uri, routingKeys: routingKeyRefs } of endpoints) {
+          if (!uri) continue
+          const routingKeys = await this.resolveRoutingKeyReferences(agentContext, routingKeyRefs ?? [])
+          const expanded = this.expandV2EndpointIfRoutingDid(agentContext, uri, routingKeys, true) ?? {
+            endpoint: uri,
             routingKeys,
           }
           resolvedServices.push({
