@@ -281,9 +281,6 @@ importers:
       '@changesets/cli':
         specifier: ^3.0.3
         version: 3.0.3
-      '@credo-ts/action-menu':
-        specifier: workspace:*
-        version: link:packages/action-menu
       '@credo-ts/anoncreds':
         specifier: workspace:*
         version: link:packages/anoncreds
@@ -305,9 +302,6 @@ importers:
       '@credo-ts/drizzle-storage':
         specifier: workspace:*
         version: link:packages/drizzle-storage
-      '@credo-ts/drpc':
-        specifier: workspace:*
-        version: link:packages/drpc
       '@credo-ts/hedera':
         specifier: workspace:*
         version: link:packages/hedera
@@ -320,9 +314,6 @@ importers:
       '@credo-ts/openid4vc':
         specifier: workspace:*
         version: link:packages/openid4vc
-      '@credo-ts/question-answer':
-        specifier: workspace:*
-        version: link:packages/question-answer
       '@credo-ts/react-native':
         specifier: workspace:*
         version: link:packages/react-native
@@ -526,34 +517,6 @@ importers:
       vite-node:
         specifier: ^6.0.0
         version: 6.0.0(@types/node@22.20.4)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
-
-  packages/action-menu:
-    dependencies:
-      '@credo-ts/core':
-        specifier: workspace:*
-        version: link:../core
-      '@credo-ts/didcomm':
-        specifier: workspace:*
-        version: link:../didcomm
-      class-transformer:
-        specifier: 'catalog:'
-        version: 0.5.1
-      class-validator:
-        specifier: 'catalog:'
-        version: 0.14.3
-      rxjs:
-        specifier: 'catalog:'
-        version: 7.8.2
-      zod:
-        specifier: 'catalog:'
-        version: 4.6.7
-    devDependencies:
-      reflect-metadata:
-        specifier: 'catalog:'
-        version: 0.2.2
-      typescript:
-        specifier: 'catalog:'
-        version: '@typescript/typescript6@6.0.2'
 
   packages/anoncreds:
     dependencies:
@@ -893,9 +856,6 @@ importers:
 
   packages/drizzle-storage:
     dependencies:
-      '@credo-ts/action-menu':
-        specifier: workspace:*
-        version: link:../action-menu
       '@credo-ts/anoncreds':
         specifier: workspace:*
         version: link:../anoncreds
@@ -905,15 +865,9 @@ importers:
       '@credo-ts/didcomm':
         specifier: workspace:*
         version: link:../didcomm
-      '@credo-ts/drpc':
-        specifier: workspace:*
-        version: link:../drpc
       '@credo-ts/openid4vc':
         specifier: workspace:*
         version: link:../openid4vc
-      '@credo-ts/question-answer':
-        specifier: workspace:*
-        version: link:../question-answer
       '@credo-ts/tenants':
         specifier: workspace:*
         version: link:../tenants
@@ -951,34 +905,6 @@ importers:
       pg:
         specifier: ^8.23.1
         version: 8.23.1
-      typescript:
-        specifier: 'catalog:'
-        version: '@typescript/typescript6@6.0.2'
-
-  packages/drpc:
-    dependencies:
-      '@credo-ts/core':
-        specifier: workspace:*
-        version: link:../core
-      '@credo-ts/didcomm':
-        specifier: workspace:*
-        version: link:../didcomm
-      class-transformer:
-        specifier: 'catalog:'
-        version: 0.5.1
-      class-validator:
-        specifier: 'catalog:'
-        version: 0.14.3
-      zod:
-        specifier: 'catalog:'
-        version: 4.6.7
-    devDependencies:
-      '@credo-ts/node':
-        specifier: workspace:*
-        version: link:../node
-      reflect-metadata:
-        specifier: 'catalog:'
-        version: 0.2.2
       typescript:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'
@@ -1133,37 +1059,6 @@ importers:
       nock:
         specifier: 'catalog:'
         version: 15.0.5(supports-color@8.1.1)
-      typescript:
-        specifier: 'catalog:'
-        version: '@typescript/typescript6@6.0.2'
-
-  packages/question-answer:
-    dependencies:
-      '@credo-ts/core':
-        specifier: workspace:*
-        version: link:../core
-      '@credo-ts/didcomm':
-        specifier: workspace:*
-        version: link:../didcomm
-      class-transformer:
-        specifier: 'catalog:'
-        version: 0.5.1
-      class-validator:
-        specifier: 'catalog:'
-        version: 0.14.3
-      rxjs:
-        specifier: 'catalog:'
-        version: 7.8.2
-      zod:
-        specifier: 'catalog:'
-        version: 4.6.7
-    devDependencies:
-      '@credo-ts/node':
-        specifier: workspace:*
-        version: link:../node
-      reflect-metadata:
-        specifier: 'catalog:'
-        version: 0.2.2
       typescript:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'
