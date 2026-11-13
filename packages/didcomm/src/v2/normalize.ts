@@ -48,10 +48,11 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?:
     from_prior,
   } = v2
 
-  // Unknown headers are ignored (spec v2.1 Message Headers) and v2 has no ~ decorators
+  // Unknown headers are ignored (spec v2.1 Message Headers) and v2 has no ~ decorators.
+  // The v1 shape has no place for these body fields, so they are lost. The warning is the only trace.
   const droppedBodyKeys = Object.keys(body ?? {}).filter((key) => key.startsWith('~') || reservedBodyKeys.includes(key))
   if (droppedBodyKeys.length > 0) {
-    logger?.debug('Dropped DIDComm v2 body keys that clash with v1 header or decorator names', {
+    logger?.warn('Dropped DIDComm v2 body keys that clash with v1 header or decorator names', {
       type,
       droppedBodyKeys,
     })
