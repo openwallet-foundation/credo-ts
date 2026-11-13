@@ -6,3 +6,4 @@ export { AnonCredsLinkSecretBindingProvider } from '../formats/AnonCredsLinkSecr
 export { composeCredentialAutoAccept, composeProofAutoAccept } from '../formats/composeAutoAccept'
 export { migrateCredentialExchangeRecordToV0_4 } from '../updates/0.3.1-0.4/credentialExchangeRecord'
 export { AnonCredsDidCommMigrationProvider } from './AnonCredsDidCommMigrationProvider'
+export { AnonCredsDidCommRevocationNotificationModule } from './AnonCredsDidCommRevocationNotificationModule'

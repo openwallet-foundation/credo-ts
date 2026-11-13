@@ -1,104 +1,41 @@
-import type { AgentContext } from '@credo-ts/core'
-import { CredoError, EventEmitter, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
+import { CredoError, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
 import type { DidCommInboundMessageContext } from '../../../../../models'
-import { DidCommConnectionRecord } from '../../../../connections'
-import type { DidCommRevocationNotificationReceivedEvent } from '../../../DidCommCredentialEvents'
-import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
-import { DidCommRevocationNotification } from '../../../models/DidCommRevocationNotification'
-import { DidCommCredentialExchangeRepository } from '../../../repository'
 import type { DidCommRevocationNotificationV1Message } from '../messages/DidCommRevocationNotificationV1Message'
 import { DidCommRevocationNotificationV2Message } from '../messages/DidCommRevocationNotificationV2Message'
 import {
-  v1ThreadRegex,
-  v2AnonCredsRevocationFormat,
-  v2AnonCredsRevocationIdentifierRegex,
-  v2IndyRevocationFormat,
-  v2IndyRevocationIdentifierRegex,
-} from '../util/revocationIdentifier'
+  type DidCommRevocationNotificationProcessor,
+  DidCommRevocationNotificationProcessorToken,
+} from './DidCommRevocationNotificationProcessor'
 import type { V2DidCommCreateRevocationNotificationMessageOptions } from './DidCommRevocationNotificationServiceOptions'
 
 @injectable()
 export class DidCommRevocationNotificationService {
-  private credentialRepository: DidCommCredentialExchangeRepository
-  private eventEmitter: EventEmitter
   private logger: Logger
 
-  public constructor(
-    credentialRepository: DidCommCredentialExchangeRepository,
-    eventEmitter: EventEmitter,
-    @inject(InjectionSymbols.Logger) logger: Logger
-  ) {
-    this.credentialRepository = credentialRepository
-    this.eventEmitter = eventEmitter
+  public constructor(@inject(InjectionSymbols.Logger) logger: Logger) {
     this.logger = logger
   }
 
-  private async processRevocationNotification(
-    agentContext: AgentContext,
-    anonCredsRevocationRegistryId: string,
-    anonCredsCredentialRevocationId: string,
-    connection: DidCommConnectionRecord,
-    comment?: string
-  ) {
-    // TODO: can we extract support for this revocation notification handler to the anoncreds module?
-    const query = {
-      anonCredsRevocationRegistryId,
-      anonCredsCredentialRevocationId,
-      connectionId: connection.id,
+  private getProcessor(agentContext: DidCommInboundMessageContext['agentContext']) {
+    if (!agentContext.dependencyManager.isRegistered(DidCommRevocationNotificationProcessorToken, true)) {
+      throw new CredoError('No revocation notification processor is registered')
     }
 
-    this.logger.trace('Getting record by query for revocation notification:', query)
-    const credentialExchangeRecord = await this.credentialRepository.getSingleByQuery(agentContext, query)
-
-    credentialExchangeRecord.revocationNotification = new DidCommRevocationNotification(comment)
-    await this.credentialRepository.update(agentContext, credentialExchangeRecord)
-
-    this.logger.trace('Emitting DidCommRevocationNotificationReceivedEvent')
-    this.eventEmitter.emit<DidCommRevocationNotificationReceivedEvent>(agentContext, {
-      type: DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
-      payload: {
-        // Clone record to prevent mutations after emitting event.
-        credentialExchangeRecord: credentialExchangeRecord.clone(),
-      },
-    })
+    return agentContext.dependencyManager.resolve<DidCommRevocationNotificationProcessor>(
+      DidCommRevocationNotificationProcessorToken
+    )
   }
 
   /**
-   * Process a received {@link DidCommRevocationNotificationV1Message}. This will create a
-   * {@link DidCommRevocationNotification} and store it in the corresponding {@link CredentialRecord}
+   * Dispatch a received {@link DidCommRevocationNotificationV1Message} to the configured processor.
    *
    * @param messageContext message context of RevocationNotificationMessageV1
    */
   public async v1ProcessRevocationNotification(
     messageContext: DidCommInboundMessageContext<DidCommRevocationNotificationV1Message>
   ): Promise<void> {
-    this.logger.info('Processing revocation notification v1', { message: messageContext.message })
-
-    // ThreadID = indy::<revocation_registry_id>::<credential_revocation_id>
-    const threadId = messageContext.message.issueThread
-
-    try {
-      const threadIdGroups = threadId.match(v1ThreadRegex)
-      if (!threadIdGroups) {
-        throw new CredoError(
-          `Incorrect revocation notification threadId format: \n${threadId}\ndoes not match\n"indy::<revocation_registry_id>::<credential_revocation_id>"`
-        )
-      }
-
-      const [, , anonCredsRevocationRegistryId, anonCredsCredentialRevocationId] = threadIdGroups
-      const comment = messageContext.message.comment
-      const connection = messageContext.assertReadyConnection()
-
-      await this.processRevocationNotification(
-        messageContext.agentContext,
-        anonCredsRevocationRegistryId,
-        anonCredsCredentialRevocationId,
-        connection,
-        comment
-      )
-    } catch (error) {
-      this.logger.warn('Failed to process revocation notification message', { error, threadId })
-    }
+    this.logger.info('Dispatching revocation notification v1', { message: messageContext.message })
+    await this.getProcessor(messageContext.agentContext).processV1(messageContext)
   }
 
   /**
@@ -122,45 +59,14 @@ export class DidCommRevocationNotificationService {
   }
 
   /**
-   * Process a received {@link DidCommRevocationNotificationV2Message}. This will create a
-   * {@link DidCommRevocationNotification} and store it in the corresponding {@link CredentialRecord}
+   * Dispatch a received {@link DidCommRevocationNotificationV2Message} to the configured processor.
    *
    * @param messageContext message context of RevocationNotificationMessageV2
    */
   public async v2ProcessRevocationNotification(
     messageContext: DidCommInboundMessageContext<DidCommRevocationNotificationV2Message>
   ): Promise<void> {
-    this.logger.info('Processing revocation notification v2', { message: messageContext.message })
-
-    const credentialId = messageContext.message.credentialId
-
-    if (![v2IndyRevocationFormat, v2AnonCredsRevocationFormat].includes(messageContext.message.revocationFormat)) {
-      throw new CredoError(
-        `Unknown revocation format: ${messageContext.message.revocationFormat}. Supported formats are indy-anoncreds and anoncreds`
-      )
-    }
-
-    try {
-      const credentialIdGroups =
-        credentialId.match(v2IndyRevocationIdentifierRegex) ?? credentialId.match(v2AnonCredsRevocationIdentifierRegex)
-      if (!credentialIdGroups) {
-        throw new CredoError(
-          `Incorrect revocation notification credentialId format: \n${credentialId}\ndoes not match\n"<revocation_registry_id>::<credential_revocation_id>"`
-        )
-      }
-
-      const [, anonCredsRevocationRegistryId, anonCredsCredentialRevocationId] = credentialIdGroups
-      const comment = messageContext.message.comment
-      const connection = messageContext.assertReadyConnection()
-      await this.processRevocationNotification(
-        messageContext.agentContext,
-        anonCredsRevocationRegistryId,
-        anonCredsCredentialRevocationId,
-        connection,
-        comment
-      )
-    } catch (error) {
-      this.logger.warn('Failed to process revocation notification message', { error, credentialId })
-    }
+    this.logger.info('Dispatching revocation notification v2', { message: messageContext.message })
+    await this.getProcessor(messageContext.agentContext).processV2(messageContext)
   }
 }
