@@ -15,6 +15,7 @@ import type { DidCommModuleConfigOptions } from './DidCommModuleConfig'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { DidCommTransportService } from './DidCommTransportService'
 import { DidCommEnvelopeRegistry, DidCommV1Envelope, DidCommV2Envelope } from './envelope'
+import { DidCommHeader } from './models/features/DidCommHeader'
 import {
   type DefaultDidCommMessagePickupProtocols,
   type DefaultDidCommProofProtocols,
@@ -122,6 +123,9 @@ function getDidcommModules<Options extends DidCommModuleConfigOptions>(options: 
   ) as unknown as DidCommModules<Options>
 }
 
+// Headers beyond the required ones that the message receiver acts on
+const DIDCOMM_V2_SUPPORTED_HEADERS = ['return_route', 'return_route_thread', 'from_prior', 'please_ack', 'ack']
+
 export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommModuleConfigOptions> implements Module {
   public readonly config: DidCommModuleConfig<Options>
   public readonly api: typeof DidCommApi<Options> = DidCommApi
@@ -227,6 +231,13 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
         )
       )
       .subscribe()
+
+    // The v2 headers the agent understands, for discover-features `header` queries
+    if (this.config.isSupported('v2')) {
+      agentContext.dependencyManager
+        .resolve(DidCommFeatureRegistry)
+        .register(...DIDCOMM_V2_SUPPORTED_HEADERS.map((id) => new DidCommHeader({ id })))
+    }
 
     await this.config.queueTransportRepository.start?.(agentContext)
 
