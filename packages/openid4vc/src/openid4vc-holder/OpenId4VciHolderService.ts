@@ -1512,10 +1512,10 @@ export class OpenId4VciHolderService {
             )
           }
 
-          mdoc.deviceKeyId = kmsKeyId
           return {
             result,
-            mdoc,
+            issuerSignedBase64Url: credential,
+            kmsKeyId,
           }
         })
       )
@@ -1532,9 +1532,9 @@ export class OpenId4VciHolderService {
 
       return {
         record: new MdocRecord({
-          credentialInstances: result.map((c) => ({
-            issuerSignedBase64Url: c.mdoc.base64Url,
-            kmsKeyId: c.mdoc.deviceKeyId,
+          credentialInstances: result.map(({ issuerSignedBase64Url, kmsKeyId }) => ({
+            issuerSignedBase64Url,
+            kmsKeyId,
           })) as MdocRecordInstances,
         }),
         notificationId,
@@ -1697,9 +1697,9 @@ export class OpenId4VciHolderService {
     agentContext: AgentContext,
     encryption: CredentialResponseEncryptionKey
   ): Promise<CredentialResponseEncryption> {
-    const publicJwk = await agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId: encryption.keyId })
+    const { publicKey } = await agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId: encryption.keyId })
     return {
-      jwk: { ...publicJwk, kid: encryption.keyId, alg: 'ECDH-ES', use: 'enc' },
+      jwk: { ...publicKey, kid: encryption.keyId, alg: 'ECDH-ES', use: 'enc' },
       enc: encryption.enc,
     }
   }

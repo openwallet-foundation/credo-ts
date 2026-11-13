@@ -1,3 +1,4 @@
+import type { IssuerSigned } from '@owf/mdoc'
 import { z } from 'zod'
 import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
@@ -102,9 +103,17 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
     }
   }
 
-  public get firstCredential(): Mdoc {
-    const mdoc = Mdoc.fromBase64Url(this.credentialInstances[0].issuerSignedBase64Url)
+  // Decoding an mdoc is expensive and getTags runs on every save, so the decoded first instance is kept.
+  #decodedFirstCredential?: { issuerSignedBase64Url: string; issuerSigned: IssuerSigned }
 
+  public get firstCredential(): Mdoc {
+    const { issuerSignedBase64Url } = this.credentialInstances[0]
+    if (this.#decodedFirstCredential?.issuerSignedBase64Url !== issuerSignedBase64Url) {
+      const { issuerSigned } = Mdoc.fromBase64Url(issuerSignedBase64Url)
+      this.#decodedFirstCredential = { issuerSignedBase64Url, issuerSigned }
+    }
+
+    const mdoc = new Mdoc(this.#decodedFirstCredential.issuerSigned)
     mdoc.deviceKeyId = this.credentialInstances[0].kmsKeyId ?? mdoc.deviceKey?.legacyKeyId
 
     return mdoc
