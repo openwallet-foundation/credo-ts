@@ -28,6 +28,7 @@ import {
   X509Module,
   X509Service,
 } from '@credo-ts/core'
+import type { Jwk } from '@openid4vc/oauth2'
 import express, { type Express } from 'express'
 import nock from 'nock'
 import { filter, firstValueFrom } from 'rxjs'
@@ -764,6 +765,141 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     // The router must end the session itself, not the fallback after the response
     expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('was not ended by the router'))
     warnSpy.mockRestore()
+  })
+
+  describe('returns a client error for an authorization response that can not be processed', () => {
+    const encode = (value: string) => TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromUtf8String(value))
+    const formBody = (response: string): RequestInit => ({
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ response }).toString(),
+    })
+
+    const expectInvalidRequest = async (url: string, request: RequestInit, errorDescription: string, status = 400) => {
+      const response = await fetch(url, { method: 'POST', ...request })
+
+      expect(response.status).toBe(status)
+      expect(await response.json()).toMatchObject({
+        error: 'invalid_request',
+        error_description: expect.stringContaining(errorDescription),
+      })
+    }
+
+    const undecodableHeader = 'Unable to decode header of encrypted JARM response.'
+    it.each<{ name: string; request: RequestInit; errorDescription: string; status?: number }>([
+      { name: 'a response that is not a jwt', request: formBody('not-a-jwt'), errorDescription: undecodableHeader },
+      {
+        name: 'a response with a header that is not json',
+        request: formBody(`${encode('not-json')}.payload.signature`),
+        errorDescription: undecodableHeader,
+      },
+      {
+        name: 'a response with a header that is not an object',
+        request: formBody(`${encode('"not-an-object"')}.payload.signature`),
+        errorDescription: undecodableHeader,
+      },
+      {
+        name: 'a response with an apv that is not base64url',
+        request: formBody(
+          `${encode(JSON.stringify({ alg: 'ECDH-ES', enc: 'A256GCM', apv: '!!!***' }))}.payload.signature`
+        ),
+        errorDescription: "Invalid 'apv' parameter",
+      },
+      {
+        name: 'a response that is not a string',
+        request: { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ response: 123 }) },
+        errorDescription: undecodableHeader,
+      },
+      {
+        name: 'a body that is not valid json',
+        request: { headers: { 'Content-Type': 'application/json' }, body: '{"response":' },
+        errorDescription: 'JSON',
+      },
+      {
+        name: 'a body with an unsupported charset',
+        request: { headers: { 'Content-Type': 'application/json; charset=latin1' }, body: '{}' },
+        errorDescription: 'unsupported charset',
+        status: 415,
+      },
+      { name: 'no body', request: {}, errorDescription: 'Missing authorization response in request body' },
+    ])('without a session for $name', async ({ request, errorDescription, status }) => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+      await expectInvalidRequest(
+        `${verificationBaseUrl}/${openIdVerifier.verifierId}/authorize`,
+        request,
+        errorDescription,
+        status
+      )
+    })
+
+    const encrypt = async (publicJwk: Jwk, payload: string) =>
+      (
+        await getOid4vcCallbacks(verifier.agent.context).encryptJwe(
+          { method: 'jwk', publicJwk, alg: 'ECDH-ES', enc: 'A256GCM' },
+          payload
+        )
+      ).jwe
+
+    it.each<{
+      name: string
+      getRequest: (encryptionJwk: Jwk) => Promise<RequestInit> | RequestInit
+      errorDescription: string
+    }>([
+      {
+        name: 'an unsupported alg',
+        getRequest: (encryptionJwk) =>
+          formBody(
+            [
+              encode(JSON.stringify({ alg: 'RSA-OAEP', enc: 'A256GCM', kid: encryptionJwk.kid })),
+              'encryptedKey',
+              'iv',
+              'ciphertext',
+              'tag',
+            ].join('.')
+          ),
+        errorDescription: 'Failed to decrypt the JARM authorization response.',
+      },
+      {
+        name: 'a header that is not json',
+        getRequest: () => formBody([encode('not-json'), 'encryptedKey', 'iv', 'ciphertext', 'tag'].join('.')),
+        errorDescription: 'Unable to parse jwt header to JSON',
+      },
+      {
+        name: 'a body that is not json',
+        getRequest: async (encryptionJwk) => formBody(await encrypt(encryptionJwk, 'not-json')),
+        errorDescription: 'Unable to parse decrypted JARM JWE body to JSON',
+      },
+      {
+        name: 'a body that is an array',
+        getRequest: async (encryptionJwk) => formBody(await encrypt(encryptionJwk, '[1,2,3]')),
+        errorDescription: 'Expected object',
+      },
+      {
+        name: 'a body that is null',
+        getRequest: async (encryptionJwk) => formBody(await encrypt(encryptionJwk, 'null')),
+        errorDescription: 'Expected object',
+      },
+      { name: 'no body', getRequest: () => ({}), errorDescription: 'Missing authorization response in request body' },
+    ])('with a session for an encrypted response with $name', async ({ getRequest, errorDescription }) => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        responseMode: 'direct_post.jwt',
+        requestSigner: { method: 'none' },
+        dcql: {
+          query: { credentials: [{ id: 'credential', format: 'mso_mdoc', meta: { doctype_value: 'doctype' } }] },
+        },
+        version: 'v1',
+      })
+
+      const { response_uri, client_metadata } = verificationSession.requestPayload
+      const encryptionJwk = client_metadata?.jwks?.keys[0]
+      if (typeof response_uri !== 'string' || !encryptionJwk) {
+        throw new Error('Expected a response_uri and an encryption jwk')
+      }
+
+      await expectInvalidRequest(response_uri, await getRequest(encryptionJwk), errorDescription)
+    })
   })
 
   it('Invalid verifier attestation in combination with dcql', async () => {
