@@ -373,6 +373,9 @@ export class OpenId4VpVerifierService {
       expiresAt,
       openId4VpVersion: version,
     })
+    for (const [key, value] of Object.entries(options.recordMetadata ?? {})) {
+      verificationSession.metadata.set(key, value)
+    }
     await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
     this.emitStateChangedEvent(agentContext, verificationSession, null)
 
@@ -754,6 +757,18 @@ export class OpenId4VpVerifierService {
       presentationExchange: pexResponse,
       dcql: dcqlResponse,
       transactionData,
+    }
+
+    try {
+      await this.config.verifiedAuthorizationResponseHandler?.({
+        agentContext,
+        verificationSession: result.verificationSession,
+        verifiedAuthorizationResponse,
+      })
+    } catch (error) {
+      result.verificationSession.errorMessage = error.message
+      await this.updateState(agentContext, result.verificationSession, OpenId4VcVerificationSessionState.Error)
+      throw error
     }
 
     result.verificationSession.authorizationResponsePayload = result.authorizationResponsePayload
