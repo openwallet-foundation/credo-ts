@@ -1,5 +1,5 @@
 ---
-'@credo-ts/webvh': major
+'@credo-ts/webvh': patch
 ---
 
 Upgrade `didwebvh-ts` to 3.1.0 (requires Node.js >=22.12.0).
