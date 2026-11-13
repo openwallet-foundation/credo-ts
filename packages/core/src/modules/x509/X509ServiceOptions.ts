@@ -51,6 +51,20 @@ export interface X509ParseOptions {
   maxContentLength?: number
 }
 
+export interface X509CertificateValidationOptions {
+  /**
+   * Key usages the certificate must have. A certificate without a Key Usage extension passes this
+   * check, as the extension is optional and its absence means the key is unrestricted.
+   */
+  requiredKeyUsages?: X509KeyUsage[]
+
+  /**
+   * Extended key usages the certificate must have. `anyExtendedKeyUsage` does not satisfy a required
+   * extended key usage.
+   */
+  requiredExtendedKeyUsages?: X509ExtendedKeyUsage[]
+}
+
 export interface X509ValidateCertificateChainOptions {
   certificateChain: EncodedX509Certificate[]
 
@@ -89,6 +103,16 @@ export interface X509ValidateCertificateChainOptions {
    * @default true
    */
   allowNonRootTrustedCertificate?: boolean
+
+  /**
+   * Additional checks on certificates in the chain.
+   */
+  validation?: {
+    /**
+     * Checks on the leaf certificate, which is `certificate` or else the first certificate in the chain.
+     */
+    leaf?: X509CertificateValidationOptions
+  }
 
   /**
    * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured

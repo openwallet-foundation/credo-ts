@@ -5,6 +5,7 @@ import { DidDocument } from '@credo-ts/core'
 import {
   createMsgCreateDidDocPayloadToSign,
   createMsgDeactivateDidDocPayloadToSign,
+  getCosmosPayerWallet,
   validateSpecCompliantPayload,
 } from '../src/dids/didCheqdUtil'
 
@@ -44,5 +45,9 @@ describe('Test Cheqd Did Utils', () => {
   it('should create MsgDeactivateDidDocPayloadToSign', async () => {
     const result = createMsgDeactivateDidDocPayloadToSign({ id: validDid }, '2.0')
     expect(result).toBeDefined()
+  })
+
+  it('should require a seed for the payer wallet', async () => {
+    await expect(getCosmosPayerWallet()).rejects.toThrow('A cosmosPayerSeed is required to write to the cheqd ledger')
   })
 })

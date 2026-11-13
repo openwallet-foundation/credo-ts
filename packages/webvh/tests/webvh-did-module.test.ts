@@ -1,7 +1,8 @@
-import { Agent } from '@credo-ts/core'
+import { Agent, DidsModuleConfig } from '@credo-ts/core'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { getAgentOptions } from '../../core/tests/helpers'
+import { WebVhDidResolver } from '../src/dids/WebVhDidResolver'
 
 import { getWebVhModules } from './setupWebVhModule'
 import { validDid } from './utils'
@@ -62,6 +63,15 @@ vi.mock('didwebvh-ts', async () => {
 describe('WebVH DID module', () => {
   let agent: Agent<ReturnType<typeof getWebVhModules>>
 
+  it('uses global caching by default and supports context scope configuration', () => {
+    const resolver = new WebVhDidResolver()
+    const config = new DidsModuleConfig({ resolvers: [resolver] })
+
+    expect(resolver.allowsCaching).toBe(true)
+    expect(config.getCacheScope('webvh')).toBe('global')
+    expect(new DidsModuleConfig({ cacheScope: { webvh: 'context' } }).getCacheScope('webvh')).toBe('context')
+  })
+
   beforeAll(async () => {
     const agentOptions = getAgentOptions('WebVH DID Module Test', {}, {}, getWebVhModules())
     agent = new Agent({ ...agentOptions, modules: { ...getWebVhModules(), inMemory: new InMemoryWalletModule() } })
@@ -103,7 +113,7 @@ describe('WebVH DID module', () => {
   })
 
   it('should resolve a webvh resource through WebVhApi', async () => {
-    const mockFetch = vi.spyOn(agent.config.agentDependencies, 'fetch').mockResolvedValue({
+    const mockFetch = vi.spyOn(agent.config, 'fetch').mockResolvedValue({
       ok: true,
       headers: {
         get: (header: string) => (header.toLowerCase() === 'content-type' ? 'application/json' : null),
@@ -116,7 +126,7 @@ describe('WebVH DID module', () => {
       'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:localhost/resources/1234'
     )
 
-    expect(mockFetch).toHaveBeenCalledWith('http://localhost/resources/1234')
+    expect(mockFetch).toHaveBeenCalledWith('http://localhost/resources/1234', expect.anything())
     expect(result).toMatchObject({
       content: { resourceType: 'schema', id: '1234' },
       contentMetadata: { contentType: 'application/json' },

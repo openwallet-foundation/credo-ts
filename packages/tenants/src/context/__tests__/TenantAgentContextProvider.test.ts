@@ -64,12 +64,12 @@ describe('TenantAgentContextProvider', () => {
 
       const tenantAgentContext = vi.fn() as unknown as AgentContext
 
-      mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
+      mockFunction(tenantRecordService.getTenantByIdForSession).mockResolvedValue(tenantRecord)
       mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
 
       const returnedAgentContext = await tenantAgentContextProvider.getAgentContextForContextCorrelationId('tenant1')
 
-      expect(tenantRecordService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
+      expect(tenantRecordService.getTenantByIdForSession).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
       expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord, {
         runInMutex: undefined,
         provisionContext: false,
@@ -87,7 +87,7 @@ describe('TenantAgentContextProvider', () => {
         status: TenantStatus.Inactive,
       })
 
-      mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
+      mockFunction(tenantRecordService.getTenantByIdForSession).mockResolvedValue(tenantRecord)
 
       await expect(tenantAgentContextProvider.getAgentContextForContextCorrelationId('tenant1')).rejects.toThrow(
         "Tenant 'tenant1' is inactive. Sessions can not be opened for inactive tenants."
@@ -107,7 +107,7 @@ describe('TenantAgentContextProvider', () => {
 
       const tenantAgentContext = vi.fn() as unknown as AgentContext
 
-      mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
+      mockFunction(tenantRecordService.getTenantByIdForSession).mockResolvedValue(tenantRecord)
       mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
 
       const returnedAgentContext = await tenantAgentContextProvider.getAgentContextForContextCorrelationId('tenant1', {
@@ -130,7 +130,7 @@ describe('TenantAgentContextProvider', () => {
 
       const tenantAgentContext = vi.fn() as unknown as AgentContext
 
-      mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
+      mockFunction(tenantRecordService.getTenantByIdForSession).mockResolvedValue(tenantRecord)
       mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
 
       const returnedAgentContext = await tenantAgentContextProvider.getContextForInboundMessage(
@@ -138,7 +138,7 @@ describe('TenantAgentContextProvider', () => {
         { contextCorrelationId: 'tenant-tenant1' }
       )
 
-      expect(tenantRecordService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
+      expect(tenantRecordService.getTenantByIdForSession).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
       expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord, {
         runInMutex: undefined,
         provisionContext: false,
@@ -173,12 +173,12 @@ describe('TenantAgentContextProvider', () => {
       const tenantAgentContext = vi.fn() as unknown as AgentContext
       mockFunction(tenantRecordService.findTenantRoutingRecordByRecipientKey).mockResolvedValue(tenantRoutingRecord)
 
-      mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
+      mockFunction(tenantRecordService.getTenantByIdForSession).mockResolvedValue(tenantRecord)
       mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
 
       const returnedAgentContext = await tenantAgentContextProvider.getContextForInboundMessage(inboundMessage)
 
-      expect(tenantRecordService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
+      expect(tenantRecordService.getTenantByIdForSession).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
       expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord, {
         runInMutex: undefined,
         provisionContext: false,

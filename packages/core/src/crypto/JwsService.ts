@@ -36,7 +36,7 @@ export class JwsService {
 
     const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
-    const key = await kms.getPublicKey({ keyId: options.keyId })
+    const { publicKey: key, backend } = await kms.getPublicKey({ keyId: options.keyId })
     assertJwkAsymmetric(key)
 
     const publicJwk = PublicJwk.fromPublicJwk(key)
@@ -77,6 +77,7 @@ export class JwsService {
       algorithm: alg,
       data: TypedArrayEncoder.fromUtf8String(`${base64UrlProtectedHeader}.${base64Payload}`),
       keyId: options.keyId,
+      backend,
     })
     const signature = TypedArrayEncoder.toBase64Url(signResult.signature)
 
@@ -280,9 +281,9 @@ export class JwsService {
     }
   ) {
     const { jwsSigner } = options
-    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
     if (jwsSigner.method === 'x5c') {
+      const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
       const trustedCertificatesFromConfig = x509ModuleConfig.trustedCertificates ?? []
       const trustedCertificates = options.trustedCertificates ?? trustedCertificatesFromConfig
       if (trustedCertificates.length === 0) {

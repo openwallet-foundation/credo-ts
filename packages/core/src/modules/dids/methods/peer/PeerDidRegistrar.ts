@@ -47,7 +47,7 @@ export class PeerDidRegistrar implements DidRegistrar {
             },
           ]
         } else {
-          const _publicJwk = await kms.getPublicKey({
+          const { publicKey: _publicJwk } = await kms.getPublicKey({
             keyId: options.options.keyId,
           })
 
@@ -138,7 +138,7 @@ export class PeerDidRegistrar implements DidRegistrar {
         tags: {
           // We need to save the recipientKeys, so we can find the associated did
           // of a key when we receive a message from another connection.
-          recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+          recipientKeyFingerprints: didDocument.allDidCommRecipientKeys.map((key) => key.fingerprint),
           alternativeDids: getAlternativeDidsForPeerDid(did),
         },
       })

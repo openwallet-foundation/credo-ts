@@ -3,15 +3,24 @@ import { MediaTypes, StatusType } from '@owf/token-status-list'
 import nock from 'nock'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, P256PublicJwk, PublicJwk } from '../../kms'
-import { TokenStatusListApi } from '../../token-status-list'
+import { TokenStatusListApi, TokenStatusListModuleConfig } from '../../token-status-list'
+import { X509ExtendedKeyUsage, X509KeyUsage } from '../../x509/X509Certificate'
 import { X509ModuleConfig } from '../../x509/X509ModuleConfig'
 import { X509Service } from '../../x509/X509Service'
+import type { X509CertificateExtensionsOptions } from '../../x509/X509ServiceOptions'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
+import { assertMdocStatusSignerKeyPurpose } from '../mdocUtil'
 import { sprindFunkeTestVectorBase64Url, sprindFunkeX509TrustedCertificate } from './mdoc.fixtures'
 
 const agentConfig = getAgentConfig('mdoc')
-const agentContext = getAgentContext({ registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]], agentConfig })
+const agentContext = getAgentContext({
+  registerInstances: [
+    [X509ModuleConfig, new X509ModuleConfig()],
+    [TokenStatusListModuleConfig, new TokenStatusListModuleConfig()],
+  ],
+  agentConfig,
+})
 
 const getNextMonth = () => {
   const now = new Date()
@@ -768,6 +777,137 @@ describe('mdoc service test', () => {
       isValid: false,
       error:
         'Trusted status list chain does not match the trusted issuance chain, and no trusted status certificates were provided for the trusted issuance certificate',
+    })
+  })
+
+  describe('with the status signing key purpose required', () => {
+    const signMdocWithStatusListSigner = async (statusCertificate: typeof certificate, path: string) => {
+      const statusListUri = `https://example.org/token-status-list/${path}`
+      const { statusList } = await tokenStatusList.createTokenStatusList({
+        format: 'cwt',
+        signer: { method: 'x5c', x5c: [statusCertificate] },
+        alg: KnownJwaSignatureAlgorithms.ES256,
+        statusList: { statusListLength: 10, bitsPerStatus: 1 },
+        statusListUri,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      })
+
+      nock('https://example.org')
+        .persist()
+        .get(`/token-status-list/${path}`)
+        .reply(200, Buffer.from(statusList as Uint8Array), { 'Content-Type': MediaTypes.StatusListCwt })
+
+      return Mdoc.sign(agentContext, {
+        docType: 'org.iso.18013.5.1.mDL',
+        holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+        namespaces: { hello: { world: 'world' } },
+        issuerCertificate: certificate,
+        validityInfo: { validUntil: nextDay },
+        statusInfo: { index: 1, uri: statusListUri },
+      })
+    }
+
+    const createStatusCertificate = async (extensions?: X509CertificateExtensionsOptions) => {
+      const statusKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const statusCertificate = await X509Service.createCertificate(agentContext, {
+        authorityKey: PublicJwk.fromPublicJwk(statusKey.publicJwk),
+        validity: { notBefore: currentDate, notAfter: nextDay },
+        issuer: 'C=DE',
+        extensions,
+      })
+      statusCertificate.keyId = statusKey.keyId
+      return statusCertificate
+    }
+
+    beforeEach(() => {
+      agentContext.dependencyManager.registerInstance(
+        TokenStatusListModuleConfig,
+        new TokenStatusListModuleConfig({ requireStatusSigningKeyPurpose: true })
+      )
+    })
+
+    afterEach(() => {
+      agentContext.dependencyManager.registerInstance(TokenStatusListModuleConfig, new TokenStatusListModuleConfig())
+    })
+
+    test('verify succeeds when the status list signer has the extended key usage', async () => {
+      const statusCertificate = await createStatusCertificate({
+        extendedKeyUsage: { usages: [X509ExtendedKeyUsage.OauthStatusSigning] },
+      })
+      const mdoc = await signMdocWithStatusListSigner(statusCertificate, 'key-purpose-allowed')
+
+      const result = await mdoc.verify(agentContext, {
+        trustedCertificates: [
+          { issuance: [certificate.toString('base64')], status: [statusCertificate.toString('base64')] },
+        ],
+      })
+
+      expect(result.isValid).toBe(true)
+    })
+
+    test('verify fails when the status list signer does not have the extended key usage', async () => {
+      const statusCertificate = await createStatusCertificate()
+      const mdoc = await signMdocWithStatusListSigner(statusCertificate, 'key-purpose-rejected')
+
+      const result = await mdoc.verify(agentContext, {
+        trustedCertificates: [
+          { issuance: [certificate.toString('base64')], status: [statusCertificate.toString('base64')] },
+        ],
+      })
+
+      expect(result).toEqual({
+        isValid: false,
+        error:
+          "The status list signer certificate does not have the required key purpose. Certificate 'C=DE' does not have the required extended key usages: OauthStatusSigning (1.3.6.1.5.5.7.3.45)",
+      })
+    })
+
+    test('verify fails when the key usage of the status list signer excludes signing', async () => {
+      const statusCertificate = await createStatusCertificate({
+        extendedKeyUsage: { usages: [X509ExtendedKeyUsage.OauthStatusSigning] },
+        keyUsage: { usages: [X509KeyUsage.KeyEncipherment] },
+      })
+      const mdoc = await signMdocWithStatusListSigner(statusCertificate, 'key-purpose-key-usage')
+
+      const result = await mdoc.verify(agentContext, {
+        trustedCertificates: [
+          { issuance: [certificate.toString('base64')], status: [statusCertificate.toString('base64')] },
+        ],
+      })
+
+      expect(result).toEqual({
+        isValid: false,
+        error:
+          "The status list signer certificate does not have the required key purpose. Certificate 'C=DE' does not have the required key usages: DigitalSignature",
+      })
+    })
+
+    test('the identifier list signer needs the extended key usage', async () => {
+      const withoutKeyPurpose = await createStatusCertificate()
+      const withKeyPurpose = await createStatusCertificate({
+        extendedKeyUsage: { usages: [X509ExtendedKeyUsage.OauthStatusSigning] },
+      })
+
+      const assertIdentifierListSigner = (signer: typeof certificate) =>
+        assertMdocStatusSignerKeyPurpose(agentContext, {
+          trustedIssuanceChain: [certificate.rawCertificate],
+          trustedIdentifierListChain: [signer.rawCertificate],
+        })
+
+      expect(() => assertIdentifierListSigner(withoutKeyPurpose)).toThrow(
+        "The identifier list signer certificate does not have the required key purpose. Certificate 'C=DE' does not have the required extended key usages: OauthStatusSigning (1.3.6.1.5.5.7.3.45)"
+      )
+      expect(() => assertIdentifierListSigner(withKeyPurpose)).not.toThrow()
+    })
+
+    test('verify succeeds without the extended key usage when signed with the issuance certificate', async () => {
+      const mdoc = await signMdocWithStatusListSigner(certificate, 'key-purpose-same-certificate')
+
+      const result = await mdoc.verify(agentContext, {
+        trustedCertificates: [{ issuance: [certificate.toString('base64')] }],
+      })
+
+      expect(result.isValid).toBe(true)
     })
   })
 

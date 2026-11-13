@@ -1,0 +1,133 @@
+import type { Logger } from '@credo-ts/core'
+import type { DidCommPlaintextMessage } from '../types'
+import { getFormatAttachmentKey, mapV2AttachmentToV1 } from './plaintextBuilder'
+import type { DidCommV2PlaintextMessage } from './types'
+
+const reservedBodyKeys = [
+  '@id',
+  '@type',
+  'from',
+  'to',
+  'from_prior',
+  'ack',
+  'lang',
+  // class-transformer also binds a decorator from its property name, not only from its ~ key
+  'service',
+  'timing',
+  'thread',
+  'transport',
+  'pleaseAck',
+  'l10n',
+  'appendedAttachments',
+]
+
+/**
+ * Normalize a DIDComm v2 plaintext message to v1 shape so existing handlers work.
+ * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→lang and ~l10n, please_ack→~please_ack, ack→ack, attachments→~attach (or formats + the named *~attach array for 2.0 credential and proof messages), created_time/expires_time→~timing.
+ * This allows v2 plaintext to be processed by v1 message handlers without changes.
+ *
+ * @param v2 - The DIDComm v2 plaintext message
+ * @returns A v1-shaped plaintext message suitable for transformAndValidate and handler dispatch
+ */
+export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?: Logger): DidCommPlaintextMessage {
+  const {
+    type,
+    id,
+    from,
+    to,
+    thid,
+    pthid,
+    body,
+    lang,
+    attachments,
+    created_time,
+    expires_time,
+    return_route,
+    please_ack,
+    ack,
+    from_prior,
+  } = v2
+
+  // Unknown headers are ignored (spec v2.1 Message Headers) and v2 has no ~ decorators
+  const droppedBodyKeys = Object.keys(body ?? {}).filter((key) => key.startsWith('~') || reservedBodyKeys.includes(key))
+  if (droppedBodyKeys.length > 0) {
+    logger?.debug('Dropped DIDComm v2 body keys that clash with v1 header or decorator names', {
+      type,
+      droppedBodyKeys,
+    })
+  }
+  const bodyFields = Object.fromEntries(Object.entries(body ?? {}).filter(([key]) => !droppedBodyKeys.includes(key)))
+
+  const v1: DidCommPlaintextMessage = {
+    ...bodyFields,
+    '@type': type,
+    '@id': id,
+  }
+
+  if (from !== undefined) v1.from = from
+  if (to !== undefined) v1.to = to
+  if (from_prior !== undefined) v1.from_prior = from_prior
+  if (ack !== undefined) v1.ack = ack
+
+  if (thid !== undefined || pthid !== undefined) {
+    const thread: { thid?: string; pthid?: string } = {}
+    if (thid !== undefined) thread.thid = thid
+    if (pthid !== undefined) thread.pthid = pthid
+    v1['~thread'] = thread
+  }
+
+  if (lang !== undefined) {
+    v1.lang = lang
+    v1['~l10n'] = { locale: lang }
+  }
+
+  if (Array.isArray(please_ack) && (please_ack.includes('') || please_ack.includes(id))) {
+    v1['~please_ack'] = { on: ['RECEIPT'] }
+  }
+
+  const formatAttachmentKey = getFormatAttachmentKey(type)
+  // Assumes any attachment with a format on a 2.0 credential or proof message is a protocol format attachment
+  const formatAttachments =
+    formatAttachmentKey && Array.isArray(attachments)
+      ? attachments.filter((attachment) => attachment.format !== undefined)
+      : []
+  if (formatAttachmentKey) {
+    if (formatAttachments.length > 0) {
+      v1.formats = [
+        ...(Array.isArray(bodyFields.formats) ? bodyFields.formats : []),
+        ...formatAttachments.map((attachment) => ({ attach_id: attachment.id, format: attachment.format })),
+      ]
+    }
+    v1[formatAttachmentKey] = [
+      ...(Array.isArray(bodyFields[formatAttachmentKey]) ? bodyFields[formatAttachmentKey] : []),
+      ...formatAttachments.map((attachment) => mapV2AttachmentToV1({ ...attachment, format: undefined })),
+    ]
+  }
+
+  const otherAttachments = Array.isArray(attachments)
+    ? attachments.filter((attachment) => !formatAttachments.includes(attachment))
+    : []
+  if (otherAttachments.length > 0) {
+    v1['~attach'] = otherAttachments.map(mapV2AttachmentToV1)
+  }
+
+  if (return_route !== undefined) {
+    v1['~transport'] = { return_route }
+  }
+
+  // The headers become the ~timing decorator and nothing else, so a body field with the same name stays protocol data
+  const timing: Record<string, string> = {}
+  const createdDate = secondsToDate(created_time)
+  if (createdDate) timing.out_time = createdDate.toISOString()
+  const expiresDate = secondsToDate(expires_time)
+  if (expiresDate) timing.expires_time = expiresDate.toISOString()
+  if (Object.keys(timing).length > 0) v1['~timing'] = timing
+
+  return v1
+}
+
+function secondsToDate(seconds: unknown): Date | undefined {
+  if (typeof seconds !== 'number') return undefined
+  const date = new Date(seconds * 1000)
+  return Number.isNaN(date.getTime()) ? undefined : date
+}

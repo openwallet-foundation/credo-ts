@@ -12,7 +12,7 @@ export interface DidCommMessageHandler {
  * of a handler. It takes all possible types from `supportedMessageTypes`
  *
  * @example
- * async handle(messageContext: DidCommMessageHandlerInboundMessage<BasicMessageHandler>) {}
+ * async handle(messageContext: DidCommMessageHandlerInboundMessage<DidCommBasicMessageHandler>) {}
  */
 export type DidCommMessageHandlerInboundMessage<H extends DidCommMessageHandler> = DidCommInboundMessageContext<
   InstanceType<H['supportedMessages'][number]>

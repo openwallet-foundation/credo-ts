@@ -1,4 +1,9 @@
-import type { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from '@credo-ts/didcomm'
+import type {
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
+  DidCommHandshakeProtocol,
+  DidCommVersion,
+} from '@credo-ts/didcomm'
 import { integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
@@ -25,6 +30,7 @@ export const didcommConnection = sqliteTable(
 
     errorMessage: text('error_message'),
     protocol: text('protocol').$type<DidCommHandshakeProtocol>(),
+    didcommVersion: text('didcomm_version').$type<DidCommVersion>(),
 
     // Using JSON for array storage
     connectionTypes: text('connection_types', { mode: 'json' }).$type<string[]>(),

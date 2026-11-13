@@ -1,11 +1,11 @@
-import { AnonCredsModule, parseIndyDid, parseIndySchemaId } from '@credo-ts/anoncreds'
+import { AnonCredsModule } from '@credo-ts/anoncreds'
 import { Agent, DidsModule, TypedArrayEncoder } from '@credo-ts/core'
+import { parseIndyDid } from '@credo-ts/indy-vdr'
+import { getIndyLedgerSchemaId, IndyVdrAnonCredsRegistry, parseIndySchemaId } from '@credo-ts/indy-vdr/anoncreds'
 import { GetSchemaRequest, indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { NativeAnoncreds } from '../../anoncreds/tests/helpers'
 import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
-import { IndyVdrIndyDidResolver, IndyVdrModule, IndyVdrSovDidResolver } from '../src'
-import { IndyVdrAnonCredsRegistry } from '../src/anoncreds/IndyVdrAnonCredsRegistry'
-import { getIndyLedgerSchemaId } from '../src/anoncreds/utils/identifiers'
+import { IndyVdrIndyDidResolver, IndyVdrModule } from '../src'
 import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrPoolService } from '../src/pool'
@@ -50,7 +50,7 @@ const endorser = new Agent(
       }),
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
-        resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
+        resolvers: [new IndyVdrIndyDidResolver()],
       }),
     }
   )
@@ -72,7 +72,7 @@ const agent = new Agent(
       }),
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
-        resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
+        resolvers: [new IndyVdrIndyDidResolver()],
       }),
     }
   )

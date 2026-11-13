@@ -707,6 +707,26 @@ describe.each(testCases)('drizzle adapter for $name', ({ drizzleRecord, createRe
 
     expect(columnsWithoutValue).toEqual([])
   })
+
+  test('stores objects in json columns', () => {
+    const values = adapter.getValuesWithBase(agentContext, createTestRecord())
+    const sqliteColumns = getTableColumns(adapter.table.sqlite)
+    const postgresColumns = getTableColumns(adapter.table.postgres)
+
+    const objectColumns = Object.keys(values).filter(
+      (columnName) =>
+        values[columnName] !== null && typeof values[columnName] === 'object' && !(values[columnName] instanceof Date)
+    )
+
+    expect(objectColumns.filter((columnName) => sqliteColumns[columnName]?.dataType !== 'json')).toEqual([])
+    expect(
+      objectColumns.filter(
+        (columnName) =>
+          postgresColumns[columnName]?.dataType !== 'json' &&
+          !(postgresColumns[columnName]?.dataType === 'array' && Array.isArray(values[columnName]))
+      )
+    ).toEqual([])
+  })
 })
 
 describe('validateRecordMapping', () => {

@@ -482,7 +482,8 @@ describe('Present Proof', () => {
   })
 
   test('Verifier sends a proof request with an expiry time', async () => {
-    const expiresTime = new Date(Date.now() + 30 * 60 * 1000)
+    // Whole seconds, the DIDComm v2 expires_time header has no milliseconds
+    const expiresTime = new Date(Math.floor(Date.now() / 1000 + 30 * 60) * 1000)
 
     const verifierProofExchangeRecord = await verifierAgent.didcomm.proofs.requestProof({
       connectionId: verifierProverConnectionId,

@@ -74,4 +74,33 @@ describe('KeyManagementApi backend selection', () => {
     expect(backend1.createKey).toHaveBeenCalled()
     expect(backend2.createKey).not.toHaveBeenCalled()
   })
+
+  test('skips the key lookup when the other backends decline the key by its id', async () => {
+    const mine = Object.assign(createMockBackend('mine'), {
+      getPublicKey: vi.fn(),
+      sign: vi.fn().mockResolvedValue({ signature: new Uint8Array() }),
+      decrypt: vi.fn().mockResolvedValue({ data: new Uint8Array() }),
+    })
+    const other = Object.assign(createMockBackend('other'), { getPublicKey: vi.fn() })
+    other.isOperationSupported.mockImplementation((_, operation) => operation.keyId !== 'my-key')
+    const kms = new KeyManagementApi(new KeyManagementModuleConfig({ backends: [other, mine] }), agentContext)
+
+    await kms.sign({ keyId: 'my-key', algorithm: 'ES256', data: new Uint8Array([1]) })
+    await kms.decrypt({
+      key: { keyId: 'my-key' },
+      decryption: { algorithm: 'A256GCM', iv: new Uint8Array(12), tag: new Uint8Array(16) },
+      encrypted: new Uint8Array([1]),
+    })
+
+    expect(mine.sign).toHaveBeenCalled()
+    expect(mine.decrypt).toHaveBeenCalled()
+    expect(mine.getPublicKey).not.toHaveBeenCalled()
+    expect(other.getPublicKey).not.toHaveBeenCalled()
+
+    await expect(
+      kms.sign({ keyId: 'my-key', backend: 'other', algorithm: 'ES256', data: new Uint8Array([1]) })
+    ).rejects.toThrow(
+      "Key management service backend 'other' does not support 'sign' operation with algorithm 'ES256' and key 'my-key'"
+    )
+  })
 })

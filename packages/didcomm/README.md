@@ -30,6 +30,8 @@
 
 Base DIDComm package for [Credo](https://github.com/openwallet-foundation/credo-ts.git). Adds all [DIDComm v1](https://hyperledger.github.io/aries-rfcs/latest/concepts/0005-didcomm/) Core protocols, such as Connections, Out-of-Band, Discover Features, Mediation Coordination, Message Pickup, Proofs and Credentials as defined in [Aries RFCs](https://github.com/hyperledger/aries-rfcs/tree/main/features).
 
+DIDComm v1 is the default. [DIDComm v2](https://identity.foundation/didcomm-messaging/spec/v2.0/) support is **opt-in** and experimental. See [DIDComm v2 Usage](../../docs/DIDCOMM-V2-USAGE.md) for how to enable it.
+
 ### Quick start
 
 In order for this module to work, we have to inject it into the agent to access agent functionality. See the example for more information.

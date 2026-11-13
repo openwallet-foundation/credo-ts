@@ -8,7 +8,7 @@ import { AskarModule } from '@credo-ts/askar'
 import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule, CheqdModuleConfig } from '@credo-ts/cheqd'
 import { CheqdAnonCredsRegistry } from '@credo-ts/cheqd/anoncreds'
 import { Agent, DidsModule } from '@credo-ts/core'
-import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
+import type { DidCommModuleConfigOptions, DidCommVersion } from '@credo-ts/didcomm'
 import {
   DidCommAutoAcceptCredential,
   DidCommAutoAcceptProof,
@@ -20,7 +20,8 @@ import {
 import { HederaDidRegistrar, HederaDidResolver, HederaModule } from '@credo-ts/hedera'
 import { HederaAnonCredsRegistry } from '@credo-ts/hedera/anoncreds'
 import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
-import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
+import { IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
+import { IndyVdrAnonCredsRegistry } from '@credo-ts/indy-vdr/anoncreds'
 import { agentDependencies, DidCommHttpInboundTransport } from '@credo-ts/node'
 import type { HederaNetwork } from '@hiero-did-sdk/client'
 import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
@@ -40,16 +41,20 @@ export const indyNetworkConfig = {
   connectOnStartup: true,
 } satisfies IndyVdrPoolConfig
 
+const didcommVersion: DidCommVersion = process.env.DIDCOMM_VERSION === 'v2' ? 'v2' : 'v1'
+
 type DemoAgent = Agent<ReturnType<typeof getAskarAnonCredsIndyModules>>
 
 export class BaseAgent {
   public port: number
   public name: string
   public agent: DemoAgent
+  public didcommVersion: DidCommVersion
 
   public constructor({ port, name }: { port: number; name: string }) {
     this.name = name
     this.port = port
+    this.didcommVersion = didcommVersion
 
     this.agent = new Agent({
       config: {},
@@ -62,7 +67,8 @@ export class BaseAgent {
             outbound: [new DidCommHttpOutboundTransport()],
           },
         },
-        { id: name, key: name }
+        { id: name, key: name },
+        { didcommVersion }
       ),
     })
   }
@@ -70,19 +76,22 @@ export class BaseAgent {
   public async initializeAgent() {
     await this.agent.initialize()
 
-    console.log(greenText(`\nAgent ${this.name} created!\n`))
+    console.log(greenText(`\nAgent ${this.name} created! (DIDComm ${this.didcommVersion})\n`))
   }
 }
 
 function getAskarAnonCredsIndyModules(
   didcommConfig: Omit<DidCommModuleConfigOptions, 'credentials' | 'proofs' | 'connections'>,
-  askarStoreConfig: AskarModuleConfigStoreOptions
+  askarStoreConfig: AskarModuleConfigStoreOptions,
+  options?: { didcommVersion?: DidCommVersion }
 ) {
   return {
     didcomm: new DidCommModule({
       ...didcommConfig,
+      didcommVersions: [options?.didcommVersion ?? 'v1'],
       connections: {
         autoAcceptConnections: true,
+        autoCreateConnectionOnFirstMessage: true,
       },
       credentials: {
         autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,

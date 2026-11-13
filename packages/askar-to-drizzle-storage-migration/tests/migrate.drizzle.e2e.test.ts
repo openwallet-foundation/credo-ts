@@ -7,13 +7,13 @@ import {
 import {
   Agent,
   DidDocument,
+  JsonLdModule,
   JsonTransformer,
   Mdoc,
   MdocRecord,
   SdJwtVcRecord,
   TypedArrayEncoder,
   W3cCredentialRecord,
-  W3cCredentialsModule,
   W3cJsonLdVerifiableCredential,
   W3cV2CredentialRecord,
   W3cV2DataIntegrityVerifiableCredential,
@@ -220,7 +220,7 @@ describe('Askar to Drizzle Migration', () => {
           logger: testLogger,
         },
         modules: {
-          w3cCredentials: new W3cCredentialsModule({
+          jsonLd: new JsonLdModule({
             documentLoader: customDocumentLoader,
           }),
           askar: askarModule,
@@ -241,7 +241,7 @@ describe('Askar to Drizzle Migration', () => {
       await migrator.deleteStorageRecords()
 
       // It should not have deleted the keys
-      expect(await askarAgent.kms.getPublicKey({ keyId: 'consistent-kid' })).toEqual({
+      expect((await askarAgent.kms.getPublicKey({ keyId: 'consistent-kid' })).publicKey).toEqual({
         crv: 'Ed25519',
         kid: 'consistent-kid',
         kty: 'OKP',
@@ -295,7 +295,7 @@ describe('Askar to Drizzle Migration', () => {
         logger: testLogger,
       },
       modules: {
-        w3cCredentials: new W3cCredentialsModule({
+        jsonLd: new JsonLdModule({
           documentLoader: customDocumentLoader,
         }),
         askar: askarModule,
@@ -367,7 +367,7 @@ describe('Askar to Drizzle Migration', () => {
     await migrator.deleteStorageRecords()
 
     // It should not have deleted the keys
-    expect(await askarAgent.kms.getPublicKey({ keyId: 'consistent-kid' })).toEqual({
+    expect((await askarAgent.kms.getPublicKey({ keyId: 'consistent-kid' })).publicKey).toEqual({
       crv: 'Ed25519',
       kid: 'consistent-kid',
       kty: 'OKP',
