@@ -69,6 +69,25 @@ Without this option, the format's other binding methods remain available. The fo
 The auto-accept helpers `composeCredentialAutoAccept` and `composeProofAutoAccept` are available from
 `@credo-ts/anoncreds/didcomm`, not the kernel utilities.
 
+To process AnonCreds DIDComm revocation notifications, include `AnonCredsDidCommRevocationNotificationModule`
+alongside `AnonCredsModule` and the DIDComm module. This module owns AnonCreds-specific notification
+parsing and record matching:
+
+```ts
+import { AnonCredsModule } from '@credo-ts/anoncreds'
+import { AnonCredsDidCommRevocationNotificationModule } from '@credo-ts/anoncreds/didcomm'
+
+const modules = {
+  anoncreds: new AnonCredsModule({ anoncreds: NativeAnoncreds, registries: [registry] }),
+  anoncredsDidCommRevocationNotification: new AnonCredsDidCommRevocationNotificationModule(),
+  didcomm: new DidCommModule(),
+}
+```
+
+The DIDComm package only dispatches notification messages through a protocol-neutral processor
+interface. Registering `AnonCredsDidCommRevocationNotificationModule` supplies the AnonCreds processor; without a
+processor, incoming revocation notifications fail explicitly.
+
 ### Legacy storage upgrades
 
 **Only users upgrading from a version of Credo TS before v0.5.x whose stores still need legacy
