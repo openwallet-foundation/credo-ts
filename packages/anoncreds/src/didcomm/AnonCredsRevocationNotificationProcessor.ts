@@ -46,10 +46,9 @@ export class AnonCredsRevocationNotificationProcessor implements DidCommRevocati
     comment?: string
   ) {
     const query: Query<DidCommCredentialExchangeRecord> = {
-      $and: [
-        { anonCredsRevocationRegistryId: revocationRegistryId },
-        { anonCredsCredentialRevocationId: credentialRevocationId, connectionId: connection.id },
-      ],
+      anonCredsRevocationRegistryId: revocationRegistryId,
+      anonCredsCredentialRevocationId: credentialRevocationId,
+      connectionId: connection.id,
     }
 
     this.logger.trace('Getting record by query for revocation notification:', query)
