@@ -20,14 +20,18 @@ export class DidCommTransportService {
   }
 
   public saveSession(session: DidCommTransportSession) {
+    // Open sessions of the connection are kept. Each concurrent request has its own session, and the
+    // reply to a request must go to the session it came in on. Closed ones are dropped here, in case
+    // their transport didn't remove them.
     if (session.connectionId) {
-      const oldSessions = this.getExistingSessionsForConnectionIdAndType(session.connectionId, session.type)
-      for (const oldSession of oldSessions) {
-        if (oldSession && oldSession.id !== session.id) {
-          this.removeSession(oldSession)
+      for (const other of Object.values(this.transportSessionTable)) {
+        if (other?.connectionId === session.connectionId && other.id !== session.id && other.isClosed) {
+          this.removeSession(other)
         }
       }
     }
+    // Removed first, so a session that is saved again becomes the most recent one
+    delete this.transportSessionTable[session.id]
     this.transportSessionTable[session.id] = session
 
     this.eventEmitter.emit<DidCommTransportSessionSavedEvent>(this.agentContext, {
@@ -38,8 +42,27 @@ export class DidCommTransportService {
     })
   }
 
-  public findSessionByConnectionId(connectionId: string) {
-    return Object.values(this.transportSessionTable).find((session) => session?.connectionId === connectionId)
+  /**
+   * The most recently saved session of the connection that is still open. A long-lived session goes
+   * before one that answers a single request, so the response to that request is left for its own
+   * reply. Closed sessions are removed, also those of other connections.
+   *
+   * @param options.includeSingleResponse set to false to skip sessions that answer a single request
+   */
+  public findSessionByConnectionId(connectionId: string, { includeSingleResponse = true } = {}) {
+    let longLived: DidCommTransportSession | undefined
+    let singleResponse: DidCommTransportSession | undefined
+    for (const session of Object.values(this.transportSessionTable).reverse()) {
+      if (!session) continue
+
+      // Clean up old sessions that were not removed by their transport
+      if (session.isClosed) this.removeSession(session)
+      else if (session.connectionId === connectionId) {
+        if (session.isSingleResponse) singleResponse ??= session
+        else longLived ??= session
+      }
+    }
+    return longLived ?? (includeSingleResponse ? singleResponse : undefined)
   }
 
   public setConnectionIdForSession(sessionId: string, connectionId: string) {
@@ -71,12 +94,6 @@ export class DidCommTransportService {
         session,
       },
     })
-  }
-
-  private getExistingSessionsForConnectionIdAndType(connectionId: string, type: string) {
-    return Object.values(this.transportSessionTable).filter(
-      (session) => session?.connectionId === connectionId && session.type === type
-    )
   }
 }
 
@@ -116,6 +133,14 @@ export interface DidCommTransportSession {
 
   // A stored connection id used to find this session via the `DidCommTransportService` for a specific connection
   connectionId?: string
+
+  // Whether the session can no longer be used to send a message, for example because the socket closed
+  // or the request was already answered. Not set means the session is open.
+  isClosed?: boolean
+
+  // Whether the session can only carry the response to the request it was created for, like an HTTP
+  // session. Such a session is not used for the reply to another inbound message.
+  isSingleResponse?: boolean
 
   // Send an encrypted message
   send(agentContext: AgentContext, encryptedMessage: DidCommEncryptedMessage): Promise<void>

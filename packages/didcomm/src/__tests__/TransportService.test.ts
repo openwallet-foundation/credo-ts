@@ -8,16 +8,96 @@ import { DidCommDidExchangeRole } from '../modules'
 import { DummyTransportSession } from './stubs'
 
 describe('DidCommTransportService', () => {
-  describe('removeSession', () => {
-    let transportService: DidCommTransportService
+  let transportService: DidCommTransportService
 
-    beforeEach(() => {
-      transportService = new DidCommTransportService(
-        getAgentContext(),
-        new EventEmitter(agentDependencies, new Subject())
-      )
+  beforeEach(() => {
+    transportService = new DidCommTransportService(
+      getAgentContext(),
+      new EventEmitter(agentDependencies, new Subject())
+    )
+  })
+
+  function saveSession(id: string, connectionId: string) {
+    const session = new DummyTransportSession(id)
+    session.connectionId = connectionId
+    transportService.saveSession(session)
+    return session
+  }
+
+  describe('saveSession', () => {
+    test('keeps the sessions of concurrent requests on the same connection', () => {
+      const first = saveSession('request-a', 'connection-1')
+      const second = saveSession('request-b', 'connection-1')
+
+      expect(transportService.findSessionById('request-a')).toBe(first)
+      expect(transportService.findSessionById('request-b')).toBe(second)
     })
 
+    test('removes closed sessions of the same connection', () => {
+      const closed = saveSession('request-a', 'connection-1')
+      const otherConnection = saveSession('request-b', 'connection-2')
+      closed.isClosed = true
+      otherConnection.isClosed = true
+
+      saveSession('request-c', 'connection-1')
+
+      expect(transportService.findSessionById('request-a')).toBeUndefined()
+      expect(transportService.findSessionById('request-b')).toBe(otherConnection)
+    })
+  })
+
+  describe('findSessionByConnectionId', () => {
+    test('returns the most recently saved session of the connection', () => {
+      saveSession('request-a', 'connection-1')
+      const second = saveSession('request-b', 'connection-1')
+      saveSession('request-c', 'connection-2')
+
+      expect(transportService.findSessionByConnectionId('connection-1')).toBe(second)
+    })
+
+    test('returns a session that was saved again over one that was first saved later', () => {
+      const first = saveSession('socket-a', 'connection-1')
+      saveSession('socket-b', 'connection-1')
+      transportService.saveSession(first)
+
+      expect(transportService.findSessionByConnectionId('connection-1')).toBe(first)
+    })
+
+    test('skips and removes sessions that are closed', () => {
+      const first = saveSession('request-a', 'connection-1')
+      const second = saveSession('request-b', 'connection-1')
+      const otherConnection = saveSession('request-c', 'connection-2')
+      otherConnection.isClosed = true
+
+      second.isClosed = true
+      expect(transportService.findSessionByConnectionId('connection-1')).toBe(first)
+      expect(transportService.findSessionById('request-b')).toBeUndefined()
+      expect(transportService.findSessionById('request-c')).toBeUndefined()
+
+      first.isClosed = true
+      expect(transportService.findSessionByConnectionId('connection-1')).toBeUndefined()
+    })
+
+    test('returns a long-lived session over a more recent single response session', () => {
+      const longLived = saveSession('socket', 'connection-1')
+      const singleResponse = saveSession('request-a', 'connection-1')
+      singleResponse.isSingleResponse = true
+
+      expect(transportService.findSessionByConnectionId('connection-1')).toBe(longLived)
+    })
+
+    test('returns a single response session only when there is no long-lived one and it is not skipped', () => {
+      const singleResponse = saveSession('request-a', 'connection-1')
+      singleResponse.isSingleResponse = true
+
+      expect(transportService.findSessionByConnectionId('connection-1')).toBe(singleResponse)
+      expect(
+        transportService.findSessionByConnectionId('connection-1', { includeSingleResponse: false })
+      ).toBeUndefined()
+    })
+  })
+
+  describe('removeSession', () => {
     test('remove session saved for a given connection', () => {
       const connection = getMockConnection({ id: 'test-123', role: DidCommDidExchangeRole.Responder })
       const session = new DummyTransportSession('dummy-session-123')

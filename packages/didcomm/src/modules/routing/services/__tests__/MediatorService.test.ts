@@ -19,7 +19,7 @@ import { DidCommMessageSender } from '../../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import { DidCommTransportService } from '../../../../DidCommTransportService'
 import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
-import { MessageSendingError } from '../../../../errors'
+import { MessageSendingError, MessageSendingErrorCategory } from '../../../../errors'
 import type { DidCommOutboundMessageContext } from '../../../../models'
 import { DidCommInboundMessageContext } from '../../../../models/DidCommInboundMessageContext'
 import { DidCommConnectionService, DidCommDidExchangeState } from '../../../connections'
@@ -702,6 +702,7 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
   const payload = { protected: 'base64url', iv: 'base64url', ciphertext: 'base64url', tag: 'base64url' }
   const sendError = new MessageSendingError('Message is undeliverable', {
     outboundMessageContext: {} as DidCommOutboundMessageContext,
+    reason: { category: MessageSendingErrorCategory.RemoteError, attempts: [] },
   })
 
   function saveLiveSession(transportSessionId: string): void {
