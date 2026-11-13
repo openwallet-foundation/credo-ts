@@ -713,6 +713,59 @@ describe('OpenId4VcIssuer', () => {
     expect(credentialResponse.credentials).toEqual([{ credential: expect.any(String) }])
   })
 
+  it('verifies the c_nonce once for a batch of proofs', async () => {
+    const preAuthorizedCode = '1234567890'
+    const result = await issuer.openid4vc.issuer.createCredentialOffer({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationIds: [universityDegreeCredentialSdJwt.id],
+      preAuthorizedCodeFlowConfig: { preAuthorizedCode },
+    })
+
+    const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
+
+    const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
+    const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
+    const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const { proof } = (await createCredentialRequest(holder.context, {
+      credentialConfiguration: universityDegreeCredentialSdJwt,
+      issuerMetadata,
+      kid: holderKid,
+      nonce: cNonce,
+    })) as { proof: { jwt: string } }
+
+    const verifyNonce = vi.spyOn(issuerService as unknown as { verifyNonce: () => Promise<void> }, 'verifyNonce')
+    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
+      issuanceSessionId: result.issuanceSession.id,
+      parsedCredentialRequest: await parseCredentialRequestAsWallet({
+        credential_configuration_id: universityDegreeCredentialSdJwt.id,
+        proofs: { jwt: [proof.jwt, proof.jwt, proof.jwt] },
+      }),
+      authorization: {
+        authorizationServer: 'https://authorization.com',
+        accessToken: {
+          payload: { active: true, sub: 'something', 'pre-authorized_code': preAuthorizedCode },
+          value: 'the-access-token',
+        },
+      },
+      credentialRequestToCredentialMapper: ({ holderBinding }) => ({
+        type: 'credentials',
+        format: 'dc+sd-jwt',
+        credentials: holderBinding.keys.map(() => ({
+          payload: { vct: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
+          issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
+          holder: { method: 'did', didUrl: holderVerificationMethod.id },
+          disclosureFrame: { _sd: ['university', 'degree'] },
+        })),
+        credentialConfigurationId: universityDegreeCredentialSdJwt.id,
+      }),
+    })
+
+    expect(credentialResponse.credentials).toHaveLength(3)
+    expect(verifyNonce).toHaveBeenCalledTimes(1)
+  })
+
   it('pre authorized code flow (jwt-vc-json)', async () => {
     const preAuthorizedCode = '1234567890'
 

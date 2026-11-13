@@ -802,7 +802,7 @@ export class OpenId4VpVerifierService {
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
 
     const result = openid4vpVerifier.validateOpenid4vpAuthorizationResponsePayload({
-      authorizationRequestPayload: verificationSession.requestPayload,
+      authorizationRequestPayload,
       authorizationResponsePayload: openid4vpAuthorizationResponsePayload,
     })
 

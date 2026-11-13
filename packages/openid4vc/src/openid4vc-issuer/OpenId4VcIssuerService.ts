@@ -1221,18 +1221,6 @@ export class OpenId4VcIssuerService {
           })
         }
 
-        // Set previous nonce if not yet set (first iteration)
-        if (!firstNonce) firstNonce = payload.nonce
-        if (firstNonce !== payload.nonce) {
-          const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
-          throw new Oauth2ServerErrorResponseError({
-            error: Oauth2ErrorCodes.InvalidProof,
-            error_description: 'Not all nonce values in proofs are equal',
-            c_nonce: cNonce,
-            c_nonce_expires_in: cNonceExpiresInSeconds,
-          })
-        }
-
         // IF nonce is provided in the key attestation (not required with jwt proof) then
         // it MUST match with the nonce of the JWT proof
         if (keyAttestation?.payload.nonce && keyAttestation.payload.nonce !== payload.nonce) {
@@ -1243,21 +1231,32 @@ export class OpenId4VcIssuerService {
           })
         }
 
-        // Verify the nonce
-        await this.verifyNonce(agentContext, issuer, payload.nonce).catch(async (error) => {
+        // The first nonce is verified, the nonces of the other proofs must be equal to it
+        if (!firstNonce) {
+          await this.verifyNonce(agentContext, issuer, payload.nonce).catch(async (error) => {
+            const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
+            throw new Oauth2ServerErrorResponseError(
+              {
+                error: Oauth2ErrorCodes.InvalidNonce,
+                error_description: 'Invalid nonce in credential request',
+                c_nonce: cNonce,
+                c_nonce_expires_in: cNonceExpiresInSeconds,
+              },
+              {
+                cause: error,
+              }
+            )
+          })
+          firstNonce = payload.nonce
+        } else if (firstNonce !== payload.nonce) {
           const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
-          throw new Oauth2ServerErrorResponseError(
-            {
-              error: Oauth2ErrorCodes.InvalidNonce,
-              error_description: 'Invalid nonce in credential request',
-              c_nonce: cNonce,
-              c_nonce_expires_in: cNonceExpiresInSeconds,
-            },
-            {
-              cause: error,
-            }
-          )
-        })
+          throw new Oauth2ServerErrorResponseError({
+            error: Oauth2ErrorCodes.InvalidProof,
+            error_description: 'Not all nonce values in proofs are equal',
+            c_nonce: cNonce,
+            c_nonce_expires_in: cNonceExpiresInSeconds,
+          })
+        }
 
         if (keyAttestation) {
           return {
