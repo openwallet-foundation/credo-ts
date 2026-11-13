@@ -52,6 +52,7 @@ import {
 import {
   AuthorizationFlow,
   type CredentialResponse,
+  type CredentialResponseEncryption,
   type DeferredCredentialResponse,
   determineAuthorizationServerForCredentialOffer,
   type IssuerMetadataResult,
@@ -66,6 +67,12 @@ import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { getDpopOptions } from '../shared/dpop'
 import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
+import {
+  getCredentialRequestEncryption,
+  selectCredentialRequestEncryption,
+  supportedResponseEncryptionContentAlgorithms,
+  supportedResponseEncryptionKeyAgreementAlgorithms,
+} from '../shared/utils'
 import { OpenId4VcHolderModuleConfig } from './OpenId4VcHolderModuleConfig'
 import type {
   OpenId4VciAcceptCredentialOfferOptions,
@@ -87,6 +94,11 @@ import type {
   OpenId4VcParseAndVerifyAuthorizationResponseOptions,
 } from './OpenId4VciHolderServiceOptions'
 import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
+
+interface CredentialResponseEncryptionKey {
+  keyId: string
+  enc: string
+}
 
 @injectable()
 export class OpenId4VciHolderService {
@@ -504,6 +516,7 @@ export class OpenId4VciHolderService {
       credentialBindingResolver,
       verifyCredentialStatus,
       allowedProofOfPossessionSignatureAlgorithms,
+      credentialResponseEncryption: credentialResponseEncryptionMode,
     } = acceptCredentialOfferOptions
     const client = this.getClient(agentContext)
 
@@ -560,91 +573,118 @@ export class OpenId4VciHolderService {
       throw new CredoError('No cNonce provided and unable to acquire cNonce from the credential issuer')
     }
 
-    for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationsToRequest) {
-      const { proofs, jwkThumbprintKmsKeyIdMapping } = await this.getCredentialRequestOptions(agentContext, {
-        allowedProofOfPossessionAlgorithms:
-          allowedProofOfPossessionSignatureAlgorithms ??
-          agentContext.resolve(Kms.KeyManagementApi).supportedJwaSignatureAlgorithms(),
-        metadata,
-        offeredCredential: {
-          id: offeredCredentialId,
-          configuration: offeredCredentialConfiguration,
-        },
-        clientId: options.clientId,
-        // We already checked whether nonce exists above
-        cNonce: cNonce as string,
-        credentialBindingResolver,
-      })
+    const responseEncryptionEnc = this.getCredentialResponseEncryptionEnc(
+      agentContext,
+      metadata,
+      credentialResponseEncryptionMode
+    )
+    const responseEncryptions: CredentialResponseEncryptionKey[] = []
 
-      this.logger.debug('Generated credential request proof of possession', { proofs })
+    try {
+      for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationsToRequest) {
+        const { proofs, jwkThumbprintKmsKeyIdMapping } = await this.getCredentialRequestOptions(agentContext, {
+          allowedProofOfPossessionAlgorithms:
+            allowedProofOfPossessionSignatureAlgorithms ??
+            agentContext.resolve(Kms.KeyManagementApi).supportedJwaSignatureAlgorithms(),
+          metadata,
+          offeredCredential: {
+            id: offeredCredentialId,
+            configuration: offeredCredentialConfiguration,
+          },
+          clientId: options.clientId,
+          // We already checked whether nonce exists above
+          cNonce: cNonce as string,
+          credentialBindingResolver,
+        })
 
-      const proof =
-        // Draft 11 ALWAYS uses proof
-        (metadata.originalDraftVersion === Openid4vciVersion.Draft11 ||
-          // Draft 14 allows both proof and proofs. Try to use proof when it makes to improve interoperability
-          (metadata.originalDraftVersion === Openid4vciVersion.Draft14 &&
-            metadata.credentialIssuer.batch_credential_issuance === undefined)) &&
-        proofs.jwt?.length === 1
-          ? ({
-              proof_type: 'jwt',
-              jwt: proofs.jwt[0],
-            } as const)
+        this.logger.debug('Generated credential request proof of possession', { proofs })
+
+        const proof =
+          // Draft 11 ALWAYS uses proof
+          (metadata.originalDraftVersion === Openid4vciVersion.Draft11 ||
+            // Draft 14 allows both proof and proofs. Try to use proof when it makes to improve interoperability
+            (metadata.originalDraftVersion === Openid4vciVersion.Draft14 &&
+              metadata.credentialIssuer.batch_credential_issuance === undefined)) &&
+          proofs.jwt?.length === 1
+            ? ({
+                proof_type: 'jwt',
+                jwt: proofs.jwt[0],
+              } as const)
+            : undefined
+
+        const credentialResponseEncryption = responseEncryptionEnc
+          ? await this.createCredentialResponseEncryption(agentContext, responseEncryptionEnc)
           : undefined
+        if (credentialResponseEncryption) responseEncryptions.push(credentialResponseEncryption)
 
-      const { credentialResponse, dpop } = await client.retrieveCredentials({
-        issuerMetadata: metadata,
-        accessToken: options.accessToken,
-        credentialConfigurationId: offeredCredentialId,
-        dpop: options.dpop
-          ? await getDpopOptions(agentContext, {
-              ...options.dpop,
-              nonce: dpopNonce,
-              dpopSigningAlgValuesSupported: [options.dpop.alg],
-            })
-          : undefined,
-        // Only include proofs if we don't add proof
-        proofs: !proof ? proofs : undefined,
-        proof,
-      })
-
-      // Set new nonce values
-      cNonce = credentialResponse.c_nonce
-      dpopNonce = dpop?.nonce
-
-      if (credentialResponse.transaction_id) {
-        const deferredCredential = {
+        const { credentialResponse, dpop } = await client.retrieveCredentials({
+          issuerMetadata: metadata,
+          accessToken: options.accessToken,
           credentialConfigurationId: offeredCredentialId,
-          credentialConfiguration: offeredCredentialConfiguration,
-          transactionId: credentialResponse.transaction_id,
-          interval: credentialResponse.interval,
-          notificationId: credentialResponse.notification_id,
-          jwkThumbprintKmsKeyIdMapping,
+          dpop: options.dpop
+            ? await getDpopOptions(agentContext, {
+                ...options.dpop,
+                nonce: dpopNonce,
+                dpopSigningAlgValuesSupported: [options.dpop.alg],
+              })
+            : undefined,
+          // Only include proofs if we don't add proof
+          proofs: !proof ? proofs : undefined,
+          proof,
+          credentialResponseEncryption: credentialResponseEncryption
+            ? await this.getCredentialResponseEncryptionParameters(agentContext, credentialResponseEncryption)
+            : undefined,
+          credentialRequestEncryption: getCredentialRequestEncryption(
+            agentContext,
+            metadata,
+            credentialResponseEncryption !== undefined
+          ),
+        })
+
+        // Set new nonce values
+        cNonce = credentialResponse.c_nonce
+        dpopNonce = dpop?.nonce
+
+        if (credentialResponse.transaction_id) {
+          const deferredCredential = {
+            credentialConfigurationId: offeredCredentialId,
+            credentialConfiguration: offeredCredentialConfiguration,
+            transactionId: credentialResponse.transaction_id,
+            interval: credentialResponse.interval,
+            notificationId: credentialResponse.notification_id,
+            jwkThumbprintKmsKeyIdMapping,
+            credentialResponseEncryption: credentialResponseEncryptionMode,
+          }
+
+          this.logger.debug('received deferred credential', deferredCredential)
+          deferredCredentials.push(deferredCredential)
+        } else {
+          // Create credential, but we don't store it yet (only after the user has accepted the credential)
+          const credential = await this.handleCredentialResponse(agentContext, credentialResponse, {
+            verifyCredentialStatus: verifyCredentialStatus ?? false,
+            format: offeredCredentialConfiguration.format as OpenId4VciCredentialFormatProfile,
+            credentialConfigurationId: offeredCredentialId,
+            credentialConfiguration: offeredCredentialConfiguration,
+            jwkThumbprintKmsKeyIdMapping,
+          })
+
+          const firstCredential = credential.record.firstCredential
+          this.logger.debug('received credential response', {
+            firstCredential:
+              firstCredential instanceof Mdoc
+                ? {
+                    issuerSignedNamespaces: firstCredential.issuerSignedNamespaces,
+                    base64Url: firstCredential.base64Url,
+                  }
+                : firstCredential,
+            totalNumberOfCredentials: credential.record.credentialInstances.length,
+          })
+          receivedCredentials.push(credential)
         }
-
-        this.logger.debug('received deferred credential', deferredCredential)
-        deferredCredentials.push(deferredCredential)
-      } else {
-        // Create credential, but we don't store it yet (only after the user has accepted the credential)
-        const credential = await this.handleCredentialResponse(agentContext, credentialResponse, {
-          verifyCredentialStatus: verifyCredentialStatus ?? false,
-          format: offeredCredentialConfiguration.format as OpenId4VciCredentialFormatProfile,
-          credentialConfigurationId: offeredCredentialId,
-          credentialConfiguration: offeredCredentialConfiguration,
-          jwkThumbprintKmsKeyIdMapping,
-        })
-
-        const firstCredential = credential.record.firstCredential
-        this.logger.debug('received credential response', {
-          firstCredential:
-            firstCredential instanceof Mdoc
-              ? {
-                  issuerSignedNamespaces: firstCredential.issuerSignedNamespaces,
-                  base64Url: firstCredential.base64Url,
-                }
-              : firstCredential,
-          totalNumberOfCredentials: credential.record.credentialInstances.length,
-        })
-        receivedCredentials.push(credential)
+      }
+    } finally {
+      for (const encryption of responseEncryptions) {
+        await this.deleteCredentialResponseEncryptionKey(agentContext, encryption)
       }
     }
 
@@ -677,6 +717,7 @@ export class OpenId4VciHolderService {
       verifyCredentialStatus,
       accessToken,
       jwkThumbprintKmsKeyIdMapping,
+      credentialResponseEncryption: credentialResponseEncryptionMode,
     } = options
     const client = this.getClient(agentContext)
 
@@ -684,55 +725,84 @@ export class OpenId4VciHolderService {
     const deferredCredentials: Array<OpenId4VciDeferredCredentialResponse> = []
     let dpopNonce = options.dpop?.nonce
 
-    const { deferredCredentialResponse, dpop } = await client.retrieveDeferredCredentials({
-      issuerMetadata,
-      accessToken,
-      transactionId,
-      dpop: options.dpop
-        ? await getDpopOptions(agentContext, {
-            ...options.dpop,
-            nonce: dpopNonce,
-            dpopSigningAlgValuesSupported: [options.dpop.alg],
-          })
-        : undefined,
-    })
+    // Before OpenID4VCI 1.0 the deferred credential response is never encrypted. From 1.0 on each deferred
+    // credential request carries its own response encryption key, so a failed request can be retried.
+    const isV1 = issuerMetadata.originalDraftVersion === Openid4vciVersion.V1
+    if (!isV1 && credentialResponseEncryptionMode === 'required') {
+      throw new CredoError(
+        `Credential response encryption is required, but credential issuer '${issuerMetadata.credentialIssuer.credential_issuer}' uses an OpenID4VCI version before 1.0, in which the deferred credential response can't be encrypted`
+      )
+    }
+    const responseEncryptionEnc = isV1
+      ? this.getCredentialResponseEncryptionEnc(agentContext, issuerMetadata, credentialResponseEncryptionMode)
+      : undefined
+    const credentialResponseEncryption = responseEncryptionEnc
+      ? await this.createCredentialResponseEncryption(agentContext, responseEncryptionEnc)
+      : undefined
 
-    // Set new nonce values
-    dpopNonce = dpop?.nonce
-
-    if (deferredCredentialResponse.interval) {
-      const deferredCredential: OpenId4VciDeferredCredentialResponse = {
-        credentialConfigurationId,
-        credentialConfiguration,
+    try {
+      const { deferredCredentialResponse, dpop } = await client.retrieveDeferredCredentials({
+        issuerMetadata,
+        accessToken,
         transactionId,
-        interval: deferredCredentialResponse.interval,
-        notificationId: deferredCredentialResponse.notification_id,
+        dpop: options.dpop
+          ? await getDpopOptions(agentContext, {
+              ...options.dpop,
+              nonce: dpopNonce,
+              dpopSigningAlgValuesSupported: [options.dpop.alg],
+            })
+          : undefined,
+        credentialResponseEncryption: credentialResponseEncryption
+          ? await this.getCredentialResponseEncryptionParameters(agentContext, credentialResponseEncryption)
+          : undefined,
+        credentialRequestEncryption: getCredentialRequestEncryption(
+          agentContext,
+          issuerMetadata,
+          credentialResponseEncryption !== undefined
+        ),
+      })
+
+      // Set new nonce values
+      dpopNonce = dpop?.nonce
+
+      if (deferredCredentialResponse.interval) {
+        const deferredCredential: OpenId4VciDeferredCredentialResponse = {
+          credentialConfigurationId,
+          credentialConfiguration,
+          transactionId,
+          interval: deferredCredentialResponse.interval,
+          notificationId: deferredCredentialResponse.notification_id,
+          jwkThumbprintKmsKeyIdMapping,
+          credentialResponseEncryption: credentialResponseEncryptionMode,
+        }
+
+        this.logger.debug('received deferred credential', deferredCredential)
+        deferredCredentials.push(deferredCredential)
+      } else {
+        // Create credential, but we don't store it yet (only after the user has accepted the credential)
+        const credential = await this.handleCredentialResponse(agentContext, deferredCredentialResponse, {
+          verifyCredentialStatus: verifyCredentialStatus ?? false,
+          format: credentialConfiguration.format as OpenId4VciCredentialFormatProfile,
+          credentialConfigurationId: credentialConfigurationId,
+          credentialConfiguration: credentialConfiguration,
+          jwkThumbprintKmsKeyIdMapping,
+        })
+
+        const firstCredential = credential.record.firstCredential
+        this.logger.debug('received credential response', {
+          firstCredential:
+            firstCredential instanceof Mdoc
+              ? {
+                  issuerSignedNamespaces: firstCredential.issuerSignedNamespaces,
+                  base64Url: firstCredential.base64Url,
+                }
+              : firstCredential,
+          totalNumberOfCredentials: credential.record.credentialInstances.length,
+        })
+        receivedCredentials.push(credential)
       }
-
-      this.logger.debug('received deferred credential', deferredCredential)
-      deferredCredentials.push(deferredCredential)
-    } else {
-      // Create credential, but we don't store it yet (only after the user has accepted the credential)
-      const credential = await this.handleCredentialResponse(agentContext, deferredCredentialResponse, {
-        verifyCredentialStatus: verifyCredentialStatus ?? false,
-        format: credentialConfiguration.format as OpenId4VciCredentialFormatProfile,
-        credentialConfigurationId: credentialConfigurationId,
-        credentialConfiguration: credentialConfiguration,
-        jwkThumbprintKmsKeyIdMapping,
-      })
-
-      const firstCredential = credential.record.firstCredential
-      this.logger.debug('received credential response', {
-        firstCredential:
-          firstCredential instanceof Mdoc
-            ? {
-                issuerSignedNamespaces: firstCredential.issuerSignedNamespaces,
-                base64Url: firstCredential.base64Url,
-              }
-            : firstCredential,
-        totalNumberOfCredentials: credential.record.credentialInstances.length,
-      })
-      receivedCredentials.push(credential)
+    } finally {
+      await this.deleteCredentialResponseEncryptionKey(agentContext, credentialResponseEncryption)
     }
 
     return {
@@ -1569,6 +1639,82 @@ export class OpenId4VciHolderService {
     return new Openid4vciClient({
       callbacks: this.getCallbacks(agentContext, options),
     })
+  }
+
+  /**
+   * Returns the `enc` value to request an encrypted credential response with, or undefined when the
+   * response is not encrypted.
+   */
+  private getCredentialResponseEncryptionEnc(
+    agentContext: AgentContext,
+    metadata: IssuerMetadataResult,
+    mode?: 'required' | 'preferred'
+  ): string | undefined {
+    const supported = metadata.credentialIssuer.credential_response_encryption
+    const required = mode === 'required' || supported?.encryption_required === true
+    if (!mode && !required) return undefined
+
+    const issuer = metadata.credentialIssuer.credential_issuer
+    const unsupported = (reason: string) => {
+      if (required) throw new CredoError(reason)
+      this.logger.debug(`${reason}, requesting an unencrypted credential response`)
+      return undefined
+    }
+
+    if (!supported) return unsupported(`Credential issuer '${issuer}' does not support credential response encryption`)
+
+    const alg = supportedResponseEncryptionKeyAgreementAlgorithms.find((alg) =>
+      supported.alg_values_supported.includes(alg)
+    )
+    const enc = supportedResponseEncryptionContentAlgorithms.find((enc) => supported.enc_values_supported.includes(enc))
+    if (!alg || !enc) {
+      return unsupported(
+        `Credential issuer '${issuer}' does not support any of the credential response encryption algorithms supported by Credo (alg ${supportedResponseEncryptionKeyAgreementAlgorithms.join(', ')}, enc ${supportedResponseEncryptionContentAlgorithms.join(', ')})`
+      )
+    }
+
+    const requiresEncryptedRequest =
+      metadata.credentialIssuer.credential_request_encryption !== undefined ||
+      metadata.originalDraftVersion === Openid4vciVersion.V1
+    if (requiresEncryptedRequest && !selectCredentialRequestEncryption(agentContext, metadata)) {
+      return unsupported(
+        `Credential issuer '${issuer}' does not advertise a credential request encryption key supported by Credo, which credential response encryption requires`
+      )
+    }
+
+    return enc
+  }
+
+  private async createCredentialResponseEncryption(
+    agentContext: AgentContext,
+    enc: string
+  ): Promise<CredentialResponseEncryptionKey> {
+    const { keyId } = await agentContext.resolve(Kms.KeyManagementApi).createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    return { keyId, enc }
+  }
+
+  private async getCredentialResponseEncryptionParameters(
+    agentContext: AgentContext,
+    encryption: CredentialResponseEncryptionKey
+  ): Promise<CredentialResponseEncryption> {
+    const publicJwk = await agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId: encryption.keyId })
+    return {
+      jwk: { ...publicJwk, kid: encryption.keyId, alg: 'ECDH-ES', use: 'enc' },
+      enc: encryption.enc,
+    }
+  }
+
+  private async deleteCredentialResponseEncryptionKey(
+    agentContext: AgentContext,
+    encryption: CredentialResponseEncryptionKey | undefined
+  ) {
+    if (!encryption) return
+    await agentContext
+      .resolve(Kms.KeyManagementApi)
+      .deleteKey({ keyId: encryption.keyId })
+      .catch((error) => {
+        this.logger.error('Unable to delete credential response encryption key', { error })
+      })
   }
 
   private getOauth2Client(

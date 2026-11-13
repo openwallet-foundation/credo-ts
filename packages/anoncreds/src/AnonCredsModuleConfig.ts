@@ -1,8 +1,8 @@
 import type { Anoncreds } from '@hyperledger/anoncreds-shared'
 import type { AnonCredsRegistry } from './services'
 import type { TailsFileService } from './services/tails'
-
 import { BasicTailsFileService } from './services/tails'
+import type { AnonCredsMigrationProvider } from './updates/AnonCredsMigrationProvider'
 
 /**
  * The `NativeAnoncreds` class exported from `@hyperledger/anoncreds-shared` (and re-exported by the platform packages).
@@ -74,6 +74,12 @@ export interface AnonCredsModuleConfigOptions {
    * @defaultValue true
    */
   autoCreateLinkSecret?: boolean
+
+  /**
+   * Preserves DIDComm exchange links when upgrading from Credo TS before v0.5.x.
+   * Not needed for stores created with v0.5.x or later, or already migrated to storage version 0.5.
+   */
+  migrationProvider?: AnonCredsMigrationProvider
 }
 
 /**
@@ -107,5 +113,9 @@ export class AnonCredsModuleConfig {
   /** See {@link AnonCredsModuleConfigOptions.autoCreateLinkSecret} */
   public get autoCreateLinkSecret() {
     return this.options.autoCreateLinkSecret ?? true
+  }
+
+  public get migrationProvider() {
+    return this.options.migrationProvider
   }
 }
