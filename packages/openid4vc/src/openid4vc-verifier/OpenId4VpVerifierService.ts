@@ -50,7 +50,7 @@ import {
   X509ModuleConfig,
   X509Service,
 } from '@credo-ts/core'
-import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { Oauth2ErrorCodes, Oauth2JwtParseError, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
   type ClientIdPrefix,
   type ClientMetadata,
@@ -64,6 +64,8 @@ import {
   type TransactionDataHashesCredentials,
   zOpenid4vpAuthorizationResponse,
 } from '@openid4vc/openid4vp'
+import { formatZodError, JsonParseError } from '@openid4vc/utils'
+import { ZodError } from 'zod'
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import type {
   OpenId4VcVerificationTypeOid4VpCredential,
@@ -470,6 +472,17 @@ export class OpenId4VpVerifierService {
         verificationSession.authorizationResponsePayload = parsed.success ? parsed.data : undefined
         verificationSession.errorMessage = error.message
         await this.updateState(agentContext, verificationSession, OpenId4VcVerificationSessionState.Error)
+      }
+
+      // FIXME: the oid4vp library should throw an Oauth2ServerErrorResponseError for a malformed response
+      if (error instanceof Oauth2JwtParseError || error instanceof JsonParseError || error instanceof ZodError) {
+        throw new Oauth2ServerErrorResponseError(
+          {
+            error: Oauth2ErrorCodes.InvalidRequest,
+            error_description: error instanceof ZodError ? formatZodError(error) : error.message,
+          },
+          { cause: error }
+        )
       }
 
       throw error

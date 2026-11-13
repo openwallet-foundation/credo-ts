@@ -304,7 +304,6 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
 
 export function getOid4vcDecryptJweCallback(agentContext: AgentContext): DecryptJweCallback {
   return async (jwe, options) => {
-    // TODO: use custom header zod schema to limit which algorithms can be used
     const { header } = decodeJwtHeader({ jwt: jwe })
 
     // The header kid is chosen by the sender, so only decrypt with the key the caller bound to the session or request
@@ -332,21 +331,17 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
       }
     }
 
-    if (header.alg !== 'ECDH-ES') {
-      throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response decryption")
-    }
-
-    if (header.enc !== 'A256GCM' && header.enc !== 'A128GCM' && header.enc !== 'A128CBC-HS256') {
-      throw new CredoError(
-        "Only 'A256GCM', 'A128GCM', and 'A128CBC-HS256' is supported as 'enc' value for JARM response decryption"
-      )
-    }
-
     let decryptedPayload: string
 
     try {
       const jweService = agentContext.dependencyManager.resolve(JweService)
-      const decrypted = await jweService.decryptJwe(agentContext, { jwe, recipientKeyId: kid })
+      const decrypted = await jweService.decryptJwe(agentContext, {
+        jwe,
+        recipientKeyId: kid,
+        // The header is chosen by the sender, so only accept the algorithms we also encrypt with
+        allowedKeyAgreementAlgorithms: [...supportedResponseEncryptionKeyAgreementAlgorithms],
+        allowedContentEncryptionAlgorithms: [...supportedResponseEncryptionContentAlgorithms],
+      })
 
       decryptedPayload = TypedArrayEncoder.toUtf8String(decrypted.data)
     } catch (error) {
