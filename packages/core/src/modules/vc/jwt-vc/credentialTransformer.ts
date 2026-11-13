@@ -124,8 +124,9 @@ export function getCredentialFromJwtPayload(jwtPayload: JwtPayload) {
       throw new CredoError('JWT vc.issuanceDate must be a string')
     }
 
-    const issuanceDate = Date.parse(jwtVc.issuanceDate) / 1000
-    if (jwtPayload.nbf !== issuanceDate) {
+    // Compare at whole-second precision: nbf may be an integer or carry a fraction (RFC 7519 §2)
+    const issuanceDate = Math.floor(Date.parse(jwtVc.issuanceDate) / 1000)
+    if (typeof jwtPayload.nbf !== 'number' || Math.floor(jwtPayload.nbf) !== issuanceDate) {
       throw new CredoError('JWT nbf and vc.issuanceDate do not match')
     }
   }
@@ -136,8 +137,8 @@ export function getCredentialFromJwtPayload(jwtPayload: JwtPayload) {
       throw new CredoError('JWT vc.expirationDate must be a string')
     }
 
-    const expirationDate = Date.parse(jwtVc.expirationDate) / 1000
-    if (expirationDate !== jwtPayload.exp) {
+    const expirationDate = Math.floor(Date.parse(jwtVc.expirationDate) / 1000)
+    if (typeof jwtPayload.exp !== 'number' || Math.floor(jwtPayload.exp) !== expirationDate) {
       throw new CredoError('JWT exp and vc.expirationDate do not match')
     }
   }
