@@ -1,3 +1,4 @@
+import type { AgentContext } from '../../agent/context'
 import type { DependencyManager, Module } from '../../plugins'
 import { CachedStorageService } from './CachedStorageService'
 import type { CacheModuleConfigOptions } from './CacheModuleConfig'
@@ -28,5 +29,9 @@ export class CacheModule implements Module {
     if (this.config.cache instanceof SingleContextStorageLruCache) {
       dependencyManager.registerSingleton(SingleContextLruCacheRepository)
     }
+  }
+
+  public async shutdown(agentContext: AgentContext) {
+    await this.config.cache.shutdown?.(agentContext)
   }
 }

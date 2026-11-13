@@ -94,15 +94,21 @@ export class SingleContextStorageLruCache implements Cache {
     }
   }
 
-  // Unlike get and set this throws on failure, as the entry would otherwise stay in the cache
   public async remove(agentContext: AgentContext, key: string, _options?: CacheOptions): Promise<void> {
     this.assertContextCorrelationId(agentContext)
 
-    const cache = await this.getCache(agentContext)
-    this.removeExpiredItems(cache)
-    cache.delete(key)
+    try {
+      const cache = await this.getCache(agentContext)
+      this.removeExpiredItems(cache)
+      cache.delete(key)
 
-    await this.persistCache(agentContext)
+      await this.persistCache(agentContext)
+    } catch (error) {
+      agentContext.config.logger.error(
+        `Error removing key '${key}' from the cache. It can be served outdated until it expires.`,
+        { error }
+      )
+    }
   }
 
   private async getCache(agentContext: AgentContext) {
