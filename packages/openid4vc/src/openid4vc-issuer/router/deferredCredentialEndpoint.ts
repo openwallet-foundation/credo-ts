@@ -106,6 +106,7 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
       }
 
       const issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, {
+        issuerId: issuer.issuerId,
         preAuthorizedCode,
         issuerState,
       })

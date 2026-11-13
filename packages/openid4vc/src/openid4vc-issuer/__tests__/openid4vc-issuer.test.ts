@@ -486,6 +486,54 @@ describe('OpenId4VcIssuer', () => {
     await handleCredentialResponse(holder.context, credentialResponse.credential, universityDegreeCredentialSdJwt)
   })
 
+  it('rejects an issuer that is not the issuer of the issuance session', async () => {
+    const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
+    const otherIssuer = await issuer.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: { universityDegreeCredentialSdJwt },
+    })
+
+    const { issuanceSession } = await issuer.openid4vc.issuer.createCredentialOffer({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationIds: [universityDegreeCredentialSdJwt.id],
+      preAuthorizedCodeFlowConfig: { preAuthorizedCode: '1234567890' },
+    })
+    issuanceSession.state = OpenId4VcIssuanceSessionState.CredentialRequestReceived
+    issuanceSession.transactions = [
+      { transactionId: 'tx', numberOfCredentials: 1, credentialConfigurationId: universityDegreeCredentialSdJwt.id },
+    ]
+
+    const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
+    const credentialRequest = await createCredentialRequest(holder.context, {
+      credentialConfiguration: universityDegreeCredentialSdJwt,
+      issuerMetadata: await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId),
+      kid: holderKid,
+      nonce: cNonce,
+    })
+    const authorization = {
+      authorizationServer: 'https://authorization.com',
+      accessToken: { payload: { active: true, sub: 'something' }, value: 'the-access-token' },
+    }
+    const error = `Issuer '${otherIssuer.issuerId}' is not the issuer '${openId4VcIssuer.issuerId}' of issuance session '${issuanceSession.id}'.`
+
+    await expect(
+      issuerService.createCredentialResponse(issuer.context, {
+        issuanceSession,
+        issuer: otherIssuer,
+        parsedCredentialRequest: await parseCredentialRequestAsWallet(credentialRequest),
+        authorization,
+      })
+    ).rejects.toThrow(error)
+
+    await expect(
+      issuerService.createDeferredCredentialResponse(issuer.context, {
+        issuanceSession,
+        issuer: otherIssuer,
+        deferredCredentialRequest: { transaction_id: 'tx' },
+        authorization,
+      })
+    ).rejects.toThrow(error)
+  })
+
   it.each([
     [['did:key'], undefined],
     [['did'], undefined],

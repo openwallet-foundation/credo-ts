@@ -639,7 +639,7 @@ export class OpenId4VcIssuerService {
       OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
     ])
     const { issuanceSession } = options
-    const issuer = options.issuer ?? (await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId))
+    const issuer = await this.getIssuerForIssuanceSession(agentContext, issuanceSession, options.issuer)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
@@ -852,7 +852,7 @@ export class OpenId4VcIssuerService {
       })
     }
 
-    const issuer = options.issuer ?? (await this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId))
+    const issuer = await this.getIssuerForIssuanceSession(agentContext, issuanceSession, options.issuer)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
 
     // Optimization: if the deferral interval hasn't passed yet, we immediately
@@ -1355,6 +1355,23 @@ export class OpenId4VcIssuerService {
 
   public async getIssuerByIssuerId(agentContext: AgentContext, issuerId: string) {
     return this.openId4VcIssuerRepository.getByIssuerId(agentContext, issuerId)
+  }
+
+  private async getIssuerForIssuanceSession(
+    agentContext: AgentContext,
+    issuanceSession: OpenId4VcIssuanceSessionRecord,
+    issuer?: OpenId4VcIssuerRecord
+  ) {
+    if (!issuer) return this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
+
+    // The issuer's metadata and keys are used to sign, so it must be the issuer of the session.
+    if (issuer.issuerId !== issuanceSession.issuerId) {
+      throw new CredoError(
+        `Issuer '${issuer.issuerId}' is not the issuer '${issuanceSession.issuerId}' of issuance session '${issuanceSession.id}'.`
+      )
+    }
+
+    return issuer
   }
 
   public async updateIssuer(
