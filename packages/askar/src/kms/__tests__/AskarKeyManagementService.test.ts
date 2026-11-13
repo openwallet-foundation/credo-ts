@@ -5,6 +5,8 @@ import { p521 } from '@noble/curves/nist.js'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import {
   AskarError,
+  Key,
+  KeyAlgorithm,
   KeyEntryList,
   KeyEntryListHandle,
   LocalKeyHandle,
@@ -45,6 +47,11 @@ const agentContext = getAgentContext({
 const service = new AskarKeyManagementService()
 
 describe('AskarKeyManagementService', () => {
+  const keyManagementApi = new Kms.KeyManagementApi(
+    new Kms.KeyManagementModuleConfig({ backends: [service] }),
+    agentContext
+  )
+
   afterEach(() => {
     vi.restoreAllMocks()
   })
@@ -77,6 +84,42 @@ describe('AskarKeyManagementService', () => {
   })
 
   describe('createKey', () => {
+    it('supports creating an ML-DSA-44 key through KeyManagementApi', async () => {
+      expect(keyManagementApi.supportedJwaSignatureAlgorithms()).toContain('ML-DSA-44')
+      const result = await keyManagementApi.createKeyForSignatureAlgorithm({ algorithm: 'ML-DSA-44' })
+      expect(result.publicJwk).toMatchObject({ kty: 'AKP', alg: 'ML-DSA-44', pub: expect.any(String) })
+
+      const data = new Uint8Array([3, 2, 1])
+      const { signature } = await keyManagementApi.sign({
+        keyId: result.keyId,
+        algorithm: 'ML-DSA-44',
+        data,
+        expectedPublicJwk: result.publicJwk,
+      })
+      await expect(
+        keyManagementApi.verify({ key: { publicJwk: result.publicJwk }, algorithm: 'ML-DSA-44', data, signature })
+      ).resolves.toMatchObject({ verified: true })
+    })
+
+    it('creates an ML-DSA-44 key successfully', async () => {
+      expect(
+        service.isOperationSupported(agentContext, { operation: 'createKey', type: { kty: 'AKP', alg: 'ML-DSA-44' } })
+      ).toBe(true)
+
+      const result = await service.createKey(agentContext, {
+        type: { kty: 'AKP', alg: 'ML-DSA-44' },
+      })
+
+      expect(result.publicJwk).toMatchObject({
+        kty: 'AKP',
+        alg: 'ML-DSA-44',
+        pub: expect.any(String),
+        kid: result.keyId,
+      })
+      expect(result.publicJwk).not.toHaveProperty('priv')
+      expect(await service.getPublicKey(agentContext, result.keyId)).toEqual(result.publicJwk)
+    })
+
     it('throws error if key id already exists', async () => {
       const keyId = 'test-key'
       await service.createKey(agentContext, {
@@ -377,6 +420,22 @@ describe('AskarKeyManagementService', () => {
       })
     })
 
+    it('signs with ML-DSA-44', async () => {
+      const { keyId } = await service.createKey(agentContext, {
+        type: { kty: 'AKP', alg: 'ML-DSA-44' },
+      })
+      const data = new Uint8Array([1, 2, 3])
+
+      expect(service.isOperationSupported(agentContext, { operation: 'sign', algorithm: 'ML-DSA-44' })).toBe(true)
+      const { signature } = await service.sign(agentContext, {
+        keyId,
+        algorithm: 'ML-DSA-44',
+        data,
+      })
+
+      expect(signature).toHaveLength(2420)
+    })
+
     it('throws error if algorithm is not supported by backend', async () => {
       const { keyId } = await service.createKey(agentContext, {
         type: { kty: 'EC', crv: 'P-256' },
@@ -490,6 +549,34 @@ describe('AskarKeyManagementService', () => {
           signature: new Uint8Array([1, 2, 3]),
         })
       ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', [service.backend]))
+    })
+
+    it('verifies ML-DSA-44 signature with key id and external public JWK', async () => {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
+        type: { kty: 'AKP', alg: 'ML-DSA-44' },
+      })
+      const data = new Uint8Array([1, 2, 3])
+      const { signature } = await service.sign(agentContext, {
+        keyId,
+        algorithm: 'ML-DSA-44',
+        data,
+      })
+
+      expect(service.isOperationSupported(agentContext, { operation: 'verify', algorithm: 'ML-DSA-44' })).toBe(true)
+      await expect(
+        service.verify(agentContext, { key: { keyId }, algorithm: 'ML-DSA-44', data, signature })
+      ).resolves.toEqual({ verified: true, publicJwk })
+      await expect(
+        service.verify(agentContext, { key: { publicJwk }, algorithm: 'ML-DSA-44', data, signature })
+      ).resolves.toEqual({ verified: true, publicJwk })
+      await expect(
+        service.verify(agentContext, {
+          key: { publicJwk },
+          algorithm: 'ML-DSA-44',
+          data: new Uint8Array([1, 2, 4]),
+          signature,
+        })
+      ).resolves.toEqual({ verified: false })
     })
 
     it('verifies ES256 signature', async () => {
@@ -755,6 +842,19 @@ describe('AskarKeyManagementService', () => {
   })
 
   describe('importKey', () => {
+    it('imports an ML-DSA-44 private JWK', async () => {
+      const generatedKey = Key.generate('mldsa44' as KeyAlgorithm)
+      const privateJwk = JSON.parse(JSON.stringify(generatedKey.jwkSecret)) as Kms.KmsJwkPrivateAkp
+      const generatedPublicJwk = JSON.parse(JSON.stringify(generatedKey.jwkPublic)) as Kms.KmsJwkPublicAkp
+      generatedKey.handle.free()
+
+      const result = await service.importKey(agentContext, { privateJwk: { ...privateJwk, kid: 'imported-mldsa' } })
+      expect(result).toEqual({
+        keyId: 'imported-mldsa',
+        publicJwk: { ...generatedPublicJwk, kid: 'imported-mldsa' },
+      })
+    })
+
     it('throws error when importing RSA key', async () => {
       await expect(
         service.importKey(agentContext, {

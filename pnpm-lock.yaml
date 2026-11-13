@@ -197,9 +197,6 @@ catalogs:
     '@hyperledger/indy-vdr-shared':
       specifier: ^0.3.0
       version: 0.3.0
-    '@openwallet-foundation/askar-nodejs':
-      specifier: 0.7.0
-      version: 0.7.0
     '@panva/hpke-noble':
       specifier: ^1.1.8
       version: 1.1.8
@@ -267,9 +264,10 @@ catalogs:
     '@hyperledger/anoncreds-shared':
       specifier: 0.5.0
       version: 0.5.0
-    '@openwallet-foundation/askar-shared':
-      specifier: 0.7.0
-      version: 0.7.0
+
+overrides:
+  '@openwallet-foundation/askar-nodejs': link:../askar-wrapper-javascript/packages/askar-nodejs
+  '@openwallet-foundation/askar-shared': link:../askar-wrapper-javascript/packages/askar-shared
 
 importers:
 
@@ -327,8 +325,8 @@ importers:
         specifier: workspace:*
         version: link:packages/webvh
       '@openwallet-foundation/askar-nodejs':
-        specifier: 'catalog:'
-        version: 0.7.0
+        specifier: link:../askar-wrapper-javascript/packages/askar-nodejs
+        version: link:../askar-wrapper-javascript/packages/askar-nodejs
       '@types/cors':
         specifier: ^2.8.19
         version: 2.8.19
@@ -411,8 +409,8 @@ importers:
         specifier: 'catalog:'
         version: 0.3.0
       '@openwallet-foundation/askar-nodejs':
-        specifier: 'catalog:'
-        version: 0.7.0
+        specifier: link:../../askar-wrapper-javascript/packages/askar-nodejs
+        version: link:../../askar-wrapper-javascript/packages/askar-nodejs
       inquirer:
         specifier: ^14.2.5
         version: 14.2.5(@types/node@22.20.4)
@@ -469,8 +467,8 @@ importers:
         specifier: ^6.1.0
         version: 6.1.0(koa@3.2.1)
       '@openwallet-foundation/askar-nodejs':
-        specifier: 'catalog:'
-        version: 0.7.0
+        specifier: link:../../askar-wrapper-javascript/packages/askar-nodejs
+        version: link:../../askar-wrapper-javascript/packages/askar-nodejs
       express:
         specifier: 'catalog:'
         version: 5.3.0(supports-color@8.1.1)
@@ -566,6 +564,9 @@ importers:
       '@noble/curves':
         specifier: ^2.0.1
         version: 2.4.0
+      '@openwallet-foundation/askar-shared':
+        specifier: link:../../../askar-wrapper-javascript/packages/askar-shared
+        version: link:../../../askar-wrapper-javascript/packages/askar-shared
       '@panva/hpke-noble':
         specifier: 'catalog:'
         version: 1.1.8(hpke@1.1.8)
@@ -589,11 +590,8 @@ importers:
         specifier: workspace:*
         version: link:../tenants
       '@openwallet-foundation/askar-nodejs':
-        specifier: 'catalog:'
-        version: 0.7.0
-      '@openwallet-foundation/askar-shared':
-        specifier: catalog:dev
-        version: 0.7.0
+        specifier: link:../../../askar-wrapper-javascript/packages/askar-nodejs
+        version: link:../../../askar-wrapper-javascript/packages/askar-nodejs
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -615,10 +613,10 @@ importers:
       '@credo-ts/tenants':
         specifier: workspace:*
         version: link:../tenants
-    devDependencies:
       '@openwallet-foundation/askar-shared':
-        specifier: catalog:dev
-        version: 0.7.0
+        specifier: link:../../../askar-wrapper-javascript/packages/askar-shared
+        version: link:../../../askar-wrapper-javascript/packages/askar-shared
+    devDependencies:
       typescript:
         specifier: 'catalog:'
         version: '@typescript/typescript6@6.0.2'
@@ -833,8 +831,8 @@ importers:
         specifier: 'catalog:'
         version: 6.1.1(supports-color@8.1.1)
       '@openwallet-foundation/askar-nodejs':
-        specifier: 'catalog:'
-        version: 0.7.0
+        specifier: link:../../../askar-wrapper-javascript/packages/askar-nodejs
+        version: link:../../../askar-wrapper-javascript/packages/askar-nodejs
       '@sphereon/pex-models':
         specifier: 'catalog:'
         version: 2.3.2
@@ -1166,8 +1164,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/node
       '@openwallet-foundation/askar-nodejs':
-        specifier: 'catalog:'
-        version: 0.7.0
+        specifier: link:../../../askar-wrapper-javascript/packages/askar-nodejs
+        version: link:../../../askar-wrapper-javascript/packages/askar-nodejs
       class-validator:
         specifier: 'catalog:'
         version: 0.14.3
@@ -3040,13 +3038,6 @@ packages:
 
   '@openid4vc/utils@0.9.2':
     resolution: {integrity: sha512-5vnpEPUtmJrTGsJnyG1fS4nixGqI347ZRZbGaf2Nb1Q45Xr34oBev3m3bcuY4QFNgQZcmiMt0v9DSUYln8X9ng==}
-
-  '@openwallet-foundation/askar-nodejs@0.7.0':
-    resolution: {integrity: sha512-KF6XGPvmYyfhaP5RqADSynY7g5pn1NqJMALX483HJHVM7aZBSAmsY7vqpfXTUdgSHM7nLhVMqegWfKhTcAg5Gw==}
-    engines: {node: '>= 22.12'}
-
-  '@openwallet-foundation/askar-shared@0.7.0':
-    resolution: {integrity: sha512-+LOynK372ETeqwpsPb4idHVQekG26nBCkKR44Q8ycoQn4bwBPVyi7jWMHOcFBudIh3yEDJmdjoTR2hbb1tlIqQ==}
 
   '@owf/cose@0.7.0':
     resolution: {integrity: sha512-A4KV1KUo+/k+WMpmIH8t2a/7cG/yWa9ErtK3HrYZWUcqCmHpIjSD/itzoKDySnHepsBA5W9Wxk+XHoQmLlJs6Q==}
@@ -9804,16 +9795,6 @@ snapshots:
       buffer: 6.0.3
       zod: 4.6.7
       zod-validation-error: 5.0.0(zod@4.6.7)
-
-  '@openwallet-foundation/askar-nodejs@0.7.0':
-    dependencies:
-      '@openwallet-foundation/askar-shared': 0.7.0
-      koffi: 3.3.7
-
-  '@openwallet-foundation/askar-shared@0.7.0':
-    dependencies:
-      buffer: 6.0.3
-      tar: 7.5.23
 
   '@owf/cose@0.7.0':
     dependencies:

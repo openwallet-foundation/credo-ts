@@ -50,10 +50,12 @@ export {
   publicJwkFromPrivateJwk,
 } from './knownJwk'
 export type {
+  KmsJwkPrivateAkp,
   KmsJwkPrivateEc,
   KmsJwkPrivateOct,
   KmsJwkPrivateOkp,
   KmsJwkPrivateRsa,
+  KmsJwkPublicAkp,
   KmsJwkPublicEc,
   KmsJwkPublicOct,
   KmsJwkPublicOkp,

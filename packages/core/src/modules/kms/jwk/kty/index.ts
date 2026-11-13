@@ -1,4 +1,11 @@
 export {
+  type KmsJwkPrivateAkp,
+  type KmsJwkPublicAkp,
+  zKmsJwkPrivateAkp,
+  zKmsJwkPrivateToPublicAkp,
+  zKmsJwkPublicAkp,
+} from './akp/akpJwk'
+export {
   type KmsJwkPrivateEc,
   type KmsJwkPublicEc,
   zKmsJwkPrivateEc,
@@ -11,7 +18,6 @@ export { P256PublicJwk } from './ec/P256PublicJwk'
 export { P384PublicJwk } from './ec/P384PublicJwk'
 export { P521PublicJwk } from './ec/P521PublicJwk'
 export { Secp256k1PublicJwk } from './ec/Secp256k1PublicJwk'
-
 export {
   type KmsJwkPrivateOct,
   type KmsJwkPublicOct,

@@ -4,6 +4,10 @@ packages:
   - demo-openid
   - samples/*
 
+overrides:
+  '@openwallet-foundation/askar-nodejs': link:../askar-wrapper-javascript/packages/askar-nodejs
+  '@openwallet-foundation/askar-shared': link:../askar-wrapper-javascript/packages/askar-shared
+
 allowBuilds:
   '@hyperledger/anoncreds-nodejs': true
   '@hyperledger/indy-vdr-nodejs': true

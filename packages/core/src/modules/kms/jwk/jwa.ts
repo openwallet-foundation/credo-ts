@@ -23,6 +23,7 @@ export const KnownJwaSignatureAlgorithms = {
   PS512: 'PS512',
   EdDSA: 'EdDSA',
   Ed25519: 'Ed25519',
+  'ML-DSA-44': 'ML-DSA-44',
   ES256K: 'ES256K',
 } as const
 

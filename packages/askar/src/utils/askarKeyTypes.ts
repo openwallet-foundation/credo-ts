@@ -14,6 +14,10 @@ export const jwkCrvToAskarAlg: Partial<
   Ed25519: KeyAlgorithm.Ed25519,
 }
 
+export const jwkAkpAlgToAskarAlg: Partial<Record<Kms.KmsJwkPublicAkp['alg'], KeyAlgorithm | undefined>> = {
+  'ML-DSA-44': 'mldsa44' as KeyAlgorithm,
+}
+
 export const jwkEncToAskarAlg = {
   'A128CBC-HS256': KeyAlgorithm.AesA128CbcHs256,
   A128GCM: KeyAlgorithm.AesA128Gcm,

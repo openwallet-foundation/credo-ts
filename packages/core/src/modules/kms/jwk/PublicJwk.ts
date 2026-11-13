@@ -51,6 +51,10 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     const publicJwk = publicJwkFromPrivateJwk(zParseWithErrorHandling(zKmsJwkPublic, jwkJson, 'jwk is not a valid jwk'))
     assertJwkAsymmetric(publicJwk)
 
+    if (publicJwk.kty === 'AKP') {
+      throw new KeyManagementError('ML-DSA-44 JWKs are not supported by PublicJwk')
+    }
+
     let jwkInstance: SupportedPublicJwk
     if (publicJwk.kty === 'RSA') {
       jwkInstance = new RsaPublicJwk(publicJwk)

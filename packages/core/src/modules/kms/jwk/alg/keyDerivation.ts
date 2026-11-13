@@ -2,12 +2,9 @@ import { KeyManagementError } from '../../error/KeyManagementError'
 import { getJwkHumanDescription } from '../humanDescription'
 import type { KnownJwaKeyAgreementAlgorithm } from '../jwa'
 import type { KmsJwkPrivate, KmsJwkPublic, KmsJwkPublicCrv } from '../knownJwk'
-import type { KmsJwkPrivateOct, KmsJwkPublicOct } from '../kty/oct/octJwk'
-import type { KmsJwkPrivateRsa, KmsJwkPublicRsa } from '../kty/rsa/rsaJwk'
+import type { KmsJwkPublicOct } from '../kty/oct/octJwk'
 
-function isCrvJwk<Jwk extends KmsJwkPrivate | KmsJwkPublic>(
-  jwk: Jwk
-): jwk is Exclude<Jwk, KmsJwkPrivateOct | KmsJwkPrivateRsa | KmsJwkPublicOct | KmsJwkPublicRsa> {
+function isCrvJwk<Jwk extends KmsJwkPrivate | KmsJwkPublic>(jwk: Jwk): jwk is Extract<Jwk, { kty: 'EC' | 'OKP' }> {
   return jwk.kty === 'EC' || jwk.kty === 'OKP'
 }
 

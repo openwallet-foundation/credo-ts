@@ -40,7 +40,6 @@ export function performSign(
         .digest()
     }
     default:
-      // @ts-expect-error
       throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${key.kty}'`, 'node')
   }
 }

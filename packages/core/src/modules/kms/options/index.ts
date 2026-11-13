@@ -4,6 +4,7 @@ export type {
   KmsCreateKeyOptions,
   KmsCreateKeyReturn,
   KmsCreateKeyType,
+  KmsCreateKeyTypeAkp,
   KmsCreateKeyTypeAsymmetric,
   KmsCreateKeyTypeEc,
   KmsCreateKeyTypeOct,

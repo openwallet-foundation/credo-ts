@@ -188,7 +188,10 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
     // The key must match expectedPublicJwk, so its key type can be checked before signing. Its `alg` is the caller's,
     // the backend checks the `alg` of the stored key.
     if (expectedPublicJwk) {
-      assertAllowedSigningAlgForKey({ ...expectedPublicJwk, alg: undefined }, kmsOptions.algorithm)
+      assertAllowedSigningAlgForKey(
+        { ...expectedPublicJwk, alg: undefined } as KmsJwkPublicAsymmetric,
+        kmsOptions.algorithm
+      )
     }
 
     const { kms, publicKey } = backend
