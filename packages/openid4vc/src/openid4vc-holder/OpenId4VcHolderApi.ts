@@ -242,6 +242,8 @@ export class OpenId4VcHolderApi {
 
   /**
    * Send a notification event to the credential issuer
+   *
+   * @throws {Openid4vciSendNotificationError} if the issuer returns an error response, such as `invalid_notification_id`
    */
   public async sendNotification(options: OpenId4VciSendNotificationOptions) {
     return this.openId4VciHolderService.sendNotification(this.agentContext, options)
