@@ -1896,7 +1896,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       it('deletes the generated key if storing it on the session fails', async () => {
         const issuanceSession = await createSession()
         const repository = dpopAgent.agent.context.resolve(OpenId4VcIssuanceSessionRepository)
-        vi.spyOn(repository, 'update').mockRejectedValueOnce(new Error('Session update failed'))
+        vi.spyOn(repository, 'updateByIdWithLock').mockRejectedValueOnce(new Error('Session update failed'))
         const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
         const deleteKey = vi.spyOn(dpopAgent.agent.kms, 'deleteKey')
 
@@ -1924,7 +1924,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         })
         const issuanceSession = await createSession()
         const repository = dpopAgent.agent.context.resolve(OpenId4VcIssuanceSessionRepository)
-        vi.spyOn(repository, 'update').mockRejectedValueOnce(new Error('Session update failed'))
+        vi.spyOn(repository, 'updateByIdWithLock').mockRejectedValueOnce(new Error('Session update failed'))
         const deleteKey = vi.spyOn(dpopAgent.agent.kms, 'deleteKey')
 
         const { response } = await pushAuthorizationRequest(issuanceSession)
@@ -1937,7 +1937,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       it('logs a failed key cleanup and still fails the request', async () => {
         const issuanceSession = await createSession()
         const repository = dpopAgent.agent.context.resolve(OpenId4VcIssuanceSessionRepository)
-        vi.spyOn(repository, 'update').mockRejectedValueOnce(new Error('Session update failed'))
+        vi.spyOn(repository, 'updateByIdWithLock').mockRejectedValueOnce(new Error('Session update failed'))
         const cleanupError = new Error('Key deletion failed')
         vi.spyOn(dpopAgent.agent.kms, 'deleteKey').mockRejectedValueOnce(cleanupError)
         const logError = vi.spyOn(dpopAgent.agent.context.config.logger, 'error')
@@ -1946,7 +1946,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
         expect(response.ok).toBe(false)
         expect(logError).toHaveBeenCalledWith(
-          'Failed to delete DPoP key after storing it on the issuance session failed',
+          'Failed to delete DPoP key after the pushed authorization request failed',
           { keyId: expect.any(String), error: cleanupError }
         )
       })

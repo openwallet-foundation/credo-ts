@@ -141,6 +141,8 @@ export interface StorageService<T extends BaseRecord<any, any, any>> {
    * Note that locking a record can result in deadlocks, and slow down processes.
    * It's recommended to minimize the side effects performed in the `updateCallback`
    *
+   * If `updateCallback` throws, the record is not updated and the error is rethrown as is.
+   *
    * TODO: should we allow partial updates for backend that support it? E.g. with drizzle
    * we can update just a value which makes locking less needed in some cases.
    */

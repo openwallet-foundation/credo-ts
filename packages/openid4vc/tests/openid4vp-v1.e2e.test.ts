@@ -44,6 +44,7 @@ import {
   OpenId4VcVerifierEvents,
   type OpenId4VcVerifierModuleConfigOptions,
   type OpenId4VpAuthorizationRequestPayload,
+  OpenId4VpVerifierService,
   Openid4vpAuthorizationRequestError,
 } from '../src'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
@@ -3889,6 +3890,68 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       error: 'invalid_request',
       error_description: 'Invalid session',
     })
+  })
+
+  it('returns redirect_uri to only one of two concurrent responses for a session', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
+      holder: { method: 'did', didUrl: holder.kid },
+      issuer: { method: 'did', didUrl: verifier.kid },
+      payload: { vct: 'OpenBadgeCredential', university: 'innsbruck' },
+    })
+    const credentialRecord = await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
+
+    const { authorizationRequest } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+      verifierId: openIdVerifier.verifierId,
+      requestSigner: { method: 'none' },
+      responseMode: 'direct_post',
+      dcql: {
+        query: {
+          credentials: [{ id: 'badge', format: 'dc+sd-jwt', meta: { vct_values: ['OpenBadgeCredential'] } }],
+        },
+      },
+      authorizationResponseRedirectUri: 'https://example.com/redirect',
+      version: 'v1',
+    })
+    const resolvedAuthorizationRequest =
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+
+    // Hold both responses before they complete the session, so both pass the state check before either completes it
+    const verifierService = verifier.agent.dependencyManager.resolve(OpenId4VpVerifierService)
+    const updatePendingState = verifierService.updatePendingState.bind(verifierService)
+    let calls = 0
+    let releaseCalls = () => {}
+    const bothCalled = new Promise<void>((resolve) => {
+      releaseCalls = resolve
+    })
+    const updateSpy = vi.spyOn(verifierService, 'updatePendingState').mockImplementation(async (...args) => {
+      calls++
+      if (calls === 2) releaseCalls()
+      await bothCalled
+      return updatePendingState(...args)
+    })
+
+    const acceptAuthorizationRequest = () =>
+      holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
+        dcql: {
+          credentials: {
+            badge: [
+              { claimFormat: ClaimFormat.SdJwtDc, credentialRecord, disclosedPayload: { university: 'innsbruck' } },
+            ],
+          },
+        },
+      })
+    const responses = await Promise.all([acceptAuthorizationRequest(), acceptAuthorizationRequest()])
+    updateSpy.mockRestore()
+
+    expect(responses.map(({ serverResponse }) => serverResponse?.body)).toEqual(
+      expect.arrayContaining([
+        { redirect_uri: 'https://example.com/redirect' },
+        { error: 'invalid_request', error_description: 'Invalid session' },
+      ])
+    )
   })
 
   it('returns redirect_uri for a response to an expired session, but not when the response is replayed', async () => {

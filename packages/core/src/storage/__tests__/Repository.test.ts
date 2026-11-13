@@ -122,6 +122,7 @@ describe('Repository', () => {
     it('should update the record returned by the callback if the storage service has no lock', async () => {
       const record = getRecord({ id: 'test-id' })
       const updatedRecord = getRecord({ id: 'test-id', tags: { myTag: 'updated' } })
+      storageMock.updateByIdWithLock = undefined
       mockFunction(storageMock.getById).mockReturnValue(Promise.resolve(record))
 
       const returnValue = await repository.updateByIdWithLock(agentContext, 'test-id', async () => updatedRecord)

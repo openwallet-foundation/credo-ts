@@ -283,6 +283,21 @@ describe('AskarStorageService', () => {
       expect(retrievedRecord.foo).toBe('transaction-test')
     })
 
+    it('should rethrow an error from the callback as is, without updating the record', async () => {
+      await insertRecord({ id: 'test-id' })
+      const error = new Error('Not allowed')
+
+      await expect(
+        storageService.updateByIdWithLock(agentContext, TestRecord, 'test-id', async (record) => {
+          record.foo = 'not-stored'
+          throw error
+        })
+      ).rejects.toBe(error)
+
+      const retrievedRecord = await storageService.getById(agentContext, TestRecord, 'test-id')
+      expect(retrievedRecord.foo).not.toBe('not-stored')
+    })
+
     it('should return the updated record', async () => {
       await insertRecord({ id: 'test-id', tags: { myTag: 'original' } })
 

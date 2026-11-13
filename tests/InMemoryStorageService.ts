@@ -40,6 +40,7 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
   public readonly supportsCursorPagination = false
 
   public contextCorrelationIdToRecords: ContextCorrelationIdToRecords = {}
+  private locks = new Map<string, Promise<unknown>>()
 
   private recordToInstance(record: StorageRecord, recordClass: BaseRecordConstructor<T>): T {
     const instance = JsonTransformer.fromJSON<T>(record.value, recordClass)
@@ -138,6 +139,28 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
       type: record.type,
       tags: record.getTags(),
     }
+  }
+
+  /** @inheritDoc */
+  public async updateByIdWithLock(
+    agentContext: AgentContext,
+    recordClass: BaseRecordConstructor<T>,
+    id: string,
+    updateCallback: (record: T) => Promise<T>
+  ): Promise<T> {
+    // Runs updates of the same record one after another, like a row lock would
+    const lockKey = `${agentContext.contextCorrelationId}:${id}`
+    const result = (this.locks.get(lockKey) ?? Promise.resolve()).then(async () => {
+      const updatedRecord = await updateCallback(await this.getById(agentContext, recordClass, id))
+      await this.update(agentContext, updatedRecord)
+      return updatedRecord
+    })
+    this.locks.set(
+      lockKey,
+      result.catch(() => undefined)
+    )
+
+    return result
   }
 
   /** @inheritDoc */

@@ -279,6 +279,50 @@ describe('OpenId4VP DC API', () => {
     await verifier.agent.shutdown()
   })
 
+  it('only verifies one of two concurrent responses for a session', async () => {
+    const { authorizationRequest, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        responseMode: 'dc_api',
+        expectedOrigins: ['https://example.com'],
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        dcql: { query: dcqlQuery },
+        version: 'v1',
+      })
+
+    const resolvedAuthorizationRequest = await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
+      authorizationRequest,
+      { origin: 'https://example.com' }
+    )
+    if (!resolvedAuthorizationRequest.dcql) throw new Error('Dcql not defined')
+
+    const result = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
+      dcql: {
+        credentials: holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
+          resolvedAuthorizationRequest.dcql.queryResult
+        ),
+      },
+      origin: resolvedAuthorizationRequest.origin,
+    })
+
+    const verify = () =>
+      verifier.agent.openid4vc.verifier.verifyAuthorizationResponse({
+        verificationSessionId: verificationSession.id,
+        origin: resolvedAuthorizationRequest.origin,
+        authorizationResponse: result.authorizationResponse,
+      })
+    const results = await Promise.allSettled([verify(), verify()])
+
+    expect(results.map((result) => result.status).sort()).toEqual(['fulfilled', 'rejected'])
+    expect(results.find((result) => result.status === 'rejected')?.reason).toMatchObject({
+      errorResponse: { error: 'invalid_request', error_description: 'Invalid session' },
+    })
+
+    const session = await verifier.agent.openid4vc.verifier.getVerificationSessionById(verificationSession.id)
+    expect(session.state).toBe(OpenId4VcVerificationSessionState.ResponseVerified)
+  })
+
   it('Digital Credentials API v1 with dcql, mdoc, sd-jwt, transaction data. unsigned, unencrypted', async () => {
     const { authorizationRequestObject, verificationSession } =
       await verifier.agent.openid4vc.verifier.createAuthorizationRequest({

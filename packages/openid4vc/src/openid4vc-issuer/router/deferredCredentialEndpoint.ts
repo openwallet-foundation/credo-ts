@@ -10,7 +10,7 @@ import {
   sendUnauthorizedError,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
-import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
+import { OpenId4VcIssuanceSessionStateError } from '../OpenId4VcIssuanceSessionStateError'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { getCredentialRequestDecryptionMetadata, OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
@@ -105,6 +105,16 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
         )
       }
 
+      // A session bound to another subject gets the same response as an unknown session, so the response doesn't
+      // reveal that the session exists
+      const sendIssuanceSessionNotFound = (internalMessage: string) =>
+        sendOauth2ErrorResponse(
+          response,
+          next,
+          agentContext.config.logger,
+          new Oauth2ServerErrorResponseError({ error: Oauth2ErrorCodes.InvalidTransactionId }, { internalMessage })
+        )
+
       const issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, {
         preAuthorizedCode,
         issuerState,
@@ -122,18 +132,8 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
           }
         )
 
-        return sendOauth2ErrorResponse(
-          response,
-          next,
-          agentContext.config.logger,
-          new Oauth2ServerErrorResponseError(
-            {
-              error: Oauth2ErrorCodes.InvalidTransactionId,
-            },
-            {
-              internalMessage: `No issuance session found for incoming credential request for issuer ${issuer.issuerId}, access token data and transaction id`,
-            }
-          )
+        return sendIssuanceSessionNotFound(
+          `No issuance session found for incoming credential request for issuer ${issuer.issuerId}, access token data and transaction id`
         )
       }
 
@@ -152,18 +152,8 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
 
       // Verify the issuance session subject
       if (issuanceSession.authorization?.subject && issuanceSession.authorization.subject !== tokenPayload.sub) {
-        return sendOauth2ErrorResponse(
-          response,
-          next,
-          agentContext.config.logger,
-          new Oauth2ServerErrorResponseError(
-            {
-              error: Oauth2ErrorCodes.CredentialRequestDenied,
-            },
-            {
-              internalMessage: `Issuance session authorization subject does not match with the token payload subject for issuance session '${issuanceSession.id}'. Returning error response`,
-            }
-          )
+        return sendIssuanceSessionNotFound(
+          `Issuance session authorization subject does not match with the token payload subject for issuance session '${issuanceSession.id}'`
         )
       }
 
@@ -214,12 +204,17 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
           deferredCredentialResponse.interval ? 202 : 200
         )
       } catch (error) {
-        issuanceSession.errorMessage =
-          typeof error.message === 'string' && error.message !== ''
-            ? error.message
-            : 'Failed to create a deferred credential response'
-
-        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
+        // A request that the session state doesn't allow, such as one for an unknown or already completed
+        // transaction, doesn't end the session
+        if (!(error instanceof OpenId4VcIssuanceSessionStateError)) {
+          await openId4VcIssuerService.updateStateToError(
+            agentContext,
+            issuanceSession,
+            typeof error.message === 'string' && error.message !== ''
+              ? error.message
+              : 'Failed to create a deferred credential response'
+          )
+        }
 
         if (error instanceof Oauth2ServerErrorResponseError) {
           return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)

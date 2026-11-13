@@ -44,6 +44,7 @@ import type { Jwk } from '@openid4vc/oauth2'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { agentDependencies } from '../../../../node/src'
+import { checkIssuanceSessionUpdates } from '../../../tests/utils'
 import { OpenId4VcModule } from '../../OpenId4VcModule'
 import type {
   OpenId4VciCredentialConfigurationSupportedWithFormats,
@@ -206,6 +207,7 @@ describe('OpenId4VcIssuer', () => {
   let holderDid: string
 
   beforeEach(async () => {
+    checkIssuanceSessionUpdates()
     await issuer.initialize()
     await holder.initialize()
 
@@ -1370,6 +1372,73 @@ describe('OpenId4VcIssuer', () => {
     })
 
     await handleCredentialResponse(holder.context, credentialResponse2.credential, universityDegreeCredential)
+  })
+
+  it('issues each credential once for concurrent credential requests', async () => {
+    const result = await issuer.openid4vc.issuer.createCredentialOffer({
+      credentialConfigurationIds: [openBadgeCredential.id, universityDegreeCredential.id],
+      issuerId: openId4VcIssuer.issuerId,
+      preAuthorizedCodeFlowConfig: {
+        preAuthorizedCode: '1234567890',
+      },
+    })
+
+    // We need to update the state, as it is checked and we're skipping the access token step
+    const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
+
+    const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
+    const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
+    const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+
+    const requestCredential = async (credentialConfiguration: typeof openBadgeCredential) =>
+      issuer.openid4vc.issuer.createCredentialResponse({
+        issuanceSessionId: result.issuanceSession.id,
+        parsedCredentialRequest: await parseCredentialRequestAsWallet(
+          await createCredentialRequest(holder.context, {
+            credentialConfiguration,
+            issuerMetadata,
+            kid: holderKid,
+            nonce: cNonce,
+          })
+        ),
+        authorization: {
+          authorizationServer: 'https://authorization.com',
+          accessToken: {
+            payload: { active: true, sub: 'something', 'pre-authorized_code': 'some' },
+            value: 'the-access-token',
+          },
+        },
+        credentialRequestToCredentialMapper: () => ({
+          type: 'credentials',
+          format: 'jwt_vc',
+          credentials: [
+            {
+              credential: new W3cCredential({
+                type: credentialConfiguration.credential_definition.type,
+                issuer: new W3cIssuer({ id: issuerDid }),
+                credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+                issuanceDate: w3cDate(Date.now()),
+              }),
+              verificationMethod: issuerVerificationMethod.id,
+            },
+          ],
+        }),
+      })
+
+    const [openBadge1, openBadge2, universityDegree] = await Promise.allSettled([
+      requestCredential(openBadgeCredential),
+      requestCredential(openBadgeCredential),
+      requestCredential(universityDegreeCredential),
+    ])
+
+    expect([openBadge1.status, openBadge2.status].sort()).toEqual(['fulfilled', 'rejected'])
+    expect(universityDegree.status).toBe('fulfilled')
+
+    const issuanceSession = await issuer.openid4vc.issuer.getIssuanceSessionById(result.issuanceSession.id)
+    expect(issuanceSession.state).toBe(OpenId4VcIssuanceSessionState.Completed)
+    expect(issuanceSession.issuedCredentials.sort()).toEqual([openBadgeCredential.id, universityDegreeCredential.id])
   })
 
   it('offer and request multiple credentials (v11 compatibility)', async () => {

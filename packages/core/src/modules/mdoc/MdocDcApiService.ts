@@ -31,7 +31,12 @@ import { type EncodedX509Certificate, X509Certificate, X509ModuleConfig, X509Ser
 import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
 import { Mdoc } from './Mdoc'
 import { MdocDeviceResponse } from './MdocDeviceResponse'
-import { MdocDeviceRequestNotSatisfiedError, MdocError, MdocVerificationSessionExpiredError } from './MdocError'
+import {
+  MdocDeviceRequestNotSatisfiedError,
+  MdocError,
+  MdocVerificationSessionExpiredError,
+  MdocVerificationSessionFinishedError,
+} from './MdocError'
 import { MdocEventTypes, type MdocVerificationSessionStateChangedEvent } from './MdocEvents'
 import type {
   MdocDcApiCreateResponseOptions,
@@ -180,7 +185,9 @@ export class MdocDcApiService {
       agentContext,
       options.verificationSessionId
     )
-    verificationSession.assertState(MdocVerificationSessionState.RequestCreated)
+    if (verificationSession.state !== MdocVerificationSessionState.RequestCreated) {
+      throw new MdocVerificationSessionFinishedError()
+    }
 
     const sessionTranscript = verificationSession.getSessionTranscript('isoMdocDcApi')
     const response = options.response.response
@@ -277,8 +284,11 @@ export class MdocDcApiService {
 
       return { verificationSession, deviceResponse, deviceRequestMatch, origin: options.origin }
     } catch (error) {
-      verificationSession.errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      await this.updateState(agentContext, verificationSession, MdocVerificationSessionState.Error)
+      // Another response already ended the session, so it stays as it is
+      if (!(error instanceof MdocVerificationSessionFinishedError)) {
+        verificationSession.errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        await this.updateState(agentContext, verificationSession, MdocVerificationSessionState.Error)
+      }
 
       throw error
     }
@@ -609,15 +619,32 @@ export class MdocDcApiService {
     return await IsoMdocDcApi.createResponse({ parsedRequest, documents }, mdocContext)
   }
 
+  /**
+   * Moves a session out of `RequestCreated`, checked under a record lock so concurrent responses can't both
+   * complete it. Throws an `MdocVerificationSessionFinishedError`, without writing the record, if it is no longer in
+   * `RequestCreated`.
+   */
   private async updateState(
     agentContext: AgentContext,
     verificationSession: MdocVerificationSessionRecord,
     newState: MdocVerificationSessionState
   ) {
-    const previousState = verificationSession.state
-    verificationSession.state = newState
+    let previousState = verificationSession.state
+    await this.mdocVerificationSessionRepository.updateByIdWithLock(
+      agentContext,
+      verificationSession.id,
+      async (record) => {
+        previousState = record.state
+        // Throwing skips the write
+        if (record.state !== MdocVerificationSessionState.RequestCreated) {
+          throw new MdocVerificationSessionFinishedError()
+        }
 
-    await this.mdocVerificationSessionRepository.update(agentContext, verificationSession)
+        verificationSession.state = newState
+        return verificationSession
+      }
+    )
+
     this.emitStateChangedEvent(agentContext, verificationSession, previousState)
   }
 
