@@ -636,10 +636,7 @@ export class OpenId4VciHolderService {
 
         // Decoding the credential is only needed for the log
         if (this.logger.logLevel <= LogLevel.Debug) {
-          const firstCredential =
-            credential.record instanceof SdJwtVcRecord
-              ? credential.record.getFirstCredential(agentContext)
-              : credential.record.firstCredential
+          const firstCredential = credential.record.firstCredential
           this.logger.debug('received credential response', {
             firstCredential:
               firstCredential instanceof Mdoc
@@ -730,10 +727,7 @@ export class OpenId4VciHolderService {
 
       // Decoding the credential is only needed for the log
       if (this.logger.logLevel <= LogLevel.Debug) {
-        const firstCredential =
-          credential.record instanceof SdJwtVcRecord
-            ? credential.record.getFirstCredential(agentContext)
-            : credential.record.firstCredential
+        const firstCredential = credential.record.firstCredential
         this.logger.debug('received credential response', {
           firstCredential:
             firstCredential instanceof Mdoc

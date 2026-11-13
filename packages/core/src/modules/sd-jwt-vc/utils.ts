@@ -5,7 +5,7 @@ import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'
 import { type DidPurpose, DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { isKnownJwaSignatureAlgorithm, type Jwk, KeyManagementApi, PublicJwk } from '../kms'
-import { X509Service } from '../x509/X509Service'
+import type { EncodedX509Certificate } from '../x509/X509ServiceOptions'
 import { SdJwtVcError } from './SdJwtVcError'
 import type { SdJwtVcHolderBinding, SdJwtVcIssuer } from './SdJwtVcOptions'
 
@@ -202,10 +202,9 @@ export function parseHolderBindingFromCredential(payload?: Record<string, unknow
 }
 
 export function parseIssuerFromCredential(
-  agentContext: AgentContext,
   header?: Record<string, unknown>,
   payload?: Record<string, unknown>
-): SdJwtVcIssuer {
+): SdJwtVcIssuer<EncodedX509Certificate> {
   if (!payload || !header) throw new SdJwtVcError('SD-JWT is missing payload')
   const iss = payload.iss as string | undefined
 
@@ -220,13 +219,9 @@ export function parseIssuerFromCredential(
       throw new SdJwtVcError('Invalid x5c header in credential. Not an array of strings.')
     }
 
-    const certificateChain = header.x5c.map((cert) =>
-      X509Service.parseCertificate(agentContext, { encodedCertificate: cert })
-    )
-
     return {
       method: 'x5c',
-      x5c: certificateChain,
+      x5c: header.x5c,
       issuer: iss,
     }
   }

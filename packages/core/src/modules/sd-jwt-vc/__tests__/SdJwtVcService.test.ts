@@ -299,11 +299,11 @@ describe('SdJwtVcService', () => {
         },
       })
 
-      expect(sdJwtVcService.fromCompact(agent.context, compact).payload.iss).toEqual('some-issuer')
+      expect(sdJwtVcService.fromCompact(compact).payload.iss).toEqual('some-issuer')
     })
 
     test('Sign (x509) sd-jwt-vc from a basic payload without disclosures', async () => {
-      const { compact } = await sdJwtVcService.sign(agent.context, {
+      const { compact, issuer } = await sdJwtVcService.sign(agent.context, {
         payload: {
           claim: 'some-claim',
           vct: 'IdentityCredential',
@@ -323,12 +323,20 @@ describe('SdJwtVcService', () => {
 
       expect(compact).toStrictEqual(simpleX509.sdJwtVc)
 
-      const sdJwtVc = sdJwtVcService.fromCompact(agent.context, compact)
+      const sdJwtVc = sdJwtVcService.fromCompact(compact)
       expect(sdJwtVc.header).toEqual({
         typ: 'vc+sd-jwt',
         alg: 'EdDSA',
         x5c: [simpleX509.trustedCertificate],
       })
+
+      // Decoding leaves the certificates encoded, the same as the signed credential
+      expect(sdJwtVc.issuer).toEqual({
+        method: 'x5c',
+        x5c: [simpleX509.trustedCertificate],
+        issuer: simpleX509.certificateIssuer,
+      })
+      expect(issuer).toEqual(sdJwtVc.issuer)
 
       expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
@@ -358,7 +366,7 @@ describe('SdJwtVcService', () => {
 
       expect(compact).toStrictEqual(simpleX509WithoutIss.sdJwtVc)
 
-      const sdJwtVc = sdJwtVcService.fromCompact(agent.context, compact)
+      const sdJwtVc = sdJwtVcService.fromCompact(compact)
       expect(sdJwtVc.header).toEqual({
         typ: 'dc+sd-jwt',
         alg: 'EdDSA',
@@ -391,7 +399,7 @@ describe('SdJwtVcService', () => {
         },
       })
 
-      const sdJwtVc = sdJwtVcService.fromCompact(agent.context, compact)
+      const sdJwtVc = sdJwtVcService.fromCompact(compact)
 
       expect(sdJwtVc.payload).not.toHaveProperty('iat')
       expect(sdJwtVc.prettyClaims).not.toHaveProperty('iat')
@@ -422,7 +430,7 @@ describe('SdJwtVcService', () => {
         },
       })
 
-      const sdJwtVc = sdJwtVcService.fromCompact(agent.context, compact)
+      const sdJwtVc = sdJwtVcService.fromCompact(compact)
       expect(sdJwtVc.payload.iat).toEqual(customIat)
     })
 
@@ -446,7 +454,7 @@ describe('SdJwtVcService', () => {
 
       expect(compact).toStrictEqual(simpleJwtVc)
 
-      const sdJwtVc = sdJwtVcService.fromCompact(agent.context, compact)
+      const sdJwtVc = sdJwtVcService.fromCompact(compact)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -481,7 +489,7 @@ describe('SdJwtVcService', () => {
 
       expect(compact).toStrictEqual(simpleJwtVcWithoutHolderBinding)
 
-      const sdJwtVc = sdJwtVcService.fromCompact(agent.context, compact)
+      const sdJwtVc = sdJwtVcService.fromCompact(compact)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -516,7 +524,7 @@ describe('SdJwtVcService', () => {
         },
       })
 
-      const sdJwtVc = sdJwtVcService.fromCompact(agent.context, compact)
+      const sdJwtVc = sdJwtVcService.fromCompact(compact)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -613,7 +621,7 @@ describe('SdJwtVcService', () => {
 
       // The digests must be resolvable using the algorithm from `_sd_alg`
       expect(prettyClaims.claim).toStrictEqual('some-claim')
-      expect(sdJwtVcService.fromCompact(agent.context, compact).prettyClaims.claim).toStrictEqual('some-claim')
+      expect(sdJwtVcService.fromCompact(compact).prettyClaims.claim).toStrictEqual('some-claim')
     })
 
     test('Create sd-jwt-vc with sha-1 as hashing algorithm and fails', async () => {
@@ -817,7 +825,7 @@ describe('SdJwtVcService', () => {
 
   describe('SdJwtVcService.receive', () => {
     test('Receive sd-jwt-vc from a basic payload without disclosures', async () => {
-      const sdJwtVc = sdJwtVcService.fromCompact(agent.context, simpleJwtVc)
+      const sdJwtVc = sdJwtVcService.fromCompact(simpleJwtVc)
       const sdJwtVcRecord = await sdJwtVcService.store(agent.context, {
         record: new SdJwtVcRecord({
           credentialInstances: [
@@ -847,7 +855,7 @@ describe('SdJwtVcService', () => {
     })
 
     test('Receive sd-jwt-vc without holder binding', async () => {
-      const sdJwtVc = sdJwtVcService.fromCompact(agent.context, simpleJwtVcWithoutHolderBinding)
+      const sdJwtVc = sdJwtVcService.fromCompact(simpleJwtVcWithoutHolderBinding)
       const sdJwtVcRecord = await sdJwtVcService.store(agent.context, {
         record: new SdJwtVcRecord({
           credentialInstances: [
@@ -874,7 +882,7 @@ describe('SdJwtVcService', () => {
     })
 
     test('Receive sd-jwt-vc from a basic payload with a disclosure', async () => {
-      const sdJwtVc = sdJwtVcService.fromCompact(agent.context, sdJwtVcWithSingleDisclosure)
+      const sdJwtVc = sdJwtVcService.fromCompact(sdJwtVcWithSingleDisclosure)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -897,7 +905,7 @@ describe('SdJwtVcService', () => {
     })
 
     test('Receive sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const sdJwtVc = sdJwtVcService.fromCompact(agent.context, complexSdJwtVc)
+      const sdJwtVc = sdJwtVcService.fromCompact(complexSdJwtVc)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -972,7 +980,6 @@ describe('SdJwtVcService', () => {
   describe('applyDisclosuresForPayload', () => {
     test('Applies disclosures for given payload', async () => {
       const presentation = sdJwtVcService.fromCompact(
-        agent.context,
         applyDisclosuresForPayload(sdJwtVcPid, {
           given_name: 'ERIKA',
           birthdate: '1964-08-12',
@@ -1006,7 +1013,6 @@ describe('SdJwtVcService', () => {
 
     test('Supports payload that results in no disclosures', async () => {
       const presentation = sdJwtVcService.fromCompact(
-        agent.context,
         applyDisclosuresForPayload(simpleJwtVc, {
           claim: 'some-claim',
         })
@@ -1054,10 +1060,7 @@ describe('SdJwtVcService', () => {
         { _sd: ['given_name', 'family_name'] }
       )
 
-      const sdJwtVc = sdJwtVcService.fromCompact(
-        agent.context,
-        applyDisclosuresForPaths(compact, [['given_name']]).compact
-      )
+      const sdJwtVc = sdJwtVcService.fromCompact(applyDisclosuresForPaths(compact, [['given_name']]).compact)
 
       expect(sdJwtVc.prettyClaims.given_name).toBe('Erika')
       expect(sdJwtVc.prettyClaims).not.toHaveProperty('family_name')
@@ -1168,7 +1171,7 @@ describe('SdJwtVcService', () => {
         presentationFrame: buildPresentationFrameForPaths(compact, [['address']]),
       })
 
-      expect(sdJwtVcService.fromCompact(agent.context, presentation).prettyClaims.address).toStrictEqual({
+      expect(sdJwtVcService.fromCompact(presentation).prettyClaims.address).toStrictEqual({
         street: 'Main St',
         country: { code: 'DE', name: 'Germany' },
       })
@@ -1400,7 +1403,7 @@ describe('SdJwtVcService', () => {
         },
       })
 
-      const sdJwtVc = sdJwtVcService.fromCompact(agent.context, presentation)
+      const sdJwtVc = sdJwtVcService.fromCompact(presentation)
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         sdJwtVc,
@@ -1815,6 +1818,29 @@ describe('SdJwtVcService', () => {
           message: 'Verify Error: Invalid JWT Signature',
           code: 'INVALID_JWT_SIGNATURE',
         }),
+        sdJwtVc: expect.any(Object),
+      })
+    })
+
+    test('verify sd-jwt-vc with an x5c entry that is not a certificate and fails', async () => {
+      const [header, ...rest] = simpleX509.sdJwtVc.split('.')
+      const invalidHeader = JsonEncoder.toBase64Url({
+        ...JsonEncoder.fromBase64Url(header),
+        x5c: ['not-a-certificate'],
+      })
+
+      // Decoding does not parse the certificates, so only verification fails
+      const sdJwtVc = sdJwtVcService.fromCompact([invalidHeader, ...rest].join('.'))
+      expect(sdJwtVc.issuer).toMatchObject({ method: 'x5c', x5c: ['not-a-certificate'] })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        sdJwtVc,
+        trustedCertificates: [simpleX509.trustedCertificate],
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        error: expect.objectContaining({ message: "Argument 'base64Text' is not Base64 encoded" }),
         sdJwtVc: expect.any(Object),
       })
     })

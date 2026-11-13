@@ -43,7 +43,7 @@ export interface SdJwtVcIssuerDid {
   didUrl: string
 }
 
-export interface SdJwtVcIssuerX5c {
+export interface SdJwtVcIssuerX5c<Certificate extends X509Certificate | EncodedX509Certificate = X509Certificate> {
   method: 'x5c'
 
   /**
@@ -52,7 +52,7 @@ export interface SdJwtVcIssuerX5c {
    *
    * The certificate containing the public key corresponding to the key used to digitally sign the JWS MUST be the first certificate.
    */
-  x5c: X509Certificate[]
+  x5c: Certificate[]
 
   /**
    * The issuer of the SD-JWT VC. Optional when signing with X509 certificates.
@@ -65,7 +65,9 @@ export type SdJwtVcHolderBinding = SdJwtVcHolderDidBinding | SdJwtVcHolderJwkBin
 
 // We only support did and x509 based issuance currently, but we might want to add support
 // for issuer metadata (as defined in SD-JWT VC) in the future
-export type SdJwtVcIssuer = SdJwtVcIssuerDid | SdJwtVcIssuerX5c
+export type SdJwtVcIssuer<Certificate extends X509Certificate | EncodedX509Certificate = X509Certificate> =
+  | SdJwtVcIssuerDid
+  | SdJwtVcIssuerX5c<Certificate>
 
 export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayload> {
   /**

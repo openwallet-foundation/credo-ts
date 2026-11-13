@@ -15,7 +15,7 @@ import { KeyManagementApi, PublicJwk } from '../kms'
 import { getStatusListSignerKeyPurposeOptions } from '../token-status-list/assertStatusListSignerKeyPurpose'
 import { TokenStatusListModuleConfig } from '../token-status-list/TokenStatusListModuleConfig'
 import { ClaimFormat } from '../vc/index'
-import { X509Certificate, X509ModuleConfig, X509Service } from '../x509'
+import { type EncodedX509Certificate, X509Certificate, X509ModuleConfig, X509Service } from '../x509'
 import { legacyTrustedCertificatesToTrustedIssuers } from '../x509/utils/convertLegacyTrustedCertificates'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
@@ -60,9 +60,9 @@ export interface SdJwtVc<
   header: Header
 
   /**
-   * The issuer of the credential
+   * The issuer of the credential. The `x5c` certificates are encoded, as they are not parsed when decoding.
    */
-  issuer: SdJwtVcIssuer
+  issuer: SdJwtVcIssuer<EncodedX509Certificate>
 
   /**
    * The holder of the credential
@@ -180,7 +180,10 @@ export class SdJwtVcService {
       compact,
       prettyClaims,
       header: header,
-      issuer: options.issuer,
+      issuer:
+        options.issuer.method === 'x5c'
+          ? { ...options.issuer, x5c: options.issuer.x5c.map((certificate) => certificate.toString('base64')) }
+          : options.issuer,
       holder: options.holder,
       payload: sdJwtPayload,
       claimFormat: ClaimFormat.SdJwtDc,
@@ -189,11 +192,10 @@ export class SdJwtVcService {
   }
 
   public fromCompact<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
-    agentContext: AgentContext,
     compactSdJwtVc: string,
     typeMetadata?: SdJwtVcTypeMetadata
   ): SdJwtVc<Header, Payload> {
-    return decodeSdJwtVc(agentContext, compactSdJwtVc, typeMetadata)
+    return decodeSdJwtVc(compactSdJwtVc, typeMetadata)
   }
 
   public async present<Payload extends SdJwtVcPayload = SdJwtVcPayload>(
@@ -284,18 +286,26 @@ export class SdJwtVcService {
       returnSdJwtVc = decodedSdJwtVc
         ? // A copy, as the type metadata is set on it below
           ({ ...decodedSdJwtVc } as SdJwtVc<Header, Payload>)
-        : decodeSdJwtVc<Header, Payload>(agentContext, compactSdJwtVc)
+        : decodeSdJwtVc<Header, Payload>(compactSdJwtVc)
     } catch (error) {
       return {
         isValid: false,
         error,
       }
     }
-    const issuer = returnSdJwtVc.issuer
 
     let typeMetadataChain: NonEmptyArray<SdJwtVcTypeMetadata> | undefined
     try {
-      const { trustedIssuer } = await this.verifyIssuer(agentContext, returnSdJwtVc, trustedIssuers)
+      const issuer: SdJwtVcIssuer =
+        returnSdJwtVc.issuer.method === 'x5c'
+          ? {
+              ...returnSdJwtVc.issuer,
+              x5c: returnSdJwtVc.issuer.x5c.map((certificate) =>
+                X509Service.parseCertificate(agentContext, { encodedCertificate: certificate })
+              ),
+            }
+          : returnSdJwtVc.issuer
+      const { trustedIssuer } = await this.verifyIssuer(agentContext, returnSdJwtVc, issuer, trustedIssuers)
       const issuerWithKey = await this.extractKeyFromIssuer(agentContext, issuer)
       const holder = returnSdJwtVc.holder
         ? await extractKeyFromHolderBinding(agentContext, returnSdJwtVc.holder)
@@ -524,11 +534,11 @@ export class SdJwtVcService {
   private async verifyIssuer<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
     agentContext: AgentContext,
     sdJwtVc: SdJwtVc<Header, Payload>,
+    issuer: SdJwtVcIssuer,
     trustedIssuers?: TrustedIssuer[]
   ) {
     const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
-    const issuer = sdJwtVc.issuer
     if (!issuer) {
       throw new SdJwtVcError('Unsupported signing method for SD-JWT VC. Only did and x5c are supported at the moment.')
     }

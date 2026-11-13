@@ -382,7 +382,7 @@ export class DcqlService {
       }
 
       if (record.type === 'SdJwtVcRecord') {
-        const sdJwtVc = record.getFirstCredential(agentContext)
+        const sdJwtVc = record.firstCredential
         const claims = sdJwtVc.prettyClaims as DcqlSdJwtVcCredential.Claims
         const authority = this.getAuthorityForCredential(agentContext, sdJwtVc)
 

@@ -462,9 +462,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).getFirstCredential(
-      holderTenant.context
-    )
+    const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
     expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
     expect(firstSdJwtVcTenant1.payload.name).toEqual('John Doe')
 
@@ -738,9 +736,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).getFirstCredential(
-      holderTenant.context
-    )
+    const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
     expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
     expect(firstSdJwtVcTenant1.payload.name).toEqual('John Doe')
 

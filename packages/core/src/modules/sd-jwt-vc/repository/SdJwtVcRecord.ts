@@ -1,6 +1,5 @@
 import { decodeSdJwtSync } from '@sd-jwt/core'
 import { z } from 'zod'
-import type { AgentContext } from '../../../agent'
 import { Hasher } from '../../../crypto'
 import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
@@ -144,9 +143,9 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
     }
   }
 
-  public getFirstCredential(agentContext: AgentContext): SdJwtVc {
+  public get firstCredential(): SdJwtVc {
     return {
-      ...decodeSdJwtVc(agentContext, this.credentialInstances[0].compactSdJwtVc, this.typeMetadata),
+      ...decodeSdJwtVc(this.credentialInstances[0].compactSdJwtVc, this.typeMetadata),
       kmsKeyId: this.credentialInstances[0].kmsKeyId,
     }
   }

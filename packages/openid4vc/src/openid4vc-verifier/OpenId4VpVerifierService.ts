@@ -1226,15 +1226,19 @@ export class OpenId4VpVerifierService {
         // `trustedIssuers` undefined and let `sdJwtVcApi.verify` surface the unsupported-issuer error.
         let trustedIssuers: TrustedIssuer[] | undefined
         if (issuer) {
+          const signer =
+            issuer.method === 'x5c'
+              ? ({
+                  method: 'x509',
+                  certificateChain: issuer.x5c.map((certificate) =>
+                    X509Service.parseCertificate(agentContext, { encodedCertificate: certificate })
+                  ),
+                } as const)
+              : ({ method: 'did', didUrl: issuer.didUrl } as const)
+
           trustedIssuers = (
             await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
-              signer:
-                issuer.method === 'x5c'
-                  ? {
-                      method: 'x509',
-                      certificateChain: issuer.x5c,
-                    }
-                  : { method: 'did', didUrl: issuer.didUrl },
+              signer,
               verification: {
                 type: 'openId4VpCredential',
                 credential: sdJwtVc,
@@ -1244,10 +1248,10 @@ export class OpenId4VpVerifierService {
             })
           )?.trustedIssuers
 
-          if (!trustedIssuers && issuer.method === 'x5c') {
+          if (!trustedIssuers && signer.method === 'x509') {
             const legacyTrustedCertificates =
               (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-                certificateChain: issuer.x5c,
+                certificateChain: signer.certificateChain,
                 verification: {
                   type: 'credential',
                   credential: sdJwtVc,

@@ -180,7 +180,7 @@ export async function useInstanceFromCredentialRecord<Record extends CredentialR
     const { compactSdJwtVc, kmsKeyId } = extractResult.credentialInstance as SdJwtVcRecordInstances[0]
 
     transformedCredentialInstance = {
-      ...decodeSdJwtVc(agentContext, compactSdJwtVc, credentialRecord.typeMetadata),
+      ...decodeSdJwtVc(compactSdJwtVc, credentialRecord.typeMetadata),
       kmsKeyId,
     }
   } else if (credentialRecord instanceof W3cCredentialRecord) {
