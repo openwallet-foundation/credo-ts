@@ -62,8 +62,19 @@ export class AnonCredsDidCommRevocationNotificationApi {
         connectionRecord.assertReady()
       }
 
-      credentialMessage = (await credentialsApi.findCredentialMessage(credentialExchangeRecordId)) ?? undefined
-      requestMessage = (await credentialsApi.findRequestMessage(credentialExchangeRecordId)) ?? undefined
+      const config =
+        this.agentContext.dependencyManager.resolve<DidCommCredentialsModuleConfig<DidCommCredentialProtocol[]>>(
+          DidCommCredentialsModuleConfig
+        )
+      const { protocolVersion } = credentialExchangeRecord
+      const protocol = config.credentialProtocols.find((protocol) => protocol.version === protocolVersion)
+      if (!protocol) {
+        throw new CredoError(`No credential protocol registered for protocol version ${protocolVersion}`)
+      }
+
+      credentialMessage =
+        (await protocol.findCredentialMessage(this.agentContext, credentialExchangeRecordId)) ?? undefined
+      requestMessage = (await protocol.findRequestMessage(this.agentContext, credentialExchangeRecordId)) ?? undefined
     } else if (connectionId) {
       connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
       connectionRecord.assertReady()

@@ -5,6 +5,7 @@ import {
   DidCommCredentialState,
   DidCommCredentialsApi,
   DidCommCredentialsModuleConfig,
+  DidCommCredentialV2Protocol,
   DidCommDidExchangeState,
   DidCommIssueCredentialV2Message,
   DidCommMessageSender,
@@ -40,10 +41,11 @@ describe('AnonCredsDidCommRevocationNotificationApi', () => {
     const agentContext = getAgentContext()
     const connectionService = new ConnectionServiceMock()
     const credentialsApi = new CredentialsApiMock()
+    const protocol = new DidCommCredentialV2Protocol({ credentialFormats: [] })
     if (credentialsEnabled) {
       agentContext.dependencyManager.registerInstance(
         DidCommCredentialsModuleConfig,
-        new DidCommCredentialsModuleConfig({ credentialProtocols: [] })
+        new DidCommCredentialsModuleConfig({ credentialProtocols: [protocol] })
       )
       agentContext.dependencyManager.registerInstance(DidCommCredentialsApi, credentialsApi)
     }
@@ -62,7 +64,7 @@ describe('AnonCredsDidCommRevocationNotificationApi', () => {
         associatedRecord: options.associatedRecord,
       })
     })
-    return { api, agentContext, connectionService, credentialsApi, messageSender }
+    return { api, agentContext, connectionService, credentialsApi, messageSender, protocol }
   }
 
   test('sends a V2 notification with comment and acknowledgement request to an explicit connection', async () => {
@@ -92,7 +94,7 @@ describe('AnonCredsDidCommRevocationNotificationApi', () => {
   })
 
   test.each([true, false])('preserves credential-exchange routing with connected=%s', async (connected) => {
-    const { api, agentContext, connectionService, credentialsApi, messageSender } = setup()
+    const { api, agentContext, connectionService, credentialsApi, messageSender, protocol } = setup()
     const record = new DidCommCredentialExchangeRecord({
       connectionId: connected ? connection.id : undefined,
       threadId: 'thread-id',
@@ -109,11 +111,16 @@ describe('AnonCredsDidCommRevocationNotificationApi', () => {
       requestAttachments: [],
     })
     vi.mocked(credentialsApi.getById).mockResolvedValue(record)
-    vi.mocked(credentialsApi.findCredentialMessage).mockResolvedValue(credentialMessage)
-    vi.mocked(credentialsApi.findRequestMessage).mockResolvedValue(requestMessage)
+    const findCredentialMessage = vi.spyOn(protocol, 'findCredentialMessage').mockResolvedValue(credentialMessage)
+    const findRequestMessage = vi.spyOn(protocol, 'findRequestMessage').mockResolvedValue(requestMessage)
 
     await api.sendRevocationNotification({ ...options, credentialExchangeRecordId: record.id })
 
+    expect(credentialsApi.getById).toHaveBeenCalledExactlyOnceWith(record.id)
+    expect(credentialsApi.findCredentialMessage).not.toHaveBeenCalled()
+    expect(credentialsApi.findRequestMessage).not.toHaveBeenCalled()
+    expect(findCredentialMessage).toHaveBeenCalledExactlyOnceWith(agentContext, record.id)
+    expect(findRequestMessage).toHaveBeenCalledExactlyOnceWith(agentContext, record.id)
     expect(getOutboundDidCommMessageContext).toHaveBeenCalledWith(
       agentContext,
       expect.objectContaining({
@@ -132,6 +139,22 @@ describe('AnonCredsDidCommRevocationNotificationApi', () => {
 
     await expect(api.sendRevocationNotification(options)).rejects.toThrow(
       'Either credentialExchangeRecordId or connectionId must be defined'
+    )
+    expect(messageSender.sendMessage).not.toHaveBeenCalled()
+  })
+
+  test('reports an unregistered credential protocol', async () => {
+    const { api, credentialsApi, messageSender } = setup()
+    const record = new DidCommCredentialExchangeRecord({
+      threadId: 'thread-id',
+      protocolVersion: 'unknown',
+      state: DidCommCredentialState.Done,
+      role: DidCommCredentialRole.Issuer,
+    })
+    vi.mocked(credentialsApi.getById).mockResolvedValue(record)
+
+    await expect(api.sendRevocationNotification({ ...options, credentialExchangeRecordId: record.id })).rejects.toThrow(
+      'No credential protocol registered for protocol version unknown'
     )
     expect(messageSender.sendMessage).not.toHaveBeenCalled()
   })
