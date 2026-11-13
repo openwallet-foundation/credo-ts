@@ -229,12 +229,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       }
     }
 
-    // Lenient on purpose: authcrypt without from falls back to the skid DID, though the spec requires from.
-    // https://identity.foundation/didcomm-messaging/spec/v2.1/#message-headers
-    const from = unwrapped.from
-    if (senderDid && from !== undefined && (typeof from !== 'string' || !areEquivalentDidPeer4Forms(from, senderDid))) {
-      throw new CredoError(`DIDComm v2 plaintext 'from' (${from}) does not match the authcrypt sender '${senderDid}'`)
-    }
+    const authenticatedSenderDid = senderDid ? assertAuthcryptFrom(unwrapped.from, senderDid) : undefined
 
     this.warnIfNotAddressedToUs(agentContext, unwrapped.to, matchedKid)
 
@@ -252,7 +247,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       plaintextMessage: normalizeV2PlaintextToV1(unwrapped, agentContext.config.logger),
       senderKey: senderKey ?? undefined,
       recipientKey,
-      authenticatedSenderDid: senderDid ? (from ?? senderDid) : undefined,
+      authenticatedSenderDid,
       recipientDid: matchedKid.split('#')[0],
     }
   }
@@ -414,6 +409,17 @@ export function toV2EnvelopeRecipients(
   }
 
   return sameDidAndCurve
+}
+
+// Authcrypt: `from` is REQUIRED and MUST match the skid DID: https://identity.foundation/didcomm-messaging/spec/v2.1/#message-headers
+function assertAuthcryptFrom(from: unknown, senderDid: string): string {
+  if (typeof from !== 'string') {
+    throw new CredoError(`DIDComm v2 authcrypt message from '${senderDid}' has no 'from' header`)
+  }
+  if (!areEquivalentDidPeer4Forms(from, senderDid)) {
+    throw new CredoError(`DIDComm v2 plaintext 'from' (${from}) does not match the authcrypt sender '${senderDid}'`)
+  }
+  return from
 }
 
 function isAddressedTo(to: unknown, matchedKid: string): boolean {
