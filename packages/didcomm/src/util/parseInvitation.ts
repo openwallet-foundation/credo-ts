@@ -47,6 +47,16 @@ const decodeInvitationJson = (encoded: string): Record<string, unknown> => {
   }
 }
 
+// A higher minor version of the v2 invitation is accepted: https://identity.foundation/didcomm-messaging/spec/v2.1/#out-of-band-messages
+const isV2OutOfBandInvitationType = (type: unknown): boolean => {
+  if (typeof type !== 'string') return false
+  try {
+    return supportsIncomingMessageType(parseMessageType(type), DidCommOutOfBandInvitationV2.type)
+  } catch {
+    return false
+  }
+}
+
 /**
  * Parses a JSON containing an invitation message and returns an DidCommOutOfBandInvitation instance
  *
@@ -55,8 +65,7 @@ const decodeInvitationJson = (encoded: string): Record<string, unknown> => {
  */
 export const parseInvitationJson = (invitationJson: Record<string, unknown>): DidCommOutOfBandInvitation => {
   // DIDComm v2 OOB uses "type" not "@type"
-  const v2Type = invitationJson.type as string
-  if (v2Type === DidCommOutOfBandInvitationV2.type.messageTypeUri) {
+  if (isV2OutOfBandInvitationType(invitationJson.type)) {
     const v2Invitation = DidCommOutOfBandInvitationV2.fromJson(invitationJson)
     MessageValidator.validateSync(v2Invitation)
     return convertV2InvitationToOutOfBandInvitation(v2Invitation)
@@ -169,9 +178,8 @@ export const parseInvitationShortUrl = async (
     return transformLegacyConnectionlessInvitationToOutOfBandInvitation(decodeInvitationJson(parsedUrl.d_m as string))
   }
   try {
-    const outOfBandInvitation = await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
-    outOfBandInvitation.invitationType = DidCommInvitationType.OutOfBand
-    return outOfBandInvitation
+    // The parser sets the invitation type, which a v2 or legacy connectionless invitation needs to keep
+    return await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
   } catch (_error) {
     throw new CredoError(
       'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `_oob`, `oob` or `d_m`, or be valid shortened URL'
