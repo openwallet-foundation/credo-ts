@@ -1,5 +1,10 @@
-import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry, DidCommProtocol } from '@credo-ts/didcomm'
+import { type AgentContext, CredoError, type DependencyManager, type Module } from '@credo-ts/core'
+import {
+  DidCommCredentialsModuleConfig,
+  DidCommFeatureRegistry,
+  DidCommMessageHandlerRegistry,
+  DidCommProtocol,
+} from '@credo-ts/didcomm'
 import { AnonCredsDidCommRevocationNotificationApi } from './AnonCredsDidCommRevocationNotificationApi'
 import { AnonCredsRevocationNotificationProcessor } from './AnonCredsRevocationNotificationProcessor'
 import {
@@ -18,6 +23,10 @@ export class AnonCredsDidCommRevocationNotificationModule implements Module {
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
+    if (!agentContext.dependencyManager.isRegistered(DidCommCredentialsModuleConfig, true)) {
+      throw new CredoError('AnonCredsDidCommRevocationNotificationModule requires DIDComm credentials to be enabled.')
+    }
+
     const messageHandlerRegistry = agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry)
     const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
     const service = agentContext.dependencyManager.resolve(DidCommRevocationNotificationService)

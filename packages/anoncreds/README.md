@@ -74,6 +74,7 @@ The auto-accept helpers `composeCredentialAutoAccept` and `composeProofAutoAccep
 Register `AnonCredsDidCommRevocationNotificationModule` alongside `AnonCredsModule` and the DIDComm module
 with credentials enabled. This optional extension owns the complete Revocation Notification protocol:
 V1/V2 messages, handlers, feature discovery, V2 sending, and AnonCreds-specific parsing and record updates.
+If DIDComm credentials are disabled, agent initialization fails with an explicit configuration error.
 
 ```ts
 import { AnonCredsModule } from '@credo-ts/anoncreds'

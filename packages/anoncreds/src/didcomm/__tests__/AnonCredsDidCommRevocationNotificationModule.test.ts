@@ -1,9 +1,11 @@
-import { EventEmitter, InjectionSymbols } from '@credo-ts/core'
+import { Agent, DependencyManager, EventEmitter, InjectionSymbols } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRepository,
+  DidCommCredentialsModuleConfig,
   DidCommFeatureRegistry,
   DidCommInboundMessageContext,
   DidCommMessageHandlerRegistry,
+  DidCommModule,
   DidCommProtocol,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
@@ -29,6 +31,7 @@ describe('AnonCredsDidCommRevocationNotificationModule', () => {
         registerInstances: [
           [InjectionSymbols.Logger, config.logger],
           [EventEmitter, eventEmitter],
+          [DidCommCredentialsModuleConfig, new DidCommCredentialsModuleConfig({ credentialProtocols: [] })],
           [
             DidCommCredentialExchangeRepository,
             new DidCommCredentialExchangeRepository(new InMemoryStorageService(), eventEmitter),
@@ -62,4 +65,45 @@ describe('AnonCredsDidCommRevocationNotificationModule', () => {
       expect(version === 'v1' ? processV2 : processV1).not.toHaveBeenCalled()
     }
   )
+
+  test('constructs the agent but rejects initialization clearly when DIDComm credentials are disabled', async () => {
+    const config = getAgentConfig('RevocationNotificationWithoutCredentials')
+    const dependencyManager = new DependencyManager()
+    const storage = new InMemoryStorageService()
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, storage)
+    const agent = new Agent(
+      {
+        dependencies: config.agentDependencies,
+        modules: {
+          didcomm: new DidCommModule({ credentials: false }),
+          revocationNotification: new AnonCredsDidCommRevocationNotificationModule(),
+        },
+      },
+      dependencyManager
+    )
+    storage.createRecordsForContext(agent.context)
+
+    try {
+      await expect(agent.initialize()).rejects.toMatchObject({
+        cause: expect.objectContaining({
+          message: 'AnonCredsDidCommRevocationNotificationModule requires DIDComm credentials to be enabled.',
+        }),
+      })
+      const handlers = agent.dependencyManager.resolve(DidCommMessageHandlerRegistry)
+      expect(
+        handlers.getHandlerForMessageType(DidCommRevocationNotificationV1Message.type.messageTypeUri)
+      ).toBeUndefined()
+      expect(
+        handlers.getHandlerForMessageType(DidCommRevocationNotificationV2Message.type.messageTypeUri)
+      ).toBeUndefined()
+      expect(
+        agent.dependencyManager.resolve(DidCommFeatureRegistry).query({
+          featureType: 'protocol',
+          match: 'https://didcomm.org/revocation_notification/*',
+        })
+      ).toHaveLength(0)
+    } finally {
+      await agent.shutdown()
+    }
+  })
 })

@@ -4,6 +4,7 @@ import {
   DidCommCredentialRole,
   DidCommCredentialState,
   DidCommCredentialsApi,
+  DidCommCredentialsModuleConfig,
   DidCommDidExchangeState,
   DidCommIssueCredentialV2Message,
   DidCommMessageSender,
@@ -32,26 +33,27 @@ const ProcessorMock = AnonCredsRevocationNotificationProcessor as MockedClassCon
 >
 
 describe('AnonCredsDidCommRevocationNotificationApi', () => {
-  const agentContext = getAgentContext()
   const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
   const options = { revocationId: 'registry-id::1', revocationFormat: 'anoncreds' }
 
-  function setup() {
+  function setup({ credentialsEnabled = true } = {}) {
+    const agentContext = getAgentContext()
     const connectionService = new ConnectionServiceMock()
     const credentialsApi = new CredentialsApiMock()
+    if (credentialsEnabled) {
+      agentContext.dependencyManager.registerInstance(
+        DidCommCredentialsModuleConfig,
+        new DidCommCredentialsModuleConfig({ credentialProtocols: [] })
+      )
+      agentContext.dependencyManager.registerInstance(DidCommCredentialsApi, credentialsApi)
+    }
     const messageSender = new MessageSenderMock()
     const processor = new ProcessorMock()
     const service = new DidCommRevocationNotificationService(
       getAgentConfig('AnonCredsDidCommRevocationNotificationApi').logger,
       processor
     )
-    const api = new AnonCredsDidCommRevocationNotificationApi(
-      agentContext,
-      connectionService,
-      credentialsApi,
-      messageSender,
-      service
-    )
+    const api = new AnonCredsDidCommRevocationNotificationApi(agentContext, connectionService, messageSender, service)
     vi.mocked(connectionService.getById).mockResolvedValue(connection)
     vi.mocked(getOutboundDidCommMessageContext).mockImplementation(async (context, options) => {
       return new DidCommOutboundMessageContext(options.message, {
@@ -60,11 +62,11 @@ describe('AnonCredsDidCommRevocationNotificationApi', () => {
         associatedRecord: options.associatedRecord,
       })
     })
-    return { api, connectionService, credentialsApi, messageSender }
+    return { api, agentContext, connectionService, credentialsApi, messageSender }
   }
 
   test('sends a V2 notification with comment and acknowledgement request to an explicit connection', async () => {
-    const { api, connectionService, credentialsApi, messageSender } = setup()
+    const { api, agentContext, connectionService, credentialsApi, messageSender } = setup()
 
     await api.sendRevocationNotification({
       ...options,
@@ -90,7 +92,7 @@ describe('AnonCredsDidCommRevocationNotificationApi', () => {
   })
 
   test.each([true, false])('preserves credential-exchange routing with connected=%s', async (connected) => {
-    const { api, connectionService, credentialsApi, messageSender } = setup()
+    const { api, agentContext, connectionService, credentialsApi, messageSender } = setup()
     const record = new DidCommCredentialExchangeRecord({
       connectionId: connected ? connection.id : undefined,
       threadId: 'thread-id',
@@ -131,6 +133,16 @@ describe('AnonCredsDidCommRevocationNotificationApi', () => {
     await expect(api.sendRevocationNotification(options)).rejects.toThrow(
       'Either credentialExchangeRecordId or connectionId must be defined'
     )
+    expect(messageSender.sendMessage).not.toHaveBeenCalled()
+  })
+
+  test('reports the missing credentials module when sending using a credential exchange', async () => {
+    const { api, credentialsApi, messageSender } = setup({ credentialsEnabled: false })
+
+    await expect(
+      api.sendRevocationNotification({ ...options, credentialExchangeRecordId: 'exchange-id' })
+    ).rejects.toThrow('AnonCredsDidCommRevocationNotificationModule requires DIDComm credentials to be enabled.')
+    expect(credentialsApi.getById).not.toHaveBeenCalled()
     expect(messageSender.sendMessage).not.toHaveBeenCalled()
   })
 })

@@ -8,6 +8,7 @@ import type {
 import {
   DidCommConnectionService,
   DidCommCredentialsApi,
+  DidCommCredentialsModuleConfig,
   DidCommMessageSender,
   getOutboundDidCommMessageContext,
 } from '@credo-ts/didcomm'
@@ -18,20 +19,17 @@ import { DidCommRevocationNotificationService } from './revocation-notification/
 export class AnonCredsDidCommRevocationNotificationApi {
   private agentContext: AgentContext
   private connectionService: DidCommConnectionService
-  private credentialsApi: DidCommCredentialsApi<DidCommCredentialProtocol[]>
   private messageSender: DidCommMessageSender
   private revocationNotificationService: DidCommRevocationNotificationService
 
   public constructor(
     agentContext: AgentContext,
     connectionService: DidCommConnectionService,
-    credentialsApi: DidCommCredentialsApi<DidCommCredentialProtocol[]>,
     messageSender: DidCommMessageSender,
     revocationNotificationService: DidCommRevocationNotificationService
   ) {
     this.agentContext = agentContext
     this.connectionService = connectionService
-    this.credentialsApi = credentialsApi
     this.messageSender = messageSender
     this.revocationNotificationService = revocationNotificationService
   }
@@ -48,7 +46,14 @@ export class AnonCredsDidCommRevocationNotificationApi {
     let requestMessage: DidCommMessage | undefined
 
     if (credentialExchangeRecordId) {
-      credentialExchangeRecord = await this.credentialsApi.getById(credentialExchangeRecordId)
+      if (!this.agentContext.dependencyManager.isRegistered(DidCommCredentialsModuleConfig, true)) {
+        throw new CredoError('AnonCredsDidCommRevocationNotificationModule requires DIDComm credentials to be enabled.')
+      }
+      const credentialsApi =
+        this.agentContext.dependencyManager.resolve<DidCommCredentialsApi<DidCommCredentialProtocol[]>>(
+          DidCommCredentialsApi
+        )
+      credentialExchangeRecord = await credentialsApi.getById(credentialExchangeRecordId)
       if (credentialExchangeRecord.connectionId) {
         connectionRecord = await this.connectionService.getById(
           this.agentContext,
@@ -57,8 +62,8 @@ export class AnonCredsDidCommRevocationNotificationApi {
         connectionRecord.assertReady()
       }
 
-      credentialMessage = (await this.credentialsApi.findCredentialMessage(credentialExchangeRecordId)) ?? undefined
-      requestMessage = (await this.credentialsApi.findRequestMessage(credentialExchangeRecordId)) ?? undefined
+      credentialMessage = (await credentialsApi.findCredentialMessage(credentialExchangeRecordId)) ?? undefined
+      requestMessage = (await credentialsApi.findRequestMessage(credentialExchangeRecordId)) ?? undefined
     } else if (connectionId) {
       connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
       connectionRecord.assertReady()
