@@ -4,9 +4,6 @@
 '@credo-ts/anoncreds': patch
 '@credo-ts/openid4vc': patch
 '@credo-ts/tenants': patch
-'@credo-ts/action-menu': patch
-'@credo-ts/question-answer': patch
-'@credo-ts/drpc': patch
 '@credo-ts/drizzle-storage': patch
 '@credo-ts/askar': patch
 ---
