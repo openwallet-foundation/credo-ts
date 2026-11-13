@@ -1,6 +1,7 @@
 import {
   CachedStorageService,
   CacheModuleConfig,
+  didKeyToVerkey,
   didToNumAlgo2DidDocument,
   InMemoryLruCache,
   Kms,
@@ -662,6 +663,41 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
       expect(mediationRepository.findSingleByRecipientKey).not.toHaveBeenCalled()
       expect(mediationRepository.findSingleByRecipientDid).toHaveBeenCalledWith(agentContext, recipientDid)
     })
+
+    test('looks up the DID of a next that is a key of the recipient', async () => {
+      mockFunction(mediationRepository.findSingleByRecipientKey).mockClear()
+      mockFunction(mediationRepository.findSingleByRecipientDid).mockClear().mockResolvedValue(null)
+
+      const forward = new DidCommForwardV2Message({ to: [], next: 'did:peer:2.abc#key-1' })
+      forward.appendedAttachments = [
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: '', iv: '', protected: '', tag: '' } } }),
+      ]
+
+      await expect(
+        mediatorService.processForwardMessage(new DidCommInboundMessageContext(forward, { agentContext }))
+      ).rejects.toThrow(RecordNotFoundError)
+
+      expect(mediationRepository.findSingleByRecipientDid).toHaveBeenCalledWith(agentContext, 'did:peer:2.abc')
+      expect(mediationRepository.findSingleByRecipientKey).not.toHaveBeenCalled()
+    })
+
+    test('falls back to the recipient key lookup for a did:key next', async () => {
+      const didKey = 'did:key:z6MkijBsFPbW4fQyvnpM9Yt2AhHYTh7N1zH6xp1mPrJJfZe1'
+      mockFunction(mediationRepository.findSingleByRecipientDid).mockResolvedValue(null)
+      mockFunction(mediationRepository.findSingleByRecipientKey).mockClear().mockResolvedValue(null)
+
+      const forward = new DidCommForwardV2Message({ to: [], next: didKey })
+      forward.appendedAttachments = [
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: '', iv: '', protected: '', tag: '' } } }),
+      ]
+
+      await expect(
+        mediatorService.processForwardMessage(new DidCommInboundMessageContext(forward, { agentContext }))
+      ).rejects.toThrow(RecordNotFoundError)
+
+      expect(mediationRepository.findSingleByRecipientDid).toHaveBeenCalledWith(agentContext, didKey)
+      expect(mediationRepository.findSingleByRecipientKey).toHaveBeenCalledWith(agentContext, didKeyToVerkey(didKey))
+    })
   })
 })
 
@@ -796,5 +832,22 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
 
     expect(transportSession.close).not.toHaveBeenCalled()
     expect(liveTransportSessionId()).toBe('transportSessionId')
+  })
+
+  test('queues every attachment of a v2 forward and delivers once', async () => {
+    const deliver = vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockResolvedValue(undefined)
+    const message = new DidCommForwardV2Message({ to: [], next: recipientDid })
+    message.appendedAttachments = [
+      new DidCommAttachment({ id: 'msg-1', data: { json: { ...payload, iv: 'first' } } }),
+      new DidCommAttachment({ id: 'msg-2', data: { json: { ...payload, iv: 'second' } } }),
+    ]
+
+    await mediatorService.processForwardMessage(new DidCommInboundMessageContext(message, { agentContext }))
+
+    expect(vi.mocked(mediationPickupApi.queueMessage).mock.calls.map(([options]) => options.message)).toEqual([
+      { ...payload, iv: 'first' },
+      { ...payload, iv: 'second' },
+    ])
+    expect(deliver).toHaveBeenCalledTimes(1)
   })
 })

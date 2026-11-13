@@ -62,15 +62,9 @@ export class DidCommForwardV2Message extends DidCommMessage {
   @IsString()
   public next!: string
 
-  /** Extract the encrypted message from the first attachment (for mediator forwarding). Uses parent's appendedAttachments (~attach). */
-  public getMessage(): DidCommEncryptedMessage | null {
-    const att = this.appendedAttachments?.[0]
-    if (!att) return null
-    try {
-      return att.getDataAsJson<DidCommEncryptedMessage>()
-    } catch {
-      return null
-    }
+  /** The encrypted messages to deliver, one per attachment: https://identity.foundation/didcomm-messaging/spec/v2.1/#routing-protocol-20 */
+  public getMessages(): DidCommEncryptedMessage[] {
+    return (this.appendedAttachments ?? []).map((attachment) => attachment.getDataAsJson<DidCommEncryptedMessage>())
   }
 
   /**
