@@ -1,11 +1,14 @@
 import type { JsonObject, W3cCredential } from '@credo-ts/core'
+import type {
+  DidCommSignedAttachmentCredentialRequestOptions as DidCommSignedAttachmentAcceptOfferOptions,
+  DidCommSignedAttachmentCreateOfferOptions,
+} from '../../util/didCommSignedAttachmentBinding'
 import type { DidCommCredentialFormat } from '../DidCommCredentialFormat'
 import type {
   AnonCredsLinkSecretCredentialRequestOptions as AnonCredsLinkSecretAcceptOfferOptions,
   DataIntegrityCredential,
   DataIntegrityCredentialOffer,
   DataIntegrityCredentialRequest,
-  DidCommSignedAttachmentCredentialRequestOptions as DidCommSignedAttachmentAcceptOfferOptions,
   W3C_VC_DATA_MODEL_VERSION,
 } from './dataIntegrityExchange'
 
@@ -13,11 +16,6 @@ export interface DidCommAnonCredsLinkSecretCreateOfferOptions {
   credentialDefinitionId: string
   revocationRegistryDefinitionId?: string
   revocationRegistryIndex?: number
-}
-
-export interface DidCommSignedAttachmentCreateOfferOptions {
-  didMethodsSupported?: string[]
-  algsSupported?: string[]
 }
 
 export interface DidCommDataIntegrityAcceptOfferFormat {

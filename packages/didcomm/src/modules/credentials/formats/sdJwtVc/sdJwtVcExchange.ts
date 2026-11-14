@@ -2,13 +2,13 @@ import type { ClaimPath, SdJwtVcPayload } from '@credo-ts/core'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsBoolean, IsObject, IsOptional, ValidateNested } from 'class-validator'
 import {
-  W3cV2SdJwtBindingMethods,
-  type W3cV2SdJwtCredentialRequestBindingProof,
-} from '../w3cV2SdJwt/w3cV2SdJwtExchange'
+  DidCommSignedAttachmentBindingMethods,
+  type DidCommSignedAttachmentCredentialRequestBindingProof,
+} from '../../util/didCommSignedAttachmentBinding'
 
 export interface SdJwtVcCredentialOfferOptions {
   bindingRequired?: boolean
-  bindingMethod?: W3cV2SdJwtBindingMethods
+  bindingMethod?: DidCommSignedAttachmentBindingMethods
   selectivelyDisclosableClaims?: ClaimPath[]
   credential: SdJwtVcPayload
 }
@@ -33,9 +33,9 @@ export class SdJwtVcCredentialOffer {
 
   @IsOptional()
   @ValidateNested()
-  @Type(() => W3cV2SdJwtBindingMethods)
+  @Type(() => DidCommSignedAttachmentBindingMethods)
   @Expose({ name: 'binding_method' })
-  public bindingMethod?: W3cV2SdJwtBindingMethods
+  public bindingMethod?: DidCommSignedAttachmentBindingMethods
 
   @IsOptional()
   @IsArray()
@@ -51,7 +51,7 @@ export class SdJwtVcCredentialOffer {
  * The `didcomm/dc-sd-jwt-request@v1.0` attachment format of Aries RFC 0884.
  */
 export interface SdJwtVcCredentialRequest {
-  binding_proof?: W3cV2SdJwtCredentialRequestBindingProof
+  binding_proof?: DidCommSignedAttachmentCredentialRequestBindingProof
 }
 
 /**

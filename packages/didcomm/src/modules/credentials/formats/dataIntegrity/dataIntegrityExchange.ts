@@ -166,11 +166,6 @@ export interface AnonCredsLinkSecretCredentialRequestOptions {
   linkSecretId?: string
 }
 
-export interface DidCommSignedAttachmentCredentialRequestOptions {
-  kid: string
-  alg?: string
-}
-
 export interface DataIntegrityCredential {
   credential: JsonObject
 }
