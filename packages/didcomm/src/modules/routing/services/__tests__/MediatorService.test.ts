@@ -227,7 +227,11 @@ describe('MediatorService - default config', () => {
         updates: [{ action: DidCommKeylistUpdateAction.add, recipientKey }],
       })
       const response = await mediatorService.processKeylistUpdateRequest(
-        new DidCommInboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
+        new DidCommInboundMessageContext(keyListUpdate, {
+          senderKey: testSenderKey,
+          connection: mockConnection,
+          agentContext,
+        })
       )
 
       expect(mediationRepository.findByQuery).toHaveBeenCalledWith(
@@ -258,7 +262,11 @@ describe('MediatorService - default config', () => {
         updates: [{ action: DidCommKeylistUpdateAction.add, recipientKey }],
       })
       const response = await mediatorService.processKeylistUpdateRequest(
-        new DidCommInboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
+        new DidCommInboundMessageContext(keyListUpdate, {
+          senderKey: testSenderKey,
+          connection: mockConnection,
+          agentContext,
+        })
       )
 
       expect(response.updated).toEqual([
@@ -293,7 +301,11 @@ describe('MediatorService - default config', () => {
         updates: [{ action: DidCommKeylistUpdateAction.add, recipientKey }],
       })
       const response = await mediatorService.processKeylistUpdateRequest(
-        new DidCommInboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
+        new DidCommInboundMessageContext(keyListUpdate, {
+          senderKey: testSenderKey,
+          connection: mockConnection,
+          agentContext,
+        })
       )
 
       expect(mediationRepository.findByQuery).toHaveBeenCalledWith(
@@ -762,7 +774,11 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
       keylistUpdate.setThread({ threadId: 'threadId' })
 
       const response = await mediatorService.processKeylistUpdateV2(
-        new DidCommInboundMessageContext(keylistUpdate, { connection: mockConnection, agentContext })
+        new DidCommInboundMessageContext(keylistUpdate, {
+          senderKey: testSenderKey,
+          connection: mockConnection,
+          agentContext,
+        })
       )
 
       expect(mediationRepository.findByQuery).toHaveBeenCalledWith(
@@ -810,7 +826,11 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
       keylistUpdate.setThread({ threadId: 'threadId' })
 
       const response = await mediatorService.processKeylistUpdateV2(
-        new DidCommInboundMessageContext(keylistUpdate, { connection: mockConnection, agentContext })
+        new DidCommInboundMessageContext(keylistUpdate, {
+          senderKey: testSenderKey,
+          connection: mockConnection,
+          agentContext,
+        })
       )
 
       expect(mediationRepository.findByQuery).toHaveBeenCalledWith(
