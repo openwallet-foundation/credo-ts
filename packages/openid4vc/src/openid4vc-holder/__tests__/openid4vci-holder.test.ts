@@ -5,6 +5,7 @@ import {
   type KeyDidCreateOptions,
   Kms,
   SdJwtVcRecord,
+  SdJwtVcService,
   TypedArrayEncoder,
   W3cCredentialRecord,
   W3cCredentialService,
@@ -67,6 +68,38 @@ describe('OpenId4VcHolder', () => {
 
   afterEach(async () => {
     await holder.shutdown()
+  })
+
+  describe('verifyCredentialStatus', () => {
+    it.each([false, true])(
+      'is passed on to the SD-JWT VC verification of a received credential (verifyCredentialStatus: %s)',
+      async (verifyCredentialStatus) => {
+        const sdJwtVcService = holder.dependencyManager.resolve(SdJwtVcService)
+        const verifySpy = vi
+          .spyOn(sdJwtVcService, 'verify')
+          .mockResolvedValueOnce({ isValid: false, error: new Error('not verified in this test') })
+
+        const holderService = holder.dependencyManager.resolve(OpenId4VciHolderService)
+        await expect(
+          // biome-ignore lint/complexity/useLiteralKeys: testing a private method
+          holderService['handleCredentialResponse'](
+            holder.context,
+            { credentials: [{ credential: 'eyJhbGciOiJFUzI1NiJ9.e30.c2ln~' }] },
+            {
+              verifyCredentialStatus,
+              format: OpenId4VciCredentialFormatProfile.SdJwtDc,
+              credentialConfigurationId: 'pid',
+              credentialConfiguration: { format: 'dc+sd-jwt', vct: 'https://example.com/pid' },
+            }
+          )
+        ).rejects.toThrow('Failed to validate sd-jwt-vc credentials')
+
+        expect(verifySpy).toHaveBeenCalledWith(
+          holder.context,
+          expect.objectContaining({ disableStatusValidation: !verifyCredentialStatus })
+        )
+      }
+    )
   })
 
   describe('[DRAFT 11]: Pre-authorized flow', () => {
