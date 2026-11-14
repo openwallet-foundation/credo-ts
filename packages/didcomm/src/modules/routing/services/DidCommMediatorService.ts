@@ -323,8 +323,15 @@ export class DidCommMediatorService {
       const publicKeyBase58 = didKeyToVerkey(update.recipientKey)
 
       if (update.action === DidCommKeylistUpdateAction.add) {
-        mediationRecord.addRecipientKey(publicKeyBase58)
-        updated.result = DidCommKeylistUpdateResult.Success
+        const taken = await this.isRegisteredToAnotherMediatee(messageContext.agentContext, mediationRecord, {
+          recipientKeys: [publicKeyBase58],
+        })
+        if (taken) {
+          updated.result = DidCommKeylistUpdateResult.ClientError
+        } else {
+          mediationRecord.addRecipientKey(publicKeyBase58)
+          updated.result = DidCommKeylistUpdateResult.Success
+        }
 
         keylist.push(updated)
       } else if (update.action === DidCommKeylistUpdateAction.remove) {
@@ -337,6 +344,20 @@ export class DidCommMediatorService {
     await this.mediationRepository.update(messageContext.agentContext, mediationRecord)
 
     return new DidCommKeylistUpdateResponseMessage({ keylist, threadId: message.threadId })
+  }
+
+  /**
+   * A recipient key or DID stays with the mediatee that registered it first. Any mediatee can learn the
+   * keys of another one from its invitations, and registering them too would make every forward for them
+   * ambiguous, so the first mediatee stops receiving messages.
+   */
+  private async isRegisteredToAnotherMediatee(
+    agentContext: AgentContext,
+    mediationRecord: DidCommMediationRecord,
+    query: { recipientKeys: [string] } | { recipientDids: [string] }
+  ): Promise<boolean> {
+    const records = await this.mediationRepository.findByQuery(agentContext, query)
+    return records.some((record) => record.id !== mediationRecord.id)
   }
 
   public async createGrantMediationMessage(agentContext: AgentContext, mediationRecord: DidCommMediationRecord) {
@@ -466,8 +487,15 @@ export class DidCommMediatorService {
       let result = KeylistUpdateResultV2.NoChange
       const canonicalRecipientDid = getDidPeer4ShortFormForEquivalence(update.recipientDid) ?? update.recipientDid
       if (update.action === KeylistUpdateActionV2.add) {
-        mediationRecord.addRecipientDid(canonicalRecipientDid)
-        result = KeylistUpdateResultV2.Success
+        const taken = await this.isRegisteredToAnotherMediatee(messageContext.agentContext, mediationRecord, {
+          recipientDids: [canonicalRecipientDid],
+        })
+        if (taken) {
+          result = KeylistUpdateResultV2.ClientError
+        } else {
+          mediationRecord.addRecipientDid(canonicalRecipientDid)
+          result = KeylistUpdateResultV2.Success
+        }
       } else if (update.action === KeylistUpdateActionV2.remove) {
         const success = mediationRecord.removeRecipientDid(canonicalRecipientDid)
         result = success ? KeylistUpdateResultV2.Success : KeylistUpdateResultV2.NoChange

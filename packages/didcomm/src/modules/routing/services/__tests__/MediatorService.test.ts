@@ -43,6 +43,7 @@ import {
   DidCommKeylistUpdateV2Message,
   DidCommMediateRequestV2Message,
   KeylistUpdateActionV2,
+  KeylistUpdateResultV2,
 } from '../../protocol/v2/messages'
 import {
   DidCommMediationRecord,
@@ -156,6 +157,7 @@ describe('MediatorService - default config', () => {
       })
 
       mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockResolvedValue([])
 
       const keyListUpdate = new DidCommKeylistUpdateMessage({
         updates: [
@@ -190,6 +192,65 @@ describe('MediatorService - default config', () => {
         },
       ])
     })
+
+    test('does not add a recipient key that another mediatee registered', async () => {
+      const recipientKey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const mediationRecord = new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'threadId',
+      })
+      const otherMediationRecord = new DidCommMediationRecord({
+        id: 'other-mediation',
+        connectionId: 'otherConnectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'otherThreadId',
+        recipientKeys: [recipientKey],
+      })
+
+      mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockResolvedValue([otherMediationRecord])
+
+      const keyListUpdate = new DidCommKeylistUpdateMessage({
+        updates: [{ action: DidCommKeylistUpdateAction.add, recipientKey }],
+      })
+      const response = await mediatorService.processKeylistUpdateRequest(
+        new DidCommInboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
+      )
+
+      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(agentContext, { recipientKeys: [recipientKey] })
+      expect(mediationRecord.recipientKeys).toEqual([])
+      expect(response.updated).toEqual([
+        { action: DidCommKeylistUpdateAction.add, recipientKey, result: DidCommKeylistUpdateResult.ClientError },
+      ])
+    })
+
+    test('adds a recipient key that only the own mediation record has', async () => {
+      const recipientKey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const mediationRecord = new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'threadId',
+        recipientKeys: [recipientKey],
+      })
+
+      mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockResolvedValue([mediationRecord])
+
+      const keyListUpdate = new DidCommKeylistUpdateMessage({
+        updates: [{ action: DidCommKeylistUpdateAction.add, recipientKey }],
+      })
+      const response = await mediatorService.processKeylistUpdateRequest(
+        new DidCommInboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
+      )
+
+      expect(response.updated).toEqual([
+        { action: DidCommKeylistUpdateAction.add, recipientKey, result: DidCommKeylistUpdateResult.Success },
+      ])
+    })
   })
 
   test('processes did:key encoded recipient keys', async () => {
@@ -202,6 +263,7 @@ describe('MediatorService - default config', () => {
     })
 
     mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+    mockFunction(mediationRepository.findByQuery).mockResolvedValue([])
 
     const keyListUpdate = new DidCommKeylistUpdateMessage({
       updates: [
@@ -587,6 +649,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
       })
 
       mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockResolvedValue([])
       mockFunction(mediationRepository.update).mockResolvedValue(undefined)
 
       const keylistUpdate = new DidCommKeylistUpdateV2Message({
@@ -608,6 +671,48 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
       expect(response.updated[0].recipientDid).toBe('did:peer:2.abc')
       expect(response.updated[0].action).toBe(KeylistUpdateActionV2.add)
       expect(response.updated[1].recipientDid).toBe('did:peer:2.xyz')
+    })
+
+    test('does not add a recipient DID that another mediatee registered', async () => {
+      const mediationRecord = new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'threadId',
+        protocolVersion: 'v2',
+      })
+      const otherMediationRecord = new DidCommMediationRecord({
+        id: 'other-mediation',
+        connectionId: 'otherConnectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'otherThreadId',
+        protocolVersion: 'v2',
+        recipientDids: ['did:peer:2.abc'],
+      })
+
+      mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockResolvedValue([otherMediationRecord])
+      mockFunction(mediationRepository.update).mockResolvedValue(undefined)
+
+      const keylistUpdate = new DidCommKeylistUpdateV2Message({
+        updates: [{ recipientDid: 'did:peer:2.abc', action: KeylistUpdateActionV2.add }],
+      })
+      keylistUpdate.setThread({ threadId: 'threadId' })
+
+      const response = await mediatorService.processKeylistUpdateV2(
+        new DidCommInboundMessageContext(keylistUpdate, { connection: mockConnection, agentContext })
+      )
+
+      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(agentContext, { recipientDids: ['did:peer:2.abc'] })
+      expect(mediationRecord.recipientDids ?? []).not.toContain('did:peer:2.abc')
+      expect(response.updated).toEqual([
+        {
+          recipientDid: 'did:peer:2.abc',
+          action: KeylistUpdateActionV2.add,
+          result: KeylistUpdateResultV2.ClientError,
+        },
+      ])
     })
   })
 
