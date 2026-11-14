@@ -589,16 +589,14 @@ describe('DidCommV2Envelope', () => {
       )
     })
 
-    it('binds a message without from to the skid DID', async () => {
+    it('rejects an authcrypt message without from', async () => {
       const sender = await createKeyAgreementDid()
       const recipient = await createKeyAgreementDid()
       const encrypted = await packAuthcrypt({ to: [recipient.did] }, sender, recipient)
 
-      const { authenticatedSenderDid } = await agent.dependencyManager
-        .resolve(DidCommV2Envelope)
-        .unpack(agent.context, encrypted)
-
-      expect(authenticatedSenderDid).toBe(sender.didUrl.split('#')[0])
+      await expect(agent.dependencyManager.resolve(DidCommV2Envelope).unpack(agent.context, encrypted)).rejects.toThrow(
+        /authcrypt message from .* has no 'from' header/
+      )
     })
 
     it('rejects a from that does not match the skid DID', async () => {
@@ -712,7 +710,7 @@ describe('DidCommV2Envelope', () => {
       const sender = await createKeyAgreementDid()
       const recipient = await createKeyAgreementDid()
       const encrypted = await packAuthcrypt(
-        { to: to === undefined ? undefined : [to === 'recipient' ? recipient.did : to] },
+        { from: sender.did, to: to === undefined ? undefined : [to === 'recipient' ? recipient.did : to] },
         sender,
         recipient
       )
