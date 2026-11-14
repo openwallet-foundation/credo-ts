@@ -180,10 +180,13 @@ export function buildDefaultV2PlaintextFromMessage(message: DidCommMessage): Did
   if (langVal !== undefined) v2.lang = langVal
   if (pleaseAck !== undefined) v2.please_ack = ['']
 
-  // DIDComm v2 carries return_route as a top-level header, not the v1 ~transport decorator.
+  // DIDComm v2 carries return_route as a top-level header, not the v1 ~transport decorator. The extension only calls
+  // return_route_thread an "attribute" and does not say where it goes; placing it next to return_route is our reading.
+  // https://github.com/decentralized-identity/didcomm-messaging/blob/main/extensions/return_route/main.md
   if (transport && typeof transport === 'object') {
-    const returnRoute = (transport as Record<string, unknown>).return_route
-    if (returnRoute !== undefined) v2.return_route = returnRoute as string
+    const { return_route, return_route_thread } = transport as Record<string, unknown>
+    if (return_route !== undefined) v2.return_route = return_route as string
+    if (return_route_thread !== undefined) v2.return_route_thread = return_route_thread as string
   }
 
   const attachments = [
