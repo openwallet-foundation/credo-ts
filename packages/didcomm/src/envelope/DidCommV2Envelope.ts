@@ -133,6 +133,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       recipientKey: v2Keys.recipients[0].key,
       connection: options?.connection,
       contentEncryptionAlgorithm: this.config.v2DefaultAnoncryptContentEncryption,
+      expiresTime: plaintext.expires_time,
     })
   }
 
@@ -172,12 +173,18 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       (typeof tagsTheirDid === 'string' && tagsTheirDid.length > 0 ? tagsTheirDid : undefined)
     const skidDid = keys.senderKeySkid.startsWith('did:') ? keys.senderKeySkid.split('#')[0] : undefined
 
-    return buildV2PlaintextFromMessage(message, {
-      from:
-        connection?.did && skidDid && areEquivalentDidPeer4Forms(connection.did, skidDid) ? connection.did : skidDid,
+    const plaintext = buildV2PlaintextFromMessage(message, {
+      // from MUST match the skid, byte for byte for a strict peer, so it never takes another did:peer:4 form
+      // from the connection: https://identity.foundation/didcomm-messaging/spec/v2.1/#message-layer-addressing-consistency
+      from: skidDid,
       to: theirDid ? [theirDid] : undefined,
       fromPrior: connection?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.fromPriorJwt,
     })
+
+    // created_time is RECOMMENDED: https://identity.foundation/didcomm-messaging/spec/v2.1/#message-headers
+    if (plaintext.created_time === undefined) plaintext.created_time = utils.dateToSeconds(new Date())
+
+    return plaintext
   }
 
   // ── Unpacking ─────────────────────────────────────────────────────────
@@ -433,6 +440,8 @@ function isAddressedTo(to: unknown, matchedKid: string): boolean {
 
 /**
  * Wrap the envelope in one anoncrypt Forward message for every routing key, outermost hop last.
+ *
+ * The expiry of the wrapped message is copied onto each forward: https://identity.foundation/didcomm-messaging/spec/v2.1/#routing-protocol-20
  */
 export async function wrapInV2Forward(
   agentContext: AgentContext,
@@ -443,6 +452,7 @@ export async function wrapInV2Forward(
     recipientKey: Kms.PublicJwk
     connection?: DidCommPackOptions['connection']
     contentEncryptionAlgorithm: DidCommV2AnoncryptContentEncryptionAlgorithm
+    expiresTime?: number
   }
 ): Promise<DidCommEncryptedMessage> {
   let payload = encryptedMessage
@@ -463,6 +473,7 @@ export async function wrapInV2Forward(
       to: [toKeyAgreementDidUrl(routingKey).split('#')[0]],
       next,
       attachments: [attachment],
+      expiresTime: options.expiresTime,
     })
 
     payload = await envelopeService.packAnoncrypt(agentContext, forwardPlaintext, {
