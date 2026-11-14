@@ -18,7 +18,6 @@ export interface DidCommTrustPingMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0048-trust-ping/README.md#messages
  */
 export class DidCommTrustPingMessage extends DidCommMessage {
-  public readonly allowDidSovPrefix = true
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   /**

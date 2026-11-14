@@ -56,10 +56,17 @@ export class RedisCache implements Cache {
     key: string,
     options?: CacheOptions
   ): Promise<CacheValue | null> {
-    const client = await this.client()
-    const namespacedKey = this.getNamespacedKey(agentContext, key, options)
-    const value = await client.get(namespacedKey)
-    return this.deserialize<CacheValue>(value)
+    try {
+      const client = await this.client()
+      const namespacedKey = this.getNamespacedKey(agentContext, key, options)
+      const value = await client.get(namespacedKey)
+      return this.deserialize<CacheValue>(value)
+    } catch (error) {
+      agentContext.config.logger.warn(`Error getting key '${key}' from the redis cache. Treating it as not cached.`, {
+        error,
+      })
+      return null
+    }
   }
 
   public async set<CacheValue>(
@@ -69,17 +76,24 @@ export class RedisCache implements Cache {
     expiresInSeconds: number | undefined = this.getDefaultExpiryInSeconds(agentContext),
     options?: CacheOptions
   ): Promise<void> {
-    const client = await this.client()
-    const namespacedKey = this.getNamespacedKey(agentContext, key, options)
-    const serializedValue = this.serialize(value)
+    try {
+      const client = await this.client()
+      const namespacedKey = this.getNamespacedKey(agentContext, key, options)
+      const serializedValue = this.serialize(value)
 
-    if (expiresInSeconds) {
-      await client.set(namespacedKey, serializedValue, 'EX', expiresInSeconds)
-    } else {
-      await client.set(namespacedKey, serializedValue)
+      if (expiresInSeconds) {
+        await client.set(namespacedKey, serializedValue, 'EX', expiresInSeconds)
+      } else {
+        await client.set(namespacedKey, serializedValue)
+      }
+    } catch (error) {
+      agentContext.config.logger.warn(`Error setting key '${key}' in the redis cache. The value is not cached.`, {
+        error,
+      })
     }
   }
 
+  // Unlike get and set this throws on failure, as the entry would otherwise stay in the cache
   public async remove(agentContext: AgentContext, key: string, options?: CacheOptions): Promise<void> {
     const client = await this.client()
     const namespacedKey = this.getNamespacedKey(agentContext, key, options)

@@ -1071,15 +1071,11 @@ export class DcqlService {
 
   // FIXME: We need to take into account OpenID4VP metadata (probably providing supported/allowed algs to the DCQL create presentation method)
   private getProofTypeForLdpVc(agentContext: AgentContext, verificationMethod: VerificationMethod) {
-    // For each of the supported algs, find the key types, then find the proof types
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
-    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-    const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwkType(publicJwk)
+    const supportedSignatureSuites = signatureSuiteRegistry.getAllByVerificationMethod(verificationMethod)
     if (supportedSignatureSuites.length === 0) {
-      throw new DcqlError(
-        `Couldn't find a supported signature suite for the given jwk ${publicJwk.jwkTypeHumanDescription}`
-      )
+      throw new DcqlError(`No signature suite supports the verification method type '${verificationMethod.type}'`)
     }
 
     return supportedSignatureSuites[0].proofType

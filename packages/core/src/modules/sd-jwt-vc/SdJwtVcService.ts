@@ -10,8 +10,10 @@ import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
 import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArrayEncoder } from '../../utils'
+import { isAllowedHttpUrl } from '../../utils/uri'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
+import { getStatusListSignerKeyPurposeOptions } from '../token-status-list/assertStatusListSignerKeyPurpose'
 import { TokenStatusListModuleConfig } from '../token-status-list/TokenStatusListModuleConfig'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig, X509Service } from '../x509'
@@ -34,6 +36,7 @@ import type {
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 import {
   extractKeyFromHolderBinding,
+  getIssuerDidUrl,
   getSdJwtHashingAlgorithm,
   getSdJwtSigner,
   getSdJwtVerifier,
@@ -350,7 +353,7 @@ export class SdJwtVcService {
         await sdjwt.verify(compactSdJwtVc, {
           requiredClaimKeys: requiredClaimKeys ? [...requiredClaimKeys, 'vct'] : ['vct'],
           keyBindingNonce: keyBinding?.nonce,
-          currentDate: dateToSeconds(now ?? new Date()),
+          currentDate: now ? dateToSeconds(now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
           disableStatusVerification: statusValidationDisabled,
         })
@@ -372,7 +375,7 @@ export class SdJwtVcService {
 
       try {
         JwtPayload.fromJson(returnSdJwtVc.payload).validate({
-          now: dateToSeconds(now ?? new Date()),
+          now: now ? dateToSeconds(now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
       } catch (error) {
@@ -651,6 +654,10 @@ export class SdJwtVcService {
   }
 
   private async fetchStatusListJwt(agentContext: AgentContext, uri: string): Promise<string> {
+    if (!isAllowedHttpUrl(uri, agentContext.config.allowInsecureHttpUrls)) {
+      throw new SdJwtVcError(`Unable to fetch status list JWT from '${uri}'. Only https urls are supported.`)
+    }
+
     const response = await agentContext.config.fetch(uri, {
       headers: {
         Accept: 'application/statuslist+jwt',
@@ -660,9 +667,7 @@ export class SdJwtVcService {
 
     if (!response.ok) {
       throw new CredoError(
-        `Received invalid response with status ${
-          response.status
-        } when fetching status list JWT from ${uri}. ${await response.text()}`
+        `Received invalid response with status ${response.status} when fetching status list JWT from ${uri}`
       )
     }
 
@@ -727,22 +732,30 @@ export class SdJwtVcService {
           )
         }
 
+        let statusListChain: X509Certificate[]
         try {
-          // Trust check only: ensure the status list certificate chain anchors in the status certificates.
+          statusListChain = header.x5c.map((certificate) => X509Certificate.fromEncodedCertificate(certificate))
+
+          // Ensures the status list certificate chain anchors in the status certificates.
           await X509Service.validateCertificateChain(agentContext, {
             certificateChain: header.x5c,
             trustedCertificates: statusCertificates,
+            validation: {
+              leaf: getStatusListSignerKeyPurposeOptions(agentContext, {
+                statusListSigner: statusListChain[0],
+                credentialSigner: credentialIssuerCertificateChain[0],
+              }),
+            },
           })
         } catch (error) {
           throw new SdJwtVcError(
-            'The status list certificate chain could not be validated against the trusted status certificates.',
+            `The status list certificate chain could not be validated against the trusted status certificates. ${error.message}`,
             { cause: error }
           )
         }
 
         // Mirror mdoc: when no dedicated status certificate is configured, the status list must
         // be signed by the exact same key as the credential issuer.
-        const statusListChain = header.x5c.map((certificate) => X509Certificate.fromEncodedCertificate(certificate))
         const chainMatchesCredentialIssuer =
           statusListChain.length === credentialIssuerCertificateChain.length &&
           statusListChain.every((certificate, index) => certificate.equal(credentialIssuerCertificateChain[index]))
@@ -758,8 +771,7 @@ export class SdJwtVcService {
       }
 
       // did: require the status list signer did to equal the trusted issuer did. The signer did is the
-      // `iss` of the status list payload; the `kid` header is typically a relative reference (e.g.
-      // `#key-1`) that has to be resolved against that did.
+      // `iss` of the status list payload, and the `kid` header has to belong to it like for the credential.
       let statusListIssuerDid: unknown
       try {
         statusListIssuerDid = JsonEncoder.fromBase64Url(data.split('.')[1]).iss
@@ -778,11 +790,7 @@ export class SdJwtVcService {
         )
       }
 
-      const didUrl = header.kid?.startsWith('#') ? `${statusListIssuerDid}${header.kid}` : header.kid
-      if (!didUrl) {
-        throw new SdJwtVcError('Unable to resolve the status list signer: the status list JWT has no `kid` header.')
-      }
-
+      const didUrl = getIssuerDidUrl(statusListIssuerDid, header.kid)
       const { verificationMethod } = await resolveDidUrl(agentContext, didUrl)
       const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
       setJwkAlgFromJwtHeader(publicJwk, header.alg)

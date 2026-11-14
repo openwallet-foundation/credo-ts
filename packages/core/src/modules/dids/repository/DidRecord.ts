@@ -10,7 +10,6 @@ import { DidDocument } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { parseDid } from '../domain/parse'
 import type { DidRecordMetadata } from './didRecordMetadataTypes'
-import { DidRecordMetadataKeys } from './didRecordMetadataTypes'
 
 export interface DidRecordProps {
   id?: string
@@ -43,7 +42,6 @@ type DefaultDidTags = {
 
   role: DidDocumentRole
   method: string
-  legacyUnqualifiedDid?: string
   methodSpecificIdentifier: string
   did: string
 }
@@ -93,13 +91,10 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
   public getTags() {
     const did = parseDid(this.did)
 
-    const legacyDid = this.metadata.get(DidRecordMetadataKeys.LegacyDid)
-
     return {
       ...this._tags,
       role: this.role,
       method: did.method,
-      legacyUnqualifiedDid: legacyDid?.unqualifiedDid,
       did: this.did,
       methodSpecificIdentifier: did.id,
 

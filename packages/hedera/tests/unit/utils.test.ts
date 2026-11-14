@@ -51,7 +51,7 @@ describe('createOrGetKey', () => {
   it('should retrieve an existing key if keyId is provided', async () => {
     const keyId = 'key456'
     const publicJwk: Kms.KmsJwkPublicOkp & { kid: string } = { kty: 'OKP', crv: 'Ed25519', x: 'xxx', kid: 'key123' }
-    kmsMock.getPublicKey.mockResolvedValue(publicJwk)
+    kmsMock.getPublicKey.mockResolvedValue({ publicKey: publicJwk, backend: 'askar' })
 
     const result = await createOrGetKey(kmsMock, keyId)
 
@@ -61,7 +61,7 @@ describe('createOrGetKey', () => {
 
   it('should throw an error if key with given keyId is not found', async () => {
     // @ts-expect-error
-    kmsMock.getPublicKey.mockResolvedValue(null)
+    kmsMock.getPublicKey.mockResolvedValue({ publicKey: null, backend: 'askar' })
 
     // Expect the function to throw an error for a missing key
     await expect(createOrGetKey(kmsMock, 'notfound')).rejects.toThrow("Key with key id 'notfound' not found")
@@ -71,7 +71,7 @@ describe('createOrGetKey', () => {
     const keyId = 'badkey'
     const badJwk: Kms.KmsJwkPublicRsa & { kid: string } = { e: '', kid: 'key-1', n: '', kty: 'RSA' }
 
-    kmsMock.getPublicKey.mockResolvedValue(badJwk)
+    kmsMock.getPublicKey.mockResolvedValue({ publicKey: badJwk, backend: 'askar' })
 
     const spyDesc = vi.spyOn(Kms, 'getJwkHumanDescription').mockReturnValue('unsupported key type')
 

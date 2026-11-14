@@ -122,7 +122,6 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 > should correctly update the did recor
     "id": "4993c740-5cd9-4c79-a7d8-23d1266d31be",
     "tags": {
       "did": "did:indy:bcovrin:test:Pow4pdnPgTS7JAXvWkoF2c",
-      "legacyUnqualifiedDid": undefined,
       "method": "indy",
       "methodSpecificIdentifier": "bcovrin:test:Pow4pdnPgTS7JAXvWkoF2c",
       "qualifiedIndyDid": undefined,
@@ -143,7 +142,6 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 > should correctly update the did recor
     "id": "8168612b-73d1-4917-9a61-84e8102988f0",
     "tags": {
       "did": "did:indy:bcovrin:test:8DFqUo6UtQLLZETE7Gm29k",
-      "legacyUnqualifiedDid": undefined,
       "method": "indy",
       "methodSpecificIdentifier": "bcovrin:test:8DFqUo6UtQLLZETE7Gm29k",
       "qualifiedIndyDid": undefined,

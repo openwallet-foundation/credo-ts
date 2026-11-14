@@ -49,7 +49,7 @@ import { DidCommRoutingService, type RemoveRoutingOptions } from './modules/rout
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isDidCommV2SignedMessage } from './util/didcommVersion'
 import { isValidJweStructure } from './util/JWE'
-import { parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
+import { parseMessageType } from './util/messageType'
 import type { DidCommV2KeyAgreementJwk, DidCommV2SignedMessageWire } from './v2'
 
 const FIRST_MESSAGE_CONNECTION_ID_NAMESPACE = '6b238103-2e51-4a24-9fd0-8d4223f63b08'
@@ -633,9 +633,6 @@ export class DidCommMessageReceiver {
    * @param message the plaintext message for which to transform the message in to a class instance
    */
   private async transformMessage(message: DidCommPlaintextMessage): Promise<DidCommMessage> {
-    // replace did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix for message type with https://didcomm.org
-    replaceLegacyDidSovPrefixOnMessage(message)
-
     const messageType = message['@type']
     const MessageClass = this.messageHandlerRegistry.getMessageClassForMessageType(messageType) ?? DidCommMessage
 

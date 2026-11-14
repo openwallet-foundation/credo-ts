@@ -47,7 +47,7 @@ export class PeerDidRegistrar implements DidRegistrar {
             },
           ]
         } else {
-          const _publicJwk = await kms.getPublicKey({
+          const { publicKey: _publicJwk } = await kms.getPublicKey({
             keyId: options.options.keyId,
           })
 

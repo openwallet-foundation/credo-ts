@@ -71,7 +71,7 @@ export class TokenStatusListService {
     const issuedAt = options.issuedAt ?? now
 
     const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
-    const jwk = await kms.getPublicKey({ keyId })
+    const { publicKey: jwk } = await kms.getPublicKey({ keyId })
 
     try {
       if (options.format === 'cwt') {
@@ -181,7 +181,7 @@ export class TokenStatusListService {
     }
 
     const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
-    const jwk = await kms.getPublicKey({ keyId })
+    const { publicKey: jwk } = await kms.getPublicKey({ keyId })
 
     const now = options.now ?? new Date()
     const issuedAt = options.issuedAt ?? now

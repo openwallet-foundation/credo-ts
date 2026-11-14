@@ -6,6 +6,7 @@ import { KeyManagementKeyNotFoundError } from './error/KeyManagementKeyNotFoundE
 import {
   getJwkHumanDescription,
   type KmsJwkPrivate,
+  type KmsJwkPublic,
   type KnownJwaSignatureAlgorithm,
   KnownJwaSignatureAlgorithms,
 } from './jwk'
@@ -163,11 +164,12 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
     const operation = {
       operation: 'sign',
       algorithm: options.algorithm,
+      keyId: options.keyId,
     } as const
 
     const kms = backend
       ? this.getKms(this.agentContext, backend, operation)
-      : (await this.getKmsForOperationAndKeyId(this.agentContext, options.keyId, operation)).kms
+      : await this.getKmsForKeyOperation(options.keyId, operation)
     return await kms.sign(this.agentContext, kmsOptions)
   }
 
@@ -181,12 +183,12 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
       'Invalid options provided to verify method'
     )
 
-    const operation = { operation: 'verify', algorithm: options.algorithm } as const
     const keyId = options.key.keyId
+    const operation = { operation: 'verify', algorithm: options.algorithm, keyId } as const
     const kms =
       backend || !keyId
         ? this.getKms(this.agentContext, backend, operation)
-        : (await this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)).kms
+        : await this.getKmsForKeyOperation(keyId, operation)
 
     return await kms.verify(this.agentContext, kmsOptions)
   }
@@ -201,16 +203,17 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
       'Invalid options provided to encrypt method'
     )
 
+    const keyId = routingKeyId(kmsOptions.key)
     const operation = {
       operation: 'encrypt',
       encryption: options.encryption,
       keyAgreement: options.key.keyAgreement,
+      keyId,
     } as const
-    const keyId = routingKeyId(kmsOptions.key)
     const kms =
       backend || !keyId
         ? this.getKms(this.agentContext, backend, operation)
-        : (await this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)).kms
+        : await this.getKmsForKeyOperation(keyId, operation)
 
     return await kms.encrypt(this.agentContext, kmsOptions)
   }
@@ -225,16 +228,17 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
       'Invalid options provided to decrypt method'
     )
 
+    const keyId = routingKeyId(options.key)
     const operation = {
       operation: 'decrypt',
       decryption: options.decryption,
       keyAgreement: options.key.keyAgreement,
+      keyId,
     } as const
-    const keyId = routingKeyId(options.key)
     const kms =
       backend || !keyId
         ? this.getKms(this.agentContext, backend, operation)
-        : (await this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)).kms
+        : await this.getKmsForKeyOperation(keyId, operation)
 
     return await kms.decrypt(this.agentContext, kmsOptions)
   }
@@ -267,9 +271,12 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
   }
 
   /**
-   * Get a public key.
+   * Get a public key, with the backend that holds it. Pass that backend to the operations that
+   * follow on the same key, so the key is not looked up again to find its backend.
    */
-  public async getPublicKey(options: WithBackend<KmsGetPublicKeyOptions, Backends>) {
+  public async getPublicKey(
+    options: WithBackend<KmsGetPublicKeyOptions, Backends>
+  ): Promise<{ publicKey: KmsJwkPublic; backend: Backends[number]['backend'] }> {
     const { backend, keyId } = zParseWithErrorHandling(
       zWithBackend(zKmsGetPublicKeyOptions),
       options,
@@ -284,11 +291,11 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
         throw new KeyManagementKeyNotFoundError(keyId, [backend])
       }
 
-      return publicKey
+      return { publicKey, backend: kms.backend }
     }
 
-    const { publicKey } = await this.getKmsForOperationAndKeyId(this.agentContext, keyId)
-    return publicKey
+    const { publicKey, kms } = await this.getKmsForOperationAndKeyId(this.agentContext, keyId)
+    return { publicKey, backend: kms.backend }
   }
 
   /**
@@ -355,6 +362,19 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
         ? `The key may exist in one of the key management services in which case the key management service does not support the ${getKmsOperationHumanDescription(operation)}`
         : undefined
     )
+  }
+
+  /**
+   * Get the kms to run an operation with a key. With one backend that supports the operation
+   * it can avoid expensive lookups of the key.
+   */
+  private async getKmsForKeyOperation(keyId: string, operation: KmsOperation) {
+    const supported = this.keyManagementConfig.backends.filter((kms) =>
+      kms.isOperationSupported(this.agentContext, operation)
+    )
+    if (supported.length === 1) return supported[0]
+
+    return (await this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)).kms
   }
 
   /**

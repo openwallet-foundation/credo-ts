@@ -1,3 +1,4 @@
+import Redis from 'ioredis'
 import { getAgentContext } from '../../core/tests/helpers'
 import { RedisCache } from '../src'
 
@@ -90,5 +91,16 @@ describe('RedisCache', () => {
 
     await expect(redisCache.get(agentContextTwo, '7')).resolves.toBeNull()
     await expect(redisCache.get(agentContextTwo, '8')).resolves.toBeNull()
+  })
+
+  it('should not throw from get and set when redis fails, but throw from remove', async () => {
+    const client = new Redis({ lazyConnect: true })
+    vi.spyOn(client, 'ping').mockRejectedValue(new Error('redis unavailable'))
+    vi.spyOn(client, 'connect').mockRejectedValue(new Error('redis unavailable'))
+    const failingCache = new RedisCache(client)
+
+    await expect(failingCache.set(agentContext, 'unavailable', 'value')).resolves.toBeUndefined()
+    await expect(failingCache.get(agentContext, 'unavailable')).resolves.toBeNull()
+    await expect(failingCache.remove(agentContext, 'unavailable')).rejects.toThrow('redis unavailable')
   })
 })

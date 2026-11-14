@@ -1,19 +1,19 @@
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { JsonTransformer } from '../../../utils'
+import { JsonLdModule } from '../jsonld'
 import { W3cJsonLdVerifiableCredential } from '../linked-data-proofs'
 import { customDocumentLoader } from '../linked-data-proofs/__tests__/documentLoader'
 import { Ed25519Signature2018Fixtures } from '../linked-data-proofs/__tests__/fixtures'
 import { W3cCredentialRecord, W3cCredentialRepository } from '../repository'
 import { W3cCredentialService } from '../W3cCredentialService'
-import { W3cCredentialsModule } from '../W3cCredentialsModule'
 
 const agentOptions = getAgentOptions(
   'W3cCredentialsApi',
   {},
   {},
   {
-    w3cCredentials: new W3cCredentialsModule({
+    jsonLd: new JsonLdModule({
       documentLoader: customDocumentLoader,
     }),
   }

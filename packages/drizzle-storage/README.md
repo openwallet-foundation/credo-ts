@@ -100,20 +100,21 @@ The following bundles are provided out of the box by the Drizzle storage module:
 
 - `coreBundle` from `@credo-ts/drizzle-storage/core` (`core`)
 - `didcommBundle` from `@credo-ts/drizzle-storage/didcomm` (`didcomm`)
-- `actionMenuBundle` from `@credo-ts/drizzle-storage/action-menu` (`action-menu`)
 - `anonCredsBundle` from `@credo-ts/drizzle-storage/anoncreds` (`anoncreds`)
 - `openid4vcBundle` from `@credo-ts/drizzle-storage/openid4vc` (`openid4vc`)
-- `drpcBundle` from `@credo-ts/drizzle-storage/drpc` (`drpc`)
 - `tenantsBundle` from `@credo-ts/drizzle-storage/tenants` (`tenants`)
-- `questionAnswerBundle` from `@credo-ts/drizzle-storage/question-answer` (`question-answer`)
+
+The bundles of the DIDComm extension modules are provided by the module packages themselves, under their `/drizzle` subpath. For example, `@credo-ts/didcomm-action-menu/drizzle` provides the `action-menu` bundle, `@credo-ts/didcomm-drpc/drizzle` the `drpc` bundle, and `@credo-ts/didcomm-question-answer/drizzle` the `question-answer` bundle. See the [Credo DIDComm extensions repository](https://github.com/openwallet-foundation/credo-ts-didcomm-ext) for the full list.
 
 > [!IMPORTANT]  
-> Make sure to order the bundles to account for any dependencies between modules. For example, the `actionMenuBundle`, depends on the connection record from `didcommBundle`. Generally we recommend to adhere to the order defined above, and always provide custom records after the records provided by the `@credo-ts/drizzle-storage` package.
+> Make sure to order the bundles to account for any dependencies between modules. For example, the `didcommActionMenuBundle` from `@credo-ts/didcomm-action-menu/drizzle` depends on the connection record from `didcommBundle`. Generally we recommend to adhere to the order defined above, and always provide custom records after the records provided by the `@credo-ts/drizzle-storage` package.
 
-The following defines the bundles for an agent using the `didcomm` and `anoncreds` extension modules, but doesn't use the `action-menu` extension module:
+The following defines the bundles for an agent using the `didcomm` and `anoncreds` extension modules, and the `@credo-ts/didcomm-action-menu` module:
 
 ```ts
-const bundles = [coreBundle, didcommBundle, actionMenuBundle, anoncredsBundle, questionAnswerBundle] as const;
+import { didcommActionMenuBundle } from '@credo-ts/didcomm-action-menu/drizzle'
+
+const bundles = [coreBundle, didcommBundle, anoncredsBundle, didcommActionMenuBundle] as const;
 ```
 
 ### Migrations
@@ -128,7 +129,7 @@ In Node.JS we can apply migrations outside of the code with a CLI.
 
 In the example below we're assuming `postgres` is used as the database dialect, but it can also be used with `sqlite`. The following parameters need to be provided to the CLI:
 
-- `bundle` - this defines the record bundles that migrations need to be applied for. For the default records provided by Credo you can just provide the module names (as documented above, `@credo-ts/drizzle-storage/core` becomes `core`). For other modules, consult the documentation of that module on the bundle name to provide. This MUST match with the records being provided and used during runtime in your Credo agent.
+- `bundle` - this defines the record bundles that migrations need to be applied for. For the default records provided by Credo you can just provide the module names (as documented above, `@credo-ts/drizzle-storage/core` becomes `core`). For other modules, pass the module that exports the bundle, for example `@credo-ts/didcomm-action-menu/drizzle`, or consult the documentation of that module. This MUST match with the records being provided and used during runtime in your Credo agent.
 - `dialect` - the dialect to use for migrations. Either `postgres` or `sqlite` and MUST match with the database being used during runtime in your Credo agent.
 - `database-url` - the url to connect to the database. You can also provide this using the `DRIZZLE_DATABASE_URL` environment variable (recommended).
 
@@ -140,10 +141,10 @@ If the `@credo-ts/drizzle-storage` package is already installed in your project,
 ```sh
 # or npm or yarn
 # Postgres
-pnpm drizzle-storage --bundle core --bundle didcomm --bundle action-menu --bundle anoncreds --bundle question-answer migrate --dialect postgres --database-url "postgresql://postgres:postgres@localhost:5432/postgres"
+pnpm drizzle-storage --bundle core --bundle didcomm --bundle anoncreds --bundle @credo-ts/didcomm-action-menu/drizzle migrate --dialect postgres --database-url "postgresql://postgres:postgres@localhost:5432/postgres"
 
 # SQL
-pnpm drizzle-storage --bundle core --bundle didcomm --bundle action-menu --bundle anoncreds --bundle question-answer migrate --dialect sqlite --database-url "file:./sqlite_agent.db"
+pnpm drizzle-storage --bundle core --bundle didcomm --bundle anoncreds --bundle @credo-ts/didcomm-action-menu/drizzle migrate --dialect sqlite --database-url "file:./sqlite_agent.db"
 
 # using npx
 npx @credo-ts/drizzle-storage@^x.x migrate
@@ -225,7 +226,7 @@ Developing a custom Drizzle storage bundle for Credo requires the following:
 - A bundle definition describing the records, and metadata about the migrations
 - A set of record files with the PostgreSQL and SQLite database definitions, as well as the Credo record adapters.
 
-The Drizzle storage module for Credo is still in an experimental phase. You can look at the bundles from this repository (such as `action-menu`) to see how a storage bundle is defined.
+The Drizzle storage module for Credo is still in an experimental phase. You can look at the bundles from this repository (such as `tenants`), or at the `/drizzle` subpath of the packages in the [Credo DIDComm extensions repository](https://github.com/openwallet-foundation/credo-ts-didcomm-ext), to see how a storage bundle is defined.
 
 ### Record adapters
 
