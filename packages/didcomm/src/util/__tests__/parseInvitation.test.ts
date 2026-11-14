@@ -257,4 +257,37 @@ describe('v2 out-of-band invitations', () => {
 
     expect(invitation.toJSON()['requests~attach']).toMatchObject([{ '@id': 'attachment-1', data: { base64 } }])
   })
+
+  test('accepts a higher minor version of the invitation type', () => {
+    const invitation = parseInvitationJson({
+      type: 'https://didcomm.org/out-of-band/2.1/invitation',
+      id: 'invitation-1',
+      from: 'did:example:alice',
+      body: {},
+    })
+
+    expect(invitation.invitationType).toBe(DidCommInvitationType.V2OutOfBand)
+    expect(invitation.v2Invitation?.type).toBe('https://didcomm.org/out-of-band/2.1/invitation')
+  })
+
+  test('keeps the v2 invitation type when the invitation comes from a short url', async () => {
+    const fetch = vi.fn(
+      async () =>
+        ({
+          status: 200,
+          ok: true,
+          headers: header,
+          json: async () => ({
+            type: 'https://didcomm.org/out-of-band/2.0/invitation',
+            id: 'invitation-1',
+            from: 'did:example:alice',
+            body: {},
+          }),
+        }) as unknown as Response
+    )
+
+    const invitation = await parseInvitationShortUrl('https://example.com/short', { ...agentDependencies, fetch })
+
+    expect(invitation.invitationType).toBe(DidCommInvitationType.V2OutOfBand)
+  })
 })

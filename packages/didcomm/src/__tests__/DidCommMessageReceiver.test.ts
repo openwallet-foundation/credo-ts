@@ -1,11 +1,15 @@
-import { JsonEncoder } from '@credo-ts/core'
+import { JsonEncoder, utils } from '@credo-ts/core'
 import { Agent } from '../../../core/src/agent/Agent'
 import { getAgentOptions, getMockConnection } from '../../../core/tests/helpers'
 import { setupSubjectTransports } from '../../../core/tests/transport'
+import { DidCommDispatcher } from '../DidCommDispatcher'
 import { DidCommMessageReceiver } from '../DidCommMessageReceiver'
 import { DidCommMessageSender } from '../DidCommMessageSender'
 import { DidCommProblemReportV2Message } from '../messages'
+import { DidCommTrustPingMessage } from '../modules/connections/messages'
+import { toAbsoluteDidUrl } from '../modules/connections/services/helpers'
 import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from '../util/didcommVersion'
+import { DidCommV2EnvelopeService } from '../v2'
 
 describe('DidCommMessageReceiver', () => {
   describe('v2 message handling', () => {
@@ -67,6 +71,85 @@ describe('DidCommMessageReceiver', () => {
       )
 
       await agent.shutdown()
+    })
+
+    describe('signed messages', () => {
+      let agent: Agent
+
+      beforeAll(async () => {
+        agent = new Agent(
+          getAgentOptions('ReceiverSignedMessages', { didcommVersions: ['v1', 'v2'] }, {}, undefined, {
+            requireDidcomm: true,
+          })
+        )
+        await agent.initialize()
+      })
+
+      afterAll(async () => {
+        await agent.shutdown()
+      })
+
+      afterEach(() => {
+        vi.restoreAllMocks()
+      })
+
+      const createSignedPing = async () => {
+        const { outOfBandInvitation } = await agent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+        const signerDid = outOfBandInvitation.v2Invitation?.from as string
+        const { didDocument, keys } = await agent.dids.resolveCreatedDidDocumentWithKeys(signerDid)
+        const [authentication] = didDocument.findVerificationMethodsByPurpose(['authentication'])
+        const signingKeyId = keys?.find((key) => authentication.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
+        if (!signingKeyId) throw new Error(`No authentication key in ${signerDid}`)
+
+        const signed = await agent.dependencyManager.resolve(DidCommV2EnvelopeService).signPlaintext(
+          agent.context,
+          {
+            id: utils.uuid(),
+            type: DidCommTrustPingMessage.type.messageTypeUri,
+            from: signerDid,
+            body: { response_requested: false },
+          },
+          { keyId: signingKeyId, kid: toAbsoluteDidUrl(didDocument.id, authentication.id), alg: 'EdDSA' }
+        )
+        return { signed, signerDid }
+      }
+
+      it('passes the signer DID to the message context as the authenticated sender', async () => {
+        const { signed, signerDid } = await createSignedPing()
+        const dispatch = vi.spyOn(agent.dependencyManager.resolve(DidCommDispatcher), 'dispatch').mockResolvedValue()
+
+        await agent.dependencyManager.resolve(DidCommMessageReceiver).receiveMessage(signed)
+
+        expect(dispatch).toHaveBeenCalledTimes(1)
+        const [messageContext] = dispatch.mock.calls[0]
+        expect(messageContext.senderDid).toBe(signerDid)
+        expect(messageContext.connection).toBeUndefined()
+      })
+
+      it('rejects a signed message under a connection with another peer', async () => {
+        const { signed } = await createSignedPing()
+        const dispatch = vi.spyOn(agent.dependencyManager.resolve(DidCommDispatcher), 'dispatch').mockResolvedValue()
+
+        await expect(
+          agent.dependencyManager
+            .resolve(DidCommMessageReceiver)
+            .receiveMessage(signed, { connection: getMockConnection({ theirDid: 'did:example:someone-else' }) })
+        ).rejects.toThrow(/is not the peer of connection/)
+
+        expect(dispatch).not.toHaveBeenCalled()
+      })
+
+      it('accepts a signed message under the connection with the signer', async () => {
+        const { signed, signerDid } = await createSignedPing()
+        const dispatch = vi.spyOn(agent.dependencyManager.resolve(DidCommDispatcher), 'dispatch').mockResolvedValue()
+        const connection = getMockConnection({ theirDid: signerDid })
+
+        await agent.dependencyManager.resolve(DidCommMessageReceiver).receiveMessage(signed, { connection })
+
+        const [messageContext] = dispatch.mock.calls[0]
+        expect(messageContext.connection).toBe(connection)
+        expect(messageContext.senderDid).toBe(signerDid)
+      })
     })
 
     it('does not answer an invalid DIDComm v2 problem report with a problem report', async () => {
