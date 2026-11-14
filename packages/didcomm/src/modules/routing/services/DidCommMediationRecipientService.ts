@@ -115,8 +115,8 @@ export class DidCommMediationRecipientService {
   }
 
   public async processMediationGrant(messageContext: DidCommInboundMessageContext<DidCommMediationGrantMessage>) {
-    // Assert ready connection
-    const connection = messageContext.assertReadyConnection()
+    // A grant changes where our messages are routed, so only the mediator itself may send it
+    const connection = messageContext.assertAuthenticatedReadyConnection()
 
     // Mediation record must already exists to be updated to granted status
     const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
@@ -146,7 +146,7 @@ export class DidCommMediationRecipientService {
   public async processMediationGrantV2(
     messageContext: DidCommInboundMessageContext<DidCommMediateGrantV2Message>
   ): Promise<DidCommMediationRecord> {
-    const connection = messageContext.assertReadyConnection()
+    const connection = messageContext.assertAuthenticatedReadyConnection()
 
     const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
     mediationRecord.assertState(DidCommMediationState.Requested)
@@ -503,7 +503,7 @@ export class DidCommMediationRecipientService {
   }
 
   public async processMediationDeny(messageContext: DidCommInboundMessageContext<DidCommMediationDenyMessage>) {
-    const connection = messageContext.assertReadyConnection()
+    const connection = messageContext.assertAuthenticatedReadyConnection()
 
     // Mediation record already exists
     const mediationRecord = await this.findByConnectionId(messageContext.agentContext, connection.id)
@@ -525,7 +525,7 @@ export class DidCommMediationRecipientService {
   public async processMediationDenyV2(
     messageContext: DidCommInboundMessageContext<DidCommMediateDenyV2Message>
   ): Promise<DidCommMediationRecord> {
-    const connection = messageContext.assertReadyConnection()
+    const connection = messageContext.assertAuthenticatedReadyConnection()
 
     const mediationRecord = await this.findByConnectionId(messageContext.agentContext, connection.id)
     if (!mediationRecord) {

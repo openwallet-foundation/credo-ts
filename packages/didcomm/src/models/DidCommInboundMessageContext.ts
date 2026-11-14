@@ -88,6 +88,26 @@ export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMess
     return this.connection
   }
 
+  /**
+   * Assert the inbound message has a ready connection and that the envelope proved the sender is its peer:
+   * a DIDComm v1 authcrypt sender key, a v2 authcrypt sender or a v2 signature. A plaintext message, such as
+   * one attached to an out-of-band invitation accepted on an existing connection, has a connection but no
+   * proven sender, so it must not change that connection or its routing.
+   *
+   * @throws {CredoError} if there is no ready connection or the sender is not authenticated
+   */
+  public assertAuthenticatedReadyConnection(): DidCommConnectionRecord {
+    const connection = this.assertReadyConnection()
+
+    if (!this.senderKey && !this.senderDid) {
+      throw new CredoError(
+        `Incoming message ${this.message.type} for connection ${connection.id} has no authenticated sender`
+      )
+    }
+
+    return connection
+  }
+
   public toJSON() {
     return {
       message: this.message,

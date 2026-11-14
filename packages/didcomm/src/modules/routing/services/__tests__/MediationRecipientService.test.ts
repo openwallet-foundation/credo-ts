@@ -65,6 +65,13 @@ describe('DidCommMediationRecipientService', () => {
   let mediationRecord: DidCommMediationRecord
   let agentContext: AgentContext
 
+  // The sender key the v1 envelope proved, which the grant and deny handlers require
+  const senderKey = Kms.PublicJwk.fromPublicKey({
+    kty: 'OKP',
+    crv: 'Ed25519',
+    publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+  }) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+
   beforeAll(async () => {
     agentContext = getAgentContext({
       agentConfig: config,
@@ -113,7 +120,7 @@ describe('DidCommMediationRecipientService', () => {
         state: DidCommDidExchangeState.Completed,
       })
 
-      const messageContext = new DidCommInboundMessageContext(mediationGrant, { connection, agentContext })
+      const messageContext = new DidCommInboundMessageContext(mediationGrant, { connection, agentContext, senderKey })
 
       await mediationRecipientService.processMediationGrant(messageContext)
 
@@ -135,7 +142,7 @@ describe('DidCommMediationRecipientService', () => {
         state: DidCommDidExchangeState.Completed,
       })
 
-      const messageContext = new DidCommInboundMessageContext(mediationGrant, { connection, agentContext })
+      const messageContext = new DidCommInboundMessageContext(mediationGrant, { connection, agentContext, senderKey })
 
       await mediationRecipientService.processMediationGrant(messageContext)
 
@@ -143,6 +150,25 @@ describe('DidCommMediationRecipientService', () => {
         'https://didcomm.org/coordinate-mediation/1.0': true,
       })
       expect(mediationRecord.routingKeys).toEqual(['8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'])
+    })
+
+    test('rejects a grant without an authenticated sender', async () => {
+      mediationRecord.state = DidCommMediationState.Requested
+      const mediationGrant = new DidCommMediationGrantMessage({
+        endpoint: 'http://attacker.example',
+        routingKeys: ['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'],
+        threadId: 'threadId',
+      })
+      const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
+
+      // A plaintext message delivered through an out-of-band `requests~attach` has a connection but no sender key
+      const messageContext = new DidCommInboundMessageContext(mediationGrant, { connection, agentContext })
+
+      await expect(mediationRecipientService.processMediationGrant(messageContext)).rejects.toThrow(
+        /has no authenticated sender/
+      )
+      expect(mediationRecord.state).toBe(DidCommMediationState.Requested)
+      expect(mediationRecord.endpoint).toBeUndefined()
     })
   })
 
@@ -357,7 +383,7 @@ describe('DidCommMediationRecipientService', () => {
         })
 
         const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
-        const messageContext = new DidCommInboundMessageContext(mediateGrant, { connection, agentContext })
+        const messageContext = new DidCommInboundMessageContext(mediateGrant, { connection, agentContext, senderKey })
 
         await mediationRecipientService.processMediationGrantV2(messageContext)
 
