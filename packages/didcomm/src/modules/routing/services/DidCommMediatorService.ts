@@ -369,8 +369,9 @@ export class DidCommMediatorService {
     if (recipient.did) queries.push({ recipientDids: [recipient.did] })
 
     for (const query of queries) {
-      const records = await this.mediationRepository.findByQuery(agentContext, query)
-      if (records.some((record) => record.id !== mediationRecord.id)) return true
+      // One record is enough: the own record only comes back when it already holds the key, and then the add changes nothing
+      const [record] = await this.mediationRepository.findByQuery(agentContext, query, { limit: 1 })
+      if (record && record.id !== mediationRecord.id) return true
     }
     return false
   }

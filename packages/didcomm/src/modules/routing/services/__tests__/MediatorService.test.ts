@@ -222,7 +222,11 @@ describe('MediatorService - default config', () => {
         new DidCommInboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
       )
 
-      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(agentContext, { recipientKeys: [recipientKey] })
+      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        { recipientKeys: [recipientKey] },
+        { limit: 1 }
+      )
       expect(mediationRecord.recipientKeys).toEqual([])
       expect(response.updated).toEqual([
         { action: DidCommKeylistUpdateAction.add, recipientKey, result: DidCommKeylistUpdateResult.ClientError },
@@ -284,9 +288,11 @@ describe('MediatorService - default config', () => {
         new DidCommInboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
       )
 
-      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(agentContext, {
-        recipientDids: [verkeyToDidKey(recipientKey)],
-      })
+      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        { recipientDids: [verkeyToDidKey(recipientKey)] },
+        { limit: 1 }
+      )
       expect(mediationRecord.recipientKeys).toEqual([])
       expect(response.updated).toEqual([
         { action: DidCommKeylistUpdateAction.add, recipientKey, result: DidCommKeylistUpdateResult.ClientError },
@@ -745,7 +751,11 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
         new DidCommInboundMessageContext(keylistUpdate, { connection: mockConnection, agentContext })
       )
 
-      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(agentContext, { recipientDids: ['did:peer:2.abc'] })
+      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        { recipientDids: ['did:peer:2.abc'] },
+        { limit: 1 }
+      )
       expect(mediationRecord.recipientDids ?? []).not.toContain('did:peer:2.abc')
       expect(response.updated).toEqual([
         {
@@ -789,9 +799,11 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
         new DidCommInboundMessageContext(keylistUpdate, { connection: mockConnection, agentContext })
       )
 
-      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(agentContext, {
-        recipientKeys: [didKeyToVerkey(recipientDid)],
-      })
+      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        { recipientKeys: [didKeyToVerkey(recipientDid)] },
+        { limit: 1 }
+      )
       expect(mediationRecord.recipientDids ?? []).not.toContain(recipientDid)
       expect(response.updated).toEqual([
         { recipientDid, action: KeylistUpdateActionV2.add, result: KeylistUpdateResultV2.ClientError },
