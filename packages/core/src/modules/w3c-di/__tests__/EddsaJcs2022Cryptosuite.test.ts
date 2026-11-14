@@ -321,6 +321,36 @@ describe('EddsaJcs2022Cryptosuite', () => {
       expect(mockKeyManagementApi.verify).not.toHaveBeenCalled()
     })
 
+    // Spec: VC DI EdDSA v1.0 section 3.3.2 step 4.1 compares values, and an inline context object is a new object after parsing.
+    it('compares inline @context objects by value', async () => {
+      const proofContext = [
+        'https://www.w3.org/ns/credentials/v2',
+        { myWebsite: 'https://vocabulary.example/myWebsite' },
+      ]
+      const proofWithContext: W3cDataIntegrityCryptosuiteProof = {
+        ...mockProofOptions,
+        '@context': proofContext,
+        proofValue: mockProofValue,
+      }
+
+      const sameInlineContext = await cryptosuite.verifyProof({
+        unsecuredDocument: { '@context': JSON.parse(JSON.stringify(proofContext)), type: 'VerifiableCredential' },
+        proof: proofWithContext,
+      })
+      expect(sameInlineContext).toMatchObject({ verified: true })
+
+      mockKeyManagementApi.verify.mockClear()
+      const otherInlineContext = await cryptosuite.verifyProof({
+        unsecuredDocument: {
+          '@context': ['https://www.w3.org/ns/credentials/v2', { myWebsite: 'https://other.example/myWebsite' }],
+          type: 'VerifiableCredential',
+        },
+        proof: proofWithContext,
+      })
+      expect(otherInlineContext).toEqual({ verified: false, verifiedDocument: null })
+      expect(mockKeyManagementApi.verify).not.toHaveBeenCalled()
+    })
+
     // Spec: VC DI EdDSA v1.0 §3.3.2 step 4.2 restores proof @context onto the unsecured document before transformation and hashing.
     it('restores proof @context onto the verified document before transformation', async () => {
       const proofContext = ['https://w3id.org/security/data-integrity/v2']
