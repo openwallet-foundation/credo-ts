@@ -210,7 +210,7 @@ describe('DIDComm inbound transports', () => {
       body: '{"protected":"e30"}',
     })
 
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(202)
     const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
     expect(eventEmitter.emit).toHaveBeenCalledWith(
       agentContext,
@@ -231,7 +231,7 @@ describe('DIDComm inbound transports', () => {
       body: '{"payload":"e30"}',
     })
 
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(202)
   })
 
   it('rejects the DIDComm v2 encrypted media type when v2 is not enabled', async () => {

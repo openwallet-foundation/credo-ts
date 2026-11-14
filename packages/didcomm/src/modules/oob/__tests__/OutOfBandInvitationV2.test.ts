@@ -1,4 +1,4 @@
-import { JsonTransformer, MessageValidator } from '../../../../../core/src/utils'
+import { JsonEncoder, JsonTransformer, MessageValidator } from '../../../../../core/src/utils'
 import { buildV2PlaintextFromMessage } from '../../../v2/plaintextBuilder'
 import { DidCommOutOfBandInvitationV2 } from '../messages/DidCommOutOfBandInvitationV2'
 
@@ -98,6 +98,15 @@ describe('DidCommOutOfBandInvitationV2', () => {
       const inv = new DidCommOutOfBandInvitationV2({ from: FROM })
       const json = inv.toJSON() as unknown as Record<string, unknown>
       expect(json.attachments).toBeUndefined()
+    })
+
+    it('always has a body', () => {
+      const inv = new DidCommOutOfBandInvitationV2({ from: FROM })
+      const json = inv.toJSON() as unknown as Record<string, unknown>
+      expect(json.body).toEqual({})
+      expect(JsonEncoder.fromBase64Url(inv.toUrl({ domain: 'https://example.com' }).split('_oob=')[1])).toMatchObject({
+        body: {},
+      })
     })
   })
 

@@ -21,7 +21,7 @@ export async function createOrGetKey(
     return Kms.PublicJwk.fromPublicJwk(publicJwk)
   }
 
-  const publicJwk = await kms.getPublicKey({ keyId })
+  const { publicKey: publicJwk } = await kms.getPublicKey({ keyId })
   if (!publicJwk) {
     throw new Error(`Key with key id '${keyId}' not found`)
   }

@@ -90,4 +90,14 @@ describe('SingleContextLruCache', () => {
       'SingleContextStorageLruCache can not be used with multiple agent context instances. Register a custom cache implementation in the CacheModule.'
     )
   })
+
+  it('should not throw from get and set when the storage fails, but throw from remove', async () => {
+    mockFunction(cacheRepository.update).mockRejectedValue(new Error('storage unavailable'))
+    await expect(cache.set(agentContext, 'test', 'somevalue')).resolves.toBeUndefined()
+    await expect(cache.remove(agentContext, 'test')).rejects.toThrow('storage unavailable')
+
+    mockFunction(cacheRepository.findById).mockRejectedValue(new Error('storage unavailable'))
+    const unloadedCache = new SingleContextStorageLruCache({ limit: 2 })
+    await expect(unloadedCache.get(agentContext, 'test')).resolves.toBeNull()
+  })
 })
