@@ -1,12 +1,14 @@
 import {
   CachedStorageService,
   CacheModuleConfig,
+  didKeyToVerkey,
   didToNumAlgo2DidDocument,
   InMemoryLruCache,
   Kms,
   RecordDuplicateError,
   RecordNotFoundError,
   TypedArrayEncoder,
+  verkeyToDidKey,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
@@ -249,6 +251,45 @@ describe('MediatorService - default config', () => {
 
       expect(response.updated).toEqual([
         { action: DidCommKeylistUpdateAction.add, recipientKey, result: DidCommKeylistUpdateResult.Success },
+      ])
+    })
+
+    test('does not add a recipient key whose did:key another mediatee registered with Coordinate Mediation 2.0', async () => {
+      const recipientKey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const mediationRecord = new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'threadId',
+      })
+      const v2MediationRecord = new DidCommMediationRecord({
+        id: 'v2-mediation',
+        connectionId: 'v2ConnectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'v2ThreadId',
+        protocolVersion: 'v2',
+        recipientDids: [verkeyToDidKey(recipientKey)],
+      })
+
+      mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockImplementation(async (_agentContext, query) =>
+        'recipientDids' in query ? [v2MediationRecord] : []
+      )
+
+      const keyListUpdate = new DidCommKeylistUpdateMessage({
+        updates: [{ action: DidCommKeylistUpdateAction.add, recipientKey }],
+      })
+      const response = await mediatorService.processKeylistUpdateRequest(
+        new DidCommInboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
+      )
+
+      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(agentContext, {
+        recipientDids: [verkeyToDidKey(recipientKey)],
+      })
+      expect(mediationRecord.recipientKeys).toEqual([])
+      expect(response.updated).toEqual([
+        { action: DidCommKeylistUpdateAction.add, recipientKey, result: DidCommKeylistUpdateResult.ClientError },
       ])
     })
   })
@@ -713,6 +754,82 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
           result: KeylistUpdateResultV2.ClientError,
         },
       ])
+    })
+
+    test('does not add a did:key whose key another mediatee registered with Coordinate Mediation 1.0', async () => {
+      const recipientDid = 'did:key:z6MkkbTaLstV4fwr1rNf5CSxdS2rGbwxi3V5y6NnVFTZ2V1w'
+      const mediationRecord = new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'threadId',
+        protocolVersion: 'v2',
+      })
+      const v1MediationRecord = new DidCommMediationRecord({
+        id: 'v1-mediation',
+        connectionId: 'v1ConnectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'v1ThreadId',
+        recipientKeys: [didKeyToVerkey(recipientDid)],
+      })
+
+      mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockImplementation(async (_agentContext, query) =>
+        'recipientKeys' in query ? [v1MediationRecord] : []
+      )
+      mockFunction(mediationRepository.update).mockResolvedValue(undefined)
+
+      const keylistUpdate = new DidCommKeylistUpdateV2Message({
+        updates: [{ recipientDid, action: KeylistUpdateActionV2.add }],
+      })
+      keylistUpdate.setThread({ threadId: 'threadId' })
+
+      const response = await mediatorService.processKeylistUpdateV2(
+        new DidCommInboundMessageContext(keylistUpdate, { connection: mockConnection, agentContext })
+      )
+
+      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(agentContext, {
+        recipientKeys: [didKeyToVerkey(recipientDid)],
+      })
+      expect(mediationRecord.recipientDids ?? []).not.toContain(recipientDid)
+      expect(response.updated).toEqual([
+        { recipientDid, action: KeylistUpdateActionV2.add, result: KeylistUpdateResultV2.ClientError },
+      ])
+    })
+  })
+
+  describe('processForwardMessage (v1)', () => {
+    test('refuses a forward whose recipient two mediation records hold', async () => {
+      const recipientKey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const byKey = new DidCommMediationRecord({
+        id: 'by-key',
+        connectionId: 'v1ConnectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'v1ThreadId',
+        recipientKeys: [recipientKey],
+      })
+      const byDid = new DidCommMediationRecord({
+        id: 'by-did',
+        connectionId: 'v2ConnectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'v2ThreadId',
+        protocolVersion: 'v2',
+        recipientDids: [verkeyToDidKey(recipientKey)],
+      })
+      mockFunction(mediationRepository.findSingleByRecipientKey).mockResolvedValue(byKey)
+      mockFunction(mediationRepository.findSingleByRecipientDid).mockResolvedValue(byDid)
+
+      const forward = new DidCommForwardMessage({
+        to: recipientKey,
+        message: { protected: 'eyJ0eXAiOiJKV1QifQ', iv: 'iv', ciphertext: 'ciphertext', tag: 'tag' },
+      })
+
+      await expect(
+        mediatorService.processForwardMessage(new DidCommInboundMessageContext(forward, { agentContext }))
+      ).rejects.toThrow(/registered by two mediation records/)
     })
   })
 
