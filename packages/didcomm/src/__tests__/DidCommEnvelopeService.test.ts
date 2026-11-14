@@ -1,11 +1,18 @@
 import { DidKey, Kms } from '@credo-ts/core'
 import { Agent } from '../../../core/src/agent/Agent'
 import { getAgentOptions } from '../../../core/tests/helpers'
-import { DidCommEnvelopeService, MAX_DIDCOMM_V1_RECIPIENTS } from '../DidCommEnvelopeService'
+import { DidCommEnvelopeService } from '../DidCommEnvelopeService'
+import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { DidCommTrustPingMessage } from '../modules/connections/messages'
 
 describe('DidCommEnvelopeService', () => {
-  const agent = new Agent(getAgentOptions('DidCommEnvelopeService', {}, {}, undefined, { requireDidcomm: true }))
+  // A low cap keeps the tests cheap; the default is covered separately
+  const maxRecipients = 3
+  const agent = new Agent(
+    getAgentOptions('DidCommEnvelopeService', { maxV1EnvelopeRecipients: maxRecipients }, {}, undefined, {
+      requireDidcomm: true,
+    })
+  )
   // Keys of another agent, which this agent resolves through every lookup before giving up
   const otherAgent = new Agent(
     getAgentOptions('DidCommEnvelopeServiceOther', {}, {}, undefined, { requireDidcomm: true })
@@ -74,25 +81,29 @@ describe('DidCommEnvelopeService', () => {
       expect(resolve).toHaveBeenCalledTimes(1)
     })
 
-    it('rejects a message with more recipients than the maximum before resolving any of them', async () => {
-      const encrypted = await packTo(await createOtherKeys(MAX_DIDCOMM_V1_RECIPIENTS + 1))
+    it('rejects a message with more recipients than the configured maximum before resolving any of them', async () => {
+      const encrypted = await packTo(await createOtherKeys(maxRecipients + 1))
       const resolve = vi.spyOn(
         envelopeService as unknown as { extractOurRecipientKeyWithKeyId: () => unknown },
         'extractOurRecipientKeyWithKeyId'
       )
 
       await expect(envelopeService.unpackMessage(agent.context, encrypted)).rejects.toThrow(
-        `has ${MAX_DIDCOMM_V1_RECIPIENTS + 1} recipients, the maximum is ${MAX_DIDCOMM_V1_RECIPIENTS}`
+        `has ${maxRecipients + 1} recipients, the maximum is ${maxRecipients}`
       )
       expect(resolve).not.toHaveBeenCalled()
     })
 
     it('accepts a message with the maximum number of recipients', async () => {
-      const encrypted = await packTo([...(await createOtherKeys(MAX_DIDCOMM_V1_RECIPIENTS - 1)), ourKey])
+      const encrypted = await packTo([...(await createOtherKeys(maxRecipients - 1)), ourKey])
 
       const { plaintextMessage } = await envelopeService.unpackMessage(agent.context, encrypted)
 
       expect(plaintextMessage['@type']).toBe(DidCommTrustPingMessage.type.messageTypeUri)
+    })
+
+    it('allows 8 recipients by default', () => {
+      expect(new DidCommModuleConfig().maxV1EnvelopeRecipients).toBe(8)
     })
   })
 })

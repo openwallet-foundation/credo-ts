@@ -11,6 +11,7 @@ import {
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
+import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { getResolvedDidcommServiceWithSigningKeyId, toX25519 } from './modules/connections/services/helpers'
 import { DidCommOutOfBandRole } from './modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandRepository } from './modules/oob/repository/DidCommOutOfBandRepository'
@@ -19,9 +20,6 @@ import { DidCommForwardMessage } from './modules/routing/protocol/v1/messages/Di
 import { DidCommMediatorRoutingRepository } from './modules/routing/repository/DidCommMediatorRoutingRepository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
-
-/** Recipients a DIDComm v1 message may have. A message to one service rarely has more than a few. */
-export const MAX_DIDCOMM_V1_RECIPIENTS = 32
 
 export interface EnvelopeKeys {
   recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
@@ -179,10 +177,9 @@ export class DidCommEnvelopeService {
     if (recipientCount === 0) {
       throw new CredoError('DIDComm v1 message has no recipients')
     }
-    if (recipientCount > MAX_DIDCOMM_V1_RECIPIENTS) {
-      throw new CredoError(
-        `DIDComm v1 message has ${recipientCount} recipients, the maximum is ${MAX_DIDCOMM_V1_RECIPIENTS}`
-      )
+    const maxRecipients = agentContext.dependencyManager.resolve(DidCommModuleConfig).maxV1EnvelopeRecipients
+    if (recipientCount > maxRecipients) {
+      throw new CredoError(`DIDComm v1 message has ${recipientCount} recipients, the maximum is ${maxRecipients}`)
     }
 
     for (const _recipient of protectedJson.recipients) {
