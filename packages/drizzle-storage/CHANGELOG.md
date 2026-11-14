@@ -1,5 +1,260 @@
 # @credo-ts/drizzle-storage
 
+## 0.8.0
+
+### Minor Changes
+
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- 6d68bfa: Remove the `action-menu`, `drpc`, and `question-answer` drizzle record bundles. The Action Menu, DRPC, and Question Answer modules moved to the [Credo DIDComm extensions repository](https://github.com/openwallet-foundation/credo-ts-didcomm-ext) as `@credo-ts/didcomm-action-menu`, `@credo-ts/didcomm-drpc`, and `@credo-ts/didcomm-question-answer`. Each package provides its bundle under the `/drizzle` subpath, for example `didcommActionMenuBundle` from `@credo-ts/didcomm-action-menu/drizzle`. The bundle names, the table names, and the migrations did not change, so existing databases keep working. Pass the subpath to the CLI, for example `--bundle @credo-ts/didcomm-action-menu/drizzle` instead of `--bundle action-menu`.
+- 3678fb3: Remove support for unqualified (legacy) AnonCreds identifiers. All AnonCreds identifiers must be fully qualified. Use `did:indy` identifiers for objects on an indy ledger.
+  
+  `@credo-ts/anoncreds`:
+  
+  - The `LegacyIndyDidCommCredentialFormatService` and `LegacyIndyDidCommProofFormatService` classes are removed, together with the `LegacyIndyCredentialFormat` and `LegacyIndyDidCommProofFormat` types. The `hlindy/*` DIDComm formats only work with unqualified identifiers. Use the `AnonCredsDidCommCredentialFormatService` and `AnonCredsDidCommProofFormatService` classes instead.
+  - The `useLegacyProverDid` option of `createCredentialRequest` is removed from the holder service. A credential request always contains an `entropy` value.
+  - The `useUnqualifiedIdentifiers` option of `createProof` and the `useUnqualifiedIdentifiersIfPresent` option of `getCredential` are removed from the holder service.
+  - The unqualified identifier helpers are removed: `unqualifiedSchemaIdRegex`, `unqualifiedSchemaVersionRegex`, `unqualifiedIndyDidRegex`, `unqualifiedCredentialDefinitionIdRegex`, `unqualifiedRevocationRegistryIdRegex`, `getUnqualifiedSchemaId`, `getUnqualifiedCredentialDefinitionId`, `getUnqualifiedRevocationRegistryDefinitionId`, `isUnqualifiedIndyDid`, `isUnqualifiedSchemaId`, `isUnqualifiedCredentialDefinitionId`, `isUnqualifiedRevocationRegistryId`, `getQualifiedDidIndyDid`, `getUnQualifiedDidIndyDid`, the `(get|is)(Qualified|Unqualified)DidIndy(Schema|CredentialDefinition|RevocationRegistryDefinition)` helpers and `generateLegacyProverDidLikeString`.
+  - The `parseIndySchemaId`, `parseIndyCredentialDefinitionId` and `parseIndyRevocationRegistryId` functions only accept `did:indy` identifiers. The `namespace` property of the parsed result is always present.
+  - The `AnonCredsSchemaRecord` and `AnonCredsCredentialDefinitionRecord` classes do not have the `unqualifiedSchemaId` and `unqualifiedCredentialDefinitionId` tags anymore. The repositories only query by the qualified identifier.
+  - The W3C credential records of AnonCreds credentials do not get the `anonCredsUnqualifiedIssuerId`, `anonCredsUnqualifiedSchemaId`, `anonCredsUnqualifiedSchemaIssuerId`, `anonCredsUnqualifiedCredentialDefinitionId` and `anonCredsUnqualifiedRevocationRegistryId` tags anymore. Proof request restrictions only match the qualified identifiers.
+  - The storage migration from version 0.4 to 0.5 still migrates credentials that use unqualified identifiers. When the indy namespace of the issuer is not in the cache, the migration resolves the `did:sov` DID of the issuer to find the namespace. This requires the `IndyVdrSovDidResolver` and an `IndyVdrModule` that is configured with the ledger of the issuer.
+  
+  `@credo-ts/indy-vdr`:
+  
+  - The `IndyVdrAnonCredsRegistry` only resolves `did:indy` schema, credential definition and revocation registry identifiers. Unqualified identifiers are not supported anymore.
+  
+  `@credo-ts/didcomm`:
+  
+  - The revocation notification service only finds credential exchange records by the qualified revocation registry id. A revocation notification that contains an unqualified revocation registry id does not match a record anymore.
+  
+  `@credo-ts/drizzle-storage`:
+  
+  - The `unqualified_schema_id` column of the `AnonCredsSchema` table and the `unqualified_credential_definition_id` column of the `AnonCredsCredentialDefinition` table are removed. Run the database migrations to apply this change.
+
+### Patch Changes
+
+- 3985e5b: Add the columns for DIDComm v2 support: `didcomm_version` on the `DidcommConnection` table (with the handshake protocol value `None`), `routing_did`, `recipient_dids` and `protocol_version` on the `DidcommMediation` table (with the pickup strategies `PickUpV4` and `PickUpV4LiveMode`), and `protocol_version` on the `DidcommBasicMessage` table. Make sure to run the migrations for the `didcomm` bundle. All columns are nullable and existing rows read as v1.
+- 357a5da: The `batchCredentialIssuance` of an OpenID4VC issuer is now stored as JSON. Saving an issuer with `batchCredentialIssuance` failed on SQLite, and on PostgreSQL it was loaded as a string. The new `0010_batch_credential_issuance_json` migration of the `openid4vc` bundle converts the PostgreSQL column to `jsonb`. Run the migrations after upgrading.
+- b4143b7: Add a `credential_request_encryption` column to the `OpenId4VcIssuer` table for the issuer's `credentialRequestEncryption` configuration. Make sure to run the migrations for the `openid4vc` bundle.
+- 77fe670: The drizzle record adapters now map records to columns using the record's `encodingSchema`, instead of a hand-written mapping per record. A column with the name of a record property stores the encoded property, other columns store the tag with that name, and the remaining tags are stored in `customTags`. `getValues` and `toRecord` are no longer abstract in `BaseDrizzleRecordAdapter`, so custom adapters that implement them keep working. Records without an `encodingSchema` still need to implement them. Adapters that use the default mapping are validated when the `DrizzleStorageModule` is created: the record must define an `encodingSchema`, every record property must have a column, and the sqlite and postgres tables must have the same columns. Adapters that implement `getValues` and `toRecord` themselves are not validated. See the README for how to write adapters.
+  
+  This fixes several issues with records stored using drizzle:
+  
+  - OpenID4VC issuance sessions with holder binding keys in `transactions` could not be loaded, as the keys were not stored as JWKs. Sessions that were stored this way can be loaded again.
+  - The `openId4VciVersion` of issuance sessions and the `openId4VpVersion` of verification sessions were not stored. The new `0009_add_openid4vc_versions` migration of the `openid4vc` bundle adds the columns, and restores the `openId4VpVersion` of existing verification sessions from their tags. Run the migrations after upgrading. Issuance sessions without a version now return a batch credential response in the format of the credential request: the v1 format for a request with `credential_configuration_id`, the draft 11-14 format otherwise.
+  - AnonCreds credential definition private, key correctness proof and revocation registry definition records lost their `credentialDefinitionId` when loaded.
+  - Custom tags of SD-JWT VC records were not restored when loaded.
+  - Clearing an optional property (for example `errorMessage`) was not persisted on update.
+  
+  `AnonCredsLinkSecretRecord` and `AnonCredsRevocationRegistryDefinitionPrivateRecord` now set `createdAt` when they are created.
+  
+  `getRecordPropertyNames` is added to `@credo-ts/core`, to get the property names of a record that defines its `encodingSchema` with `createRecordEncodingSchema`. It also works for schemas from a different zod instance.
+- 46700e9: Add a `status` column to the `Tenant` table for the new tenant status (active/inactive) feature. Make sure to run the migrations for the `tenants` bundle, existing tenants are set to active.
+- 82a6efd: Update the TypeScript development dependency to TypeScript 7 (`typescript@^7.0.2`, installed as `@typescript/native`) for type checking. The `typescript` package is now an alias of `@typescript/typescript6@^6.0.2`, so tools that use the TypeScript compiler API, such as `tsdown` when generating declaration files, keep working.
+  
+  This has no effect on runtime behaviour. `getPublicJwkFromDid` in `@credo-ts/openid4vc` now declares its `Promise<PublicJwk>` return type, which is the type it already returned.
+- f87b6bb: The issuer now supports credential response encryption (OID4VCI §8.3). When a wallet includes `credential_response_encryption` in its credential or deferred credential request, the issuer encrypts the response body as a compact JWE and returns it with `Content-Type: application/jwt`. Requests without encryption continue to work unchanged.
+  
+  The issuer metadata advertises `credential_response_encryption` when credential request encryption is configured (see `credentialRequestEncryption`), as OID4VCI §8.2 requires an encrypted credential request when response encryption is used. By default encryption is optional and all algorithms supported by Credo are listed (`alg_values_supported: ["ECDH-ES"]`, `enc_values_supported: ["A128GCM", "A256GCM", "A128CBC-HS256"]`). Use the new `credentialResponseEncryption` option when creating or updating an issuer to require encryption or restrict the supported `alg` and `enc` values. Requests that omit required encryption or use an unsupported `alg` or `enc` are rejected with `invalid_encryption_parameters`.
+  
+  The drizzle storage stores the issuer's `credentialResponseEncryption` configuration in a new `credential_response_encryption` column; run the drizzle migrations when upgrading.
+- de1c035: Add `issuerInfo` to `createIssuer` and `updateIssuerMetadata`, published as `issuer_info` (ETSI TS 119 472-3) in the JSON and signed credential issuer metadata. The `Openid4vcIssuer` table gets an `issuer_info` column, so make sure to run the migrations for the `openid4vc` bundle.
+- 526a989: feat: support node 26
+- eaa2283: Add a `failed_tx_code_attempts` column to the `OpenId4VcIssuanceSession` table for the new `tx_code` attempt limit. Make sure to run the migrations for the `openid4vc` bundle.
+- 81265f5: All records in Credo are now encoded, decoded and validated with a zod schema instead of class-transformer and class-validator. This is the first step of moving Credo away from class-transformer and class-validator. The stored format of records doesn't change, so no storage migration is needed.
+  
+  A class opts in by defining a static `encodingSchema` (a zod codec). `JsonTransformer` and `MessageValidator` use it when present, and fall back to class-transformer and class-validator otherwise, so custom records and other classes keep working without changes. Records can define their schema with `createRecordEncodingSchema`:
+  
+  ```ts
+  import { BaseRecord, createRecordEncodingSchema, zIsoDate } from '@credo-ts/core'
+  import { z } from 'zod'
+  
+  const myRecordEncodingSchema = createRecordEncodingSchema({
+    name: z.string(),
+    expiresAt: zIsoDate.optional(),
+  })
+  
+  export class MyRecord extends BaseRecord {
+    public static get encodingSchema() {
+      return myRecordEncodingSchema
+    }
+  
+    // ...
+  }
+  ```
+  
+  Some things behave differently:
+  
+  - A stored record that fails to decode now throws a `RecordDecodingError` with the `recordType` and `recordId`, caused by a `ZodValidationError`. Before, this was a `ClassValidationError`. `ZodValidationError` and `ClassValidationError` now both extend `CredoValidationError`.
+  - Drizzle storage encodes a record before it stores it, so an invalid record is never stored. Askar already did.
+  - A subclass of a Credo record inherits the record's `encodingSchema`. Properties the subclass adds with class-transformer decorators are still stored, but no longer transformed (for example a `Date` is decoded as a string). Define an `encodingSchema` on the subclass to transform them.
+- Updated dependencies [d490104]
+- Updated dependencies [b77a2c3]
+- Updated dependencies [61d7d0f]
+- Updated dependencies [457f5a6]
+- Updated dependencies [da782ba]
+- Updated dependencies [c2bb4d5]
+- Updated dependencies [0b9531a]
+- Updated dependencies [c452dfc]
+- Updated dependencies [2c4e3a2]
+- Updated dependencies [3f1151e]
+- Updated dependencies [798c401]
+- Updated dependencies [b77a2c3]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [8abea64]
+- Updated dependencies [3564660]
+- Updated dependencies [8a6af0b]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [1c18cf8]
+- Updated dependencies [33d3f53]
+- Updated dependencies [93907de]
+- Updated dependencies [f3d537a]
+- Updated dependencies [de1c035]
+- Updated dependencies [2485e36]
+- Updated dependencies [51bd389]
+- Updated dependencies [9eadcb8]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [14e84ce]
+- Updated dependencies [218237d]
+- Updated dependencies [fac9757]
+- Updated dependencies [95b0dd5]
+- Updated dependencies [81265f5]
+- Updated dependencies [b77a2c3]
+- Updated dependencies [3d4b386]
+- Updated dependencies [9105c2d]
+- Updated dependencies [b51f8b5]
+- Updated dependencies [75f7139]
+- Updated dependencies [3985e5b]
+- Updated dependencies [77fe670]
+- Updated dependencies [dbde0f1]
+- Updated dependencies [526a989]
+- Updated dependencies [820d809]
+- Updated dependencies [c452dfc]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [3354c95]
+- Updated dependencies [4dd128a]
+- Updated dependencies [82a6efd]
+- Updated dependencies [a362176]
+- Updated dependencies [da2a293]
+- Updated dependencies [a362176]
+- Updated dependencies [46700e9]
+- Updated dependencies [8bd6914]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [4c2f93b]
+- Updated dependencies [dde35e0]
+- Updated dependencies [1de1ead]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [820d809]
+- Updated dependencies [716cb84]
+- Updated dependencies [82a6efd]
+- Updated dependencies [667c462]
+- Updated dependencies [9303c90]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [1bbcdc3]
+- Updated dependencies [4b55457]
+- Updated dependencies [e851280]
+- Updated dependencies [3c27483]
+- Updated dependencies [7fb55cc]
+- Updated dependencies [cf46149]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [4b137e8]
+- Updated dependencies [6eae20c]
+- Updated dependencies [b4143b7]
+- Updated dependencies [f87b6bb]
+- Updated dependencies [b473230]
+- Updated dependencies [6127175]
+- Updated dependencies [aadabc9]
+- Updated dependencies [8abea64]
+- Updated dependencies [7c4ed20]
+- Updated dependencies [b4143b7]
+- Updated dependencies [a6f9a5a]
+- Updated dependencies [6127175]
+- Updated dependencies [e930e66]
+- Updated dependencies [28bc709]
+- Updated dependencies [6b037bd]
+- Updated dependencies [fb968ea]
+- Updated dependencies [b4143b7]
+- Updated dependencies [6eae20c]
+- Updated dependencies [d80bc49]
+- Updated dependencies [de1c035]
+- Updated dependencies [42f56a2]
+- Updated dependencies [42f56a2]
+- Updated dependencies [de1c035]
+- Updated dependencies [42f56a2]
+- Updated dependencies [42f56a2]
+- Updated dependencies [42f56a2]
+- Updated dependencies [42f56a2]
+- Updated dependencies [52d3782]
+- Updated dependencies [ae0fe8e]
+- Updated dependencies [0bbfed8]
+- Updated dependencies [52d3782]
+- Updated dependencies [809e3a5]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [357a5da]
+- Updated dependencies [0814729]
+- Updated dependencies [705ddec]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [fb99743]
+- Updated dependencies [b9c051d]
+- Updated dependencies [526a989]
+- Updated dependencies [25199e8]
+- Updated dependencies [7e4863f]
+- Updated dependencies [1bdf6f1]
+- Updated dependencies [ef2502c]
+- Updated dependencies [144ca38]
+- Updated dependencies [9bc0ebd]
+- Updated dependencies [4c379c8]
+- Updated dependencies [d086b7a]
+- Updated dependencies [3678fb3]
+- Updated dependencies [28bc709]
+- Updated dependencies [b21bba5]
+- Updated dependencies [3354c95]
+- Updated dependencies [0523bd0]
+- Updated dependencies [0b7ba8d]
+- Updated dependencies [2f20e2e]
+- Updated dependencies [8a6af0b]
+- Updated dependencies [c452dfc]
+- Updated dependencies [8178149]
+- Updated dependencies [b1090de]
+- Updated dependencies [78d5cfb]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [eaa2283]
+- Updated dependencies [194cf1e]
+- Updated dependencies [ac3b95b]
+- Updated dependencies [3d4b386]
+- Updated dependencies [ae0fe8e]
+- Updated dependencies [c1aec02]
+- Updated dependencies [c1aec02]
+- Updated dependencies [64fec67]
+- Updated dependencies [cbfe06b]
+- Updated dependencies [47691c2]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [56ae9a6]
+- Updated dependencies [47691c2]
+- Updated dependencies [93907de]
+- Updated dependencies [94faeed]
+- Updated dependencies [dbbef02]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [47691c2]
+- Updated dependencies [8114e84]
+- Updated dependencies [dbafd1e]
+- Updated dependencies [2151443]
+- Updated dependencies [c05145a]
+- Updated dependencies [ad928f5]
+- Updated dependencies [808e873]
+- Updated dependencies [81265f5]
+  - @credo-ts/anoncreds@0.8.0
+  - @credo-ts/didcomm@0.8.0
+  - @credo-ts/core@0.8.0
+  - @credo-ts/openid4vc@0.8.0
+  - @credo-ts/tenants@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes

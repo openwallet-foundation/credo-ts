@@ -1,5 +1,121 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 1c18cf8: Expose the canonical AnonCreds W3C proof APIs from `@credo-ts/anoncreds`, as established by the v0.7.x API migration. Remove the deprecated AnonCreds DIDComm formats and protocols from the package root and expose them through `@credo-ts/anoncreds/didcomm`, while keeping DIDComm as a required AnonCreds dependency. Make AnonCreds an optional peer dependency of Cheqd and WebVH and expose their registries only through their `/anoncreds` subpaths. Consumers using those registries must install `@credo-ts/anoncreds` explicitly.
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+
+### Patch Changes
+
+- 5364f64: Pin CosmJS dependencies to the versions supported by `@cheqd/sdk-esm`.
+- 14e84ce: Keep cheqd DID URL query parameters on `ParsedCheqdDid.params`, which `ParsedDid` no longer declares after the `did-resolver` 6 upgrade.
+- 7b394f5: Resolving cheqd DIDs and resources no longer needs the cosmos payer wallet. The wallet is now created on the first ledger write, so a missing or failing `cosmosPayerSeed` doesn't block resolution. This fixes resolution on React Native, where deriving a wallet from a generated mnemonic failed. Ledger writes without a `cosmosPayerSeed` now fail with an error instead of using an unfunded generated wallet. On React Native, a mnemonic `cosmosPayerSeed` needs a full WebCrypto implementation such as `react-native-quick-crypto`.
+  
+  `CheqdLedgerService.disconnect()` now disconnects instead of creating the SDK.
+- 7a1a5c9: Consolidate Ed25519 linked data proof suite contexts to use the bundled JSON-LD context registry and shared VC context URL constants. This removes duplicate suite-local Ed25519 context documents/constants, flattens the Ed25519 signature suite files into the main signature suites folder, and fixes bundled context document loading for URLs with fragments.
+- 82a6efd: Update the TypeScript development dependency to TypeScript 7 (`typescript@^7.0.2`, installed as `@typescript/native`) for type checking. The `typescript` package is now an alias of `@typescript/typescript6@^6.0.2`, so tools that use the TypeScript compiler API, such as `tsdown` when generating declaration files, keep working.
+  
+  This has no effect on runtime behaviour. `getPublicJwkFromDid` in `@credo-ts/openid4vc` now declares its `Promise<PublicJwk>` return type, which is the type it already returned.
+- 526a989: feat: support node 26
+- Updated dependencies [d490104]
+- Updated dependencies [b77a2c3]
+- Updated dependencies [61d7d0f]
+- Updated dependencies [457f5a6]
+- Updated dependencies [da782ba]
+- Updated dependencies [c2bb4d5]
+- Updated dependencies [0b9531a]
+- Updated dependencies [c452dfc]
+- Updated dependencies [2c4e3a2]
+- Updated dependencies [798c401]
+- Updated dependencies [b77a2c3]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [8abea64]
+- Updated dependencies [3564660]
+- Updated dependencies [8a6af0b]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [1c18cf8]
+- Updated dependencies [33d3f53]
+- Updated dependencies [93907de]
+- Updated dependencies [f3d537a]
+- Updated dependencies [de1c035]
+- Updated dependencies [2485e36]
+- Updated dependencies [51bd389]
+- Updated dependencies [9eadcb8]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [14e84ce]
+- Updated dependencies [3985e5b]
+- Updated dependencies [77fe670]
+- Updated dependencies [dbde0f1]
+- Updated dependencies [526a989]
+- Updated dependencies [820d809]
+- Updated dependencies [c452dfc]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [3354c95]
+- Updated dependencies [a362176]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [4c2f93b]
+- Updated dependencies [1de1ead]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [820d809]
+- Updated dependencies [716cb84]
+- Updated dependencies [82a6efd]
+- Updated dependencies [667c462]
+- Updated dependencies [9303c90]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [1bbcdc3]
+- Updated dependencies [cf46149]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [e930e66]
+- Updated dependencies [ae0fe8e]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [357a5da]
+- Updated dependencies [0814729]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [fb99743]
+- Updated dependencies [b9c051d]
+- Updated dependencies [526a989]
+- Updated dependencies [1bdf6f1]
+- Updated dependencies [144ca38]
+- Updated dependencies [d086b7a]
+- Updated dependencies [3678fb3]
+- Updated dependencies [b21bba5]
+- Updated dependencies [3354c95]
+- Updated dependencies [0523bd0]
+- Updated dependencies [0b7ba8d]
+- Updated dependencies [8a6af0b]
+- Updated dependencies [8178149]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+- Updated dependencies [ac3b95b]
+- Updated dependencies [3d4b386]
+- Updated dependencies [ae0fe8e]
+- Updated dependencies [cbfe06b]
+- Updated dependencies [47691c2]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [56ae9a6]
+- Updated dependencies [47691c2]
+- Updated dependencies [93907de]
+- Updated dependencies [94faeed]
+- Updated dependencies [dbbef02]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [47691c2]
+- Updated dependencies [dbafd1e]
+- Updated dependencies [2151443]
+- Updated dependencies [c05145a]
+- Updated dependencies [ad928f5]
+- Updated dependencies [808e873]
+- Updated dependencies [81265f5]
+  - @credo-ts/anoncreds@0.8.0
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes

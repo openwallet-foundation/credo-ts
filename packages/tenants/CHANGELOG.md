@@ -1,5 +1,180 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- c452dfc: The id, status and storage version of the tenant record, which are read every time a tenant session is opened, now come from the cache of the agent's `CacheModule`, with an expiry of 30 seconds. The rest of the record is not cached. The new `tenantRecordCache` option of the tenants module config changes the expiry, or turns the cache off with `false`.
+  
+  ```ts
+  new TenantsModule({
+    tenantRecordCache: { expiryInSeconds: 60 },
+  })
+  ```
+  
+  When running multiple instances, use a cache that is shared between them, such as `RedisCache` from `@credo-ts/redis-cache`. A tenant that is deactivated, deleted or updated is removed from the cache, so with a shared cache the change takes effect on every instance at once. With a cache per instance, such as `InMemoryLruCache`, the other instances keep opening sessions for a deactivated or deleted tenant until the entry expires. The same goes for every instance when removing the tenant from the cache fails. The update or delete still succeeds and an error is logged.
+  
+  The cache is not used when the agent's cache is the `SingleContextStorageLruCache`, which is the default when no `CacheModule` is registered. A warning is logged once in that case.
+
+### Patch Changes
+
+- 51bd389: Default agent modules can now be configured by passing their config options instead of a module instance. Module instances still work. Other modules must still be passed as a module instance.
+  
+  ```ts
+  const agent = new Agent({
+    dependencies: agentDependencies,
+    modules: {
+      dids: { resolvers: [new WebDidResolver()] },
+      x509: { trustedCertificates: [certificate] },
+      askar: new AskarModule({ askar, store }),
+    },
+  })
+  ```
+- 46700e9: Add a status (active/inactive) to tenant records. Sessions can not be opened for inactive tenants, so inbound DIDComm messages and endpoints such as OpenID4VC result in an error for the tenant. Use `tenants.updateTenantStatus` to change the status, and pass `allowInactive: true` to `getTenantAgent`/`withTenantAgent` to deliberately open a session for an inactive tenant. Existing tenant records are considered active.
+- 82a6efd: Update the TypeScript development dependency to TypeScript 7 (`typescript@^7.0.2`, installed as `@typescript/native`) for type checking. The `typescript` package is now an alias of `@typescript/typescript6@^6.0.2`, so tools that use the TypeScript compiler API, such as `tsdown` when generating declaration files, keep working.
+  
+  This has no effect on runtime behaviour. `getPublicJwkFromDid` in `@credo-ts/openid4vc` now declares its `Promise<PublicJwk>` return type, which is the type it already returned.
+- 526a989: feat: support node 26
+- 81265f5: All records in Credo are now encoded, decoded and validated with a zod schema instead of class-transformer and class-validator. This is the first step of moving Credo away from class-transformer and class-validator. The stored format of records doesn't change, so no storage migration is needed.
+  
+  A class opts in by defining a static `encodingSchema` (a zod codec). `JsonTransformer` and `MessageValidator` use it when present, and fall back to class-transformer and class-validator otherwise, so custom records and other classes keep working without changes. Records can define their schema with `createRecordEncodingSchema`:
+  
+  ```ts
+  import { BaseRecord, createRecordEncodingSchema, zIsoDate } from '@credo-ts/core'
+  import { z } from 'zod'
+  
+  const myRecordEncodingSchema = createRecordEncodingSchema({
+    name: z.string(),
+    expiresAt: zIsoDate.optional(),
+  })
+  
+  export class MyRecord extends BaseRecord {
+    public static get encodingSchema() {
+      return myRecordEncodingSchema
+    }
+  
+    // ...
+  }
+  ```
+  
+  Some things behave differently:
+  
+  - A stored record that fails to decode now throws a `RecordDecodingError` with the `recordType` and `recordId`, caused by a `ZodValidationError`. Before, this was a `ClassValidationError`. `ZodValidationError` and `ClassValidationError` now both extend `CredoValidationError`.
+  - Drizzle storage encodes a record before it stores it, so an invalid record is never stored. Askar already did.
+  - A subclass of a Credo record inherits the record's `encodingSchema`. Properties the subclass adds with class-transformer decorators are still stored, but no longer transformed (for example a `Date` is decoded as a string). Define an `encodingSchema` on the subclass to transform them.
+- Updated dependencies [457f5a6]
+- Updated dependencies [c2bb4d5]
+- Updated dependencies [0b9531a]
+- Updated dependencies [c452dfc]
+- Updated dependencies [2c4e3a2]
+- Updated dependencies [798c401]
+- Updated dependencies [b77a2c3]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [8abea64]
+- Updated dependencies [3564660]
+- Updated dependencies [8a6af0b]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [33d3f53]
+- Updated dependencies [93907de]
+- Updated dependencies [f3d537a]
+- Updated dependencies [de1c035]
+- Updated dependencies [2485e36]
+- Updated dependencies [51bd389]
+- Updated dependencies [9eadcb8]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [14e84ce]
+- Updated dependencies [218237d]
+- Updated dependencies [fac9757]
+- Updated dependencies [95b0dd5]
+- Updated dependencies [81265f5]
+- Updated dependencies [b77a2c3]
+- Updated dependencies [3d4b386]
+- Updated dependencies [9105c2d]
+- Updated dependencies [b51f8b5]
+- Updated dependencies [75f7139]
+- Updated dependencies [3985e5b]
+- Updated dependencies [77fe670]
+- Updated dependencies [dbde0f1]
+- Updated dependencies [526a989]
+- Updated dependencies [820d809]
+- Updated dependencies [c452dfc]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [3354c95]
+- Updated dependencies [4dd128a]
+- Updated dependencies [82a6efd]
+- Updated dependencies [da2a293]
+- Updated dependencies [a362176]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [4c2f93b]
+- Updated dependencies [dde35e0]
+- Updated dependencies [1de1ead]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [820d809]
+- Updated dependencies [716cb84]
+- Updated dependencies [82a6efd]
+- Updated dependencies [667c462]
+- Updated dependencies [9303c90]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [1bbcdc3]
+- Updated dependencies [e851280]
+- Updated dependencies [3c27483]
+- Updated dependencies [7fb55cc]
+- Updated dependencies [cf46149]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [4b137e8]
+- Updated dependencies [aadabc9]
+- Updated dependencies [e930e66]
+- Updated dependencies [ae0fe8e]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [357a5da]
+- Updated dependencies [0814729]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [fb99743]
+- Updated dependencies [b9c051d]
+- Updated dependencies [526a989]
+- Updated dependencies [25199e8]
+- Updated dependencies [d086b7a]
+- Updated dependencies [3678fb3]
+- Updated dependencies [b21bba5]
+- Updated dependencies [3354c95]
+- Updated dependencies [0523bd0]
+- Updated dependencies [0b7ba8d]
+- Updated dependencies [2f20e2e]
+- Updated dependencies [8a6af0b]
+- Updated dependencies [8178149]
+- Updated dependencies [b1090de]
+- Updated dependencies [78d5cfb]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+- Updated dependencies [ac3b95b]
+- Updated dependencies [ae0fe8e]
+- Updated dependencies [64fec67]
+- Updated dependencies [cbfe06b]
+- Updated dependencies [47691c2]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [56ae9a6]
+- Updated dependencies [47691c2]
+- Updated dependencies [93907de]
+- Updated dependencies [94faeed]
+- Updated dependencies [dbbef02]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [47691c2]
+- Updated dependencies [8114e84]
+- Updated dependencies [dbafd1e]
+- Updated dependencies [2151443]
+- Updated dependencies [c05145a]
+- Updated dependencies [ad928f5]
+- Updated dependencies [808e873]
+- Updated dependencies [81265f5]
+  - @credo-ts/didcomm@0.8.0
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes

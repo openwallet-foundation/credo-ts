@@ -1,5 +1,440 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 798c401: Remove deprecated AnonCreds Data Integrity compatibility aliases. Use the canonical AnonCreds W3C credential APIs and `DidCommDataIntegrityCredentialFormatService` from `@credo-ts/didcomm` instead.
+- b77a2c3: Remove `sov` from the default `publicDidMethods` of the DIDs module config. `DidRecord` no longer sets the `legacyUnqualifiedDid` tag. Existing records keep the tag in storage, but Credo does not use it. The `_internal/legacyDid` metadata that storage migrations write is unchanged.
+- de1c035: Update `dcql` to `^4.0.0`. In the `output` of a DCQL query result, an array element that is not selected is now `DcqlNotDisclosed` instead of `null`, so a claim with a literal `null` value is kept and matched. Code that reads the output must check for `DcqlNotDisclosed`, which is exported from `@credo-ts/core`:
+  
+  ```ts
+  import { DcqlNotDisclosed } from '@credo-ts/core'
+  
+  const disclosed = output.list.filter((element) => element !== DcqlNotDisclosed)
+  ```
+  
+  Also updates `@sd-jwt/*` to `^0.23.0`, `@owf/cose` and `@owf/token-status-list` to `^0.5.0` and `@owf/mdoc` to `^0.8.3`.
+- 14e84ce: Upgrade `did-resolver` to 6.0.0 and `web-did-resolver` to 3.2.0. DID URLs are now parsed strictly according to DID Core v1.0: `parseDid` and `tryParseDid` reject legacy matrix parameters (`;key=value`), unencoded characters outside the RFC 3986 sets in path, query and fragment, and invalid percent escapes, and resolution of such DIDs returns `invalidDid`. `ParsedDid` no longer has a `params` property. `did:web` resolution now validates the host, returns no document when its `id` does not match the DID, and reports `resolutionError` for network, HTTP and JSON failures (`notFound` only for HTTP 404 and `id` mismatches). Requests use the agent's injected fetch with Credo's timeout helper; `web-did-resolver` requires Node.js 22 or later.
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- b2ac66a: Reject `did:jwk` identifiers containing private key material, restrict DID URL fragments to `#0`, and generate verification relationships according to the JWK `use` value.
+- fb968ea: KMS `decrypt` renames its public key fields to say which key they hold. For `ECDH-ES` and `ECDH-ES+KW` the sender's ephemeral key moves from `externalPublicJwk` to `ephemeralPublicJwk`. For `ECDH-HSALSA20` the sender key moves from `externalPublicJwk` to `senderPublicJwk`. `KmsEncryptedKey` no longer has `iv` and `tag`, and `KmsKeyAgreementEcdhEs` is replaced by `KmsKeyAgreementEncryptEcdhEs` and `KmsKeyAgreementDecryptEcdhEs`.
+  
+  If you wrote your own KMS backend, its `encrypt` now has to:
+  
+  - call `encryption.aad({ ephemeralPublicJwk })` once when it is a function, and use the result as the AAD
+  - generate the ECDH ephemeral key itself
+  - return `ephemeralPublicJwk`, and `encryptedKeys` for the key wrapping algorithms
+  
+  `ECDH-ES` and `ECDH-ES+KW` options that reach a backend through `KeyManagementApi` never carry a `keyId`.
+- fb968ea: The KMS now creates the ECDH ephemeral key itself and never stores it. `encrypt` returns its public key as `ephemeralPublicJwk`. `ECDH-ES` and `ECDH-ES+KW` no longer take a `keyId`, and passing one now fails validation. In `encrypt`, a `keyId` in `keyAgreement` now always means the sender's key.
+  
+  `encryption.aad` can now be a callback that gets the `ephemeralPublicJwk` and returns the AAD, so you can put the `epk` in a JWE protected header. This is only allowed with `ECDH-ES`, `ECDH-ES+KW` and `ECDH-1PU+A256KW`. These now only allow authenticated content encryption in both `encrypt` and `decrypt`, and `encrypt` no longer takes an `iv` for them.
+  
+  Askar no longer reports `ECDH-ES` with `A256CBC-HS512` as supported, as its key derivation can't produce the 64 byte key. Agents that also register the Node backend now encrypt it with Node.
+  
+  ```ts
+  // before
+  const ephemeralKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+  const header = JsonEncoder.toBase64Url({ alg: 'ECDH-ES', enc: 'A256GCM', epk: ephemeralKey.publicJwk })
+  const { encrypted, iv, tag } = await agent.kms.encrypt({
+    key: { keyAgreement: { algorithm: 'ECDH-ES', keyId: ephemeralKey.keyId, externalPublicJwk: recipientJwk } },
+    encryption: { algorithm: 'A256GCM', aad: TypedArrayEncoder.fromUtf8String(header) },
+    data,
+  })
+  await agent.kms.deleteKey({ keyId: ephemeralKey.keyId })
+  
+  // after
+  let header: string | undefined
+  const { encrypted, iv, tag } = await agent.kms.encrypt({
+    key: { keyAgreement: { algorithm: 'ECDH-ES', externalPublicJwk: recipientJwk } },
+    encryption: {
+      algorithm: 'A256GCM',
+      aad: ({ ephemeralPublicJwk }) => {
+        header = JsonEncoder.toBase64Url({ alg: 'ECDH-ES', enc: 'A256GCM', epk: ephemeralPublicJwk })
+        return TypedArrayEncoder.fromUtf8String(header)
+      },
+    },
+    data,
+  })
+  ```
+- fb968ea: KMS `encrypt` can now wrap the content key for more than one recipient. `ECDH-ES+A128KW`, `ECDH-ES+A192KW`, `ECDH-ES+A256KW` and the new `ECDH-1PU+A256KW` take a `recipients` array instead of `externalPublicJwk`, and return `encryptedKeys` in the same order. All recipients must use the same key type and curve, since they share one ephemeral key. The single `encryptedKey` is removed from the result.
+  
+  The Askar and Node backends support `ECDH-1PU+A256KW`, which needs an `A*CBC-HS*` content encryption algorithm in both `encrypt` and `decrypt`. `supportedBackendsForOperation` returns no backends for content encryption that `encrypt` or `decrypt` rejects.
+  
+  ```ts
+  const { encrypted, iv, tag, ephemeralPublicJwk, encryptedKeys } = await agent.kms.encrypt({
+    key: {
+      keyAgreement: {
+        algorithm: 'ECDH-1PU+A256KW',
+        keyId: senderKeyId,
+        recipients: [{ externalPublicJwk: aliceJwk }, { externalPublicJwk: bobJwk }],
+      },
+    },
+    encryption: { algorithm: 'A256CBC-HS512' },
+    data,
+  })
+  ```
+- 820d809: `KeyManagementApi.getPublicKey` now returns the backend that holds the key with the public key. This is a breaking change, the public key was returned directly before. Pass the backend to the operations that follow on the same key to skip looking up its backend.
+  
+  ```ts
+  const { publicKey, backend } = await agent.kms.getPublicKey({ keyId })
+  await agent.kms.sign({ keyId, backend, algorithm: 'ES256', data })
+  ```
+- 1bbcdc3: Support the request information of ISO/IEC TS 23220-4 (taken up by the second edition of ISO/IEC 18013-5) in the ISO mdoc DC API, by updating `@owf/mdoc` to `^0.9.1`, `@owf/*` to `^0.6.0` and `@sd-jwt/*` to `^0.23.2`.
+  
+  Verifier:
+  
+  - `createDcApiVerificationSession` takes `deviceRequestInfo.useCases`, which say which doc requests the response has to answer, and `requestInfo` per doc request with alternative elements, accepted issuers (`issuerIdentifiers`, hex encoded authority key identifiers), `uniqueDocSetRequired` and `maximumResponseSize`. Accepted issuers are matched against the certificate chain each document was verified with.
+  - Use cases are only sent when passed, and then set the device request version to `1.1`. Wallets that do not support them ignore them. `treatAmbiguousMultipleDocRequestsAsAlternatives` is ignored when use cases are passed.
+  
+  ```ts
+  await agent.mdoc.createDcApiVerificationSession({
+    docRequests: [mdlDocRequest, passportDocRequest, residencePermitDocRequest],
+    // an mDL, or a passport and a residence permit
+    deviceRequestInfo: { useCases: [{ mandatory: true, documentSets: [[0], [1, 2]] }] },
+  })
+  ```
+  
+  - `MdocDeviceResponse.verify` returns per document its `documentIndex`, the verified `mdoc` and the `trustedIssuanceChain` it was verified with, instead of nothing.
+  
+  Wallet:
+  
+  - New `agent.mdoc.selectCredentialsForRequest` selects the credentials to answer a resolved request with, like `selectCredentialsForDcqlRequest`: the first matching document set of every mandatory use case (or, without mandatory use cases, of the first use case that can be answered), the first credential per doc request that can be used with `useMode`, and per claim its first option, including the alternative sets and device signed values that takes. Doc requests answered with the same credential share one document. For a resolved DC API request the result can be passed to `createDcApiResponse` as is.
+  - The resolved request types drop `DcApi` from their name, as they do not depend on the DC API: `MdocResolvedDocRequest(Success|Failure)`, `MdocValidCredential`, `MdocFailedCredential` and `MdocCredentialMatch`. The `MdocDcApi*` names stay as deprecated aliases. `MdocDcApiResolvedRequest` extends the new `MdocResolvedRequest`.
+  - `createDcApiResponse` takes several doc request indexes in `docRequestIndex`, to answer several doc requests of a credential's docType with a single document.
+  - `createDcApiResponse` takes `alternatives` per credential, to disclose an alternative set in place of a requested element. The claim `options` in the resolved request list the sets an mdoc can disclose. It throws when the credentials do not answer the use cases of the request.
+  
+  ```ts
+  const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+  if (resolved.success) {
+    const response = await agent.mdoc.createDcApiResponse(agent.mdoc.selectCredentialsForRequest(resolved))
+  }
+  ```
+  
+  Breaking:
+  
+  - The resolved request of `resolveDcApiRequest` replaces `docRequestsAsAlternatives` with `useCasesSource` and `useCases`, and the `deviceRequestMatch` of `verifyDcApiResponse` changes the same way. For a request without use cases, `useCasesSource` is `'allDocRequests'` (was `docRequestsAsAlternatives: false`), or `'eachDocRequest'` with `treatAmbiguousMultipleDocRequestsAsAlternatives` (was `docRequestsAsAlternatives: true`). For a request with use cases it is `'deviceRequestInfo'`, and a successful request can have doc requests without a valid credential: use `useCases[].matchingDocumentSets` to see which doc requests to answer, or `selectCredentialsForRequest`.
+  
+  ```ts
+  // Before
+  if (resolved.success && !resolved.docRequestsAsAlternatives) {
+    // every doc request has a valid credential
+  }
+  
+  // After
+  if (resolved.success && resolved.useCasesSource === 'allDocRequests') {
+    // every doc request has a valid credential
+  }
+  ```
+- b9c051d: Replace the hardcoded public DID method list and `publicDidMethods` configuration with sparse per-method `cacheScope` overrides on the DID module. All cache-enabled methods now default to global scope, including custom methods; configure `cacheScope: { web: 'context' }` to isolate a method's cache by agent context. Unspecified methods remain global, and an empty map does not force context scope. Resolvers retain `allowsCaching` but do not declare scope. Web, Indy, WebVH, Cheqd, and Hedera retain global caching; Key, JWK, and Peer remain uncached. Reads, writes, and invalidation use the same scope policy.
+  
+  To migrate an explicit `publicDidMethods` list, set `context` overrides for cache-enabled methods that were excluded from the list. Review custom resolvers for tenant-dependent resolution, as these previously defaulted to context scope.
+- b21bba5: HTTP requests now have a response size limit and a timeout, so a malicious server can't exhaust memory or keep a request open. The agent wraps `agentDependencies.fetch` with the new `fetchLimits` agent config, which defaults to 10 MiB and 30 seconds. This also covers requests that libraries make with it, such as OpenID4VC and mdoc requests. A response over the limit is aborted and its request fails.
+  
+  These options override `maxResponseBytes` for specific requests:
+  
+  - `maxTypeMetadataBytes` on `SdJwtVcModule` for type metadata.
+  - `maxStatusListBytes` on the new `TokenStatusListModule` config for status lists of Token Status Lists, SD-JWT VCs and mdocs.
+  - `maxDidDocumentBytes` on `WebDidResolver`.
+  - `maxResourceBytes` on `WebVhDidResolver`.
+  - `maxResponseBytes` on `DidCommHttpOutboundTransport`.
+  - `maxInvitationBytes` on `DidCommModule` for short URL invitations.
+  
+  The download stops at the limit when the `fetch` in the agent dependencies exposes the response body as a stream. On React Native, recent Expo versions use `expo/fetch` as the global fetch, which supports this. React Native's built-in fetch doesn't: it only returns a response after the whole body is downloaded. A response over the limit then still fails, but it doesn't protect memory. We recommend `expo/fetch`, or another fetch implementation that supports streaming.
+  
+  When `DidCommWsInboundTransport` creates the server from `port`, it now limits received messages to 5 MiB, the same as `DidCommHttpInboundTransport`. Before, the limit was 100 MiB, the default of `ws`. A larger message now closes the socket. Agents that receive larger messages, for example a mediator receiving `forward` messages with large attachments, can raise the limit with the new `maxPayloadBytes` option. When you pass your own `server`, set `maxPayload` on it yourself.
+- 0b7ba8d: SD-JWT VCs signed with an X.509 certificate no longer require the `iss` claim to be an HTTPS URI that matches a SAN URI or SAN DNS name in the leaf certificate, for both signing and verifying. The SD-JWT VC draft dropped these requirements.
+  
+  Do not rely on the `iss` value for any means of trust when verifying an SD-JWT VC signed with an X509 certificate.
+- 8178149: Validate canonical multibase proof values and strict varint/multihash encodings. SHA-1 multihash encoding is no longer supported.
+- 194cf1e: Make published TypeScript declarations resolvable without development dependencies. Move `@types/events` to dependencies in `@credo-ts/core`, and `@types/node` and `@types/ws` to dependencies in `@credo-ts/node`. Replace non-portable and self-referential imports in core, and use `AgentDependencies` for the WebSocket type in `@credo-ts/didcomm` instead of importing from undeclared `ws`.
+- ac3b95b: JSON-LD credentials now use the upstream `jsonld`, `jsonld-signatures` and `@digitalbazaar/vc` libraries instead of the `@digitalcredentials` forks. React Native no longer needs `expo-crypto`. `@credo-ts/react-native` adds `crypto.subtle.digest` when it is missing, and the runtime must provide `TextEncoder`. Hermes provides it from React Native 0.74, which is now the minimum supported version.
+  
+  Some things behave differently:
+  
+  - Expiration and issuance dates of JSON-LD credentials are now checked with the `validitySkewSeconds` agent config (30 seconds by default). Before, no clock skew was allowed.
+  - The `vcJs` validation result no longer contains a `log` property, and its `credentialResults` no longer contain the `credential`.
+- cbfe06b: Remove the deprecated `documentLoader` option of the `W3cCredentialsModule`, and the `W3cCredentialsModuleConfig`. The `JsonLdModule` is now a default module. Configure the document loader on it instead:
+  
+  ```ts
+  const agent = new Agent({
+    modules: {
+      jsonLd: new JsonLdModule({ documentLoader }),
+    },
+  })
+  ```
+- 94faeed: Signing a W3C VCDM 2.0 JWT or SD-JWT presentation now picks the signer with the same rules the verifier checks. The signer DID is the `holder`, else the shared `credentialSubject.id`, else the `cnf.kid` DID, and it must be the `holder`, a `credentialSubject.id` of every credential that has one, and the DID of every `cnf.kid`. The key is the `cnf` key, else the single local `authentication` key, and must be a local `authentication` key of that DID. Signing now throws a clear error when these can't all be met, instead of signing a presentation the verifier rejects. The presentation `kid` is now always an absolute DID URL. A credential bound only with `cnf.jwk` now needs a `holder` or `credentialSubject.id` DID to be presented. Verifying a presentation now also requires the DID of a credential's `cnf.kid` to be the DID that signed the presentation.
+- dbbef02: W3C v2 JWT and SD-JWT presentations now include `iat` and the `undefined-terms/v2` context. W3C v2 SD-JWT credentials can no longer make `issuer`, `validFrom` or `validUntil` selectively disclosable, so an issuer disclosure frame that does now throws.
+
+### Patch Changes
+
+- c2bb4d5: Validate JSON-LD credential signing readiness before accepting a proposal or creating a direct or negotiated offer. The preflight checks that the issuer verification method belongs to a DID created by the agent and is compatible with the requested proof type. This requires a created DID record and a resolvable issuer DID document earlier in the exchange, at offer creation or proposal acceptance, rather than waiting until request acceptance. For example, a `did:web` issuer is now resolved at offer time. Capability failures use the typed `W3cJsonLdCredentialSigningNotSupportedError`, allowing callers to choose a negotiation or rejection flow. Signing-time checks also use this error for the same capability failures. When a created DID or verification method cannot be found, the typed error wraps the original error as its cause.
+- 0b9531a: Added Aries RFC 881 (vc+sd-jwt) format handler
+  
+  `@credo-ts/core` now exports `validateW3cV2SdJwtDisclosureFrame` and `NON_DISCLOSEABLE_FIELDS`, so that
+  a disclosure frame can be validated before it is used to sign a credential.
+  
+  The `didcomm_signed_attachment` binding method is now implemented by a helper shared with the data
+  integrity format. As a result the data integrity format also accepts a binding proof whose attachment
+  payload is base64url encoded, in addition to base64. Signed attachments are still produced as base64,
+  so this only widens what is accepted from other agents.
+- c452dfc: `RedisCache` and `SingleContextStorageLruCache` no longer throw from `get` and `set` when the cache can't be reached. `get` returns `null`, `set` does nothing, and both log a warning. This keeps the agent working from storage during a cache outage. `remove` still throws, as the entry would otherwise stay in the cache.
+- 2c4e3a2: `CachedStorageService` now writes a record to the cache only after the underlying storage has saved or updated it. Before, a save or update that failed in storage (for example with a `RecordDuplicateError`) left the unsaved record in the cache, and a later `getById` returned a record that did not exist in storage.
+- ee69f9d: Update `@sd-jwt/*` to `^0.23.1`. SD-JWT VC type metadata that describes a different `vct` than the one it was resolved for is now rejected.
+- 8abea64: Update `@sd-jwt/*` to `^0.22.0` and `@owf/*` to `^0.4.2` (`@owf/mdoc` to `^0.8.2`).
+  
+  - The error of a failed SD-JWT VC verification now carries a `code` (e.g. `JWT_EXPIRED`, `JWT_NOT_YET_VALID`, `INVALID_JWT_SIGNATURE`, `STATUS_INVALID`) and, for time and status checks, `details`. A failed `iat`, `nbf` or `exp` check is reported as a `JwtTimeClaimException`, a subclass of `SDJWTException`, whose `details` include the allowed clock skew.
+  - The `typ` header of a status list JWT is now checked by `@sd-jwt/sd-jwt-vc`, so Credo's own check is removed. A status list JWT whose `typ` is not `statuslist+jwt` is still rejected, now with an `SLException` (`The typ header '<typ>' must be equal to 'statuslist+jwt'`) instead of an `SdJwtVcError`.
+- 3564660: Several crypto fixes:
+  
+  - `JwsService` now rejects a JWS with a `crit` or `b64` protected header parameter. It supports neither, and before it ignored them.
+  - `CredoWebCrypto.getRandomValues` now fills the array it's given. Before, it returned a new array and left the argument untouched.
+  - `KeyManagementApi.getPublicKey` now returns the key from the provided `backend`. Before, it only checked the key existed there and then returned the key from the first backend that had one.
+  - `areObjectsEqual` no longer treats an array and an object with the same entries as equal, or arrays of different length as equal.
+- 8a6af0b: Validate public-key payload lengths and compressed EC encodings inside fromMulticodec, including direct decoder calls. Existing multicodec prefix fields, valid fingerprints, and general public-key imports remain unchanged.
+- 7a1a5c9: Consolidate Ed25519 linked data proof suite contexts to use the bundled JSON-LD context registry and shared VC context URL constants. This removes duplicate suite-local Ed25519 context documents/constants, flattens the Ed25519 signature suite files into the main signature suites folder, and fixes bundled context document loading for URLs with fragments.
+- 33d3f53: Added a `customStatusListFetcher` option to the SD-JWT VC module. It replaces the HTTP GET with which the agent fetches the status list JWT that the `status.status_list.uri` claim of a presented SD-JWT VC references, in the same way `customTypeMetadataResolver` replaces the fetch of Type Metadata. The option receives the `uri` and a `defaultFetcher`, so a verifier can apply a network policy to the fetch (HTTPS only, no redirects, an address allowlist, a response size bound) or serve the status list JWT from a cache, and fall back to the default fetch where it wants to.
+  
+  `@credo-ts/core` now exports `SdJwtVcModuleConfig`, `SdJwtVcModuleConfigOptions`, and the types of the `customStatusListFetcher` and `customTypeMetadataResolver` options.
+  
+  The agent now also rejects a status list JWT whose JOSE header `typ` is not `statuslist+jwt`, as Token Status List requires of a relying party. This check runs before the signature of the status list JWT is verified, whichever fetcher returned it.
+- 93907de: DCQL now only reports cryptographic holder binding for credentials that are bound to a key or to their subject, so presentations of credentials without holder binding are rejected unless the credential query sets `require_cryptographic_holder_binding: false`. Wallets no longer offer such credentials for queries that require holder binding. The Credo OpenID4VP verifier still rejects queries that set `require_cryptographic_holder_binding: false`, so it can't accept credentials without holder binding yet. This only applies to other verifiers and to the wallet side.
+- f3d537a: Fix DCQL LDP credential retrieval to filter expanded types using `ldp_vc` queries instead of `jwt_vc_json` queries.
+- 2485e36: The agent now logs a warning when it uses the default cache. The default cache will change from the `SingleContextStorageLruCache` to the `InMemoryLruCache` in a future version. To keep using the `SingleContextStorageLruCache`, register the `CacheModule` with it explicitly.
+  
+  ```ts
+  new Agent({
+    modules: {
+      cache: new CacheModule({ cache: new SingleContextStorageLruCache({ limit: 500 }) }),
+    },
+  })
+  ```
+- 51bd389: Default agent modules can now be configured by passing their config options instead of a module instance. Module instances still work. Other modules must still be passed as a module instance.
+  
+  ```ts
+  const agent = new Agent({
+    dependencies: agentDependencies,
+    modules: {
+      dids: { resolvers: [new WebDidResolver()] },
+      x509: { trustedCertificates: [certificate] },
+      askar: new AskarModule({ askar, store }),
+    },
+  })
+  ```
+- 9eadcb8: `DidDocument.getRecipientKeysWithVerificationMethod` and `DidDocument.recipientKeys` now return each key once. Before, a key was returned once per DIDComm service that referenced it, and once per verification method that carried it, so the `recipientKeyFingerprints` tag of a `DidRecord` contained duplicate fingerprints. With `mapX25519ToEd25519`, an X25519 key whose Ed25519 counterpart is also a recipient key is returned once as well.
+- 1ee57f6: DID resolution now returns an `invalidDidDocument` error when the id of the resolved DID document does not match the resolved DID.
+- 3985e5b: Add DIDComm v2 ([DIDComm Messaging v2.1](https://identity.foundation/didcomm-messaging/spec/v2.1/)) next to DIDComm v1. Support for v2 is opt-in: `didcommVersions` defaults to `['v1']`, and an agent without v2 rejects v2 envelopes and keeps its v1 behaviour. An agent with both versions talks v1 and v2 at the same time. The version of a connection is stored on the connection record, so existing v1 connections keep working and new connections use the version of the invitation they come from. The public API has no breaking changes: all v2 additions are new types, members, options or overloads next to the existing ones.
+  
+  ```ts
+  const agent = new Agent({
+    modules: {
+      didcomm: new DidCommModule({
+        didcommVersions: ['v1', 'v2'],
+        // optional, these are the defaults
+        v2KeyAgreementCurve: 'X25519', // or 'P-256' | 'P-384'
+        v2DefaultAuthcryptContentEncryption: 'A256CBC-HS512',
+        v2DefaultAnoncryptContentEncryption: 'A256CBC-HS512', // or 'A256GCM' | 'XC20P'
+        peerDidNumAlgoForV2OOB: PeerDidNumAlgo.ShortFormAndLongForm, // did:peer:4
+        basicMessages: { protocols: ['v1', 'v2'] },
+      }),
+      connections: new DidCommConnectionsModule({ autoCreateConnectionOnFirstMessage: true }),
+      mediationRecipient: new DidCommMediationRecipientModule({ mediationProtocolVersions: ['v1', 'v2'] }),
+      mediator: new DidCommMediatorModule({ mediationProtocolVersions: ['v1', 'v2'] }),
+    },
+  })
+  
+  const { outOfBandInvitation } = await agent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+  ```
+  
+  `@credo-ts/didcomm`:
+  
+  - Envelopes: `DidCommV2EnvelopeService` packs and unpacks authcrypt (`ECDH-1PU+A256KW` with `A256CBC-HS512`) and anoncrypt (`ECDH-ES+A256KW` with `A256CBC-HS512`, `A256GCM` or `XC20P`) JWEs in general JSON serialization with `apu`/`apv`, for X25519, P-256 and P-384 key agreement, and verifies signed messages (`application/didcomm-signed+json` with EdDSA, ES256 or ES256K), also when they are nested in an encrypted message. The `DidCommEnvelope` interface with `DidCommV1Envelope`, `DidCommV2Envelope` and the `DidCommEnvelopeRegistry` picks the version per message: the version of the inbound session, else the version of the connection, else v1. Outbound messages are always authcrypt, except forwards, which are anoncrypt. Credo's X25519 keys are independent keys and are no longer derived from Ed25519 keys.
+  - Message handling: v2 plaintext messages are converted to the v1 shape (`@id`, `@type`, `~thread`, `~attach`, `~timing`, `~transport`) before they reach the handlers, and back when they are sent, so protocol implementations are version-agnostic. Message classes can shape their own v2 headers and body. Inbound v2 messages are matched to a connection by the `to`/`from` DID pair, then by `theirDid`, by keys, or by a `from_prior` issuer or a verified `alsoKnownAs` alias. Replies over a transport session use the version of the inbound message. Problem reports use report-problem/2.0 on v2 connections. Message ids and `pthid` accept 1 to 64 characters including `~`.
+  - Connections and out-of-band: out-of-band 2.0 invitations (`DidCommOutOfBandInvitationV2`, `_oob` URL parameter, attachments). `createInvitation` takes `didCommVersion`, `peerDidNumAlgoForV2OOB` and `ourDid`; `receiveImplicitInvitation` takes `didCommVersion` and detects it from the DID document when omitted. v2 connections have no handshake (`DidCommHandshakeProtocol.None`): accepting the invitation creates a completed connection and the first message carries the invitation id as `pthid`. With `autoCreateConnectionOnFirstMessage` a first v2 message opens a connection, bound to the invitation named by `pthid` or to an implicit invitation (one of our public DIDs). Connection reuse works through `pthid` (`reuseForOutOfBandInvitation`). `DidCommConnectionRecord.didcommVersion` (`'v1' | 'v2'`) is also a queryable tag. DID rotation with `from_prior` and hangup (`connections.rotate()`, `connections.hangup()`) work on v2 connections.
+  - Protocols over v2: Trust Ping 2.0, Basic Message 2.0 (`basicMessages: { protocols }`), Discover Features 2.0, Routing 2.0 (`forward`), Coordinate Mediation 2.0, Message Pickup 4.0 (`PickUpV4` and `PickUpV4LiveMode` strategies), Report Problem 2.0 and the empty message. Connection request and response (DID Exchange) stay v1. Out of Band 2.0, Message Pickup 4.0 and `empty/1.0` are registered and advertised in discover-features only when v2 is enabled.
+  - Mediation: Coordinate Mediation 2.0 on both sides (mediate-request/grant/deny, keylist-update, keylist-query with pagination, `routing_did` in the grant). `mediationProtocolVersions` defaults to `['v1']` on the recipient and mediator modules. The mediator publishes a routing DID (`mediatorRoutingDid`, or a did:peer:2 built from its routing record) and adds an X25519 routing key to its routing record when v2 is enabled. The pickup strategy follows the mediation version (4.0 on CM 2.0, 2.0 on CM 1.0). v1 peers reach a recipient behind a CM 2.0 mediator: a `did-communication` service whose endpoint is a routing DID is expanded to the mediator endpoint and its routing keys. `DidCommRouting` gains the optional `keyAgreementKey` and `routingDid`. `DidCommMediationRecord` gains `routingDid`, `recipientDids` and `protocolVersion`. `notifyKeylistUpdate` has a new overload `(mediationRecord, recipientKeyOrDid, action?)`.
+  - `DidCommInboundMessageContext` gains the optional `recipientDid`, `senderKeyAgreementKey` and `recipientKeyAgreementKey`; `senderKey` and `recipientKey` stay Ed25519 keys. `DidCommMessagePickupModule` defaults `protocols` to v1, v2 and v4; v4 is skipped when v2 is not enabled. `DidCommMessageSender` and `DidCommMessageReceiver` take the `DidCommEnvelopeRegistry` in their constructors.
+  
+  Behaviour changes for agents that do not enable v2: the recipient-key fingerprints of a DID document that advertises a `DIDCommMessaging` service include its `keyAgreement` keys (stored records keep their tags until they are saved again), a v1 forward is also matched by the recipient DID, a `did-communication` service with a DID endpoint is expanded, and HTTP inbound content types are matched case-insensitively and without parameters. When v2 is enabled, `oob.createInvitation()` without v1-only options (`handshakeProtocols`, `messages`, `appendedAttachments`, `routing`) creates a v2 invitation; pass `didCommVersion: 'v1'` to keep v1.
+  
+  `@credo-ts/core`:
+  
+  - `DidDocument` gains `didCommV2Services`, `allDidCommRecipientKeys` (the v1 recipient keys plus the `keyAgreement` keys of a document with a v2 service) and `getKeyAgreementRecipientKeysWithVerificationMethod()`. `didCommServices`, `recipientKeys` and `getRecipientKeysWithVerificationMethod()` keep their v1 content.
+  - `DidRecord.recipientKeyFingerprints` and the `recipientKeyFingerprints` tag of created DIDs are built from `allDidCommRecipientKeys`, so a DID with a v2 service is also found by its `keyAgreement` keys.
+  - `utils.uuidFromName`, `didToNumAlgo2DidDocument`, `didToNumAlgo4DidDocument`, `areEquivalentDidPeer4Forms`, `getDidPeer4ShortFormForEquivalence`, `isShortFormDidPeer4` and `getAlternativeDidsForNumAlgo4Did` are exported. `PublicJwk.is()` accepts up to four types.
+  
+  `@credo-ts/node`:
+  
+  - `DidCommHttpInboundTransport` accepts `application/didcomm-encrypted+json` and `application/didcomm-signed+json` when v2 is enabled, and answers with the v2 media type when the reply is a v2 envelope.
+  
+  Askar and in-memory storage need no migration, all new record fields are optional. Drizzle storage needs the `didcomm` bundle migrations, see the `@credo-ts/drizzle-storage` changelog.
+- 77fe670: The drizzle record adapters now map records to columns using the record's `encodingSchema`, instead of a hand-written mapping per record. A column with the name of a record property stores the encoded property, other columns store the tag with that name, and the remaining tags are stored in `customTags`. `getValues` and `toRecord` are no longer abstract in `BaseDrizzleRecordAdapter`, so custom adapters that implement them keep working. Records without an `encodingSchema` still need to implement them. Adapters that use the default mapping are validated when the `DrizzleStorageModule` is created: the record must define an `encodingSchema`, every record property must have a column, and the sqlite and postgres tables must have the same columns. Adapters that implement `getValues` and `toRecord` themselves are not validated. See the README for how to write adapters.
+  
+  This fixes several issues with records stored using drizzle:
+  
+  - OpenID4VC issuance sessions with holder binding keys in `transactions` could not be loaded, as the keys were not stored as JWKs. Sessions that were stored this way can be loaded again.
+  - The `openId4VciVersion` of issuance sessions and the `openId4VpVersion` of verification sessions were not stored. The new `0009_add_openid4vc_versions` migration of the `openid4vc` bundle adds the columns, and restores the `openId4VpVersion` of existing verification sessions from their tags. Run the migrations after upgrading. Issuance sessions without a version now return a batch credential response in the format of the credential request: the v1 format for a request with `credential_configuration_id`, the draft 11-14 format otherwise.
+  - AnonCreds credential definition private, key correctness proof and revocation registry definition records lost their `credentialDefinitionId` when loaded.
+  - Custom tags of SD-JWT VC records were not restored when loaded.
+  - Clearing an optional property (for example `errorMessage`) was not persisted on update.
+  
+  `AnonCredsLinkSecretRecord` and `AnonCredsRevocationRegistryDefinitionPrivateRecord` now set `createdAt` when they are created.
+  
+  `getRecordPropertyNames` is added to `@credo-ts/core`, to get the property names of a record that defines its `encodingSchema` with `createRecordEncodingSchema`. It also works for schemas from a different zod instance.
+- 820d809: Signing a JWS and decrypting an OpenID4VP authorization response each read the key from the key management service one time less. `JwsService` passes the backend that holds the key to `sign`, so the key is not looked up a second time to find its backend, and the OpenID4VC JWE decrypt callback no longer reads the public key back after decrypting.
+  
+  When a single key management backend supports an operation, `sign`, `verify`, `encrypt` and `decrypt` no longer read the public key first to find the backend of the key. The backend reports a missing key itself.
+  
+  The operation passed to `isOperationSupported` for `sign`, `verify`, `encrypt` and `decrypt` now has the `keyId` of the key it runs with. A backend that knows the key is not its own can return `false`, which leaves a single backend and skips the lookup.
+- c452dfc: `Repository.findSingleByQuery` with a `cacheKey` returned a stale record after the record was updated, until the cache entry expired. It now reads the record through the cached storage service, which updates keep fresh. It also only uses the cache for records that allow caching.
+- 5cb5e46: Fix `replaceError` to include the full `error.cause` chain in log output. Previously, `cause` was always dropped because it is non-enumerable on both `CredoError` and the built-in `Error` class. The new implementation walks the cause chain inside the replacer, tracking visited errors in a local `Set` to replace circular references with `'[Circular]'` instead of throwing a `RangeError`.
+- 3354c95: `getDomainFromUrl` now parses the URL with `URL` and throws for URLs that contain a username or password. Before, `https://good.example:x@evil.example` returned `good.example`. The domain is used to match an OpenID4VP response URL against the SAN DNS names of an x5c certificate.
+- a362176: Updated the identity common dependencies: `@openid4vc/*` to 0.9.2, `@owf/cose` and `@owf/token-status-list` to 0.7.0, `@owf/mdoc` to 0.9.3 and `@sd-jwt/*` to 0.24.2.
+- 4c2f93b: Added a `JweService` next to the `JwsService`. It creates compact and general JSON JWEs with `ECDH-ES`, `ECDH-ES+A128KW`/`A192KW`/`A256KW` and `ECDH-1PU+A256KW`, and sets `alg`, `enc`, `apu`, `apv` and `epk` in the protected header from the same values the KMS uses for key derivation. Decryption parses compact or general JSON JWEs, uses the received protected header as AAD and selects the recipient by `kid`.
+  
+  The OpenID4VC JWE encrypt and decrypt callbacks now use the `JweService`.
+- 1de1ead: `createKey` and `createKeyForSignatureAlgorithm` of the KMS accept `backendOptions` together with `backend`, which are passed to that backend.
+  
+  The `secureEnvironment` backend now requires `@animo-id/expo-secure-environment` 0.3, and takes its `generateKeypair` options as `backendOptions`.
+  
+  `SecureEnvironmentKeyManagementService.withUserAuthentication(agentContext, callback, options)`: signatures of that agent context in the callback ask the user to authenticate at most once, for the first key that requires it (iOS). `keyIds` limits it to the given keys, other keys ask for every signature as before.
+  
+  ```ts
+  const secureEnvironment = new SecureEnvironmentKeyManagementService({
+    prompt: () => ({ title: t('Sign with your wallet') }),
+  })
+  // modules: { kms: new KeyManagementModule({ backends: [new AskarKeyManagementService(), secureEnvironment] }) }
+  
+  await agent.kms.createKey({
+    type: { kty: 'EC', crv: 'P-256' },
+    backend: 'secureEnvironment',
+    backendOptions: {
+      userAuthentication: { methods: ['biometric', 'deviceCredential'] },
+      minimumKeyStorage: 'trustedEnvironment',
+    },
+  })
+  
+  await secureEnvironment.withUserAuthentication(agent.context, () => presentCredentials(), {
+    keyIds: credentialKeyIds,
+    prompt: { title: t('Share 2 credentials') },
+  })
+  ```
+- 716cb84: `KeyManagementApi` now picks the backend that holds the key for `encrypt`, `decrypt` and `verify` when no `backend` is given, like `sign` already did. Before, these always used the default backend, so a key that lived in another backend was not found.
+- 82a6efd: Update the TypeScript development dependency to TypeScript 7 (`typescript@^7.0.2`, installed as `@typescript/native`) for type checking. The `typescript` package is now an alias of `@typescript/typescript6@^6.0.2`, so tools that use the TypeScript compiler API, such as `tsdown` when generating declaration files, keep working.
+  
+  This has no effect on runtime behaviour. `getPublicJwkFromDid` in `@credo-ts/openid4vc` now declares its `Promise<PublicJwk>` return type, which is the type it already returned.
+- 667c462: Verifying a JSON-LD (`ldp_vc`) credential now fails when the issuer is not a DID, such as an `https` URL. Before, these credentials skipped the trusted issuer check. All other credential formats already required a DID or X.509 issuer.
+- 9303c90: Fixed a regression since 0.7.1 where an `ldp_vc` or `ldp_vp` could not be signed with an `Ed25519VerificationKey2020` method. Each Ed25519 suite only accepts its own verification method type, but OpenID4VCI issuance, DCQL and Presentation Exchange still chose the suite by key type and picked `Ed25519Signature2018`. They now choose by verification method type, using the new `SignatureSuiteRegistry.getAllByVerificationMethod`.
+  
+  `proofType` is now optional when signing a JSON-LD credential. When it is omitted, the first suite that supports the verification method type is used, so callers no longer have to look up the verification method separately before signing. OpenID4VCI `ldp_vc` issuance relies on this, so the issuer method is looked up under `assertionMethod`, as signing does, and issuer keys listed only under `assertionMethod` now work. Failures still throw `W3cJsonLdCredentialSigningNotSupportedError`. The OpenID4VCI holder now also requests an `ldp_vc` with `EdDSA` when the issuer only supports `Ed25519Signature2020`.
+- 87e9c1a: Verifying a JSON-LD (`ldp_vp`) presentation now only counts the presentation proofs that verify when it checks that the holder controls the `credentialSubject` of each credential. A proof set passes when one of its proofs verifies, so a second proof that didn't verify could authenticate a subject the presenter doesn't control.
+- 87e9c1a: Verifying a JSON-LD (`ldp_vp`) presentation now reads the `credentialSubject` ids from the expanded credential when it checks that the holder controls the subject. Before, only the literal `id` property was read, so a credential whose subject id was rewritten to `@id` or another alias of `@id` was accepted as a bearer credential, presented by anyone.
+- cf46149: `Repository.updateByIdWithLock` now stores the record returned by the callback when the storage service has no lock, instead of the record it read. When two mediator instances create the routing record at the same time, the instance that loses now deletes the routing keys it created instead of leaving them in the KMS.
+- 56516ee: `CredoError` and its subclasses are now native subclasses of `Error`, and the `make-error` dependency is removed. Engines and test runners now recognise a Credo error as an error (`Error.isError`, `util.types.isNativeError`), and Vitest compares the `message` in `toEqual` and `toThrow` on Node 24 and later. The observable behaviour is unchanged: `name` is the class name, `cause` is a non-enumerable read-only property, and `inspect()` returns the full cause chain.
+- 4fed115: Fix `SdJwtVcSignOptions.hashingAlgorithm` being ignored when issuing an SD-JWT VC.
+  
+  `sign()` rejected every value other than `sha-256` and then hardcoded `sha-256` as the hash algorithm of the `@sd-jwt` instance, so the option could only ever hold its documented default. The option is now passed through, meaning an issuer can produce a credential with e.g. `_sd_alg: "sha-512"` and SHA-512 disclosure digests, as allowed by SD-JWT VC. The option type now excludes `sha-1`, matching the W3C VC 2.0 SD-JWT sign options, since `_sd_alg` must name a hash algorithm that is considered secure, and this is now enforced at runtime as well (for both SD-JWT VCs and W3C VC 2.0 credentials/presentations secured with SD-JWT).
+- aadabc9: Add `supportedJwaSignatureAlgorithms` to the `KeyManagementApi`, which excludes symmetric (HMAC) algorithms unless `includeSymmetricAlgorithms` is set. OpenID4VC and DIDComm now use it, so symmetric algorithms are no longer advertised in metadata such as `vp_formats_supported`, `proof_signing_alg_values_supported` and `algsSupported`.
+- e930e66: Remove repeated work in OpenID4VC flows. The issuer verifies the `c_nonce` of a batch credential request once instead of once per proof. `MdocRecord` decodes its mdoc once instead of on every `firstCredential` and `getTags` call. The holder stores a received mdoc as the issuer sent it, instead of a re-encoded copy.
+- ae0fe8e: fix(openid4vc): don't fail encrypted OpenID4VP response verification when the wallet sends a non-UTF-8 (binary) JARM `apu` header. The `apu` bytes are now kept as-is and only interpreted as a UTF-8 `tstr` where they are actually used: the ISO 18013-7 / OpenID4VP draft 18 mdoc session transcript.
+- ee69f9d: The `openId4VpCredential` verification passed to `getTrustedIssuersForVerification` now includes `dcql`: the DCQL query and the id of the credential query the credential was presented for. Decide trust on the query, not on the credential's `vct`. A query also matches an SD-JWT VC whose type metadata extends a requested `vct`, and any issuer can publish such type metadata. When the verifier resolved that type metadata, the SD-JWT VC has it as `typeMetadata` and `typeMetadataChain`.
+  
+  ```ts
+  const getTrustedIssuersForVerification: GetTrustedIssuersForVerification<VerificationSigner, OpenId4VcVerificationTypes> =
+    async (agentContext, { verification }) => {
+      if (verification.type === 'openId4VpCredential' && verification.dcql?.credentialQueryId === 'pid') {
+        return { trustedIssuers: [{ method: 'x509', issuance: [pidIssuerCertificate] }] }
+      }
+  
+      return undefined
+    }
+  ```
+- 357a5da: Update `@owf/cose`, `@owf/token-status-list`, `@owf/mdoc` and `@sd-jwt/*` so they share one version of `@owf/cose`. With two versions, `updateTokenStatusList` could not read a CWT status list.
+- 0814729: Add P-521 ES512 signature verification to the Askar wrapper using @noble/curves and support P-521 ECDSA verification in CredoWalletWebCrypto.
+- 2e13dd1: `DidsApi` no longer imports `parseDid` from `@sphereon/ssi-types` and uses Credo's own `parseDid` instead. Parsing behaviour is unchanged. An invalid DID URL passed to `resolveVerificationMethodFromCreatedDidRecord` now throws a `CredoError` ("Error parsing did '…'") instead of a plain `Error('invalid did')`.
+- fb99743: `didToNumAlgo2DidDocument` now creates the services of a `did:peer:2` DID document as instances of their typed service classes (`DidCommV1Service`, `IndyAgentService`, `DidCommV2Service` or `LegacyDidCommV2Service`) instead of the generic `DidDocumentService`. Before, the generic instances had no `priority`, so `DidDocument.didCommServices` sorted the services of a resolved `did:peer:2` on `undefined`, and `instanceof` checks on these services failed. The `priority` of a `did-communication` service now defaults to `0`, as it does for every other DID method.
+- 526a989: feat: support node 26
+- d086b7a: The default JSON-LD document loader now fetches remote documents with the agent's fetch, so the agent's `fetchLimits` and a custom fetch in the agent dependencies also apply to JSON-LD contexts. Set `maxDocumentBytes` on the `JsonLdModule` to override the size limit. The JSON-LD document loader and the SD-JWT VC status list fetcher now only fetch `https` urls, unless `allowInsecureHttpUrls` is enabled. The document loader also rejects a redirect to an url that isn't allowed. Errors for a failed status list fetch no longer include the response body.
+  
+  `JsonLdModuleConfig` now requires a `documentLoader` when you construct it directly. `JsonLdModule` still defaults to `defaultDocumentLoader`.
+- 3354c95: Update `@sd-jwt/*` to `^0.24.3` and `@owf/*` to `^0.7.0` (`@owf/mdoc` to `^0.9.3`).
+  
+  - SD-JWT VC verification now rejects credentials where `iss`, `nbf`, `exp`, `cnf`, `vct`, `vct#integrity` or `status`, or one of their sub-claims, is selectively disclosable. The SD-JWT VC spec forbids this. Signing with a disclosure frame for a sub-claim of these claims now throws.
+  - SD-JWT VC verification rejects an issuer-signed JWT or Key Binding JWT with a `crit` header.
+  - mdoc verification accepts the fully-specified COSE algorithms of RFC 9864 (`ESP256`, `ESP384`, `ESP512`, `Ed25519` and `Ed448`), and rejects a signature whose key type or curve does not match its algorithm.
+- 0523bd0: Fixed the status list signer check for a did issuer of an SD-JWT VC. A status list JWT whose `iss` is the trusted issuer did but whose `kid` is an absolute did url of another did is now rejected, the same way the `kid` of the credential itself is checked. Before, the agent verified the status list JWT with the key of that other did.
+- 8a6af0b: Reject invalid public-key lengths and non-compressed EC representations when decoding multicodec fingerprints, including did:key and Multikey inputs. General public-key imports and existing DID Document representations remain unchanged.
+- 7ba15bc: Fix JSON-LD credential exchanges failing or silently stalling when the issuer's signature suite adds its own `@context` to the credential.
+  
+  A signature suite must add its `@context` to the document it signs when the document does not already carry a compatible one. The holder compared the received credential to the credential request for exact equality, so this required addition was treated as a mismatch. In practice this affected `Ed25519Signature2020`, whose terms are not defined by the `credentials/v1` context, and it was not limited to a hard failure: the same check backs `shouldAutoRespondToCredential`, so with `AutoAcceptCredential.ContentApproved` the exchange stalled without an error.
+  
+  The holder now also accepts the requested credential with the agreed proof type's suite context appended. Any other difference is still rejected.
+- ae0fe8e: fix(openid4vc): advertise legacy COSE algorithms for the `mso_mdoc` format in the verifier's `vp_formats_supported`. Alongside the RFC 9053 fully-specified algorithms (ESP256 -9, ESP384 -51, Ed25519 -19), the verifier now also advertises their deprecated/legacy polymorphic equivalents (ES256 -7, ES384 -35, EdDSA -8).
+- 47691c2: Verifying a Data Integrity proof now rejects it when its `expires` time has passed or its `created` time is in the future, allowing for `validitySkewSeconds`. Before, only the format of `created` and `expires` was checked. This applies to single proofs and to every proof in a proof set or chain. A new `now` verify option sets the time to check against. A `created` or `expires` that is not a string is now also rejected.
+- 1ee57f6: Verifying a W3C credential or presentation (JWT, SD-JWT, Data Integrity and JSON-LD) now rejects a signing key whose controller is not the DID of the document it is listed in. Before, a DID document could name another DID as the controller of its keys, and a Data Integrity credential or presentation, or a JWT presentation without `iss`, was then attributed to that DID.
+- faaf1e0: The `trustedIssuers` option for verifying W3C credentials and presentations now also accepts a callback that resolves the trusted issuers for each credential. OpenID4VP verification uses it to apply the trust callback's result to that credential only. Before, the trusted issuers of all credentials in a W3C presentation were merged and applied to each credential.
+- 56ae9a6: Fixed signing a JSON-LD credential or presentation created with `new W3cCredential()` / `new W3cPresentation()` without an `expirationDate` or `id`. The constructors assigned `undefined` to these optional fields, the keys survived serialization, and JSON-LD signing rejected them. This also affected OpenID4VP `ldp_vp` presentations built by the DCQL service.
+- 47691c2: Verifying a W3C VC 2.0 Data Integrity credential now checks `validFrom` and `validUntil`, like the JWT and SD-JWT paths already did. The result is only valid when all validations pass. Before, an expired or not-yet-valid credential was accepted.
+  
+  A `validFrom` or `validUntil` that is not a parseable date, such as a `:60` leap second, now fails validation in the JWT, SD-JWT and Data Integrity paths. Before, it was ignored.
+- 93907de: Verifying a W3C VC 2.0 presentation now checks that every credential bound to a key with `cnf` is presented with that key, and that a KB-JWT on an SD-JWT credential is for that presentation. Before, a credential bound only through `cnf` could be presented by anyone. A KB-JWT is only accepted when a `domain` is given, and `cnf` can no longer be selectively disclosed. A `cnf` DID URL must now point to an `authentication` key, not an `assertionMethod` key. Signing a presentation for a holder with several authentication keys uses the key the credentials are bound to.
+- faaf1e0: Verifying a W3C VC 2.0 Data Integrity credential now checks that its issuer is trusted, using `trustedIssuers` or the `getTrustedIssuersForVerification` callback. Verifying a VC 2.0 presentation now also passes `trustedIssuers` to the credentials it contains.
+- 47691c2: Verifying a W3C VC 2.0 credential or presentation (JWT, SD-JWT and Data Integrity) now accepts a `now` option, the date to use as the current time. It applies to the JWT time claims, `validFrom` and `validUntil`, the KB-JWT and the Data Integrity proof `created` and `expires`, and to the credentials in a presentation.
+- dbafd1e: Expose the ASN.1 parse options added in `@peculiar/x509` 2.1.0 as `X509ParseOptions` (`maxDepth`, `maxNodes`, `maxContentLength`), bounding the work done when parsing untrusted DER. Pass them to the `X509Certificate`, `CertificateSigningRequest` and `X509CertificateRevocationList` parsing factories, to the `X509Service` and revocation methods that parse, or set `parseOptions` on the X509 module.
+  
+  The limits are enforced whether or not they are provided, so Credo applies its own `defaultX509ParseOptions`, raising the node limit from 10000 to 1500000 to match the 10 MB CRL the revocation checker downloads; the parser default rejects any CRL with more than about 3300 entries. Options are taken as a whole: a per-call value replaces the module's, which replaces `defaultX509ParseOptions`, and limits left unset fall back to the parser's own.
+  
+  `X509Service.parseCertificateSigningRequest` now takes an `agentContext` as its first argument, matching every other method on it. `X509Api` is unchanged.
+- 2151443: `X509Service.validateCertificateChain` now requires the built chain to start with the presented chain. It may continue with trusted certificates that weren't presented, such as the root. Before, the presented chain `[leaf, intermediate]` could build `[leaf, root]`, and the intermediate was never checked. Its authority key identifier could still match DCQL `trusted_authorities`, and out-of-order chains were accepted. This applies to SD-JWT VC `x5c`, mdoc `x5chain` and JWS `x5c`.
+- c05145a: The issuer and subject objects for X.509 certificates, CSRs and CRLs now support `organizationName` (`O`) and `organizationIdentifier` (OID 2.5.4.97). Values are now escaped according to RFC 4514. Before, a comma in a value split it into another attribute. A value can't end with a backslash, because `@peculiar/x509` can't parse it.
+  
+  ```ts
+  await agent.x509.createCertificate({
+    authorityKey,
+    issuer: {
+      commonName: 'Example Root',
+      countryName: 'NL',
+      organizationName: 'Example Org, Inc.',
+      organizationIdentifier: 'NTRNL-12345678',
+      organizationalUnit: 'Engineering',
+    },
+  })
+  ```
+- ad928f5: Added the `validation.leaf` option to `X509Service.validateCertificateChain`, with `requiredKeyUsages` and `requiredExtendedKeyUsages` to verify the purpose of the leaf certificate. Failed checks are reported in the `keyUsage` and new `extendedKeyUsage` validations of the validation result.
+  
+  Added the `requireStatusSigningKeyPurpose` option to the `TokenStatusListModule`. When enabled, the x509 signer of the status list of an SD-JWT VC or mdoc, or of the identifier list of an mdoc, must have the `id-kp-oauthStatusSigning` extended key usage (`X509ExtendedKeyUsage.OauthStatusSigning`), and `digitalSignature` if it has a Key Usage extension. A credential issuer that signs the status or identifier list with the same key as the credential is exempt. The option is disabled by default, as the extended key usage is only recommended by the Token Status List draft and optional in ISO/IEC 18013-5.
+  
+  Added `X509Certificate.hasExtension`.
+- 808e873: X.509 certificate chain validation now checks revocation by default (`SoftFail` for the full chain), as documented for the `revocationCheck` option of the X509 module. Set `revocationCheck: { mode: X509RevocationCheckMode.Disabled }` to turn it off. Revocation options passed to `checkCertificateRevocation` or `fetchCertificateRevocationList` now use the module's `revocationCheck` for any option they don't set.
+- 81265f5: All records in Credo are now encoded, decoded and validated with a zod schema instead of class-transformer and class-validator. This is the first step of moving Credo away from class-transformer and class-validator. The stored format of records doesn't change, so no storage migration is needed.
+  
+  A class opts in by defining a static `encodingSchema` (a zod codec). `JsonTransformer` and `MessageValidator` use it when present, and fall back to class-transformer and class-validator otherwise, so custom records and other classes keep working without changes. Records can define their schema with `createRecordEncodingSchema`:
+  
+  ```ts
+  import { BaseRecord, createRecordEncodingSchema, zIsoDate } from '@credo-ts/core'
+  import { z } from 'zod'
+  
+  const myRecordEncodingSchema = createRecordEncodingSchema({
+    name: z.string(),
+    expiresAt: zIsoDate.optional(),
+  })
+  
+  export class MyRecord extends BaseRecord {
+    public static get encodingSchema() {
+      return myRecordEncodingSchema
+    }
+  
+    // ...
+  }
+  ```
+  
+  Some things behave differently:
+  
+  - A stored record that fails to decode now throws a `RecordDecodingError` with the `recordType` and `recordId`, caused by a `ZodValidationError`. Before, this was a `ClassValidationError`. `ZodValidationError` and `ClassValidationError` now both extend `CredoValidationError`.
+  - Drizzle storage encodes a record before it stores it, so an invalid record is never stored. Askar already did.
+  - A subclass of a Credo record inherits the record's `encodingSchema`. Properties the subclass adds with class-transformer decorators are still stored, but no longer transformed (for example a `Date` is decoded as a string). Define an `encodingSchema` on the subclass to transform them.
+
 ## 0.7.1
 
 ### Patch Changes

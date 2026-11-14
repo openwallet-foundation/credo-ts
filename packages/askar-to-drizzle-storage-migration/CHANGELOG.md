@@ -1,5 +1,123 @@
 # @credo-ts/askar-to-drizzle-storage-migration
 
+## 0.8.0
+
+### Minor Changes
+
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+
+### Patch Changes
+
+- da782ba: Added support for `@openwallet-foundation/askar-shared` 0.7 and `@hyperledger/anoncreds-shared` 0.5. Older versions stay supported. The new versions are ESM only, and their Node.js packages require Node.js 22.12 or newer.
+- a12ff75: The `@openwallet-foundation/askar-shared` peer dependency is now `^0.4.3 || ^0.5.0 || ^0.6.0`, the same range as `@credo-ts/askar`, instead of an exact version.
+- 82a6efd: Update the TypeScript development dependency to TypeScript 7 (`typescript@^7.0.2`, installed as `@typescript/native`) for type checking. The `typescript` package is now an alias of `@typescript/typescript6@^6.0.2`, so tools that use the TypeScript compiler API, such as `tsdown` when generating declaration files, keep working.
+  
+  This has no effect on runtime behaviour. `getPublicJwkFromDid` in `@credo-ts/openid4vc` now declares its `Promise<PublicJwk>` return type, which is the type it already returned.
+- 526a989: feat: support node 26
+- Updated dependencies [da782ba]
+- Updated dependencies [af409b7]
+- Updated dependencies [61d7d0f]
+- Updated dependencies [c2bb4d5]
+- Updated dependencies [bac90d4]
+- Updated dependencies [0b9531a]
+- Updated dependencies [c452dfc]
+- Updated dependencies [2c4e3a2]
+- Updated dependencies [798c401]
+- Updated dependencies [b77a2c3]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [8abea64]
+- Updated dependencies [3564660]
+- Updated dependencies [8a6af0b]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [33d3f53]
+- Updated dependencies [93907de]
+- Updated dependencies [f3d537a]
+- Updated dependencies [de1c035]
+- Updated dependencies [2485e36]
+- Updated dependencies [51bd389]
+- Updated dependencies [9eadcb8]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [14e84ce]
+- Updated dependencies [3985e5b]
+- Updated dependencies [3985e5b]
+- Updated dependencies [357a5da]
+- Updated dependencies [b4143b7]
+- Updated dependencies [77fe670]
+- Updated dependencies [526a989]
+- Updated dependencies [820d809]
+- Updated dependencies [c452dfc]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [3354c95]
+- Updated dependencies [a362176]
+- Updated dependencies [46700e9]
+- Updated dependencies [46700e9]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [4c2f93b]
+- Updated dependencies [1de1ead]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [820d809]
+- Updated dependencies [716cb84]
+- Updated dependencies [82a6efd]
+- Updated dependencies [667c462]
+- Updated dependencies [9303c90]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [1bbcdc3]
+- Updated dependencies [cf46149]
+- Updated dependencies [6d68bfa]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [f87b6bb]
+- Updated dependencies [aadabc9]
+- Updated dependencies [e930e66]
+- Updated dependencies [de1c035]
+- Updated dependencies [ae0fe8e]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [357a5da]
+- Updated dependencies [0814729]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [fb99743]
+- Updated dependencies [b9c051d]
+- Updated dependencies [526a989]
+- Updated dependencies [d086b7a]
+- Updated dependencies [3678fb3]
+- Updated dependencies [b21bba5]
+- Updated dependencies [3354c95]
+- Updated dependencies [0523bd0]
+- Updated dependencies [0b7ba8d]
+- Updated dependencies [8a6af0b]
+- Updated dependencies [c452dfc]
+- Updated dependencies [8178149]
+- Updated dependencies [b1090de]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [eaa2283]
+- Updated dependencies [194cf1e]
+- Updated dependencies [ac3b95b]
+- Updated dependencies [ae0fe8e]
+- Updated dependencies [cbfe06b]
+- Updated dependencies [47691c2]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [56ae9a6]
+- Updated dependencies [47691c2]
+- Updated dependencies [93907de]
+- Updated dependencies [94faeed]
+- Updated dependencies [dbbef02]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [47691c2]
+- Updated dependencies [dbafd1e]
+- Updated dependencies [2151443]
+- Updated dependencies [c05145a]
+- Updated dependencies [ad928f5]
+- Updated dependencies [808e873]
+- Updated dependencies [81265f5]
+  - @credo-ts/askar@0.8.0
+  - @credo-ts/core@0.8.0
+  - @credo-ts/tenants@0.8.0
+  - @credo-ts/drizzle-storage@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes
