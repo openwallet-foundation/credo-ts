@@ -5,8 +5,11 @@ import {
   getDidPeer4ShortFormForEquivalence,
   getEd25519VerificationKey2018,
   getJsonWebKey2020,
+  getPublicJwkFromVerificationMethod,
   getX25519KeyAgreementKey2019,
   JsonEncoder,
+  JwsService,
+  JwtPayload,
   Kms,
   NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
@@ -62,6 +65,7 @@ import { DidCommDidRotateV2Service } from '../services/DidCommDidRotateV2Service
 import {
   createPeerDidForV2OOB,
   findOwnKeyAgreementKey,
+  toAbsoluteDidUrl,
   toKeyAgreement,
   toKeyAgreementDidUrl,
 } from '../services/helpers'
@@ -1168,6 +1172,47 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       expect(bobAfter.theirDid).toBeUndefined()
       expect(bobAfter.previousTheirDids).toContain(aliceDid)
       expect(await bobContents()).toContain('goodbye')
+    })
+
+    describe('from_prior JWT shape', () => {
+      // Signs any claims with the authentication key of Alice, as the service does for a from_prior
+      const signAsAlice = async (claims: Record<string, unknown>, typ?: string) => {
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        const aliceDid = aliceBobConnection!.did!
+        const { didDocument, keys } = await aliceAgent.dids.resolveCreatedDidDocumentWithKeys(aliceDid)
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        const authRef = didDocument.authentication![0]
+        const vm = typeof authRef === 'string' ? didDocument.dereferenceKey(authRef, ['authentication']) : authRef
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        const kmsKeyId = keys!.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))!.kmsKeyId
+
+        return aliceAgent.dependencyManager.resolve(JwsService).createJwsCompact(aliceAgent.context, {
+          keyId: kmsKeyId,
+          payload: JwtPayload.fromJson({ iss: aliceDid, iat: Math.floor(Date.now() / 1000), ...claims }),
+          protectedHeaderOptions: {
+            alg: getPublicJwkFromVerificationMethod(vm).signatureAlgorithm,
+            kid: toAbsoluteDidUrl(aliceDid, vm.id),
+            ...(typ ? { typ } : {}),
+          },
+        })
+      }
+      const verifyOnBob = (jwt: string) =>
+        bobAgent.dependencyManager.resolve(DidCommDidRotateV2Service).verifyFromPrior(bobAgent.context, jwt)
+
+      test('accepts a JWT without typ', async () => {
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        await expect(verifyOnBob(await signAsAlice({}))).resolves.toMatchObject({ iss: aliceBobConnection!.did })
+      })
+
+      test('rejects a JWT whose typ is not JWT', async () => {
+        await expect(verifyOnBob(await signAsAlice({}, 'dc+sd-jwt'))).rejects.toThrow(/typ 'dc\+sd-jwt'/)
+      })
+
+      test('rejects a JWT with claims other than the registered ones', async () => {
+        await expect(verifyOnBob(await signAsAlice({ vct: 'https://example.com/vct' }, 'JWT'))).rejects.toThrow(
+          /claims other than the registered ones: vct/
+        )
+      })
     })
 
     test('a from_prior with a non-string sub drops the message', async () => {
