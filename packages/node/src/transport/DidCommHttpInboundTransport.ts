@@ -144,8 +144,9 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
         await firstValueFrom(subject)
 
         // If agent did not use session when processing message we need to send response here.
+        // 202 Accepted, as no response travels back on this connection: https://identity.foundation/didcomm-messaging/spec/v2.1/#https
         if (!res.headersSent) {
-          res.status(200).end()
+          res.status(202).end()
         }
       } catch (error) {
         agentContext.config.logger.error(`Error processing inbound message: ${error.message}`, error)
@@ -174,7 +175,7 @@ export class HttpTransportSession implements DidCommTransportSession {
 
   public async close(): Promise<void> {
     if (!this.res.headersSent) {
-      this.res.status(200).end()
+      this.res.status(202).end()
     }
   }
 
