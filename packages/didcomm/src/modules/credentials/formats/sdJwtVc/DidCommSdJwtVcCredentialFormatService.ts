@@ -1,4 +1,4 @@
-import type { AgentContext, JwsDetachedFormat, SdJwtVc, SdJwtVcHolderBinding } from '@credo-ts/core'
+import type { AgentContext, JwsDetachedFormat, SdJwtVcHolderBinding } from '@credo-ts/core'
 import {
   CredoError,
   DidsApi,
@@ -39,6 +39,7 @@ import type {
   DidCommCredentialFormatCreateReturn,
   DidCommCredentialFormatProcessCredentialOptions,
   DidCommCredentialFormatProcessOptions,
+  DidCommCredentialFormatProcessRequestOptions,
 } from '../DidCommCredentialFormatServiceOptions'
 import {
   W3cV2SdJwtBindingMethods,
@@ -143,15 +144,14 @@ async function applyTypeMetadataSelectiveDisclosure(
   offer: SdJwtVcCredentialOffer
 ): Promise<void> {
   const { credential } = offer
-  if (typeof credential.vct !== 'string') return
-  // fetchTypeMetadata only reads `vct` and `vct#integrity` from the JWT payload, so an unsigned JWT is enough
-  const compact = `${JsonEncoder.toBase64Url({ alg: 'none' })}.${JsonEncoder.toBase64Url(credential)}.~`
+  const { vct, 'vct#integrity': integrity } = credential
+  if (typeof vct !== 'string') return
   const typeMetadata = await agentContext.dependencyManager
     .resolve(SdJwtVcApi)
-    .fetchTypeMetadata({ compact, payload: credential } as SdJwtVc, {
-      throwErrorOnFetchError: false,
-      throwErrorOnUnsupportedVctValue: false,
-    })
+    .fetchTypeMetadata(
+      { vct, 'vct#integrity': typeof integrity === 'string' ? integrity : undefined },
+      { throwErrorOnFetchError: false, throwErrorOnUnsupportedVctValue: false }
+    )
 
   const pointers = [...(offer.selectivelyDisclosableClaims ?? [])]
   for (const { path, sd } of typeMetadata?.mergedTypeMetadata.claims ?? []) {
@@ -165,6 +165,13 @@ async function applyTypeMetadataSelectiveDisclosure(
   }
 
   if (pointers.length > 0) offer.selectivelyDisclosableClaims = pointers
+}
+
+function omittedStatusMechanisms(status: unknown): string[] {
+  if (!isJsonObject(status)) return []
+  return Object.entries(status)
+    .filter(([, reference]) => isJsonObject(reference) && Object.keys(reference).length === 0)
+    .map(([mechanism]) => mechanism)
 }
 
 // RFC 0884 Issuance-time Claims: the only claims that can differ from the offer
@@ -182,6 +189,11 @@ function assertClaimsMatchOffer(claims: Record<string, unknown>, offered: Record
   const { status: offeredStatus } = offered
   const { status: issuedStatus } = issued
   if (isJsonObject(offeredStatus) && isJsonObject(issuedStatus)) {
+    for (const mechanism of omittedStatusMechanisms(offeredStatus)) {
+      if (!isJsonObject(issuedStatus[mechanism]) || Object.keys(issuedStatus[mechanism]).length === 0) {
+        throw new CredoError(`The issued 'status.${mechanism}' must have the members the offer left out`)
+      }
+    }
     expected.status = Object.fromEntries(
       Object.entries(offeredStatus).map(([mechanism, reference]) => [
         mechanism,
@@ -265,8 +277,7 @@ export class DidCommSdJwtVcCredentialFormatService
       credential,
     })
     await applyTypeMetadataSelectiveDisclosure(agentContext, credentialOffer)
-    // `acceptRequest` signs the offered `status` as is, so it can't leave out members
-    assertValidOffer(credentialOffer, { allowOmittedStatusMembers: false })
+    assertValidOffer(credentialOffer, { allowOmittedStatusMembers: true })
     // Credo only issues with DID-based key discovery, and core sets `iss` to the bare DID of the signing key
     if (typeof credential.iss !== 'string' || tryParseDid(credential.iss)?.did !== credential.iss) {
       throw new CredoError("The offered credential must have an 'iss' that is a DID without a path, query or fragment")
@@ -362,7 +373,7 @@ export class DidCommSdJwtVcCredentialFormatService
 
   public async processRequest(
     agentContext: AgentContext,
-    { credentialExchangeRecord, attachment }: DidCommCredentialFormatProcessOptions
+    { credentialExchangeRecord, attachment, requestAppendAttachments }: DidCommCredentialFormatProcessRequestOptions
   ): Promise<void> {
     const offerMessage = await agentContext.dependencyManager
       .resolve(DidCommMessageRepository)
@@ -380,9 +391,15 @@ export class DidCommSdJwtVcCredentialFormatService
       )
     }
 
-    const bindingProof = attachment.getDataAsJson<SdJwtVcCredentialRequest>().binding_proof?.didcomm_signed_attachment
-    if (this.parseOffer(agentContext, offerAttachment).bindingRequired && !bindingProof) {
-      throw new V2CredentialProblemReportError('Binding is required but no binding proof was provided', {
+    try {
+      await this.verifyBindingProof(
+        agentContext,
+        this.parseOffer(agentContext, offerAttachment),
+        attachment.getDataAsJson<SdJwtVcCredentialRequest>(),
+        requestAppendAttachments
+      )
+    } catch (error) {
+      throw new V2CredentialProblemReportError(error.message, {
         problemCode: DidCommCredentialProblemReportReason.IssuanceAbandoned,
       })
     }
@@ -422,8 +439,14 @@ export class DidCommSdJwtVcCredentialFormatService
       allowedPurposes: ['assertionMethod'],
     })
 
+    const payload = sdJwtVcFormat?.status
+      ? { ...credentialOffer.credential, status: { ...credentialOffer.credential.status, ...sdJwtVcFormat.status } }
+      : credentialOffer.credential
+    if (payload.status !== undefined) assertValidStatus(payload.status, { allowOmittedMembers: false })
+    assertClaimsMatchOffer(payload, credentialOffer.credential)
+
     const { compact } = await agentContext.dependencyManager.resolve(SdJwtVcApi).sign({
-      payload: credentialOffer.credential,
+      payload,
       issuer: { method: 'did', didUrl: verificationMethod.id },
       holder,
       disclosureFrame: disclosureFrameFromClaimsPathPointers(credentialOffer.selectivelyDisclosableClaims),
@@ -540,6 +563,9 @@ export class DidCommSdJwtVcCredentialFormatService
   ): Promise<boolean> {
     const credentialOffer = this.parseOffer(agentContext, offerAttachment)
     const credentialRequest = requestAttachment.getDataAsJson<SdJwtVcCredentialRequest>()
+
+    // The issuer application has to fill an omitted status mechanism through acceptRequest
+    if (omittedStatusMechanisms(credentialOffer.credential.status).length > 0) return false
 
     if (!credentialOffer.bindingRequired && !credentialRequest.binding_proof?.didcomm_signed_attachment) {
       return true

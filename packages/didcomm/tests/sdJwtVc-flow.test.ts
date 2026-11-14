@@ -675,6 +675,7 @@ async function offerAndRequest({ binding, kid = holderKdv.kid }: { binding?: 'ki
   await formatService.processRequest(agentContext, {
     credentialExchangeRecord: issuerCredentialRecord,
     attachment: requestAttachment,
+    requestAppendAttachments,
   })
 
   return {

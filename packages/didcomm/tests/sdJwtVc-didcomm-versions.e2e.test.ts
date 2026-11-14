@@ -1,4 +1,10 @@
-import type { ClaimPath, PeerDidNumAlgo2CreateOptions, SdJwtVcPayload, SdJwtVcTypeMetadata } from '@credo-ts/core'
+import type {
+  ClaimPath,
+  JsonObject,
+  PeerDidNumAlgo2CreateOptions,
+  SdJwtVcPayload,
+  SdJwtVcTypeMetadata,
+} from '@credo-ts/core'
 import {
   Agent,
   DidDocumentBuilder,
@@ -19,6 +25,9 @@ import {
   waitForCredentialRecordSubject,
 } from '../../core/tests'
 import {
+  DidCommAttachment,
+  DidCommAttachmentData,
+  DidCommAutoAcceptCredential,
   DidCommCredentialEventTypes,
   DidCommCredentialState,
   DidCommCredentialV2Protocol,
@@ -247,6 +256,106 @@ describe.each(['v1', 'v2'] as const)('dc+sd-jwt issuance over a DIDComm %s conne
     expect(prettyClaims.cnf).toEqual({ kid: holderKdv.kid })
   })
 
+  test('sends issuance-abandoned when the binding proof has a wrong nonce', async () => {
+    const acceptOffer = DidCommSdJwtVcCredentialFormatService.prototype.acceptOffer
+    vi.spyOn(DidCommSdJwtVcCredentialFormatService.prototype, 'acceptOffer').mockImplementation(function (
+      this: DidCommSdJwtVcCredentialFormatService,
+      agentContext,
+      options
+    ) {
+      const offer = options.offerAttachment.getDataAsJson<{
+        binding_method: { didcomm_signed_attachment: JsonObject }
+      }>()
+      offer.binding_method.didcomm_signed_attachment = {
+        ...offer.binding_method.didcomm_signed_attachment,
+        nonce: 'another-nonce',
+      }
+      const offerAttachment = new DidCommAttachment({
+        id: options.offerAttachment.id,
+        data: new DidCommAttachmentData({ json: offer }),
+      })
+      return acceptOffer.call(this, agentContext, { ...options, offerAttachment })
+    })
+
+    const { threadId } = await issuerAgent.didcomm.credentials.offerCredential({
+      connectionId: issuerConnectionId,
+      protocolVersion: 'v2',
+      credentialFormats: {
+        sdJwtVc: {
+          credential: { ...identityCredential(), iss: issuerKdv.did },
+          bindingRequired: true,
+          didCommSignedAttachmentBinding: { algsSupported: ['EdDSA'], didMethodsSupported: ['key'] },
+        },
+      },
+    })
+
+    const holderOfferRecord = await waitForCredentialRecordSubject(holderReplay, {
+      threadId,
+      state: DidCommCredentialState.OfferReceived,
+    })
+    await holderAgent.didcomm.credentials.acceptOffer({
+      credentialExchangeRecordId: holderOfferRecord.id,
+      credentialFormats: { sdJwtVc: { didCommSignedAttachment: { kid: holderKdv.kid } } },
+    })
+
+    const holderAbandonedRecord = await waitForCredentialRecordSubject(holderReplay, {
+      threadId,
+      state: DidCommCredentialState.Abandoned,
+    })
+    expect(holderAbandonedRecord.errorMessage).toBe('issuance-abandoned: Invalid nonce in signed attachment')
+
+    const [issuerRecord] = await issuerAgent.didcomm.credentials.findAllByQuery({ threadId })
+    expect(issuerRecord.state).toBe(DidCommCredentialState.OfferSent)
+  })
+
+  test('fills the offered status placeholder when the issuer accepts the request', async () => {
+    const status = { status_list: { idx: 412, uri: 'https://issuer.example.com/statuslists/1' } }
+    const credential = {
+      ...identityCredential(),
+      iss: issuerKdv.did,
+      status: { status_list: {} },
+    } as unknown as SdJwtVcPayload
+
+    const { prettyClaims } = await issue({ credential, status })
+
+    expect(prettyClaims).toEqual({ ...credential, status, iat: expect.any(Number), cnf: { kid: holderKdv.kid } })
+  })
+
+  test('waits for the issuer to fill a status placeholder even when it auto-accepts the request', async () => {
+    const status = { status_list: { idx: 7, uri: 'https://issuer.example.com/statuslists/1' } }
+    const credential = {
+      ...identityCredential(),
+      iss: issuerKdv.did,
+      status: { status_list: {} },
+    } as unknown as SdJwtVcPayload
+
+    const shouldAutoRespondToRequest = vi.spyOn(
+      DidCommSdJwtVcCredentialFormatService.prototype,
+      'shouldAutoRespondToRequest'
+    )
+
+    const { prettyClaims } = await issue({
+      credential,
+      status,
+      autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
+    })
+
+    await expect(shouldAutoRespondToRequest.mock.results[0]?.value).resolves.toBe(false)
+    expect(prettyClaims).toEqual({ ...credential, status, iat: expect.any(Number), cnf: { kid: holderKdv.kid } })
+  })
+
+  test('does not issue while an offered status mechanism still has its members left out', async () => {
+    const credential = {
+      ...identityCredential(),
+      iss: issuerKdv.did,
+      status: { other_mechanism: {} },
+    } as unknown as SdJwtVcPayload
+
+    await expect(issue({ credential })).rejects.toThrow(
+      "The issued 'status.other_mechanism' must have the members the offer left out"
+    )
+  })
+
   test('makes the claims the vct Type Metadata marks sd always selectively disclosable', async () => {
     const credential = typedCredential(issuerKdv.did)
 
@@ -288,14 +397,19 @@ describe.each(['v1', 'v2'] as const)('dc+sd-jwt issuance over a DIDComm %s conne
     credential,
     selectivelyDisclosableClaims,
     kid = holderKdv.kid,
+    status,
+    autoAcceptCredential,
   }: {
     credential: SdJwtVcPayload
     selectivelyDisclosableClaims?: ClaimPath[]
     kid?: string
+    status?: SdJwtVcPayload['status']
+    autoAcceptCredential?: DidCommAutoAcceptCredential
   }) {
     const { threadId } = await issuerAgent.didcomm.credentials.offerCredential({
       connectionId: issuerConnectionId,
       protocolVersion: 'v2',
+      autoAcceptCredential,
       credentialFormats: {
         sdJwtVc: {
           credential,
@@ -319,7 +433,10 @@ describe.each(['v1', 'v2'] as const)('dc+sd-jwt issuance over a DIDComm %s conne
       threadId,
       state: DidCommCredentialState.RequestReceived,
     })
-    await issuerAgent.didcomm.credentials.acceptRequest({ credentialExchangeRecordId: issuerRequestRecord.id })
+    await issuerAgent.didcomm.credentials.acceptRequest({
+      credentialExchangeRecordId: issuerRequestRecord.id,
+      credentialFormats: { sdJwtVc: { status } },
+    })
 
     const holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
       threadId,

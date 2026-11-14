@@ -13,7 +13,10 @@ export interface DidCommSdJwtVcSignedAttachmentCreateOfferOptions
 }
 
 export interface DidCommSdJwtVcOfferCredentialFormat {
-  /** `iss` must be the issuer DID, without a path, query or fragment. A `status` mechanism must have all its members. */
+  /**
+   * `iss` must be the issuer DID, without a path, query or fragment. A `status` mechanism can omit its members,
+   * as in `{ status_list: {} }`, and `acceptRequest` then sets them with `status`.
+   */
   credential: SdJwtVcPayload
   bindingRequired?: boolean
   selectivelyDisclosableClaims?: ClaimPath[]
@@ -30,6 +33,8 @@ export interface DidCommSdJwtVcAcceptOfferFormat {
 export interface DidCommSdJwtVcAcceptRequestFormat {
   /** The `assertionMethod` verification method of the issuer to sign with. Defaults to the first one. */
   issuerVerificationMethod?: string
+  /** Merged into the offered `status`, to fill the status mechanisms the offer named with their members omitted. */
+  status?: SdJwtVcPayload['status']
 }
 
 export interface DidCommSdJwtVcCredentialFormat extends DidCommCredentialFormat {

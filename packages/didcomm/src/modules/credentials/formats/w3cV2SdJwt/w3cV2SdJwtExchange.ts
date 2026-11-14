@@ -39,7 +39,7 @@ export class W3cV2SdJwtDidCommSignedAttachmentBindingMethod {
   @Expose({ name: 'did_methods_supported' })
   public didMethodsSupported!: string[]
 
-  // RFC 0884 only. Whether the issuer accepts a signed attachment with a bare key in a `jwk` header.
+  // RFC 0881 and RFC 0884. Whether the issuer accepts a signed attachment with a bare key in a `jwk` header.
   @IsOptional()
   @IsBoolean()
   @Expose({ name: 'jwk_supported' })

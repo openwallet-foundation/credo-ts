@@ -58,6 +58,7 @@ import {
   simpleX509WithoutIss,
 } from './sdjwtvc.fixtures'
 
+const extractJwt = SDJwt.extractJwt
 const mockJwtDecode = (mockedPayload: Partial<Jwt>) =>
   mockProperty(
     SDJwt,
@@ -3437,6 +3438,33 @@ describe('SdJwtVcService', () => {
 
       expect(customResolver).toHaveBeenCalledWith('urn:custom:namespace:identity', customIntegrity, expect.any(Object))
 
+      expect(result).toEqual({
+        mergedTypeMetadata: mockMetadata,
+        typeMetadataChain: [mockMetadata],
+        vctValues: ['urn:custom:namespace:identity'],
+      })
+    })
+
+    test('Fetch type metadata from a vct and vct#integrity', async () => {
+      const mockMetadata = { vct: 'urn:custom:namespace:identity', name: 'Custom Identity Credential' }
+      const customResolver = vi.fn((async () => mockMetadata) satisfies CustomTypeMetadataResolver)
+
+      mockProperty(SDJwt, 'extractJwt', extractJwt)
+      agent.context.dependencyManager.registerInstance(
+        SdJwtVcModuleConfig,
+        new SdJwtVcModuleConfig({ customTypeMetadataResolver: customResolver })
+      )
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        vct: 'urn:custom:namespace:identity',
+        'vct#integrity': 'sha256-abc123',
+      })
+
+      expect(customResolver).toHaveBeenCalledWith(
+        'urn:custom:namespace:identity',
+        'sha256-abc123',
+        expect.objectContaining({ isExtendedVct: false })
+      )
       expect(result).toEqual({
         mergedTypeMetadata: mockMetadata,
         typeMetadataChain: [mockMetadata],

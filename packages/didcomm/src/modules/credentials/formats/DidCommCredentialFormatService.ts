@@ -16,6 +16,7 @@ import type {
   DidCommCredentialFormatCreateReturn,
   DidCommCredentialFormatProcessCredentialOptions,
   DidCommCredentialFormatProcessOptions,
+  DidCommCredentialFormatProcessRequestOptions,
 } from './DidCommCredentialFormatServiceOptions'
 
 export interface DidCommCredentialFormatService<CF extends DidCommCredentialFormat = DidCommCredentialFormat> {
@@ -49,7 +50,7 @@ export interface DidCommCredentialFormatService<CF extends DidCommCredentialForm
     agentContext: AgentContext,
     options: DidCommCredentialFormatCreateRequestOptions<CF>
   ): Promise<DidCommCredentialFormatCreateReturn>
-  processRequest(agentContext: AgentContext, options: DidCommCredentialFormatProcessOptions): Promise<void>
+  processRequest(agentContext: AgentContext, options: DidCommCredentialFormatProcessRequestOptions): Promise<void>
   acceptRequest(
     agentContext: AgentContext,
     options: DidCommCredentialFormatAcceptRequestOptions<CF>
