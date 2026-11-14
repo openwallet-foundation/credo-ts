@@ -85,7 +85,7 @@ export async function createDidCommSignedAttachment(
   const signedAttach = new DidCommAttachment({
     mimeType: 'application/json',
     data: new DidCommAttachmentData({
-      base64: TypedArrayEncoder.toBase64(TypedArrayEncoder.fromBase64Url(jws.payload)),
+      base64: jws.payload,
     }),
   })
 

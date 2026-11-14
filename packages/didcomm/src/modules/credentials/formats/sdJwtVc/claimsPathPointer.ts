@@ -31,6 +31,30 @@ export function resolveClaimsPathPointer(claims: Record<string, unknown>, pointe
   return claim
 }
 
+/** SD-JWT VC section 9.1, where `null` selects all elements of an array */
+export function selectClaimsPath(claims: Record<string, unknown>, path: Array<string | number | null>): ClaimPath[] {
+  let selected: Array<{ pointer: ClaimPath; value: unknown }> = [{ pointer: [], value: claims }]
+  for (const component of path) {
+    selected = selected.flatMap(({ pointer, value }) => {
+      if (component === null) {
+        return Array.isArray(value)
+          ? value.map((element, index) => ({ pointer: [...pointer, index], value: element }))
+          : []
+      }
+      if (typeof component === 'string') {
+        return isJsonObject(value) && Object.hasOwn(value, component)
+          ? [{ pointer: [...pointer, component], value: value[component] }]
+          : []
+      }
+      return Array.isArray(value) && component < value.length
+        ? [{ pointer: [...pointer, component], value: value[component] }]
+        : []
+    })
+  }
+
+  return selected.map(({ pointer }) => pointer)
+}
+
 export function disclosureFrameFromClaimsPathPointers(pointers: ClaimPath[] = []): IDisclosureFrame | undefined {
   if (pointers.length === 0) return undefined
 

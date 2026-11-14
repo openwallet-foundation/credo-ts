@@ -1,4 +1,14 @@
-import { Agent, JsonEncoder } from '@credo-ts/core'
+import type { ClaimPath, PeerDidNumAlgo2CreateOptions, SdJwtVcPayload, SdJwtVcTypeMetadata } from '@credo-ts/core'
+import {
+  Agent,
+  DidDocumentBuilder,
+  getEd25519VerificationKey2018,
+  JsonEncoder,
+  Kms,
+  PeerDidNumAlgo,
+  SdJwtVcModule,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 import type { CreateDidKidVerificationMethodReturn, EventReplaySubject } from '../../core/tests'
 import {
   createDidKidVerificationMethod,
@@ -17,8 +27,26 @@ import {
   DidCommV2EnvelopeService,
 } from '../src'
 
+const typeMetadata = {
+  vct: 'https://credentials.example.com/typed_credential',
+  claims: [
+    { path: ['given_name'], sd: 'always' },
+    { path: ['nationalities', null], sd: 'always' },
+    { path: ['family_name'], sd: 'never' },
+  ],
+} satisfies SdJwtVcTypeMetadata
+
+const disclosableIssuerTypeMetadata = {
+  vct: 'https://credentials.example.com/disclosable_issuer',
+  claims: [{ path: ['iss'], sd: 'always' }],
+} satisfies SdJwtVcTypeMetadata
+
 const getModules = (endpoint: string) =>
   ({
+    sdJwtVc: new SdJwtVcModule({
+      customTypeMetadataResolver: async (vct) =>
+        [typeMetadata, disclosableIssuerTypeMetadata].find((metadata) => metadata.vct === vct),
+    }),
     didcomm: new DidCommModule({
       endpoints: [endpoint],
       didcommVersions: ['v1', 'v2'],
@@ -154,6 +182,9 @@ describe.each(['v1', 'v2'] as const)('dc+sd-jwt issuance over a DIDComm %s conne
     })
     expect(kmsKeyId).toBe(binding === 'jwk' ? holderKdv.publicJwk.keyId : undefined)
 
+    const requestMessage = await holderAgent.didcomm.credentials.findRequestMessage(holderDoneRecord.id)
+    expect(requestMessage?.appendedAttachments?.[0].data.base64).toMatch(/^[A-Za-z0-9_-]+$/)
+
     const plaintexts = unpackSpy.mock.settledResults
       .flatMap((result) => (result.type === 'fulfilled' ? [result.value.plaintext] : []))
       .filter(({ type }) => type.startsWith('https://didcomm.org/issue-credential/2.0/'))
@@ -190,4 +221,152 @@ describe.each(['v1', 'v2'] as const)('dc+sd-jwt issuance over a DIDComm %s conne
       },
     ])
   })
+
+  test('issues a credential bound to a DID key that is only in authentication', async () => {
+    const kid = await createAuthenticationOnlyPeerDid(holderAgent)
+
+    const { prettyClaims } = await issue({ credential: { ...identityCredential(), iss: issuerKdv.did }, kid })
+
+    expect(prettyClaims.cnf).toEqual({ kid })
+  })
+
+  test('accepts a binding proof with padded base64 data, as older writers send it', async () => {
+    const acceptRequest = DidCommSdJwtVcCredentialFormatService.prototype.acceptRequest
+    const acceptRequestSpy = vi
+      .spyOn(DidCommSdJwtVcCredentialFormatService.prototype, 'acceptRequest')
+      .mockImplementation(function (this: DidCommSdJwtVcCredentialFormatService, agentContext, options) {
+        for (const attachment of options.requestAppendAttachments ?? []) {
+          attachment.data.base64 = TypedArrayEncoder.toBase64(attachment.getDataAsUint8Array())
+        }
+        return acceptRequest.call(this, agentContext, options)
+      })
+
+    const { prettyClaims } = await issue({ credential: { ...identityCredential(), iss: issuerKdv.did } })
+
+    expect(acceptRequestSpy.mock.calls[0][1].requestAppendAttachments?.[0].data.base64).toMatch(/=$/)
+    expect(prettyClaims.cnf).toEqual({ kid: holderKdv.kid })
+  })
+
+  test('makes the claims the vct Type Metadata marks sd always selectively disclosable', async () => {
+    const credential = typedCredential(issuerKdv.did)
+
+    const { payload, prettyClaims } = await issue({ credential })
+
+    expect(prettyClaims).toEqual({ ...credential, iat: expect.any(Number), cnf: { kid: holderKdv.kid } })
+    expect(payload).not.toHaveProperty('given_name')
+    expect(payload.nationalities).toEqual([{ '...': expect.any(String) }, { '...': expect.any(String) }])
+    expect(payload.family_name).toBe('Mustermann')
+  })
+
+  test('does not offer a pointer to a claim the vct Type Metadata marks sd never', async () => {
+    const offerCredential = issuerAgent.didcomm.credentials.offerCredential({
+      connectionId: issuerConnectionId,
+      protocolVersion: 'v2',
+      credentialFormats: {
+        sdJwtVc: { credential: typedCredential(issuerKdv.did), selectivelyDisclosableClaims: [['family_name']] },
+      },
+    })
+
+    await expect(offerCredential).rejects.toThrow(
+      `Claim ["family_name"] is marked sd 'never' in the Type Metadata of 'vct'`
+    )
+  })
+
+  test('does not offer a credential whose vct Type Metadata marks a protected claim sd always', async () => {
+    const offerCredential = issuerAgent.didcomm.credentials.offerCredential({
+      connectionId: issuerConnectionId,
+      protocolVersion: 'v2',
+      credentialFormats: {
+        sdJwtVc: { credential: { vct: disclosableIssuerTypeMetadata.vct, iss: issuerKdv.did } },
+      },
+    })
+
+    await expect(offerCredential).rejects.toThrow('Claim ["iss"] cannot be selectively disclosable')
+  })
+
+  async function issue({
+    credential,
+    selectivelyDisclosableClaims,
+    kid = holderKdv.kid,
+  }: {
+    credential: SdJwtVcPayload
+    selectivelyDisclosableClaims?: ClaimPath[]
+    kid?: string
+  }) {
+    const { threadId } = await issuerAgent.didcomm.credentials.offerCredential({
+      connectionId: issuerConnectionId,
+      protocolVersion: 'v2',
+      credentialFormats: {
+        sdJwtVc: {
+          credential,
+          selectivelyDisclosableClaims,
+          bindingRequired: true,
+          didCommSignedAttachmentBinding: { algsSupported: ['EdDSA'], didMethodsSupported: ['key', 'peer'] },
+        },
+      },
+    })
+
+    const holderOfferRecord = await waitForCredentialRecordSubject(holderReplay, {
+      threadId,
+      state: DidCommCredentialState.OfferReceived,
+    })
+    await holderAgent.didcomm.credentials.acceptOffer({
+      credentialExchangeRecordId: holderOfferRecord.id,
+      credentialFormats: { sdJwtVc: { didCommSignedAttachment: { kid } } },
+    })
+
+    const issuerRequestRecord = await waitForCredentialRecordSubject(issuerReplay, {
+      threadId,
+      state: DidCommCredentialState.RequestReceived,
+    })
+    await issuerAgent.didcomm.credentials.acceptRequest({ credentialExchangeRecordId: issuerRequestRecord.id })
+
+    const holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
+      threadId,
+      state: DidCommCredentialState.CredentialReceived,
+    })
+    await holderAgent.didcomm.credentials.acceptCredential({ credentialExchangeRecordId: holderCredentialRecord.id })
+    await waitForCredentialRecordSubject(issuerReplay, { threadId, state: DidCommCredentialState.Done })
+
+    const [{ credentialRecordId }] = (await holderAgent.didcomm.credentials.getById(holderCredentialRecord.id))
+      .credentials
+    return (await holderAgent.sdJwtVc.getById(credentialRecordId)).firstCredential
+  }
 })
+
+const identityCredential = () => ({
+  vct: 'https://credentials.example.com/identity_credential',
+  given_name: 'Erika',
+  family_name: 'Mustermann',
+})
+
+const typedCredential = (iss: string) => ({
+  vct: typeMetadata.vct,
+  iss,
+  given_name: 'Erika',
+  family_name: 'Mustermann',
+  nationalities: ['DE', 'FR'],
+})
+
+async function createAuthenticationOnlyPeerDid(agent: SdJwtVcAgent): Promise<string> {
+  const { keyId, publicJwk } = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+  const verificationMethod = getEd25519VerificationKey2018({
+    id: '#key-1',
+    controller: '#id',
+    publicJwk: Kms.PublicJwk.fromPublicJwk(publicJwk),
+  })
+
+  const { didState } = await agent.dids.create<PeerDidNumAlgo2CreateOptions>({
+    method: 'peer',
+    didDocument: new DidDocumentBuilder('')
+      .addVerificationMethod(verificationMethod)
+      .addAuthentication(verificationMethod.id)
+      .build(),
+    options: {
+      numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc,
+      keys: [{ didDocumentRelativeKeyId: '#key-1', kmsKeyId: keyId }],
+    },
+  })
+
+  return `${didState.did}#key-1`
+}

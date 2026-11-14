@@ -239,7 +239,34 @@ describe('dc+sd-jwt credential format service', () => {
     expect(record.firstCredential.kmsKeyId).toBe(holderKdv.publicJwk.keyId)
   })
 
-  test.todo('issues a credential bound to a DID key that is only in authentication, once core resolves cnf.kid there')
+  test('issues a credential bound to a DID key that is only in authentication', async () => {
+    const { kid } = await createPeerDidKid('authentication')
+    const {
+      issuerCredentialRecord,
+      holderCredentialRecord,
+      offerAttachment,
+      requestAttachment,
+      requestAppendAttachments,
+    } = await offerAndRequest({ binding: 'kid', kid })
+
+    const { attachment: credentialAttachment } = await formatService.acceptRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      offerAttachment,
+      requestAttachment,
+      requestAppendAttachments,
+    })
+
+    await formatService.processCredential(agentContext, {
+      credentialExchangeRecord: holderCredentialRecord,
+      attachment: credentialAttachment,
+      offerAttachment,
+      requestAttachment,
+      requestAppendAttachments,
+    })
+
+    const record = await sdJwtVcApi.getById(holderCredentialRecord.credentials[0].credentialRecordId)
+    expect(record.firstCredential.prettyClaims.cnf).toEqual({ kid })
+  })
 
   test('rejects a binding key that is not in the authentication relationship', async () => {
     const { kid } = await createPeerDidKid('assertionMethod')
@@ -600,7 +627,7 @@ describe('dc+sd-jwt credential format service', () => {
   })
 })
 
-async function offerAndRequest({ binding }: { binding?: 'kid' | 'jwk' } = {}) {
+async function offerAndRequest({ binding, kid = holderKdv.kid }: { binding?: 'kid' | 'jwk'; kid?: string } = {}) {
   const threadId = 'f365c1a5-2baf-4873-9432-fa87c888a0aa'
   const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v2',
@@ -641,9 +668,7 @@ async function offerAndRequest({ binding }: { binding?: 'kid' | 'jwk' } = {}) {
       credentialExchangeRecord: holderCredentialRecord,
       offerAttachment,
       credentialFormats: {
-        sdJwtVc: binding
-          ? { didCommSignedAttachment: binding === 'jwk' ? { jwk: holderKdv.publicJwk } : { kid: holderKdv.kid } }
-          : {},
+        sdJwtVc: binding ? { didCommSignedAttachment: binding === 'jwk' ? { jwk: holderKdv.publicJwk } : { kid } } : {},
       },
     })
 

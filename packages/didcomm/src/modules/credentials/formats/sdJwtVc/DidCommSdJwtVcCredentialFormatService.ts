@@ -1,4 +1,4 @@
-import type { AgentContext, JwsDetachedFormat, SdJwtVcHolderBinding } from '@credo-ts/core'
+import type { AgentContext, JwsDetachedFormat, SdJwtVc, SdJwtVcHolderBinding } from '@credo-ts/core'
 import {
   CredoError,
   DidsApi,
@@ -49,6 +49,7 @@ import {
   disclosureFrameFromClaimsPathPointers,
   findNotSelectivelyDisclosable,
   resolveClaimsPathPointer,
+  selectClaimsPath,
 } from './claimsPathPointer'
 import type { DidCommSdJwtVcCredentialFormat } from './DidCommSdJwtVcCredentialFormat'
 import { type SdJwtVcCredential, SdJwtVcCredentialOffer, type SdJwtVcCredentialRequest } from './sdJwtVcExchange'
@@ -134,6 +135,36 @@ function assertValidOffer(
       throw new CredoError(`Claim ${JSON.stringify(pointer)} cannot be selectively disclosable`)
     }
   }
+}
+
+// SD-JWT VC section 5.6.4, applied when the Type Metadata of `vct` can be resolved
+async function applyTypeMetadataSelectiveDisclosure(
+  agentContext: AgentContext,
+  offer: SdJwtVcCredentialOffer
+): Promise<void> {
+  const { credential } = offer
+  if (typeof credential.vct !== 'string') return
+  // fetchTypeMetadata only reads `vct` and `vct#integrity` from the JWT payload, so an unsigned JWT is enough
+  const compact = `${JsonEncoder.toBase64Url({ alg: 'none' })}.${JsonEncoder.toBase64Url(credential)}.~`
+  const typeMetadata = await agentContext.dependencyManager
+    .resolve(SdJwtVcApi)
+    .fetchTypeMetadata({ compact, payload: credential } as SdJwtVc, {
+      throwErrorOnFetchError: false,
+      throwErrorOnUnsupportedVctValue: false,
+    })
+
+  const pointers = [...(offer.selectivelyDisclosableClaims ?? [])]
+  for (const { path, sd } of typeMetadata?.mergedTypeMetadata.claims ?? []) {
+    for (const pointer of selectClaimsPath(credential, path)) {
+      const offered = pointers.some((offeredPointer) => JSON.stringify(offeredPointer) === JSON.stringify(pointer))
+      if (sd === 'never' && offered) {
+        throw new CredoError(`Claim ${JSON.stringify(pointer)} is marked sd 'never' in the Type Metadata of 'vct'`)
+      }
+      if (sd === 'always' && !offered) pointers.push(pointer)
+    }
+  }
+
+  if (pointers.length > 0) offer.selectivelyDisclosableClaims = pointers
 }
 
 // RFC 0884 Issuance-time Claims: the only claims that can differ from the offer
@@ -233,6 +264,7 @@ export class DidCommSdJwtVcCredentialFormatService
       selectivelyDisclosableClaims,
       credential,
     })
+    await applyTypeMetadataSelectiveDisclosure(agentContext, credentialOffer)
     // `acceptRequest` signs the offered `status` as is, so it can't leave out members
     assertValidOffer(credentialOffer, { allowOmittedStatusMembers: false })
     // Credo only issues with DID-based key discovery, and core sets `iss` to the bare DID of the signing key

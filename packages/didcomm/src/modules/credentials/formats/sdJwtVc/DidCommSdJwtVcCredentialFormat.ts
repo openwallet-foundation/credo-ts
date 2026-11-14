@@ -16,8 +16,6 @@ export interface DidCommSdJwtVcOfferCredentialFormat {
   /** `iss` must be the issuer DID, without a path, query or fragment. A `status` mechanism must have all its members. */
   credential: SdJwtVcPayload
   bindingRequired?: boolean
-
-  /** Include the claims the `vct` Type Metadata marks `sd` `always` and leave out the `never` ones. */
   selectivelyDisclosableClaims?: ClaimPath[]
   didCommSignedAttachmentBinding?: DidCommSdJwtVcSignedAttachmentCreateOfferOptions
 }
