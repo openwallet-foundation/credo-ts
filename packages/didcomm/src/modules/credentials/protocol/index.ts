@@ -1,4 +1,3 @@
-export * from './revocation-notification'
 export * from './v2'
 
 import * as CredentialProtocolOptions from './DidCommCredentialProtocolOptions'

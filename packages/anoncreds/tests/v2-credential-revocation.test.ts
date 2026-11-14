@@ -224,7 +224,7 @@ describe('IC v2 credential revocation', () => {
       options: {},
     })
 
-    await faberAgent.didcomm.credentials.sendRevocationNotification({
+    await faberAgent.modules.anoncredsDidCommRevocationNotification.sendRevocationNotification({
       connectionId,
       revocationFormat: 'anoncreds',
       revocationId: `${credentialRevocationRegistryDefinitionId}::${credentialRevocationIndex}`,

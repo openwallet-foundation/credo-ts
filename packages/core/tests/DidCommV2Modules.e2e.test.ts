@@ -138,13 +138,13 @@ describe('DIDComm v2 modules', () => {
       await faberAgent.didcomm.discovery.queryFeatures({
         connectionId: faberConnection.id,
         protocolVersion: 'v2',
-        queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],
+        queries: [{ featureType: 'protocol', match: 'https://didcomm.org/issue-credential/*' }],
       })
 
       const query = await waitForQuerySubject(aliceReplay, { timeoutMs: 10000 })
       expect(query).toMatchObject({
         protocolVersion: 'v2',
-        queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],
+        queries: [{ featureType: 'protocol', match: 'https://didcomm.org/issue-credential/*' }],
       })
 
       const disclosure = await waitForDisclosureSubject(faberReplay, { timeoutMs: 10000 })
@@ -153,11 +153,7 @@ describe('DIDComm v2 modules', () => {
         disclosures: expect.arrayContaining([
           expect.objectContaining({
             type: 'protocol',
-            id: 'https://didcomm.org/revocation_notification/1.0',
-          }),
-          expect.objectContaining({
-            type: 'protocol',
-            id: 'https://didcomm.org/revocation_notification/2.0',
+            id: 'https://didcomm.org/issue-credential/2.0',
           }),
         ]),
       })

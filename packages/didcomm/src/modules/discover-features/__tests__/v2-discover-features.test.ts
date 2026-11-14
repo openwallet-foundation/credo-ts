@@ -68,24 +68,21 @@ describe('v2 discover features', () => {
     await faberAgent.didcomm.discovery.queryFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v2',
-      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],
+      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/issue-credential/*' }],
     })
 
     const query = await waitForQuerySubject(aliceReplay, { timeoutMs: 10000 })
 
     expect(query).toMatchObject({
       protocolVersion: 'v2',
-      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],
+      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/issue-credential/*' }],
     })
 
     const disclosure = await waitForDisclosureSubject(faberReplay, { timeoutMs: 10000 })
 
     expect(disclosure).toMatchObject({
       protocolVersion: 'v2',
-      disclosures: [
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/1.0', roles: ['holder'] },
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/2.0', roles: ['holder'] },
-      ],
+      disclosures: [{ type: 'protocol', id: 'https://didcomm.org/issue-credential/2.0', roles: ['holder', 'issuer'] }],
     })
   })
 
@@ -221,15 +218,12 @@ describe('v2 discover features', () => {
     const matchingFeatures = await faberAgent.didcomm.discovery.queryFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v2',
-      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],
+      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/issue-credential/*' }],
       awaitDisclosures: true,
     })
 
     expect(matchingFeatures).toMatchObject({
-      features: [
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/1.0', roles: ['holder'] },
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/2.0', roles: ['holder'] },
-      ],
+      features: [{ type: 'protocol', id: 'https://didcomm.org/issue-credential/2.0', roles: ['holder', 'issuer'] }],
     })
   })
 })

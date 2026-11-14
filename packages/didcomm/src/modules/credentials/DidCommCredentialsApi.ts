@@ -3,7 +3,7 @@ import { AgentContext, CredoError, InjectionSymbols, inject, injectable, type Lo
 import { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { getOutboundDidCommMessageContext } from '../../getDidCommOutboundMessageContext'
-import { DidCommConnectionRecord, DidCommConnectionService } from '../connections'
+import { DidCommConnectionService } from '../connections'
 import type {
   AcceptCredentialOfferOptions,
   AcceptCredentialOptions,
@@ -22,13 +22,11 @@ import type {
   OfferCredentialOptions,
   ProposeCredentialOptions,
   SendCredentialProblemReportOptions,
-  SendRevocationNotificationOptions,
 } from './DidCommCredentialsApiOptions'
 import { DidCommCredentialsModuleConfig } from './DidCommCredentialsModuleConfig'
 import { DidCommCredentialState } from './models/DidCommCredentialState'
 import type { DidCommCredentialProtocol } from './protocol/DidCommCredentialProtocol'
 import type { CredentialFormatsFromProtocols } from './protocol/DidCommCredentialProtocolOptions'
-import { DidCommRevocationNotificationService } from './protocol/revocation-notification/services'
 import type { DidCommCredentialExchangeRecord } from './repository/DidCommCredentialExchangeRecord'
 import { DidCommCredentialExchangeRepository } from './repository/DidCommCredentialExchangeRepository'
 
@@ -53,9 +51,6 @@ export interface DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> 
 
   // Issue Credential Methods
   acceptCredential(options: AcceptCredentialOptions): Promise<DidCommCredentialExchangeRecord>
-
-  // Revoke Credential Methods
-  sendRevocationNotification(options: SendRevocationNotificationOptions): Promise<void>
 
   // out of band
   createOffer(options: CreateCredentialOfferOptions<CPs>): Promise<{
@@ -98,7 +93,6 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
   private messageSender: DidCommMessageSender
   private credentialExchangeRepository: DidCommCredentialExchangeRepository
   private agentContext: AgentContext
-  private revocationNotificationService: DidCommRevocationNotificationService
   private logger: Logger
 
   public constructor(
@@ -107,14 +101,12 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
     agentContext: AgentContext,
     @inject(InjectionSymbols.Logger) logger: Logger,
     credentialExchangeRepository: DidCommCredentialExchangeRepository,
-    revocationNotificationService: DidCommRevocationNotificationService,
     config: DidCommCredentialsModuleConfig<CPs>
   ) {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.credentialExchangeRepository = credentialExchangeRepository
     this.agentContext = agentContext
-    this.revocationNotificationService = revocationNotificationService
     this.logger = logger
     this.config = config
   }
@@ -510,66 +502,6 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
     await this.messageSender.sendMessage(outboundMessageContext)
 
     return credentialExchangeRecord
-  }
-
-  /**
-   * Send a revocation notification to a connectionId related to a given revocationId and format.
-   * Currently, Revocation Notification V2 protocol is supported.
-   *
-   * @param credentialExchangeId credential exchange record. If not present, connectionId must be present
-   * @param connectionId The id of the connection to send the revocation notification. If not present, credentialExchangeId will be used to
-   * determine connection/service endpoints details
-   * @param revocationFormat Revocation credential identification format, as specified in Aries RFC 0721 (e.g. anoncreds)
-   * @param revocationId Format specific revocation id, as specified in Aries RFC 0721 (e.g. did:indy:entity:revregsdef123::credentialIndex)
-   */
-  public async sendRevocationNotification(options: SendRevocationNotificationOptions): Promise<void> {
-    const { connectionId, credentialExchangeRecordId, revocationId, revocationFormat, comment, requestAck } = options
-
-    let credentialExchangeRecord: DidCommCredentialExchangeRecord | undefined
-    let connectionRecord: DidCommConnectionRecord | undefined
-    let credentialMessage: DidCommMessage | undefined
-    let requestMessage: DidCommMessage | undefined
-
-    if (credentialExchangeRecordId) {
-      credentialExchangeRecord = await this.getById(credentialExchangeRecordId)
-      if (credentialExchangeRecord.connectionId) {
-        connectionRecord = await this.connectionService.getById(
-          this.agentContext,
-          credentialExchangeRecord.connectionId
-        )
-        connectionRecord.assertReady()
-      }
-
-      const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
-      credentialMessage =
-        (await protocol.findCredentialMessage(this.agentContext, credentialExchangeRecordId)) ?? undefined
-      requestMessage = (await protocol.findRequestMessage(this.agentContext, credentialExchangeRecordId)) ?? undefined
-    } else if (connectionId) {
-      connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
-      connectionRecord.assertReady()
-    } else {
-      throw new CredoError('Either credentialExchangeId or connectionId must be defined')
-    }
-
-    if (!connectionId && !credentialMessage) {
-      throw new CredoError('No associated DIDComm connection was found for the revocation notification')
-    }
-
-    const { message } = await this.revocationNotificationService.v2CreateRevocationNotification({
-      credentialId: revocationId,
-      revocationFormat,
-      comment,
-      requestAck,
-    })
-
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
-      message,
-      connectionRecord,
-      associatedRecord: credentialExchangeRecord,
-      lastSentMessage: credentialMessage,
-      lastReceivedMessage: requestMessage,
-    })
-    await this.messageSender.sendMessage(outboundMessageContext)
   }
 
   /**
