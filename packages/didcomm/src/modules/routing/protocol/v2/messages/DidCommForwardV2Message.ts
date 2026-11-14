@@ -1,9 +1,10 @@
-import { utils } from '@credo-ts/core'
+import { CredoError, utils } from '@credo-ts/core'
 import { Expose } from 'class-transformer'
 import { IsArray, IsString } from 'class-validator'
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import type { DidCommEncryptedMessage } from '../../../../../types'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
+import { isValidJweStructure } from '../../../../../util/JWE'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from '../../../../../v2/types'
 
@@ -62,9 +63,27 @@ export class DidCommForwardV2Message extends DidCommMessage {
   @IsString()
   public next!: string
 
-  /** The encrypted messages to deliver, one per attachment: https://identity.foundation/didcomm-messaging/spec/v2.1/#routing-protocol-20 */
+  /**
+   * The encrypted messages to deliver, one per attachment: https://identity.foundation/didcomm-messaging/spec/v2.1/#routing-protocol-20
+   *
+   * @throws {CredoError} when an attachment has no JSON data or the data is not an encrypted message
+   */
   public getMessages(): DidCommEncryptedMessage[] {
-    return (this.appendedAttachments ?? []).map((attachment) => attachment.getDataAsJson<DidCommEncryptedMessage>())
+    const attachments = this.appendedAttachments ?? []
+    return attachments.map((attachment, index) => {
+      let json: unknown
+      try {
+        json = attachment.getDataAsJson()
+      } catch {
+        json = undefined
+      }
+      if (!isValidJweStructure(json)) {
+        throw new CredoError(
+          `Invalid v2 Forward: attachment ${index + 1} of ${attachments.length} is not an encrypted message`
+        )
+      }
+      return json
+    })
   }
 
   /**

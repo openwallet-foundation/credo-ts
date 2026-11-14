@@ -650,7 +650,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
         next: recipientDid,
       })
       forward.appendedAttachments = [
-        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: '', iv: '', protected: '', tag: '' } } }),
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: 'c', iv: 'i', protected: 'p', tag: 't' } } }),
       ]
 
       const messageContext = new DidCommInboundMessageContext(forward, {
@@ -664,13 +664,28 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
       expect(mediationRepository.findSingleByRecipientDid).toHaveBeenCalledWith(agentContext, recipientDid)
     })
 
+    test('refuses a forward whose attachment is not an encrypted message, naming the attachment', async () => {
+      mockFunction(mediationRepository.findSingleByRecipientDid).mockClear()
+      const forward = new DidCommForwardV2Message({ to: [], next: 'did:peer:2.abc' })
+      forward.appendedAttachments = [
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: 'c', iv: 'i', protected: 'p', tag: 't' } } }),
+        new DidCommAttachment({ id: 'msg-2', data: { links: ['https://example.com/message'] } }),
+        new DidCommAttachment({ id: 'msg-3', data: { json: { not: 'a jwe' } } }),
+      ]
+
+      await expect(
+        mediatorService.processForwardMessage(new DidCommInboundMessageContext(forward, { agentContext }))
+      ).rejects.toThrow('Invalid v2 Forward: attachment 2 of 3 is not an encrypted message')
+      expect(mediationRepository.findSingleByRecipientDid).not.toHaveBeenCalled()
+    })
+
     test('looks up the DID of a next that is a key of the recipient', async () => {
       mockFunction(mediationRepository.findSingleByRecipientKey).mockClear()
       mockFunction(mediationRepository.findSingleByRecipientDid).mockClear().mockResolvedValue(null)
 
       const forward = new DidCommForwardV2Message({ to: [], next: 'did:peer:2.abc#key-1' })
       forward.appendedAttachments = [
-        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: '', iv: '', protected: '', tag: '' } } }),
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: 'c', iv: 'i', protected: 'p', tag: 't' } } }),
       ]
 
       await expect(
@@ -688,7 +703,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
 
       const forward = new DidCommForwardV2Message({ to: [], next: didKey })
       forward.appendedAttachments = [
-        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: '', iv: '', protected: '', tag: '' } } }),
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: 'c', iv: 'i', protected: 'p', tag: 't' } } }),
       ]
 
       await expect(
