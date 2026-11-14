@@ -20,7 +20,7 @@ import {
   type ResolvedDidCommService,
   verkeyToPublicJwk,
 } from '@credo-ts/core'
-import { toAbsoluteDidUrl } from '../modules/connections/services/helpers'
+import { getServiceEndpointEntries, toAbsoluteDidUrl } from '../modules/connections/services/helpers'
 import type { DidCommVersion } from '../util/didcommVersion'
 
 export interface GetSupportedDidCommVersionsFromDidDocResult {
@@ -295,38 +295,36 @@ export class DidCommDocumentService {
           recipientKeys.push(publicJwk)
         }
 
-        // Every serviceEndpoint entry becomes a service to try, in order of preference, so the sender
-        // can fail over between them: https://identity.foundation/didcomm-messaging/spec/v2.1/#service-endpoint
-        let endpoints: Array<{ uri?: string; routingKeys?: string[] }>
-        if (didCommService.type === NewDidCommV2Service.type) {
-          const serviceEndpoint = (didCommService as NewDidCommV2Service).serviceEndpoint
-          endpoints = Array.isArray(serviceEndpoint) ? serviceEndpoint : [serviceEndpoint]
-        } else {
-          endpoints = [
-            {
-              uri:
-                typeof didCommService.serviceEndpoint === 'string'
-                  ? didCommService.serviceEndpoint
-                  : (didCommService.serviceEndpoint as { uri?: string })?.uri,
-              routingKeys: (didCommService as DidCommV2Service).routingKeys,
-            },
-          ]
-        }
-
-        for (const { uri, routingKeys: routingKeyRefs } of endpoints) {
+        // Every serviceEndpoint entry becomes a service to try, in order of preference, so the sender can
+        // fail over between them. An entry whose routing keys do not resolve is skipped, since the other
+        // entries may still work; the error is thrown only when no entry resolves.
+        const entries = getServiceEndpointEntries(didCommService)
+        let lastError: unknown
+        let resolvedEntries = 0
+        for (const [index, { uri, routingKeys: routingKeyRefs }] of entries.entries()) {
           if (!uri) continue
-          const routingKeys = await this.resolveRoutingKeyReferences(agentContext, routingKeyRefs ?? [])
-          const expanded = this.expandV2EndpointIfRoutingDid(agentContext, uri, routingKeys, true) ?? {
-            endpoint: uri,
-            routingKeys,
+          try {
+            const routingKeys = await this.resolveRoutingKeyReferences(agentContext, routingKeyRefs ?? [])
+            const expanded = this.expandV2EndpointIfRoutingDid(agentContext, uri, routingKeys, true) ?? {
+              endpoint: uri,
+              routingKeys,
+            }
+            resolvedServices.push({
+              id: didCommService.id,
+              recipientKeys: recipientKeys as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
+              routingKeys: expanded.routingKeys,
+              serviceEndpoint: expanded.endpoint,
+            })
+            resolvedEntries += 1
+          } catch (error) {
+            lastError = error
+            agentContext.config.logger.warn(
+              `Skipping serviceEndpoint entry ${index + 1} of ${entries.length} of service '${didCommService.id}': its routing keys could not be resolved`,
+              { uri, error }
+            )
           }
-          resolvedServices.push({
-            id: didCommService.id,
-            recipientKeys: recipientKeys as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
-            routingKeys: expanded.routingKeys,
-            serviceEndpoint: expanded.endpoint,
-          })
         }
+        if (resolvedEntries === 0 && lastError !== undefined) throw lastError
       }
     }
 

@@ -299,6 +299,55 @@ describe('DidCommDocumentService', () => {
       expect(resolved.map((service) => service.id)).toEqual(['did:example:alice#dm', 'did:example:alice#dm'])
     })
 
+    test('skips a serviceEndpoint entry whose routing keys do not resolve and keeps the others', async () => {
+      const aliceDoc = new DidDocument({
+        id: 'did:example:alice',
+        service: [
+          new NewDidCommV2Service({
+            id: 'did:example:alice#dm',
+            serviceEndpoint: [
+              new NewDidCommV2ServiceEndpoint({
+                uri: 'https://primary.example/didcomm',
+                routingKeys: ['did:example:mediator#key-1'],
+              }),
+              new NewDidCommV2ServiceEndpoint({ uri: 'wss://fallback.example/didcomm' }),
+            ],
+          }),
+        ],
+      })
+      mockFunction(didResolverService.resolveDidDocument).mockImplementation(async (_agentContext, did) => {
+        if (did === 'did:example:alice') return aliceDoc
+        throw new Error(`Unable to resolve ${did}`)
+      })
+
+      const resolved = await didCommDocumentService.resolveServicesFromDid(agentContext, 'did:example:alice')
+
+      expect(resolved.map((service) => service.serviceEndpoint)).toEqual(['wss://fallback.example/didcomm'])
+    })
+
+    test('throws when no serviceEndpoint entry of a DIDComm v2 service resolves', async () => {
+      const aliceDoc = new DidDocument({
+        id: 'did:example:alice',
+        service: [
+          new NewDidCommV2Service({
+            id: 'did:example:alice#dm',
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
+              uri: 'https://primary.example/didcomm',
+              routingKeys: ['did:example:mediator#key-1'],
+            }),
+          }),
+        ],
+      })
+      mockFunction(didResolverService.resolveDidDocument).mockImplementation(async (_agentContext, did) => {
+        if (did === 'did:example:alice') return aliceDoc
+        throw new Error(`Unable to resolve ${did}`)
+      })
+
+      await expect(didCommDocumentService.resolveServicesFromDid(agentContext, 'did:example:alice')).rejects.toThrow(
+        'Unable to resolve did:example:mediator#key-1'
+      )
+    })
+
     test('resolves keyAgreement routing keys for a DIDComm v2 service', async () => {
       const mediatorKeyAgreementKey = Kms.PublicJwk.fromPublicKey({
         kty: 'OKP',

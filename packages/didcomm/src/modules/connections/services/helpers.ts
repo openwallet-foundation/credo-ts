@@ -7,6 +7,7 @@ import {
   DidDocumentBuilder,
   type DidDocumentKey,
   DidDocumentRole,
+  type DidDocumentService,
   DidKey,
   DidRepository,
   DidsApi,
@@ -70,6 +71,24 @@ export function toKeyAgreementDidUrl(jwk: Kms.PublicJwk): string {
 
 export function toAbsoluteDidUrl(did: string, id: string): string {
   return id.startsWith('did:') ? id : `${did}#${id.replace(/^#/, '')}`
+}
+
+/**
+ * The serviceEndpoint entries of a DIDComm service in order of preference, each with its routing key
+ * references. A DIDComm v2.1 service may list several so the sender can fail over between them:
+ * https://identity.foundation/didcomm-messaging/spec/v2.1/#service-endpoint
+ */
+export function getServiceEndpointEntries(
+  service: DidDocumentService
+): Array<{ uri?: string; routingKeys?: string[] }> {
+  if (service.type === NewDidCommV2Service.type) {
+    const serviceEndpoint = (service as NewDidCommV2Service).serviceEndpoint
+    return Array.isArray(serviceEndpoint) ? serviceEndpoint : [serviceEndpoint]
+  }
+  const { serviceEndpoint, routingKeys } = service as { serviceEndpoint: unknown; routingKeys?: string[] }
+  const uri =
+    typeof serviceEndpoint === 'string' ? serviceEndpoint : (serviceEndpoint as { uri?: string } | undefined)?.uri
+  return [{ uri, routingKeys }]
 }
 
 /**

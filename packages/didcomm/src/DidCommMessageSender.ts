@@ -11,7 +11,6 @@ import {
   injectable,
   Kms,
   MessageValidator,
-  NewDidCommV2Service,
   type ResolvedDidCommService,
   utils,
   verkeyToDidKey,
@@ -31,7 +30,12 @@ import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './mode
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import { DidCommConnectionRepository } from './modules/connections/repository'
 import { DidCommConnectionMetadataKeys } from './modules/connections/repository/DidCommConnectionMetadataTypes'
-import { findOwnKeyAgreementKey, toAbsoluteDidUrl, toKeyAgreement } from './modules/connections/services/helpers'
+import {
+  findOwnKeyAgreementKey,
+  getServiceEndpointEntries,
+  toAbsoluteDidUrl,
+  toKeyAgreement,
+} from './modules/connections/services/helpers'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommOutOfBandRepository } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
@@ -705,54 +709,52 @@ export class DidCommMessageSender {
             : didToNumAlgo4DidDocument(connection.theirDid)
           const allServices = didDocument.service ?? []
           for (const svc of allServices) {
-            let endpoint: string | undefined =
-              'firstServiceEndpointUri' in svc
-                ? (svc as NewDidCommV2Service).firstServiceEndpointUri
-                : typeof svc.serviceEndpoint === 'string'
-                  ? svc.serviceEndpoint
-                  : (svc.serviceEndpoint as { uri?: string })?.uri
-            let routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
-            const isV2Connection = (connection.didcommVersion ?? 'v1') === 'v2'
-            // When endpoint is a DID (e.g. routing DID), resolve to get transport URL and mediator's keys for Forward.
-            if (endpoint?.startsWith('did:')) {
-              const expanded = this.didCommDocumentService.expandV2EndpointIfRoutingDid(
-                agentContext,
-                endpoint,
-                [],
-                isV2Connection
-              )
-              endpoint = expanded?.endpoint
-              routingKeys = expanded?.routingKeys ?? []
-            }
-            if (endpoint) {
-              const recipientKeys: Kms.PublicJwk[] = []
-              // For v2 connections, use only keyAgreement VMs (X25519) — DIDComm v2 spec requires
-              // the kid to be a keyAgreement VM DID URL. For v1, include both authentication and
-              // keyAgreement for backwards compatibility.
-              const keyRefs = isV2Connection
-                ? [...(didDocument.keyAgreement ?? [])]
-                : [...(didDocument.authentication ?? []), ...(didDocument.keyAgreement ?? [])]
-              const seen = new Set<string>()
-              for (const keyRef of keyRefs) {
-                const verificationMethod =
-                  typeof keyRef === 'string' ? didDocument.dereferenceVerificationMethod(keyRef) : keyRef
-                if (seen.has(verificationMethod.id)) continue
-                const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-                if (
-                  publicJwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk) ||
-                  (!isV2Connection && publicJwk.is(Kms.Ed25519PublicJwk))
-                ) {
-                  seen.add(verificationMethod.id)
-                  publicJwk.keyId = toAbsoluteDidUrl(didDocument.id, verificationMethod.id)
-                  recipientKeys.push(publicJwk)
-                }
+            // Each serviceEndpoint entry is one service to try, in order of preference, as resolveServicesFromDid does
+            for (const entry of getServiceEndpointEntries(svc)) {
+              let endpoint: string | undefined = entry.uri
+              let routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
+              const isV2Connection = (connection.didcommVersion ?? 'v1') === 'v2'
+              // When endpoint is a DID (e.g. routing DID), resolve to get transport URL and mediator's keys for Forward.
+              if (endpoint?.startsWith('did:')) {
+                const expanded = this.didCommDocumentService.expandV2EndpointIfRoutingDid(
+                  agentContext,
+                  endpoint,
+                  [],
+                  isV2Connection
+                )
+                endpoint = expanded?.endpoint
+                routingKeys = expanded?.routingKeys ?? []
               }
-              didCommServices.push({
-                id: svc.id,
-                recipientKeys: recipientKeys as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
-                routingKeys,
-                serviceEndpoint: endpoint,
-              })
+              if (endpoint) {
+                const recipientKeys: Kms.PublicJwk[] = []
+                // For v2 connections, use only keyAgreement VMs (X25519) — DIDComm v2 spec requires
+                // the kid to be a keyAgreement VM DID URL. For v1, include both authentication and
+                // keyAgreement for backwards compatibility.
+                const keyRefs = isV2Connection
+                  ? [...(didDocument.keyAgreement ?? [])]
+                  : [...(didDocument.authentication ?? []), ...(didDocument.keyAgreement ?? [])]
+                const seen = new Set<string>()
+                for (const keyRef of keyRefs) {
+                  const verificationMethod =
+                    typeof keyRef === 'string' ? didDocument.dereferenceVerificationMethod(keyRef) : keyRef
+                  if (seen.has(verificationMethod.id)) continue
+                  const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+                  if (
+                    publicJwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk) ||
+                    (!isV2Connection && publicJwk.is(Kms.Ed25519PublicJwk))
+                  ) {
+                    seen.add(verificationMethod.id)
+                    publicJwk.keyId = toAbsoluteDidUrl(didDocument.id, verificationMethod.id)
+                    recipientKeys.push(publicJwk)
+                  }
+                }
+                didCommServices.push({
+                  id: svc.id,
+                  recipientKeys: recipientKeys as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
+                  routingKeys,
+                  serviceEndpoint: endpoint,
+                })
+              }
             }
           }
           if (didCommServices.length > 0) {
