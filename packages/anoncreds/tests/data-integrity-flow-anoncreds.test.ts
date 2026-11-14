@@ -27,6 +27,7 @@ import {
   CacheModuleConfig,
   DidResolverService,
   DidsModuleConfig,
+  defaultDocumentLoader,
   InjectionSymbols,
   InMemoryLruCache,
   JsonLdModuleConfig,
@@ -36,7 +37,6 @@ import {
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
-  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import type { DataIntegrityCredentialRequest } from '@credo-ts/didcomm'
 import {
@@ -45,7 +45,6 @@ import {
   DidCommCredentialRole,
   DidCommCredentialState,
   DidCommDataIntegrityCredentialFormatService,
-  DidCommDataIntegrityLinkSecretBindingProviderToken,
   DidCommProofExchangeRecord,
   DidCommProofRole,
   DidCommProofState,
@@ -97,9 +96,7 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
-    [DidCommDataIntegrityLinkSecretBindingProviderToken, new AnonCredsLinkSecretBindingProvider()],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
       CacheModuleConfig,
@@ -113,7 +110,9 @@ const agentContext = getAgentContext({
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
 
-const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService()
+const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService({
+  linkSecretBinding: new AnonCredsLinkSecretBindingProvider(),
+})
 const anoncredsProofFormatService = new AnonCredsDidCommProofFormatService()
 
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'

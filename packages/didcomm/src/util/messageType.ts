@@ -1,6 +1,5 @@
 import type { ValidationArguments, ValidationOptions } from 'class-validator'
 import { buildMessage, ValidateBy } from 'class-validator'
-import type { DidCommPlaintextMessage } from '../types'
 
 const PROTOCOL_URI_REGEX = /^(.+)\/([^/\\]+)\/(\d+).(\d+)$/
 const MESSAGE_TYPE_REGEX = /^(.+)\/([^/\\]+)\/(\d+).(\d+)\/([^/\\]+)$/
@@ -120,10 +119,6 @@ export function parseDidCommProtocolUri(didCommProtocolUri: string): ParsedDidCo
  *  - protocolName
  *  - majorVersion
  *
- * If allowLegacyDidSovPrefixMismatch is true (default) it will allow for the case where the incoming protocol uri still has the legacy
- * did:sov:BzCbsNYhMrjHiqZDTUASHg;spec did prefix, but the expected message type does not. This only works for incoming messages with a prefix
- * of did:sov:BzCbsNYhMrjHiqZDTUASHg;spec and the expected message type having a prefix value of https:/didcomm.org
- *
  * @example
  * const incomingProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.0')
  * const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.4')
@@ -131,25 +126,12 @@ export function parseDidCommProtocolUri(didCommProtocolUri: string): ParsedDidCo
  * // Returns true because the incoming protocol uri is equal to the expected protocol uri, except for
  * // the minor version, which is lower
  * const isIncomingProtocolUriSupported = supportsIncomingDidCommProtocolUri(incomingProtocolUri, expectedProtocolUri)
- *
- * @example
- * const incomingProtocolUri = parseDidCommProtocolUri('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0')
- * const expectedProtocolUri = parseDidCommProtocolUri('https://didcomm.org/connections/1.0')
- *
- * // Returns true because the incoming protocol uri is equal to the expected protocol uri, except for
- * // the legacy did sov prefix.
- * const isIncomingProtocolUriSupported = supportsIncomingDidCommProtocolUri(incomingProtocolUri, expectedProtocolUri)
  */
 export function supportsIncomingDidCommProtocolUri(
   incomingProtocolUri: ParsedDidCommProtocolUri,
-  expectedProtocolUri: ParsedDidCommProtocolUri,
-  { allowLegacyDidSovPrefixMismatch = true }: { allowLegacyDidSovPrefixMismatch?: boolean } = {}
+  expectedProtocolUri: ParsedDidCommProtocolUri
 ) {
-  const incomingDocumentUri = allowLegacyDidSovPrefixMismatch
-    ? replaceLegacyDidSovPrefix(incomingProtocolUri.documentUri)
-    : incomingProtocolUri.documentUri
-
-  const documentUriMatches = expectedProtocolUri.documentUri === incomingDocumentUri
+  const documentUriMatches = expectedProtocolUri.documentUri === incomingProtocolUri.documentUri
   const protocolNameMatches = expectedProtocolUri.protocolName === incomingProtocolUri.protocolName
   const majorVersionMatches = expectedProtocolUri.protocolMajorVersion === incomingProtocolUri.protocolMajorVersion
 
@@ -168,10 +150,6 @@ export function supportsIncomingDidCommProtocolUri(
  *  - majorVersion
  *  - messageName
  *
- * If allowLegacyDidSovPrefixMismatch is true (default) it will allow for the case where the incoming message type still has the legacy
- * did:sov:BzCbsNYhMrjHiqZDTUASHg;spec did prefix, but the expected message type does not. This only works for incoming messages with a prefix
- * of did:sov:BzCbsNYhMrjHiqZDTUASHg;spec and the expected message type having a prefix value of https:/didcomm.org
- *
  * @example
  * const incomingMessageType = parseMessageType('https://didcomm.org/connections/1.0/request')
  * const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
@@ -179,25 +157,12 @@ export function supportsIncomingDidCommProtocolUri(
  * // Returns true because the incoming message type is equal to the expected message type, except for
  * // the minor version, which is lower
  * const isIncomingMessageTypeSupported = supportsIncomingMessageType(incomingMessageType, expectedMessageType)
- *
- * @example
- * const incomingMessageType = parseMessageType('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/request')
- * const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.0/request')
- *
- * // Returns true because the incoming message type is equal to the expected message type, except for
- * // the legacy did sov prefix.
- * const isIncomingMessageTypeSupported = supportsIncomingMessageType(incomingMessageType, expectedMessageType)
  */
 export function supportsIncomingMessageType(
   incomingMessageType: ParsedMessageType,
-  expectedMessageType: ParsedMessageType,
-  { allowLegacyDidSovPrefixMismatch = true }: { allowLegacyDidSovPrefixMismatch?: boolean } = {}
+  expectedMessageType: ParsedMessageType
 ) {
-  const incomingDocumentUri = allowLegacyDidSovPrefixMismatch
-    ? replaceLegacyDidSovPrefix(incomingMessageType.documentUri)
-    : incomingMessageType.documentUri
-
-  const documentUriMatches = expectedMessageType.documentUri === incomingDocumentUri
+  const documentUriMatches = expectedMessageType.documentUri === incomingMessageType.documentUri
   const protocolNameMatches = expectedMessageType.protocolName === incomingMessageType.protocolName
   const majorVersionMatches = expectedMessageType.protocolMajorVersion === incomingMessageType.protocolMajorVersion
   const messageNameMatches = expectedMessageType.messageName === incomingMessageType.messageName
@@ -246,34 +211,4 @@ export function IsValidMessageType(
     },
     validationOptions
   )
-}
-
-export function replaceLegacyDidSovPrefixOnMessage(message: DidCommPlaintextMessage | Record<string, unknown>) {
-  message['@type'] = replaceLegacyDidSovPrefix(message['@type'] as string)
-}
-
-export function replaceNewDidCommPrefixWithLegacyDidSovOnMessage(message: Record<string, unknown>) {
-  message['@type'] = replaceNewDidCommPrefixWithLegacyDidSov(message['@type'] as string)
-}
-
-export function replaceLegacyDidSovPrefix(messageType: string) {
-  const didSovPrefix = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec'
-  const didCommPrefix = 'https://didcomm.org'
-
-  if (messageType.startsWith(didSovPrefix)) {
-    return messageType.replace(didSovPrefix, didCommPrefix)
-  }
-
-  return messageType
-}
-
-export function replaceNewDidCommPrefixWithLegacyDidSov(messageType: string) {
-  const didSovPrefix = 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec'
-  const didCommPrefix = 'https://didcomm.org'
-
-  if (messageType.startsWith(didCommPrefix)) {
-    return messageType.replace(didCommPrefix, didSovPrefix)
-  }
-
-  return messageType
 }

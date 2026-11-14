@@ -158,7 +158,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
             didDocumentRelativeKeyId: '#key-1',
           })
         } else {
-          const _publicJwk = await kms.getPublicKey({
+          const { publicKey: _publicJwk } = await kms.getPublicKey({
             keyId: options.options.keyId,
           })
           keys.push({
@@ -327,7 +327,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
               kmsKeyId: createKeyResult.keyId,
             }
           } else if (options.options.keyId) {
-            const _publicJwk = await kms.getPublicKey({
+            const { publicKey: _publicJwk } = await kms.getPublicKey({
               keyId: options.options.keyId,
             })
             createdKey = {

@@ -1,4 +1,4 @@
-import type { DefaultAgentModules, ModulesMap, Query, QueryOptions } from '@credo-ts/core'
+import type { AgentModulesInput, DefaultAgentModules, Query, QueryOptions } from '@credo-ts/core'
 import {
   AgentContext,
   InjectionSymbols,
@@ -20,7 +20,7 @@ import type {
 } from './TenantsApiOptions'
 
 @injectable()
-export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
+export class TenantsApi<AgentModules extends AgentModulesInput = DefaultAgentModules> {
   public readonly rootAgentContext: AgentContext
   private tenantRecordService: TenantRecordService
   private agentContextProvider: TenantAgentContextProvider

@@ -15,8 +15,6 @@ import type { DidCommV2PlaintextMessage } from '../../../../../v2/types'
  * The created_time header is the ~timing out_time of the message, so a v1 envelope carries it in the ~timing decorator.
  */
 export class DidCommBasicMessageV2 extends DidCommMessage {
-  public readonly allowDidSovPrefix = false
-
   /**
    * Create new DidCommBasicMessageV2 instance.
    *

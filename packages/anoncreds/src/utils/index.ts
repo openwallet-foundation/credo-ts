@@ -5,7 +5,6 @@ export {
   fetchSchema,
 } from './anonCredsObjects'
 export { areAnonCredsProofRequestsEqual } from './areRequestsEqual'
-export { composeCredentialAutoAccept, composeProofAutoAccept } from './composeAutoAccept'
 export { createRequestFromPreview } from './createRequestFromPreview'
 export { type AnonCredsCredentialValue, checkValidCredentialValueEncoding } from './credential'
 export { areCredentialPreviewAttributesEqual } from './credentialPreviewAttributes'

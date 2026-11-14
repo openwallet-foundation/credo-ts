@@ -10,6 +10,7 @@ import {
   assertCreatedProofPostconditions,
   validateProofFieldFormats,
   validateProofRequiredMembers,
+  validateProofTimestamps,
 } from './proof-processing/proofValidation'
 
 import { W3cDataIntegrityCryptosuiteRegistry } from './W3cDataIntegrityCryptosuiteRegistry'
@@ -58,6 +59,11 @@ export interface W3cDataIntegrityVerifyProofOptions {
   expectedProofPurpose?: string
   domain?: W3cDataIntegrityDomain
   challenge?: string
+
+  /**
+   * The time to check the proof `created` and `expires` against. Defaults to the current time.
+   */
+  now?: Date
 }
 
 export interface W3cDataIntegrityVerifyProofDocumentOptions extends W3cDataIntegrityVerifyProofOptions {
@@ -260,6 +266,26 @@ export class W3cDataIntegrityProofService {
         return createInvalidResult(proofFieldFormatIssues[0], proofFieldFormatIssues.slice(1))
       }
 
+      const proofTimestampIssues = proofs
+        .map((proof, index) => {
+          const proofTimestampError = validateProofTimestamps(proof, {
+            skewSeconds: agentContext.config.validitySkewSeconds,
+            now: options.now,
+          })
+          if (!proofTimestampError) return undefined
+
+          return createIssue(
+            W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
+            `Proof at index ${index} has invalid created/expires times`,
+            proofTimestampError.errors[0]?.detail ?? proofTimestampError.errors[0]?.title
+          )
+        })
+        .filter((issue): issue is W3cDataIntegrityProcessingIssue => issue !== undefined)
+
+      if (proofTimestampIssues.length > 0) {
+        return createInvalidResult(proofTimestampIssues[0], proofTimestampIssues.slice(1))
+      }
+
       const proofIdToIndex = this.createProofIdToIndexMap(proofs)
 
       const { proof: _, ...unsecuredDocument } = normalizedSecuredDocument
@@ -348,7 +374,7 @@ export class W3cDataIntegrityProofService {
 
   /**
    * Implements VC Data Integrity v1.0 §4.4 steps 5-8 for a single-proof input.
-   * Runs proof checks, field-format checks, relationship validation, and cryptosuite verification.
+   * Runs proof checks, field-format checks, created/expires times, relationship validation, and cryptosuite verification.
    */
   private async verifySingleProofCore(
     agentContext: AgentContext,
@@ -369,6 +395,14 @@ export class W3cDataIntegrityProofService {
     const proofFieldFormatError = validateProofFieldFormats(proof)
     if (proofFieldFormatError) {
       return proofFieldFormatError
+    }
+
+    const proofTimestampError = validateProofTimestamps(proof, {
+      skewSeconds: agentContext.config.validitySkewSeconds,
+      now: options.now,
+    })
+    if (proofTimestampError) {
+      return proofTimestampError
     }
 
     const proofPurposeValidationError = await validateProofPurposeVerificationRelationship(agentContext, proof)

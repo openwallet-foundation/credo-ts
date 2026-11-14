@@ -1,6 +1,7 @@
 import {
   Agent,
   CacheModule,
+  CacheModuleConfig,
   DependencyManager,
   InjectionSymbols,
   InMemoryLruCache,
@@ -93,10 +94,26 @@ describe('UpdateAssistant | AnonCreds | v0.4 - v0.5', () => {
       },
     ])
 
+    await agent.dependencyManager
+      .resolve(CacheModuleConfig)
+      .cache.set(
+        agent.context,
+        'IndyVdrPoolService:6LHqdUeWDWsL94zRc1ULEx',
+        { indyNamespace: 'bcovrin:test' },
+        undefined,
+        { scope: 'global' }
+      )
+    const warn = vi.spyOn(agent.config.logger, 'warn')
     await updateAssistant.update({ updateToVersion: '0.5' })
 
     expect(await updateAssistant.isUpToDate('0.5')).toBe(true)
     expect(await updateAssistant.getNeededUpdates('0.5')).toEqual([])
+    const records = Object.values(
+      storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records
+    )
+    expect(records.filter((record) => record.type === W3cCredentialRecord.type)).toHaveLength(2)
+    expect(records.filter((record) => record.type === 'AnonCredsCredentialRecord')).toHaveLength(0)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('no AnonCreds migration provider is configured'))
 
     // We mock the system time, however the issuanceDate is set by AnonCreds RS in rust, so we need to
     // manually set the issuanceDate to the current date (which is mocked) to not have inconsistent snapshot

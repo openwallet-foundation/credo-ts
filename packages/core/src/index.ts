@@ -5,7 +5,13 @@ export * from './agent'
 export { Agent } from './agent/Agent'
 export { AgentConfig } from './agent/AgentConfig'
 export type { AgentDependencies } from './agent/AgentDependencies'
-export type { AgentApi, DefaultAgentModules, EmptyModuleMap, ModulesMap } from './agent/AgentModules'
+export type {
+  AgentApi,
+  AgentModulesInput,
+  DefaultAgentModules,
+  EmptyModuleMap,
+  ModulesMap,
+} from './agent/AgentModules'
 export { BaseAgent } from './agent/BaseAgent'
 export { EventEmitter } from './agent/EventEmitter'
 export * from './agent/Events'
@@ -133,7 +139,7 @@ export type { VersionString } from './utils/version'
 import { indyDidFromPublicKeyBase58 } from './utils/did'
 import { areObjectsEqual } from './utils/objectEquality'
 import timestamp, { addSecondsToDate, dateToSeconds, nowInSeconds } from './utils/timestamp'
-import { getProtocolScheme } from './utils/uri'
+import { getProtocolScheme, isAllowedHttpUrl } from './utils/uri'
 import { isValidUuid, uuid, uuidFromName } from './utils/uuid'
 
 const utils = {
@@ -142,6 +148,7 @@ const utils = {
   uuidFromName,
   isValidUuid,
   getProtocolScheme,
+  isAllowedHttpUrl,
   timestamp,
   indyDidFromPublicKeyBase58,
   nowInSeconds,

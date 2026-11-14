@@ -66,8 +66,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     this.tenantSessionCoordinator.assertTenantContextCorrelationId(contextCorrelationId)
     const tenantId = this.tenantSessionCoordinator.getTenantIdForContextCorrelationId(contextCorrelationId)
 
-    // TODO: maybe we can look at not having to retrieve the tenant record if there's already a context available.
-    const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId)
+    const tenantRecord = await this.tenantRecordService.getTenantByIdForSession(this.rootAgentContext, tenantId)
 
     if (tenantRecord.status !== TenantStatus.Active && !allowInactive) {
       throw new TenantInactiveError(tenantRecord.id)
@@ -84,7 +83,14 @@ export class TenantAgentContextProvider implements AgentContextProvider {
 
     const agentContext = await this.tenantSessionCoordinator.getContextForSession(tenantRecord, {
       provisionContext,
-      runInMutex: shouldUpdate ? (agentContext) => this._updateTenantStorage(tenantRecord, agentContext) : undefined,
+      runInMutex: shouldUpdate
+        ? async (agentContext) =>
+            this._updateTenantStorage(
+              // The update writes the record back, so it needs the whole record
+              await this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId),
+              agentContext
+            )
+        : undefined,
     })
 
     this.logger.debug(`Created tenant agent context for context correlation id '${contextCorrelationId}'`)

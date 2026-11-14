@@ -816,7 +816,7 @@ export class DidCommOutOfBandApi {
       return { outOfBandRecord, connectionRecord }
     }
 
-    const existingConnection = await this.findExistingConnection(outOfBandInvitation)
+    const existingConnection = reuseConnection ? await this.findExistingConnection(outOfBandInvitation) : null
 
     await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, DidCommOutOfBandState.PrepareResponse)
 
@@ -1066,12 +1066,15 @@ export class DidCommOutOfBandApi {
 
     const invitationDids = [
       ...outOfBandInvitation.invitationDids,
-      // Also search for legacy invitationDids based on inline services (TODO: remove in 0.6.0)
+      // Connections created by Credo 0.5.1 or earlier, or migrated from 0.1, store the invitation did in this format
       ...outOfBandInvitation.getInlineServices().map(outOfBandServiceToInlineKeysNumAlgo2Did),
     ]
 
     for (const invitationDid of invitationDids) {
-      const connections = await this.connectionsApi.findByInvitationDid(invitationDid)
+      // Hangup clears did or theirDid but keeps the state, and a v2 connection can't take a v1 handshake-reuse
+      const connections = (await this.connectionsApi.findByInvitationDid(invitationDid)).filter(
+        ({ did, theirDid, didcommVersion, isReady }) => isReady && did && theirDid && didcommVersion !== 'v2'
+      )
 
       this.logger.debug(`Retrieved ${connections.length} connections for invitation did ${invitationDid}`)
 
@@ -1086,8 +1089,9 @@ export class DidCommOutOfBandApi {
         const [firstConnection] = connections
         return firstConnection
       }
-      return null
     }
+
+    return null
   }
 
   private async emitWithConnection(

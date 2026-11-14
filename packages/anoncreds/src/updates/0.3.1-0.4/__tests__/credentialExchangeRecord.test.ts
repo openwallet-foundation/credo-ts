@@ -5,6 +5,8 @@ import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../co
 import type { CredentialRecordBinding, DidCommCredentialState } from '../../../../../didcomm/src'
 import { DidCommCredentialExchangeRecord } from '../../../../../didcomm/src'
 import { DidCommCredentialExchangeRepository } from '../../../../../didcomm/src/modules/credentials/repository/DidCommCredentialExchangeRepository'
+import { AnonCredsModuleConfig } from '../../../AnonCredsModuleConfig'
+import { AnonCredsDidCommMigrationProvider } from '../../../didcomm/AnonCredsDidCommMigrationProvider'
 import * as testModule from '../credentialExchangeRecord'
 import {
   migrateIndyCredentialMetadataToAnonCredsMetadata,
@@ -27,7 +29,13 @@ vi.mock('../../../../../core/src/agent/Agent', () => {
         config: agentConfig,
         context: agentContext,
         dependencyManager: {
-          resolve: vi.fn(function () {
+          isRegistered: vi.fn(function () {
+            return true
+          }),
+          resolve: vi.fn(function (token) {
+            if (token === AnonCredsModuleConfig) {
+              return { migrationProvider: new AnonCredsDidCommMigrationProvider() }
+            }
             return credentialRepository
           }),
         },

@@ -38,7 +38,7 @@ import {
 import type { OpenId4VpVersion } from '../openid4vc-verifier'
 import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
 import { getOid4vcCallbacks } from '../shared/callbacks'
-import { getSupportedResponseEncryptionJwks } from '../shared/utils'
+import { getSupportedEncryptionJwks } from '../shared/utils'
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
   OpenId4VpDeclineAuthorizationRequestOptions,
@@ -722,7 +722,7 @@ export class OpenId4VpHolderService {
     // The verifier can include multiple keys (e.g. P-256, P-384 and P-521). We first filter the
     // keys to the ones we can actually perform the key agreement with, so we don't pick a key
     // that is not supported by the key management backends of this agent.
-    const supportedJwks = getSupportedResponseEncryptionJwks(agentContext, clientMetadata.jwks)
+    const supportedJwks = getSupportedEncryptionJwks(agentContext, clientMetadata.jwks)
 
     if (supportedJwks.keys.length === 0) {
       throw new CredoError(
