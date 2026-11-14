@@ -10,8 +10,8 @@
  *
  * Unlike the other tests in this directory these run against real Ed25519 keys and the real
  * `W3cDataIntegrityApi`, so a resource actually has to round-trip. No network access is needed:
- * `WebVhDidResolver` allows serving locally created did records, so did resolution is answered
- * from the repository.
+ * DID resolution is stubbed from the repository for relationship-selection tests; a separate
+ * test below resolves a real registrar-authored log.
  */
 
 import {
@@ -29,11 +29,15 @@ import {
   VerificationMethod,
   W3cDataIntegrityModule,
 } from '@credo-ts/core'
+import type { DIDLog } from 'didwebvh-ts'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
+import { createWebVhTestOptions } from '../../../../tests/utils'
+import { WebVhDidRegistrar } from '../../../dids/WebVhDidRegistrar'
 import { WebVhDidResolver } from '../../../dids/WebVhDidResolver'
+import { WebVhDidRecordMetadataKeys } from '../../../dids/webVhDidRecordMetadataTypes'
 import { WebVhAnonCredsRegistry } from '../WebVhAnonCredsRegistry'
 
 const issuerId = 'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01'
@@ -114,7 +118,41 @@ describe('WebVhAnonCredsRegistry assertionMethod signing', () => {
       })
     )
 
+    vi.spyOn(webvhResolver, 'resolve').mockImplementation(async (context, did) => {
+      const record = await context.resolve(DidRepository).getSingleByQuery(context, { did })
+      return { didDocument: record.didDocument ?? null, didDocumentMetadata: {}, didResolutionMetadata: {} }
+    })
+
     registry = new WebVhAnonCredsRegistry()
+  })
+
+  it('round-trips an attested resource using caller-authored fragments and a validated registrar log', async () => {
+    const resolver = agentContext.resolve(DidsModuleConfig).resolvers[0] as WebVhDidResolver
+    vi.mocked(resolver.resolve).mockRestore()
+    const created = await new WebVhDidRegistrar().create(
+      agentContext,
+      await createWebVhTestOptions(agentContext, 'authored.example.com')
+    )
+    if (created.didState.state !== 'finished') throw new Error(`Create failed: ${JSON.stringify(created.didState)}`)
+    const record = await agentContext.resolve(DidRepository).getSingleByQuery(agentContext, {
+      did: created.didState.did,
+    })
+    const log = record.metadata.get<DIDLog>(WebVhDidRecordMetadataKeys.DidLog)
+    if (!log) throw new Error('Created DID has no log')
+    vi.spyOn(agentContext.config, 'fetch').mockImplementation(
+      async () => new Response(log.map((entry) => JSON.stringify(entry)).join('\n'))
+    )
+    const authoredSchema = { ...schema, issuerId: created.didState.did }
+    const { registrationMetadata, schemaState } = await registry.registerSchema(agentContext, {
+      schema: authoredSchema,
+    })
+    if (schemaState.state !== 'finished') throw new Error('Schema registration failed')
+    const resource = JSON.parse(JSON.stringify(registrationMetadata.attestedResource))
+    expect(resource.proof.verificationMethod).toBe(`${created.didState.did}#assertion-key`)
+    resolveResource.mockResolvedValue({ content: resource, dereferencingMetadata: { contentType: 'application/json' } })
+    const result = await registry.getSchema(agentContext, schemaState.schemaId)
+    expect(result.resolutionMetadata.error).toBeUndefined()
+    expect(result.schema).toEqual(authoredSchema)
   })
 
   it('signs with the assertionMethod key and the resource round-trips through getSchema', async () => {

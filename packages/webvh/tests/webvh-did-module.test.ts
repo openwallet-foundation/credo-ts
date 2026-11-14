@@ -5,134 +5,102 @@ import { getAgentOptions } from '../../core/tests/helpers'
 import { WebVhDidResolver } from '../src/dids/WebVhDidResolver'
 
 import { getWebVhModules } from './setupWebVhModule'
-import { validDid } from './utils'
-
-// Simplified partial mock. Keep unmocked exports (e.g. multibaseEncode) for registrar internals.
-vi.mock('didwebvh-ts', async () => {
-  const actual = await vi.importActual<typeof import('didwebvh-ts')>('didwebvh-ts')
-
-  return {
-    ...actual,
-    resolveDID: vi.fn().mockResolvedValue({
-      doc: {
-        '@context': ['https://www.w3.org/ns/did/v1'],
-        id: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
-        verificationMethod: [
-          {
-            id: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1',
-            type: 'Ed25519VerificationKey2020',
-            controller: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
-            publicKeyMultibase: 'z6MkkBaWtQKyx7Mr54XaXyMAEpNKqphK4x7ztuBpSfR6Wqwr',
-          },
-        ],
-        authentication: ['did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1'],
-      },
-      did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
-    }),
-    createDID: vi.fn().mockResolvedValue({
-      doc: {
-        '@context': ['https://www.w3.org/ns/did/v1'],
-        id: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
-        verificationMethod: [
-          {
-            id: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1',
-            type: 'Multikey',
-            controller: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
-            publicKeyMultibase: 'z6MkkBaWtQKyx7Mr54XaXyMAEpNKqphK4x7ztuBpSfR6Wqwr',
-          },
-        ],
-        authentication: ['did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1'],
-        assertionMethod: ['did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1'],
-        keyAgreement: ['did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1'],
-      },
-      did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
-      log: [],
-    }),
-    updateDID: vi.fn().mockResolvedValue({
-      did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
-    }),
-    AbstractCrypto: vi.fn().mockImplementation(() => ({
-      sign: vi.fn().mockResolvedValue({
-        signature: 'signature',
-      }),
-      verify: vi.fn().mockResolvedValue(true),
-    })),
-  }
-})
+import { createWebVhTestOptions } from './utils'
 
 describe('WebVH DID module', () => {
   let agent: Agent<ReturnType<typeof getWebVhModules>>
 
-  it('uses global caching by default and supports context scope configuration', () => {
+  it('disables resolver shortcuts regardless of cache scope configuration', () => {
     const resolver = new WebVhDidResolver()
     const config = new DidsModuleConfig({ resolvers: [resolver] })
 
-    expect(resolver.allowsCaching).toBe(true)
+    expect(resolver.allowsCaching).toBe(false)
+    expect(resolver.allowsLocalDidRecord).toBe(false)
     expect(config.getCacheScope('webvh')).toBe('global')
     expect(new DidsModuleConfig({ cacheScope: { webvh: 'context' } }).getCacheScope('webvh')).toBe('context')
   })
 
   beforeAll(async () => {
-    const agentOptions = getAgentOptions('WebVH DID Module Test', {}, {}, getWebVhModules())
-    agent = new Agent({ ...agentOptions, modules: { ...getWebVhModules(), inMemory: new InMemoryWalletModule() } })
-
+    const modules = getWebVhModules()
+    const agentOptions = getAgentOptions('WebVH DID Module Test', {}, {}, modules)
+    agent = new Agent({ ...agentOptions, modules: { ...modules, inMemory: new InMemoryWalletModule() } })
     await agent.initialize()
   })
 
   afterAll(async () => {
-    if (agent) {
-      await agent.shutdown()
-    }
+    await agent.shutdown()
+  })
+  afterEach(() => vi.restoreAllMocks())
+
+  it('creates, updates and deactivates through agent.dids with exported WebVH options', async () => {
+    const options = await createWebVhTestOptions(agent.context, 'domain.example')
+    const created = await agent.dids.create(options)
+    expect(created.didState.state).toBe('finished')
+    if (created.didState.state !== 'finished') throw new Error('DID create failed')
+    const { did, didDocument } = created.didState
+    const fetch = vi.spyOn(agent.config, 'fetch').mockResolvedValue(new Response(null, { status: 404 }))
+    const unpublished = await agent.dids.resolve(did)
+    expect(unpublished.didResolutionMetadata.error).toBeDefined()
+    expect(unpublished.didDocument).toBeNull()
+    const unpublishedLog = await agent.modules.webvh.getPublicationData(did)
+    const local = await agent.modules.webvh.resolveDIDFromLog(unpublishedLog.log)
+    expect(local.didDocument?.id).toBe(did)
+    fetch.mockImplementation(async () => {
+      const { log } = await agent.modules.webvh.getPublicationData(did)
+      return new Response(log.map((entry) => JSON.stringify(entry)).join('\n'))
+    })
+    const resolved = await agent.dids.resolve(did)
+    expect(resolved.didDocument?.id).toBe(did)
+    expect(resolved.didDocumentMetadata.versionId).toBe(created.didDocumentMetadata.versionId)
+    const updated = await agent.dids.update({ did, didDocument })
+    expect(updated.didState.state).toBe('finished')
+    const records = await agent.dids.getCreatedDids({ did })
+    expect(records).toHaveLength(1)
+    const publication = await agent.modules.webvh.getPublicationData(did)
+    expect(publication.log).toHaveLength(2)
+    const latest = await agent.dids.resolve(did)
+    expect(latest.didDocumentMetadata.versionId).toBe(publication.log[1].versionId)
+    const deactivate = await agent.dids.deactivate({ did })
+    expect(deactivate.didState.state).toBe('finished')
+    const deactivated = await agent.dids.resolve(did)
+    expect(deactivated.didDocumentMetadata.deactivated).toBe(true)
+    expect(deactivated.didDocument).toBeNull()
+    expect(fetch).toHaveBeenCalled()
   })
 
-  it('should resolve a valid WebVH DID', async () => {
-    const didResolutionResult = await agent.dids.resolve(validDid)
-    expect(didResolutionResult.didDocument).toBeDefined()
-    expect(didResolutionResult.didDocument?.id).toBe(
-      'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example'
-    )
-  })
-
-  it('should register a webvh DID through the configured registrar', async () => {
-    const didCreateResult = await agent.dids.create({ method: 'webvh', domain: 'domain.example' })
-
-    expect(didCreateResult.didState.state).toBe('finished')
-
-    if (didCreateResult.didState.state === 'finished') {
-      expect(didCreateResult.didState.did).toBe(
-        'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example'
+  it('uses upstream DID URL selectors without core latest-document/cache shortcuts', async () => {
+    const created = await agent.dids.create(await createWebVhTestOptions(agent.context, 'versions.example'))
+    if (created.didState.state !== 'finished') throw new Error('DID create failed')
+    const { did, didDocument } = created.didState
+    await agent.dids.update({ did, didDocument })
+    const { log } = await agent.modules.webvh.getPublicationData(did)
+    const fetch = vi
+      .spyOn(agent.config, 'fetch')
+      .mockImplementation(
+        async () => new Response(log.map((entry) => JSON.stringify(entry)).join('\n'), { status: 200 })
       )
-    }
-
-    const createdDids = await agent.dids.getCreatedDids({ method: 'webvh' })
-    expect(createdDids.some((record) => record.did === didCreateResult.didState.did)).toBe(true)
+    const resolved = await agent.dids.resolve(`${did}?versionNumber=1`)
+    expect(resolved.didDocumentMetadata.versionId).toBe(log[0].versionId)
+    expect(fetch).toHaveBeenCalled()
+    const conflicting = await agent.dids.resolve(`${did}?versionNumber=1&versionId=${log[0].versionId}`)
+    expect(conflicting.didResolutionMetadata.error).toBe('invalidOptions')
   })
 
-  it('should expose WebVhApi through webvhSdk module', () => {
-    expect(typeof agent.modules.webvhSdk.resolveResource).toBe('function')
-  })
-
-  it('should resolve a webvh resource through WebVhApi', async () => {
-    const mockFetch = vi.spyOn(agent.config, 'fetch').mockResolvedValue({
-      ok: true,
-      headers: {
-        get: (header: string) => (header.toLowerCase() === 'content-type' ? 'application/json' : null),
-      },
-      json: async () => ({ resourceType: 'schema', id: '1234' }),
-      text: async () => '',
-    } as unknown as Response)
-
-    const result = await agent.modules.webvhSdk.resolveResource(
-      'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:localhost/resources/1234'
+  it('resolves ported, encoded resource paths through the configured API', async () => {
+    const mockFetch = vi.spyOn(agent.config, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ resourceType: 'schema', id: '1234' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
     )
-
-    expect(mockFetch).toHaveBeenCalledWith('http://localhost/resources/1234', expect.anything())
+    const result = await agent.modules.webvh.resolveResource(
+      'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:localhost.example.com%3A8443:some%20path/resources/1234'
+    )
+    expect(mockFetch).toHaveBeenCalledWith('https://localhost.example.com:8443/some%20path/resources/1234')
     expect(result).toMatchObject({
       content: { resourceType: 'schema', id: '1234' },
       contentMetadata: { contentType: 'application/json' },
       dereferencingMetadata: { contentType: 'application/json' },
     })
-
-    mockFetch.mockRestore()
   })
 })

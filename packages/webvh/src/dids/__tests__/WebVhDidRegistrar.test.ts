@@ -1,178 +1,311 @@
 import {
   CacheModuleConfig,
-  DidDocument,
-  DidDocumentRole,
   DidDocumentService,
-  DidRecord,
   DidRepository,
   InjectionSymbols,
   InMemoryLruCache,
 } from '@credo-ts/core'
+import {
+  type DIDLog,
+  type DIDResolutionMeta,
+  deriveNextKeyHash,
+  getWitnessRequirements,
+  resolveDIDFromLog,
+} from 'didwebvh-ts'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
-import { mockResolvedDidDocument, mockResolvedDidRecord } from '../../anoncreds/services/__tests__/mock-resources'
+import { createWebVhTestKey, createWebVhTestOptions } from '../../../tests/utils'
+import { WebVhApi } from '../../WebVhApi'
+import { WebVhDidCrypto } from '../WebVhDidCrypto'
 import { WebVhDidRegistrar } from '../WebVhDidRegistrar'
+import { WebVhDidRecordMetadataKeys } from '../webVhDidRecordMetadataTypes'
 
-const inMemoryStorageService = new InMemoryStorageService()
-
-describe('WebVhDidRegistrar Integration Tests', () => {
+describe('WebVhDidRegistrar integration', () => {
   let registrar: WebVhDidRegistrar
   let agentContext: ReturnType<typeof getAgentContext>
   let repository: DidRepository
 
-  beforeEach(async () => {
-    // Create a real resolver instance
+  beforeEach(() => {
     registrar = new WebVhDidRegistrar()
-
-    // Create a fresh agent context
-    const agentConfig = getAgentConfig('WebVhDidRegistrarTest')
     agentContext = getAgentContext({
-      agentConfig,
+      agentConfig: getAgentConfig('WebVhDidRegistrarTest'),
       registerInstances: [
         [InjectionSymbols.Stop$, new Subject<boolean>()],
         [InjectionSymbols.AgentDependencies, agentDependencies],
-        [InjectionSymbols.StorageService, inMemoryStorageService],
-        [
-          CacheModuleConfig,
-          new CacheModuleConfig({
-            cache: new InMemoryLruCache({ limit: 500 }),
-          }),
-        ],
+        [InjectionSymbols.StorageService, new InMemoryStorageService()],
+        [CacheModuleConfig, new CacheModuleConfig({ cache: new InMemoryLruCache({ limit: 500 }) })],
       ],
     })
     repository = agentContext.dependencyManager.resolve(DidRepository)
   })
 
-  afterEach(() => {
-    inMemoryStorageService.contextCorrelationIdToRecords = {}
+  async function create(options?: Awaited<ReturnType<typeof createWebVhTestOptions>>) {
+    const result = await registrar.create(agentContext, options ?? (await createWebVhTestOptions(agentContext)))
+    expect(result.didState.state).toBe('finished')
+    if (result.didState.state !== 'finished') throw new Error(`Create failed: ${JSON.stringify(result.didState)}`)
+    return result.didState
+  }
+
+  test('persists the caller-authored fragment and returned log/document/metadata', async () => {
+    const options = await createWebVhTestOptions(agentContext)
+    const { did, didDocument } = await create(options)
+    const record = await repository.getSingleByQuery(agentContext, { did })
+    expect(record.keys).toEqual(options.options.keys)
+    expect(didDocument.verificationMethod?.[0].id).toBe(`${did}#assertion-key`)
+    expect(didDocument.assertionMethod).toEqual([`${did}#assertion-key`])
+    const log = record.metadata.get<DIDLog>(WebVhDidRecordMetadataKeys.DidLog)
+    const resolved = await resolveDIDFromLog(log ?? [], { verifier: new WebVhDidCrypto(agentContext) })
+    expect(resolved.didResolutionMetadata.error).toBeUndefined()
+    expect(log?.[0].state).toEqual(didDocument.toJSON())
+    expect(resolved.didDocument?.verificationMethod).toEqual(didDocument.toJSON().verificationMethod)
+    expect(record.metadata.get<DIDResolutionMeta>(WebVhDidRecordMetadataKeys.ControllerMetadata)?.versionId).toBe(
+      log?.[0].versionId
+    )
   })
 
-  describe('DID WebVH creation', () => {
-    it('should correctly create a new did webvh', async () => {
-      const result = await registrar.create(agentContext, { domain: 'id.test-suite.app' })
+  test('uses a fully qualified host with port and caller-supplied path segments', async () => {
+    const { did } = await create(await createWebVhTestOptions(agentContext, 'alice.example.com:8443', ['credo', '01']))
+    expect(did).toMatch(/:alice\.example\.com%3A8443:credo:01$/)
+    const record = await repository.getSingleByQuery(agentContext, { did })
+    expect(record.getTag('domain')).toBe('alice.example.com:8443:credo:01')
+  })
 
-      expect(result).toEqual({
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: expect.objectContaining({
-          state: 'finished',
-          didDocument: expect.any(Object),
-        }),
-      })
-
-      expect(result.didState.did).toMatch(/^did:webvh:.+/)
-      expect(result.didState.didDocument?.context).toEqual([
-        'https://www.w3.org/ns/did/v1',
-        'https://w3id.org/security/multikey/v1',
-      ])
-      expect(result.didState.didDocument?.id).toMatch(/^did:webvh:.+/)
-      expect(result.didState.didDocument?.controller).toMatch(/^did:webvh:.+/)
-      const authentication = result.didState.didDocument?.authentication?.[0]
-      const verification = result.didState.didDocument?.verificationMethod?.[0]
-      expect(verification?.id).toMatch(/^did:webvh:.+/)
-      expect(verification?.controller).toMatch(/^did:webvh:.+/)
-      expect(authentication).toEqual(verification?.id)
-    })
-
-    it('should percent-encode host:port in resulting did id', async () => {
-      const result = await registrar.create(agentContext, { domain: 'alice:8443' })
-      expect(result.didState.state).toBe('finished')
-      expect(result.didState.did).toContain('alice%3A8443')
-      expect(result.didState.didDocument?.id).toContain('alice%3A8443')
-      expect(result.didState.didDocument?.controller).toContain('alice%3A8443')
-    })
-
-    it('should correctly create two dids, each one with differents path and port', async () => {
-      const didResult = await registrar.create(agentContext, { domain: 'id.test-suite.app:80', path: 'credo/01' })
-      expect(didResult.didState.did).toMatch(/%3A80:credo:01$/)
-      expect(didResult.didState.didDocument?.id).toMatch(/%3A80:credo:01$/)
-      expect(didResult.didState.didDocument?.controller).toMatch(/%3A80:credo:01$/)
-
-      const did2Result = await registrar.create(agentContext, { domain: 'id.test-suite.app:88', path: '/credo/02/' })
-      expect(did2Result.didState.did).toMatch(/%3A88:credo:02$/)
-      expect(did2Result.didState.didDocument?.id).toMatch(/%3A88:credo:02$/)
-      expect(did2Result.didState.didDocument?.controller).toMatch(/%3A88:credo:02$/)
-    })
-
-    it('should correctly create a new did webvh with path and port', async () => {
-      const result = await registrar.create(agentContext, { domain: 'id.test-suite.app:80', path: 'credo/01' })
-
-      expect(result).toEqual({
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: expect.objectContaining({
-          state: 'finished',
-          didDocument: expect.any(Object),
-        }),
-      })
-
-      expect(result.didState.did).toMatch(/%3A80:credo:01$/)
-      expect(result.didState.didDocument?.context).toEqual([
-        'https://www.w3.org/ns/did/v1',
-        'https://w3id.org/security/multikey/v1',
-      ])
-      expect(result.didState.didDocument?.id).toMatch(/%3A80:credo:01$/)
-      expect(result.didState.didDocument?.controller).toMatch(/%3A80:credo:01$/)
-      const authentication = result.didState.didDocument?.authentication?.[0]
-      const verification = result.didState.didDocument?.verificationMethod?.[0]
-      expect(authentication).toEqual(verification?.id)
-    })
-
-    it('should fail if DID record already exists', async () => {
-      const domain = 'id.test-suite.app'
-      const didRecord = new DidRecord({
-        did: mockResolvedDidDocument.id,
-        role: DidDocumentRole.Created,
-      })
-      didRecord.setTags({ domain })
-      await repository.save(agentContext, didRecord)
-      const result = await registrar.create(agentContext, { domain })
-
-      expect(result).toEqual({
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'failed',
-          reason: `A record with domain "${domain}" already exists.`,
-        },
-      })
+  test('preserves the existing domain duplicate-query behavior', async () => {
+    await create()
+    const result = await registrar.create(agentContext, await createWebVhTestOptions(agentContext))
+    expect(result.didState).toEqual({
+      state: 'failed',
+      reason: 'unknownError: A record with domain "id.test-suite.app" already exists.',
     })
   })
 
-  describe('DID WebVH update', () => {
-    it('should correctly update a did webvh', async () => {
-      const {
-        didState: { did, didDocument },
-      } = await registrar.create(agentContext, { domain: 'id.test-suite.app' })
-      if (did && didDocument) {
-        didDocument.service = mockResolvedDidDocument.service.map((service) => new DidDocumentService(service))
-        const result = await registrar.update(agentContext, { did, didDocument })
+  test('uses the returned location for duplicate queries when address forms differ', async () => {
+    await create()
+    const result = await registrar.create(
+      agentContext,
+      await createWebVhTestOptions(agentContext, 'https://id.test-suite.app/')
+    )
+    expect(result.didState).toMatchObject({ state: 'failed', reason: expect.stringContaining('already exists') })
+    expect(await repository.getAll(agentContext)).toHaveLength(1)
+  })
 
-        expect(result.didState.did).toMatch(did)
-        expect(result.didState.didDocument?.context).toEqual([
-          'https://www.w3.org/ns/did/v1',
-          'https://w3id.org/security/multikey/v1',
-        ])
-        expect(result.didState.didDocument?.service).toEqual(didDocument.service)
-      }
+  test('allows controller keys outside the document and uncontrolled document methods', async () => {
+    const options = await createWebVhTestOptions(agentContext)
+    const controller = await createWebVhTestKey(agentContext)
+    options.options.keys = []
+    options.options.updateKeys = [`did:key:${controller.multikey}#${controller.multikey}`]
+    options.options.updateKeyKmsKeyIds = { [controller.multikey]: controller.keyId }
+    const { did, didDocument } = await create(options)
+    expect(didDocument.verificationMethod?.[0].publicKeyMultibase).not.toBe(controller.multikey)
+    const result = await registrar.update(agentContext, { did, didDocument })
+    expect(result.didState.state).toBe('finished')
+    const record = await repository.getSingleByQuery(agentContext, { did })
+    expect(record.keys).toEqual([])
+    expect(record.metadata.get(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds)).toEqual(
+      options.options.updateKeyKmsKeyIds
+    )
+  })
+
+  test('accepts an authored method embedded in assertionMethod', async () => {
+    const options = await createWebVhTestOptions(agentContext)
+    const method = options.didDocument.verificationMethod?.[0]
+    if (!method) throw new Error('Missing fixture method')
+    options.didDocument.verificationMethod = []
+    options.didDocument.authentication = []
+    options.didDocument.assertionMethod = [method]
+    const { did } = await create(options)
+    expect((await repository.getSingleByQuery(agentContext, { did })).keys).toEqual(options.options.keys)
+  })
+
+  test('rejects a document key mapping with mismatched KMS public material', async () => {
+    const options = await createWebVhTestOptions(agentContext)
+    options.options.keys[0].kmsKeyId = (await createWebVhTestKey(agentContext)).keyId
+    const result = await registrar.create(agentContext, options)
+    expect(result.didState).toMatchObject({
+      state: 'failed',
+      reason: expect.stringContaining('does not match KMS key'),
+    })
+    expect(await repository.getAll(agentContext)).toHaveLength(0)
+  })
+
+  test('rejects a controller mapping with mismatched KMS public material', async () => {
+    const options = await createWebVhTestOptions(agentContext)
+    options.options.updateKeyKmsKeyIds[options.options.updateKeys[0]] = (await createWebVhTestKey(agentContext)).keyId
+    const result = await registrar.create(agentContext, options)
+    expect(result.didState).toMatchObject({
+      state: 'failed',
+      reason: expect.stringContaining('does not match KMS key'),
+    })
+  })
+
+  test('maps typed missing KMS keys to notFound', async () => {
+    const options = await createWebVhTestOptions(agentContext)
+    options.options.keys[0].kmsKeyId = 'missing-key'
+    const result = await registrar.create(agentContext, options)
+    expect(result.didState).toMatchObject({ state: 'failed', reason: expect.stringMatching(/^notFound:/) })
+  })
+
+  test('replaces the complete document without repairing omitted relationships', async () => {
+    const { did, didDocument } = await create()
+    didDocument.assertionMethod = undefined
+    didDocument.service = [
+      new DidDocumentService({ id: '#test', type: 'Test', serviceEndpoint: 'https://example.com' }),
+    ]
+    const result = await registrar.update(agentContext, { did, didDocument })
+    expect(result.didState.state).toBe('finished')
+    expect(result.didState.didDocument?.assertionMethod).toBeUndefined()
+    expect(result.didState.didDocument?.service).toEqual(didDocument.service)
+  })
+
+  test('rejects partial/add/remove document updates', async () => {
+    const { did, didDocument } = await create()
+    for (const didDocumentOperation of ['addToDidDocument', 'removeFromDidDocument'] as const) {
+      const result = await registrar.update(agentContext, { did, didDocument, didDocumentOperation })
+      expect(result.didState).toMatchObject({ state: 'failed', reason: expect.stringMatching(/^notSupported:/) })
+    }
+    // @ts-expect-error WebVH requires the complete DidDocument, unlike core's broader input.
+    const result = await registrar.update(agentContext, { did, didDocument: { id: did } })
+    expect(result.didState).toMatchObject({ state: 'failed', reason: expect.stringMatching(/^notSupported:/) })
+    // @ts-expect-error Omitted documents are intentionally unsupported at the Credo boundary.
+    const omitted = await registrar.update(agentContext, { did })
+    expect(omitted.didState).toMatchObject({ state: 'failed', reason: expect.stringMatching(/^notSupported:/) })
+  })
+
+  test('drops stale document mappings but retains controller access', async () => {
+    const { did, didDocument } = await create()
+    const method = didDocument.verificationMethod?.[0]
+    if (!method) throw new Error('Missing fixture method')
+    method.id = `${did}#renamed`
+    didDocument.authentication = [method.id]
+    didDocument.assertionMethod = [method.id]
+    const result = await registrar.update(agentContext, { did, didDocument })
+    expect(result.didState.state).toBe('finished')
+    const record = await repository.getSingleByQuery(agentContext, { did })
+    expect(record.keys).toEqual([])
+    expect(Object.keys(record.metadata.get(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds) ?? {})).toHaveLength(1)
+  })
+
+  test('uses inherited controller keys after rotating and appending a parameter-only update', async () => {
+    const { did, didDocument } = await create()
+    const next = await createWebVhTestKey(agentContext)
+    const rotated = await registrar.update(agentContext, {
+      did,
+      didDocument,
+      options: { updateKeys: [next.multikey], updateKeyKmsKeyIds: { [next.multikey]: next.keyId } },
+    })
+    expect(rotated.didState.state).toBe('finished')
+    const parameterUpdate = await registrar.update(agentContext, {
+      did,
+      didDocument,
+      options: { watchers: ['https://watcher.example'] },
+    })
+    expect(parameterUpdate.didState.state).toBe('finished')
+    const result = await registrar.update(agentContext, { did, didDocument })
+    expect(result.didState.state).toBe('finished')
+    const record = await repository.getSingleByQuery(agentContext, { did })
+    const log = record.metadata.get<DIDLog>(WebVhDidRecordMetadataKeys.DidLog)
+    expect(log?.at(-1)?.proof?.[0].verificationMethod).toBe(`did:key:${next.multikey}#${next.multikey}`)
+  })
+
+  test('signs pre-rotation with the committed replacement key, then deactivates separately', async () => {
+    const options = await createWebVhTestOptions(agentContext)
+    const next = await createWebVhTestKey(agentContext)
+    options.options.nextKeyHashes = [await deriveNextKeyHash(next.multikey)]
+    const { did, didDocument } = await create(options)
+    const premature = await registrar.deactivate(agentContext, { did })
+    expect(premature.didState).toMatchObject({
+      state: 'failed',
+      reason: expect.stringContaining('pre-rotation is active'),
     })
 
-    it('should fail if DID record not exists', async () => {
-      const did = mockResolvedDidRecord.did
-      const didDocument = new DidDocument(mockResolvedDidRecord.didDocument as unknown as DidDocument)
+    const update = await registrar.update(agentContext, {
+      did,
+      didDocument,
+      options: { updateKeys: [next.multikey], nextKeyHashes: [], updateKeyKmsKeyIds: { [next.multikey]: next.keyId } },
+    })
+    expect(update.didState.state).toBe('finished')
+    const deactivated = await registrar.deactivate(agentContext, { did })
+    expect(deactivated.didState.state).toBe('finished')
+    expect(deactivated.didDocumentMetadata.deactivated).toBe(true)
+    const record = await repository.getSingleByQuery(agentContext, { did })
+    expect(record.metadata.get(WebVhDidRecordMetadataKeys.DidLog)).toHaveLength(3)
+    expect(record.metadata.get<DIDResolutionMeta>(WebVhDidRecordMetadataKeys.ControllerMetadata)?.updateKeys).toEqual(
+      []
+    )
+  })
 
-      const result = await registrar.update(agentContext, { did, didDocument })
+  test('bridges a witnessed create and update with application-collected proofs, without witness requests', async () => {
+    const fetch = vi.spyOn(agentContext.config, 'fetch')
+    const witness = await createWebVhTestKey(agentContext)
+    const options = await createWebVhTestOptions(agentContext)
+    options.options.witness = { threshold: 1, witnesses: [{ id: `did:key:${witness.multikey}` }] }
+    const { did, didDocument } = await create(options)
+    const api = new WebVhApi(agentContext)
+    const genesis = await api.getPublicationData(did)
+    const genesisProof = await api.signWitnessProof({
+      trustedLog: [],
+      candidateLog: genesis.log,
+      witnessProofs: [],
+      kmsKeyId: witness.keyId,
+    })
+    await api.storeWitnessProofs(did, [genesisProof])
+    const update = await registrar.update(agentContext, { did, didDocument })
+    expect(update.didState.state).toBe('finished')
+    const candidate = await api.getPublicationData(did)
+    const updateProof = await api.signWitnessProof({
+      trustedLog: genesis.log,
+      candidateLog: candidate.log,
+      witnessProofs: [genesisProof],
+      kmsKeyId: witness.keyId,
+    })
+    await api.storeWitnessProofs(did, [genesisProof, updateProof])
+    expect(getWitnessRequirements(candidate.log).map((requirement) => requirement.threshold)).toEqual([1, 1])
+    expect(await api.verifyWitnessProofs({ log: candidate.log, witnessProofs: [genesisProof] })).toMatchObject({
+      verified: false,
+      requirements: [{ satisfied: true }, { satisfied: false }],
+    })
+    expect(
+      await api.verifyWitnessProofs({ log: candidate.log, witnessProofs: [genesisProof, updateProof] })
+    ).toMatchObject({
+      verified: true,
+      requirements: [
+        { satisfied: true, approvals: 1 },
+        { satisfied: true, approvals: 1 },
+      ],
+      rejectedProofs: [expect.objectContaining({ code: 'duplicate-witness' })],
+    })
+    const resolved = await api.resolveDIDFromLog(candidate.log, { witnessProofs: [genesisProof, updateProof] })
+    expect(resolved.didResolutionMetadata.error).toBeUndefined()
+    expect(resolved.didDocumentMetadata.witness.threshold).toBe('1')
+    expect(fetch).not.toHaveBeenCalled()
+    fetch.mockRestore()
+  })
 
-      expect(result).toEqual({
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'failed',
-          reason: 'DID not found',
-        },
-      })
+  test('persists returned DID and document when moving a portable DID', async () => {
+    const options = await createWebVhTestOptions(agentContext)
+    options.options.portable = true
+    const { did, didDocument } = await create(options)
+    const result = await registrar.update(agentContext, { did, didDocument, options: { address: 'moved.example.com' } })
+    expect(result.didState.state).toBe('finished')
+    expect(result.didState.did).toMatch(/:moved\.example\.com$/)
+    const record = await repository.getSingleByQuery(agentContext, { did: result.didState.did })
+    expect(record.didDocument?.id).toBe(result.didState.did)
+    expect(await repository.findSingleByQuery(agentContext, { did })).toBeNull()
+  })
+
+  test('missing records and missing controller mappings remain distinct failures', async () => {
+    const { did, didDocument } = await create()
+    const missing = await registrar.update(agentContext, { did: `${did}:absent`, didDocument })
+    expect(missing.didState).toMatchObject({ state: 'failed', reason: expect.stringMatching(/^notFound:/) })
+    const record = await repository.getSingleByQuery(agentContext, { did })
+    record.metadata.set(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds, {})
+    await repository.update(agentContext, record)
+    const inconsistent = await registrar.update(agentContext, { did, didDocument })
+    expect(inconsistent.didState).toMatchObject({
+      state: 'failed',
+      reason: expect.stringContaining('unknownError: no authorized controller'),
     })
   })
 })

@@ -25,11 +25,13 @@ vi.mock('didwebvh-ts', () => {
   return {
     resolveDID: vi.fn(async (did: string) => {
       return {
-        doc: {
+        didDocument: {
           '@context': ['https://www.w3.org/ns/did/v1'],
           id: did,
           verificationMethod: [],
         },
+        didDocumentMetadata: {},
+        didResolutionMetadata: {},
       }
     }),
   }

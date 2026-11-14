@@ -1,4 +1,5 @@
-import { DidDocument, DidDocumentService, VerificationMethod } from '@credo-ts/core'
+import { type AgentContext, DidDocument, DidDocumentService, Kms, VerificationMethod } from '@credo-ts/core'
+import type { WebVhDidCreateOptions } from '../src'
 
 export const validDid = 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example'
 
@@ -28,4 +29,43 @@ export function validDidDoc() {
     verificationMethod,
     service,
   })
+}
+
+export async function createWebVhTestKey(agentContext: AgentContext) {
+  const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+  const key = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+  return { keyId: key.keyId, multikey: Kms.PublicJwk.fromPublicJwk(key.publicJwk).fingerprint }
+}
+
+export async function createWebVhTestOptions(
+  agentContext: AgentContext,
+  address = 'id.test-suite.app',
+  paths?: string[]
+): Promise<WebVhDidCreateOptions> {
+  const { keyId, multikey } = await createWebVhTestKey(agentContext)
+  return {
+    method: 'webvh',
+    didDocument: DidDocument.fromJSON({
+      '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/multikey/v1'],
+      id: '{DID}',
+      controller: '{DID}',
+      verificationMethod: [
+        {
+          id: '{DID}#assertion-key',
+          type: 'Multikey',
+          controller: '{DID}',
+          publicKeyMultibase: multikey,
+        },
+      ],
+      authentication: ['{DID}#assertion-key'],
+      assertionMethod: ['{DID}#assertion-key'],
+    }),
+    options: {
+      address,
+      paths,
+      keys: [{ didDocumentRelativeKeyId: '#assertion-key', kmsKeyId: keyId }],
+      updateKeys: [multikey],
+      updateKeyKmsKeyIds: { [multikey]: keyId },
+    },
+  }
 }
