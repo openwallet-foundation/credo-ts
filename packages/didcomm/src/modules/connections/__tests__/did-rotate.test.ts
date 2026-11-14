@@ -1080,6 +1080,8 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
         const terminated = await getBobConnection()
         expect(terminated.theirDid).toBeUndefined()
         expect(dispatch).toHaveBeenCalledTimes(1)
+        // Nobody authenticated as the peer, so the empty message runs without the connection
+        expect(dispatch.mock.calls[0][0].connection).toBeUndefined()
 
         await receiveOnBob(termination)
         expect(dispatch).toHaveBeenCalledTimes(1)
@@ -1087,6 +1089,49 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       } finally {
         dispatch.mockRestore()
       }
+    })
+
+    test('an anoncrypt message that carries a termination is processed without the connection', async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const termination = await aliceRotateService().createFromPriorForTermination(aliceAgent.context, aliceDid)
+      const message = await anoncryptToBob({
+        type: DidCommBasicMessageV2.type.messageTypeUri,
+        from_prior: termination,
+        created_time: Math.floor(Date.now() / 1000),
+        body: { content: 'with termination' },
+      })
+
+      const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
+      try {
+        // The termination is applied, and the body runs without the connection, which a basic message needs
+        await expect(receiveOnBob(message)).rejects.toThrow(/No connection associated/)
+        expect(dispatch).toHaveBeenCalledTimes(1)
+        expect(dispatch.mock.calls[0][0].connection).toBeUndefined()
+      } finally {
+        dispatch.mockRestore()
+      }
+
+      expect((await getBobConnection()).theirDid).toBeUndefined()
+      expect(await bobContents()).not.toContain('with termination')
+    })
+
+    test('a termination carried by a message from another DID is dropped and changes nothing', async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const otherDid = await createAliceDid()
+      const termination = await aliceRotateService().createFromPriorForTermination(aliceAgent.context, aliceDid)
+
+      const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
+      try {
+        await receiveOnBob(await sendBasicMessageAs(otherDid, termination, 'carried termination'))
+        expect(dispatch).not.toHaveBeenCalled()
+      } finally {
+        dispatch.mockRestore()
+      }
+
+      expect((await getBobConnection()).theirDid).toEqual(aliceDid)
+      expect(await bobContents()).not.toContain('carried termination')
     })
 
     test.each([

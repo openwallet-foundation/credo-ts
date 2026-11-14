@@ -194,6 +194,15 @@ export class DidCommDidRotateV2Service {
     }
 
     if (payload.sub === undefined) {
+      // A termination travels anoncrypt or authcrypt from the DID it ends; carried by another DID it is a replay
+      if (senderDid && !areEquivalentDidPeer4Forms(payload.iss, senderDid)) {
+        this.logger.warn("Ignoring termination from_prior whose 'iss' is not the authenticated sender", {
+          connectionId: connection.id,
+          iss: payload.iss,
+          senderDid,
+        })
+        return 'ignored'
+      }
       await this.processRotateToNothing(agentContext, connection)
       return 'applied'
     }
