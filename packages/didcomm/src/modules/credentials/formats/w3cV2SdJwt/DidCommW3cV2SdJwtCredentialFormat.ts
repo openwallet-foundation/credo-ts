@@ -61,8 +61,9 @@ export interface DidCommW3cV2SdJwtAcceptRequestFormat {
   disclosureFrame?: IDisclosureFrame
 
   /**
-   * The holder to bind the credential to, adding a `cnf` claim to the issued credential. When omitted,
-   * it is derived from the binding proof in the request.
+   * The holder to bind the credential to, adding a `cnf` claim to the issued credential. Only used when
+   * the request has no binding proof. When it has one, RFC 0881 requires the `cnf` to be the key of the
+   * binding proof, so the credential is always bound to that key and a different `holder` is rejected.
    */
   holder?: SdJwtVcHolderBinding
 
