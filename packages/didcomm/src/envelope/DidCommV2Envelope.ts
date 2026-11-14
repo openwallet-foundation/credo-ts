@@ -174,8 +174,9 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     const skidDid = keys.senderKeySkid.startsWith('did:') ? keys.senderKeySkid.split('#')[0] : undefined
 
     const plaintext = buildV2PlaintextFromMessage(message, {
-      from:
-        connection?.did && skidDid && areEquivalentDidPeer4Forms(connection.did, skidDid) ? connection.did : skidDid,
+      // from MUST match the skid, byte for byte for a strict peer, so it never takes another did:peer:4 form
+      // from the connection: https://identity.foundation/didcomm-messaging/spec/v2.1/#message-layer-addressing-consistency
+      from: skidDid,
       to: theirDid ? [theirDid] : undefined,
       fromPrior: connection?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.fromPriorJwt,
     })
