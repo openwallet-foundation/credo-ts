@@ -12,7 +12,7 @@ export interface MessageContextParams {
   sessionId?: string
   senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   recipientKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
-  /** DIDComm v2 sender DID proven by the authcrypt envelope. Never set for anoncrypt. */
+  /** DIDComm v2 sender DID proven by the authcrypt envelope or by the signature of a signed message. Never set for anoncrypt. */
   senderDid?: string
   /** DIDComm v2: our DID the envelope was addressed to. */
   recipientDid?: string
@@ -32,7 +32,7 @@ export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMess
   public senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   /** The Ed25519 key of ours a DIDComm v1 message was encrypted to. Never set for v2 envelopes. */
   public recipientKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
-  /** DIDComm v2 sender DID proven by the authcrypt envelope. Never set for anoncrypt. */
+  /** DIDComm v2 sender DID proven by the authcrypt envelope or by the signature of a signed message. Never set for anoncrypt. */
   public senderDid?: string
   /** DIDComm v2: our DID the envelope was addressed to. */
   public recipientDid?: string
