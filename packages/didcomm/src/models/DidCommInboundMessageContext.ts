@@ -73,11 +73,15 @@ export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMess
   }
 
   /**
-   * Assert the inbound message has a ready connection associated with it.
+   * Assert the inbound message has a ready connection and, unless `allowUnauthenticatedSender` is set, that
+   * the envelope proved the sender is its peer: a DIDComm v1 authcrypt sender key, a v2 authcrypt sender or
+   * a v2 signature. A plaintext message, such as one attached to an out-of-band invitation accepted on an
+   * existing connection, has a connection but no proven sender. Only a handler that accepts such a message
+   * on purpose, and does not act on the connection itself, opts out.
    *
-   * @throws {CredoError} if there is no connection or the connection is not ready
+   * @throws {CredoError} if there is no connection, the connection is not ready, or the sender is not authenticated
    */
-  public assertReadyConnection(): DidCommConnectionRecord {
+  public assertReadyConnection(options?: { allowUnauthenticatedSender?: boolean }): DidCommConnectionRecord {
     if (!this.connection) {
       throw new CredoError(`No connection associated with incoming message ${this.message.type}`)
     }
@@ -85,27 +89,13 @@ export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMess
     // Make sure connection is ready
     this.connection.assertReady()
 
-    return this.connection
-  }
-
-  /**
-   * Assert the inbound message has a ready connection and that the envelope proved the sender is its peer:
-   * a DIDComm v1 authcrypt sender key, a v2 authcrypt sender or a v2 signature. A plaintext message, such as
-   * one attached to an out-of-band invitation accepted on an existing connection, has a connection but no
-   * proven sender, so it must not change that connection or its routing.
-   *
-   * @throws {CredoError} if there is no ready connection or the sender is not authenticated
-   */
-  public assertAuthenticatedReadyConnection(): DidCommConnectionRecord {
-    const connection = this.assertReadyConnection()
-
-    if (!this.senderKey && !this.senderDid) {
+    if (!options?.allowUnauthenticatedSender && !this.senderKey && !this.senderDid) {
       throw new CredoError(
-        `Incoming message ${this.message.type} for connection ${connection.id} has no authenticated sender`
+        `Incoming message ${this.message.type} for connection ${this.connection.id} has no authenticated sender`
       )
     }
 
-    return connection
+    return this.connection
   }
 
   public toJSON() {

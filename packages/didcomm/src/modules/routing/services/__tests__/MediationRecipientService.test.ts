@@ -33,6 +33,13 @@ import { DidCommMediationRecord } from '../../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
 import { DidCommMediationRecipientService } from '../DidCommMediationRecipientService'
 
+// The key the envelope proved as the sender, which assertReadyConnection requires
+const testSenderKey = Kms.PublicJwk.fromPublicKey({
+  kty: 'OKP',
+  crv: 'Ed25519',
+  publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+}) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+
 vi.mock('../../repository/DidCommMediationRepository')
 const MediationRepositoryMock = DidCommMediationRepository as MockedClassConstructor<typeof DidCommMediationRepository>
 
@@ -193,7 +200,11 @@ describe('DidCommMediationRecipientService', () => {
         keylist,
       })
 
-      const messageContext = new DidCommInboundMessageContext(keyListUpdateResponse, { connection, agentContext })
+      const messageContext = new DidCommInboundMessageContext(keyListUpdateResponse, {
+        senderKey: testSenderKey,
+        connection,
+        agentContext,
+      })
 
       expect(connection.metadata.get(DidCommConnectionMetadataKeys.UseDidKeysForProtocol)).toBeNull()
 
@@ -422,6 +433,7 @@ describe('DidCommMediationRecipientService', () => {
 
         const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
         const messageContext = new DidCommInboundMessageContext(keylistUpdateResponse, {
+          senderKey: testSenderKey,
           connection,
           agentContext,
         })

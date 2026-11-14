@@ -129,7 +129,7 @@ export class DidCommDidRotateService {
    * @param messageContext
    */
   public async processHangup(messageContext: DidCommInboundMessageContext<DidCommHangupMessage>) {
-    const connection = messageContext.assertAuthenticatedReadyConnection()
+    const connection = messageContext.assertReadyConnection()
     const { agentContext } = messageContext
 
     if (connection.theirDid) {
@@ -155,7 +155,7 @@ export class DidCommDidRotateService {
    * @returns
    */
   public async processRotate(messageContext: DidCommInboundMessageContext<DidCommDidRotateMessage>) {
-    const connection = messageContext.assertAuthenticatedReadyConnection()
+    const connection = messageContext.assertReadyConnection()
     const { message, agentContext } = messageContext
 
     // Check and store their new did
@@ -230,7 +230,7 @@ export class DidCommDidRotateService {
   public async processRotateAck(inboundMessage: DidCommInboundMessageContext<DidCommDidRotateAckMessage>) {
     const { agentContext, message } = inboundMessage
 
-    const connection = inboundMessage.assertAuthenticatedReadyConnection()
+    const connection = inboundMessage.assertReadyConnection()
 
     // Update connection info based on metadata set when creating the rotate message
     const didRotateMetadata = connection.metadata.get(DidCommConnectionMetadataKeys.DidRotate)
@@ -271,7 +271,7 @@ export class DidCommDidRotateService {
   ): Promise<void> {
     const { message, agentContext } = messageContext
 
-    const connection = messageContext.assertAuthenticatedReadyConnection()
+    const connection = messageContext.assertReadyConnection()
 
     this.logger.debug(`Processing problem report with id ${message.id}`)
 

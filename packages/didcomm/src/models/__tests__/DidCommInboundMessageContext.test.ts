@@ -14,11 +14,11 @@ describe('DidCommInboundMessageContext', () => {
     publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
   }) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
-  describe('assertAuthenticatedReadyConnection', () => {
+  describe('assertReadyConnection', () => {
     it('returns the connection when a v1 sender key authenticated the message', () => {
       const context = new DidCommInboundMessageContext(message, { agentContext, connection, senderKey })
 
-      expect(context.assertAuthenticatedReadyConnection()).toBe(connection)
+      expect(context.assertReadyConnection()).toBe(connection)
     })
 
     it('returns the connection when a v2 sender DID authenticated the message', () => {
@@ -28,19 +28,25 @@ describe('DidCommInboundMessageContext', () => {
         senderDid: 'did:example:peer',
       })
 
-      expect(context.assertAuthenticatedReadyConnection()).toBe(connection)
+      expect(context.assertReadyConnection()).toBe(connection)
     })
 
     it('rejects a plaintext message that has a connection but no authenticated sender', () => {
       const context = new DidCommInboundMessageContext(message, { agentContext, connection })
 
-      expect(() => context.assertAuthenticatedReadyConnection()).toThrow(/has no authenticated sender/)
+      expect(() => context.assertReadyConnection()).toThrow(/has no authenticated sender/)
+    })
+
+    it('returns the connection of a plaintext message when the handler allows an unauthenticated sender', () => {
+      const context = new DidCommInboundMessageContext(message, { agentContext, connection })
+
+      expect(context.assertReadyConnection({ allowUnauthenticatedSender: true })).toBe(connection)
     })
 
     it('rejects a message without a connection', () => {
       const context = new DidCommInboundMessageContext(message, { agentContext, senderKey })
 
-      expect(() => context.assertAuthenticatedReadyConnection()).toThrow(/No connection associated/)
+      expect(() => context.assertReadyConnection()).toThrow(/No connection associated/)
     })
 
     it('rejects a connection that is not ready', () => {
@@ -50,7 +56,7 @@ describe('DidCommInboundMessageContext', () => {
         senderKey,
       })
 
-      expect(() => context.assertAuthenticatedReadyConnection()).toThrow()
+      expect(() => context.assertReadyConnection()).toThrow()
     })
   })
 })
