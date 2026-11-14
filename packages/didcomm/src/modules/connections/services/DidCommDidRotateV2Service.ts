@@ -445,7 +445,19 @@ export class DidCommDidRotateV2Service {
   }
 
   private decodeFromPrior(jws: string): FromPriorPayload {
-    const { payload } = Jwt.fromSerializedJwt(jws)
+    const { header, payload } = Jwt.fromSerializedJwt(jws)
+
+    // A DID may sign other JWTs with its authentication key, such as SD-JWT VCs. Those have another typ
+    // or claims of their own, and must not rotate or end a relationship. typ may be absent for interop.
+    const typ = (header as { typ?: unknown }).typ
+    if (typ !== undefined && typ !== 'JWT') {
+      throw new CredoError(`from_prior JWT has typ '${typ}', expected 'JWT'`)
+    }
+    const unknownClaims = Object.keys(payload.additionalClaims)
+    if (unknownClaims.length > 0) {
+      throw new CredoError(`from_prior JWT has claims other than the registered ones: ${unknownClaims.join(', ')}`)
+    }
+
     if (typeof payload.iss !== 'string') throw new CredoError("from_prior JWT missing 'iss'")
     if (typeof payload.iat !== 'number') throw new CredoError("from_prior JWT missing 'iat'")
     if (payload.sub !== undefined && typeof payload.sub !== 'string') {
