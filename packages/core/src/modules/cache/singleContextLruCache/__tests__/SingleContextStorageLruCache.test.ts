@@ -91,10 +91,14 @@ describe('SingleContextLruCache', () => {
     )
   })
 
-  it('should not throw from get and set when the storage fails, but throw from remove', async () => {
+  it('should not throw from get, set and remove when the storage fails, and log a failed remove as an error', async () => {
+    const errorSpy = vi.spyOn(agentContext.config.logger, 'error')
     mockFunction(cacheRepository.update).mockRejectedValue(new Error('storage unavailable'))
     await expect(cache.set(agentContext, 'test', 'somevalue')).resolves.toBeUndefined()
-    await expect(cache.remove(agentContext, 'test')).rejects.toThrow('storage unavailable')
+    await expect(cache.remove(agentContext, 'test')).resolves.toBeUndefined()
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Error removing key 'test'"), {
+      error: new Error('storage unavailable'),
+    })
 
     mockFunction(cacheRepository.findById).mockRejectedValue(new Error('storage unavailable'))
     const unloadedCache = new SingleContextStorageLruCache({ limit: 2 })

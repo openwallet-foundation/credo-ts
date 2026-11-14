@@ -139,19 +139,8 @@ export class TenantRecordService {
     return `tenants:tenant-record:${tenantId}`
   }
 
-  // Does not throw, as the change to the tenant record is already stored when this is called
   private async removeFromCache(agentContext: AgentContext, tenantId: string) {
-    const cache = this.getCache(agentContext)
-    if (!cache) return
-
-    try {
-      await cache.cache.remove(agentContext, this.getCacheKey(tenantId))
-    } catch (error) {
-      agentContext.config.logger.error(
-        `Error removing tenant record for tenant '${tenantId}' from the cache. Sessions can be opened with the outdated record until it expires after ${cache.expiryInSeconds} seconds.`,
-        { error }
-      )
-    }
+    await this.getCache(agentContext)?.cache.remove(agentContext, this.getCacheKey(tenantId))
   }
 
   private getCache(agentContext: AgentContext) {

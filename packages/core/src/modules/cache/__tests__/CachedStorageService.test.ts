@@ -32,10 +32,47 @@ describe('CachedStorageService', () => {
     expect(await cache.get(agentContext, `${record.type}:${record.id}`)).toBeNull()
   })
 
+  test('removes an updated record from the cache', async () => {
+    const cache = new InMemoryLruCache({ limit: 10 })
+    const agentContext = getAgentContext({
+      registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache, useCachedStorageService: true })]],
+    })
+    const storageService = { save: vi.fn(), update: vi.fn() } as unknown as StorageService<CachedTestRecord>
+    const cachedStorageService = new CachedStorageService(storageService)
+    const record = new CachedTestRecord({ id: 'test-id', foo: 'bar' })
+
+    await cachedStorageService.save(agentContext, record)
+    await cachedStorageService.update(agentContext, record)
+    expect(await cache.get(agentContext, `${record.type}:${record.id}`)).toBeNull()
+  })
+
+  test('removes a deleted record from the cache', async () => {
+    const cache = new InMemoryLruCache({ limit: 10 })
+    const agentContext = getAgentContext({
+      registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache, useCachedStorageService: true })]],
+    })
+    const storageService = {
+      save: vi.fn(),
+      delete: vi.fn(),
+      deleteById: vi.fn(),
+    } as unknown as StorageService<CachedTestRecord>
+    const cachedStorageService = new CachedStorageService(storageService)
+    const record = new CachedTestRecord({ id: 'test-id', foo: 'bar' })
+
+    await cachedStorageService.save(agentContext, record)
+    await cachedStorageService.delete(agentContext, record)
+    expect(await cache.get(agentContext, `${record.type}:${record.id}`)).toBeNull()
+
+    await cachedStorageService.save(agentContext, record)
+    await cachedStorageService.deleteById(agentContext, CachedTestRecord, record.id)
+    expect(await cache.get(agentContext, `${record.type}:${record.id}`)).toBeNull()
+  })
+
   test('findSingleByQuery with a cache key returns the updated record and skips records that do not allow caching', async () => {
     const storageService = {
       update: vi.fn(),
       findByQuery: vi.fn(),
+      getById: vi.fn(),
     } as unknown as StorageService<TestRecord>
     const agentContext = getAgentContext({
       registerInstances: [
@@ -50,6 +87,7 @@ describe('CachedStorageService', () => {
 
     const record = new CachedTestRecord({ id: 'test-id', foo: 'bar' })
     vi.mocked(storageService.findByQuery).mockResolvedValue([record.clone()])
+    vi.mocked(storageService.getById).mockImplementation(async () => record.clone())
     const repository = new Repository<TestRecord>(CachedTestRecord, storageService, eventEmitter)
 
     await repository.findSingleByQuery(agentContext, { foo: 'bar' }, { cacheKey: 'key' })
