@@ -883,7 +883,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
         next: recipientDid,
       })
       forward.appendedAttachments = [
-        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: '', iv: '', protected: '', tag: '' } } }),
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: 'c', iv: 'i', protected: 'p', tag: 't' } } }),
       ]
 
       const messageContext = new DidCommInboundMessageContext(forward, {
@@ -895,6 +895,56 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
 
       expect(mediationRepository.findSingleByRecipientKey).not.toHaveBeenCalled()
       expect(mediationRepository.findSingleByRecipientDid).toHaveBeenCalledWith(agentContext, recipientDid)
+    })
+
+    test('refuses a forward whose attachment is not an encrypted message, naming the attachment', async () => {
+      mockFunction(mediationRepository.findSingleByRecipientDid).mockClear()
+      const forward = new DidCommForwardV2Message({ to: [], next: 'did:peer:2.abc' })
+      forward.appendedAttachments = [
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: 'c', iv: 'i', protected: 'p', tag: 't' } } }),
+        new DidCommAttachment({ id: 'msg-2', data: { links: ['https://example.com/message'] } }),
+        new DidCommAttachment({ id: 'msg-3', data: { json: { not: 'a jwe' } } }),
+      ]
+
+      await expect(
+        mediatorService.processForwardMessage(new DidCommInboundMessageContext(forward, { agentContext }))
+      ).rejects.toThrow('Invalid v2 Forward: attachment 2 of 3 is not an encrypted message')
+      expect(mediationRepository.findSingleByRecipientDid).not.toHaveBeenCalled()
+    })
+
+    test('looks up the DID of a next that is a key of the recipient', async () => {
+      mockFunction(mediationRepository.findSingleByRecipientKey).mockClear()
+      mockFunction(mediationRepository.findSingleByRecipientDid).mockClear().mockResolvedValue(null)
+
+      const forward = new DidCommForwardV2Message({ to: [], next: 'did:peer:2.abc#key-1' })
+      forward.appendedAttachments = [
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: 'c', iv: 'i', protected: 'p', tag: 't' } } }),
+      ]
+
+      await expect(
+        mediatorService.processForwardMessage(new DidCommInboundMessageContext(forward, { agentContext }))
+      ).rejects.toThrow(RecordNotFoundError)
+
+      expect(mediationRepository.findSingleByRecipientDid).toHaveBeenCalledWith(agentContext, 'did:peer:2.abc')
+      expect(mediationRepository.findSingleByRecipientKey).not.toHaveBeenCalled()
+    })
+
+    test('falls back to the recipient key lookup for a did:key next', async () => {
+      const didKey = 'did:key:z6MkijBsFPbW4fQyvnpM9Yt2AhHYTh7N1zH6xp1mPrJJfZe1'
+      mockFunction(mediationRepository.findSingleByRecipientDid).mockResolvedValue(null)
+      mockFunction(mediationRepository.findSingleByRecipientKey).mockClear().mockResolvedValue(null)
+
+      const forward = new DidCommForwardV2Message({ to: [], next: didKey })
+      forward.appendedAttachments = [
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: 'c', iv: 'i', protected: 'p', tag: 't' } } }),
+      ]
+
+      await expect(
+        mediatorService.processForwardMessage(new DidCommInboundMessageContext(forward, { agentContext }))
+      ).rejects.toThrow(RecordNotFoundError)
+
+      expect(mediationRepository.findSingleByRecipientDid).toHaveBeenCalledWith(agentContext, didKey)
+      expect(mediationRepository.findSingleByRecipientKey).toHaveBeenCalledWith(agentContext, didKeyToVerkey(didKey))
     })
   })
 })
@@ -1030,5 +1080,22 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
 
     expect(transportSession.close).not.toHaveBeenCalled()
     expect(liveTransportSessionId()).toBe('transportSessionId')
+  })
+
+  test('queues every attachment of a v2 forward and delivers once', async () => {
+    const deliver = vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockResolvedValue(undefined)
+    const message = new DidCommForwardV2Message({ to: [], next: recipientDid })
+    message.appendedAttachments = [
+      new DidCommAttachment({ id: 'msg-1', data: { json: { ...payload, iv: 'first' } } }),
+      new DidCommAttachment({ id: 'msg-2', data: { json: { ...payload, iv: 'second' } } }),
+    ]
+
+    await mediatorService.processForwardMessage(new DidCommInboundMessageContext(message, { agentContext }))
+
+    expect(vi.mocked(mediationPickupApi.queueMessage).mock.calls.map(([options]) => options.message)).toEqual([
+      { ...payload, iv: 'first' },
+      { ...payload, iv: 'second' },
+    ])
+    expect(deliver).toHaveBeenCalledTimes(1)
   })
 })

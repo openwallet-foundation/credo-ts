@@ -27,6 +27,7 @@ import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { DidCommTransportService } from '../../../DidCommTransportService'
 import { MessageSendingError } from '../../../errors'
 import type { DidCommInboundMessageContext } from '../../../models'
+import type { DidCommEncryptedMessage } from '../../../types'
 import type { DidCommConnectionRecord } from '../../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../../connections/services'
@@ -185,26 +186,30 @@ export class DidCommMediatorService {
     const messagePickupApi = agentContext.resolve(DidCommMessagePickupApi)
 
     let recipientDid: string
-    let encryptedMessage: import('../../../types').DidCommEncryptedMessage
+    let encryptedMessages: DidCommEncryptedMessage[]
     let mediationRecord: DidCommMediationRecord | null
 
     if (message instanceof DidCommForwardV2Message) {
       if (!message.next) {
         throw new CredoError('Invalid v2 Forward: Missing required attribute "next"')
       }
-      const attachment = message.getMessage()
-      if (!attachment) {
+      encryptedMessages = message.getMessages()
+      if (encryptedMessages.length === 0) {
         throw new CredoError('Invalid v2 Forward: Missing or empty attachment')
       }
-      encryptedMessage = attachment
-      // v2 `next` is always a DID; canonicalize did:peer:4 long→short so it matches keylist entries
-      recipientDid = getDidPeer4ShortFormForEquivalence(message.next) ?? message.next
+      // `next` is a DID, or a key of the recipient on the last hop, while the keylist holds canonical
+      // (did:peer:4 short form) DIDs: https://identity.foundation/didcomm-messaging/spec/v2.1/#routing-protocol-20
+      const nextDid = message.next.split('#')[0]
+      recipientDid = getDidPeer4ShortFormForEquivalence(nextDid) ?? nextDid
       mediationRecord = await this.mediationRepository.findSingleByRecipientDid(agentContext, recipientDid)
+      if (!mediationRecord && isDidKey(nextDid)) {
+        mediationRecord = await this.mediationRepository.findSingleByRecipientKey(agentContext, didKeyToVerkey(nextDid))
+      }
     } else {
       if (!message.to) {
         throw new CredoError('Invalid v1 Forward: Missing required attribute "to"')
       }
-      encryptedMessage = message.message
+      encryptedMessages = [message.message]
       const rawDid = message.to.startsWith('did:') ? message.to : verkeyToDidKey(message.to)
       recipientDid = getDidPeer4ShortFormForEquivalence(rawDid) ?? rawDid
       // A v1 client registers the key, a v2 client registers its did:key. Both indexes are read, so a
@@ -234,18 +239,22 @@ export class DidCommMediatorService {
 
     switch (messageForwardingStrategy) {
       case DidCommMessageForwardingStrategy.QueueOnly:
-        await messagePickupApi.queueMessage({
-          connectionId: mediationRecord.connectionId,
-          recipientDids: [recipientDid],
-          message: encryptedMessage,
-        })
+        for (const encryptedMessage of encryptedMessages) {
+          await messagePickupApi.queueMessage({
+            connectionId: mediationRecord.connectionId,
+            recipientDids: [recipientDid],
+            message: encryptedMessage,
+          })
+        }
         break
       case DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery: {
-        await messagePickupApi.queueMessage({
-          connectionId: mediationRecord.connectionId,
-          recipientDids: [recipientDid],
-          message: encryptedMessage,
-        })
+        for (const encryptedMessage of encryptedMessages) {
+          await messagePickupApi.queueMessage({
+            connectionId: mediationRecord.connectionId,
+            recipientDids: [recipientDid],
+            message: encryptedMessage,
+          })
+        }
         const session = await messagePickupApi.getLiveModeSession({
           connectionId: mediationRecord.connectionId,
           role: DidCommMessagePickupSessionRole.MessageHolder,
@@ -286,11 +295,13 @@ export class DidCommMediatorService {
       }
       case DidCommMessageForwardingStrategy.DirectDelivery: {
         const messageSender = agentContext.dependencyManager.resolve(DidCommMessageSender)
-        await messageSender.sendPackage(agentContext, {
-          connection,
-          recipientKey: recipientDid,
-          encryptedMessage,
-        })
+        for (const encryptedMessage of encryptedMessages) {
+          await messageSender.sendPackage(agentContext, {
+            connection,
+            recipientKey: recipientDid,
+            encryptedMessage,
+          })
+        }
       }
     }
   }
