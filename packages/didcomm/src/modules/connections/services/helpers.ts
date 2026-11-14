@@ -1,5 +1,6 @@
 import {
   AgentContext,
+  areEquivalentDidPeer4Forms,
   CredoError,
   createPeerDidDocumentFromServices,
   DidCommV1Service,
@@ -70,6 +71,16 @@ export function toKeyAgreementDidUrl(jwk: Kms.PublicJwk): string {
 
 export function toAbsoluteDidUrl(did: string, id: string): string {
   return id.startsWith('did:') ? id : `${did}#${id.replace(/^#/, '')}`
+}
+
+/**
+ * The DID URL with `did` as its DID when both are forms of one did:peer:4, else unchanged. A stored
+ * did:peer:4 document may carry the other form of the DID the peer knows us by, and `from` follows the skid.
+ */
+export function toDidUrlOfDid(didUrl: string, did: string): string {
+  const [urlDid, fragment] = didUrl.split('#')
+  if (urlDid === did || fragment === undefined || !areEquivalentDidPeer4Forms(urlDid, did)) return didUrl
+  return `${did}#${fragment}`
 }
 
 /**

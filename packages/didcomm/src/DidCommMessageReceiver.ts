@@ -168,9 +168,31 @@ export class DidCommMessageReceiver {
     this.envelopeRegistry.assertVersionEnabled(signedMessage)
 
     const envelope = this.envelopeRegistry.getEnvelopeForDidCommVersion('v2')
-    const plaintextMessage = await envelope.unpackSigned(agentContext, signedMessage)
+    const { plaintextMessage, signerDid } = await envelope.unpackSigned(agentContext, signedMessage)
 
-    await this.receivePlaintextMessage(agentContext, plaintextMessage, connection, receivedAt)
+    // Trust comes from the signature, not from the transport that delivered the message:
+    // https://identity.foundation/didcomm-messaging/spec/v2.1/#transports
+    if (connection) {
+      if (!connection.theirDid || !areEquivalentDidPeer4Forms(connection.theirDid, signerDid)) {
+        throw new CredoError(
+          `DIDComm v2 signed message signer '${signerDid}' is not the peer of connection '${connection.id}'`
+        )
+      }
+    } else {
+      const to = Array.isArray(plaintextMessage.to) ? (plaintextMessage.to as string[]) : undefined
+      const found = await this.findConnectionByDids(agentContext, signerDid, to)
+      // As for encrypted messages, only a ready connection reaches the handlers
+      connection = found?.isReady ? found : undefined
+    }
+
+    const message = await this.transformAndValidate(agentContext, plaintextMessage, connection)
+    const messageContext = new DidCommInboundMessageContext(message, {
+      connection,
+      senderDid: signerDid,
+      agentContext,
+      receivedAt,
+    })
+    await this.dispatcher.dispatch(messageContext)
   }
 
   private async receiveEncryptedMessage(
@@ -361,39 +383,14 @@ export class DidCommMessageReceiver {
     const fromPriorJws = plaintextMessage.from_prior as string | undefined
 
     if (from !== undefined) {
-      // v2 plaintext includes `to` (our DIDs). Multiple connections can share the same `theirDid`
-      // (e.g. several implicit sessions to one did:web); disambiguate with (ourDid, theirDid).
-      if (to?.length) {
-        const byPair = await this.connectionService.findByDids(agentContext, {
-          ourDid: to[0],
-          theirDid: from,
-        })
-        if (byPair) return { connection: byPair }
-      }
-
-      let connection: DidCommConnectionRecord | null = null
-      try {
-        connection = await this.connectionService.findByTheirDid(agentContext, from)
-      } catch (error) {
-        if (error instanceof RecordDuplicateError) {
-          const candidates = await this.connectionService.findAllByQuery(agentContext, { theirDid: from })
-          if (to?.length) {
-            connection = candidates.find((c) => c.did === to[0]) ?? null
-          }
-          if (!connection && candidates.length === 1) {
-            connection = candidates[0]
-          }
-        } else {
-          throw error
-        }
-      }
-      if (connection) return { connection }
+      const byDids = await this.findConnectionByDids(agentContext, from, to)
+      if (byDids) return { connection: byDids }
 
       // Fallback: try findByKeys. With v1 connections + v2 envelope, findByTheirDid can fail in edge cases.
       // With v2 OOB, findByKeys may work if DidRecords exist for the keys. DID record tags index
       // X25519 and P-256/P-384 fingerprints too, so v2 key-agreement keys can match.
       if (recipientKey && senderKey) {
-        connection = await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
+        const connection = await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
         if (connection) {
           const keyOwner = await agentContext.dependencyManager
             .resolve(DidRepository)
@@ -509,6 +506,31 @@ export class DidCommMessageReceiver {
     // v1: use sender/recipient keys
     if (!recipientKey || !senderKey) return { connection: null }
     return { connection: await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey }) }
+  }
+
+  /**
+   * Find the connection with a peer DID. Several connections can share one `theirDid`, such as
+   * several implicit sessions to one did:web, so our DID from the plaintext `to` picks between them.
+   */
+  private async findConnectionByDids(
+    agentContext: AgentContext,
+    theirDid: string,
+    to?: string[]
+  ): Promise<DidCommConnectionRecord | null> {
+    if (to?.length) {
+      const byPair = await this.connectionService.findByDids(agentContext, { ourDid: to[0], theirDid })
+      if (byPair) return byPair
+    }
+
+    try {
+      return await this.connectionService.findByTheirDid(agentContext, theirDid)
+    } catch (error) {
+      if (!(error instanceof RecordDuplicateError)) throw error
+
+      const candidates = await this.connectionService.findAllByQuery(agentContext, { theirDid })
+      const byOurDid = to?.length ? candidates.find((c) => c.did === to[0]) : undefined
+      return byOurDid ?? (candidates.length === 1 ? candidates[0] : null)
+    }
   }
 
   private async isImplicitInvitationDid(agentContext: AgentContext, dids: string[]): Promise<boolean> {

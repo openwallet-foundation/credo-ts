@@ -31,6 +31,18 @@ describe('normalizeV2PlaintextToV1', () => {
     expect(v1).not.toHaveProperty('return_route')
   })
 
+  it('maps the return_route_thread header to the ~transport decorator', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      id: 'msg-rrt',
+      type: 'https://didcomm.org/message-pickup/4.0/status-request',
+      body: {},
+      return_route: 'thread',
+      return_route_thread: 'thread-1',
+    })
+    expect(v1['~transport']).toEqual({ return_route: 'thread', return_route_thread: 'thread-1' })
+    expect(v1).not.toHaveProperty('return_route_thread')
+  })
+
   it('spreads body into top level', () => {
     const v2: DidCommV2PlaintextMessage = {
       id: 'msg-1',

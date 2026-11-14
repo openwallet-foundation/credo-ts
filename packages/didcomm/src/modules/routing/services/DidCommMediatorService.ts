@@ -212,9 +212,14 @@ export class DidCommMediatorService {
       encryptedMessages = [message.message]
       const rawDid = message.to.startsWith('did:') ? message.to : verkeyToDidKey(message.to)
       recipientDid = getDidPeer4ShortFormForEquivalence(rawDid) ?? rawDid
-      mediationRecord =
-        (await this.mediationRepository.findSingleByRecipientKey(agentContext, message.to)) ??
-        (await this.mediationRepository.findSingleByRecipientDid(agentContext, recipientDid))
+      // A v1 client registers the key, a v2 client registers its did:key. Both indexes are read, so a
+      // key one mediatee holds in each index does not route the traffic of the other one.
+      const byKey = await this.mediationRepository.findSingleByRecipientKey(agentContext, message.to)
+      const byDid = await this.mediationRepository.findSingleByRecipientDid(agentContext, recipientDid)
+      if (byKey && byDid && byKey.id !== byDid.id) {
+        throw new CredoError(`Forward recipient '${message.to}' is registered by two mediation records`)
+      }
+      mediationRecord = byKey ?? byDid
     }
 
     if (!mediationRecord) {
@@ -334,8 +339,16 @@ export class DidCommMediatorService {
       const publicKeyBase58 = didKeyToVerkey(update.recipientKey)
 
       if (update.action === DidCommKeylistUpdateAction.add) {
-        mediationRecord.addRecipientKey(publicKeyBase58)
-        updated.result = DidCommKeylistUpdateResult.Success
+        const taken = await this.isRegisteredToAnotherMediatee(messageContext.agentContext, mediationRecord, {
+          key: publicKeyBase58,
+          did: verkeyToDidKey(publicKeyBase58),
+        })
+        if (taken) {
+          updated.result = DidCommKeylistUpdateResult.ClientError
+        } else {
+          mediationRecord.addRecipientKey(publicKeyBase58)
+          updated.result = DidCommKeylistUpdateResult.Success
+        }
 
         keylist.push(updated)
       } else if (update.action === DidCommKeylistUpdateAction.remove) {
@@ -348,6 +361,30 @@ export class DidCommMediatorService {
     await this.mediationRepository.update(messageContext.agentContext, mediationRecord)
 
     return new DidCommKeylistUpdateResponseMessage({ keylist, threadId: message.threadId })
+  }
+
+  /**
+   * A recipient key or DID stays with the mediatee that registered it first. Any mediatee can learn the
+   * keys of another one from its invitations, and registering them too would make every forward for them
+   * ambiguous, so the first mediatee stops receiving messages.
+   *
+   * A v1 client registers a key and a v2 client registers its did:key, so both indexes are checked.
+   */
+  private async isRegisteredToAnotherMediatee(
+    agentContext: AgentContext,
+    mediationRecord: DidCommMediationRecord,
+    recipient: { key?: string; did?: string }
+  ): Promise<boolean> {
+    const queries: Query<DidCommMediationRecord>[] = []
+    if (recipient.key) queries.push({ recipientKeys: [recipient.key] })
+    if (recipient.did) queries.push({ recipientDids: [recipient.did] })
+
+    for (const query of queries) {
+      // One record is enough: the own record only comes back when it already holds the key, and then the add changes nothing
+      const [record] = await this.mediationRepository.findByQuery(agentContext, query, { limit: 1 })
+      if (record && record.id !== mediationRecord.id) return true
+    }
+    return false
   }
 
   public async createGrantMediationMessage(agentContext: AgentContext, mediationRecord: DidCommMediationRecord) {
@@ -477,8 +514,16 @@ export class DidCommMediatorService {
       let result = KeylistUpdateResultV2.NoChange
       const canonicalRecipientDid = getDidPeer4ShortFormForEquivalence(update.recipientDid) ?? update.recipientDid
       if (update.action === KeylistUpdateActionV2.add) {
-        mediationRecord.addRecipientDid(canonicalRecipientDid)
-        result = KeylistUpdateResultV2.Success
+        const taken = await this.isRegisteredToAnotherMediatee(messageContext.agentContext, mediationRecord, {
+          did: canonicalRecipientDid,
+          key: isDidKey(canonicalRecipientDid) ? didKeyToVerkey(canonicalRecipientDid) : undefined,
+        })
+        if (taken) {
+          result = KeylistUpdateResultV2.ClientError
+        } else {
+          mediationRecord.addRecipientDid(canonicalRecipientDid)
+          result = KeylistUpdateResultV2.Success
+        }
       } else if (update.action === KeylistUpdateActionV2.remove) {
         const success = mediationRecord.removeRecipientDid(canonicalRecipientDid)
         result = success ? KeylistUpdateResultV2.Success : KeylistUpdateResultV2.NoChange
