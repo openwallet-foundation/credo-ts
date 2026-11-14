@@ -5,6 +5,7 @@ import { IsBoolean, IsOptional, IsString, ValidateNested } from 'class-validator
 export interface W3cV2SdJwtDidCommSignedAttachmentBindingMethodOptions {
   algsSupported: string[]
   didMethodsSupported: string[]
+  jwkSupported?: boolean
   nonce: string
 }
 
@@ -19,6 +20,7 @@ export class W3cV2SdJwtDidCommSignedAttachmentBindingMethod {
     if (options) {
       this.algsSupported = options.algsSupported
       this.didMethodsSupported = options.didMethodsSupported
+      this.jwkSupported = options.jwkSupported
       this.nonce = options.nonce
     }
   }
@@ -36,6 +38,12 @@ export class W3cV2SdJwtDidCommSignedAttachmentBindingMethod {
   @IsString({ each: true })
   @Expose({ name: 'did_methods_supported' })
   public didMethodsSupported!: string[]
+
+  // RFC 0881 and RFC 0884. Whether the issuer accepts a signed attachment with a bare key in a `jwk` header.
+  @IsOptional()
+  @IsBoolean()
+  @Expose({ name: 'jwk_supported' })
+  public jwkSupported?: boolean
 
   // Nonce to be used in the request to prevent replay attacks of the signed attachment.
   @IsString()
