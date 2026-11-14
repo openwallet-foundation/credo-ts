@@ -309,6 +309,12 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
    */
   credentialConfigurationIds?: string[]
 
+  /**
+   * Whether to check the status (e.g. a Token Status List) of the received credentials. When
+   * `false`, the status list is not fetched while the credentials are received.
+   *
+   * @default false
+   */
   verifyCredentialStatus?: boolean
 
   /**
