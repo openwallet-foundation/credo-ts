@@ -270,6 +270,7 @@ export class DidCommProofFormatCoordinator<PFs extends DidCommProofFormatService
       await formatService.processRequest(agentContext, {
         attachment,
         proofRecord,
+        requestMessage: message,
       })
     }
 
