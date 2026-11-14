@@ -20,6 +20,9 @@ import { DidCommMediatorRoutingRepository } from './modules/routing/repository/D
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 
+/** Recipients a DIDComm v1 message may have. A message to one service rarely has more than a few. */
+export const MAX_DIDCOMM_V1_RECIPIENTS = 32
+
 export interface EnvelopeKeys {
   recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
@@ -171,11 +174,23 @@ export class DidCommEnvelopeService {
       encrypted_key: string
     } | null = null
 
+    // The sender is not authenticated yet and each recipient costs storage lookups, so the sender must not choose how many we do
+    const recipientCount = Array.isArray(protectedJson.recipients) ? protectedJson.recipients.length : 0
+    if (recipientCount === 0) {
+      throw new CredoError('DIDComm v1 message has no recipients')
+    }
+    if (recipientCount > MAX_DIDCOMM_V1_RECIPIENTS) {
+      throw new CredoError(
+        `DIDComm v1 message has ${recipientCount} recipients, the maximum is ${MAX_DIDCOMM_V1_RECIPIENTS}`
+      )
+    }
+
     for (const _recipient of protectedJson.recipients) {
       recipientKey = await this.extractOurRecipientKeyWithKeyId(agentContext, _recipient)
 
       if (recipientKey) {
         recipient = _recipient
+        break
       }
     }
 
