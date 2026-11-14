@@ -1,5 +1,5 @@
 import type { AgentContext, BaseRecordAny, ResolvedDidCommService } from '@credo-ts/core'
-import { CredoError, Kms } from '@credo-ts/core'
+import { CredoError, Kms, RecordNotFoundError } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { ServiceDecorator } from './decorators/service/ServiceDecorator'
@@ -17,6 +17,7 @@ import {
 import { DidCommOutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
 import { DidCommRoutingService } from './modules/routing'
 import { DidCommMessageRepository, DidCommMessageRole } from './repository'
+import { DidCommDocumentService } from './services/DidCommDocumentService'
 import type { DidCommV2KeyAgreementJwk } from './v2/types'
 
 /**
@@ -129,7 +130,7 @@ export async function getConnectionlessOutboundMessageContext(
 
   const senderKey = ourService.recipientKeys[0]
   if (!senderKey.hasKeyId) {
-    await setSenderKeyIdFromOutOfBandRecord(agentContext, senderKey, outOfBandRecord)
+    await setSenderKeyId(agentContext, senderKey, outOfBandRecord)
   }
   const senderKeySkid = toKeyAgreementDidUrl(senderKey)
 
@@ -145,25 +146,65 @@ export async function getConnectionlessOutboundMessageContext(
   })
 }
 
-// A sent ~service only holds the base58 key. The kms key id lives on the out of band record we created.
-async function setSenderKeyIdFromOutOfBandRecord(
+// A sent ~service only holds the base58 key. The kms key id lives on the out of band record or did record we created.
+async function setSenderKeyId(
   agentContext: AgentContext,
   senderKey: Kms.PublicJwk,
   outOfBandRecord?: DidCommOutOfBandRecord
 ): Promise<void> {
-  const senderOutOfBandRecord =
+  const senderOutOfBandRecords =
     outOfBandRecord?.role === DidCommOutOfBandRole.Sender
-      ? outOfBandRecord
-      : await agentContext.dependencyManager.resolve(DidCommOutOfBandRepository).findSingleByQuery(agentContext, {
+      ? [outOfBandRecord]
+      : await agentContext.dependencyManager.resolve(DidCommOutOfBandRepository).findByQuery(agentContext, {
           role: DidCommOutOfBandRole.Sender,
           recipientKeyFingerprints: [senderKey.fingerprint],
         })
+  const inlineOutOfBandRecord = senderOutOfBandRecords.find((record) =>
+    record.invitationInlineServiceKeys?.some(
+      ({ recipientKeyFingerprint }) => recipientKeyFingerprint === senderKey.fingerprint
+    )
+  )
 
-  const kmsKeyId = senderOutOfBandRecord?.invitationInlineServiceKeys?.find(
-    ({ recipientKeyFingerprint }) => recipientKeyFingerprint === senderKey.fingerprint
-  )?.kmsKeyId
+  if (!inlineOutOfBandRecord) {
+    const createdDidKeyId = await findCreatedDidKeyId(agentContext, senderKey)
+    if (createdDidKeyId) {
+      senderKey.keyId = createdDidKeyId
+      return
+    }
+  }
 
-  senderKey.keyId = kmsKeyId ?? senderKey.legacyKeyId
+  const senderOutOfBandRecord = inlineOutOfBandRecord ?? senderOutOfBandRecords[0]
+  if (!senderOutOfBandRecord) return
+
+  const ourService = await agentContext.dependencyManager
+    .resolve(DidCommOutOfBandService)
+    .getResolvedServiceForOutOfBandServices(
+      agentContext,
+      senderOutOfBandRecord.outOfBandInvitation.getServices(),
+      senderOutOfBandRecord.invitationInlineServiceKeys
+    )
+
+  const ourKey = ourService.recipientKeys.find(({ fingerprint }) => fingerprint === senderKey.fingerprint)
+  if (ourKey?.hasKeyId) {
+    senderKey.keyId = ourKey.keyId
+  }
+}
+
+async function findCreatedDidKeyId(agentContext: AgentContext, publicJwk: Kms.PublicJwk): Promise<string | undefined> {
+  try {
+    const { didDocument, keys } = await agentContext.dependencyManager
+      .resolve(DidCommDocumentService)
+      .resolveCreatedDidDocumentWithKeysByRecipientKey(agentContext, publicJwk)
+
+    const verificationMethod = didDocument.findVerificationMethodByPublicKey(publicJwk)
+    return (
+      keys?.find(({ didDocumentRelativeKeyId }) => verificationMethod.id.endsWith(didDocumentRelativeKeyId))
+        ?.kmsKeyId ?? publicJwk.legacyKeyId
+    )
+  } catch (error) {
+    if (error instanceof RecordNotFoundError) return undefined
+    throw error
+  }
 }
 
 /**

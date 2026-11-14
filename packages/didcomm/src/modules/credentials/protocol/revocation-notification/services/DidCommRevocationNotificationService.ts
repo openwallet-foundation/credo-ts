@@ -1,20 +1,10 @@
-import type { AgentContext, Kms } from '@credo-ts/core'
-import {
-  CredoError,
-  EventEmitter,
-  InjectionSymbols,
-  inject,
-  injectable,
-  JsonTransformer,
-  type Logger,
-} from '@credo-ts/core'
-import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
+import { CredoError, EventEmitter, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
 import type { DidCommInboundMessageContext } from '../../../../../models'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../repository'
-import { DidCommConnectionRecord } from '../../../../connections'
+import { DidCommConnectionRecord, DidCommConnectionService } from '../../../../connections'
 import { keyAgreementsEqual } from '../../../../connections/services/helpers'
 import type { DidCommRevocationNotificationReceivedEvent } from '../../../DidCommCredentialEvents'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
+import { DidCommCredentialsModuleConfig } from '../../../DidCommCredentialsModuleConfig'
 import { DidCommCredentialRole } from '../../../models'
 import { DidCommRevocationNotification } from '../../../models/DidCommRevocationNotification'
 import { DidCommCredentialExchangeRecord, DidCommCredentialExchangeRepository } from '../../../repository'
@@ -82,42 +72,41 @@ export class DidCommRevocationNotificationService {
     messageContext: DidCommInboundMessageContext,
     credentialExchangeRecord: DidCommCredentialExchangeRecord
   ): Promise<void> {
-    if (credentialExchangeRecord.connectionId) {
+    const { agentContext } = messageContext
+    const protocol = agentContext.dependencyManager
+      .resolve(DidCommCredentialsModuleConfig)
+      .credentialProtocols.find(({ version }) => version === credentialExchangeRecord.protocolVersion)
+    if (!protocol) {
       throw new CredoError(
-        `Credential exchange ${credentialExchangeRecord.id} is bound to connection ${credentialExchangeRecord.connectionId}. Its revocation notification must be sent over that connection`
+        `No credential protocol registered for protocol version ${credentialExchangeRecord.protocolVersion}`
       )
     }
 
+    const credentialMessage = await protocol.findCredentialMessage(agentContext, credentialExchangeRecord.id)
+    if (!credentialMessage) {
+      throw new CredoError(`No credential message found for credential record with id '${credentialExchangeRecord.id}'`)
+    }
+    const requestMessage = await protocol.findRequestMessage(agentContext, credentialExchangeRecord.id)
+    if (!requestMessage) {
+      throw new CredoError(`No request message found for credential record with id '${credentialExchangeRecord.id}'`)
+    }
+
+    await agentContext.dependencyManager
+      .resolve(DidCommConnectionService)
+      .assertConnectionOrOutOfBandExchange(messageContext, {
+        lastReceivedMessage: credentialMessage,
+        lastSentMessage: requestMessage,
+        expectedConnectionId: credentialExchangeRecord.connectionId,
+      })
+
+    // The shared check trusts the notification's own ~service, so pin the sender to the credential message ~service.
     const senderKey = messageContext.senderKeyAgreementKey ?? messageContext.senderKey
-    if (!senderKey) {
-      throw new CredoError('Connection-less revocation notification must be authcrypted by the issuer')
-    }
-
-    const issuerKeys = await this.getConnectionlessIssuerKeys(messageContext.agentContext, credentialExchangeRecord)
-    if (!issuerKeys.some((issuerKey) => keyAgreementsEqual(senderKey, issuerKey))) {
+    const issuerKeys = credentialMessage.service?.resolvedDidCommService.recipientKeys ?? []
+    if (!senderKey || !issuerKeys.some((key) => keyAgreementsEqual(senderKey, key))) {
       throw new CredoError(
-        `Sender key ${senderKey.fingerprint} is not a key of the issuer of credential exchange ${credentialExchangeRecord.id}`
+        `Sender key ${senderKey?.fingerprint} not found in the ~service of credential message ${credentialMessage.id}`
       )
     }
-  }
-
-  private async getConnectionlessIssuerKeys(
-    agentContext: AgentContext,
-    credentialExchangeRecord: DidCommCredentialExchangeRecord
-  ): Promise<Kms.PublicJwk[]> {
-    const receivedMessages = await agentContext.dependencyManager
-      .resolve(DidCommMessageRepository)
-      .findByQuery(agentContext, { associatedRecordId: credentialExchangeRecord.id, role: DidCommMessageRole.Receiver })
-
-    return receivedMessages.flatMap(({ message }) => {
-      if (!message['~service']) return []
-      try {
-        return JsonTransformer.fromJSON(message['~service'], ServiceDecorator).resolvedDidCommService.recipientKeys
-      } catch (error) {
-        this.logger.debug(`Skipping unparsable ~service on received message ${message['@id']}`, { error })
-        return []
-      }
-    })
   }
 
   /**
