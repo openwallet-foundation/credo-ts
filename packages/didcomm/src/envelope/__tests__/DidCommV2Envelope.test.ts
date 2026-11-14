@@ -3,6 +3,7 @@ import {
   DidKey,
   didDocumentToNumAlgo2Did,
   didToNumAlgo2DidDocument,
+  getDidPeer4ShortFormForEquivalence,
   getEd25519VerificationKey2018,
   getPublicJwkFromVerificationMethod,
   getX25519KeyAgreementKey2019,
@@ -221,6 +222,36 @@ describe('DidCommV2Envelope', () => {
     expect(authenticatedSenderDid).toBe(previous.did)
   })
 
+  it('sets from to the skid DID when the connection holds the other did:peer:4 form', async () => {
+    const current = await createKeyAgreementDid()
+    const peer = await createKeyAgreementDid()
+    peer.publicJwk.keyId = peer.didUrl
+    const shortForm = getDidPeer4ShortFormForEquivalence(current.did)
+    expect(shortForm).toBeDefined()
+    expect(shortForm).not.toBe(current.did)
+
+    const connection = new DidCommConnectionRecord({
+      role: DidCommDidExchangeRole.Responder,
+      state: DidCommDidExchangeState.Completed,
+      did: shortForm,
+      theirDid: peer.did,
+      didcommVersion: 'v2',
+    })
+    const envelope = agent.dependencyManager.resolve(DidCommV2Envelope)
+    const keys = await envelope.buildReturnRouteKeys(agent.context, {
+      senderKey: peer.publicJwk,
+      recipientKey: current.publicJwk,
+      plaintextMessage: { '@type': DidCommTrustPingMessage.type.messageTypeUri, '@id': 'ping-7' },
+    })
+
+    const encrypted = await envelope.pack(agent.context, new DidCommTrustPingMessage({}), keys, { connection })
+    const { plaintextMessage } = await envelope.unpack(agent.context, encrypted)
+
+    const skid = JsonEncoder.fromBase64Url(encrypted.protected).skid as string
+    expect(skid).toBe(current.didUrl)
+    expect(plaintextMessage.from).toBe(skid.split('#')[0])
+  })
+
   it('does not pack v2 without a sender skid', async () => {
     const sender = await createKeyAgreementDid()
     const recipient = await createKeyAgreementDid()
@@ -324,6 +355,7 @@ describe('DidCommV2Envelope', () => {
       routingKeys: [routingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>],
       recipientKey: recipient.publicJwk,
       contentEncryptionAlgorithm: 'A256CBC-HS512',
+      expiresTime: 1700000000,
     })) as DidCommV2EncryptedMessage
     const { plaintext } = await envelopeService.unpack(agent.context, forward, {
       recipientKey: Kms.PublicJwk.fromPublicJwk(created.publicJwk) as DidCommV2KeyAgreementJwk & { keyId: string },
@@ -333,6 +365,26 @@ describe('DidCommV2Envelope', () => {
 
     expect(forward.recipients[0].header.kid).toBe('did:example:mediator#kx')
     expect(plaintext.to).toEqual(['did:example:mediator'])
+    expect(plaintext.expires_time).toBe(1700000000)
+  })
+
+  it('sets created_time on an outbound message', async () => {
+    const sender = await createKeyAgreementDid()
+    const recipient = await createKeyAgreementDid()
+    const envelope = agent.dependencyManager.resolve(DidCommV2Envelope)
+    const keys = await envelope.buildReturnRouteKeys(agent.context, {
+      senderKey: recipient.publicJwk,
+      recipientKey: sender.publicJwk,
+      plaintextMessage: { '@type': DidCommTrustPingMessage.type.messageTypeUri, '@id': 'ping-10' },
+    })
+
+    const before = Math.floor(Date.now() / 1000)
+    const encrypted = await envelope.pack(agent.context, new DidCommTrustPingMessage({}), keys)
+    const { plaintextMessage } = await envelope.unpack(agent.context, encrypted)
+
+    const timing = plaintextMessage['~timing'] as { out_time?: string } | undefined
+    expect(timing?.out_time).toBeDefined()
+    expect(Math.floor(new Date(timing?.out_time as string).getTime() / 1000)).toBeGreaterThanOrEqual(before)
   })
 
   it('names the DID of a DID URL routing key as next of the forward before it', async () => {
