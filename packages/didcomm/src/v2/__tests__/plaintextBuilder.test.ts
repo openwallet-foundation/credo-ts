@@ -147,6 +147,16 @@ describe('buildV2PlaintextFromMessage', () => {
     expect(v2.body).not.toHaveProperty('~transport')
   })
 
+  it('round-trips thread return routing through the v2 headers and back to ~transport', () => {
+    const message = new DidCommTrustPingMessage({ comment: 'hi' })
+    message.setReturnRouting(ReturnRouteTypes.thread, 'thread-1')
+
+    const v1 = normalizeV2PlaintextToV1(buildV2PlaintextFromMessage(message))
+
+    expect(v1['~transport']).toEqual({ return_route: 'thread', return_route_thread: 'thread-1' })
+    expect(JsonTransformer.fromJSON(v1, DidCommTrustPingMessage).transport).toEqual(message.transport)
+  })
+
   it('maps ~please_ack to a please_ack header for the current message', () => {
     const message = new DidCommTrustPingMessage({ comment: 'hi' })
     message.setPleaseAck()
