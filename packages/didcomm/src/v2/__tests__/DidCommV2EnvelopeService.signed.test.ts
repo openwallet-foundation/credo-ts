@@ -89,7 +89,17 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
       ).rejects.toThrow(/Unsupported DIDComm v2 signing algorithm/)
     })
 
-    it('rejects when plaintext.from is set but does not match the signer DID', async () => {
+    it('rejects a plaintext without from', async () => {
+      await expect(
+        envelopeService.signPlaintext(
+          agentContext,
+          { ...plaintext, from: undefined },
+          { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' }
+        )
+      ).rejects.toThrow(/must have a 'from' header/)
+    })
+
+    it('rejects when plaintext.from does not match the signer DID', async () => {
       await expect(
         envelopeService.signPlaintext(
           agentContext,
@@ -177,9 +187,13 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
       expect(verifiedPlaintext).toEqual(plaintext)
     })
 
-    async function signWithTyp(typ: string | undefined): Promise<DidCommV2SignedMessage> {
+    // Signs without the checks of signPlaintext, to build messages it refuses to produce
+    async function signWithTyp(
+      typ: string | undefined,
+      payload: DidCommV2PlaintextMessage = plaintext
+    ): Promise<DidCommV2SignedMessage> {
       const jws = await agentContext.dependencyManager.resolve(JwsService).createJws(agentContext, {
-        payload: JsonEncoder.toUint8Array(plaintext),
+        payload: JsonEncoder.toUint8Array(payload),
         keyId: signerJwk.keyId,
         header: { kid: signerKid },
         protectedHeaderOptions: { alg: 'EdDSA', ...(typ ? { typ } : {}) },
@@ -189,6 +203,22 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
         signatures: [{ protected: jws.protected, signature: jws.signature, header: jws.header }],
       }
     }
+
+    it('rejects a signed message without from', async () => {
+      const signed = await signWithTyp(DIDCOMM_V2_SIGNED_MIME_TYPE, { ...plaintext, from: undefined })
+
+      await expect(
+        envelopeService.verifySignedMessage(agentContext, signed, { resolveSignerJwk: async () => signerJwk })
+      ).rejects.toThrow(/must have a 'from' header/)
+    })
+
+    it('rejects a signed message whose from is not the signer DID', async () => {
+      const signed = await signWithTyp(DIDCOMM_V2_SIGNED_MIME_TYPE, { ...plaintext, from: 'did:example:eve' })
+
+      await expect(
+        envelopeService.verifySignedMessage(agentContext, signed, { resolveSignerJwk: async () => signerJwk })
+      ).rejects.toThrow(/does not match signer DID/)
+    })
 
     it.each([undefined, 'JWM', 'application/jwm', 'didcomm-signed+json'])(
       'accepts a signed message with typ %s',
@@ -232,16 +262,11 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
       ).rejects.toThrow(/Could not resolve DIDComm v2 signer JWK/)
     })
 
-    it('rejects when the inner plaintext from does not match the signer DID', async () => {
-      const mismatched = await envelopeService.signPlaintext(
-        agentContext,
-        { ...plaintext, from: undefined },
-        { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' }
-      )
+    it('rejects a signed message whose payload was replaced', async () => {
       const tamperedPayload = JsonEncoder.toBase64Url({ ...plaintext, from: 'did:example:eve' })
       const tampered: DidCommV2SignedMessage = {
         payload: tamperedPayload,
-        signatures: mismatched.signatures,
+        signatures: signedMessage.signatures,
       }
       // The signature won't verify because the payload changed, so we get the verify failure first.
       await expect(
