@@ -330,8 +330,11 @@ export class SdJwtVcService {
     try {
       const { trustedIssuer } = await this.verifyIssuer(agentContext, returnSdJwtVc, trustedIssuers)
       const issuerWithKey = await this.extractKeyFromIssuer(agentContext, issuer)
+      // assertionMethod stays accepted for holders that already rely on it
       const holder = returnSdJwtVc.holder
-        ? await extractKeyFromHolderBinding(agentContext, returnSdJwtVc.holder)
+        ? await extractKeyFromHolderBinding(agentContext, returnSdJwtVc.holder, {
+            didPurposes: ['authentication', 'assertionMethod'],
+          })
         : undefined
 
       const statusValidationDisabled = disableStatusValidation === true || verifyCredentialStatus === false

@@ -16,7 +16,7 @@ const mdlQuery = { id: 'mdl', format: 'mso_mdoc', meta: { doctype_value: 'org.is
 const matched = (id: string) => ({
   success: true,
   credential_query_id: id,
-  valid_credentials: [{ record: {} }],
+  valid_credentials: [{ record: { firstCredential: { holder: {} } } }],
 })
 
 const queryResult = (credentialSets?: Array<{ options: string[][]; required: boolean }>): DcqlQueryResult =>
@@ -81,7 +81,7 @@ describe('DidCommDcqlProofFormatService', () => {
 
   describe('withUnsupportedFormatsUnmatched', () => {
     test('keeps the supported alternative option of a credential set', () => {
-      const result = withUnsupportedFormatsUnmatched(queryResult([{ options: [['mdl'], ['pid']], required: true }]))
+      const result = withUnsupportedFormatsUnmatched(queryResult([{ options: [['mdl'], ['pid']], required: true }]), [])
 
       expect(result.credential_matches.mdl).toEqual({ success: false, credential_query_id: 'mdl' })
       expect(result.credential_matches.pid.success).toBe(true)
@@ -94,7 +94,8 @@ describe('DidCommDcqlProofFormatService', () => {
         queryResult([
           { options: [['mdl']], required: true },
           { options: [['pid']], required: true },
-        ])
+        ]),
+        []
       )
 
       expect(result.credential_sets?.[0].matching_options).toBeUndefined()
@@ -107,7 +108,8 @@ describe('DidCommDcqlProofFormatService', () => {
         queryResult([
           { options: [['pid']], required: true },
           { options: [['mdl']], required: false },
-        ])
+        ]),
+        []
       )
 
       expect(result.credential_sets?.[1].matching_options).toBeUndefined()
@@ -115,7 +117,7 @@ describe('DidCommDcqlProofFormatService', () => {
     })
 
     test('an mso_mdoc query without credential sets cannot be satisfied', () => {
-      const result = withUnsupportedFormatsUnmatched(queryResult())
+      const result = withUnsupportedFormatsUnmatched(queryResult(), [])
 
       expect(result.credential_sets).toBeUndefined()
       expect(result.can_be_satisfied).toBe(false)
@@ -129,7 +131,11 @@ describe('DidCommDcqlProofFormatService', () => {
 
     const result = await dcqlFormatService.getCredentialsForRequest(agentContext, {
       proofRecord: proofRecord(),
-      requestAttachment: attachment(request({ dcql_query: { credentials: [mdlQuery, pidQuery] } })),
+      requestAttachment: attachment(
+        request({
+          dcql_query: { credentials: [mdlQuery, pidQuery], credential_sets: [{ options: [['mdl'], ['pid']] }] },
+        })
+      ),
     })
 
     expect(result.credential_matches.mdl.success).toBe(false)

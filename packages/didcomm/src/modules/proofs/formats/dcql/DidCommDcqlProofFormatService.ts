@@ -5,12 +5,14 @@ import type {
   DcqlPresentation,
   DcqlQuery,
   DcqlQueryResult,
+  DcqlValidCredential,
   DidDocument,
   DidPurpose,
   JsonValue,
   SdJwtVc,
 } from '@credo-ts/core'
 import {
+  areEquivalentDidPeer4Forms,
   asArray,
   CredoError,
   DcqlService,
@@ -22,6 +24,8 @@ import {
   isJsonObject,
   isNonEmptyArray,
   JsonEncoder,
+  JwsService,
+  JwtPayload,
   Kms,
   parseDid,
   SdJwtVcApi,
@@ -77,6 +81,7 @@ const NONCE_PATTERN = /^[A-Za-z0-9\-._~]+$/
 const MAX_PRESENTATION_AGE_SECONDS = 300
 
 const SUPPORTED_CREDENTIAL_FORMATS = ['dc+sd-jwt', 'vc+sd-jwt']
+const DCQL_LIBRARY_FORMATS = ['mso_mdoc', 'dc+sd-jwt', 'vc+sd-jwt', 'jwt_vc_json', 'ldp_vc']
 const NON_SELECTIVELY_DISCLOSABLE_CREDENTIAL_CLAIMS = [
   '@context',
   'type',
@@ -100,14 +105,12 @@ class WrongNonceOrAudienceError extends CredoError {
   }
 }
 
-// Same credential_sets rule as runDcqlQuery in the dcql library, applied after unmatching unsupported formats
-export function withUnsupportedFormatsUnmatched(result: DcqlQueryResult): DcqlQueryResult {
+// Same credential_sets rule as runDcqlQuery in the dcql library, applied after unmatching what cannot be presented
+export function withUnsupportedFormatsUnmatched(result: DcqlQueryResult, createdDids: string[]): DcqlQueryResult {
   const credential_matches = Object.fromEntries(
-    result.credentials.map(({ id, format }): [string, DcqlMatchWithRecord] => [
-      id,
-      SUPPORTED_CREDENTIAL_FORMATS.includes(format)
-        ? result.credential_matches[id]
-        : { success: false, credential_query_id: id },
+    result.credentials.map((credentialQuery): [string, DcqlMatchWithRecord] => [
+      credentialQuery.id,
+      getPresentableMatch(credentialQuery, result.credential_matches[credentialQuery.id], createdDids),
     ])
   )
   const credential_sets = result.credential_sets?.map((set) => {
@@ -123,6 +126,54 @@ export function withUnsupportedFormatsUnmatched(result: DcqlQueryResult): DcqlQu
       ? credential_sets.every((set) => !set.required || set.matching_options !== undefined)
       : result.credentials.every(({ id }) => credential_matches[id].success),
   }
+}
+
+function getPresentableMatch(
+  credentialQuery: DcqlCredentialQuery,
+  match: DcqlMatchWithRecord | undefined,
+  createdDids: string[]
+): DcqlMatchWithRecord {
+  const unmatched: DcqlMatchWithRecord = { success: false, credential_query_id: credentialQuery.id }
+  if (!SUPPORTED_CREDENTIAL_FORMATS.includes(credentialQuery.format) || !match) return unmatched
+  if (!match.success) return match
+  if (credentialQuery.format === 'vc+sd-jwt' && credentialQuery.require_cryptographic_holder_binding === false) {
+    return unmatched
+  }
+
+  const validCredentials = (match.valid_credentials as DcqlValidCredential[]).filter(({ record }) =>
+    isPresentable(credentialQuery.format, record.firstCredential, createdDids)
+  )
+  return isNonEmptyArray(validCredentials)
+    ? ({ ...match, valid_credentials: validCredentials } as DcqlMatchWithRecord)
+    : unmatched
+}
+
+// RFC 0882 makes presenting a dc+sd-jwt without cnf a MAY, and core always adds a KB-JWT
+function isPresentable(format: string, credential: unknown, createdDids: string[]): boolean {
+  if (format === 'dc+sd-jwt') return (credential as SdJwtVc).holder !== undefined
+  const signerDid = getVcSdJwtSignerDid(credential)
+  return signerDid !== undefined && createdDids.includes(signerDid)
+}
+
+// Mirrors the signer DID resolvePresentationSigner picks for the presentation DcqlService creates
+function getVcSdJwtSignerDid(credential: unknown): string | undefined {
+  if (!(credential instanceof W3cV2SdJwtVerifiableCredential)) return undefined
+  const { cnf } = credential.sdJwt.payload
+  if (!isJsonObject(cnf)) return undefined
+
+  const cnfDid = typeof cnf.kid === 'string' ? tryParseDid(cnf.kid)?.did : undefined
+  const signerDid = credential.resolvedCredential.credentialSubjectIds[0] ?? cnfDid
+  return typeof cnf.kid !== 'string' || cnfDid === signerDid ? signerDid : undefined
+}
+
+async function getCreatedSignerDids(agentContext: AgentContext, credentials: unknown[]): Promise<string[]> {
+  const signerDids = new Set(credentials.flatMap((credential) => getVcSdJwtSignerDid(credential) ?? []))
+  const createdDids = await Promise.all(
+    Array.from(signerDids).map(async (did) =>
+      (await agentContext.resolve(DidsApi).getCreatedDids({ did })).length > 0 ? [did] : []
+    )
+  )
+  return createdDids.flat()
 }
 
 export class DidCommDcqlProofFormatService implements DidCommProofFormatService<DidCommDcqlProofFormat> {
@@ -227,6 +278,12 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
       proofFormats?.dcql?.credentials ??
       dcqlService.selectCredentialsForRequest(await this.getQueryResult(agentContext, request.dcql_query))
 
+    const createdDids = await getCreatedSignerDids(
+      agentContext,
+      Object.values(credentials).flatMap((entries) =>
+        entries.map(({ credentialRecord }) => credentialRecord.firstCredential)
+      )
+    )
     for (const [credentialQueryId, entries] of Object.entries(credentials)) {
       const credentialQuery = request.dcql_query.credentials.find(({ id }) => id === credentialQueryId)
       if (!credentialQuery || !SUPPORTED_CREDENTIAL_FORMATS.includes(credentialQuery.format)) {
@@ -234,17 +291,32 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
       }
       this.assertVcSdJwtHolderBindingRequired(credentialQuery)
       if (
-        credentialQuery.format === 'vc+sd-jwt' &&
         entries.some(
           ({ credentialRecord }) =>
-            !(credentialRecord.firstCredential instanceof W3cV2SdJwtVerifiableCredential) ||
-            !isJsonObject(credentialRecord.firstCredential.sdJwt.payload.cnf)
+            !isPresentable(credentialQuery.format, credentialRecord.firstCredential, createdDids)
         )
       ) {
         throw new CredoError(
-          `Credential Query '${credentialQueryId}' requires holder binding, but the selected vc+sd-jwt credential has no 'cnf'`
+          credentialQuery.format === 'dc+sd-jwt'
+            ? `Credential Query '${credentialQueryId}' cannot be presented with the selected dc+sd-jwt credential, because it has no 'cnf'`
+            : `Credential Query '${credentialQueryId}' cannot be presented with the selected vc+sd-jwt credential, because this agent cannot sign a presentation for its 'cnf'`
         )
       }
+      if (entries.length === 0 || (entries.length > 1 && credentialQuery.multiple !== true)) {
+        throw new CredoError(
+          `Credential Query '${credentialQueryId}' must be presented with exactly one credential unless it sets 'multiple'`
+        )
+      }
+    }
+
+    const isDelivered = (credentialQueryIds: string[]): boolean => credentialQueryIds.every((id) => id in credentials)
+    const { credential_sets: credentialSets, credentials: credentialQueries } = request.dcql_query
+    if (
+      credentialSets
+        ? !credentialSets.every((set) => set.required === false || set.options.some(isDelivered))
+        : !isDelivered(credentialQueries.map(({ id }) => id))
+    ) {
+      throw new CredoError('The selected credentials do not deliver every credential the DCQL request requires')
     }
 
     const { encodedDcqlPresentation } = await dcqlService.createPresentation(agentContext, {
@@ -366,9 +438,23 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
   }
 
   private async getQueryResult(agentContext: AgentContext, dcqlQuery: ParsedDcqlQuery): Promise<DcqlQueryResult> {
-    const result = await agentContext.resolve(DcqlService).getCredentialsForRequest(agentContext, dcqlQuery)
+    const credentials = dcqlQuery.credentials.filter(({ format }) => DCQL_LIBRARY_FORMATS.includes(format))
+    const result = isNonEmptyArray(credentials)
+      ? await agentContext.resolve(DcqlService).getCredentialsForRequest(agentContext, { credentials })
+      : { credential_matches: {} }
+    const createdDids = await getCreatedSignerDids(
+      agentContext,
+      Object.values(result.credential_matches).flatMap((match) =>
+        match.success
+          ? (match.valid_credentials as DcqlValidCredential[]).map(({ record }) => record.firstCredential)
+          : []
+      )
+    )
 
-    return withUnsupportedFormatsUnmatched(result)
+    return withUnsupportedFormatsUnmatched(
+      { ...result, credentials: dcqlQuery.credentials, credential_sets: dcqlQuery.credential_sets } as DcqlQueryResult,
+      createdDids
+    )
   }
 
   private async createRequestAttachment(
@@ -427,7 +513,27 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
 
   private validateDcqlQuery(agentContext: AgentContext, dcqlQuery: unknown): ParsedDcqlQuery {
     this.logExperimentalWarning(agentContext)
-    const parsed = agentContext.resolve(DcqlService).validateDcqlQuery(dcqlQuery)
+    const rawCredentials = isJsonObject(dcqlQuery) && Array.isArray(dcqlQuery.credentials) ? dcqlQuery.credentials : []
+    const isUnknownFormat = (credentialQuery: unknown): credentialQuery is Record<string, unknown> =>
+      isJsonObject(credentialQuery) &&
+      typeof credentialQuery.format === 'string' &&
+      !DCQL_LIBRARY_FORMATS.includes(credentialQuery.format)
+    // The dcql library cannot parse other formats, so a stand-in checks their id and credential_sets references
+    const parsed = agentContext.resolve(DcqlService).validateDcqlQuery(
+      isJsonObject(dcqlQuery)
+        ? {
+            ...dcqlQuery,
+            credentials: rawCredentials.map((credentialQuery) =>
+              isUnknownFormat(credentialQuery) ? { id: credentialQuery.id, format: 'dc+sd-jwt' } : credentialQuery
+            ),
+          }
+        : dcqlQuery
+    )
+    parsed.credentials = parsed.credentials.map((credentialQuery, index) =>
+      isUnknownFormat(rawCredentials[index])
+        ? (rawCredentials[index] as unknown as DcqlCredentialQuery)
+        : credentialQuery
+    ) as ParsedDcqlQuery['credentials']
 
     for (const credentialQuery of (dcqlQuery as { credentials: Array<Record<string, unknown>> }).credentials) {
       const { id, format, meta } = credentialQuery
@@ -548,24 +654,45 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
       return
     }
 
-    await this.assertAudienceIsConnectionDid(agentContext, connection, audience)
+    const didcommV2 =
+      connection.didcommVersion === 'v2' || requestMessage.from !== undefined || requestMessage.to !== undefined
+    if (didcommV2) {
+      const to = requestMessage.to === undefined ? [] : asArray(requestMessage.to)
+      if (typeof requestMessage.from !== 'string' || to.length !== 1) {
+        throw new CredoError("DCQL request over DIDComm v2 must have a 'from' and a 'to' with exactly one DID")
+      }
+      // The presentation goes from connection.did to connection.theirDid, so the request must be addressed between them
+      if (
+        !connection.did ||
+        !connection.theirDid ||
+        !areEquivalentDidPeer4Forms(to[0], connection.did) ||
+        !areEquivalentDidPeer4Forms(parseDid(requestMessage.from).did, connection.theirDid)
+      ) {
+        throw new CredoError("DCQL request 'from' and 'to' are not the DIDs of the connection")
+      }
+    }
+
+    await this.assertAudienceIsConnectionDid(agentContext, connection, audience, didcommV2)
   }
 
   private async assertAudienceIsConnectionDid(
     agentContext: AgentContext,
     connection: DidCommConnectionRecord,
-    audience: string
+    audience: string,
+    didcommV2: boolean
   ): Promise<void> {
     const audienceDid = audience.slice(AUDIENCE_PREFIX.length)
-    if (connection.theirDid === audienceDid) return
+    if (connection.theirDid && areEquivalentDidPeer4Forms(connection.theirDid, audienceDid)) return
 
     const audienceError = `DCQL request audience '${audience}' is not the verifier DID of the connection`
     if (!connection.theirDid) throw new CredoError(audienceError)
 
     try {
-      const recipientKeys = (
-        await agentContext.resolve(DidCommDocumentService).resolveServicesFromDid(agentContext, connection.theirDid)
-      ).flatMap((service) => service.recipientKeys)
+      const recipientKeys = didcommV2
+        ? getKeyAgreementKeys(await agentContext.resolve(DidsApi).resolveDidDocument(connection.theirDid))
+        : (
+            await agentContext.resolve(DidCommDocumentService).resolveServicesFromDid(agentContext, connection.theirDid)
+          ).flatMap((service) => service.recipientKeys)
       if (recipientKeys.length > 0) {
         const audienceKeys = getAudienceKeys(await agentContext.resolve(DidsApi).resolveDidDocument(audienceDid))
         if (recipientKeys.every((key) => audienceKeys.some((audienceKey) => audienceKey.equals(key)))) return
@@ -750,18 +877,13 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     }
 
     this.assertHolderBindingKid(verifiablePresentation, credential)
+    await this.assertSignedWithCnfKey(agentContext, verifiablePresentation, credential)
 
-    const result = await agentContext.resolve(W3cV2CredentialService).verifyPresentation(agentContext, {
-      presentation: verifiablePresentation,
-      challenge: request.nonce,
-      domain: request.audience,
-    })
+    const result = await agentContext.resolve(W3cV2CredentialService).verifyCredential(agentContext, { credential })
     if (!result.isValid) {
-      const failed = [result.presentation, ...result.credentialEntries].flatMap(({ validations }) =>
-        Object.entries(validations)
-          .filter(([, validation]) => validation && !validation.isValid)
-          .map(([name, validation]) => `${name}: ${validation?.error?.message}`)
-      )
+      const failed = Object.entries(result.validations)
+        .filter(([, validation]) => validation && !validation.isValid)
+        .map(([name, validation]) => `${name}: ${validation?.error?.message}`)
       throw new CredoError(`vc+sd-jwt presentation is invalid: ${[result.error?.message, ...failed].join(', ')}`, {
         cause: result.error,
       })
@@ -785,7 +907,6 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     })
   }
 
-  // verifyPresentation checks the cnf key signed it (under `authentication`) and the holder, but accepts any kid for that key
   private assertHolderBindingKid(
     presentation: W3cV2SdJwtVerifiablePresentation,
     credential: W3cV2SdJwtVerifiableCredential
@@ -797,6 +918,36 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     }
     if (presentation.sdJwt.header.kid !== cnf.kid) {
       throw new CredoError("vp+sd-jwt header 'kid' must be the credential 'cnf.kid'")
+    }
+  }
+
+  // RFC 0882 binds the holder through `cnf` only, so `credentialSubject.id` is not checked against the signer
+  private async assertSignedWithCnfKey(
+    agentContext: AgentContext,
+    presentation: W3cV2SdJwtVerifiablePresentation,
+    credential: W3cV2SdJwtVerifiableCredential
+  ): Promise<void> {
+    const cnf = credential.sdJwt.payload.cnf
+    const { isValid } = await agentContext.resolve(JwsService).verifyJws(agentContext, {
+      jws: presentation.encoded.split('~')[0],
+      jwsSigner: { method: 'jwk', jwk: await this.resolveCnfKey(agentContext, cnf) },
+    })
+    if (!isValid) {
+      throw new CredoError("vp+sd-jwt is not signed with the credential 'cnf' key")
+    }
+
+    JwtPayload.fromJson(presentation.sdJwt.payload).validate({
+      skewSeconds: agentContext.config.validitySkewSeconds,
+    })
+
+    const { holderId } = presentation.resolvedPresentation
+    if (
+      isJsonObject(cnf) &&
+      typeof cnf.kid === 'string' &&
+      holderId !== undefined &&
+      holderId !== parseDid(cnf.kid).did
+    ) {
+      throw new CredoError(`vp+sd-jwt holder '${holderId}' is not the DID of the credential 'cnf.kid'`)
     }
   }
 
@@ -865,6 +1016,14 @@ function getAudienceKeys(didDocument: DidDocument): Kms.PublicJwk[] {
   }
 
   return keys
+}
+
+function getKeyAgreementKeys(didDocument: DidDocument): Kms.PublicJwk[] {
+  return (didDocument.keyAgreement ?? []).map((method) =>
+    getPublicJwkFromVerificationMethod(
+      typeof method === 'string' ? didDocument.dereferenceVerificationMethod(method) : method
+    )
+  )
 }
 
 function hasSdDigests(value: unknown): boolean {
