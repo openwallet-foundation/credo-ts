@@ -509,6 +509,36 @@ describe('Rotation E2E tests', () => {
     })
   })
 
+  // A plaintext message with a connection is what an out-of-band `requests~attach` accepted on an existing
+  // connection delivers, so nobody proved who sent it
+  describe('Messages without an authenticated sender', () => {
+    test('a plaintext did-rotate does not change their did', async () => {
+      const rotate = new DidCommDidRotateMessage({ toDid: 'did:example:attacker' })
+
+      await expect(
+        bobAgent.dependencyManager
+          .resolve(DidCommMessageReceiver)
+          .receiveMessage(rotate.toJSON(), { connection: bobAliceConnection })
+      ).rejects.toThrow(/has no authenticated sender/)
+
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const connection = await bobAgent.didcomm.connections.getById(bobAliceConnection?.id!)
+      expect(connection.theirDid).toEqual(aliceBobConnection?.did)
+    })
+
+    test('a plaintext hangup does not end the relationship', async () => {
+      await expect(
+        bobAgent.dependencyManager
+          .resolve(DidCommMessageReceiver)
+          .receiveMessage(new DidCommHangupMessage({}).toJSON(), { connection: bobAliceConnection })
+      ).rejects.toThrow(/has no authenticated sender/)
+
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const connection = await bobAgent.didcomm.connections.getById(bobAliceConnection?.id!)
+      expect(connection.theirDid).toEqual(aliceBobConnection?.did)
+    })
+  })
+
   describe('Hangup', () => {
     test('Hangup without record deletion', async () => {
       // Send message to initial did
