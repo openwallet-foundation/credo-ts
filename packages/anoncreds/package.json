@@ -7,7 +7,7 @@
     },
     "./didcomm": "./src/didcomm/index.ts"
   },
-  "version": "0.7.1",
+  "version": "0.8.0",
   "files": [
     "build"
   ],
