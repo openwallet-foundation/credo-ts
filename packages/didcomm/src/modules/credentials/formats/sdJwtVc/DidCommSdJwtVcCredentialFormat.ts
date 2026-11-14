@@ -1,13 +1,12 @@
 import type { ClaimPath, Kms, SdJwtVcPayload, XOR } from '@credo-ts/core'
-import type { DidCommCredentialFormat } from '../DidCommCredentialFormat'
 import type {
-  DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions,
-  DidCommW3cV2SdJwtSignedAttachmentCredentialRequestOptions,
-} from '../w3cV2SdJwt/DidCommW3cV2SdJwtCredentialFormat'
+  DidCommSignedAttachmentCreateOfferOptions,
+  DidCommSignedAttachmentCredentialRequestOptions,
+} from '../../util/didCommSignedAttachmentBinding'
+import type { DidCommCredentialFormat } from '../DidCommCredentialFormat'
 import type { SdJwtVcCredential, SdJwtVcCredentialOffer, SdJwtVcCredentialRequest } from './sdJwtVcExchange'
 
-export interface DidCommSdJwtVcSignedAttachmentCreateOfferOptions
-  extends DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions {
+export interface DidCommSdJwtVcSignedAttachmentCreateOfferOptions extends DidCommSignedAttachmentCreateOfferOptions {
   /** Accept a binding proof signed with a bare key in a `jwk` header. `didMethodsSupported` can then be empty. */
   jwkSupported?: boolean
 }
@@ -24,10 +23,7 @@ export interface DidCommSdJwtVcOfferCredentialFormat {
 }
 
 export interface DidCommSdJwtVcAcceptOfferFormat {
-  didCommSignedAttachment?: XOR<
-    DidCommW3cV2SdJwtSignedAttachmentCredentialRequestOptions,
-    { alg?: string; jwk: Kms.PublicJwk }
-  >
+  didCommSignedAttachment?: XOR<DidCommSignedAttachmentCredentialRequestOptions, { alg?: string; jwk: Kms.PublicJwk }>
 }
 
 export interface DidCommSdJwtVcAcceptRequestFormat {
