@@ -1,15 +1,29 @@
-import type { DidRepository, IDisclosureFrame, JsonObject } from '@credo-ts/core'
+import type {
+  DidRepository,
+  IDisclosureFrame,
+  JsonObject,
+  JwsDetachedFormat,
+  PeerDidNumAlgo2CreateOptions,
+  SdJwtVcHolderBinding,
+} from '@credo-ts/core'
 import {
   AgentContext,
+  CacheModuleConfig,
   ClaimFormat,
+  DidDocumentBuilder,
   DidResolverService,
+  DidsApi,
   DidsModuleConfig,
+  getEd25519VerificationKey2018,
   InjectionSymbols,
+  InMemoryLruCache,
+  JsonEncoder,
   JsonLdModule,
   JsonTransformer,
   KeyDidRegistrar,
   KeyDidResolver,
   Kms,
+  PeerDidNumAlgo,
   W3cDataIntegrityModule,
   W3cV2Credential,
   W3cV2CredentialService,
@@ -31,12 +45,19 @@ import {
   DidCommAttachment,
   DidCommAttachmentData,
   DidCommCredentialExchangeRecord,
+  DidCommCredentialFormatSpec,
   DidCommCredentialProblemReportReason,
   DidCommCredentialRole,
   DidCommCredentialState,
+  DidCommCredentialV2Preview,
+  DidCommMessageRepository,
+  DidCommMessageRole,
+  DidCommOfferCredentialV2Message,
   DidCommProblemReportError,
   DidCommW3cV2SdJwtCredentialFormatService,
+  V2CredentialProblemReportError,
 } from '../src'
+import { createDidCommSignedAttachment } from '../src/modules/credentials/util/didCommSignedAttachment'
 
 const agentConfig = getAgentConfig('W3cV2SdJwt format service test')
 const inMemoryStorageService = new InMemoryStorageService()
@@ -56,6 +77,7 @@ const agentContext = getAgentContext({
     [DidsModuleConfig, didsModuleConfig],
     [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [X509ModuleConfig, new X509ModuleConfig()],
+    [CacheModuleConfig, new CacheModuleConfig({ cache: new InMemoryLruCache({ limit: 500 }) })],
   ],
   agentConfig,
 })
@@ -68,6 +90,13 @@ agentContext.dependencyManager.registerModules({
 })
 
 const formatService = new DidCommW3cV2SdJwtCredentialFormatService()
+
+const attachment = (json: unknown) =>
+  new DidCommAttachment({
+    id: 'attachment-id',
+    mimeType: 'application/json',
+    data: new DidCommAttachmentData({ json: json as JsonObject }),
+  })
 
 describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
   let issuerKdv: CreateDidKidVerificationMethodReturn
@@ -592,7 +621,282 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
       })
     ).resolves.toBeUndefined()
   })
+
+  test.each<[string, { algsSupported?: string[]; didMethodsSupported?: string[] }, JsonObject, string]>([
+    [
+      'an alg',
+      { algsSupported: ['ES256'] },
+      { algs_supported: ['EdDSA'] },
+      "alg 'EdDSA' is not one of the supported algorithms ES256",
+    ],
+    ['a nonce', {}, { nonce: 'another-nonce' }, 'Invalid nonce in signed attachment'],
+    [
+      'a DID method',
+      { didMethodsSupported: ['peer'] },
+      { did_methods_supported: ['key'] },
+      "DID method 'key' is not supported by the issuer",
+    ],
+  ])(
+    'abandons issuance for a binding proof with %s that was not offered',
+    async (_, offerBinding, holderOffer, error) => {
+      const { issuerCredentialRecord, offerAttachment, requestAttachment, requestAppendAttachments } =
+        await offerAndBoundRequest({
+          kid: holderKdv.kid,
+          offerBinding: { algsSupported: ['EdDSA'], didMethodsSupported: ['key'], ...offerBinding },
+          tamperHolderOffer: (bindingMethod) => ({ ...bindingMethod, ...holderOffer }),
+        })
+
+      const processRequest = formatService.processRequest(agentContext, {
+        credentialExchangeRecord: issuerCredentialRecord,
+        attachment: requestAttachment,
+        requestAppendAttachments,
+      })
+      await expect(processRequest).rejects.toThrow(V2CredentialProblemReportError)
+      await expect(processRequest).rejects.toThrow(error)
+      await expect(processRequest).rejects.toMatchObject({
+        problemReport: { description: { code: DidCommCredentialProblemReportReason.IssuanceAbandoned } },
+      })
+
+      const acceptRequest = formatService.acceptRequest(agentContext, {
+        credentialExchangeRecord: issuerCredentialRecord,
+        offerAttachment,
+        requestAttachment,
+        requestAppendAttachments,
+      })
+      await expect(acceptRequest).rejects.toThrow(V2CredentialProblemReportError)
+      await expect(acceptRequest).rejects.toThrow(error)
+    }
+  )
+
+  test('acceptOffer does not sign a binding proof with a DID method the offer does not support', async () => {
+    await expect(
+      offerAndBoundRequest({
+        kid: holderKdv.kid,
+        offerBinding: { algsSupported: ['EdDSA'], didMethodsSupported: ['peer'] },
+      })
+    ).rejects.toThrow("DID method 'key' is not supported by the issuer")
+  })
+
+  test('rejects a binding key that is not in the authentication relationship', async () => {
+    const kid = await createPeerDidKid('assertionMethod')
+
+    await expect(offerAndBoundRequest({ kid })).rejects.toThrow(`'${kid}' in purposes authentication`)
+
+    const { issuerCredentialRecord, offerAttachment } = await offerAndBoundRequest({ kid: holderKdv.kid })
+    const offer = offerAttachment.getDataAsJson<{ binding_method: { didcomm_signed_attachment: { nonce: string } } }>()
+    const signedAttachment = await createDidCommSignedAttachment(
+      agentContext,
+      { nonce: offer.binding_method.didcomm_signed_attachment.nonce },
+      { kid },
+      ['EdDSA']
+    )
+
+    const processRequest = formatService.processRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      attachment: attachment({ binding_proof: { didcomm_signed_attachment: { attachment_id: signedAttachment.id } } }),
+      requestAppendAttachments: [signedAttachment],
+    })
+    await expect(processRequest).rejects.toThrow(V2CredentialProblemReportError)
+    await expect(processRequest).rejects.toThrow(`'${kid}' in purposes authentication`)
+  })
+
+  test('issues a credential bound to a DID key that is only in authentication', async () => {
+    const kid = await createPeerDidKid('authentication')
+    const { issuerCredentialRecord, offerAttachment, requestAttachment, requestAppendAttachments } =
+      await offerAndBoundRequest({ kid })
+
+    await formatService.processRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      attachment: requestAttachment,
+      requestAppendAttachments,
+    })
+    const { attachment: credentialAttachment } = await formatService.acceptRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      offerAttachment,
+      requestAttachment,
+      requestAppendAttachments,
+    })
+
+    const { credential } = credentialAttachment.getDataAsJson<{ credential: string }>()
+    expect(W3cV2SdJwtVerifiableCredential.fromCompact(credential).sdJwt.payload.cnf).toEqual({ kid })
+  })
+
+  test.each<[string, (jwk: JsonObject) => JsonObject, string]>([
+    ['both kid and jwk', (jwk) => ({ kid: holderKdv.kid, jwk }), "must not have both 'kid' and 'jwk'"],
+    [
+      'a jwk when the offer has no jwk_supported',
+      (jwk) => ({ jwk }),
+      "The offer does not accept a 'jwk' binding proof",
+    ],
+  ])('abandons issuance for a binding proof header with %s', async (_, header, error) => {
+    const { issuerCredentialRecord, offerAttachment } = await offerAndBoundRequest({ kid: holderKdv.kid })
+    const offer = offerAttachment.getDataAsJson<{ binding_method: { didcomm_signed_attachment: { nonce: string } } }>()
+    const signedAttachment = await createDidCommSignedAttachment(
+      agentContext,
+      { nonce: offer.binding_method.didcomm_signed_attachment.nonce },
+      { jwk: holderKdv.publicJwk },
+      ['EdDSA']
+    )
+    const jws = signedAttachment.data.jws as JwsDetachedFormat
+    const { jwk, ...protectedHeader } = JsonEncoder.fromBase64Url(jws.protected)
+    if (header(jwk).kid) jws.protected = JsonEncoder.toBase64Url({ ...protectedHeader, ...header(jwk) })
+
+    const processRequest = formatService.processRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      attachment: attachment({ binding_proof: { didcomm_signed_attachment: { attachment_id: signedAttachment.id } } }),
+      requestAppendAttachments: [signedAttachment],
+    })
+    await expect(processRequest).rejects.toThrow(V2CredentialProblemReportError)
+    await expect(processRequest).rejects.toThrow(error)
+  })
+
+  test('acceptRequest rejects a holder that is not the key of the binding proof', async () => {
+    const { issuerCredentialRecord, offerAttachment, requestAttachment, requestAppendAttachments } =
+      await offerAndBoundRequest({ kid: holderKdv.kid })
+
+    await expect(
+      formatService.acceptRequest(agentContext, {
+        credentialExchangeRecord: issuerCredentialRecord,
+        offerAttachment,
+        requestAttachment,
+        requestAppendAttachments,
+        credentialFormats: { w3cV2SdJwt: { holder: { method: 'did', didUrl: issuerKdv.kid } } },
+      })
+    ).rejects.toThrow('The holder must be the key of the binding proof in the request')
+  })
+
+  test.each<[string, () => SdJwtVcHolderBinding | undefined]>([
+    ['no cnf', () => undefined],
+    ['the cnf of another key', () => ({ method: 'did', didUrl: issuerKdv.kid })],
+  ])('processCredential rejects a credential with %s for a request with a binding proof', async (_, holder) => {
+    const { offerAttachment, requestAttachment, requestAppendAttachments } = await offerAndBoundRequest({
+      kid: holderKdv.kid,
+    })
+
+    const signedCredential = await agentContext.dependencyManager
+      .resolve(W3cV2CredentialService)
+      .signCredential(agentContext, {
+        format: ClaimFormat.SdJwtW3cVc,
+        credential: JsonTransformer.fromJSON(
+          offerAttachment.getDataAsJson<{ credential: JsonObject }>().credential,
+          W3cV2Credential
+        ),
+        verificationMethod: issuerKdv.verificationMethod.id,
+        alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
+        holder: holder(),
+      })
+
+    await expect(
+      formatService.processCredential(agentContext, {
+        credentialExchangeRecord: new DidCommCredentialExchangeRecord({
+          protocolVersion: 'v2',
+          state: DidCommCredentialState.CredentialReceived,
+          threadId: '2c3d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e6f',
+          role: DidCommCredentialRole.Holder,
+        }),
+        attachment: attachment({ credential: signedCredential.encoded }),
+        offerAttachment,
+        requestAttachment,
+        requestAppendAttachments,
+      })
+    ).rejects.toThrow("The credential must have a 'cnf' claim with only the 'kid' of the binding proof")
+  })
+
+  /**
+   * Offers an optional `didcomm_signed_attachment` binding, saves the sent offer for `processRequest`,
+   * and has the holder sign a binding proof with `kid` against its own copy of the offer.
+   */
+  async function offerAndBoundRequest({
+    kid,
+    offerBinding = { algsSupported: ['EdDSA'], didMethodsSupported: ['key', 'peer'] },
+    tamperHolderOffer = (bindingMethod) => bindingMethod,
+  }: {
+    kid: string
+    offerBinding?: { algsSupported?: string[]; didMethodsSupported?: string[] }
+    tamperHolderOffer?: (bindingMethod: JsonObject) => JsonObject
+  }) {
+    const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
+      protocolVersion: 'v2',
+      state: DidCommCredentialState.OfferSent,
+      threadId: '1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e',
+      role: DidCommCredentialRole.Issuer,
+    })
+
+    const { format, attachment: offerAttachment } = await formatService.createOffer(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      credentialFormats: {
+        w3cV2SdJwt: {
+          credential: {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuerKdv.did,
+            validFrom: new Date().toISOString(),
+            credentialSubject: { name: 'John' },
+          },
+          didCommSignedAttachmentBinding: offerBinding,
+        },
+      },
+    })
+    await saveSentOffer(issuerCredentialRecord, format, offerAttachment)
+
+    const offer = offerAttachment.getDataAsJson<{ binding_method: { didcomm_signed_attachment: JsonObject } }>()
+    const { attachment: requestAttachment, appendAttachments: requestAppendAttachments } =
+      await formatService.acceptOffer(agentContext, {
+        credentialExchangeRecord: issuerCredentialRecord,
+        offerAttachment: attachment({
+          ...offer,
+          binding_method: {
+            didcomm_signed_attachment: tamperHolderOffer(offer.binding_method.didcomm_signed_attachment),
+          },
+        }),
+        credentialFormats: { w3cV2SdJwt: { didCommSignedAttachment: { kid } } },
+      })
+
+    return { issuerCredentialRecord, offerAttachment, requestAttachment, requestAppendAttachments }
+  }
 })
+
+async function saveSentOffer(
+  credentialExchangeRecord: DidCommCredentialExchangeRecord,
+  format: DidCommCredentialFormatSpec,
+  offerAttachment: DidCommAttachment
+) {
+  await agentContext.dependencyManager.resolve(DidCommMessageRepository).saveAgentMessage(agentContext, {
+    agentMessage: new DidCommOfferCredentialV2Message({
+      formats: [format],
+      offerAttachments: [offerAttachment],
+      credentialPreview: new DidCommCredentialV2Preview({ attributes: [] }),
+    }),
+    role: DidCommMessageRole.Sender,
+    associatedRecordId: credentialExchangeRecord.id,
+  })
+}
+
+async function createPeerDidKid(purpose: 'authentication' | 'assertionMethod') {
+  const { keyId, publicJwk } = await agentContext.dependencyManager
+    .resolve(Kms.KeyManagementApi)
+    .createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+  const verificationMethod = getEd25519VerificationKey2018({
+    id: '#key-1',
+    controller: '#id',
+    publicJwk: Kms.PublicJwk.fromPublicJwk(publicJwk),
+  })
+
+  const didDocument = new DidDocumentBuilder('').addVerificationMethod(verificationMethod)
+  if (purpose === 'authentication') didDocument.addAuthentication(verificationMethod.id)
+  else didDocument.addAssertionMethod(verificationMethod.id)
+
+  const { didState } = await agentContext.dependencyManager.resolve(DidsApi).create<PeerDidNumAlgo2CreateOptions>({
+    method: 'peer',
+    didDocument: didDocument.build(),
+    options: {
+      numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc,
+      keys: [{ didDocumentRelativeKeyId: '#key-1', kmsKeyId: keyId }],
+    },
+  })
+
+  return `${didState.did}#key-1`
+}
 
 /**
  * Issues a credential for an unbound offer, rewrites the issued credential with `tamper`, re-signs it as
@@ -726,7 +1030,7 @@ async function issuanceFlowTest(options: {
   }
 
   // --- Issuer creates offer ---
-  const { attachment: offerAttachment } = await formatService.createOffer(agentContext, {
+  const { format: offerFormat, attachment: offerAttachment } = await formatService.createOffer(agentContext, {
     credentialExchangeRecord: issuerCredentialRecord,
     credentialFormats: {
       w3cV2SdJwt: {
@@ -741,6 +1045,7 @@ async function issuanceFlowTest(options: {
       },
     },
   })
+  await saveSentOffer(issuerCredentialRecord, offerFormat, offerAttachment)
 
   // --- Holder processes offer ---
   await formatService.processOffer(agentContext, {
@@ -762,6 +1067,7 @@ async function issuanceFlowTest(options: {
   await formatService.processRequest(agentContext, {
     credentialExchangeRecord: issuerCredentialRecord,
     attachment: requestAttachment,
+    requestAppendAttachments,
   })
 
   // --- Issuer accepts request (issues credential) ---
@@ -783,6 +1089,7 @@ async function issuanceFlowTest(options: {
     credentialExchangeRecord: holderCredentialRecord,
     attachment: credentialAttachment,
     requestAttachment,
+    requestAppendAttachments,
   })
 
   // --- Assertions ---
