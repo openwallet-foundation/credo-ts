@@ -106,6 +106,7 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
       }
 
       const issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, {
+        issuerId: issuer.issuerId,
         preAuthorizedCode,
         issuerState,
       })
@@ -188,6 +189,7 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
         const { deferredCredentialResponse, deferredCredentialResponseJwt } =
           await openId4VcIssuerService.createDeferredCredentialResponse(agentContext, {
             issuanceSession,
+            issuer,
             deferredCredentialRequest: parsedCredentialRequest.deferredCredentialRequest,
             authorization: {
               authorizationServer,

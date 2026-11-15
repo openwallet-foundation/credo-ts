@@ -62,7 +62,7 @@ import { purposes } from '../vc/linked-data-proofs/adapters/jsonld-signatures-ad
 import { resolveCredentialSubjectVerificationMethod } from '../vc/resolveSigner'
 import { W3cV2SdJwtCredentialService, W3cV2SdJwtVerifiableCredential } from '../vc/sd-jwt-vc'
 import { normalizeDidIdentifier } from '../vc/util'
-import { X509Certificate } from '../x509'
+import { X509Service } from '../x509'
 import { DcqlError } from './DcqlError'
 import type {
   DcqlCredentialsForRequest,
@@ -199,12 +199,13 @@ export class DcqlService {
   }
 
   private getAuthorityForCredential(
+    agentContext: AgentContext,
     credential: VerifiableCredential | W3cV2EnvelopedVerifiableCredential
   ): DcqlCredential['authority'] {
     if (credential.claimFormat === ClaimFormat.SdJwtDc) {
       const akiValues = (credential.header.x5c as string[] | undefined)
         ?.map((c) => {
-          const akiHex = X509Certificate.fromEncodedCertificate(c).authorityKeyIdentifier
+          const akiHex = X509Service.parseCertificate(agentContext, { encodedCertificate: c }).authorityKeyIdentifier
           return akiHex ? TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromHex(akiHex)) : undefined
         })
         .filter((aki) => aki !== undefined)
@@ -220,7 +221,7 @@ export class DcqlService {
     if (credential.claimFormat === ClaimFormat.MsoMdoc) {
       const akiValues = credential.issuerSignedCertificateChain
         .map((c) => {
-          const akiHex = X509Certificate.fromRawCertificate(c).authorityKeyIdentifier
+          const akiHex = X509Service.parseCertificate(agentContext, { encodedCertificate: c }).authorityKeyIdentifier
           return akiHex ? TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromHex(akiHex)) : undefined
         })
         .filter((aki) => aki !== undefined)
@@ -270,7 +271,7 @@ export class DcqlService {
 
       return {
         credential_format: queryCredential.format === 'dc+sd-jwt' ? 'dc+sd-jwt' : 'vc+sd-jwt',
-        authority: this.getAuthorityForCredential(presentation),
+        authority: this.getAuthorityForCredential(agentContext, presentation),
         cryptographic_holder_binding: presentation.kbJwt !== undefined,
         vct:
           presentationVctValues.find((presentationVctValue) => requestedVcts?.includes(presentationVctValue)) ??
@@ -286,7 +287,10 @@ export class DcqlService {
       return {
         cryptographic_holder_binding: true,
         credential_format: 'mso_mdoc',
-        authority: this.getAuthorityForCredential(new Mdoc(presentation.deviceResponse.documents[0].issuerSigned)),
+        authority: this.getAuthorityForCredential(
+          agentContext,
+          new Mdoc(presentation.deviceResponse.documents[0].issuerSigned)
+        ),
         doctype: presentation.deviceResponse.documents[0].docType,
         namespaces: Object.entries(
           Object.fromEntries(
@@ -314,7 +318,7 @@ export class DcqlService {
       return {
         cryptographic_holder_binding: hasHolderBinding(undefined, vc.credentialSubjectIds),
         credential_format: 'jwt_vc_json',
-        authority: this.getAuthorityForCredential(vc),
+        authority: this.getAuthorityForCredential(agentContext, vc),
         claims: vc.jsonCredential as { [key: string]: JsonValue },
         type: vc.type,
       } satisfies DcqlW3cVcCredential
@@ -330,7 +334,7 @@ export class DcqlService {
       return {
         cryptographic_holder_binding: hasHolderBinding(undefined, vc.credentialSubjectIds),
         credential_format: 'ldp_vc',
-        authority: this.getAuthorityForCredential(vc),
+        authority: this.getAuthorityForCredential(agentContext, vc),
         claims: vc.jsonCredential as DcqlW3cVcCredential.Claims,
         type: expandedTypes,
       } satisfies DcqlW3cVcCredential
@@ -349,7 +353,7 @@ export class DcqlService {
       return {
         cryptographic_holder_binding: hasW3cV2HolderBinding(firstEntry.envelopedCredential),
         credential_format: 'vc+sd-jwt',
-        authority: this.getAuthorityForCredential(firstEntry),
+        authority: this.getAuthorityForCredential(agentContext, firstEntry),
         type: asArray(firstEntry.resolvedCredential.type),
         claims: firstEntry.resolvedCredential.toJSON() as { [key: string]: JsonValue },
       } satisfies DcqlW3cVcCredential
@@ -371,7 +375,7 @@ export class DcqlService {
         const mdoc = record.firstCredential
 
         return {
-          authority: this.getAuthorityForCredential(mdoc),
+          authority: this.getAuthorityForCredential(agentContext, mdoc),
           credential_format: 'mso_mdoc',
           doctype: mdoc.docType,
           namespaces: mdoc.issuerSignedNamespaces,
@@ -382,6 +386,7 @@ export class DcqlService {
       if (record.type === 'SdJwtVcRecord') {
         const sdJwtVc = record.firstCredential
         const claims = sdJwtVc.prettyClaims as DcqlSdJwtVcCredential.Claims
+        const authority = this.getAuthorityForCredential(agentContext, sdJwtVc)
 
         // To keep correct mapping of input credential index, we add it multiple times here:
         // - for dc+sd-jwt and vc+sd-jwt
@@ -395,7 +400,7 @@ export class DcqlService {
 
         return [
           {
-            authority: this.getAuthorityForCredential(sdJwtVc),
+            authority,
             credential_format: 'dc+sd-jwt',
             vct: record.getTags().vct,
             claims,
@@ -404,7 +409,7 @@ export class DcqlService {
           ...record.extendedVctValues.map(
             (extendedVctValue) =>
               ({
-                authority: this.getAuthorityForCredential(sdJwtVc),
+                authority,
                 credential_format: 'dc+sd-jwt',
                 vct: extendedVctValue,
                 claims,
@@ -412,7 +417,7 @@ export class DcqlService {
               }) satisfies DcqlSdJwtVcCredential
           ),
           {
-            authority: this.getAuthorityForCredential(sdJwtVc),
+            authority,
             credential_format: 'vc+sd-jwt',
             vct: record.getTags().vct,
             claims,
@@ -421,7 +426,7 @@ export class DcqlService {
           ...record.extendedVctValues.map(
             (extendedVctValue) =>
               ({
-                authority: this.getAuthorityForCredential(sdJwtVc),
+                authority,
                 credential_format: 'vc+sd-jwt',
                 vct: extendedVctValue,
                 claims,
@@ -437,7 +442,7 @@ export class DcqlService {
         if (firstCredential.claimFormat === ClaimFormat.LdpVc) {
           return {
             credential_format: 'ldp_vc',
-            authority: this.getAuthorityForCredential(firstCredential),
+            authority: this.getAuthorityForCredential(agentContext, firstCredential),
             type: record.getTags().expandedTypes ?? [],
             claims: firstCredential.jsonCredential as DcqlW3cVcCredential.Claims,
             cryptographic_holder_binding: hasHolderBinding(undefined, firstCredential.credentialSubjectIds),
@@ -446,7 +451,7 @@ export class DcqlService {
 
         return {
           credential_format: 'jwt_vc_json',
-          authority: this.getAuthorityForCredential(firstCredential),
+          authority: this.getAuthorityForCredential(agentContext, firstCredential),
           type: firstCredential.type,
           claims: firstCredential.jsonCredential as DcqlW3cVcCredential.Claims,
           cryptographic_holder_binding: hasHolderBinding(undefined, firstCredential.credentialSubjectIds),
@@ -459,7 +464,7 @@ export class DcqlService {
 
         return {
           credential_format: 'vc+sd-jwt',
-          authority: this.getAuthorityForCredential(firstCredential),
+          authority: this.getAuthorityForCredential(agentContext, firstCredential),
           type: asArray(firstCredential.resolvedCredential.type),
           claims: firstCredential.resolvedCredential.toJSON() as DcqlW3cVcCredential.Claims,
           cryptographic_holder_binding: hasW3cV2HolderBinding(firstCredential),
