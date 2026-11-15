@@ -37,7 +37,7 @@ export class JwsService {
 
     const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
-    const key = await kms.getPublicKey({ keyId: options.keyId })
+    const { publicKey: key, backend } = await kms.getPublicKey({ keyId: options.keyId })
     assertJwkAsymmetric(key)
 
     const publicJwk = PublicJwk.fromPublicJwk(key)
@@ -78,6 +78,7 @@ export class JwsService {
       algorithm: alg,
       data: TypedArrayEncoder.fromUtf8String(`${base64UrlProtectedHeader}.${base64Payload}`),
       keyId: options.keyId,
+      backend,
     })
     const signature = TypedArrayEncoder.toBase64Url(signResult.signature)
 

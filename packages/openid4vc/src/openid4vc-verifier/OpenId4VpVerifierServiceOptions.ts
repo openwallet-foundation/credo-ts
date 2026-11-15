@@ -1,4 +1,6 @@
 import type {
+  AgentContext,
+  CanBePromise,
   DcqlPresentation,
   DcqlPresentationResult,
   DcqlQuery,
@@ -122,6 +124,12 @@ export interface OpenId4VpCreateAuthorizationRequestOptions {
    * the verifier service config will be used.
    */
   expirationInSeconds?: number
+
+  /**
+   * Entries set on the `metadata` of the verification session record before it is stored, so the
+   * record does not have to be updated after it is created.
+   */
+  recordMetadata?: Record<string, Record<string, unknown>>
 }
 
 export type OpenId4VpVersion = 'v1' | 'v1.draft21' | 'v1.draft24'
@@ -247,3 +255,18 @@ export interface OpenId4VpCreateVerifierOptions {
 }
 
 export type OpenId4VcUpdateVerifierRecordOptions = Pick<OpenId4VcVerifierRecordProps, 'verifierId' | 'clientMetadata'>
+
+export interface OpenId4VpVerifiedAuthorizationResponseHandlerOptions {
+  agentContext: AgentContext
+
+  /**
+   * The verification session of the response. It is not yet updated to `ResponseVerified`.
+   */
+  verificationSession: OpenId4VcVerificationSessionRecord
+
+  verifiedAuthorizationResponse: Omit<OpenId4VpVerifiedAuthorizationResponse, 'verificationSession'>
+}
+
+export type OpenId4VpVerifiedAuthorizationResponseHandler = (
+  options: OpenId4VpVerifiedAuthorizationResponseHandlerOptions
+) => CanBePromise<void>

@@ -115,7 +115,7 @@ export class DidCommMediationRecipientService {
   }
 
   public async processMediationGrant(messageContext: DidCommInboundMessageContext<DidCommMediationGrantMessage>) {
-    // Assert ready connection
+    // A grant changes where our messages are routed, so only the mediator itself may send it
     const connection = messageContext.assertReadyConnection()
 
     // Mediation record must already exists to be updated to granted status
