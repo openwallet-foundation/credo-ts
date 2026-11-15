@@ -1,5 +1,4 @@
 import type { AgentContext } from '../../agent/context'
-import type { GetTrustedIssuersForCredential, TrustedIssuerDid } from '../../agent/TrustedIssuersForVerification'
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
@@ -299,10 +298,16 @@ export class W3cV2CredentialService {
     validationResults.credentialEntries = (
       await Promise.all(
         entries.map((entry) =>
-          this.verifyPresentationEntry(agentContext, entry, signer, options.trustedIssuers, {
-            nonce: options.challenge,
-            audience: options.domain,
-          })
+          this.verifyPresentationEntry(
+            agentContext,
+            entry,
+            signer,
+            { trustedIssuers: options.trustedIssuers, now: options.now },
+            {
+              nonce: options.challenge,
+              audience: options.domain,
+            }
+          )
         )
       )
     ).flat()
@@ -317,7 +322,7 @@ export class W3cV2CredentialService {
     agentContext: AgentContext,
     entry: W3cV2PresentationCredentialEntry,
     signer: ResolvedSigner,
-    trustedIssuers: TrustedIssuerDid[] | GetTrustedIssuersForCredential | undefined,
+    verifyOptions: Pick<W3cV2VerifyPresentationOptions, 'trustedIssuers' | 'now'>,
     presentationBinding: { nonce: string; audience?: string }
   ): Promise<W3cV2PresentationCredentialEntryResult[]> {
     if (entry instanceof W3cV2DataIntegrityVerifiablePresentation) {
@@ -331,7 +336,7 @@ export class W3cV2CredentialService {
     if (entry instanceof W3cV2DataIntegrityVerifiableCredential) {
       const credentialResult = await this.w3cV2DataIntegrityCredentialService.verifyCredential(agentContext, {
         credential: entry,
-        trustedIssuers,
+        ...verifyOptions,
       } as W3cV2DiVerifyCredentialOptions)
 
       return [
@@ -362,7 +367,7 @@ export class W3cV2CredentialService {
     if (enclosed instanceof W3cV2JwtVerifiableCredential) {
       credentialResult = await this.w3cV2JwtCredentialService.verifyCredential(agentContext, {
         credential: enclosed,
-        trustedIssuers,
+        ...verifyOptions,
       } as W3cV2JwtVerifyCredentialOptions)
       claims = enclosed.jwt.payload.toJson()
     } else if (enclosed instanceof W3cV2SdJwtVerifiableCredential) {
@@ -378,7 +383,7 @@ export class W3cV2CredentialService {
 
       credentialResult = await this.w3cV2SdJwtCredentialService.verifyCredential(agentContext, {
         credential: enclosed,
-        trustedIssuers,
+        ...verifyOptions,
         keyBinding: enclosed.sdJwt.kbJwt && audience ? { nonce, audience } : undefined,
       } as W3cV2SdJwtVerifyCredentialOptions)
       claims = enclosed.sdJwt.prettyClaims
@@ -403,7 +408,8 @@ export class W3cV2CredentialService {
   }
 
   /**
-   * A credential bound to a key with `cnf` must be presented with that key.
+   * A credential bound to a key with `cnf` must be presented with that key. A `cnf.kid` must also be a key of
+   * the DID that signed the presentation.
    */
   private async verifyHolderBinding(
     agentContext: AgentContext,
@@ -415,17 +421,28 @@ export class W3cV2CredentialService {
       if (!holderBinding) return { isValid: true }
 
       // The presentation signer is resolved under `authentication`, so the holder key must be too
-      const { publicJwk } = await extractKeyFromHolderBinding(agentContext, holderBinding, {
+      const { publicJwk, did } = await extractKeyFromHolderBinding(agentContext, holderBinding, {
         didPurposes: ['authentication'],
       })
-      if (publicJwk.equals(getPublicJwkFromVerificationMethod(signer.verificationMethod))) return { isValid: true }
-
-      return {
-        isValid: false,
-        error: new CredoError(
-          `Credential is bound to a different key than verification method ${signer.verificationMethod.id} that signed the presentation`
-        ),
+      if (!publicJwk.equals(getPublicJwkFromVerificationMethod(signer.verificationMethod))) {
+        return {
+          isValid: false,
+          error: new CredoError(
+            `Credential is bound to a different key than verification method ${signer.verificationMethod.id} that signed the presentation`
+          ),
+        }
       }
+
+      if (holderBinding.method === 'did' && did !== signer.signer) {
+        return {
+          isValid: false,
+          error: new CredoError(
+            `Credential is bound to cnf.kid '${holderBinding.didUrl}' of did '${did}', but the presentation is signed by did '${signer.signer}'`
+          ),
+        }
+      }
+
+      return { isValid: true }
     } catch (error) {
       return { isValid: false, error }
     }

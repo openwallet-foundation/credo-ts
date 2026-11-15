@@ -1,11 +1,17 @@
 import type { AgentContext } from '@credo-ts/core'
 import { Hasher, utils } from '@credo-ts/core'
+import { isIndyDid, parseIndyDid } from '@credo-ts/indy-vdr'
 import {
   getDidIndyCredentialDefinitionId,
-  getDidIndyIdentifierVariants,
   getDidIndyRevocationRegistryDefinitionId,
   getDidIndySchemaId,
-} from '../../indy-vdr/src/anoncreds/utils/identifiers'
+  isDidIndyCredentialDefinitionId,
+  isDidIndyRevocationRegistryId,
+  isDidIndySchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndyRevocationRegistryId,
+  parseIndySchemaId,
+} from '@credo-ts/indy-vdr/anoncreds'
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsRegistry,
@@ -26,16 +32,6 @@ import type {
   RegisterSchemaReturn,
 } from '../src'
 import { bytesToBigint } from '../src/utils/bytesToBigint'
-import {
-  isDidIndyCredentialDefinitionId,
-  isDidIndyRevocationRegistryId,
-  isDidIndySchemaId,
-  isIndyDid,
-  parseIndyCredentialDefinitionId,
-  parseIndyDid,
-  parseIndyRevocationRegistryId,
-  parseIndySchemaId,
-} from '../src/utils/indyIdentifiers'
 import { dateToTimestamp } from '../src/utils/timestamp'
 
 /**
@@ -49,8 +45,18 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   public readonly allowsCaching = true
   public readonly allowsLocalRecord = true
 
+  // shortcut: only percent-encodes spaces in did:indy ids, which is all the tests use
   public getIdentifierVariants(identifier: string) {
-    return getDidIndyIdentifierVariants(identifier)
+    if (
+      !isDidIndySchemaId(identifier) &&
+      !isDidIndyCredentialDefinitionId(identifier) &&
+      !isDidIndyRevocationRegistryId(identifier)
+    ) {
+      return [identifier]
+    }
+
+    const unencoded = identifier.replaceAll('%20', ' ')
+    return [...new Set([unencoded.replaceAll(' ', '%20'), identifier, unencoded])]
   }
 
   private schemas: Record<string, AnonCredsSchema>

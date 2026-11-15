@@ -1,4 +1,4 @@
-import { CredoError } from '@credo-ts/core'
+import { CredoError, DidKey, Kms } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
@@ -12,7 +12,12 @@ import {
 import type { DidCommMessageReceivedEvent } from '../../didcomm/src/DidCommEvents'
 import { DidCommEventTypes } from '../../didcomm/src/DidCommEvents'
 import type { DidCommMessage } from '../../didcomm/src/DidCommMessage'
-import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../didcomm/src/modules/connections'
+import {
+  DidCommConnectionRepository,
+  DidCommDidExchangeState,
+  DidCommHandshakeProtocol,
+  DidCommTrustPingV2Message,
+} from '../../didcomm/src/modules/connections'
 import {
   type CreateCredentialOfferOptions,
   DidCommAutoAcceptCredential,
@@ -23,7 +28,10 @@ import { DidCommOutOfBandEventTypes } from '../../didcomm/src/modules/oob/domain
 import { DidCommOutOfBandRole } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
 import { OutOfBandDidCommService } from '../../didcomm/src/modules/oob/domain/OutOfBandDidCommService'
+import { outOfBandServiceToInlineKeysNumAlgo2Did } from '../../didcomm/src/modules/oob/helpers'
 import { DidCommOutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
+import { DidCommOutOfBandRecordMetadataKeys } from '../../didcomm/src/modules/oob/repository/outOfBandRecordMetadataTypes'
+import { DidCommRoutingService } from '../../didcomm/src/modules/routing'
 import { Agent } from '../src/agent/Agent'
 import { JsonEncoder, JsonTransformer, TypedArrayEncoder } from '../src/utils'
 import { getAgentOptions, waitForCredentialRecord } from './helpers'
@@ -65,6 +73,7 @@ describe('out of band', () => {
     label: 'Faber College',
     alias: `Faber's connection with Alice`,
     imageUrl: 'http://faber.image.url',
+    handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
   }
 
   const issueCredentialConfig = {
@@ -78,6 +87,17 @@ describe('out of band', () => {
     label: 'alice',
     autoAcceptConnection: false,
   }
+
+  // Coordinate Mediation 2.0 routing did: Ed25519 routing key + mediator endpoint
+  const mediatorRoutingKey = Kms.PublicJwk.fromFingerprint(
+    'z6MkiP5ghmdLFh1GyGRQQQLVJhJtjQjTpxUY3AnY3h5gu3BE'
+  ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  const mediatorRoutingDid = `did:peer:2.V${mediatorRoutingKey.fingerprint}.S${JsonEncoder.toBase64Url({
+    t: 'dm',
+    s: 'https://mediator.example.com',
+    r: [],
+    a: ['didcomm/v2'],
+  })}`
 
   let credentialTemplate: CreateCredentialOfferOptions<
     [DidCommCredentialV2Protocol<[AnonCredsDidCommCredentialFormatService]>]
@@ -168,6 +188,16 @@ describe('out of band', () => {
           multiUseInvitation: true,
         })
       ).rejects.toEqual(new CredoError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined."))
+    })
+
+    test('throw error when a message does not support the DIDComm version of the invitation', async () => {
+      await expect(
+        faberAgent.didcomm.oob.createInvitation({ messages: [new DidCommTrustPingV2Message({})] })
+      ).rejects.toEqual(
+        new CredoError(
+          'Message type https://didcomm.org/trust-ping/2.0/ping only supports DIDComm v2 but the invitation uses DIDComm v1'
+        )
+      )
     })
 
     test('handles empty messages array as no messages being passed', async () => {
@@ -288,6 +318,22 @@ describe('out of band', () => {
   })
 
   describe('receiveInvitation', () => {
+    // Lists the service of `outOfBandInvitation` first and the service of `earlierOutOfBandInvitation` second
+    const withEarlierServiceSecond = (
+      outOfBandInvitation: DidCommOutOfBandInvitation,
+      earlierOutOfBandInvitation: DidCommOutOfBandInvitation
+    ) => {
+      const invitationJson = outOfBandInvitation.toJSON()
+      const [service] = invitationJson.services as Record<string, unknown>[]
+      const [earlierService] = earlierOutOfBandInvitation.toJSON().services as Record<string, unknown>[]
+
+      // Both invitations use `#inline-0`, so the new service gets another id to keep the ids unique
+      return DidCommOutOfBandInvitation.fromJson({
+        ...invitationJson,
+        services: [{ ...service, id: '#inline-1' }, earlierService],
+      })
+    }
+
     test('receive OOB connection invitation', async () => {
       const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
       const { outOfBandInvitation } = outOfBandRecord
@@ -329,32 +375,31 @@ describe('out of band', () => {
       expect(faberAliceConnection.alias).toBe(makeConnectionConfig.alias)
     })
 
+    test('create v1 invitation with Coordinate Mediation 2.0 routing resolves the routing did to the mediator endpoint and routing keys', async () => {
+      const recipientKey = Kms.PublicJwk.fromFingerprint(
+        'z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'
+      ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+      recipientKey.keyId = recipientKey.legacyKeyId
+
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
+        ...makeConnectionConfig,
+        routing: {
+          endpoints: ['rxjs:faber'],
+          routingDid: mediatorRoutingDid,
+          routingKeys: [],
+          recipientKey,
+        },
+      })
+
+      const [service] = outOfBandRecord.outOfBandInvitation.getInlineServices()
+      expect(service.serviceEndpoint).toBe('https://mediator.example.com')
+      expect(service.recipientKeys).toEqual([new DidKey(recipientKey).did])
+      expect(service.routingKeys).toEqual([new DidKey(mediatorRoutingKey).did])
+    })
+
     test('process credential offer requests based on OOB message', async () => {
       const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
 
-      const { outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation({
-        ...issueCredentialConfig,
-        messages: [message],
-      })
-
-      const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
-
-      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
-        state: DidCommCredentialState.OfferReceived,
-        threadId: message.threadId,
-      })
-      await aliceAgent.didcomm.oob.receiveInvitationFromUrl(urlMessage, receiveInvitationConfig)
-
-      const aliceCredentialRecord = await aliceCredentialRecordPromise
-      expect(aliceCredentialRecord.state).toBe(DidCommCredentialState.OfferReceived)
-    })
-
-    test('process credential offer requests with legacy did:sov prefix on message type based on OOB message', async () => {
-      const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
-
-      // we need to override the message type to use the legacy did:sov prefix
-      // @ts-expect-error
-      message.type = message.type.replace('https://didcomm.org', 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec')
       const { outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation({
         ...issueCredentialConfig,
         messages: [message],
@@ -519,6 +564,73 @@ describe('out of band', () => {
           reuseThreadId,
         },
       })
+    })
+
+    test('reuse an existing connection that matches a later service of the invitation', async () => {
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
+      const { connectionRecord: firstAliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
+        outOfBandRecord.outOfBandInvitation,
+        { label: 'alice' }
+      )
+      if (!firstAliceFaberConnection) throw new Error('Connection record is undefined')
+      await aliceAgent.didcomm.connections.returnWhenIsConnected(firstAliceFaberConnection.id)
+
+      const outOfBandRecord2 = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
+      const { connectionRecord: secondAliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
+        withEarlierServiceSecond(outOfBandRecord2.outOfBandInvitation, outOfBandRecord.outOfBandInvitation),
+        { label: 'alice', reuseConnection: true }
+      )
+
+      expect(secondAliceFaberConnection?.id).toEqual(firstAliceFaberConnection.id)
+      expect(await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord2.id)).toHaveLength(0)
+    })
+
+    test('do not reuse a hung-up connection that matches a later service of the invitation', async () => {
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
+      const { connectionRecord: firstAliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
+        outOfBandRecord.outOfBandInvitation,
+        { label: 'alice' }
+      )
+      if (!firstAliceFaberConnection) throw new Error('Connection record is undefined')
+      await aliceAgent.didcomm.connections.returnWhenIsConnected(firstAliceFaberConnection.id)
+      await aliceAgent.didcomm.connections.hangup({ connectionId: firstAliceFaberConnection.id })
+
+      const outOfBandRecord2 = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
+      const { connectionRecord: secondAliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
+        withEarlierServiceSecond(outOfBandRecord2.outOfBandInvitation, outOfBandRecord.outOfBandInvitation),
+        { label: 'alice', reuseConnection: true }
+      )
+      if (!secondAliceFaberConnection) throw new Error('Connection record is undefined')
+      await aliceAgent.didcomm.connections.returnWhenIsConnected(secondAliceFaberConnection.id)
+
+      expect(secondAliceFaberConnection.id).not.toEqual(firstAliceFaberConnection.id)
+      expect(await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord2.id)).toHaveLength(1)
+    })
+
+    test('reuse an existing connection that stores the invitation did in the legacy format', async () => {
+      // The same routing gives both invitations the same service
+      const routing = await faberAgent.didcomm.mediationRecipient.getRouting({})
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ ...makeConnectionConfig, routing })
+      const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(outOfBandRecord.outOfBandInvitation, {
+        label: 'alice',
+      })
+      if (!connectionRecord) throw new Error('Connection record is undefined')
+      const firstAliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(connectionRecord.id)
+
+      // Connections created by Credo 0.5.1 or earlier, or migrated from 0.1, store the invitation did in this format
+      const [service] = outOfBandRecord.outOfBandInvitation.getInlineServices()
+      firstAliceFaberConnection.invitationDid = outOfBandServiceToInlineKeysNumAlgo2Did(service)
+      const connectionRepository = aliceAgent.context.resolve(DidCommConnectionRepository)
+      await connectionRepository.update(aliceAgent.context, firstAliceFaberConnection)
+
+      const outOfBandRecord2 = await faberAgent.didcomm.oob.createInvitation({ ...makeConnectionConfig, routing })
+      const { connectionRecord: secondAliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
+        outOfBandRecord2.outOfBandInvitation,
+        { label: 'alice', reuseConnection: true }
+      )
+
+      expect(secondAliceFaberConnection?.id).toEqual(firstAliceFaberConnection.id)
+      expect(await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord2.id)).toHaveLength(0)
     })
 
     test('create a new connection when connection exists and reuse is false', async () => {
@@ -715,7 +827,9 @@ describe('out of band', () => {
     })
 
     test(`make two connections with ${DidCommHandshakeProtocol.DidExchange} by reusing the did from the first connection as the 'invitationDid' in oob invitation for the second connection`, async () => {
-      const outOfBandRecord1 = await faberAgent.didcomm.oob.createInvitation({})
+      const outOfBandRecord1 = await faberAgent.didcomm.oob.createInvitation({
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+      })
 
       let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
         outOfBandRecord1.outOfBandInvitation,
@@ -734,6 +848,7 @@ describe('out of band', () => {
       // (first connection's did matches the one used in invitation, since no rotation has been done (multiUse=false))
       const outOfBandRecord2 = await faberAgent.didcomm.oob.createInvitation({
         invitationDid: faberAliceConnection.did,
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
       })
 
       let { connectionRecord: aliceFaberConnection2 } = await aliceAgent.didcomm.oob.receiveInvitation(
@@ -918,8 +1033,116 @@ describe('out of band', () => {
       expect(JsonTransformer.toJSON(faberCredentialRequest?.service)).toEqual({
         recipientKeys: [TypedArrayEncoder.toBase58(routing.recipientKey.publicKey.publicKey)],
         serviceEndpoint: routing.endpoints[0],
-        routingKeys: routing.routingKeys.map((r) => TypedArrayEncoder.toBase58(r.publicKey.publicKey)),
+        routingKeys: (routing.routingKeys ?? []).map((r) => TypedArrayEncoder.toBase58(r.publicKey.publicKey)),
       })
+    })
+
+    test('oob exchange without handshake where Coordinate Mediation 2.0 routing is used on recipient', async () => {
+      const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
+        handshake: false,
+        messages: [message],
+      })
+
+      const baseRouting = await aliceAgent.didcomm.mediationRecipient.getRouting({})
+      const routing = {
+        recipientKey: baseRouting.recipientKey,
+        keyAgreementKey: baseRouting.keyAgreementKey,
+        endpoints: baseRouting.endpoints,
+        routingDid: mediatorRoutingDid,
+        routingKeys: [],
+      }
+
+      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+        state: DidCommCredentialState.OfferReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+
+      await aliceAgent.didcomm.oob.receiveInvitation(outOfBandRecord.outOfBandInvitation, {
+        label: 'alice',
+        routing,
+      })
+
+      const aliceCredentialRecord = await aliceCredentialRecordPromise
+
+      const faberCredentialRecordPromise = waitForCredentialRecord(faberAgent, {
+        state: DidCommCredentialState.RequestReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+
+      await aliceAgent.didcomm.credentials.acceptOffer({
+        credentialExchangeRecordId: aliceCredentialRecord.id,
+      })
+
+      const faberCredentialRecord = await faberCredentialRecordPromise
+      const faberCredentialRequest = await faberAgent.didcomm.credentials.findRequestMessage(faberCredentialRecord.id)
+
+      expect(JsonTransformer.toJSON(faberCredentialRequest?.service)).toEqual({
+        recipientKeys: [TypedArrayEncoder.toBase58(routing.recipientKey.publicKey.publicKey)],
+        serviceEndpoint: 'https://mediator.example.com',
+        routingKeys: [TypedArrayEncoder.toBase58(mediatorRoutingKey.publicKey.publicKey)],
+      })
+    })
+
+    test('oob exchange without handshake where recipient has a Coordinate Mediation 2.0 default mediator', async () => {
+      const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
+        handshake: false,
+        messages: [message],
+      })
+
+      const baseRouting = await aliceAgent.didcomm.mediationRecipient.getRouting({})
+      const routing = {
+        recipientKey: baseRouting.recipientKey,
+        keyAgreementKey: baseRouting.keyAgreementKey,
+        endpoints: baseRouting.endpoints,
+        routingDid: mediatorRoutingDid,
+        routingKeys: [],
+      }
+
+      const routingService = aliceAgent.dependencyManager.resolve(DidCommRoutingService)
+      const getRoutingSpy = vi.spyOn(routingService, 'getRouting').mockResolvedValue(routing)
+
+      try {
+        const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+          state: DidCommCredentialState.OfferReceived,
+          threadId: message.threadId,
+          timeoutMs: 10000,
+        })
+
+        await aliceAgent.didcomm.oob.receiveInvitation(outOfBandRecord.outOfBandInvitation, { label: 'alice' })
+
+        const aliceCredentialRecord = await aliceCredentialRecordPromise
+
+        const faberCredentialRecordPromise = waitForCredentialRecord(faberAgent, {
+          state: DidCommCredentialState.RequestReceived,
+          threadId: message.threadId,
+          timeoutMs: 10000,
+        })
+
+        await aliceAgent.didcomm.credentials.acceptOffer({
+          credentialExchangeRecordId: aliceCredentialRecord.id,
+        })
+
+        const faberCredentialRecord = await faberCredentialRecordPromise
+        const faberCredentialRequest = await faberAgent.didcomm.credentials.findRequestMessage(faberCredentialRecord.id)
+
+        expect(JsonTransformer.toJSON(faberCredentialRequest?.service)).toEqual({
+          recipientKeys: [TypedArrayEncoder.toBase58(routing.recipientKey.publicKey.publicKey)],
+          serviceEndpoint: 'https://mediator.example.com',
+          routingKeys: [TypedArrayEncoder.toBase58(mediatorRoutingKey.publicKey.publicKey)],
+        })
+
+        const aliceOutOfBandRecord = await aliceAgent.didcomm.oob.findByReceivedInvitationId(
+          outOfBandRecord.outOfBandInvitation.id
+        )
+        const recipientRouting = aliceOutOfBandRecord?.metadata.get(DidCommOutOfBandRecordMetadataKeys.RecipientRouting)
+        expect(recipientRouting?.routingDid).toBe(mediatorRoutingDid)
+      } finally {
+        getRoutingSpy.mockRestore()
+      }
     })
 
     test('legacy connectionless exchange where response is received to invitation', async () => {
@@ -992,7 +1215,7 @@ describe('out of band', () => {
       expect(JsonTransformer.toJSON(faberCredentialRequest?.service)).toEqual({
         recipientKeys: [TypedArrayEncoder.toBase58(routing.recipientKey.publicKey.publicKey)],
         serviceEndpoint: routing.endpoints[0],
-        routingKeys: routing.routingKeys.map((r) => TypedArrayEncoder.toBase58(r.publicKey.publicKey)),
+        routingKeys: (routing.routingKeys ?? []).map((r) => TypedArrayEncoder.toBase58(r.publicKey.publicKey)),
       })
     })
 

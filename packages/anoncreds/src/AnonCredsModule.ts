@@ -1,16 +1,10 @@
 import type { DependencyManager, Module, Update } from '@credo-ts/core'
 import { AnonCredsW3cCredentialServiceSymbol } from '@credo-ts/core'
-import {
-  DidCommDataIntegrityLinkSecretBindingProviderToken,
-  type DidCommRevocationRegistryIdQueryBuilder,
-  DidCommRevocationRegistryIdQueryBuilderToken,
-} from '@credo-ts/didcomm'
 import { AnonCredsApi } from './AnonCredsApi'
 import type { AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from './anoncreds-rs'
 import { AnonCredsW3cCredentialService } from './anoncreds-rs/AnonCredsW3cCredentialService'
-import { AnonCredsLinkSecretBindingProvider } from './formats/AnonCredsLinkSecretBindingProvider'
 import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsKeyCorrectnessProofRepository,
@@ -24,7 +18,6 @@ import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol, AnonCredsVe
 import { AnonCredsRegistryService } from './services/registry/AnonCredsRegistryService'
 import { updateAnonCredsModuleV0_3_1ToV0_4 } from './updates/0.3.1-0.4'
 import { updateAnonCredsModuleV0_4ToV0_5 } from './updates/0.4-0.5'
-import { identifierQuery } from './utils/identifierVariants'
 
 /**
  * @public
@@ -58,25 +51,6 @@ export class AnonCredsModule implements Module {
     dependencyManager.registerSingleton(AnonCredsVerifierServiceSymbol, AnonCredsRsVerifierService)
 
     dependencyManager.registerSingleton(AnonCredsW3cCredentialServiceSymbol, AnonCredsW3cCredentialService)
-
-    // Makes the `anoncreds_link_secret` binding method of the W3C Data Integrity credential
-    // attachment format available. Without it, that format only supports the binding methods that
-    // do not require anoncreds.
-    dependencyManager.registerSingleton(
-      DidCommDataIntegrityLinkSecretBindingProviderToken,
-      AnonCredsLinkSecretBindingProvider
-    )
-
-    // Revocation notifications find the credential exchange with every form of the revocation registry id
-    dependencyManager.registerInstance(DidCommRevocationRegistryIdQueryBuilderToken, ((
-      agentContext,
-      revocationRegistryId
-    ) =>
-      identifierQuery(
-        agentContext,
-        'anonCredsRevocationRegistryId',
-        revocationRegistryId
-      )) satisfies DidCommRevocationRegistryIdQueryBuilder)
   }
 
   public updates = [

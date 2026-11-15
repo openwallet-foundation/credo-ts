@@ -386,22 +386,9 @@ describe('W3C VC 2.0 format e2e matrix (transport-agnostic)', () => {
         domain,
       })
 
-      const signedPresentation = await holderAgent.w3cV2Credentials.signPresentation(signPresentationOptions as never)
-
-      const verifyPresentationResult = await issuerAgent.w3cV2Credentials.verifyPresentation({
-        presentation: signedPresentation,
-        challenge,
-        domain,
-      } as never)
-
-      expect(verifyPresentationResult.isValid).toBe(false)
-      expect(
-        verifyPresentationResult.credentialEntries.some(
-          (entry) =>
-            (entry as { validations?: { credentialSubjectAuthentication?: { isValid?: boolean } } }).validations
-              ?.credentialSubjectAuthentication?.isValid === false
-        )
-      ).toBe(true)
+      await expect(holderAgent.w3cV2Credentials.signPresentation(signPresentationOptions as never)).rejects.toThrow(
+        'is not a credentialSubject.id of every presentation credential that has one'
+      )
     })
   })
 
@@ -514,22 +501,9 @@ describe('W3C VC 2.0 format e2e matrix (transport-agnostic)', () => {
         domain,
       })
 
-      const signedPresentation = await holderAgent.w3cV2Credentials.signPresentation(signPresentationOptions as never)
-
-      const verifyPresentationResult = await issuerAgent.w3cV2Credentials.verifyPresentation({
-        presentation: signedPresentation,
-        challenge,
-        domain,
-      } as never)
-
-      expect(verifyPresentationResult.isValid).toBe(false)
-      expect(
-        verifyPresentationResult.credentialEntries.some(
-          (entry) =>
-            (entry as { validations?: { credentialSubjectAuthentication?: { isValid?: boolean } } }).validations
-              ?.credentialSubjectAuthentication?.isValid === false
-        )
-      ).toBe(true)
+      await expect(holderAgent.w3cV2Credentials.signPresentation(signPresentationOptions as never)).rejects.toThrow(
+        'is not a credentialSubject.id of every presentation credential that has one'
+      )
     })
   })
 

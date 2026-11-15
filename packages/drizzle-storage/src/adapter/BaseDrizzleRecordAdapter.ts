@@ -4,14 +4,16 @@ import {
   type BaseRecordConstructor,
   CredoError,
   decodeCursor,
+  getRecordPropertyNames,
   JsonTransformer,
   type Query,
   type QueryOptions,
   RecordDecodingError,
   RecordDuplicateError,
   RecordNotFoundError,
+  type TagsBase,
 } from '@credo-ts/core'
-import { and, asc, DrizzleQueryError, desc, eq, type Simplify } from 'drizzle-orm'
+import { and, asc, DrizzleQueryError, desc, eq, getTableColumns, type Simplify } from 'drizzle-orm'
 import { PgTransaction as _PgTransaction, PgTable, pgTable } from 'drizzle-orm/pg-core'
 import {
   SQLiteTable as _SQLiteTable,
@@ -52,6 +54,9 @@ export type DrizzleAdapterRecordValues<Table extends _SQLiteTable> = Simplify<
   Omit<{ [Key in keyof Table['$inferInsert']]: Table['$inferInsert'][Key] }, 'contextCorrelationId'>
 >
 
+// Columns that are set by the base adapter
+const baseColumnNames = ['contextCorrelationId', 'id', 'createdAt', 'updatedAt', 'metadata', 'customTags']
+
 /**
  * Adapter between a specific Record class and the record Type
  */
@@ -77,6 +82,12 @@ export abstract class BaseDrizzleRecordAdapter<
    */
   public tagKeyMapping?: DrizzleCustomTagKeyMapping
 
+  /**
+   * Columns that store a custom tag, which are restored as tags when a record is loaded. Other tag
+   * columns store tags that the record computes from its properties, so these are not restored.
+   */
+  public customTagColumns: string[] = []
+
   public constructor(
     public database: DrizzleDatabase<PostgresSchema, SQLiteSchema>,
     table: {
@@ -89,7 +100,47 @@ export abstract class BaseDrizzleRecordAdapter<
     this.recordClass = recordClass
   }
 
-  public abstract getValues(record: CredoRecord): DrizzleAdapterValues<SQLiteTable>
+  /**
+   * Returns the column values for a record.
+   *
+   * By default columns are mapped by name: a column with the name of a record property stores the encoded
+   * property, any other column stores the tag with that name. Tags without a column are stored in `customTags`,
+   * except for the tags in {@link tagKeyMapping}, which are stored as part of a property.
+   *
+   * Requires the record to define its `encodingSchema` using `createRecordEncodingSchema`. Override this method
+   * and {@link toRecord} for other records, or when the database structure differs from the record.
+   */
+  public getValues(record: CredoRecord): DrizzleAdapterValues<SQLiteTable> {
+    const recordPropertyNames = this.getRecordPropertyNames()
+    const encodedRecord = JsonTransformer.toJSON(record)
+    const tags = record.getTags() as TagsBase
+    const customTags = { ...tags }
+
+    const values: Record<string, unknown> = {}
+    // The sqlite and postgres tables are validated to have the same columns
+    for (const [columnName, column] of Object.entries(this.columns)) {
+      if (baseColumnNames.includes(columnName)) continue
+
+      let value = tags[columnName]
+      if (recordPropertyNames.includes(columnName)) {
+        const recordValue = (record as Record<string, unknown>)[columnName]
+
+        // Date columns store the date, not the encoded string
+        value = recordValue instanceof Date ? recordValue : encodedRecord[columnName]
+      }
+
+      // Drizzle ignores undefined values on update, so null is used to clear a column
+      values[columnName] = value === undefined && !column.notNull ? null : value
+      delete customTags[columnName]
+    }
+
+    for (const tagName of Object.keys(this.tagKeyMapping ?? {})) {
+      delete customTags[tagName]
+    }
+
+    return { ...values, customTags } as unknown as DrizzleAdapterValues<SQLiteTable>
+  }
+
   public getValuesWithBase(agentContext: AgentContext, record: CredoRecord) {
     // Encoding validates the record, so an invalid record throws before it is stored
     JsonTransformer.toJSON(record)
@@ -123,7 +174,108 @@ export abstract class BaseDrizzleRecordAdapter<
     }
   }
 
-  public abstract toRecord(values: DrizzleAdapterRecordValues<SQLiteTable>): CredoRecord
+  /**
+   * Creates a record from the column values. The reverse of {@link getValues}: columns with the name of a
+   * record property are decoded as part of the record, and the {@link customTagColumns} and `customTags`
+   * are set as tags.
+   */
+  public toRecord(values: DrizzleAdapterRecordValues<SQLiteTable>): CredoRecord {
+    const recordPropertyNames = this.getRecordPropertyNames()
+    const { customTags, contextCorrelationId, ...columnValues } = values as Record<string, unknown>
+
+    const encodedRecord: Record<string, unknown> = {}
+    const tags: Record<string, unknown> = {}
+    for (const [columnName, value] of Object.entries(columnValues)) {
+      if (recordPropertyNames.includes(columnName)) encodedRecord[columnName] = value
+      else if (this.customTagColumns.includes(columnName)) tags[columnName] = value
+    }
+
+    const record = JsonTransformer.fromJSON(encodedRecord, this.recordClass)
+    record.setTags({ ...tags, ...(customTags as TagsBase | undefined) } as TagsBase)
+
+    return record
+  }
+
+  /**
+   * Validates that the table can store the record, so a mismatch is found when the adapter is registered
+   * rather than when a record is stored. Called by the {@link DrizzleStorageModuleConfig}.
+   *
+   * Only adapters that use the default {@link getValues} and {@link toRecord} are validated, see
+   * {@link validateDefaultMapping}. Adapters that override these methods and call `super` can call
+   * {@link validateDefaultMapping} from this method to be validated as well.
+   *
+   * @throws {CredoDrizzleStorageError} if the table can't store the record
+   */
+  public validateRecordMapping() {
+    const usesDefaultMapping =
+      this.getValues === BaseDrizzleRecordAdapter.prototype.getValues &&
+      this.toRecord === BaseDrizzleRecordAdapter.prototype.toRecord
+
+    if (usesDefaultMapping) this.validateDefaultMapping()
+  }
+
+  /**
+   * Validates that the table can store the record with the default mapping: the record defines an `encodingSchema`,
+   * the sqlite and postgres tables have the same columns, every property of the record has a column with the same
+   * name, and every column in {@link customTagColumns} exists.
+   *
+   * @throws {CredoDrizzleStorageError} if the table can't store the record
+   */
+  protected validateDefaultMapping() {
+    const recordPropertyNames = getRecordPropertyNames(this.recordClass)
+    if (!recordPropertyNames) {
+      throw new CredoDrizzleStorageError(
+        `Record ${this.recordClass.name} does not define an encodingSchema using createRecordEncodingSchema. Implement getValues and toRecord in the drizzle adapter for this record.`
+      )
+    }
+
+    const columnNames = Object.keys(getTableColumns(this.table.sqlite))
+    const postgresColumnNames = Object.keys(getTableColumns(this.table.postgres))
+
+    const errors: string[] = []
+
+    const onlyInSqlite = columnNames.filter((columnName) => !postgresColumnNames.includes(columnName))
+    const onlyInPostgres = postgresColumnNames.filter((columnName) => !columnNames.includes(columnName))
+    if (onlyInSqlite.length > 0 || onlyInPostgres.length > 0) {
+      errors.push(
+        `the sqlite and postgres tables have different columns (only in sqlite: ${onlyInSqlite.join(', ') || '-'}, only in postgres: ${onlyInPostgres.join(', ') || '-'})`
+      )
+    }
+
+    // The tags are stored in the tag columns and customTags
+    const propertiesWithoutColumn = recordPropertyNames.filter(
+      (propertyName) => propertyName !== '_tags' && !columnNames.includes(propertyName)
+    )
+    if (propertiesWithoutColumn.length > 0) {
+      errors.push(`the table has no column for record properties ${propertiesWithoutColumn.join(', ')}`)
+    }
+
+    const missingCustomTagColumns = this.customTagColumns.filter((columnName) => !columnNames.includes(columnName))
+    if (missingCustomTagColumns.length > 0) {
+      errors.push(`the table has no column for custom tag columns ${missingCustomTagColumns.join(', ')}`)
+    }
+
+    if (errors.length > 0) {
+      throw new CredoDrizzleStorageError(
+        `Drizzle adapter for record ${this.recordClass.name} can't store the record: ${errors.join('; ')}.`
+      )
+    }
+  }
+
+  private get columns() {
+    return getTableColumns(this.table.sqlite)
+  }
+
+  private getRecordPropertyNames() {
+    const recordPropertyNames = getRecordPropertyNames(this.recordClass)
+    if (!recordPropertyNames) {
+      throw new CredoDrizzleStorageError(
+        `Record ${this.recordClass.name} does not define an encodingSchema using createRecordEncodingSchema. Override getValues and toRecord in the drizzle adapter for this record.`
+      )
+    }
+
+    return recordPropertyNames
+  }
 
   public async query(agentContext: AgentContext, query?: Query<CredoRecord>, queryOptions?: QueryOptions) {
     try {

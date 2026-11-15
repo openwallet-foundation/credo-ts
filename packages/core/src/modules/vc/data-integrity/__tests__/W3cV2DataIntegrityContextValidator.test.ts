@@ -5,6 +5,7 @@ import type { AgentContext } from '../../../../agent/context'
 import { DidResolverService } from '../../../dids'
 import { W3cDataIntegrityProcessingErrorCode as DataIntegrityProcessingErrorCode } from '../../../w3c-di/internal'
 import { DEFAULT_CONTEXTS } from '../../jsonld/contexts'
+import { defaultDocumentLoader } from '../../jsonld/documentLoader'
 import { JsonLdModuleConfig } from '../../jsonld/JsonLdModuleConfig'
 import { W3cV2CredentialsModuleConfig } from '../../W3cV2CredentialsModuleConfig'
 import { W3cV2DataIntegrityContextValidator } from '../W3cV2DataIntegrityContextValidator'
@@ -18,7 +19,7 @@ const DI_PINNED_CONTEXTS = [
 
 function createValidator(
   options: { recompactInvalidContexts?: boolean } = {},
-  jsonLdModuleConfig: JsonLdModuleConfig = new JsonLdModuleConfig()
+  jsonLdModuleConfig: JsonLdModuleConfig = new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })
 ) {
   return new W3cV2DataIntegrityContextValidator(
     jsonLdModuleConfig,

@@ -3,6 +3,7 @@ import { IsBoolean } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface DidCommLiveDeliveryChangeV2MessageOptions {
@@ -12,6 +13,7 @@ export interface DidCommLiveDeliveryChangeV2MessageOptions {
 
 export class DidCommLiveDeliveryChangeV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   public constructor(options: DidCommLiveDeliveryChangeV2MessageOptions) {
     super()

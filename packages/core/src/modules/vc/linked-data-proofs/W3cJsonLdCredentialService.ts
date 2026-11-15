@@ -74,7 +74,8 @@ export class W3cJsonLdCredentialService {
   }
 
   /**
-   * Validate that the agent can prepare to sign a credential with the given proof type and verification method.
+   * Validate that the agent can prepare to sign a credential with the given verification method, and the proof type
+   * if one is given.
    */
   public async assertCanSignCredential(
     agentContext: AgentContext,
@@ -111,6 +112,7 @@ export class W3cJsonLdCredentialService {
         credential: JsonTransformer.toJSON(options.credential),
         suite: suites,
         documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
+        maxClockSkew: agentContext.config.validitySkewSeconds,
         checkStatus: ({ credential }: { credential: W3cJsonCredential }) => {
           // Only throw error if credentialStatus is present
           if (verifyCredentialStatus && 'credentialStatus' in credential) {
@@ -250,6 +252,7 @@ export class W3cJsonLdCredentialService {
         challenge: options.challenge,
         domain: options.domain,
         documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
+        maxClockSkew: agentContext.config.validitySkewSeconds,
       }
 
       // this is a hack because vcjs throws if purpose is passed as undefined or null
@@ -378,8 +381,9 @@ export class W3cJsonLdCredentialService {
   ): Promise<void> {
     const issuerId = credential.issuerId
 
-    // Only enforced for did-based issuers
-    if (!issuerId.startsWith('did:')) return
+    if (!issuerId.startsWith('did:')) {
+      throw new CredoError(`Credential issuer '${issuerId}' is not a did. Only did issuers are supported.`)
+    }
 
     const issuerDid = parseDid(issuerId).did
 
@@ -428,25 +432,18 @@ export class W3cJsonLdCredentialService {
     return this.signatureSuiteRegistry.getByProofType(proofType)
   }
 
-  private async prepareSigningSuite(
+  /**
+   * Resolves a verification method of a did created by this agent, mapping the lookup failures to typed errors.
+   */
+  private async resolveSigningVerificationMethod(
     agentContext: AgentContext,
-    options: {
-      proofType: string
-      verificationMethodId: string
-      allowedPurposes: Array<DidPurpose | 'verificationMethod'>
-      date?: string
-      controller?: string
-    }
+    verificationMethodId: string,
+    allowedPurposes: Array<DidPurpose | 'verificationMethod'>
   ) {
-    const suiteInfo = this.getSigningSuiteInfo(options.proofType)
-
-    const dids = agentContext.resolve(DidsApi)
-    let resolved: Awaited<ReturnType<typeof dids.resolveVerificationMethodFromCreatedDidRecord>>
     try {
-      resolved = await dids.resolveVerificationMethodFromCreatedDidRecord(
-        options.verificationMethodId,
-        options.allowedPurposes
-      )
+      return await agentContext
+        .resolve(DidsApi)
+        .resolveVerificationMethodFromCreatedDidRecord(verificationMethodId, allowedPurposes)
     } catch (error) {
       if (error instanceof RecordNotFoundError) {
         throw new W3cJsonLdCredentialSigningNotSupportedError(
@@ -458,18 +455,46 @@ export class W3cJsonLdCredentialService {
       if (
         error instanceof CredoError &&
         error.message ===
-          `Unable to locate verification method with id '${options.verificationMethodId}' in purposes ${options.allowedPurposes}`
+          `Unable to locate verification method with id '${verificationMethodId}' in purposes ${allowedPurposes}`
       ) {
         throw new W3cJsonLdCredentialSigningNotSupportedError(error.message, 'verification-method-not-found', error)
       }
       throw error
     }
+  }
 
-    const { verificationMethod: nativeVerificationMethod, publicJwk } = resolved
+  private async prepareSigningSuite(
+    agentContext: AgentContext,
+    options: {
+      proofType?: string
+      verificationMethodId: string
+      allowedPurposes: Array<DidPurpose | 'verificationMethod'>
+      date?: string
+      controller?: string
+    }
+  ) {
+    // Only an omitted proofType is inferred, so an empty one is still rejected as unsupported
+    const requestedSuiteInfo = options.proofType !== undefined ? this.getSigningSuiteInfo(options.proofType) : undefined
+
+    const { verificationMethod: nativeVerificationMethod, publicJwk } = await this.resolveSigningVerificationMethod(
+      agentContext,
+      options.verificationMethodId,
+      options.allowedPurposes
+    )
+
+    // Without a requested proof type, pick the suite from the method resolved above instead of looking it up again
+    const suiteInfo =
+      requestedSuiteInfo ?? this.signatureSuiteRegistry.getAllByVerificationMethod(nativeVerificationMethod)[0]
+    if (!suiteInfo) {
+      throw new W3cJsonLdCredentialSigningNotSupportedError(
+        `No signature suite supports the verification method type '${nativeVerificationMethod.type}'`,
+        'unsupported-verification-method-type'
+      )
+    }
 
     if (!suiteInfo.verificationMethodTypes.includes(nativeVerificationMethod.type)) {
       throw new W3cJsonLdCredentialSigningNotSupportedError(
-        `Unsupported verification method type '${nativeVerificationMethod.type}' for proof type '${options.proofType}'. Supported types are: ${suiteInfo.verificationMethodTypes.join(', ')}`,
+        `Unsupported verification method type '${nativeVerificationMethod.type}' for proof type '${suiteInfo.proofType}'. Supported types are: ${suiteInfo.verificationMethodTypes.join(', ')}`,
         'unsupported-verification-method-type'
       )
     }

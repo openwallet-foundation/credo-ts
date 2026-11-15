@@ -1,12 +1,13 @@
 import { IsString } from 'class-validator'
 import { z } from 'zod'
+import * as zm from 'zod/mini'
 import { ClassValidationError, ZodValidationError } from '../../error'
 import { GenericRecord } from '../../modules/generic-records/repository/GenericRecord'
 import { JsonTransformer, zJsonTransformerClass } from '../../utils/JsonTransformer'
 import { MessageValidator } from '../../utils/MessageValidator'
 import { zIsoDate } from '../../utils/zod'
 import { BaseRecord } from '../BaseRecord'
-import { createRecordEncodingSchema } from '../recordEncodingSchema'
+import { createRecordEncodingSchema, getRecordPropertyNames } from '../recordEncodingSchema'
 import { TestRecord } from './TestRecord'
 
 class LegacyNested {
@@ -184,5 +185,33 @@ describe('createRecordEncodingSchema', () => {
     const record = JsonTransformer.fromJSON({ id: 'record-id', content: null }, GenericRecord)
 
     expect(record.content).toBeNull()
+  })
+
+  test('returns the property names of a record', () => {
+    expect(getRecordPropertyNames(ZodTestRecord)).toEqual([
+      'id',
+      'createdAt',
+      'updatedAt',
+      'metadata',
+      '_tags',
+      'foo',
+      'expiresAt',
+      'nested',
+    ])
+
+    // Records without an encoding schema
+    expect(getRecordPropertyNames(TestRecord)).toBeUndefined()
+  })
+
+  test('returns the property names of a record with a schema from a different zod instance', () => {
+    // zod/mini schemas are not instances of the zod classes
+    const encodingSchema = zm.codec(zm.looseObject({}), zm.object({ foo: zm.string() }), {
+      decode: (encoded) => encoded as { foo: string },
+      encode: (decoded) => decoded,
+    })
+
+    const MiniRecord = Object.assign(() => {}, { encodingSchema })
+
+    expect(getRecordPropertyNames(MiniRecord)).toEqual(['foo'])
   })
 })

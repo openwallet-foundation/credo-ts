@@ -53,10 +53,10 @@ describe('KeyManagementApi', () => {
       },
     })
 
-    const publicJwk = await agent.kms.getPublicKey({
+    const publicKey = await agent.kms.getPublicKey({
       keyId: 'hello',
     })
-    expect(publicJwk).toEqual(result.publicJwk)
+    expect(publicKey).toEqual({ publicKey: result.publicJwk, backend: 'node' })
 
     const deleted = await agent.kms.deleteKey({
       keyId: 'hello',
@@ -181,6 +181,26 @@ describe('KeyManagementApi', () => {
         'HS512',
         'ES256',
       ])
+    })
+  })
+
+  test('getPublicKey returns the key from the provided backend', async () => {
+    const otherBackend = Object.assign(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), {
+      backend: 'other',
+    })
+    const kms = new KeyManagementApi(
+      new KeyManagementModuleConfig({
+        backends: [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), otherBackend],
+      }),
+      agent.context
+    )
+
+    await kms.createKey({ keyId: 'same-id', type: { kty: 'EC', crv: 'P-256' } })
+    const otherKey = await kms.createKey({ keyId: 'same-id', backend: 'other', type: { kty: 'EC', crv: 'P-256' } })
+
+    expect(await kms.getPublicKey({ keyId: 'same-id', backend: 'other' })).toEqual({
+      publicKey: otherKey.publicJwk,
+      backend: 'other',
     })
   })
 

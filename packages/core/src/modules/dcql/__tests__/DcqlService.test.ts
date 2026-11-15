@@ -5,17 +5,30 @@ import { agentDependencies, getAgentContext } from '../../../../tests'
 import { AgentContext } from '../../../agent'
 import { InjectionSymbols } from '../../../constants'
 import type { NonEmptyArray } from '../../../types'
+import {
+  DidDocumentBuilder,
+  DidsApi,
+  getEd25519VerificationKey2018,
+  getEd25519VerificationKey2020,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+  VerificationMethod,
+} from '../../dids'
+import { Ed25519PublicJwk, PublicJwk } from '../../kms'
 import { MdocApi } from '../../mdoc'
 import { type SdJwtVc, SdJwtVcApi, type SdJwtVcPayload } from '../../sd-jwt-vc'
 import {
   ClaimFormat,
+  SignatureSuiteRegistry,
   W3cCredentialRecord,
   W3cCredentialRepository,
+  W3cCredentialService,
   W3cV2EnvelopedVerifiableCredential,
   W3cV2SdJwtVerifiableCredential,
 } from '../../vc'
 import { CredoEs256DidJwkJwtVc } from '../../vc/jwt-vc/__tests__/fixtures/credo-jwt-vc'
 import { Ed25519Signature2018Fixtures } from '../../vc/linked-data-proofs/__tests__/fixtures'
+import { Ed25519Signature2018, Ed25519Signature2020 } from '../../vc/linked-data-proofs/signature-suites'
 import { DcqlError } from '../DcqlError'
 import { DcqlService } from '../DcqlService'
 
@@ -90,6 +103,102 @@ describe('DcqlService', () => {
           valid_credentials: [{ record: { id: jwtRecord.id } }],
         })
       }
+    })
+  })
+
+  describe('createPresentation for ldp_vc', () => {
+    const holderDid = 'did:example:holder'
+    const verificationMethodId = `${holderDid}#key-1`
+    const publicJwk = PublicJwk.fromFingerprint(
+      'z6MkvBpZTRb7tjuUF5AkmhG1JDV928hZbg5KAQJcogvhz9ax'
+    ) as PublicJwk<Ed25519PublicJwk>
+
+    const createPresentation = async (verificationMethodType: string) => {
+      const getVerificationMethod =
+        verificationMethodType === VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018
+          ? getEd25519VerificationKey2018
+          : getEd25519VerificationKey2020
+      // Overriding the type of a 2020 method gives a Multikey method, which also uses publicKeyMultibase
+      const verificationMethod = new VerificationMethod({
+        ...getVerificationMethod({ id: verificationMethodId, controller: holderDid, publicJwk }),
+        type: verificationMethodType,
+      })
+      const didDocument = new DidDocumentBuilder(holderDid)
+        .addVerificationMethod(verificationMethod)
+        .addAuthentication(verificationMethodId)
+        .build()
+
+      const signPresentation = vi.fn().mockResolvedValue({ encoded: {} })
+      const storage = new InMemoryStorageService()
+      const agentContext = getAgentContext({
+        registerInstances: [
+          [InjectionSymbols.StorageService, storage],
+          [InjectionSymbols.AgentDependencies, agentDependencies],
+          [InjectionSymbols.Stop$, new Subject<boolean>()],
+          [DidsApi, { resolveDidDocument: vi.fn().mockResolvedValue(didDocument) }],
+          [W3cCredentialService, { signPresentation }],
+          [
+            SignatureSuiteRegistry,
+            new SignatureSuiteRegistry([
+              {
+                suiteClass: Ed25519Signature2018,
+                proofType: 'Ed25519Signature2018',
+                verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018],
+                supportedPublicJwkTypes: [Ed25519PublicJwk],
+              },
+              {
+                suiteClass: Ed25519Signature2020,
+                proofType: 'Ed25519Signature2020',
+                verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020],
+                supportedPublicJwkTypes: [Ed25519PublicJwk],
+              },
+            ]),
+          ],
+        ],
+      })
+
+      const credentialRecord = new W3cCredentialRecord({
+        credentialInstances: [
+          {
+            credential: {
+              ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+              credentialSubject: {
+                ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED.credentialSubject,
+                id: holderDid,
+              },
+            },
+          },
+        ],
+      })
+      await storage.save(agentContext, credentialRecord)
+
+      await dcqlService.createPresentation(agentContext, {
+        credentialQueryToCredential: {
+          ldp: [{ claimFormat: ClaimFormat.LdpVc, credentialRecord, disclosedPayload: {} }],
+        },
+        challenge: 'challenge',
+        domain: 'example.com',
+      })
+
+      return signPresentation
+    }
+
+    test.each([
+      [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018, 'Ed25519Signature2018'],
+      [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020, 'Ed25519Signature2020'],
+    ])('signs with the suite for a %s authentication method', async (verificationMethodType, proofType) => {
+      const signPresentation = await createPresentation(verificationMethodType)
+
+      expect(signPresentation).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ format: ClaimFormat.LdpVp, proofType, verificationMethod: verificationMethodId })
+      )
+    })
+
+    test('throws when no suite supports the authentication method type', async () => {
+      await expect(createPresentation('Multikey')).rejects.toThrow(
+        new DcqlError("No signature suite supports the verification method type 'Multikey'")
+      )
     })
   })
 

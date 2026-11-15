@@ -2,6 +2,7 @@ import type { DependencyManager } from '../../../../../core/src/plugins'
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { DidCommMessagePickupModule } from '../DidCommMessagePickupModule'
 import { DidCommMessagePickupModuleConfig } from '../DidCommMessagePickupModuleConfig'
 import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
@@ -50,6 +51,7 @@ describe('DidCommMessagePickupModule', () => {
         [DidCommMessagePickupSessionService, messagePickupSessionSessionService],
         [DidCommMessageHandlerRegistry, messageHandlerRegistry],
         [DidCommFeatureRegistry, featureRegistry],
+        [DidCommModuleConfig, new DidCommModuleConfig()],
       ],
     })
     await messagePickupModule.initialize(agentContext)

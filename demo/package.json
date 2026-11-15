@@ -10,13 +10,15 @@
   "license": "Apache-2.0",
   "scripts": {
     "alice": "vite-node src/AliceInquirer.ts",
-    "faber": "vite-node src/FaberInquirer.ts"
+    "faber": "vite-node src/FaberInquirer.ts",
+    "alice:v2": "DIDCOMM_VERSION=v2 vite-node src/AliceInquirer.ts",
+    "faber:v2": "DIDCOMM_VERSION=v2 vite-node src/FaberInquirer.ts"
   },
   "dependencies": {
     "@hyperledger/anoncreds-nodejs": "catalog:",
     "@hyperledger/indy-vdr-nodejs": "catalog:",
     "@openwallet-foundation/askar-nodejs": "catalog:",
-    "inquirer": "^14.2.4"
+    "inquirer": "^14.2.5"
   },
   "devDependencies": {
     "@credo-ts/anoncreds": "workspace:*",

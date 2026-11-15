@@ -200,9 +200,9 @@ describe('getOid4vcJwtVerifyCallback', () => {
 
   describe('jwk signer', () => {
     // There is no `jwk` variant of `VerificationSigner`/`TrustedIssuer`, so a bare jwk signed
-    // credential issuer metadata is not checked against a trust list.
+    // authorization request is not checked against a trust list.
     test('is not checked against the trusted issuers', async () => {
-      const jwt = await createJwt(agent.context, { typ: 'openidvci-issuer-metadata+jwt', signer: jwkSigner })
+      const jwt = await createJwt(agent.context, { typ: 'oauth-authz-req+jwt', signer: jwkSigner })
       agent.context.config.setTrustedIssuersForVerification(async () => ({ trustedIssuers: [] }))
 
       await expect(verify(jwt)).resolves.toEqual(expect.objectContaining({ verified: true }))
@@ -216,11 +216,13 @@ describe('getOid4vcJwtVerifyCallback', () => {
       ['keyattestation+jwt', 'Key attestations', true],
       ['application/oauth-client-attestation+jwt', 'Wallet attestations', true],
       ['Application/Key-Attestation+JWT', 'Key attestations', false],
+      ['openidvci-issuer-metadata+jwt', 'Credential issuer metadata', false],
+      ['application/openidvci-issuer-metadata+jwt', 'Credential issuer metadata', false],
     ])('is rejected for typ %s (with issuance session: %s)', async (typ, name, withIssuanceSession) => {
       const jwt = await createJwt(agent.context, { typ, signer: jwkSigner })
 
       await expect(verify(jwt, { issuanceSession: withIssuanceSession })).rejects.toThrow(
-        `${name} signed with a 'jwk' header are not supported.`
+        `${name} signed with a 'jwk' header`
       )
     })
   })

@@ -19,16 +19,18 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@credo-ts/action-menu"
+    <a href="https://www.npmjs.com/package/@credo-ts/didcomm"
     ><img
-      alt="@credo-ts/action-menu version"
-      src="https://img.shields.io/npm/v/@credo-ts/action-menu"
+      alt="@credo-ts/didcomm version"
+      src="https://img.shields.io/npm/v/@credo-ts/didcomm"
   /></a>
 
 </p>
 <br />
 
 Base DIDComm package for [Credo](https://github.com/openwallet-foundation/credo-ts.git). Adds all [DIDComm v1](https://hyperledger.github.io/aries-rfcs/latest/concepts/0005-didcomm/) Core protocols, such as Connections, Out-of-Band, Discover Features, Mediation Coordination, Message Pickup, Proofs and Credentials as defined in [Aries RFCs](https://github.com/hyperledger/aries-rfcs/tree/main/features).
+
+DIDComm v1 is the default. [DIDComm v2](https://identity.foundation/didcomm-messaging/spec/v2.0/) support is **opt-in** and experimental. See [DIDComm v2 Usage](../../docs/DIDCOMM-V2-USAGE.md) for how to enable it.
 
 ### Quick start
 

@@ -1,7 +1,7 @@
 import type { Logger } from '../logger'
 import { DidsApi } from '../modules/dids'
 import { GenericRecordsApi } from '../modules/generic-records'
-import { KeyManagementApi, type KeyManagementModule } from '../modules/kms'
+import { KeyManagementApi, type KeyManagementModule, type KeyManagementModuleConfigOptions } from '../modules/kms'
 import { MdocApi } from '../modules/mdoc'
 import { SdJwtVcApi } from '../modules/sd-jwt-vc'
 import { TokenStatusListApi } from '../modules/token-status-list'
@@ -11,13 +11,19 @@ import { W3cDataIntegrityApi } from '../modules/w3c-di'
 import { X509Api } from '../modules/x509'
 import type { DependencyManager, Module } from '../plugins'
 import type { AgentConfig } from './AgentConfig'
-import type { AgentApi, EmptyModuleMap, ModuleApiInstance, ModulesMap, WithoutDefaultModules } from './AgentModules'
+import type {
+  AgentApi,
+  AgentModulesInput,
+  EmptyModuleMap,
+  ModuleApiInstance,
+  WithoutDefaultModules,
+} from './AgentModules'
 
 import { getAgentApi } from './AgentModules'
 import { AgentContext } from './context'
 import { EventEmitter } from './EventEmitter'
 
-export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap> {
+export abstract class BaseAgent<AgentModules extends AgentModulesInput = EmptyModuleMap> {
   protected logger: Logger
   protected eventEmitter: EventEmitter
   protected _isInitialized = false
@@ -36,7 +42,9 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
    */
   public readonly kms: AgentModules['kms'] extends KeyManagementModule<infer Backends>
     ? KeyManagementApi<Backends>
-    : KeyManagementApi
+    : AgentModules['kms'] extends KeyManagementModuleConfigOptions<infer Backends>
+      ? KeyManagementApi<Backends>
+      : KeyManagementApi
   public readonly tokenStatusList: TokenStatusListApi
 
   /**

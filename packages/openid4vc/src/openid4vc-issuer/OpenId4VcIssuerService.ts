@@ -10,6 +10,7 @@ import {
   joinUriParts,
   Kms,
   MdocApi,
+  parseDid,
   type Query,
   type QueryOptions,
   SdJwtVcApi,
@@ -34,6 +35,7 @@ import {
   Oauth2ServerErrorResponseError,
   PkceCodeChallengeMethod,
   preAuthorizedCodeGrantIdentifier,
+  type RequestDpopOptions,
   refreshTokenGrantIdentifier,
   SupportedClientAuthenticationMethod,
   type TokenIntrospectionResponse,
@@ -62,18 +64,19 @@ import type {
 } from '../shared'
 import { keyAttestationLevelSatisfies, OpenId4VciCredentialFormatProfile } from '../shared'
 import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
+import { getDpopOptions } from '../shared/dpop'
 import {
   getCredentialConfigurationsSupportedForScopes,
   getOfferedCredentials,
   getScopesFromCredentialConfigurationsSupported,
 } from '../shared/issuerMetadataUtils'
 import { getLocalAccessTokenJwks, getOid4vcLocalJwksCallback } from '../shared/localJwks'
+import type { OpenId4VciChainedAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import {
   credoJwtIssuerToOpenId4VcJwtIssuer,
   decodeJwtIssuer,
   encodeJwtIssuer,
-  getProofTypeFromPublicJwk,
   getPublicJwkFromDid,
   supportedResponseEncryptionContentAlgorithms,
   supportedResponseEncryptionKeyAgreementAlgorithms,
@@ -101,6 +104,7 @@ import type {
   OpenId4VcUpdateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import {
+  type OpenId4VcIssuanceSessionChainedIdentityDpop,
   OpenId4VcIssuanceSessionRecord,
   OpenId4VcIssuanceSessionRepository,
   OpenId4VcIssuerRecord,
@@ -616,7 +620,11 @@ export class OpenId4VcIssuerService {
 
   public async createCredentialResponse(
     agentContext: AgentContext,
-    options: OpenId4VciCreateCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
+    options: OpenId4VciCreateCredentialResponseOptions & {
+      issuanceSession: OpenId4VcIssuanceSessionRecord
+      /** The issuer of the session, when the caller already has it. */
+      issuer?: OpenId4VcIssuerRecord
+    }
   ): Promise<{
     issuanceSession: OpenId4VcIssuanceSessionRecord
     credentialResponse: CredentialResponse
@@ -631,7 +639,7 @@ export class OpenId4VcIssuerService {
       OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
     ])
     const { issuanceSession } = options
-    const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
+    const issuer = await this.getIssuerForIssuanceSession(agentContext, issuanceSession, options.issuer)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
@@ -778,10 +786,15 @@ export class OpenId4VcIssuerService {
         expectedLength: verifiedCredentialRequestProofs.keys.length,
       })
 
+      // Older sessions have no version. Requests use credential_configuration_id from draft 15 on
+      const openId4VciVersion =
+        issuanceSession.openId4VciVersion ??
+        (parsedCredentialRequest.credentialConfigurationId ? 'v1' : 'v1.draft11-14')
+
       const immediateResult = await vcIssuer.createCredentialResponse({
         credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
         credentials: credentialRequest.proofs
-          ? issuanceSession.openId4VciVersion === 'v1' || issuanceSession.openId4VciVersion === 'v1.draft15'
+          ? openId4VciVersion === 'v1' || openId4VciVersion === 'v1.draft15'
             ? credentials.credentials.map((c) => ({ credential: c }))
             : credentials.credentials
           : undefined,
@@ -811,7 +824,11 @@ export class OpenId4VcIssuerService {
 
   public async createDeferredCredentialResponse(
     agentContext: AgentContext,
-    options: OpenId4VciCreateDeferredCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
+    options: OpenId4VciCreateDeferredCredentialResponseOptions & {
+      issuanceSession: OpenId4VcIssuanceSessionRecord
+      /** The issuer of the session, when the caller already has it. */
+      issuer?: OpenId4VcIssuerRecord
+    }
   ): Promise<{
     issuanceSession: OpenId4VcIssuanceSessionRecord
     deferredCredentialResponse: DeferredCredentialResponse
@@ -835,7 +852,7 @@ export class OpenId4VcIssuerService {
       })
     }
 
-    const issuer = await this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
+    const issuer = await this.getIssuerForIssuanceSession(agentContext, issuanceSession, options.issuer)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
 
     // Optimization: if the deferral interval hasn't passed yet, we immediately
@@ -998,6 +1015,26 @@ export class OpenId4VcIssuerService {
       })
     }
 
+    // Without binding methods in the metadata, key binding isn't required, so any signer is accepted.
+    const bindingMethods = credentialConfiguration.cryptographic_binding_methods_supported
+    const assertBindingMethodSupported = (signer: { method: 'jwk' } | { method: 'did'; didUrl: string }) => {
+      if (!bindingMethods) return
+
+      // Same mapping as the holder: a jwk proof key can be bound as 'jwk' or 'cose_key', and 'did' allows any did method.
+      const bindingMethod = signer.method === 'jwk' ? 'jwk' : `did:${parseDid(signer.didUrl).method}`
+      const isSupported =
+        bindingMethod === 'jwk'
+          ? bindingMethods.includes('jwk') || bindingMethods.includes('cose_key')
+          : bindingMethods.includes('did') || bindingMethods.includes(bindingMethod)
+
+      if (!isSupported) {
+        throw new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidProof,
+          error_description: `Binding method '${bindingMethod}' is not supported for credential configuration '${credentialConfigurationId}'. Supported binding methods are ${bindingMethods.join(', ')}`,
+        })
+      }
+    }
+
     if (proofType === 'attestation' && proofValue.length !== 1) {
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.InvalidProof,
@@ -1013,6 +1050,7 @@ export class OpenId4VcIssuerService {
         issuerMetadata,
         keyAttestationJwt,
       })
+      assertBindingMethodSupported({ method: 'jwk' })
 
       if (!supportedProofType.proof_signing_alg_values_supported.includes(keyAttestation.header.alg)) {
         throw new Oauth2ServerErrorResponseError({
@@ -1116,6 +1154,7 @@ export class OpenId4VcIssuerService {
             error_description: "Only 'jwk' and 'did' binding methods supported for jwt proof",
           })
         }
+        assertBindingMethodSupported(signer)
 
         if (proofSigners[0] && signer.method !== proofSigners[0].method) {
           throw new Oauth2ServerErrorResponseError({
@@ -1190,18 +1229,6 @@ export class OpenId4VcIssuerService {
           })
         }
 
-        // Set previous nonce if not yet set (first iteration)
-        if (!firstNonce) firstNonce = payload.nonce
-        if (firstNonce !== payload.nonce) {
-          const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
-          throw new Oauth2ServerErrorResponseError({
-            error: Oauth2ErrorCodes.InvalidProof,
-            error_description: 'Not all nonce values in proofs are equal',
-            c_nonce: cNonce,
-            c_nonce_expires_in: cNonceExpiresInSeconds,
-          })
-        }
-
         // IF nonce is provided in the key attestation (not required with jwt proof) then
         // it MUST match with the nonce of the JWT proof
         if (keyAttestation?.payload.nonce && keyAttestation.payload.nonce !== payload.nonce) {
@@ -1212,21 +1239,32 @@ export class OpenId4VcIssuerService {
           })
         }
 
-        // Verify the nonce
-        await this.verifyNonce(agentContext, issuer, payload.nonce).catch(async (error) => {
+        // The first nonce is verified, the nonces of the other proofs must be equal to it
+        if (!firstNonce) {
+          await this.verifyNonce(agentContext, issuer, payload.nonce).catch(async (error) => {
+            const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
+            throw new Oauth2ServerErrorResponseError(
+              {
+                error: Oauth2ErrorCodes.InvalidNonce,
+                error_description: 'Invalid nonce in credential request',
+                c_nonce: cNonce,
+                c_nonce_expires_in: cNonceExpiresInSeconds,
+              },
+              {
+                cause: error,
+              }
+            )
+          })
+          firstNonce = payload.nonce
+        } else if (firstNonce !== payload.nonce) {
           const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
-          throw new Oauth2ServerErrorResponseError(
-            {
-              error: Oauth2ErrorCodes.InvalidNonce,
-              error_description: 'Invalid nonce in credential request',
-              c_nonce: cNonce,
-              c_nonce_expires_in: cNonceExpiresInSeconds,
-            },
-            {
-              cause: error,
-            }
-          )
-        })
+          throw new Oauth2ServerErrorResponseError({
+            error: Oauth2ErrorCodes.InvalidProof,
+            error_description: 'Not all nonce values in proofs are equal',
+            c_nonce: cNonce,
+            c_nonce_expires_in: cNonceExpiresInSeconds,
+          })
+        }
 
         if (keyAttestation) {
           return {
@@ -1295,7 +1333,18 @@ export class OpenId4VcIssuerService {
     return this.openId4VcIssuanceSessionRepository.getById(agentContext, issuanceSessionId)
   }
 
-  public async deleteIssuanceSessionById(agentContext: AgentContext, issuanceSessionId: string) {
+  public async deleteIssuanceSessionById(
+    agentContext: AgentContext,
+    issuanceSessionId: string,
+    options?: { deleteChainedDpopKey?: boolean }
+  ) {
+    const issuanceSession = await this.openId4VcIssuanceSessionRepository.getById(agentContext, issuanceSessionId)
+    const chainedDpop = issuanceSession?.chainedIdentity?.externalDpop
+
+    if ((options?.deleteChainedDpopKey ?? true) && chainedDpop?.keyGeneratedForSession) {
+      await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: chainedDpop.keyId })
+    }
+
     await this.openId4VcIssuanceSessionRepository.deleteById(agentContext, issuanceSessionId)
   }
 
@@ -1305,6 +1354,23 @@ export class OpenId4VcIssuerService {
 
   public async getIssuerByIssuerId(agentContext: AgentContext, issuerId: string) {
     return this.openId4VcIssuerRepository.getByIssuerId(agentContext, issuerId)
+  }
+
+  private async getIssuerForIssuanceSession(
+    agentContext: AgentContext,
+    issuanceSession: OpenId4VcIssuanceSessionRecord,
+    issuer?: OpenId4VcIssuerRecord
+  ) {
+    if (!issuer) return this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
+
+    // The issuer's metadata and keys are used to sign, so it must be the issuer of the session.
+    if (issuer.issuerId !== issuanceSession.issuerId) {
+      throw new CredoError(
+        `Issuer '${issuer.issuerId}' is not the issuer '${issuanceSession.issuerId}' of issuance session '${issuanceSession.id}'.`
+      )
+    }
+
+    return issuer
   }
 
   public async updateIssuer(
@@ -1386,6 +1452,13 @@ export class OpenId4VcIssuerService {
     credentialIssuerMetadata: OpenId4VciCredentialIssuerMetadata,
     metadataSigner: OpenId4VcJwtIssuer
   ) {
+    // Wallets must establish trust in the metadata signer (OID4VCI 1.0 section 12.2.3), which a bare jwk can't provide.
+    if (metadataSigner.method === 'jwk') {
+      throw new CredoError(
+        `Signing the credential issuer metadata with a 'jwk' signer is not supported. Use 'x5c' or 'did' to sign the credential issuer metadata, or set 'metadataSigner' to null to stop signing it.`
+      )
+    }
+
     const issuer = this.getIssuer(agentContext)
     const credentialIssuerMetadataJwt = await issuer.createSignedCredentialIssuerMetadataJwt({
       credentialIssuerMetadata,
@@ -1864,6 +1937,62 @@ export class OpenId4VcIssuerService {
     })
   }
 
+  public async getChainedDpopOptions(
+    agentContext: AgentContext,
+    options: {
+      issuanceSession: OpenId4VcIssuanceSessionRecord
+      chainedAuthorizationServerConfig: OpenId4VciChainedAuthorizationServerConfig
+      authorizationServerMetadata: AuthorizationServerMetadata
+      // Only the authorization request creates a key, later requests reuse the persisted one.
+      createKey?: boolean
+    }
+  ): Promise<{
+    dpop?: RequestDpopOptions
+    session?: OpenId4VcIssuanceSessionChainedIdentityDpop
+  }> {
+    const persisted = options.issuanceSession.chainedIdentity?.externalDpop
+    const dpopConfig = options.chainedAuthorizationServerConfig.dpop
+    const supportedSigningAlgorithms = options.authorizationServerMetadata.dpop_signing_alg_values_supported
+
+    if (!supportedSigningAlgorithms) {
+      if (persisted) {
+        throw new CredoError('Authorization server no longer advertises DPoP support for this issuance session.')
+      }
+      if (dpopConfig?.requireServerSupport) {
+        throw new CredoError(`Authorization server does not support DPoP.`)
+      }
+
+      agentContext.config.logger.debug(`Authorization server does not support DPoP. Continuing without DPoP.`)
+      return {}
+    }
+    if (supportedSigningAlgorithms.length === 0) {
+      throw new CredoError(`Authorization server advertises DPoP support without any signing algorithms.`)
+    }
+    if (!persisted && !options.createKey) {
+      throw new CredoError('Chained DPoP key was not initialized during the authorization request.')
+    }
+
+    const dpop = await getDpopOptions(agentContext, {
+      dpopSigningAlgValuesSupported: supportedSigningAlgorithms,
+      signingAlgValuesSupported: persisted
+        ? [persisted.alg].filter((algorithm) => dpopConfig?.signingAlgValuesSupported?.includes(algorithm) ?? true)
+        : dpopConfig?.signingAlgValuesSupported,
+      keyId: persisted?.keyId ?? dpopConfig?.keyId,
+      nonce: persisted?.nonce,
+    })
+
+    return {
+      dpop,
+      session: persisted
+        ? { ...persisted }
+        : {
+            keyId: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk).keyId,
+            alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
+            keyGeneratedForSession: !dpopConfig?.keyId,
+          },
+    }
+  }
+
   public getOauth2Client(agentContext: AgentContext, issuerRecord?: OpenId4VcIssuerRecord) {
     return new Oauth2Client({
       callbacks: {
@@ -2308,8 +2437,8 @@ export class OpenId4VcIssuerService {
     format: `${ClaimFormat.JwtVc}` | `${ClaimFormat.LdpVc}`,
     options: OpenId4VciSignW3cCredentials['credentials'][number]
   ) {
-    const publicJwk = await getPublicJwkFromDid(agentContext, options.verificationMethod)
     if (format === ClaimFormat.JwtVc) {
+      const publicJwk = await getPublicJwkFromDid(agentContext, options.verificationMethod)
       return await this.w3cCredentialService.signCredential(agentContext, {
         format: ClaimFormat.JwtVc,
         credential: options.credential,
@@ -2318,12 +2447,11 @@ export class OpenId4VcIssuerService {
       })
     }
 
-    const proofType = getProofTypeFromPublicJwk(agentContext, publicJwk)
+    // No proofType, so signing picks the suite from the verification method type, as the key type alone is not enough
     return await this.w3cCredentialService.signCredential(agentContext, {
       format: ClaimFormat.LdpVc,
       credential: options.credential,
       verificationMethod: options.verificationMethod,
-      proofType: proofType,
     })
   }
 
@@ -2361,20 +2489,46 @@ function getCredentialResponseEncryptionMetadata(agentContext: AgentContext, iss
   }
 }
 
+function toCredentialRequestEncryptionJwk(jwk: Kms.KmsJwkPublic & { kid: string }) {
+  return { ...Kms.PublicJwk.fromUnknown(jwk).toJson(), kid: jwk.kid, use: 'enc', alg: 'ECDH-ES' }
+}
+
 function getCredentialRequestEncryptionMetadata(issuerRecord: OpenId4VcIssuerRecord) {
   if (!issuerRecord.credentialRequestEncryption) return undefined
 
   return {
     jwks: {
-      keys: issuerRecord.credentialRequestEncryption.jwks.map((jwk) => ({
-        ...Kms.PublicJwk.fromUnknown(jwk).toJson(),
-        kid: jwk.kid,
-        use: 'enc',
-        alg: 'ECDH-ES',
-      })),
+      keys: issuerRecord.credentialRequestEncryption.jwks.map(toCredentialRequestEncryptionJwk),
     },
     enc_values_supported: [...supportedResponseEncryptionContentAlgorithms],
     encryption_required: issuerRecord.credentialRequestEncryption.required ?? false,
+  }
+}
+
+/**
+ * Issuer metadata to parse (deferred) credential requests with. The library only decrypts with keys
+ * from the metadata, so this adds the previous request encryption keys that are not advertised.
+ */
+export function getCredentialRequestDecryptionMetadata(
+  issuerMetadata: OpenId4VciMetadata,
+  issuerRecord: OpenId4VcIssuerRecord
+): OpenId4VciMetadata {
+  const requestEncryption = issuerMetadata.credentialIssuer.credential_request_encryption
+  const previousJwks = issuerRecord.credentialRequestEncryption?.previousJwks
+  if (!requestEncryption || !previousJwks?.length) return issuerMetadata
+
+  return {
+    ...issuerMetadata,
+    credentialIssuer: {
+      ...issuerMetadata.credentialIssuer,
+      credential_request_encryption: {
+        ...requestEncryption,
+        jwks: {
+          ...requestEncryption.jwks,
+          keys: [...requestEncryption.jwks.keys, ...previousJwks.map(toCredentialRequestEncryptionJwk)],
+        },
+      },
+    },
   }
 }
 
@@ -2387,7 +2541,22 @@ export function assertCredentialEncryptionConfiguration(
     )
   }
 
-  const unsupportedKey = options.credentialRequestEncryption?.jwks.find(
+  const requestEncryptionJwks = [
+    ...(options.credentialRequestEncryption?.jwks ?? []),
+    ...(options.credentialRequestEncryption?.previousJwks ?? []),
+  ]
+
+  // Requests are matched to a decryption key by kid, so a kid must identify a single key
+  const duplicateKey = requestEncryptionJwks.find(
+    (jwk, index) => requestEncryptionJwks.findIndex(({ kid }) => kid === jwk.kid) !== index
+  )
+  if (duplicateKey) {
+    throw new CredoError(
+      `Credential request encryption key '${duplicateKey.kid}' must be unique across 'jwks' and 'previousJwks'.`
+    )
+  }
+
+  const unsupportedKey = requestEncryptionJwks.find(
     (jwk) => jwk.kty === 'oct' || !Kms.allowedKeyDerivationAlgsForKey(jwk).includes('ECDH-ES')
   )
   if (unsupportedKey) {

@@ -142,9 +142,9 @@ export function getOid4vcJwtVerifyCallback(
     let trustedCertificates = options?.trustedCertificates
     const typ = normalizeJwtTyp(header.typ)
 
-    // Wallet and key attestations signed with a bare `jwk` can't be checked against the trusted issuers
-    // (there is no `jwk` variant of `VerificationSigner`/`TrustedIssuer`), so any client could sign its own.
-    // This is checked regardless of the issuance session, so it applies to every endpoint.
+    // Wallet attestations, key attestations and signed issuer metadata signed with a bare `jwk` can't be checked
+    // against the trusted issuers (there is no `jwk` variant of `VerificationSigner`/`TrustedIssuer`), so anyone
+    // could sign their own. This is checked regardless of the issuance session, so it applies to every endpoint.
     if (signer.method === 'jwk') {
       if (typ === 'oauth-client-attestation+jwt') {
         throw new CredoError(
@@ -155,6 +155,12 @@ export function getOid4vcJwtVerifyCallback(
       if (typ === 'keyattestation+jwt' || typ === 'key-attestation+jwt') {
         throw new CredoError(
           `Key attestations signed with a 'jwk' header are not supported. Use 'x5c' or 'did' to sign the key attestation.`
+        )
+      }
+
+      if (typ === 'openidvci-issuer-metadata+jwt') {
+        throw new CredoError(
+          `Credential issuer metadata signed with a 'jwk' header is not supported. Use 'x5c' or 'did' to sign the credential issuer metadata.`
         )
       }
     }
@@ -196,7 +202,8 @@ export function getOid4vcJwtVerifyCallback(
       }
 
       // NOTE: other jwts signed with a bare `jwk` are not checked against a trust list, as there is no
-      // `jwk` variant of `VerificationSigner`/`TrustedIssuer`. Wallet and key attestations are rejected above.
+      // `jwk` variant of `VerificationSigner`/`TrustedIssuer`. Wallet and key attestations and signed issuer
+      // metadata are rejected above.
     }
 
     const alg = signer.alg as Kms.KnownJwaSignatureAlgorithm
@@ -296,14 +303,14 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
 }
 
 export function getOid4vcDecryptJweCallback(agentContext: AgentContext): DecryptJweCallback {
-  const kms = agentContext.resolve(Kms.KeyManagementApi)
   return async (jwe, options) => {
     // TODO: use custom header zod schema to limit which algorithms can be used
     const { header } = decodeJwtHeader({ jwt: jwe })
 
     // The header kid is chosen by the sender, so only decrypt with the key the caller bound to the session or request
-    let kid = options?.jwk?.kid
-    if (!kid) {
+    const decryptionJwk = options?.jwk
+    let kid = decryptionJwk?.kid
+    if (!decryptionJwk || !kid) {
       agentContext.config.logger.error('Unable to decrypt JWE. No jwk with kid was provided to decrypt with')
       return {
         decrypted: false,
@@ -336,18 +343,10 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
     }
 
     let decryptedPayload: string
-    let publicJwk: Kms.PublicJwk
 
     try {
       const jweService = agentContext.dependencyManager.resolve(JweService)
       const decrypted = await jweService.decryptJwe(agentContext, { jwe, recipientKeyId: kid })
-
-      // TODO: decrypt should return the public jwk instance
-      publicJwk = Kms.PublicJwk.fromUnknown(
-        await kms.getPublicKey({
-          keyId: kid,
-        })
-      )
 
       decryptedPayload = TypedArrayEncoder.toUtf8String(decrypted.data)
     } catch (error) {
@@ -364,7 +363,8 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
 
     return {
       decrypted: true,
-      decryptionJwk: publicJwk.toJson() as Jwk,
+      // The key that was decrypted with, without reading it from the kms again
+      decryptionJwk,
       payload: decryptedPayload,
       header,
     }

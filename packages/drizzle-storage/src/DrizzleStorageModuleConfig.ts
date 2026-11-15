@@ -43,6 +43,10 @@ export class DrizzleStorageModuleConfig {
       .map((record) => (record.adapter ? new record.adapter(this.database) : undefined))
       .filter((adapter) => adapter !== undefined)
 
+    for (const adapter of this.adapters) {
+      adapter.validateRecordMapping()
+    }
+
     this.schemas = getSchemaFromDrizzleRecords(allRecords, getDrizzleDatabaseType(options.database))
   }
 }

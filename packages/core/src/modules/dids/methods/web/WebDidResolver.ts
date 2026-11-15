@@ -1,11 +1,19 @@
 import { Resolver } from 'did-resolver'
 import * as didWeb from 'web-did-resolver'
 import type { AgentContext } from '../../../../agent'
-import { fetchWithTimeout } from '../../../../utils/fetch'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { DidDocument } from '../../domain'
 import type { DidResolver } from '../../domain/DidResolver'
 import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../../types'
+
+export interface WebDidResolverOptions {
+  /**
+   * Maximum size in bytes of a fetched DID document.
+   *
+   * @default the `maxResponseBytes` of the agent's `fetchLimits`
+   */
+  maxDidDocumentBytes?: number
+}
 
 export class WebDidResolver implements DidResolver {
   public readonly supportedMethods
@@ -14,9 +22,11 @@ export class WebDidResolver implements DidResolver {
   public readonly allowsLocalDidRecord = true
 
   private resolver = didWeb.getResolver()
+  private options: WebDidResolverOptions
 
-  public constructor() {
+  public constructor(options: WebDidResolverOptions = {}) {
     this.supportedMethods = Object.keys(this.resolver)
+    this.options = options
   }
 
   public async resolve(
@@ -27,7 +37,8 @@ export class WebDidResolver implements DidResolver {
   ): Promise<DidResolutionResult> {
     const didResolver = new Resolver(
       didWeb.getResolver({
-        fetch: (url, init) => fetchWithTimeout(agentContext.config.agentDependencies.fetch, url, init),
+        fetch: (url, init) =>
+          agentContext.config.fetch(url, { ...init, maxResponseBytes: this.options.maxDidDocumentBytes }),
       })
     )
     const result = await didResolver.resolve(did, didResolutionOptions)

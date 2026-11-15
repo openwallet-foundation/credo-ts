@@ -1,6 +1,6 @@
 // No type definitions available for this library
 //@ts-expect-error
-import jsonLdSignatures from '@digitalcredentials/jsonld-signatures'
+import jsonLdSignatures from 'jsonld-signatures'
 
 const { constants: JsonLdConstants, purposes: JsonLdPurposes, suites: JsonLdSuites } = jsonLdSignatures
 

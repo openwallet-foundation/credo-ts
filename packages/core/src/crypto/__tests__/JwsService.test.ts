@@ -160,6 +160,16 @@ describe('JwsService', () => {
     )
   })
 
+  it('throws an error when creating a jws with crit or b64', async () => {
+    await expect(
+      jwsService.createJwsCompact(agentContext, {
+        payload: JsonEncoder.toUint8Array(didJwsz6Mkf.DATA_JSON),
+        keyId: didJwsz6MkfKey.keyId,
+        protectedHeaderOptions: { alg: KnownJwaSignatureAlgorithms.EdDSA, b64: false, crit: ['b64'] },
+      })
+    ).rejects.toThrow("JWS protected header parameters 'crit' and 'b64' are not supported.")
+  })
+
   it('allows both x5c/jwk and kid (no did) to be present', async () => {
     const payload = JsonEncoder.toUint8Array(didJwsz6Mkf.DATA_JSON)
 
@@ -287,6 +297,20 @@ describe('JwsService', () => {
       expect(isValid).toBe(false)
       expect(jwsSigners).toMatchObject([])
     })
+
+    it.each([{ crit: ['exp'] }, { b64: false, crit: ['b64'] }, { b64: true }])(
+      'throws an error if the protected header contains %o',
+      async (header) => {
+        const protectedHeader = JsonEncoder.toBase64Url({
+          ...JsonEncoder.fromBase64Url(didJwsz6Mkf.JWS_JSON.protected),
+          ...header,
+        })
+
+        await expect(
+          jwsService.verifyJws(agentContext, { jws: { ...didJwsz6Mkf.JWS_JSON, protected: protectedHeader } })
+        ).rejects.toThrow("JWS protected header parameters 'crit' and 'b64' are not supported.")
+      }
+    )
 
     it('throws an error if the jws signatures array does not contain a JWS', async () => {
       await expect(

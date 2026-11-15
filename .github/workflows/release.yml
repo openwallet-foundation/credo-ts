@@ -65,6 +65,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ env.CURRENT_PACKAGE_VERSION }}
+          target_commitish: ${{ github.sha }}
 
   release-unstable:
     name: Release Unstable

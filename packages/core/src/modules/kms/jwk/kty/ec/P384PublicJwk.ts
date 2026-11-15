@@ -1,14 +1,14 @@
 import { KnownJwaKeyAgreementAlgorithms, type KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../../jwa'
 import type { PublicJwkType } from '../PublicJwk'
 import type { KmsJwkPublicEc } from './ecJwk'
-import { ecPublicJwkToPublicKey, ecPublicKeyToPublicJwk } from './ecPublicKey'
+import { ecMulticodecToPublicJwk, ecPublicJwkToPublicKey, ecPublicKeyToPublicJwk } from './ecPublicKey'
 
 type Jwk = KmsJwkPublicEc & { crv: 'P-384' }
 
 export class P384PublicJwk implements PublicJwkType<Jwk> {
   public static supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] = [KnownJwaSignatureAlgorithms.ES384]
   public static supportedEncryptionKeyAgreementAlgorithms = [KnownJwaKeyAgreementAlgorithms.ECDH_ES]
-  public static multicodecPrefix = 4609
+  public static multicodecPrefix = 0x1201
 
   public supportedEncryptionKeyAgreementAlgorithms = P384PublicJwk.supportedEncryptionKeyAgreementAlgorithms
   public supportedSignatureAlgorithms = P384PublicJwk.supportedSignatureAlgorithms
@@ -42,7 +42,7 @@ export class P384PublicJwk implements PublicJwkType<Jwk> {
   }
 
   public static fromMulticodec(multicodec: Uint8Array) {
-    const jwk = ecPublicKeyToPublicJwk(multicodec, 'P-384')
+    const jwk = ecMulticodecToPublicJwk(multicodec, 'P-384')
     return new P384PublicJwk(jwk)
   }
 }

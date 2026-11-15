@@ -126,14 +126,20 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
           )
         }
 
+        const chainedDpop = await openId4VcIssuerService.getChainedDpopOptions(agentContext, {
+          issuanceSession,
+          chainedAuthorizationServerConfig: authorizationServerConfig,
+          authorizationServerMetadata,
+        })
+
         // Retrieve access token
-        // TODO: add support for DPoP
-        const { accessTokenResponse } = await oauth2Client
+        const { accessTokenResponse, dpop } = await oauth2Client
           .retrieveAuthorizationCodeAccessToken({
             authorizationCode: authorizationResponse.code,
             authorizationServerMetadata,
             pkceCodeVerifier: issuanceSession.chainedIdentity.pkceCodeVerifier,
             redirectUri: joinUriParts(config.baseUrl, [issuer.issuerId, 'redirect']),
+            dpop: chainedDpop.dpop,
           })
           .catch((error) => {
             if (error instanceof Oauth2ClientErrorResponseError) {
@@ -172,6 +178,26 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
               }
             )
           })
+
+        if (chainedDpop.session) {
+          chainedDpop.session.nonce = dpop?.nonce
+        }
+
+        const isDpopTokenResponse = accessTokenResponse.token_type.toLowerCase() === 'dpop'
+        if (Boolean(chainedDpop.dpop) !== isDpopTokenResponse) {
+          throw new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.ServerError,
+            },
+            {
+              internalMessage: `Credo ${
+                chainedDpop.dpop
+                  ? 'used DPoP but the token response type was'
+                  : 'did not use DPoP but the token response type was'
+              } '${accessTokenResponse.token_type}' for '${authorizationServerMetadata.issuer}'.`,
+            }
+          )
+        }
 
         // Verify the ID Token if 'openid' scope was requested
         if (accessTokenResponse.scope?.split(' ').includes('openid')) {
@@ -222,6 +248,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
         issuanceSession.chainedIdentity = {
           ...issuanceSession.chainedIdentity,
           externalAccessTokenResponse: accessTokenResponse,
+          externalDpop: chainedDpop.session,
         }
 
         // TODO: we need to start using locks so we can't get corrupted state

@@ -1,4 +1,3 @@
-import { parseIndyDid } from '@credo-ts/anoncreds'
 import { AgentContext, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import type { IndyVdrRequest, IndyVdrPool as indyVdrPool, RequestResponseType } from '@hyperledger/indy-vdr-shared'
 import {
@@ -7,7 +6,7 @@ import {
   indyVdr,
   PoolCreate,
 } from '@hyperledger/indy-vdr-shared'
-
+import { parseIndyDid } from '../dids/didIndyUtil'
 import { IndyVdrError } from '../error'
 
 export interface TransactionAuthorAgreement {

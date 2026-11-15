@@ -2,6 +2,7 @@ import type {
   OpenId4VcVerificationSessionState,
   OpenId4VpAuthorizationRequestPayload,
   OpenId4VpAuthorizationResponsePayload,
+  OpenId4VpVersion,
 } from '@credo-ts/openid4vc'
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
@@ -32,6 +33,7 @@ export const openId4VcVerificationSession = sqliteTable(
       mode: 'json',
     }).$type<OpenId4VpAuthorizationResponsePayload>(),
     presentationDuringIssuanceSession: text('presentation_during_issuance_session'),
+    openId4VpVersion: text('openid4vp_version').$type<OpenId4VpVersion>(),
 
     // These tags may be encoded in a JWT, so we need to duplicate them
     nonce: text().notNull(),

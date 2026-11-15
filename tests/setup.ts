@@ -8,7 +8,8 @@ import { LogLevel } from '../packages/core/src/logger/Logger'
 import testLogger from '../packages/core/tests/logger'
 
 // Get test file path at module load
-const testPath = expect.getState().testPath
+const testPath = expect.getState()?.testPath
+
 const relativeTestPath = testPath ? path.relative(process.cwd(), testPath) : undefined
 
 // Create a log file name based on test file

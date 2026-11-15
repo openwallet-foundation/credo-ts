@@ -3,6 +3,7 @@ import { AgentContext } from '../../agent'
 import { CredoWebCrypto } from '../../crypto'
 import { CredoError } from '../../error'
 import { KeyManagementApi, type KmsJwkPublicEcdh, type KnownJwaHpkeAlgorithm, PublicJwk } from '../../modules/kms'
+import { TokenStatusListModuleConfig } from '../../modules/token-status-list/TokenStatusListModuleConfig'
 import { X509Certificate } from '../../modules/x509/X509Certificate'
 import { X509Service } from '../../modules/x509/X509Service'
 import { getMac0Context } from './mac0Context'
@@ -30,7 +31,12 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
   const kms = agentContext.resolve(KeyManagementApi)
 
   return {
-    fetch: agentContext.config.agentDependencies.fetch,
+    // Only used for the status and identifier lists that an mdoc references
+    fetch: (url, init) =>
+      agentContext.config.fetch(url, {
+        ...init,
+        maxResponseBytes: agentContext.resolve(TokenStatusListModuleConfig).maxStatusListBytes,
+      }),
     crypto: {
       digest: async (input) => {
         const { bytes, digestAlgorithm } = input

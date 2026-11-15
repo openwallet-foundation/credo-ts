@@ -2,6 +2,7 @@ import { DeviceResponse } from '@owf/mdoc'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
+import { TypedArrayEncoder } from '../../../utils'
 import type { DifPresentationExchangeDefinition } from '../../dif-presentation-exchange'
 import { assertMdocInputDescriptor, inputDescriptorToDocumentRequest } from '../../dif-presentation-exchange/utils/mdoc'
 import { PublicJwk } from '../../kms'
@@ -235,6 +236,24 @@ describe('mdoc device-response openid4vp test', () => {
             responseUri,
             verifierGeneratedNonce,
             mdocGeneratedNonce,
+          },
+        })
+      ).resolves.toEqual({
+        documents: [{ documentIndex: 0, mdoc: expect.any(Mdoc), trustedIssuanceChain: expect.any(Array) }],
+      })
+    })
+
+    it('should be verifiable with the mdoc-generated nonce provided as raw utf-8 bytes', async () => {
+      const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponse)
+      await expect(
+        mdocDeviceResponse.verify(agent.context, {
+          trustedCertificates: [ISSUER_CERTIFICATE_P256],
+          sessionTranscriptOptions: {
+            type: 'openId4VpDraft18',
+            clientId,
+            responseUri,
+            verifierGeneratedNonce,
+            mdocGeneratedNonce: TypedArrayEncoder.fromUtf8String(mdocGeneratedNonce),
           },
         })
       ).resolves.toEqual({

@@ -3,6 +3,7 @@ import {
   BaseRecord,
   CredoError,
   createRecordEncodingSchema,
+  isJsonObject,
   Kms,
   utils,
   zIsoDate,
@@ -162,12 +163,28 @@ export interface OpenId4VcIssuanceSessionChainedIdentity {
   externalAuthorizationServerMetadata?: AuthorizationServerMetadata
 
   /**
+   * The DPoP key and nonce Credo uses towards the external identity provider's authorization server.
+   * Not related to the wallet's DPoP binding in the top-level `dpop` of the issuance session.
+   */
+  externalDpop?: OpenId4VcIssuanceSessionChainedIdentityDpop
+
+  /**
    * The access token response received from the external identity provider.
    *
    * If the scope 'openid' is requested, we automatically verify if the
    * ID Token JWT is valid.
    */
   externalAccessTokenResponse?: AccessTokenResponse
+}
+
+export interface OpenId4VcIssuanceSessionChainedIdentityDpop {
+  keyId: string
+  alg: Kms.KnownJwaSignatureAlgorithm
+  nonce?: string
+  /**
+   * True only when this issuance session caused the key to be generated.
+   */
+  keyGeneratedForSession?: boolean
 }
 
 export type DefaultOpenId4VcIssuanceSessionRecordTags = {
@@ -284,13 +301,23 @@ export interface OpenId4VcIssuanceSessionRecordProps {
   openId4VciVersion: OpenId4VciVersion
 }
 
+/**
+ * The drizzle storage stored `PublicJwk` instances as is, which serializes to `{ jwk: { jwk: { kty, ... } } }`.
+ * Returns the JWK for this format, so these records can be loaded.
+ */
+function unwrapSerializedPublicJwk(jwk: unknown): unknown {
+  if (isJsonObject(jwk) && isJsonObject(jwk.jwk) && isJsonObject(jwk.jwk.jwk)) return jwk.jwk.jwk
+
+  return jwk
+}
+
 const zPublicJwk = z.codec(
   z.unknown(),
   z.custom<Kms.PublicJwk>((value) => value instanceof Kms.PublicJwk, 'Must be an instance of PublicJwk'),
   {
     decode: (jwk, payload) => {
       try {
-        return Kms.PublicJwk.fromUnknown(jwk)
+        return Kms.PublicJwk.fromUnknown(unwrapSerializedPublicJwk(jwk))
       } catch (error) {
         payload.issues.push({
           code: 'custom',

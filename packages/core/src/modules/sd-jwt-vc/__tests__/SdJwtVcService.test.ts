@@ -1,4 +1,4 @@
-import type { AgentContext, Constructable, SdJwtVc } from '@credo-ts/core'
+import type { AgentContext, Constructable, SdJwtVc, X509CertificateExtensionsOptions } from '@credo-ts/core'
 import {
   Agent,
   CredoError,
@@ -12,13 +12,18 @@ import {
   KeyDidRegistrar,
   KeyDidResolver,
   parseDid,
+  TokenStatusListModuleConfig,
   TypedArrayEncoder,
   X509Certificate,
+  X509ExtendedKeyUsage,
+  X509KeyUsage,
   X509ModuleConfig,
   X509Service,
+  X509ValidationError,
 } from '@credo-ts/core'
 import { createHeaderAndPayload, SLException, StatusList } from '@owf/token-status-list'
 import { decodeSdJwtSync, getClaimsSync, Jwt, SDJwt } from '@sd-jwt/core'
+import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc'
 import { randomUUID } from 'crypto'
 import nock from 'nock'
 import { type Mock, vi } from 'vitest'
@@ -108,7 +113,7 @@ const generateStatusList = async (
   length: number,
   revokedIndexes: number[],
   // `createHeaderAndPayload` always sets the `typ`, so a wrong `typ` is set on the JWS header instead
-  overrides: { typ?: string; sub?: string } = {}
+  overrides: { typ?: string; sub?: string; kid?: string } = {}
 ): Promise<string> => {
   const statusList = new StatusList(
     Array.from({ length }, (_, i) => (revokedIndexes.includes(i) ? 1 : 0)),
@@ -126,7 +131,7 @@ const generateStatusList = async (
     {
       alg: 'EdDSA',
       typ: 'statuslist+jwt',
-      kid: `#${keyId}`,
+      kid: overrides.kid ?? `#${keyId}`,
     }
   )
 
@@ -273,24 +278,24 @@ describe('SdJwtVcService', () => {
       vi.mocked(agent.kms.randomBytes).mockImplementation(staticSalt)
     })
 
-    test('Sign (x509) sd-jwt-vc with an invalid certificate issuer should fail', async () => {
-      await expect(
-        sdJwtVcService.sign(agent.context, {
-          payload: {
-            claim: 'some-claim',
-            vct: 'IdentityCredential',
-          },
-          holder: {
-            method: 'jwk',
-            jwk: holderKey,
-          },
-          issuer: {
-            method: 'x5c',
-            x5c: [simpleX509Certificate],
-            issuer: 'some-issuer',
-          },
-        })
-      ).rejects.toThrow()
+    test('Sign (x509) sd-jwt-vc with an issuer claim that does not match the certificate', async () => {
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          claim: 'some-claim',
+          vct: 'IdentityCredential',
+        },
+        holder: {
+          method: 'jwk',
+          jwk: holderKey,
+        },
+        issuer: {
+          method: 'x5c',
+          x5c: [simpleX509Certificate],
+          issuer: 'some-issuer',
+        },
+      })
+
+      expect(sdJwtVcService.fromCompact(compact).payload.iss).toEqual('some-issuer')
     })
 
     test('Sign (x509) sd-jwt-vc from a basic payload without disclosures', async () => {
@@ -1526,6 +1531,31 @@ describe('SdJwtVcService', () => {
       })
     })
 
+    test('Verify sd-jwt-vc with status where the status list is larger than the fetch limit and fails', async () => {
+      const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
+
+      nock('https://example.com')
+        .get('/status-list')
+        .reply(200, 'a'.repeat(agent.config.fetchLimits.maxResponseBytes + 1), {
+          'Content-Type': 'application/statuslist+jwt',
+        })
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleSdJwtVcWithStatus,
+        presentationFrame: {},
+      })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        sdJwtVc: expect.any(Object),
+        error: expect.objectContaining({ message: expect.stringMatching(/too large|exceeded limit/) }),
+      })
+    })
+
     test('Verify sd-jwt-vc with status where credential is revoked and fails', async () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
@@ -1776,6 +1806,78 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: false,
         error: new CredoError("Expected JWT header 'alg' to be a known JWA signature algorithm, found 'RS1'"),
+        sdJwtVc: expect.any(Object),
+      })
+    })
+
+    test('verify x509 protected sd-jwt-vc with a selectively disclosed iss and fails', async () => {
+      // @sd-jwt/sd-jwt-vc refuses to issue this, so we skip that check to create a non-compliant credential
+      const validateDisclosureFrameSpy = vi
+        .spyOn(SDJwtVcInstance.prototype, 'validateDisclosureFrame')
+        .mockImplementation(() => {})
+
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: { claim: 'some-claim', vct: 'IdentityCredential' },
+        disclosureFrame: { _sd: ['iss'] },
+        issuer: {
+          method: 'x5c',
+          x5c: [simpleX509Certificate],
+          issuer: simpleX509.certificateIssuer,
+        },
+      })
+      validateDisclosureFrameSpy.mockRestore()
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: compact,
+        trustedCertificates: [simpleX509.trustedCertificate],
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        error: expect.objectContaining({
+          name: 'SDJWTException',
+          message: 'Protected claims must not be selectively disclosed: iss',
+          code: 'INVALID_SD_JWT',
+        }),
+        sdJwtVc: expect.objectContaining({
+          prettyClaims: expect.objectContaining({ iss: simpleX509.certificateIssuer }),
+        }),
+      })
+    })
+
+    test('verify sd-jwt-vc with a selectively disclosable status sub-claim that is not disclosed and fails', async () => {
+      // @sd-jwt/sd-jwt-vc refuses to issue this, so we skip that check to create a non-compliant credential
+      const validateDisclosureFrameSpy = vi
+        .spyOn(SDJwtVcInstance.prototype, 'validateDisclosureFrame')
+        .mockImplementation(() => {})
+
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          vct: 'IdentityCredential',
+          status: { status_list: { idx: 0, uri: 'https://example.com/status-list' } },
+        },
+        disclosureFrame: { status: { _sd: ['status_list'] } },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+      })
+      validateDisclosureFrameSpy.mockRestore()
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: compact,
+        presentationFrame: {},
+      })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, { compactSdJwtVc: presentation })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        error: expect.objectContaining({
+          name: 'SDJWTException',
+          message: 'Protected claims must not have selectively disclosable parts: status',
+          code: 'INVALID_SD_JWT',
+        }),
         sdJwtVc: expect.any(Object),
       })
     })
@@ -2032,6 +2134,32 @@ describe('SdJwtVcService', () => {
       }
     })
 
+    test('did: status list with the trusted issuer did as iss but an absolute kid of a different did is rejected', async () => {
+      const otherKey = PublicJwk.fromPublicJwk(
+        (await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      )
+      const otherDidUrl = (new DidKey(otherKey).didDocument.verificationMethod ?? [])[0].id
+
+      mockStatusList(await generateStatusList(agent.context, otherKey, issuerDidUrl, 24, [], { kid: otherDidUrl }))
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleSdJwtVcWithStatus,
+        presentationFrame: {},
+      })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
+      })
+
+      expect(verificationResult.isValid).toBe(false)
+      if (!verificationResult.isValid) {
+        expect(verificationResult.error?.message).toContain(
+          `kid in header is an absolute DID URL, but the did (${otherDidUrl.split('#')[0]}) does not match with the 'iss' did (${issuerDid()})`
+        )
+      }
+    })
+
     test('status validation can be disabled even when the credential is revoked', async () => {
       mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [12]))
 
@@ -2163,6 +2291,217 @@ describe('SdJwtVcService', () => {
         expect(verificationResult.error?.message).toContain('Status List JWT verification failed')
       }
     })
+
+    describe('with the status signing key purpose required', () => {
+      type StatusExtensions = {
+        leafExtensions?: X509CertificateExtensionsOptions
+        rootExtensions?: X509CertificateExtensionsOptions
+      }
+
+      const createStatusRootAndLeaf = async ({ leafExtensions, rootExtensions }: StatusExtensions) => {
+        const rootKey = PublicJwk.fromPublicJwk(
+          (await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+        )
+        const leafKey = PublicJwk.fromPublicJwk(
+          (await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+        )
+        const validity = { notBefore: new Date('2020-01-01'), notAfter: new Date('2035-01-01') }
+
+        const rootCertificate = await X509Service.createCertificate(agent.context, {
+          authorityKey: rootKey,
+          issuer: { commonName: 'Status Root' },
+          validity,
+          extensions: { basicConstraints: { ca: true }, ...rootExtensions },
+        })
+        const leafCertificate = await X509Service.createCertificate(agent.context, {
+          authorityKey: rootKey,
+          subjectPublicKey: leafKey,
+          issuer: { commonName: 'Status Root' },
+          subject: { commonName: 'Status Leaf' },
+          validity,
+          extensions: leafExtensions,
+        })
+        leafCertificate.keyId = leafKey.keyId
+
+        return { rootCertificate, leafKey, leafCertificate }
+      }
+
+      // Only the status root is trusted, so a check on the wrong end of the chain fails these tests.
+      const verifyWithStatusRoot = async (statusExtensions: StatusExtensions = {}) => {
+        const issuance = await createSigningCertificate('Issuance')
+        const status = await createStatusRootAndLeaf(statusExtensions)
+
+        const presentation = await signX509CredentialWithStatus(issuance.certificate)
+        mockStatusList(await generateX509StatusList(agent.context, status.leafKey, status.leafCertificate, 24, []))
+
+        return sdJwtVcService.verify(agent.context, {
+          compactSdJwtVc: presentation,
+          trustedIssuers: [
+            {
+              method: 'x509',
+              issuance: [issuance.certificate.toString('base64')],
+              status: [status.rootCertificate.toString('base64')],
+            },
+          ],
+        })
+      }
+
+      beforeEach(() => {
+        agent.context.dependencyManager.registerInstance(
+          TokenStatusListModuleConfig,
+          new TokenStatusListModuleConfig({ requireStatusSigningKeyPurpose: true })
+        )
+      })
+
+      afterEach(() => {
+        agent.context.dependencyManager.registerInstance(TokenStatusListModuleConfig, new TokenStatusListModuleConfig())
+      })
+
+      test('x509: a status leaf with the extended key usage is accepted', async () => {
+        const verificationResult = await verifyWithStatusRoot({
+          leafExtensions: {
+            extendedKeyUsage: { usages: [X509ExtendedKeyUsage.OauthStatusSigning] },
+            keyUsage: { usages: [X509KeyUsage.DigitalSignature] },
+          },
+        })
+
+        expect(verificationResult.isValid).toBe(true)
+      })
+
+      const statusListChainError =
+        'Status List JWT verification failed: The status list certificate chain could not be validated against the trusted status certificates.'
+      const missingStatusSigningMessage = `${statusListChainError} Certificate 'CN=Status Leaf' does not have the required extended key usages: OauthStatusSigning (1.3.6.1.5.5.7.3.45)`
+
+      test('x509: a status leaf without the extended key usage is rejected', async () => {
+        const verificationResult = await verifyWithStatusRoot()
+
+        expect(verificationResult.isValid).toBe(false)
+        if (!verificationResult.isValid) {
+          expect(verificationResult.error?.message).toBe(missingStatusSigningMessage)
+
+          // The key purpose is checked as part of the chain validation.
+          const chainValidationError = (verificationResult.error?.cause as Error | undefined)?.cause
+          expect(chainValidationError).toBeInstanceOf(X509ValidationError)
+          expect(
+            (chainValidationError as X509ValidationError).validationResult.validations.extendedKeyUsage?.isValid
+          ).toBe(false)
+        }
+      })
+
+      test('x509: the extended key usage only on the trusted status root is rejected', async () => {
+        const verificationResult = await verifyWithStatusRoot({
+          rootExtensions: { extendedKeyUsage: { usages: [X509ExtendedKeyUsage.OauthStatusSigning] } },
+        })
+
+        expect(verificationResult.isValid).toBe(false)
+        if (!verificationResult.isValid) {
+          expect(verificationResult.error?.message).toBe(missingStatusSigningMessage)
+        }
+      })
+
+      test('x509: a status leaf with a different extended key usage is rejected', async () => {
+        const verificationResult = await verifyWithStatusRoot({
+          leafExtensions: { extendedKeyUsage: { usages: [X509ExtendedKeyUsage.CodeSigning] } },
+        })
+
+        expect(verificationResult.isValid).toBe(false)
+        if (!verificationResult.isValid) {
+          expect(verificationResult.error?.message).toBe(missingStatusSigningMessage)
+        }
+      })
+
+      test('x509: a status leaf whose key usage excludes signing is rejected', async () => {
+        const verificationResult = await verifyWithStatusRoot({
+          leafExtensions: {
+            extendedKeyUsage: { usages: [X509ExtendedKeyUsage.OauthStatusSigning] },
+            keyUsage: { usages: [X509KeyUsage.KeyEncipherment] },
+          },
+        })
+
+        expect(verificationResult.isValid).toBe(false)
+        if (!verificationResult.isValid) {
+          expect(verificationResult.error?.message).toBe(
+            `${statusListChainError} Certificate 'CN=Status Leaf' does not have the required key usages: DigitalSignature`
+          )
+        }
+      })
+
+      test('x509: the credential issuer certificate does not need the extended key usage', async () => {
+        const issuance = await createSigningCertificate('Issuance')
+
+        const presentation = await signX509CredentialWithStatus(issuance.certificate)
+        mockStatusList(await generateX509StatusList(agent.context, issuance.key, issuance.certificate, 24, []))
+
+        const verificationResult = await sdJwtVcService.verify(agent.context, {
+          compactSdJwtVc: presentation,
+          trustedIssuers: [{ method: 'x509', issuance: [issuance.certificate.toString('base64')] }],
+        })
+
+        expect(verificationResult.isValid).toBe(true)
+      })
+
+      test('x509: the credential issuer certificate as a dedicated status certificate does not need the extended key usage', async () => {
+        const issuance = await createSigningCertificate('Issuance')
+
+        const presentation = await signX509CredentialWithStatus(issuance.certificate)
+        mockStatusList(await generateX509StatusList(agent.context, issuance.key, issuance.certificate, 24, []))
+
+        const verificationResult = await sdJwtVcService.verify(agent.context, {
+          compactSdJwtVc: presentation,
+          trustedIssuers: [
+            {
+              method: 'x509',
+              issuance: [issuance.certificate.toString('base64')],
+              status: [issuance.certificate.toString('base64')],
+            },
+          ],
+        })
+
+        expect(verificationResult.isValid).toBe(true)
+      })
+
+      test('x509: a renewed credential issuer certificate with the same key does not need the extended key usage', async () => {
+        const issuance = await createSigningCertificate('Issuance')
+        const renewedCertificate = await X509Service.createCertificate(agent.context, {
+          authorityKey: issuance.key,
+          issuer: { commonName: 'Issuance' },
+          validity: { notBefore: new Date('2021-01-01'), notAfter: new Date('2036-01-01') },
+        })
+        renewedCertificate.keyId = issuance.key.keyId
+
+        const presentation = await signX509CredentialWithStatus(issuance.certificate)
+        mockStatusList(await generateX509StatusList(agent.context, issuance.key, renewedCertificate, 24, []))
+
+        const verificationResult = await sdJwtVcService.verify(agent.context, {
+          compactSdJwtVc: presentation,
+          trustedIssuers: [
+            {
+              method: 'x509',
+              issuance: [issuance.certificate.toString('base64')],
+              status: [renewedCertificate.toString('base64')],
+            },
+          ],
+        })
+
+        expect(verificationResult.isValid).toBe(true)
+      })
+
+      test('did: a status list is not affected', async () => {
+        mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, []))
+
+        const presentation = await sdJwtVcService.present(agent.context, {
+          sdJwtVc: simpleSdJwtVcWithStatus,
+          presentationFrame: {},
+        })
+
+        const verificationResult = await sdJwtVcService.verify(agent.context, {
+          compactSdJwtVc: presentation,
+          trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
+        })
+
+        expect(verificationResult.isValid).toBe(true)
+      })
+    })
   })
 
   describe('SdJwtVcService.verify fetches the status list', () => {
@@ -2260,6 +2599,28 @@ describe('SdJwtVcService', () => {
       const verificationResult = await verify(await presentWithStatus())
 
       expect(verificationResult.isValid).toBe(true)
+    })
+
+    test('rejects an http status list uri when insecure http urls are not allowed', async () => {
+      const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
+      const fetchSpy = vi.spyOn(agent.context.config, 'fetch')
+      const signed = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          vct: 'IdentityCredential',
+          status: { status_list: { idx: 12, uri: 'http://example.com/status-list' } },
+        } as SdJwtVcPayload,
+        issuer: { method: 'did', didUrl: issuerDidUrl },
+      })
+
+      const verificationResult = await verify(
+        await sdJwtVcService.present(agent.context, { sdJwtVc: signed, presentationFrame: {} })
+      )
+
+      expect(verificationResult.isValid).toBe(false)
+      if (!verificationResult.isValid) {
+        expect(verificationResult.error?.message).toContain('Only https urls are supported')
+      }
+      expect(fetchSpy).not.toHaveBeenCalled()
     })
 
     test("rejects a status list JWT whose 'sub' is not the uri of the status claim", async () => {
@@ -2542,6 +2903,35 @@ describe('SdJwtVcService', () => {
       ).rejects.toThrow(
         "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful response."
       )
+    })
+
+    test('Fetch type metadata throws error when the response is larger than the fetch limit', async () => {
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      })
+
+      nock('https://example.com')
+        .get('/credentials/identity')
+        .reply(200, {
+          vct: 'https://example.com/credentials/identity',
+          name: 'a'.repeat(agent.config.fetchLimits.maxResponseBytes),
+        })
+
+      nock('https://example.com').get('/.well-known/vct/credentials/identity').reply(404)
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'https://example.com/credentials/identity',
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toMatchObject({
+        message:
+          "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful response.",
+        cause: expect.objectContaining({ message: expect.stringMatching(/too large|exceeded limit/) }),
+      })
     })
 
     test('Fetch type metadata with valid vct#integrity (sha256) should succeed', async () => {

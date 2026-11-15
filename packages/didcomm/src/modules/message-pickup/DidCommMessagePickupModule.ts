@@ -1,17 +1,26 @@
 import type { AgentContext, ApiModule, Constructor, DependencyManager, Optional } from '@credo-ts/core'
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommMessagePickupApi } from './DidCommMessagePickupApi'
 import type { DidCommMessagePickupModuleConfigOptions } from './DidCommMessagePickupModuleConfig'
 import { DidCommMessagePickupModuleConfig } from './DidCommMessagePickupModuleConfig'
-import { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol } from './protocol'
+import {
+  DidCommMessagePickupV1Protocol,
+  DidCommMessagePickupV2Protocol,
+  DidCommMessagePickupV4Protocol,
+} from './protocol'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 import { DidCommMessagePickupSessionService } from './services'
 
 /**
  * Default protocols that will be registered if the `protocols` property is not configured.
  */
-export type DefaultDidCommMessagePickupProtocols = [DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol]
+export type DefaultDidCommMessagePickupProtocols = [
+  DidCommMessagePickupV1Protocol,
+  DidCommMessagePickupV2Protocol,
+  DidCommMessagePickupV4Protocol,
+]
 
 // MessagePickupModuleOptions makes the protocols property optional from the config, as it will set it when not provided.
 export type DidCommMessagePickupModuleOptions<MessagePickupProtocols extends DidCommMessagePickupProtocol[]> = Optional<
@@ -31,7 +40,11 @@ export class DidCommMessagePickupModule<
   public constructor(config?: DidCommMessagePickupModuleOptions<MessagePickupProtocols>) {
     this.config = new DidCommMessagePickupModuleConfig({
       ...config,
-      protocols: config?.protocols ?? [new DidCommMessagePickupV1Protocol(), new DidCommMessagePickupV2Protocol()],
+      protocols: config?.protocols ?? [
+        new DidCommMessagePickupV1Protocol(),
+        new DidCommMessagePickupV2Protocol(),
+        new DidCommMessagePickupV4Protocol(),
+      ],
     }) as DidCommMessagePickupModuleConfig<MessagePickupProtocols>
   }
 
@@ -51,7 +64,10 @@ export class DidCommMessagePickupModule<
     const messageHandlerRegistry = agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry)
     const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
 
+    const didcommConfig = agentContext.resolve(DidCommModuleConfig)
     for (const protocol of this.config.protocols) {
+      // Message Pickup 4.0 runs over DIDComm v2 only, so a v1-only agent neither handles nor advertises it
+      if (protocol.version === 'v4' && !didcommConfig.isSupported('v2')) continue
       protocol.register(messageHandlerRegistry, featureRegistry)
     }
   }

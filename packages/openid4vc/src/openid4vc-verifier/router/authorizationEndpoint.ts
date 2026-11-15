@@ -11,6 +11,7 @@ import {
   sendOauth2ErrorResponse,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
+import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
 import {
@@ -33,7 +34,14 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
       // Response already handled in the method
       if (!result.success) return
 
-      authorizationResponseRedirectUri = result.verificationSession.authorizationResponseRedirectUri
+      // Only the response that ends the session gets the redirect_uri, so a replayed one doesn't learn it.
+      const { state } = result.verificationSession
+      if (
+        state === OpenId4VcVerificationSessionState.RequestCreated ||
+        state === OpenId4VcVerificationSessionState.RequestUriRetrieved
+      ) {
+        authorizationResponseRedirectUri = result.verificationSession.authorizationResponseRedirectUri
+      }
 
       const { verificationSession } = await openId4VcVerifierService.verifyAuthorizationResponse(agentContext, {
         authorizationResponse: request.body,

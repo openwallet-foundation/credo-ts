@@ -1,17 +1,10 @@
 import type { DependencyManager } from '@credo-ts/core'
 import { AnonCredsW3cCredentialServiceSymbol } from '@credo-ts/core'
-import {
-  DidCommDataIntegrityLinkSecretBindingProviderToken,
-  type DidCommRevocationRegistryIdQueryBuilder,
-  DidCommRevocationRegistryIdQueryBuilderToken,
-} from '@credo-ts/didcomm'
-import { getAgentContext, mockFunction } from '../../../core/tests/helpers'
 import { NativeAnoncreds } from '../../tests/helpers'
 import { AnonCredsModule } from '../AnonCredsModule'
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../anoncreds-rs'
 import { AnonCredsW3cCredentialService } from '../anoncreds-rs/AnonCredsW3cCredentialService'
-import { AnonCredsLinkSecretBindingProvider } from '../formats/AnonCredsLinkSecretBindingProvider'
 import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsCredentialDefinitionRepository,
@@ -40,28 +33,7 @@ describe('AnonCredsModule', () => {
     })
     anonCredsModule.register(dependencyManager)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(13)
-
-    const [, revocationRegistryIdQueryBuilder] =
-      mockFunction(dependencyManager.registerInstance).mock.calls.find(
-        ([token]) => token === DidCommRevocationRegistryIdQueryBuilderToken
-      ) ?? []
-    // The builder matches every form of the id that the registry returns
-    const agentContext = getAgentContext({
-      registerInstances: [
-        [
-          AnonCredsModuleConfig,
-          {
-            registries: [{ supportedIdentifier: /.+/, getIdentifierVariants: (id: string) => [id.toUpperCase(), id] }],
-          } as unknown as AnonCredsModuleConfig,
-        ],
-      ],
-    })
-    expect(
-      (revocationRegistryIdQueryBuilder as DidCommRevocationRegistryIdQueryBuilder)(agentContext, 'registry:a')
-    ).toEqual({
-      $or: [{ anonCredsRevocationRegistryId: 'REGISTRY:A' }, { anonCredsRevocationRegistryId: 'registry:a' }],
-    })
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(12)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsRegistryService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsSchemaRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsCredentialDefinitionRepository)
@@ -91,17 +63,7 @@ describe('AnonCredsModule', () => {
       AnonCredsW3cCredentialService
     )
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
-      DidCommDataIntegrityLinkSecretBindingProviderToken,
-      AnonCredsLinkSecretBindingProvider
-    )
-
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
-      DidCommDataIntegrityLinkSecretBindingProviderToken,
-      AnonCredsLinkSecretBindingProvider
-    )
-
-    expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(2)
+    expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(AnonCredsModuleConfig, anonCredsModule.config)
   })
 })

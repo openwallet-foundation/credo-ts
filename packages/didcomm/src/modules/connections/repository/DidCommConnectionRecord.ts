@@ -1,6 +1,7 @@
 import type { TagsBase } from '@credo-ts/core'
 import { BaseRecord, CredoError, createRecordEncodingSchema, utils, zWithUpgrade } from '@credo-ts/core'
 import { z } from 'zod'
+import type { DidCommVersion } from '../../../util/didcommVersion'
 import type { DidCommConnectionType } from '../models'
 import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from '../models'
 import type { DidCommConnectionMetadata } from './DidCommConnectionMetadataTypes'
@@ -26,6 +27,8 @@ export interface DidCommConnectionRecordProps {
   connectionTypes?: Array<DidCommConnectionType | string>
   previousDids?: Array<string>
   previousTheirDids?: Array<string>
+  /** DIDComm envelope version. V2 OOB uses v2; handshake protocols use v1. Defaults to v1. */
+  didcommVersion?: DidCommVersion
 }
 
 export type CustomDidCommConnectionTags = TagsBase
@@ -38,6 +41,7 @@ export type DefaultDidCommConnectionTags = {
   theirDid?: string
   outOfBandId?: string
   invitationDid?: string
+  didcommVersion?: DidCommVersion
   connectionTypes?: Array<DidCommConnectionType | string>
   previousDids?: Array<string>
   previousTheirDids?: Array<string>
@@ -60,7 +64,7 @@ const didCommConnectionRecordEncodingSchema = createRecordEncodingSchema({
   // only store the major version, storing .x for the minor version. We have this
   // transformation so we don't have to migrate the data in the database.
   protocol: zWithUpgrade(z.string(), (value) => {
-    if (!value || typeof value !== 'string' || value.endsWith('.x')) return value
+    if (!value || typeof value !== 'string' || !value.includes('.') || value.endsWith('.x')) return value
     return `${value.split('.').slice(0, -1).join('.')}.x`
   }).nullish(),
   outOfBandId: z.string().nullish(),
@@ -68,6 +72,7 @@ const didCommConnectionRecordEncodingSchema = createRecordEncodingSchema({
   connectionTypes: z.array(z.string()).nullish(),
   previousDids: z.array(z.string()).nullish(),
   previousTheirDids: z.array(z.string()).nullish(),
+  didcommVersion: z.enum(['v1', 'v2']).nullish(),
 })
 
 export class DidCommConnectionRecord extends BaseRecord<
@@ -103,6 +108,9 @@ export class DidCommConnectionRecord extends BaseRecord<
   public previousDids: string[] = []
   public previousTheirDids: string[] = []
 
+  /** DIDComm envelope version for this connection. V2 OOB uses v2; handshake protocols use v1. Defaults to v1. */
+  public didcommVersion?: DidCommVersion
+
   public static readonly type = 'ConnectionRecord'
   public readonly type = DidCommConnectionRecord.type
 
@@ -133,6 +141,7 @@ export class DidCommConnectionRecord extends BaseRecord<
       this.connectionTypes = props.connectionTypes ?? []
       this.previousDids = props.previousDids ?? []
       this.previousTheirDids = props.previousTheirDids ?? []
+      this.didcommVersion = props.didcommVersion
     }
   }
 
@@ -147,6 +156,7 @@ export class DidCommConnectionRecord extends BaseRecord<
       theirDid: this.theirDid,
       outOfBandId: this.outOfBandId,
       invitationDid: this.invitationDid,
+      didcommVersion: this.didcommVersion,
       connectionTypes: this.connectionTypes,
       previousDids: this.previousDids,
       previousTheirDids: this.previousTheirDids,

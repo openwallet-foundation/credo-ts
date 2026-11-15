@@ -8,7 +8,7 @@ import { StorageUpdateService, StorageVersionRepository, UpdateAssistant } from 
 import type { InitConfig } from '../types'
 import { AgentConfig } from './AgentConfig'
 import type { AgentDependencies } from './AgentDependencies'
-import type { AgentModulesInput } from './AgentModules'
+import type { AgentModulesInput, ValidateAgentModules } from './AgentModules'
 import { extendModulesWithDefaultModules } from './AgentModules'
 import { BaseAgent } from './BaseAgent'
 import { AgentContext, DefaultAgentContextProvider } from './context'
@@ -16,7 +16,7 @@ import { EventEmitter } from './EventEmitter'
 
 interface AgentOptions<AgentModules extends AgentModulesInput> {
   config?: InitConfig
-  modules?: AgentModules
+  modules?: AgentModules & ValidateAgentModules<AgentModules>
   dependencies: AgentDependencies
 }
 
@@ -26,6 +26,12 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
   public constructor(options: AgentOptions<AgentModules>, dependencyManager = new DependencyManager()) {
     const agentConfig = new AgentConfig(options.config ?? {}, options.dependencies)
     const modulesWithDefaultModules = extendModulesWithDefaultModules(options.modules)
+
+    if (!options.modules?.cache) {
+      agentConfig.logger.warn(
+        "No 'cache' module configured, using the default 'SingleContextStorageLruCache'. The default will change to the 'InMemoryLruCache' in a future version. To keep using the 'SingleContextStorageLruCache', register the 'CacheModule' with it explicitly."
+      )
+    }
 
     // Register internal dependencies
     dependencyManager.registerSingleton(EventEmitter)

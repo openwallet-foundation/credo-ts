@@ -5,7 +5,14 @@ import { JwtPayload } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import type { JsonObject } from '../../../types'
-import { asArray, JsonTransformer, MessageValidator, nowInSeconds, TypedArrayEncoder } from '../../../utils'
+import {
+  asArray,
+  dateToSeconds,
+  JsonTransformer,
+  MessageValidator,
+  nowInSeconds,
+  TypedArrayEncoder,
+} from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi } from '../../kms'
 import type { IDisclosureFrame } from '../../sd-jwt-vc'
@@ -26,9 +33,10 @@ import type {
 } from '../models'
 import { validateSignerIsExpectedParty } from '../resolveSigner'
 import {
-  extractHolderFromPresentationCredentials,
   getSignerForJwt,
+  resolvePresentationSigner,
   validateAndResolveVerificationMethod,
+  withUndefinedTermsContext,
 } from '../v2-jwt-utils'
 import {
   validateVc2ContextBaseline,
@@ -140,6 +148,7 @@ export class W3cV2SdJwtCredentialService {
 
         // Validate JWT payload
         JwtPayload.fromJson(credential.sdJwt.payload).validate({
+          now: options.now ? dateToSeconds(options.now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
@@ -158,6 +167,7 @@ export class W3cV2SdJwtCredentialService {
           validFrom: credential.resolvedCredential.validFrom,
           validUntil: credential.resolvedCredential.validUntil,
           skewSeconds: agentContext.config.validitySkewSeconds,
+          now: options.now,
         })
 
         validationResults.validations.credentialStatus = validateVc2CredentialStatus({
@@ -207,6 +217,7 @@ export class W3cV2SdJwtCredentialService {
 
       try {
         await sdJwt.verify(credential.encoded, {
+          currentDate: options.now ? dateToSeconds(options.now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
           keyBindingNonce: options.keyBinding?.nonce,
           expectedKeyBindingAudience: options.keyBinding?.audience,
@@ -254,11 +265,13 @@ export class W3cV2SdJwtCredentialService {
     // The JWT payload is simply the presentation
     const payload = JsonTransformer.toJSON(options.presentation) as W3cV2JsonPresentation
 
-    // Add the nonce and aud to the payload
+    // Add the nonce, aud and iat to the payload
     payload.nonce = options.challenge
     payload.aud = options.domain
+    payload.iat = nowInSeconds()
+    payload['@context'] = withUndefinedTermsContext(payload['@context'])
 
-    const holder = await extractHolderFromPresentationCredentials(agentContext, options.presentation)
+    const holder = await resolvePresentationSigner(agentContext, options.presentation)
 
     holder.publicJwk.alg = holder.alg
 
@@ -323,6 +336,7 @@ export class W3cV2SdJwtCredentialService {
 
         // Validate JWT payload
         JwtPayload.fromJson(presentation.sdJwt.payload).validate({
+          now: options.now ? dateToSeconds(options.now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
@@ -373,6 +387,7 @@ export class W3cV2SdJwtCredentialService {
 
       try {
         await sdjwt.verify(presentation.encoded, {
+          currentDate: options.now ? dateToSeconds(options.now) : nowInSeconds(),
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 

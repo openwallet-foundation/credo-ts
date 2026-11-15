@@ -432,14 +432,12 @@ export class DifPresentationExchangeService {
       inputDescriptorAlgorithms
     )
 
-    // For each of the supported algs, find the key types, then find the proof types
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
-    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-    const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwkType(publicJwk)
+    const supportedSignatureSuites = signatureSuiteRegistry.getAllByVerificationMethod(verificationMethod)
     if (supportedSignatureSuites.length === 0) {
       throw new DifPresentationExchangeError(
-        `Couldn't find a supported signature suite for the given jwk ${getJwkHumanDescription(publicJwk.toJson())}`
+        `No signature suite supports the verification method type '${verificationMethod.type}'`
       )
     }
 
@@ -449,6 +447,7 @@ export class DifPresentationExchangeService {
       )
 
       if (!foundSignatureSuite) {
+        const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
         throw new DifPresentationExchangeError(
           [
             'No possible signature suite found for the given verification method.',

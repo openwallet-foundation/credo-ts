@@ -18,7 +18,7 @@ import {
   PublicJwk,
 } from '../../kms'
 import { X509Certificate } from '../X509Certificate'
-import { X509Error } from '../X509Error'
+import { X509Error, X509ValidationError } from '../X509Error'
 import { X509ModuleConfig } from '../X509ModuleConfig'
 import { X509Service } from '../X509Service'
 import { X509RevocationCheckMode } from '../X509ValidationOptions'
@@ -565,6 +565,207 @@ gTqhM3BGMuf+
     })
   })
 
+  describe('required key purpose validation', () => {
+    const anyExtendedKeyUsage = '2.5.29.37.0' as X509ExtendedKeyUsage
+    const missingStatusSigningMessage =
+      "Certificate 'CN=Key Purpose Leaf' does not have the required extended key usages: OauthStatusSigning (1.3.6.1.5.5.7.3.45)"
+    const missingDigitalSignatureMessage =
+      "Certificate 'CN=Key Purpose Leaf' does not have the required key usages: DigitalSignature"
+
+    async function buildChain({
+      leafKeyUsages,
+      leafExtendedKeyUsages,
+      rootExtendedKeyUsages,
+    }: {
+      leafKeyUsages?: X509KeyUsage[]
+      leafExtendedKeyUsages?: X509ExtendedKeyUsage[]
+      rootExtendedKeyUsages?: X509ExtendedKeyUsage[]
+    } = {}) {
+      const rootKey = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+      const leafKey = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+
+      const root = await X509Service.createCertificate(agentContext, {
+        serialNumber: '01',
+        issuer: { commonName: 'Key Purpose Root' },
+        authorityKey: rootKey,
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: {
+          basicConstraints: { ca: true },
+          ...(rootExtendedKeyUsages ? { extendedKeyUsage: { usages: rootExtendedKeyUsages } } : {}),
+        },
+      })
+      const leaf = await X509Service.createCertificate(agentContext, {
+        serialNumber: '02',
+        issuer: root.subject,
+        authorityKey: rootKey,
+        subject: { commonName: 'Key Purpose Leaf' },
+        subjectPublicKey: leafKey,
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: {
+          ...(leafKeyUsages ? { keyUsage: { usages: leafKeyUsages } } : {}),
+          ...(leafExtendedKeyUsages ? { extendedKeyUsage: { usages: leafExtendedKeyUsages } } : {}),
+        },
+      })
+
+      return [leaf, root].map((c) => c.toString('base64'))
+    }
+
+    it('does not enforce key purposes when none are required', async () => {
+      const certificateChain = await buildChain({
+        leafKeyUsages: [X509KeyUsage.KeyEncipherment],
+        leafExtendedKeyUsages: [X509ExtendedKeyUsage.CodeSigning],
+      })
+
+      await expect(X509Service.validateCertificateChain(agentContext, { certificateChain })).resolves.toHaveLength(2)
+    })
+
+    it('accepts a leaf with all required extended key usages', async () => {
+      const certificateChain = await buildChain({
+        leafExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning, X509ExtendedKeyUsage.CodeSigning],
+      })
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain,
+          validation: {
+            leaf: {
+              requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning, X509ExtendedKeyUsage.CodeSigning],
+            },
+          },
+        })
+      ).resolves.toHaveLength(2)
+    })
+
+    it('accepts a directly trusted leaf with the required extended key usage', async () => {
+      const certificateChain = await buildChain({
+        leafExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning],
+      })
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain: [certificateChain[0]],
+          trustedCertificates: [certificateChain[0]],
+          validation: { leaf: { requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning] } },
+        })
+      ).resolves.toHaveLength(1)
+    })
+
+    it('rejects a leaf without an extended key usage extension and reports the failed validation', async () => {
+      const certificateChain = await buildChain()
+
+      const error = await X509Service.validateCertificateChain(agentContext, {
+        certificateChain,
+        validation: { leaf: { requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning] } },
+      }).catch((error) => error)
+
+      expect(error).toBeInstanceOf(X509ValidationError)
+      expect(error.message).toBe(missingStatusSigningMessage)
+      expect(error.validationResult.validations.extendedKeyUsage.isValid).toBe(false)
+    })
+
+    it('rejects a leaf missing one of the required extended key usages', async () => {
+      const certificateChain = await buildChain({ leafExtendedKeyUsages: [X509ExtendedKeyUsage.CodeSigning] })
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain,
+          validation: {
+            leaf: {
+              requiredExtendedKeyUsages: [X509ExtendedKeyUsage.CodeSigning, X509ExtendedKeyUsage.OauthStatusSigning],
+            },
+          },
+        })
+      ).rejects.toThrow(missingStatusSigningMessage)
+    })
+
+    it('names each missing extended key usage, or shows only the OID when it has no name', async () => {
+      const certificateChain = await buildChain()
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain,
+          validation: {
+            leaf: {
+              requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning, '1.2.3.4' as X509ExtendedKeyUsage],
+            },
+          },
+        })
+      ).rejects.toThrow(
+        "Certificate 'CN=Key Purpose Leaf' does not have the required extended key usages: OauthStatusSigning (1.3.6.1.5.5.7.3.45), 1.2.3.4"
+      )
+    })
+
+    it('does not accept anyExtendedKeyUsage in place of a required extended key usage', async () => {
+      const certificateChain = await buildChain({ leafExtendedKeyUsages: [anyExtendedKeyUsage] })
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain,
+          validation: { leaf: { requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning] } },
+        })
+      ).rejects.toThrow(missingStatusSigningMessage)
+    })
+
+    it('does not accept the required extended key usage on a CA certificate instead of the leaf', async () => {
+      const certificateChain = await buildChain({ rootExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning] })
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain,
+          validation: { leaf: { requiredExtendedKeyUsages: [X509ExtendedKeyUsage.OauthStatusSigning] } },
+        })
+      ).rejects.toThrow(missingStatusSigningMessage)
+    })
+
+    it('rejects a leaf whose key usage does not include a required key usage', async () => {
+      const certificateChain = await buildChain({ leafKeyUsages: [X509KeyUsage.KeyEncipherment] })
+
+      const error = await X509Service.validateCertificateChain(agentContext, {
+        certificateChain,
+        validation: { leaf: { requiredKeyUsages: [X509KeyUsage.DigitalSignature] } },
+      }).catch((error) => error)
+
+      expect(error).toBeInstanceOf(X509ValidationError)
+      expect(error.message).toBe(missingDigitalSignatureMessage)
+      expect(error.validationResult.validations.keyUsage.isValid).toBe(false)
+    })
+
+    it('rejects a leaf with a key usage extension without any bits set', async () => {
+      const certificateChain = await buildChain({ leafKeyUsages: [] })
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain,
+          validation: { leaf: { requiredKeyUsages: [X509KeyUsage.DigitalSignature] } },
+        })
+      ).rejects.toThrow(missingDigitalSignatureMessage)
+    })
+
+    it('accepts a leaf whose key usage includes the required key usage', async () => {
+      const certificateChain = await buildChain({
+        leafKeyUsages: [X509KeyUsage.DigitalSignature, X509KeyUsage.KeyEncipherment],
+      })
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain,
+          validation: { leaf: { requiredKeyUsages: [X509KeyUsage.DigitalSignature] } },
+        })
+      ).resolves.toHaveLength(2)
+    })
+
+    it('accepts a leaf without a key usage extension (unrestricted) when a key usage is required', async () => {
+      const certificateChain = await buildChain()
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain,
+          validation: { leaf: { requiredKeyUsages: [X509KeyUsage.DigitalSignature] } },
+        })
+      ).resolves.toHaveLength(2)
+    })
+  })
+
   it('should verify a certificate chain where the root certificate is not in the provided chain, but is in trusted certificates', async () => {
     const authorityKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
     const documentSignerKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
@@ -690,6 +891,72 @@ gTqhM3BGMuf+
           certificateChain: [certificateChain[1], certificateChain[2], certificateChain[0]],
         })
     ).rejects.toThrow(X509Error)
+  })
+
+  describe('provided chain must match the built chain', () => {
+    async function createCa(commonName: string) {
+      const key = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+      const certificate = await X509Service.createCertificate(agentContext, {
+        authorityKey: key,
+        issuer: { commonName },
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: { basicConstraints: { ca: true }, subjectKeyIdentifier: { include: true } },
+      })
+      return { key, certificate }
+    }
+
+    async function createIssued(commonName: string, issuer: { key: PublicJwk; certificate: X509Certificate }) {
+      const key = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+      const certificate = await X509Service.createCertificate(agentContext, {
+        authorityKey: issuer.key,
+        subjectPublicKey: key,
+        issuer: issuer.certificate.subject,
+        subject: { commonName },
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: { basicConstraints: { ca: true }, authorityKeyIdentifier: { include: true } },
+      })
+      return { key, certificate }
+    }
+
+    it('accepts a chain without the trusted root', async () => {
+      const root = await createCa('Root')
+      const intermediate = await createIssued('Intermediate', root)
+      const leaf = await createIssued('Leaf', intermediate)
+
+      const validatedChain = await X509Service.validateCertificateChain(agentContext, {
+        certificateChain: [leaf.certificate, intermediate.certificate].map((c) => c.toString('base64')),
+        trustedCertificates: [root.certificate.toString('base64')],
+      })
+      expect(validatedChain.length).toBe(3)
+    })
+
+    it('rejects a chain with an appended certificate that is not part of the chain', async () => {
+      const root = await createCa('Root')
+      const leaf = await createIssued('Leaf', root)
+      const unrelatedIntermediate = await createIssued('Unrelated Intermediate', await createCa('Unrelated Root'))
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain: [leaf.certificate, unrelatedIntermediate.certificate].map((c) => c.toString('base64')),
+          trustedCertificates: [root.certificate.toString('base64')],
+        })
+      ).rejects.toThrow('contains certificates that are not part of the chain')
+    })
+
+    it('rejects a chain that is not ordered leaf first', async () => {
+      const root = await createCa('Root')
+      const intermediate = await createIssued('Intermediate', root)
+      const leaf = await createIssued('Leaf', intermediate)
+
+      await expect(
+        X509Service.validateCertificateChain(agentContext, {
+          certificateChain: [leaf.certificate, root.certificate, intermediate.certificate].map((c) =>
+            c.toString('base64')
+          ),
+          trustedCertificates: [root.certificate.toString('base64')],
+        })
+      ).rejects.toThrow('not ordered leaf first')
+    })
   })
 
   it('should correctly parse test vector from verifier.eudiw.dev', async () => {

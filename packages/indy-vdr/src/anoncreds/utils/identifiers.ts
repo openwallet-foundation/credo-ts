@@ -1,15 +1,106 @@
-import {
-  didIndyCredentialDefinitionIdRegex,
-  didIndyRegex,
-  didIndyRevocationRegistryIdRegex,
-  didIndySchemaIdRegex,
-  isDidIndyCredentialDefinitionId,
-  isDidIndyRevocationRegistryId,
-  isDidIndySchemaId,
-  parseIndyCredentialDefinitionId,
-  parseIndyRevocationRegistryId,
-  parseIndySchemaId,
-} from '@credo-ts/anoncreds'
+import { CredoError } from '@credo-ts/core'
+import { didIndyRegex } from '../../dids/didIndyUtil'
+
+const didIndyAnonCredsBase = new RegExp(`(${didIndyRegex.source.slice(1, -1)})/anoncreds/v0`)
+
+export const didIndySchemaIdRegex = new RegExp(`^${didIndyAnonCredsBase.source}/SCHEMA/(.+)/([0-9.]+)$`)
+
+export const didIndyCredentialDefinitionIdRegex = new RegExp(
+  `^${didIndyAnonCredsBase.source}/CLAIM_DEF/([1-9][0-9]*)/(.+)$`
+)
+
+export const didIndyRevocationRegistryIdRegex = new RegExp(
+  `^${didIndyAnonCredsBase.source}/REV_REG_DEF/([1-9][0-9]*)/(.+)/(.+)$`
+)
+
+export function isDidIndySchemaId(schemaId: string) {
+  return didIndySchemaIdRegex.test(schemaId)
+}
+
+export function isDidIndyCredentialDefinitionId(credentialDefinitionId: string) {
+  return didIndyCredentialDefinitionIdRegex.test(credentialDefinitionId)
+}
+
+export function isDidIndyRevocationRegistryId(revocationRegistryId: string) {
+  return didIndyRevocationRegistryIdRegex.test(revocationRegistryId)
+}
+
+export interface ParsedIndySchemaId {
+  did: string
+  namespace: string
+  namespaceIdentifier: string
+  schemaName: string
+  schemaVersion: string
+}
+
+export function parseIndySchemaId(schemaId: string): ParsedIndySchemaId {
+  const match = schemaId.match(didIndySchemaIdRegex)
+  if (match) {
+    const [, did, namespace, namespaceIdentifier, schemaName, schemaVersion] = match
+
+    return {
+      did,
+      namespace,
+      namespaceIdentifier,
+      schemaName,
+      schemaVersion,
+    }
+  }
+
+  throw new CredoError(`Invalid did:indy schema id: ${schemaId}`)
+}
+
+export interface ParsedIndyCredentialDefinitionId {
+  did: string
+  namespace: string
+  namespaceIdentifier: string
+  schemaSeqNo: string
+  tag: string
+}
+
+export function parseIndyCredentialDefinitionId(credentialDefinitionId: string): ParsedIndyCredentialDefinitionId {
+  const match = credentialDefinitionId.match(didIndyCredentialDefinitionIdRegex)
+  if (match) {
+    const [, did, namespace, namespaceIdentifier, schemaSeqNo, tag] = match
+
+    return {
+      did,
+      namespace,
+      namespaceIdentifier,
+      schemaSeqNo,
+      tag,
+    }
+  }
+
+  throw new CredoError(`Invalid did:indy credential definition id: ${credentialDefinitionId}`)
+}
+
+export interface ParsedIndyRevocationRegistryId {
+  did: string
+  namespace: string
+  namespaceIdentifier: string
+  schemaSeqNo: string
+  credentialDefinitionTag: string
+  revocationRegistryTag: string
+}
+
+export function parseIndyRevocationRegistryId(revocationRegistryId: string): ParsedIndyRevocationRegistryId {
+  const match = revocationRegistryId.match(didIndyRevocationRegistryIdRegex)
+  if (match) {
+    const [, did, namespace, namespaceIdentifier, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag] = match
+
+    return {
+      did,
+      namespace,
+      namespaceIdentifier,
+      schemaSeqNo,
+      credentialDefinitionTag,
+      revocationRegistryTag,
+    }
+  }
+
+  throw new CredoError(`Invalid did:indy revocation registry id: ${revocationRegistryId}`)
+}
 
 const indyVdrAnonCredsRegexes = [
   // issuer id
@@ -29,32 +120,17 @@ export const indyVdrAnonCredsRegistryIdentifierRegex = new RegExp(
   indyVdrAnonCredsRegexes.map((r) => r.source).join('|')
 )
 
-/**
- * The did:indy spec percent-encodes the schema name and tags in DID URLs (RFC 3986 section 2). Agents without
- * support for this can't resolve encoded ids, so encoding is opt-in.
- */
-function encodeSegment(segment: string, percentEncode: boolean) {
-  return percentEncode ? encodeURIComponent(segment) : segment
-}
-
-export function getDidIndySchemaId(
-  namespace: string,
-  unqualifiedDid: string,
-  name: string,
-  version: string,
-  percentEncode = false
-) {
-  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/SCHEMA/${encodeSegment(name, percentEncode)}/${version}`
+export function getDidIndySchemaId(namespace: string, unqualifiedDid: string, name: string, version: string) {
+  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/SCHEMA/${name}/${version}`
 }
 
 export function getDidIndyCredentialDefinitionId(
   namespace: string,
   unqualifiedDid: string,
   schemaSeqNo: string | number,
-  tag: string,
-  percentEncode = false
+  tag: string
 ) {
-  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/${encodeSegment(tag, percentEncode)}`
+  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/${tag}`
 }
 
 export function getDidIndyRevocationRegistryDefinitionId(
@@ -62,10 +138,9 @@ export function getDidIndyRevocationRegistryDefinitionId(
   unqualifiedDid: string,
   schemaSeqNo: string | number,
   credentialDefinitionTag: string,
-  revocationRegistryTag: string,
-  percentEncode = false
+  revocationRegistryTag: string
 ) {
-  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/REV_REG_DEF/${schemaSeqNo}/${encodeSegment(credentialDefinitionTag, percentEncode)}/${encodeSegment(revocationRegistryTag, percentEncode)}`
+  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/REV_REG_DEF/${schemaSeqNo}/${credentialDefinitionTag}/${revocationRegistryTag}`
 }
 
 export function getDidIndyRevocationRegistryEntryId(
@@ -73,46 +148,9 @@ export function getDidIndyRevocationRegistryEntryId(
   unqualifiedDid: string,
   schemaSeqNo: string | number,
   credentialDefinitionTag: string,
-  revocationRegistryTag: string,
-  percentEncode = false
+  revocationRegistryTag: string
 ) {
-  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/REV_REG_ENTRY/${schemaSeqNo}/${encodeSegment(credentialDefinitionTag, percentEncode)}/${encodeSegment(revocationRegistryTag, percentEncode)}`
-}
-
-type EncodeSegment = (segment: string) => string
-
-/**
- * Parses a did:indy schema, credential definition or revocation registry id once, and returns a function that
- * formats it with `encode` applied to the schema name and tags. Returns `undefined` for other ids.
- */
-function parseDidIndyIdentifierFormatter(identifier: string): ((encode: EncodeSegment) => string) | undefined {
-  if (isDidIndySchemaId(identifier)) {
-    const { did, schemaName, schemaVersion } = parseIndySchemaId(identifier)
-    return (encode) => `${did}/anoncreds/v0/SCHEMA/${encode(schemaName)}/${schemaVersion}`
-  }
-  if (isDidIndyCredentialDefinitionId(identifier)) {
-    const { did, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(identifier)
-    return (encode) => `${did}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/${encode(tag)}`
-  }
-  if (isDidIndyRevocationRegistryId(identifier)) {
-    const { did, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag } =
-      parseIndyRevocationRegistryId(identifier)
-    return (encode) =>
-      `${did}/anoncreds/v0/REV_REG_DEF/${schemaSeqNo}/${encode(credentialDefinitionTag)}/${encode(revocationRegistryTag)}`
-  }
-
-  return undefined
-}
-
-/**
- * Returns a did:indy schema, credential definition or revocation registry id in its percent-encoded form (the
- * canonical form, first), as given and unencoded, as all refer to the same object. Other ids are returned as is.
- */
-export function getDidIndyIdentifierVariants(identifier: string): string[] {
-  const format = parseDidIndyIdentifierFormatter(identifier)
-  if (!format) return [identifier]
-
-  return [...new Set([format(encodeURIComponent), identifier, format((segment) => segment)])]
+  return `did:indy:${namespace}:${unqualifiedDid}/anoncreds/v0/REV_REG_ENTRY/${schemaSeqNo}/${credentialDefinitionTag}/${revocationRegistryTag}`
 }
 
 /**

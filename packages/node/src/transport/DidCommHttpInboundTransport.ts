@@ -7,7 +7,16 @@ import type {
   DidCommMessageReceivedEvent,
   DidCommTransportSession,
 } from '@credo-ts/didcomm'
-import { DidCommEventTypes, DidCommMimeType, DidCommModuleConfig, DidCommTransportService } from '@credo-ts/didcomm'
+import {
+  DIDCOMM_V2_ENCRYPTED_MIME_TYPE,
+  DIDCOMM_V2_SIGNED_MIME_TYPE,
+  DidCommEventTypes,
+  DidCommMimeType,
+  DidCommModuleConfig,
+  DidCommTransportService,
+  isDidCommV2EncryptedMessage,
+  normalizeDidCommMediaType,
+} from '@credo-ts/didcomm'
 import type { Express, Request, Response } from 'express'
 import express, { text } from 'express'
 import type { Server } from 'http'
@@ -82,13 +91,18 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
   }
 
   private registerRoute(agentContext: AgentContext, transportService: DidCommTransportService) {
-    this.app.post(this.path, text({ type: supportedContentTypes, limit: '5mb' }), async (req, res) => {
-      const contentType = req.headers['content-type']
+    const acceptedContentTypes = agentContext.dependencyManager.resolve(DidCommModuleConfig).isSupported('v2')
+      ? [...supportedContentTypes, DIDCOMM_V2_ENCRYPTED_MIME_TYPE, DIDCOMM_V2_SIGNED_MIME_TYPE]
+      : supportedContentTypes
+    const isAccepted = (contentType: string | undefined): boolean =>
+      contentType !== undefined && acceptedContentTypes.includes(normalizeDidCommMediaType(contentType))
 
-      if (!contentType || !supportedContentTypes.includes(contentType)) {
+    const parseBody = text({ type: (req) => isAccepted(req.headers['content-type']), limit: '5mb' })
+    this.app.post(this.path, parseBody, async (req, res) => {
+      if (!isAccepted(req.headers['content-type'])) {
         return res
           .status(415)
-          .send(`Unsupported content-type. Supported content-types are: ${supportedContentTypes.join(', ')}`)
+          .send(`Unsupported content-type. Supported content-types are: ${acceptedContentTypes.join(', ')}`)
       }
 
       const session = new HttpTransportSession(utils.uuid(), req, res)
@@ -130,8 +144,9 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
         await firstValueFrom(subject)
 
         // If agent did not use session when processing message we need to send response here.
+        // 202 Accepted, as no response travels back on this connection: https://identity.foundation/didcomm-messaging/spec/v2.1/#https
         if (!res.headersSent) {
-          res.status(200).end()
+          res.status(202).end()
         }
       } catch (error) {
         agentContext.config.logger.error(`Error processing inbound message: ${error.message}`, error)
@@ -160,7 +175,7 @@ export class HttpTransportSession implements DidCommTransportSession {
 
   public async close(): Promise<void> {
     if (!this.res.headersSent) {
-      this.res.status(200).end()
+      this.res.status(202).end()
     }
   }
 
@@ -176,8 +191,11 @@ export class HttpTransportSession implements DidCommTransportSession {
     // However, if the request mime-type is a mime-type that is supported by us, we use that
     // to minimize the chance of interoperability issues
     const requestMimeType = this.req.headers['content-type']
-    if (requestMimeType && supportedContentTypes.includes(requestMimeType)) {
-      responseMimeType = requestMimeType
+    const normalized = requestMimeType ? normalizeDidCommMediaType(requestMimeType) : undefined
+    if (isDidCommV2EncryptedMessage(encryptedMessage)) {
+      responseMimeType = DIDCOMM_V2_ENCRYPTED_MIME_TYPE
+    } else if (normalized && supportedContentTypes.includes(normalized)) {
+      responseMimeType = normalized
     }
 
     this.res.status(200).contentType(responseMimeType).json(encryptedMessage).end()

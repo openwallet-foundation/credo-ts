@@ -54,7 +54,8 @@ export type MdocOpenId4VpDraft18SessionTranscriptOptions = {
   responseUri: string
   clientId: string
   verifierGeneratedNonce: string
-  mdocGeneratedNonce: string
+  /** Raw bytes (e.g. the JARM `apu` header) are decoded as UTF-8. */
+  mdocGeneratedNonce: string | Uint8Array
 }
 
 export type MdocSessionTranscriptByteOptions = {

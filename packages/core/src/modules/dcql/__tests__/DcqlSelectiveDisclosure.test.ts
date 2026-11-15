@@ -99,6 +99,7 @@ describe('DCQL selective disclosure', () => {
   let issuerDidUrl: string
   let issuerKeyId: string
   let holderKey: PublicJwk
+  let holderDid: string
 
   const challenge = 'challenge'
   const domain = 'https://verifier.example.com'
@@ -132,6 +133,14 @@ describe('DCQL selective disclosure', () => {
     holderKey = PublicJwk.fromPublicJwk(
       (await agent.kms.importKey({ privateJwk: { ...holderPrivateJwk, kid: holderKid } })).publicJwk
     )
+
+    const holderDidKey = new DidKey(holderKey)
+    holderDid = holderDidKey.did
+    await agent.dids.import({
+      did: holderDid,
+      didDocument: holderDidKey.didDocument,
+      keys: [{ didDocumentRelativeKeyId: `#${holderKey.fingerprint}`, kmsKeyId: holderKey.keyId }],
+    })
   })
 
   afterAll(async () => {
@@ -784,6 +793,7 @@ describe('DCQL selective disclosure', () => {
           type: ['VerifiableCredential', type],
           issuer: issuerDid,
           credentialSubject: {
+            id: holderDid,
             given_name: sd('Erika'),
             family_name: sd('Mustermann'),
             nationalities: [sd('DE'), decoy(), sd('NL')],
@@ -826,23 +836,18 @@ describe('DCQL selective disclosure', () => {
       const claimSet = getClaimSet(queryResult)
 
       expect(credential.envelopedCredential.sdJwt.prettyClaims.credentialSubject).toStrictEqual({
+        id: holderDid,
         nationalities: ['NL'],
         degrees: [{ name: 'MSc' }],
       })
       expect((claimSet.output as Record<string, unknown>).credentialSubject).toStrictEqual({
+        id: holderDid,
         nationalities: ['NL'],
         degrees: [{ name: 'MSc' }],
       })
     })
 
     test('presents a W3C VC SD-JWT as its subject, not its schema', async () => {
-      const holderDidKey = new DidKey(holderKey)
-      await agent.dids.import({
-        did: holderDidKey.did,
-        didDocument: holderDidKey.didDocument,
-        keys: [{ didDocumentRelativeKeyId: `#${holderKey.fingerprint}`, kmsKeyId: holderKey.keyId }],
-      })
-
       const type = `urn:type:${randomUUID()}`
       const compact = await signSdJwt(
         {
@@ -850,7 +855,7 @@ describe('DCQL selective disclosure', () => {
           type: ['VerifiableCredential', type],
           issuer: issuerDid,
           credentialSchema: { id: 'https://example.com/schema.json', type: 'JsonSchema' },
-          credentialSubject: { id: holderDidKey.did, given_name: sd('Erika') },
+          credentialSubject: { id: holderDid, given_name: sd('Erika') },
         },
         'vc+sd-jwt'
       )
@@ -871,7 +876,7 @@ describe('DCQL selective disclosure', () => {
       await dcqlService.assertValidDcqlPresentation(agent.context, dcqlPresentation, dcqlQuery)
 
       const presentation = dcqlPresentation.credential[0] as W3cV2SdJwtVerifiablePresentation
-      expect(presentation.resolvedPresentation.holderId).toBe(holderDidKey.did)
+      expect(presentation.resolvedPresentation.holderId).toBe(holderDid)
     })
   })
 })

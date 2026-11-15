@@ -7,7 +7,7 @@ import { KeyManagementModule } from '../../modules/kms'
 import { MdocModule } from '../../modules/mdoc'
 import { SdJwtVcModule } from '../../modules/sd-jwt-vc'
 import { TokenStatusListModule } from '../../modules/token-status-list/TokenStatusListModule'
-import { W3cCredentialsModule, W3cV2CredentialsModule } from '../../modules/vc'
+import { JsonLdModule, W3cCredentialsModule, W3cV2CredentialsModule } from '../../modules/vc'
 import { W3cDataIntegrityModule } from '../../modules/w3c-di'
 import { X509Module } from '../../modules/x509'
 import type { Module } from '../../plugins'
@@ -58,6 +58,7 @@ describe('AgentModules', () => {
         genericRecords: expect.any(GenericRecordsModule),
         dids: expect.any(DidsModule),
         kms: expect.any(KeyManagementModule),
+        jsonLd: expect.any(JsonLdModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
         w3cV2Credentials: expect.any(W3cV2CredentialsModule),
         w3cDataIntegrity: expect.any(W3cDataIntegrityModule),
@@ -81,6 +82,7 @@ describe('AgentModules', () => {
         genericRecords: expect.any(GenericRecordsModule),
         dids: expect.any(DidsModule),
         kms: expect.any(KeyManagementModule),
+        jsonLd: expect.any(JsonLdModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
         w3cV2Credentials: expect.any(W3cV2CredentialsModule),
         w3cDataIntegrity: expect.any(W3cDataIntegrityModule),
@@ -107,6 +109,7 @@ describe('AgentModules', () => {
         dcql: expect.any(DcqlModule),
         dids: expect.any(DidsModule),
         kms: expect.any(KeyManagementModule),
+        jsonLd: expect.any(JsonLdModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
         w3cV2Credentials: expect.any(W3cV2CredentialsModule),
         w3cDataIntegrity: expect.any(W3cDataIntegrityModule),
