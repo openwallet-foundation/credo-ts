@@ -1,6 +1,6 @@
 import type { InitConfig } from '@credo-ts/core'
 
-import { Agent } from '@credo-ts/core'
+import { Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 import { TenantsModule } from '@credo-ts/tenants'
 import { NativeAskar, Store } from '@openwallet-foundation/askar-nodejs'
@@ -19,6 +19,7 @@ describe('Tenants Askar database schemes E2E', () => {
       config: agentConfig,
       modules: {
         tenants: new TenantsModule(),
+        cache: new CacheModule({ cache: new InMemoryLruCache({ limit: 500 }) }),
         askar: new AskarModule({
           askar: NativeAskar,
           store: getAskarStoreConfig('askar tenants without profiles e2e agent 1', { inMemory: false }),
@@ -71,6 +72,7 @@ describe('Tenants Askar database schemes E2E', () => {
       config: agentConfig,
       modules: {
         tenants: new TenantsModule(),
+        cache: new CacheModule({ cache: new InMemoryLruCache({ limit: 500 }) }),
         askar: new AskarModule({
           askar: NativeAskar,
           store: getAskarStoreConfig('askar tenants with profiles e2e agent 1'),

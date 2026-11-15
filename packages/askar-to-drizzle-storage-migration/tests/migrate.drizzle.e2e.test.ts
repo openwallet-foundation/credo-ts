@@ -6,7 +6,9 @@ import {
 } from '@credo-ts/askar'
 import {
   Agent,
+  CacheModule,
   DidDocument,
+  InMemoryLruCache,
   JsonLdModule,
   JsonTransformer,
   Mdoc,
@@ -300,6 +302,7 @@ describe('Askar to Drizzle Migration', () => {
         }),
         askar: askarModule,
         tenants: new TenantsModule(),
+        cache: new CacheModule({ cache: new InMemoryLruCache({ limit: 500 }) }),
       },
     })
     await askarAgent.initialize()
@@ -332,6 +335,7 @@ describe('Askar to Drizzle Migration', () => {
       modules: {
         drizzle: drizzleModule,
         tenants: new TenantsModule(),
+        cache: new CacheModule({ cache: new InMemoryLruCache({ limit: 500 }) }),
       },
     })
     await drizzleAgent.initialize()

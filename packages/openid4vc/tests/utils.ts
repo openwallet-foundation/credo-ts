@@ -1,5 +1,5 @@
 import type { BaseEvent, InitConfig, ModulesMap, X509Module } from '@credo-ts/core'
-import { Agent, getDomainFromUrl, LogLevel } from '@credo-ts/core'
+import { Agent, CacheModule, getDomainFromUrl, InMemoryLruCache, LogLevel } from '@credo-ts/core'
 import type { TenantsModule } from '@credo-ts/tenants'
 import type { Observable } from 'rxjs'
 import { catchError, filter, lastValueFrom, map, ReplaySubject, take, timeout } from 'rxjs'
@@ -34,7 +34,11 @@ export async function createAgentFromModules<MM extends ModulesMap>(
       ...agentDependencies,
       fetch: customFetch ?? agentDependencies.fetch,
     },
-    modules: modulesMap,
+    // The tenants module needs a cache that supports multiple agent contexts
+    modules:
+      'tenants' in modulesMap && !('cache' in modulesMap)
+        ? { ...modulesMap, cache: new CacheModule({ cache: new InMemoryLruCache({ limit: 500 }) }) }
+        : modulesMap,
   })
 
   let dns = 'localhost'
