@@ -1,7 +1,7 @@
-import LRUMap from 'lru_map'
 import type { AgentContext } from '../../../agent/context'
 import { CredoError, RecordDuplicateError } from '../../../error'
 import type { Cache, CacheOptions } from '../Cache'
+import { LruCache } from '../LruCache'
 import type { SingleContextLruCacheItem } from './SingleContextLruCacheRecord'
 
 import { SingleContextLruCacheRecord } from './SingleContextLruCacheRecord'
@@ -29,7 +29,7 @@ export interface SingleContextStorageLruCacheOptions {
  */
 export class SingleContextStorageLruCache implements Cache {
   private limit: number
-  private _cache?: LRUMap.LRUMap<string, SingleContextLruCacheItem>
+  private _cache?: LruCache<SingleContextLruCacheItem>
   private _contextCorrelationId?: string
 
   public constructor({ limit }: SingleContextStorageLruCacheOptions) {
@@ -94,15 +94,21 @@ export class SingleContextStorageLruCache implements Cache {
     }
   }
 
-  // Unlike get and set this throws on failure, as the entry would otherwise stay in the cache
   public async remove(agentContext: AgentContext, key: string, _options?: CacheOptions): Promise<void> {
     this.assertContextCorrelationId(agentContext)
 
-    const cache = await this.getCache(agentContext)
-    this.removeExpiredItems(cache)
-    cache.delete(key)
+    try {
+      const cache = await this.getCache(agentContext)
+      this.removeExpiredItems(cache)
+      cache.delete(key)
 
-    await this.persistCache(agentContext)
+      await this.persistCache(agentContext)
+    } catch (error) {
+      agentContext.config.logger.error(
+        `Error removing key '${key}' from the cache. It can be served outdated until it expires.`,
+        { error }
+      )
+    }
   }
 
   private async getCache(agentContext: AgentContext) {
@@ -115,7 +121,9 @@ export class SingleContextStorageLruCache implements Cache {
   }
 
   private lruFromRecord(cacheRecord: SingleContextLruCacheRecord) {
-    return new LRUMap.LRUMap<string, SingleContextLruCacheItem>(this.limit, cacheRecord.entries.entries())
+    const cache = new LruCache<SingleContextLruCacheItem>({ limit: this.limit })
+    for (const [key, value] of cacheRecord.entries) cache.set(key, value)
+    return cache
   }
 
   private async fetchCacheRecord(agentContext: AgentContext) {
@@ -146,12 +154,12 @@ export class SingleContextStorageLruCache implements Cache {
     return cacheRecord
   }
 
-  private removeExpiredItems(cache: LRUMap.LRUMap<string, SingleContextLruCacheItem>) {
-    cache.forEach((value, key) => {
+  private removeExpiredItems(cache: LruCache<SingleContextLruCacheItem>) {
+    for (const [key, value] of cache.entries()) {
       if (value.expiresAt && Date.now() > value.expiresAt) {
         cache.delete(key)
       }
-    })
+    }
   }
 
   private async persistCache(agentContext: AgentContext) {
@@ -161,7 +169,7 @@ export class SingleContextStorageLruCache implements Cache {
     await cacheRepository.update(
       agentContext,
       new SingleContextLruCacheRecord({
-        entries: new Map(cache.toJSON().map(({ key, value }) => [key, value])),
+        entries: new Map(cache.entries()),
         id: CONTEXT_STORAGE_LRU_CACHE_ID,
       })
     )

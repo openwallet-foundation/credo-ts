@@ -783,7 +783,7 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     }
 
     const result = await sdJwtVcApi.verify({
-      compactSdJwtVc: presentation,
+      sdJwtVc: presentation,
       keyBinding:
         requireHolderBinding || sdJwtVc.kbJwt ? { audience: request.audience, nonce: request.nonce } : undefined,
     })
