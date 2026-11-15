@@ -4,6 +4,7 @@ import type { DidCommInboundMessageContext } from '../../../../../models'
 import { DidCommConnectionRecord } from '../../../../connections'
 import type { DidCommRevocationNotificationReceivedEvent } from '../../../DidCommCredentialEvents'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
+import { DidCommCredentialRole } from '../../../models/DidCommCredentialRole'
 import { DidCommRevocationNotification } from '../../../models/DidCommRevocationNotification'
 import { DidCommCredentialExchangeRepository } from '../../../repository'
 import type { DidCommRevocationNotificationV1Message } from '../messages/DidCommRevocationNotificationV1Message'
@@ -41,10 +42,12 @@ export class DidCommRevocationNotificationService {
     comment?: string
   ) {
     // TODO: can we extract support for this revocation notification handler to the anoncreds module?
+    // Only the holder's record, the issuer's record of the exchange has the same revocation tags and connection
     const query = {
       anonCredsRevocationRegistryId,
       anonCredsCredentialRevocationId,
       connectionId: connection.id,
+      role: DidCommCredentialRole.Holder,
     }
 
     this.logger.trace('Getting record by query for revocation notification:', query)

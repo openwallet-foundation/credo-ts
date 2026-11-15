@@ -104,6 +104,11 @@ describe('RevocationNotificationService', () => {
 
       await revocationNotificationService.v1ProcessRevocationNotification(messageContext)
 
+      expect(credentialRepository.getSingleByQuery).toHaveBeenCalledWith(
+        agentContext,
+        expect.objectContaining({ connectionId: connection.id, role: DidCommCredentialRole.Holder })
+      )
+
       const clonedCredentialRecord = eventListenerMock.mock.calls[0][0].payload.credentialExchangeRecord
       expect(clonedCredentialRecord.toJSON()).toEqual(credentialRecord.toJSON())
 
