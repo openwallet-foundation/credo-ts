@@ -1065,6 +1065,21 @@ describe('W3cJsonLdCredentialsService', () => {
         }
       )
 
+      it.each([
+        ['verify', 'the key that signed the presentation', () => issuerDidKey.publicJwk.fingerprint, true],
+        ['fail', 'another key of the signer', () => 'key-2', false],
+      ])('should %s when the credentialSubject id is a DID URL of %s', async (_, __, getFragment, isValid) => {
+        const verifiablePresentation = await signPresentationForSubject(`${issuerDidKey.did}#${getFragment()}`)
+
+        const result = await w3cJsonLdCredentialService.verifyPresentation(agentContext, {
+          presentation: verifiablePresentation as W3cJsonLdVerifiablePresentation,
+          challenge: 'challenge-holder-binding',
+        })
+
+        expect(result.validations.credentials?.[0].isValid).toBe(isValid)
+        expect(result.isValid).toBe(isValid)
+      })
+
       it('should verify a presentation when the signer (holder) is the credentialSubject', async () => {
         const verifiablePresentation = await signPresentationForSubject(issuerDidKey.did)
 

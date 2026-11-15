@@ -14,7 +14,7 @@ import type { Query } from '../../storage/StorageService'
 import { JsonTransformer } from '../../utils'
 import { uuid } from '../../utils/uuid'
 import type { VerificationMethod } from '../dids'
-import { DidsApi, getPublicJwkFromVerificationMethod } from '../dids'
+import { getPublicJwkFromVerificationMethod } from '../dids'
 import { getJwkHumanDescription } from '../kms'
 import { MdocApi, MdocRecord, type MdocSessionTranscriptOptions } from '../mdoc'
 import { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
@@ -34,6 +34,7 @@ import {
   AnonCredsW3cCredentialServiceSymbol,
 } from '../vc/anoncreds-w3c-credential'
 import { purposes } from '../vc/linked-data-proofs/adapters/jsonld-signatures-adapter'
+import { resolveCredentialSubjectVerificationMethod } from '../vc/resolveSigner'
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import type {
   DifPexCredentialsForRequest,
@@ -514,18 +515,18 @@ export class DifPresentationExchangeService {
         }
 
         // Determine a suitable verification method for the presentation
-        const verificationMethod = await this.getVerificationMethodForSubjectId(
+        const { verificationMethod, verificationMethodId, signer } = await resolveCredentialSubjectVerificationMethod(
           agentContext,
           presentationToCreate.subjectIds[0]
         )
 
         const w3cPresentation = JsonTransformer.fromJSON(presentationInput, W3cPresentation)
-        w3cPresentation.holder = verificationMethod.controller
+        w3cPresentation.holder = signer
 
         const signedPresentation = await this.w3cCredentialService.signPresentation<ClaimFormat.JwtVp>(agentContext, {
           format: ClaimFormat.JwtVp,
           alg: this.getSigningAlgorithmForJwtVc(presentationDefinition, verificationMethod),
-          verificationMethod: verificationMethod.id,
+          verificationMethod: verificationMethodId,
           presentation: w3cPresentation,
           challenge,
           domain,
@@ -559,13 +560,13 @@ export class DifPresentationExchangeService {
           throw new DifPresentationExchangeError('Cannot create presentation for credentials without subject id')
         }
         // Determine a suitable verification method for the presentation
-        const verificationMethod = await this.getVerificationMethodForSubjectId(
+        const { verificationMethod, verificationMethodId, signer } = await resolveCredentialSubjectVerificationMethod(
           agentContext,
           presentationToCreate.subjectIds[0]
         )
 
         const w3cPresentation = JsonTransformer.fromJSON(presentationInput, W3cPresentation)
-        w3cPresentation.holder = verificationMethod.controller
+        w3cPresentation.holder = signer
 
         const signedPresentation = await this.w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.LdpVp,
@@ -574,7 +575,7 @@ export class DifPresentationExchangeService {
           // by the verifier, and we can then just add this to the vpToCreate interface
           proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
           proofPurpose: new purposes.AuthenticationProofPurpose({ challenge, domain }),
-          verificationMethod: verificationMethod.id,
+          verificationMethod: verificationMethodId,
           presentation: w3cPresentation,
           challenge,
           domain,
@@ -617,29 +618,6 @@ export class DifPresentationExchangeService {
         'Only JWT, SD-JWT-VC, JSONLD credentials are supported for a single presentation'
       )
     }
-  }
-
-  private async getVerificationMethodForSubjectId(agentContext: AgentContext, subjectId: string) {
-    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-
-    if (!subjectId.startsWith('did:')) {
-      throw new DifPresentationExchangeError(
-        `Only dids are supported as credentialSubject id. ${subjectId} is not a valid did`
-      )
-    }
-
-    const didDocument = await didsApi.resolveDidDocument(subjectId)
-
-    if (!didDocument.authentication || didDocument.authentication.length === 0) {
-      throw new DifPresentationExchangeError(
-        `No authentication verificationMethods found for did ${subjectId} in did document`
-      )
-    }
-
-    // the signature suite to use for the presentation is dependant on the credentials we share.
-    // 1. Get the verification method for this given proof purpose in this DID document
-    const [verificationMethod] = didDocument.findVerificationMethodsByPurpose(['authentication'])
-    return verificationMethod
   }
 
   /**

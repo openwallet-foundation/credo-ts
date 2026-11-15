@@ -15,3 +15,11 @@ export function parseDid(did: string): ParsedDid {
 export function tryParseDid(did: string): ParsedDid | null {
   return parse(did)
 }
+
+/**
+ * Resolves a relative DID URL such as `#key-1`, which DID documents may use for their verification methods,
+ * against `did`. An absolute DID URL is returned as-is.
+ */
+export function toAbsoluteDidUrl(did: string, didUrl: string): string {
+  return didUrl.startsWith('#') ? `${did}${didUrl}` : didUrl
+}

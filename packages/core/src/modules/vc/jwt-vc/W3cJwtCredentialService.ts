@@ -369,7 +369,7 @@ export class W3cJwtCredentialService {
 
           const credentialSubjectAuthentication = validateCredentialSubjectAuthentication(
             credential.credentialSubjectIds,
-            prover.signer
+            prover
           )
 
           return {

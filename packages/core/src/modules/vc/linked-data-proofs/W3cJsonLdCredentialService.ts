@@ -283,9 +283,11 @@ export class W3cJsonLdCredentialService {
       // `@id` or another alias of `@id`.
       const [holders, credentialsSubjectIds] = await Promise.all([
         Promise.all(
-          Array.from(holderVerificationMethods, (verificationMethod) =>
-            this.resolveSigner(agentContext, verificationMethod)
-          )
+          // resolveSigner parses the proof verificationMethod as a DID URL, so it is absolute
+          Array.from(holderVerificationMethods, async (verificationMethodId) => ({
+            signer: await this.resolveSigner(agentContext, verificationMethodId),
+            verificationMethodId,
+          }))
         ),
         Promise.all(credentials.map((credential) => this.getExpandedCredentialSubjectIds(agentContext, credential))),
       ])
