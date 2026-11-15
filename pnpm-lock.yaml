@@ -237,8 +237,8 @@ catalogs:
       specifier: ^15.0.5
       version: 15.0.5
     presentation-exchange:
-      specifier: 0.1.0-alpha-20261028112426
-      version: 0.1.0-alpha-20261028112426
+      specifier: 0.1.0-alpha-20261115113231
+      version: 0.1.0-alpha-20261115113231
     reflect-metadata:
       specifier: 0.2.2
       version: 0.2.2
@@ -562,7 +562,7 @@ importers:
         version: 0.14.3
       presentation-exchange:
         specifier: 'catalog:'
-        version: 0.1.0-alpha-20261028112426
+        version: 0.1.0-alpha-20261115113231
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -782,7 +782,7 @@ importers:
         version: 1.13.4
       presentation-exchange:
         specifier: 'catalog:'
-        version: 0.1.0-alpha-20261028112426
+        version: 0.1.0-alpha-20261115113231
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -6156,8 +6156,8 @@ packages:
     deprecated: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
     hasBin: true
 
-  presentation-exchange@0.1.0-alpha-20261028112426:
-    resolution: {integrity: sha512-oQp0vySiEuR5G0ndQo6npef+13YJkDBAaTCsr+H514czZ9Ov9cyHRtZMWz1N+0MZ7HsuOUkYVBTvg8J6hxJE4Q==}
+  presentation-exchange@0.1.0-alpha-20261115113231:
+    resolution: {integrity: sha512-8xcSfQ3RR0qjILQ5eZga/rtM9ix1P9l43uZi1CR6/+virZ7sXamqImNIUWOfy4Xcu3OlfCFHAYYH5YV089+tSg==}
 
   pretty-format@29.7.0:
     resolution: {integrity: sha512-Pdlw/oPxN+aXdmM9R00JVC9WVFoCLTKJvDVLgmJ+qAffBMxsV85l/Lu7sNx4zSzPyoL2euImuEwHhOXdEgNFZQ==}
@@ -12871,7 +12871,7 @@ snapshots:
       tar-fs: 2.1.4
       tunnel-agent: 0.6.0
 
-  presentation-exchange@0.1.0-alpha-20261028112426:
+  presentation-exchange@0.1.0-alpha-20261115113231:
     dependencies:
       zod: 4.6.7
 

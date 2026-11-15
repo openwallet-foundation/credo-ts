@@ -18,7 +18,12 @@ import {
   W3cJsonLdVerifiablePresentation,
 } from '../../vc'
 import { DifPresentationExchangeService } from '../DifPresentationExchangeService'
-import { type DifPresentationExchangeDefinitionV2, DifPresentationExchangeSubmissionLocation } from '../models'
+import {
+  type DifPresentationExchangeDefinitionV2,
+  type DifPresentationExchangeSubmission,
+  DifPresentationExchangeSubmissionLocation,
+} from '../models'
+import { extractPresentationsWithDescriptorsFromSubmission } from '../utils'
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -193,6 +198,63 @@ const presentationDefinition: DifPresentationExchangeDefinitionV2 = {
       },
     },
   ],
+}
+
+const degreeDefinition: DifPresentationExchangeDefinitionV2 = {
+  id: 'degree',
+  input_descriptors: [
+    {
+      id: 'degree',
+      constraints: {
+        fields: [{ path: ['$.credentialSubject.degree.level'], filter: { type: 'string', const: 'PhD' } }],
+      },
+    },
+  ],
+}
+
+// Signatures are verified before the presentation is checked against the definition
+const dummyProof = {
+  type: 'Ed25519Signature2018',
+  created: '2025-01-01T00:00:00Z',
+  verificationMethod: 'did:example:issuer#key-1',
+  proofPurpose: 'assertionMethod',
+  jws: 'eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..c2lnbmF0dXJl',
+}
+
+function degreeCredential(level: string) {
+  return {
+    '@context': ['https://www.w3.org/2018/credentials/v1'],
+    type: ['VerifiableCredential'],
+    issuer: 'did:example:issuer',
+    issuanceDate: '2025-01-01T00:00:00Z',
+    credentialSubject: { id: 'did:example:holder', degree: { level } },
+    proof: dummyProof,
+  }
+}
+
+function degreePresentation(levels: string[]) {
+  return JsonTransformer.fromJSON(
+    {
+      '@context': ['https://www.w3.org/2018/credentials/v1'],
+      type: ['VerifiablePresentation'],
+      holder: 'did:example:holder',
+      verifiableCredential: levels.map(degreeCredential),
+      // Covered by the holder's proof only, it isn't one of the presented credentials
+      fakeCred: degreeCredential('PhD'),
+      proof: { ...dummyProof, verificationMethod: 'did:example:holder#key-1', proofPurpose: 'authentication' },
+    },
+    W3cJsonLdVerifiablePresentation
+  )
+}
+
+function degreeSubmission(
+  descriptor: Pick<DifPresentationExchangeSubmission['descriptor_map'][number], 'path' | 'path_nested'>
+): DifPresentationExchangeSubmission {
+  return {
+    id: 'degree-submission',
+    definition_id: degreeDefinition.id,
+    descriptor_map: [{ id: 'degree', format: 'ldp_vp', ...descriptor }],
+  }
 }
 
 describe('DifPresentationExchangeService', () => {
@@ -1110,5 +1172,52 @@ describe('DifPresentationExchangeService', () => {
         expect.stringContaining("Credential format 'mso_mdoc' is not allowed"),
       ]),
     })
+  })
+
+  test('throws when a descriptor path does not point at a credential of the presentation', () => {
+    const presentation = degreePresentation(['BSc'])
+
+    for (const descriptor of [
+      { path: '$', path_nested: { id: 'degree', format: 'ldp_vc', path: '$.fakeCred' } },
+      { path: '$.fakeCred' },
+      { path: '$', path_nested: { id: 'degree', format: 'ldp_vc', path: '$.fakeCred[0]' } },
+      { path: '$.fakeCred[0]' },
+    ]) {
+      const submission = degreeSubmission(descriptor)
+
+      expect(() => pexService.validatePresentation(degreeDefinition, presentation, submission)).toThrow(
+        expect.objectContaining({
+          message: 'Invalid presentation',
+          additionalMessages: expect.arrayContaining([
+            expect.stringContaining(`'${descriptor.path_nested?.path ?? descriptor.path}'`),
+          ]),
+        })
+      )
+      expect(() =>
+        extractPresentationsWithDescriptorsFromSubmission(presentation, submission, degreeDefinition)
+      ).toThrow("Unable to extract the credential of submission descriptor 'degree' at path")
+    }
+  })
+
+  test('validates and extracts the credential a descriptor path points at', () => {
+    const submission = degreeSubmission({
+      path: '$',
+      path_nested: { id: 'degree', format: 'ldp_vc', path: '$.verifiableCredential[1]' },
+    })
+
+    expect(() =>
+      pexService.validatePresentation(degreeDefinition, degreePresentation(['PhD', 'BSc']), submission)
+    ).toThrow('Invalid presentation')
+
+    const presentation = degreePresentation(['BSc', 'PhD'])
+    pexService.validatePresentation(degreeDefinition, presentation, submission)
+
+    const [{ credential }] = extractPresentationsWithDescriptorsFromSubmission(
+      presentation,
+      submission,
+      degreeDefinition
+    )
+    expect(credential).toBeInstanceOf(W3cJsonLdVerifiableCredential)
+    expect(credential).toBe((presentation.verifiableCredential as W3cJsonLdVerifiableCredential[])[1])
   })
 })
