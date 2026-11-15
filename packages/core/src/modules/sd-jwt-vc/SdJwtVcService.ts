@@ -14,6 +14,7 @@ import { isAllowedHttpUrl } from '../../utils/uri'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
 import { getStatusListSignerKeyPurposeOptions } from '../token-status-list/assertStatusListSignerKeyPurpose'
+import { getCachedStatusList, setCachedStatusListJwt } from '../token-status-list/statusListCache'
 import { TokenStatusListModuleConfig } from '../token-status-list/TokenStatusListModuleConfig'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig, X509Service } from '../x509'
@@ -34,6 +35,7 @@ import type {
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
+import { getCachedTypeMetadata, setCachedTypeMetadata } from './typeMetadataCache'
 import {
   extractKeyFromHolderBinding,
   getIssuerDidUrl,
@@ -283,8 +285,11 @@ export class SdJwtVcService {
       }
     | { isValid: false; sdJwtVc?: SdJwtVc<Header, Payload>; error: Error }
   > {
+    // Status lists fetched for this verification, by JWT. They are cached once their signature is verified
+    const fetchedStatusListUris = new Map<string, string>()
     const sdjwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
+      statusListFetcher: this.getStatusListFetcher(agentContext, fetchedStatusListUris),
       // We manually fetch later
       loadTypeMetadataFormat: false,
     })
@@ -339,14 +344,26 @@ export class SdJwtVcService {
       setJwkAlgFromJwtHeader(issuerWithKey.publicJwk, sdJwtVc.jwt.header?.alg)
       if (holder && sdJwtVc.kbJwt) setJwkAlgFromJwtHeader(holder.publicJwk, sdJwtVc.kbJwt.header?.alg)
 
+      const statusVerifier = this.getStatusVerifier(agentContext, {
+        matchedTrustedIssuer: trustedIssuer,
+        credentialIssuerKey: issuerWithKey.publicJwk,
+        credentialIssuerCertificateChain: issuer.method === 'x5c' ? issuer.x5c : undefined,
+      })
+
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, issuerWithKey.publicJwk),
         kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
-        statusVerifier: this.getStatusVerifier(agentContext, {
-          matchedTrustedIssuer: trustedIssuer,
-          credentialIssuerKey: issuerWithKey.publicJwk,
-          credentialIssuerCertificateChain: issuer.method === 'x5c' ? issuer.x5c : undefined,
-        }),
+        statusVerifier: async (data, signature) => {
+          const isValid = await statusVerifier(data, signature)
+
+          if (isValid) {
+            const statusListJwt = `${data}.${signature}`
+            const uri = fetchedStatusListUris.get(statusListJwt)
+            if (uri) await setCachedStatusListJwt(agentContext, uri, statusListJwt)
+          }
+
+          return isValid
+        },
       })
 
       try {
@@ -642,11 +659,18 @@ export class SdJwtVcService {
     }
   }
 
-  private getStatusListFetcher(agentContext: AgentContext) {
+  private getStatusListFetcher(agentContext: AgentContext, fetchedStatusListUris?: Map<string, string>) {
     const sdJwtVcConfig = agentContext.dependencyManager.resolve(SdJwtVcModuleConfig)
 
     return async (uri: string) => {
-      const defaultFetcher = () => this.fetchStatusListJwt(agentContext, uri)
+      const defaultFetcher = async () => {
+        const cached = await getCachedStatusList(agentContext, 'statusListJwt', uri)
+        if (cached) return cached
+
+        const statusListJwt = await this.fetchStatusListJwt(agentContext, uri)
+        fetchedStatusListUris?.set(statusListJwt, uri)
+        return statusListJwt
+      }
       return sdJwtVcConfig.customStatusListFetcher
         ? await sdJwtVcConfig.customStatusListFetcher(uri, { defaultFetcher })
         : await defaultFetcher()
@@ -855,6 +879,15 @@ export class SdJwtVcService {
         `Unable to resolve type metadata for vct '${vct}'. Only https supported for default resolver`
       )
     }
+    if (integrity !== undefined && typeof integrity !== 'string') {
+      throw new SdJwtVcError(
+        `Found '${isExtendedVct ? 'extends' : 'vct'}#integrity' with value '${integrity}' but value was not of type 'string'.`
+      )
+    }
+
+    const cachedTypeMetadata = await getCachedTypeMetadata(agentContext, vct, integrity)
+    if (cachedTypeMetadata) return cachedTypeMetadata
+
     let firstError: Error | undefined
     const maxResponseBytes = agentContext.resolve(SdJwtVcModuleConfig).maxTypeMetadataBytes
 
@@ -895,14 +928,15 @@ export class SdJwtVcService {
 
     const typeMetadata = (await response.clone().json()) as Record<string, unknown>
     if (integrity) {
-      if (typeof integrity !== 'string') {
-        throw new SdJwtVcError(
-          `Found '${isExtendedVct ? 'extends' : 'vct'}#integrity' with value '${integrity}' but value was not of type 'string'.`
-        )
-      }
-
       IntegrityVerifier.verifyIntegrity(new Uint8Array(await response.arrayBuffer()), integrity)
     }
+
+    await setCachedTypeMetadata(agentContext, {
+      vct,
+      integrity,
+      typeMetadata,
+      cacheControl: response.headers.get('cache-control'),
+    })
 
     return typeMetadata
   }

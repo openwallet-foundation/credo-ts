@@ -1,6 +1,7 @@
 import type { AgentContext, Constructable, SdJwtVc, X509CertificateExtensionsOptions } from '@credo-ts/core'
 import {
   Agent,
+  CacheModuleConfig,
   CredoError,
   DidKey,
   DidsModule,
@@ -113,7 +114,7 @@ const generateStatusList = async (
   length: number,
   revokedIndexes: number[],
   // `createHeaderAndPayload` always sets the `typ`, so a wrong `typ` is set on the JWS header instead
-  overrides: { typ?: string; sub?: string; kid?: string } = {}
+  overrides: { typ?: string; sub?: string; kid?: string; ttl?: number } = {}
 ): Promise<string> => {
   const statusList = new StatusList(
     Array.from({ length }, (_, i) => (revokedIndexes.includes(i) ? 1 : 0)),
@@ -127,6 +128,7 @@ const generateStatusList = async (
       iss: did,
       sub: overrides.sub ?? 'https://example.com/status-list',
       iat: Date.now() / 1000,
+      ...(overrides.ttl ? { ttl: overrides.ttl } : {}),
     },
     {
       alg: 'EdDSA',
@@ -1556,6 +1558,55 @@ describe('SdJwtVcService', () => {
       })
     })
 
+    test('Verify sd-jwt-vc with status serves a verified status list with a ttl from the cache', async () => {
+      const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
+      const cache = agent.context.resolve(CacheModuleConfig).cache
+      const cacheKey = 'token-status-list:statusListJwt:v1:https://example.com/status-list'
+
+      const statusList = await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [], { ttl: 60 })
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleSdJwtVcWithStatus,
+        presentationFrame: {},
+      })
+
+      try {
+        // Only one response is mocked, so a second fetch would fail the verification
+        const scope = mockStatusList(statusList)
+        for (let i = 0; i < 2; i++) {
+          const verificationResult = await sdJwtVcService.verify(agent.context, { compactSdJwtVc: presentation })
+          expect(verificationResult.isValid).toBe(true)
+        }
+        expect(scope.isDone()).toBe(true)
+        expect(await cache.get(agent.context, cacheKey, { scope: 'global' })).toEqual(statusList)
+      } finally {
+        await cache.remove(agent.context, cacheKey, { scope: 'global' })
+      }
+    })
+
+    test('Verify sd-jwt-vc with status does not cache a status list without ttl and exp, or with an invalid signature', async () => {
+      const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
+      const cache = agent.context.resolve(CacheModuleConfig).cache
+      const cacheKey = 'token-status-list:statusListJwt:v1:https://example.com/status-list'
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleSdJwtVcWithStatus,
+        presentationFrame: {},
+      })
+
+      mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, []))
+      expect((await sdJwtVcService.verify(agent.context, { compactSdJwtVc: presentation })).isValid).toBe(true)
+      expect(await cache.get(agent.context, cacheKey, { scope: 'global' })).toBeNull()
+
+      const otherKey = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      mockStatusList(
+        await generateStatusList(agent.context, PublicJwk.fromPublicJwk(otherKey.publicJwk), issuerDidUrl, 24, [], {
+          ttl: 60,
+        })
+      )
+      expect((await sdJwtVcService.verify(agent.context, { compactSdJwtVc: presentation })).isValid).toBe(false)
+      expect(await cache.get(agent.context, cacheKey, { scope: 'global' })).toBeNull()
+    })
+
     test('Verify sd-jwt-vc with status where credential is revoked and fails', async () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
@@ -2665,6 +2716,36 @@ describe('SdJwtVcService', () => {
         typeMetadataChain: [mockMetadata],
         vctValues: ['https://example.com/credentials/identity'],
       })
+    })
+
+    test('Serves type metadata from the cache for the max-age of the response', async () => {
+      const vct = 'https://example.com/credentials/cached'
+      const mockMetadata = { vct, name: 'Cached Credential' }
+      mockJwtDecode({ payload: { vct } })
+
+      // Only one response is mocked, so a second fetch would throw
+      const scope = nock('https://example.com')
+        .get('/credentials/cached')
+        .reply(200, mockMetadata, { 'Cache-Control': 'public, max-age=60' })
+
+      for (let i = 0; i < 2; i++) {
+        const result = await sdJwtVcService.fetchTypeMetadata(agent.context, { payload: { vct } } as unknown as SdJwtVc)
+        expect(result?.typeMetadataChain).toEqual([mockMetadata])
+      }
+      expect(scope.isDone()).toBe(true)
+    })
+
+    test('Fetches type metadata again when the response has no freshness lifetime', async () => {
+      const vct = 'https://example.com/credentials/not-cached'
+      const mockMetadata = { vct, name: 'Not Cached Credential' }
+      mockJwtDecode({ payload: { vct } })
+
+      const scope = nock('https://example.com').get('/credentials/not-cached').times(2).reply(200, mockMetadata)
+
+      for (let i = 0; i < 2; i++) {
+        await sdJwtVcService.fetchTypeMetadata(agent.context, { payload: { vct } } as unknown as SdJwtVc)
+      }
+      expect(scope.isDone()).toBe(true)
     })
 
     test('Fetch type metadata from legacy vct URL path when new path fails', async () => {

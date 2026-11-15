@@ -33,6 +33,7 @@ import type {
   MdocDeviceResponseVerifyResult,
   MdocSessionTranscriptOptions,
 } from './MdocOptions'
+import { cacheVerifiedMdocStatusLists, type FetchedMdocStatusLists } from './mdocStatusListCache'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
 import {
   assertMdocStatusListChainsMatchIssuanceChain,
@@ -303,7 +304,8 @@ export class MdocDeviceResponse {
     agentContext: AgentContext,
     options: Omit<MdocDeviceResponseVerifyOptions, 'deviceResponse'>
   ): Promise<MdocDeviceResponseVerifyResult> {
-    const mdocContext = getMdocContext(agentContext)
+    const fetchedStatusLists: FetchedMdocStatusLists = new Map()
+    const mdocContext = getMdocContext(agentContext, { fetchedStatusLists })
 
     defaultVerificationCallback({
       status: this.deviceResponse.documents?.length ? 'PASSED' : 'FAILED',
@@ -349,6 +351,14 @@ export class MdocDeviceResponse {
         trustedIssuanceChain,
         trustedStatusListChain,
         trustedIdentifierListChain,
+      })
+    }
+
+    for (const { document, statusList, trustedStatusListChain, identifierList } of verificationResult.documents) {
+      await cacheVerifiedMdocStatusLists(agentContext, fetchedStatusLists, document.issuerSigned.issuerAuth, {
+        statusList,
+        trustedStatusListChain,
+        identifierList,
       })
     }
 
