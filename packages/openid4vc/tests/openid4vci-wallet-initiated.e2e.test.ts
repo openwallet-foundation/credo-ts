@@ -16,6 +16,7 @@ import type {
 } from '../src'
 import {
   authorizationCodeGrantIdentifier,
+  OpenId4VcIssuanceSessionRepository,
   OpenId4VcIssuanceSessionState,
   OpenId4VcIssuerService,
   OpenId4VcModule,
@@ -147,6 +148,11 @@ describe('OpenId4Vc (Wallet Initiated Issuance)', () => {
     const idpServer = new Oauth2AuthorizationServer({
       callbacks: { ...getOid4vcCallbacks(issuer.agent.context), signJwt: idpSignJwt },
     })
+    const idpSigner = {
+      method: 'jwk',
+      publicJwk: idpServerJwk.toJson() as Jwk,
+      alg: 'ES256',
+    } satisfies JwtSigner
 
     const idpApp = express()
     idpApp.get('/.well-known/oauth-authorization-server', (_req, res) =>
@@ -186,11 +192,7 @@ describe('OpenId4Vc (Wallet Initiated Issuance)', () => {
         return res.status(401).json({ error: 'invalid_client', error_description: 'Invalid authorization header' })
       }
 
-      const signer = {
-        method: 'jwk',
-        publicJwk: idpServerJwk.toJson() as Jwk,
-        alg: 'ES256',
-      } satisfies JwtSigner
+      const signer = idpSigner
       const { jwt } = await idpSignJwt(signer, {
         header: { ...jwtHeaderFromJwtSigner(signer), alg: 'ES256', typ: 'JWT' },
         payload: {
@@ -224,6 +226,16 @@ describe('OpenId4Vc (Wallet Initiated Issuance)', () => {
     const clearHolderNock = setupNockToExpress('http://localhost:5757', holderApp)
 
     return {
+      // An access token for the issuer, as the IDP issues it in the external authorization server flow
+      createAccessToken: (issuerId: string) =>
+        idpServer.createAccessTokenResponse({
+          authorizationServer: 'http://localhost:4747',
+          audience: `${issuanceBaseUrl}/${issuerId}`,
+          expiresInSeconds: 5000,
+          subject: 'external-subject',
+          scope: 'UniversityDegreeCredential',
+          signer: idpSigner,
+        }),
       clearNocks: () => {
         clearIdpNock()
         clearHolderNock()
@@ -520,6 +532,63 @@ describe('OpenId4Vc (Wallet Initiated Issuance)', () => {
     expect(issuanceSession?.credentialOfferPayload.credential_configuration_ids).toEqual(['universityDegree'])
 
     await issuerTenant.endSession()
+  })
+
+  it('saves the dynamic issuance session of a credential request once', async () => {
+    const getDynamicIssuanceSession: OpenId4VciGetDynamicIssuanceSession = async ({
+      requestedCredentialConfigurations,
+    }) => ({
+      authorizationFlow: 'external',
+      credentialConfigurationIds: Object.keys(requestedCredentialConfigurations),
+    })
+
+    await createIssuer(getDynamicIssuanceSession)
+    const { clearNocks, createAccessToken } = await setupExternalIdp({ idpClientId: 'foo', idpClientSecret: 'bar' })
+
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+      authorizationServerConfigs: [{ type: 'direct', issuer: 'http://localhost:4747' }],
+    })
+    await issuerTenant.endSession()
+
+    const resolvedCredentialOffer = await resolveWalletInitiatedOffer(holderTenant, openIdIssuerTenant.issuerId)
+    const { access_token: accessToken } = await createAccessToken(openIdIssuerTenant.issuerId)
+
+    const saveSpy = vi.spyOn(OpenId4VcIssuanceSessionRepository.prototype, 'save')
+    const updateSpy = vi.spyOn(OpenId4VcIssuanceSessionRepository.prototype, 'update')
+
+    const credentialResponse = await holderTenant.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      accessToken,
+      credentialBindingResolver,
+    })
+    expect(credentialResponse.credentials).toHaveLength(1)
+    expect(saveSpy).toHaveBeenCalledTimes(1)
+    expect(saveSpy.mock.calls[0][1].state).toBe(OpenId4VcIssuanceSessionState.Completed)
+    expect(updateSpy).not.toHaveBeenCalled()
+
+    // A failed request, here without a proof, saves its session once, in the error state
+    saveSpy.mockClear()
+    const failedResponse = await fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/credential`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ credential_configuration_id: 'universityDegree' }),
+    })
+    expect(await failedResponse.json()).toMatchObject({ error: 'invalid_proof' })
+    expect(saveSpy).toHaveBeenCalledTimes(1)
+    expect(saveSpy.mock.calls[0][1].state).toBe(OpenId4VcIssuanceSessionState.Error)
+    expect(updateSpy).not.toHaveBeenCalled()
+
+    saveSpy.mockRestore()
+    updateSpy.mockRestore()
+    await holderTenant.endSession()
+    clearNocks()
   })
 
   it('rejects an external flow at an endpoint that only supports chained', async () => {

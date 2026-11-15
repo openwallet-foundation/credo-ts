@@ -2,14 +2,14 @@ import type {
   OpenId4VciAuthorizationCodeFlowConfig,
   OpenId4VciPreAuthorizedCodeFlowConfig,
 } from '../OpenId4VcIssuerServiceOptions'
-import type { OpenId4VcIssuerRecord } from '../repository'
+import type { OpenId4VcIssuerRecordWithOptionalClientSecrets } from '../repository'
 
 /**
  * Whether any grant of a credential offer uses the internal (Credo) authorization server, which issues the
  * access and refresh tokens. Chained authorization and presentation during issuance also use it.
  */
 export function offerUsesInternalAuthorizationServer(options: {
-  issuer: OpenId4VcIssuerRecord
+  issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets
   credentialIssuer: string
   preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig
   authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig

@@ -14,6 +14,7 @@ import {
   sendUnauthorizedError,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
+import { decodeUnverifiedAccessToken } from '../externalAuthorizationServerCache'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { getCredentialRequestDecryptionMetadata, OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
@@ -26,9 +27,18 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
   router.post(config.credentialEndpointPath, async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
     const { agentContext, issuer } = getRequestContext(request)
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
-    const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer, true)
+    // Read before verification, to only fetch the authorization server and key the token needs. An opaque
+    // token has no issuer, so every authorization server is fetched to introspect it
+    const unverifiedAccessToken = decodeUnverifiedAccessToken(request.headers.authorization)
+    const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(
+      agentContext,
+      issuer,
+      unverifiedAccessToken.issuer ? [unverifiedAccessToken.issuer] : true
+    )
     const vcIssuer = openId4VcIssuerService.getIssuer(agentContext)
-    const resourceServer = openId4VcIssuerService.getResourceServer(agentContext, issuer, issuerMetadata)
+    const resourceServer = openId4VcIssuerService.getResourceServer(agentContext, issuer, issuerMetadata, {
+      jwksKid: unverifiedAccessToken.kid,
+    })
 
     const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [
       config.credentialEndpointPath,
@@ -71,6 +81,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
     }
 
     let issuanceSession: OpenId4VcIssuanceSessionRecord | null = null
+    let subjectWasSet = false
     const preAuthorizedCode =
       typeof tokenPayload['pre-authorized_code'] === 'string' ? tokenPayload['pre-authorized_code'] : undefined
     const issuerState = typeof tokenPayload.issuer_state === 'string' ? tokenPayload.issuer_state : undefined
@@ -199,7 +210,8 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
           ...issuanceSession.authorization,
           subject: tokenPayload.sub,
         }
-        await issuanceSessionRepository.update(agentContext, issuanceSession)
+        // Not saved here: the subject is stored with the credential response, or when the request fails
+        subjectWasSet = true
       }
     }
 
@@ -282,11 +294,30 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
       }
     }
 
+    // A request for a finished session is denied without changing the session
+    if (issuanceSession.isFinishedState) {
+      return sendOauth2ErrorResponse(
+        response,
+        next,
+        agentContext.config.logger,
+        new Oauth2ServerErrorResponseError(
+          {
+            error: Oauth2ErrorCodes.CredentialRequestDenied,
+          },
+          {
+            internalMessage: `Received credential request for issuance session '${issuanceSession.id}' in state '${issuanceSession.state}'. Returning error response`,
+          }
+        )
+      )
+    }
+
+    const previousState = issuanceSession.state
     try {
       const { credentialResponse, credentialResponseJwt } = await openId4VcIssuerService.createCredentialResponse(
         agentContext,
         {
           issuanceSession,
+          issuanceSessionIsNew: !isExistingSession,
           issuer,
           parsedCredentialRequest,
           authorization: {
@@ -325,7 +356,14 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
           typeof error.message === 'string' && error.message !== ''
             ? error.message
             : 'Failed to create a credential response'
-        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
+        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error, {
+          isNew: !isExistingSession,
+        })
+      } else if (subjectWasSet || issuanceSession.state !== previousState) {
+        // The subject binds the session, so it is stored even when the wallet can retry
+        await issuanceSessionRepository
+          .update(agentContext, issuanceSession)
+          .catch((error) => agentContext.config.logger.error('Failed to store issuance session', { error }))
       }
 
       if (error instanceof Oauth2ServerErrorResponseError) {

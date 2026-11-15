@@ -53,7 +53,7 @@ import {
   Openid4vciVersion,
   type ParseCredentialRequestReturn,
 } from '@openid4vc/openid4vci'
-import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
+import { OpenId4VpVerifierService } from '../openid4vc-verifier'
 import type {
   OpenId4VciCredentialConfigurationSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadata,
@@ -71,7 +71,10 @@ import {
   getScopesFromCredentialConfigurationsSupported,
 } from '../shared/issuerMetadataUtils'
 import { getLocalAccessTokenJwks, getOid4vcLocalJwksCallback } from '../shared/localJwks'
-import type { OpenId4VciChainedAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
+import type {
+  OpenId4VciAuthorizationServerConfigWithOptionalClientSecret,
+  OpenId4VciChainedAuthorizationServerConfig,
+} from '../shared/models/OpenId4VciAuthorizationServerConfig'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import {
   credoJwtIssuerToOpenId4VcJwtIssuer,
@@ -81,6 +84,7 @@ import {
   supportedResponseEncryptionContentAlgorithms,
   supportedResponseEncryptionKeyAgreementAlgorithms,
 } from '../shared/utils'
+import { getExternalAuthorizationServerCacheCallbacks } from './externalAuthorizationServerCache'
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import { type OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
@@ -108,6 +112,7 @@ import {
   OpenId4VcIssuanceSessionRecord,
   OpenId4VcIssuanceSessionRepository,
   OpenId4VcIssuerRecord,
+  type OpenId4VcIssuerRecordWithOptionalClientSecrets,
   OpenId4VcIssuerRepository,
 } from './repository'
 import { offerUsesInternalAuthorizationServer } from './util/authorizationServer'
@@ -140,7 +145,9 @@ export class OpenId4VcIssuerService {
 
   public async createStatelessCredentialOffer(
     agentContext: AgentContext,
-    options: OpenId4VciCreateStatelessCredentialOfferOptions & { issuer: OpenId4VcIssuerRecord }
+    options: OpenId4VciCreateStatelessCredentialOfferOptions & {
+      issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets
+    }
   ): Promise<{ credentialOffer: string; credentialOfferObject: OpenId4VciCredentialOfferPayload }> {
     const { authorizationCodeFlowConfig, issuer, credentialConfigurationIds } = options
     const vcIssuer = this.getIssuer(agentContext)
@@ -184,7 +191,7 @@ export class OpenId4VcIssuerService {
 
   public async createCredentialOffer(
     agentContext: AgentContext,
-    options: OpenId4VciCreateCredentialOfferOptions & { issuer: OpenId4VcIssuerRecord }
+    options: OpenId4VciCreateCredentialOfferOptions & { issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets }
   ) {
     const {
       preAuthorizedCodeFlowConfig,
@@ -365,12 +372,17 @@ export class OpenId4VcIssuerService {
    * created based on the requested credential configurations. Returns `null` if neither the callback
    * nor the fallback applies (the caller can then produce an appropriate error).
    *
+   * For the `credentialRequest` origin the session is not saved: the credential endpoint saves it
+   * once, with the credential response.
+   *
    * If the callback denies the request (by throwing or returning `undefined`/`null`), or returns
    * options for an `authorizationFlow` that is not in `supportedAuthorizationFlows`, an
    * `Oauth2ServerErrorResponseError` is thrown.
    *
    * The flow is validated **before** the session is created, so no session is persisted when the
    * request is denied or the flow is not supported.
+   *
+   * @internal
    */
   public async getDynamicIssuanceSession(
     agentContext: AgentContext,
@@ -409,6 +421,7 @@ export class OpenId4VcIssuerService {
         },
         // The legacy dynamic issuance session honors the global `dpopRequired` config.
         requireDpop: this.openId4VcIssuerConfig.dpopRequired,
+        save: options.origin !== 'credentialRequest',
       })
     }
 
@@ -464,11 +477,12 @@ export class OpenId4VcIssuerService {
       sessionOptions,
       clientId,
       accessTokenPayload,
+      save: options.origin !== 'credentialRequest',
     })
   }
 
   /**
-   * Create and persist the issuance session for a dynamic (wallet-initiated) issuance request based
+   * Create the issuance session for a dynamic (wallet-initiated) issuance request based
    * on the options returned by the `getDynamicIssuanceSession` callback.
    *
    * The created session has either `chainedIdentity` (chained authorization server flow),
@@ -479,7 +493,7 @@ export class OpenId4VcIssuerService {
   private async createDynamicIssuanceSession(
     agentContext: AgentContext,
     options: {
-      issuer: OpenId4VcIssuerRecord
+      issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets
       sessionOptions: OpenId4VciDynamicIssuanceSessionOptions
       clientId?: string
       accessTokenPayload?: AccessTokenProfileJwtPayload | TokenIntrospectionResponse
@@ -490,6 +504,9 @@ export class OpenId4VcIssuerService {
        * configured through the session options).
        */
       requireDpop?: boolean
+
+      /** Whether to save the session. When false, the caller saves it. */
+      save: boolean
     }
   ): Promise<OpenId4VcIssuanceSessionRecord> {
     const { issuer, sessionOptions, accessTokenPayload } = options
@@ -612,18 +629,23 @@ export class OpenId4VcIssuerService {
       openId4VciVersion: sessionOptions.version ?? 'v1',
     })
 
-    await this.openId4VcIssuanceSessionRepository.save(agentContext, issuanceSession)
+    if (options.save) await this.openId4VcIssuanceSessionRepository.save(agentContext, issuanceSession)
     this.emitStateChangedEvent(agentContext, issuanceSession, null)
 
     return issuanceSession
   }
 
+  /**
+   * @internal
+   */
   public async createCredentialResponse(
     agentContext: AgentContext,
     options: OpenId4VciCreateCredentialResponseOptions & {
       issuanceSession: OpenId4VcIssuanceSessionRecord
       /** The issuer of the session, when the caller already has it. */
-      issuer?: OpenId4VcIssuerRecord
+      issuer?: OpenId4VcIssuerRecordWithOptionalClientSecrets
+      /** The session isn't stored yet, so it is saved instead of updated. */
+      issuanceSessionIsNew?: boolean
     }
   ): Promise<{
     issuanceSession: OpenId4VcIssuanceSessionRecord
@@ -680,6 +702,8 @@ export class OpenId4VcIssuerService {
       authorization: options.authorization,
     })
 
+    // Verifying the proofs moves the session to the credential request received state
+    const isPartiallyIssued = issuanceSession.state === OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
     const verifiedCredentialRequestProofs = await this.verifyCredentialRequestProofs(agentContext, {
       issuanceSession,
       issuer,
@@ -696,14 +720,13 @@ export class OpenId4VcIssuerService {
     // NOTE: this will throw an error if the verifier module is not registered and there is a
     // verification session. But you can't get here without the verifier module anyway
     if (issuanceSession.presentation?.openId4VcVerificationSessionId) {
-      const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
-      const session = await verifierApi.getVerificationSessionById(
+      const verifierService = agentContext.dependencyManager.resolve(OpenId4VpVerifierService)
+      const session = await verifierService.getVerificationSessionById(
+        agentContext,
         issuanceSession.presentation.openId4VcVerificationSessionId
       )
 
-      const response = await verifierApi.getVerifiedAuthorizationResponse(
-        issuanceSession.presentation.openId4VcVerificationSessionId
-      )
+      const response = await verifierService.getVerifiedAuthorizationResponse(agentContext, session)
 
       if (response.presentationExchange) {
         verification = {
@@ -769,16 +792,15 @@ export class OpenId4VcIssuerService {
       })
 
       // Determine new state
-      const newState =
-        issuanceSession.state === OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
-          ? OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
-          : OpenId4VcIssuanceSessionState.CredentialRequestReceived
+      const newState = isPartiallyIssued
+        ? OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
+        : OpenId4VcIssuanceSessionState.CredentialRequestReceived
 
       // Update expiry time to allow for re-check
-      await this.updateExpiresAt(agentContext, issuanceSession, signOptionsOrDeferral.interval)
+      this.extendExpiresAt(issuanceSession, signOptionsOrDeferral.interval)
 
       // Update state
-      await this.updateState(agentContext, issuanceSession, newState)
+      await this.updateState(agentContext, issuanceSession, newState, { isNew: options.issuanceSessionIsNew })
     } else {
       const credentials = await this.getSignedCredentials(agentContext, signOptionsOrDeferral, {
         issuanceSession,
@@ -812,7 +834,7 @@ export class OpenId4VcIssuerService {
         issuanceSession.credentialOfferPayload.credential_configuration_ids.length
           ? OpenId4VcIssuanceSessionState.Completed
           : OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
-      await this.updateState(agentContext, issuanceSession, newState)
+      await this.updateState(agentContext, issuanceSession, newState, { isNew: options.issuanceSessionIsNew })
     }
 
     return {
@@ -822,12 +844,15 @@ export class OpenId4VcIssuerService {
     }
   }
 
+  /**
+   * @internal
+   */
   public async createDeferredCredentialResponse(
     agentContext: AgentContext,
     options: OpenId4VciCreateDeferredCredentialResponseOptions & {
       issuanceSession: OpenId4VcIssuanceSessionRecord
       /** The issuer of the session, when the caller already has it. */
-      issuer?: OpenId4VcIssuerRecord
+      issuer?: OpenId4VcIssuerRecordWithOptionalClientSecrets
     }
   ): Promise<{
     issuanceSession: OpenId4VcIssuanceSessionRecord
@@ -925,7 +950,8 @@ export class OpenId4VcIssuerService {
       })
 
       // Update expiry time to allow for re-check
-      await this.updateExpiresAt(agentContext, issuanceSession, signOptionsOrDeferral.interval)
+      this.extendExpiresAt(issuanceSession, signOptionsOrDeferral.interval)
+      await this.openId4VcIssuanceSessionRepository.update(agentContext, issuanceSession)
     } else {
       const credentials = await this.getSignedCredentials(agentContext, signOptionsOrDeferral, {
         issuanceSession,
@@ -968,7 +994,7 @@ export class OpenId4VcIssuerService {
     agentContext: AgentContext,
     options: {
       parsedCredentialRequest: ParseCredentialRequestReturn
-      issuer: OpenId4VcIssuerRecord
+      issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets
       issuanceSession: OpenId4VcIssuanceSessionRecord
       credentialConfigurationId: string
       credentialConfiguration: CredentialConfigurationSupportedWithFormats
@@ -1042,7 +1068,10 @@ export class OpenId4VcIssuerService {
       })
     }
 
-    await this.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.CredentialRequestReceived)
+    // Not saved here: the session is saved with the credential response, or by the caller when the request fails
+    const previousState = issuanceSession.state
+    issuanceSession.state = OpenId4VcIssuanceSessionState.CredentialRequestReceived
+    this.emitStateChangedEvent(agentContext, issuanceSession, previousState)
 
     if (proofType === 'attestation') {
       const keyAttestationJwt = proofValue[0]
@@ -1359,9 +1388,10 @@ export class OpenId4VcIssuerService {
   private async getIssuerForIssuanceSession(
     agentContext: AgentContext,
     issuanceSession: OpenId4VcIssuanceSessionRecord,
-    issuer?: OpenId4VcIssuerRecord
+    issuer?: OpenId4VcIssuerRecordWithOptionalClientSecrets
   ) {
-    if (!issuer) return this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
+    // Only read, so it can come from the request context cache
+    if (!issuer) return this.openId4VcIssuerRepository.getCachedByIssuerId(agentContext, issuanceSession.issuerId)
 
     // The issuer's metadata and keys are used to sign, so it must be the issuer of the session.
     if (issuer.issuerId !== issuanceSession.issuerId) {
@@ -1498,29 +1528,35 @@ export class OpenId4VcIssuerService {
   }
 
   /**
-   * @param fetchExternalAuthorizationServerMetadata defaults to false
+   * @param fetchExternalAuthorizationServerMetadata defaults to false. Pass a list of authorization
+   * server issuers to only fetch the metadata of those, when they are configured on the issuer.
    */
   public async getIssuerMetadata(
     agentContext: AgentContext,
-    issuerRecord: OpenId4VcIssuerRecord,
-    fetchExternalAuthorizationServerMetadata = false
+    issuerRecord: OpenId4VcIssuerRecordWithOptionalClientSecrets,
+    fetchExternalAuthorizationServerMetadata: boolean | string[] = false
   ) {
     const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
     const issuerUrl = joinUriParts(config.baseUrl, [issuerRecord.issuerId])
     const oauth2Client = this.getOauth2Client(agentContext)
     const directAuthorizationServerConfigs = issuerRecord.directAuthorizationServerConfigs
 
-    const extraAuthorizationServers: AuthorizationServerMetadata[] =
-      fetchExternalAuthorizationServerMetadata && directAuthorizationServerConfigs
-        ? await Promise.all(
-            directAuthorizationServerConfigs.map(async (server) => {
-              const metadata = await oauth2Client.fetchAuthorizationServerMetadata(server.issuer)
-              if (!metadata)
-                throw new CredoError(`Authorization server metadata not found for issuer '${server.issuer}'`)
-              return metadata
-            })
-          )
-        : []
+    const issuersToFetch = fetchExternalAuthorizationServerMetadata
+    const authorizationServersToFetch = Array.isArray(issuersToFetch)
+      ? directAuthorizationServerConfigs?.filter((server) => issuersToFetch.includes(server.issuer))
+      : issuersToFetch
+        ? directAuthorizationServerConfigs
+        : undefined
+
+    const extraAuthorizationServers: AuthorizationServerMetadata[] = authorizationServersToFetch
+      ? await Promise.all(
+          authorizationServersToFetch.map(async (server) => {
+            const metadata = await oauth2Client.fetchAuthorizationServerMetadata(server.issuer)
+            if (!metadata) throw new CredoError(`Authorization server metadata not found for issuer '${server.issuer}'`)
+            return metadata
+          })
+        )
+      : []
 
     const authorizationServers =
       directAuthorizationServerConfigs && directAuthorizationServerConfigs.length > 0
@@ -1614,7 +1650,10 @@ export class OpenId4VcIssuerService {
     }
   }
 
-  public async createNonce(agentContext: AgentContext, issuer: OpenId4VcIssuerRecord) {
+  /**
+   * @internal
+   */
+  public async createNonce(agentContext: AgentContext, issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets) {
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
@@ -1647,7 +1686,11 @@ export class OpenId4VcIssuerService {
    * in the cache if we have 'seen' them. They will only be in the cache for a short time
    * and it will prevent replay
    */
-  private async verifyNonce(agentContext: AgentContext, issuer: OpenId4VcIssuerRecord, cNonce: string) {
+  private async verifyNonce(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets,
+    cNonce: string
+  ) {
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
@@ -1682,8 +1725,13 @@ export class OpenId4VcIssuerService {
    * PoP JWT, as defined in draft 09 of OAuth 2.0 Attestation-Based Client Authentication.
    *
    * The challenge is a stateless signed JWT, following the same approach as {@link createNonce}.
+   *
+   * @internal
    */
-  public async createClientAttestationChallenge(agentContext: AgentContext, issuer: OpenId4VcIssuerRecord) {
+  public async createClientAttestationChallenge(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets
+  ) {
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
@@ -1709,10 +1757,12 @@ export class OpenId4VcIssuerService {
 
   /**
    * Verifies a Client Attestation PoP challenge previously issued by {@link createClientAttestationChallenge}.
+   *
+   * @internal
    */
   public async verifyClientAttestationChallenge(
     agentContext: AgentContext,
-    issuer: OpenId4VcIssuerRecord,
+    issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets,
     challenge: string
   ) {
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
@@ -1748,10 +1798,12 @@ export class OpenId4VcIssuerService {
    * Non-throwing variant of {@link verifyClientAttestationChallenge}. Returns `false` when no challenge
    * is provided or it is invalid/expired. Used by the token endpoint to decide whether to respond with
    * a `use_attestation_challenge` error.
+   *
+   * @internal
    */
   public async isClientAttestationPopChallengeValid(
     agentContext: AgentContext,
-    issuer: OpenId4VcIssuerRecord,
+    issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets,
     challenge?: string
   ): Promise<boolean> {
     if (!challenge) return false
@@ -1767,10 +1819,12 @@ export class OpenId4VcIssuerService {
    * Enforces the Client Attestation PoP `challenge` (draft 09) on an authorization server verify result
    * (pushed authorization request / authorization challenge). A `challenge` that is present is always
    * validated; a missing `challenge` is only an error when the issuer requires it (`required`).
+   *
+   * @internal
    */
   public async verifyClientAttestationPopChallenge(
     agentContext: AgentContext,
-    issuer: OpenId4VcIssuerRecord,
+    issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets,
     options: {
       clientAttestation?: { clientAttestationPop: { payload: { challenge?: string } } }
       required: boolean
@@ -1806,9 +1860,12 @@ export class OpenId4VcIssuerService {
     }
   }
 
+  /**
+   * @internal
+   */
   public async createRefreshToken(
     agentContext: AgentContext,
-    issuer: OpenId4VcIssuerRecord,
+    issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets,
     options: {
       issuerState?: string
       preAuthorizedCode?: string
@@ -1852,6 +1909,9 @@ export class OpenId4VcIssuerService {
     return refreshToken
   }
 
+  /**
+   * @internal
+   */
   public parseRefreshToken(agentContext: AgentContext, token: string) {
     const jwt = Jwt.fromSerializedJwt(token)
     jwt.payload.validate({
@@ -1901,9 +1961,12 @@ export class OpenId4VcIssuerService {
     }
   }
 
+  /**
+   * @internal
+   */
   public async verifyRefreshToken(
     agentContext: AgentContext,
-    issuer: OpenId4VcIssuerRecord,
+    issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets,
     parsedRefreshToken: ReturnType<OpenId4VcIssuerService['parseRefreshToken']>
   ) {
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
@@ -1931,17 +1994,23 @@ export class OpenId4VcIssuerService {
     }
   }
 
+  /**
+   * @internal
+   */
   public getIssuer(agentContext: AgentContext, options: { issuanceSession?: OpenId4VcIssuanceSessionRecord } = {}) {
     return new Openid4vciIssuer({
       callbacks: getOid4vcCallbacks(agentContext, options),
     })
   }
 
+  /**
+   * @internal
+   */
   public async getChainedDpopOptions(
     agentContext: AgentContext,
     options: {
       issuanceSession: OpenId4VcIssuanceSessionRecord
-      chainedAuthorizationServerConfig: OpenId4VciChainedAuthorizationServerConfig
+      chainedAuthorizationServerConfig: OpenId4VciAuthorizationServerConfigWithOptionalClientSecret<OpenId4VciChainedAuthorizationServerConfig>
       authorizationServerMetadata: AuthorizationServerMetadata
       // Only the authorization request creates a key, later requests reuse the persisted one.
       createKey?: boolean
@@ -1993,10 +2062,17 @@ export class OpenId4VcIssuerService {
     }
   }
 
-  public getOauth2Client(agentContext: AgentContext, issuerRecord?: OpenId4VcIssuerRecord) {
+  /**
+   * @internal
+   */
+  public getOauth2Client(agentContext: AgentContext, issuerRecord?: OpenId4VcIssuerRecordWithOptionalClientSecrets) {
     return new Oauth2Client({
       callbacks: {
         ...getOid4vcCallbacks(agentContext),
+        ...getExternalAuthorizationServerCacheCallbacks(
+          agentContext,
+          this.openId4VcIssuerConfig.externalAuthorizationServerCacheExpiryInSeconds
+        ),
         ...(issuerRecord
           ? { clientAuthentication: dynamicOid4vciClientAuthentication(agentContext, issuerRecord) }
           : {}),
@@ -2004,6 +2080,9 @@ export class OpenId4VcIssuerService {
     })
   }
 
+  /**
+   * @internal
+   */
   public getOauth2AuthorizationServer(
     agentContext: AgentContext,
     options: { issuanceSession?: OpenId4VcIssuanceSessionRecord } = {}
@@ -2015,10 +2094,17 @@ export class OpenId4VcIssuerService {
     })
   }
 
+  /**
+   * @internal
+   */
   public getResourceServer(
     agentContext: AgentContext,
-    issuerRecord: OpenId4VcIssuerRecord,
-    issuerMetadata: Awaited<ReturnType<OpenId4VcIssuerService['getIssuerMetadata']>>
+    issuerRecord: OpenId4VcIssuerRecordWithOptionalClientSecrets,
+    issuerMetadata: Awaited<ReturnType<OpenId4VcIssuerService['getIssuerMetadata']>>,
+    options: {
+      /** A cached JWK Set of an external authorization server without this `kid` is fetched again. */
+      jwksKid?: string
+    } = {}
   ) {
     // Access tokens issued by this agent are signed with the issuer record's access token key, and
     // the JWKs endpoint of our built-in authorization server publishes that exact key. Resolve it
@@ -2037,28 +2123,32 @@ export class OpenId4VcIssuerService {
         )
       : {}
 
+    const cacheCallbacks = getExternalAuthorizationServerCacheCallbacks(
+      agentContext,
+      this.openId4VcIssuerConfig.externalAuthorizationServerCacheExpiryInSeconds,
+      options.jwksKid
+    )
+    const localJwksCallback = getOid4vcLocalJwksCallback(agentContext, localJwks)
+
     return new Oauth2ResourceServer({
       callbacks: {
         ...getOid4vcCallbacks(agentContext),
-        ...getOid4vcLocalJwksCallback(agentContext, localJwks),
+        ...cacheCallbacks,
+        getJwks: async (jwksUri) => (await localJwksCallback.getJwks?.(jwksUri)) ?? cacheCallbacks.getJwks?.(jwksUri),
         clientAuthentication: dynamicOid4vciClientAuthentication(agentContext, issuerRecord),
       },
     })
   }
 
   /**
-   * Update the expiresAt field of the issuance session to ensure it remains
-   * valid during the deferral process.
+   * Extend the expiresAt field of the issuance session to ensure it remains
+   * valid during the deferral process. Not saved here: the caller saves the session.
    *
    * We set it to the maximum between the current expiresAt and the current time
    * plus interval and the grace period. This accounts for the chance of multiple
    * deferrals happening, always retaining the longer interval.
    */
-  private async updateExpiresAt(
-    agentContext: AgentContext,
-    issuanceSession: OpenId4VcIssuanceSessionRecord,
-    intervalInSeconds: number
-  ) {
+  private extendExpiresAt(issuanceSession: OpenId4VcIssuanceSessionRecord, intervalInSeconds: number) {
     const expiresAt =
       issuanceSession.expiresAt ??
       utils.addSecondsToDate(
@@ -2077,18 +2167,20 @@ export class OpenId4VcIssuerService {
           .getTime()
       )
     )
-
-    await this.openId4VcIssuanceSessionRepository.update(agentContext, issuanceSession)
   }
 
   /**
    * Update the record to a new state and emit an state changed event. Also updates the record
    * in storage.
+   *
+   * @internal
    */
   public async updateState(
     agentContext: AgentContext,
     issuanceSession: OpenId4VcIssuanceSessionRecord,
-    newState: OpenId4VcIssuanceSessionState
+    newState: OpenId4VcIssuanceSessionState,
+    /** `isNew`: the session isn't stored yet, so it is saved instead of updated. */
+    options: { isNew?: boolean } = {}
   ) {
     agentContext.config.logger.debug(
       `Updating openid4vc issuance session record ${issuanceSession.id} to state ${newState} (previous=${issuanceSession.state})`
@@ -2096,11 +2188,15 @@ export class OpenId4VcIssuerService {
 
     const previousState = issuanceSession.state
     issuanceSession.state = newState
-    await this.openId4VcIssuanceSessionRepository.update(agentContext, issuanceSession)
+    if (options.isNew) await this.openId4VcIssuanceSessionRepository.save(agentContext, issuanceSession)
+    else await this.openId4VcIssuanceSessionRepository.update(agentContext, issuanceSession)
 
     this.emitStateChangedEvent(agentContext, issuanceSession, previousState)
   }
 
+  /**
+   * @internal
+   */
   public emitStateChangedEvent(
     agentContext: AgentContext,
     issuanceSession: OpenId4VcIssuanceSessionRecord,
@@ -2120,7 +2216,7 @@ export class OpenId4VcIssuerService {
   private async getGrantsFromConfig(
     agentContext: AgentContext,
     config: {
-      issuer: OpenId4VcIssuerRecord
+      issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets
       issuerMetadata: OpenId4VciMetadata
       preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig
       authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
@@ -2183,6 +2279,9 @@ export class OpenId4VcIssuerService {
     return grants
   }
 
+  /**
+   * @internal
+   */
   public getStaticChainedAuthorizationScopes(options: {
     authorizationServerConfig: {
       issuer: string
@@ -2468,7 +2567,10 @@ export class OpenId4VcIssuerService {
   }
 }
 
-function getCredentialResponseEncryptionMetadata(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord) {
+function getCredentialResponseEncryptionMetadata(
+  agentContext: AgentContext,
+  issuerRecord: OpenId4VcIssuerRecordWithOptionalClientSecrets
+) {
   if (!issuerRecord.credentialRequestEncryption) {
     if (issuerRecord.credentialResponseEncryption) {
       agentContext.config.logger.warn(
@@ -2493,7 +2595,7 @@ function toCredentialRequestEncryptionJwk(jwk: Kms.KmsJwkPublic & { kid: string 
   return { ...Kms.PublicJwk.fromUnknown(jwk).toJson(), kid: jwk.kid, use: 'enc', alg: 'ECDH-ES' }
 }
 
-function getCredentialRequestEncryptionMetadata(issuerRecord: OpenId4VcIssuerRecord) {
+function getCredentialRequestEncryptionMetadata(issuerRecord: OpenId4VcIssuerRecordWithOptionalClientSecrets) {
   if (!issuerRecord.credentialRequestEncryption) return undefined
 
   return {
@@ -2511,7 +2613,7 @@ function getCredentialRequestEncryptionMetadata(issuerRecord: OpenId4VcIssuerRec
  */
 export function getCredentialRequestDecryptionMetadata(
   issuerMetadata: OpenId4VciMetadata,
-  issuerRecord: OpenId4VcIssuerRecord
+  issuerRecord: OpenId4VcIssuerRecordWithOptionalClientSecrets
 ): OpenId4VciMetadata {
   const requestEncryption = issuerMetadata.credentialIssuer.credential_request_encryption
   const previousJwks = issuerRecord.credentialRequestEncryption?.previousJwks

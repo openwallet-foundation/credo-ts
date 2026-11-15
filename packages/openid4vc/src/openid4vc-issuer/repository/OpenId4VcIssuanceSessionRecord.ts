@@ -528,6 +528,10 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
     }
   }
 
+  public get isFinishedState() {
+    return this.state === OpenId4VcIssuanceSessionState.Completed || this.state === OpenId4VcIssuanceSessionState.Error
+  }
+
   public assertState(expectedStates: OpenId4VcIssuanceSessionState | OpenId4VcIssuanceSessionState[]) {
     if (!Array.isArray(expectedStates)) {
       expectedStates = [expectedStates]

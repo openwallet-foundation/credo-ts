@@ -3,20 +3,17 @@ import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 import type {
   OpenId4VciCreateCredentialOfferOptions,
-  OpenId4VciCreateCredentialResponseOptions,
-  OpenId4VciCreateDeferredCredentialResponseOptions,
   OpenId4VciCreateIssuerOptions,
   OpenId4VciCreateStatelessCredentialOfferOptions,
   OpenId4VcUpdateIssuerOptions,
   OpenId4VcUpdateIssuerRecordOptions,
 } from './OpenId4VcIssuerServiceOptions'
-import { OpenId4VcIssuerRecord } from './repository'
+import { OpenId4VcIssuerRecord, OpenId4VcIssuerRepository } from './repository'
 
 /**
  * @public
  * This class represents the API for interacting with the OpenID4VC Issuer service.
- * It provides methods for creating a credential offer, creating a response to a credential issuance request,
- * and retrieving a credential offer from a URI.
+ * It provides methods for creating a credential offer and retrieving a credential offer from a URI.
  */
 @injectable()
 export class OpenId4VcIssuerApi {
@@ -100,7 +97,10 @@ export class OpenId4VcIssuerApi {
     options: OpenId4VciCreateStatelessCredentialOfferOptions & { issuerId: string }
   ) {
     const { issuerId, ...rest } = options
-    const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
+    // Only read, so it can come from the request context cache
+    const issuer = await this.agentContext
+      .resolve(OpenId4VcIssuerRepository)
+      .getCachedByIssuerId(this.agentContext, issuerId)
     return await this.openId4VcIssuerService.createStatelessCredentialOffer(this.agentContext, { ...rest, issuer })
   }
 
@@ -111,45 +111,18 @@ export class OpenId4VcIssuerApi {
    */
   public async createCredentialOffer(options: OpenId4VciCreateCredentialOfferOptions & { issuerId: string }) {
     const { issuerId, ...rest } = options
-    const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
+    // Only read, so it can come from the request context cache
+    const issuer = await this.agentContext
+      .resolve(OpenId4VcIssuerRepository)
+      .getCachedByIssuerId(this.agentContext, issuerId)
     return await this.openId4VcIssuerService.createCredentialOffer(this.agentContext, { ...rest, issuer })
   }
 
-  /**
-   * This function creates a response which can be sent to the holder after receiving a credential issuance request.
-   */
-  public async createCredentialResponse(
-    options: OpenId4VciCreateCredentialResponseOptions & { issuanceSessionId: string }
-  ) {
-    const { issuanceSessionId, ...rest } = options
-    const issuanceSession = await this.openId4VcIssuerService.getIssuanceSessionById(
-      this.agentContext,
-      issuanceSessionId
-    )
-
-    return await this.openId4VcIssuerService.createCredentialResponse(this.agentContext, { ...rest, issuanceSession })
-  }
-
-  /**
-   * This function creates a response which can be sent to the holder after receiving a deferred credential issuance request.
-   */
-  public async createDeferredCredentialResponse(
-    options: OpenId4VciCreateDeferredCredentialResponseOptions & { issuanceSessionId: string }
-  ) {
-    const { issuanceSessionId, ...rest } = options
-    const issuanceSession = await this.openId4VcIssuerService.getIssuanceSessionById(
-      this.agentContext,
-      issuanceSessionId
-    )
-
-    return await this.openId4VcIssuerService.createDeferredCredentialResponse(this.agentContext, {
-      ...rest,
-      issuanceSession,
-    })
-  }
-
   public async getIssuerMetadata(issuerId: string) {
-    const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
+    // Only read, so it can come from the request context cache
+    const issuer = await this.agentContext
+      .resolve(OpenId4VcIssuerRepository)
+      .getCachedByIssuerId(this.agentContext, issuerId)
     return this.openId4VcIssuerService.getIssuerMetadata(this.agentContext, issuer)
   }
 

@@ -27,7 +27,7 @@ import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import {
   OpenId4VcIssuanceSessionRecord,
   OpenId4VcIssuanceSessionRepository,
-  OpenId4VcIssuerRecord,
+  type OpenId4VcIssuerRecordWithOptionalClientSecrets,
 } from '../repository'
 import { getPkceFromAuthorizationRequest } from '../util/pkce'
 import { getClientAttestationToVerify } from '../util/walletAttestation'
@@ -36,7 +36,7 @@ import type { OpenId4VcIssuanceRequest } from './requestContext'
 export async function handlePushedAuthorizationRequest(
   agentContext: AgentContext,
   options: {
-    issuer: OpenId4VcIssuerRecord
+    issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets
     issuanceSession: OpenId4VcIssuanceSessionRecord
     parsedAuthorizationRequest: ParsePushedAuthorizationRequestResult
     request: RequestLike

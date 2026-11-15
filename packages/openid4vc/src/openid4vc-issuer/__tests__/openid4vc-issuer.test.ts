@@ -55,7 +55,10 @@ import { OpenId4VciCredentialFormatProfile } from '../../shared'
 import { getOid4vcEncryptJweCallback } from '../../shared/callbacks'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { getCredentialRequestDecryptionMetadata, OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
-import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
+import type {
+  OpenId4VciCreateCredentialResponseOptions,
+  OpenId4VciCredentialRequestToCredentialMapper,
+} from '../OpenId4VcIssuerServiceOptions'
 import type { OpenId4VcIssuerRecord } from '../repository'
 import { OpenId4VcIssuanceSessionRepository, OpenId4VcIssuerRepository } from '../repository'
 
@@ -331,6 +334,17 @@ describe('OpenId4VcIssuer', () => {
 
   // This method is available on the holder service,
   // would be nice to reuse
+  // The credential endpoint creates the response. These tests skip the endpoint
+  async function createCredentialResponse(
+    options: OpenId4VciCreateCredentialResponseOptions & { issuanceSessionId: string }
+  ) {
+    const { issuanceSessionId, ...rest } = options
+    const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
+    const issuanceSession = await issuerService.getIssuanceSessionById(issuer.context, issuanceSessionId)
+
+    return issuerService.createCredentialResponse(issuer.context, { ...rest, issuanceSession })
+  }
+
   async function handleCredentialResponse(
     agentContext: AgentContext,
     credentialInResponse: string | Record<string, unknown> | undefined,
@@ -444,7 +458,7 @@ describe('OpenId4VcIssuer', () => {
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
-    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
+    const { credentialResponse } = await createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       parsedCredentialRequest: await parseCredentialRequestAsWallet(credentialRequest),
       authorization: {
@@ -570,7 +584,7 @@ describe('OpenId4VcIssuer', () => {
       nonce: cNonce,
     })
 
-    const credentialResponsePromise = issuer.openid4vc.issuer.createCredentialResponse({
+    const credentialResponsePromise = createCredentialResponse({
       issuanceSessionId: issuanceSession.id,
       parsedCredentialRequest: await parseCredentialRequestAsWallet(credentialRequest),
       authorization: {
@@ -664,7 +678,7 @@ describe('OpenId4VcIssuer', () => {
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
-    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
+    const { credentialResponse } = await createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       parsedCredentialRequest: await parseCredentialRequestAsWallet(credentialRequest),
       authorization: {
@@ -730,7 +744,7 @@ describe('OpenId4VcIssuer', () => {
       nonce: cNonce,
     })) as { proof: { jwt: string } }
 
-    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
+    const { credentialResponse } = await createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       parsedCredentialRequest: await parseCredentialRequestAsWallet({
         credential_configuration_id: universityDegreeCredentialSdJwt.id,
@@ -784,7 +798,7 @@ describe('OpenId4VcIssuer', () => {
     })) as { proof: { jwt: string } }
 
     const verifyNonce = vi.spyOn(issuerService as unknown as { verifyNonce: () => Promise<void> }, 'verifyNonce')
-    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
+    const { credentialResponse } = await createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       parsedCredentialRequest: await parseCredentialRequestAsWallet({
         credential_configuration_id: universityDegreeCredentialSdJwt.id,
@@ -837,7 +851,7 @@ describe('OpenId4VcIssuer', () => {
     const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
-    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
+    const { credentialResponse } = await createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       authorization: {
         authorizationServer: 'https://authorization.com',
@@ -961,7 +975,7 @@ describe('OpenId4VcIssuer', () => {
         })
       )
 
-      return issuer.openid4vc.issuer.createCredentialResponse({
+      return createCredentialResponse({
         issuanceSessionId: result.issuanceSession.id,
         authorization: {
           authorizationServer: 'https://authorization.com',
@@ -1090,7 +1104,7 @@ describe('OpenId4VcIssuer', () => {
     const issuerMetadata = await issuer.modules.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
-    const { credentialResponse } = await issuer.modules.openid4vc.issuer.createCredentialResponse({
+    const { credentialResponse } = await createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       authorization: {
         authorizationServer: 'https://authorization.com',
@@ -1186,7 +1200,7 @@ describe('OpenId4VcIssuer', () => {
     const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
     await expect(
-      issuer.openid4vc.issuer.createCredentialResponse({
+      createCredentialResponse({
         issuanceSessionId: result.issuanceSession.id,
         authorization: {
           authorizationServer: 'https://authorization.com',
@@ -1233,7 +1247,7 @@ describe('OpenId4VcIssuer', () => {
     const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
     const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
-    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
+    const { credentialResponse } = await createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       parsedCredentialRequest: await parseCredentialRequestAsWallet(
         await createCredentialRequest(holder.context, {
@@ -1304,7 +1318,7 @@ describe('OpenId4VcIssuer', () => {
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
     const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     await expect(
-      issuer.openid4vc.issuer.createCredentialResponse({
+      createCredentialResponse({
         issuanceSessionId: result.issuanceSession.id,
         authorization: {
           authorizationServer: 'https://authorization.com',
@@ -1402,7 +1416,7 @@ describe('OpenId4VcIssuer', () => {
     const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
     const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
-    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
+    const { credentialResponse } = await createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       parsedCredentialRequest: await parseCredentialRequestAsWallet(
         await createCredentialRequest(holder.context, {
@@ -1437,7 +1451,7 @@ describe('OpenId4VcIssuer', () => {
 
     await handleCredentialResponse(holder.context, credentialResponse.credential, openBadgeCredential)
 
-    const { credentialResponse: credentialResponse2 } = await issuer.openid4vc.issuer.createCredentialResponse({
+    const { credentialResponse: credentialResponse2 } = await createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       parsedCredentialRequest: await parseCredentialRequestAsWallet(
         await createCredentialRequest(holder.context, {
@@ -1471,6 +1485,108 @@ describe('OpenId4VcIssuer', () => {
     })
 
     await handleCredentialResponse(holder.context, credentialResponse2.credential, universityDegreeCredential)
+  })
+
+  it('stores the session on a deferred request, keeping a partially issued session in that state', async () => {
+    const result = await issuer.openid4vc.issuer.createCredentialOffer({
+      credentialConfigurationIds: [openBadgeCredential.id, universityDegreeCredential.id],
+      issuerId: openId4VcIssuer.issuerId,
+      preAuthorizedCodeFlowConfig: {},
+    })
+
+    const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    // We need to update the state, as it is checked and we're skipping the access token step
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
+
+    const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
+    const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const authorization = {
+      authorizationServer: 'https://authorization.com',
+      accessToken: {
+        payload: { active: true, sub: 'something', 'pre-authorized_code': 'some' },
+        value: 'the-access-token',
+      },
+    }
+    const requestCredential = async (
+      credentialConfiguration: typeof openBadgeCredential | typeof universityDegreeCredential,
+      credentialRequestToCredentialMapper: OpenId4VciCredentialRequestToCredentialMapper
+    ) =>
+      createCredentialResponse({
+        issuanceSessionId: result.issuanceSession.id,
+        parsedCredentialRequest: await parseCredentialRequestAsWallet(
+          await createCredentialRequest(holder.context, {
+            credentialConfiguration,
+            issuerMetadata,
+            kid: holderKid,
+            nonce: (await issuerService.createNonce(issuer.context, openId4VcIssuer)).cNonce,
+          })
+        ),
+        authorization,
+        credentialRequestToCredentialMapper,
+      })
+    const getStoredState = async () =>
+      (await issuanceSessionRepository.getById(issuer.context, result.issuanceSession.id)).state
+
+    await expect(
+      requestCredential(openBadgeCredential, () => {
+        throw new Error('Mapper failed')
+      })
+    ).rejects.toThrow('Mapper failed')
+    // The caller stores the session when the request fails
+    expect(await getStoredState()).toBe(OpenId4VcIssuanceSessionState.AccessTokenCreated)
+
+    await requestCredential(openBadgeCredential, () => ({
+      type: 'credentials',
+      format: 'jwt_vc',
+      credentials: [
+        {
+          credential: new W3cCredential({
+            type: openBadgeCredential.credential_definition.type,
+            issuer: new W3cIssuer({ id: issuerDid }),
+            credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+            issuanceDate: w3cDate(Date.now()),
+          }),
+          verificationMethod: issuerVerificationMethod.id,
+        },
+      ],
+    }))
+    expect(await getStoredState()).toBe(OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued)
+
+    // A deferral extends the expiry of the session to cover the interval
+    const beforeDeferral = Date.now()
+    await requestCredential(universityDegreeCredential, () => ({
+      type: 'deferral',
+      transactionId: 'transaction-id',
+      interval: 3600,
+    }))
+    const deferredSession = await issuanceSessionRepository.getById(issuer.context, result.issuanceSession.id)
+    expect(deferredSession.state).toBe(OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued)
+    const firstExpiresAt = deferredSession.expiresAt?.getTime()
+    expect(firstExpiresAt).toBeGreaterThanOrEqual(beforeDeferral + 3600 * 1000)
+
+    // A deferral of the deferred credential request extends it again, once the interval has passed
+    deferredSession.transactions = deferredSession.transactions.map((transaction) => ({
+      ...transaction,
+      deferredUntil: new Date(Date.now() - 1000),
+    }))
+    await issuanceSessionRepository.update(issuer.context, deferredSession)
+    await issuerService.createDeferredCredentialResponse(issuer.context, {
+      issuanceSession: deferredSession,
+      deferredCredentialRequest: { transaction_id: 'transaction-id' },
+      authorization,
+      deferredCredentialRequestToCredentialMapper: () => ({
+        type: 'deferral',
+        transactionId: 'transaction-id',
+        interval: 7200,
+      }),
+    })
+    const sessionAfterSecondDeferral = await issuanceSessionRepository.getById(
+      issuer.context,
+      result.issuanceSession.id
+    )
+    expect(sessionAfterSecondDeferral.state).toBe(OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued)
+    expect(sessionAfterSecondDeferral.expiresAt?.getTime()).toBeGreaterThan(firstExpiresAt ?? 0)
   })
 
   it('offer and request multiple credentials (v11 compatibility)', async () => {
@@ -1523,7 +1639,7 @@ describe('OpenId4VcIssuer', () => {
     const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
     const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
-    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
+    const { credentialResponse } = await createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       parsedCredentialRequest: await parseCredentialRequestAsWallet(
         await createCredentialRequest(holder.context, {
@@ -1558,7 +1674,7 @@ describe('OpenId4VcIssuer', () => {
 
     await handleCredentialResponse(holder.context, credentialResponse.credential, openBadgeCredential)
 
-    const { credentialResponse: credentialResponse2 } = await issuer.openid4vc.issuer.createCredentialResponse({
+    const { credentialResponse: credentialResponse2 } = await createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       parsedCredentialRequest: await parseCredentialRequestAsWallet(
         await createCredentialRequest(holder.context, {
@@ -1832,7 +1948,7 @@ describe('OpenId4VcIssuer', () => {
       credential_response_encryption: { jwk: encPublicJwk, enc: 'A128GCM' },
     }
 
-    const { credentialResponse, credentialResponseJwt } = await issuer.openid4vc.issuer.createCredentialResponse({
+    const { credentialResponse, credentialResponseJwt } = await createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       parsedCredentialRequest: await parseCredentialRequestAsWallet(credentialRequest),
       authorization: {
@@ -1888,7 +2004,7 @@ describe('OpenId4VcIssuer', () => {
         nonce: cNonce,
       })
 
-      return issuer.openid4vc.issuer.createCredentialResponse({
+      return createCredentialResponse({
         issuanceSessionId: result.issuanceSession.id,
         parsedCredentialRequest: await parseCredentialRequestAsWallet(
           enc ? { ...baseRequest, credential_response_encryption: { jwk, enc } } : baseRequest
