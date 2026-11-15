@@ -20,6 +20,7 @@ import { MdocApi, MdocRecord, type MdocSessionTranscriptOptions } from '../mdoc'
 import { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
 import { SdJwtVcApi } from '../sd-jwt-vc'
+import { getStoredHolderKmsKeyId } from '../sd-jwt-vc/utils'
 import type { W3cCredentialRecord, W3cJsonPresentation } from '../vc'
 import {
   ClaimFormat,
@@ -595,8 +596,10 @@ export class DifPresentationExchangeService {
 
         // NOTE: we use the kmsKeyId from the first credential. We don't support the new useMode (for single-use credentials) for PEX
         const originalSdJwtVc = sdJwtVcApi.fromCompact(sdJwtInput.compactSdJwtVc)
-        originalSdJwtVc.kmsKeyId =
+        originalSdJwtVc.kmsKeyId = getStoredHolderKmsKeyId(
+          originalSdJwtVc.holder,
           presentationToCreate.verifiableCredentials[0].credential.credentialInstances[0].kmsKeyId
+        )
 
         const sdJwtVc = await sdJwtVcApi.present({
           sdJwtVc: originalSdJwtVc,

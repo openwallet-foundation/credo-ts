@@ -96,10 +96,28 @@ describe('mdoc service test', () => {
     expect(mdoc.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.deviceKey.jwk.kid).toEqual(otherKey.keyId)
     expect(mdoc.deviceKeyId).toBeUndefined()
     expect(mdoc.deviceKey.hasKeyId).toBe(false)
-    expect(MdocRecord.fromMdoc(mdoc).firstCredential.deviceKeyId).toEqual(mdoc.deviceKey.legacyKeyId)
+    expect(() => MdocRecord.fromMdoc(mdoc)).toThrow("Set 'deviceKeyId' on the mdoc")
+    await expect(
+      MdocDeviceResponse.createDeviceResponse(agentContext, {
+        mdocs: [mdoc],
+        documentRequests: [{ docType: mdoc.docType, nameSpaces: { hello: { world: true } } }],
+        sessionTranscriptOptions: {
+          type: 'openId4VpDraft18',
+          mdocGeneratedNonce: 'something',
+          verifierGeneratedNonce: 'something-else',
+          clientId: 'something',
+          responseUri: 'something',
+        },
+      })
+    ).rejects.toThrow("Set 'deviceKeyId' on the mdoc")
+
+    // A record stored before kmsKeyId existed still uses the legacy key id
+    const recordWithoutKmsKeyId = new MdocRecord({ credentialInstances: [{ issuerSignedBase64Url: mdoc.base64Url }] })
+    expect(recordWithoutKmsKeyId.firstCredential.deviceKeyId).toEqual(mdoc.deviceKey.legacyKeyId)
 
     mdoc.deviceKeyId = holderKey.keyId
     expect(mdoc.deviceKey.keyId).toEqual(holderKey.keyId)
+    expect(MdocRecord.fromMdoc(mdoc).credentialInstances[0].kmsKeyId).toEqual(holderKey.keyId)
   })
 
   test('can create and verify mdoc', async () => {

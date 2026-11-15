@@ -203,7 +203,7 @@ export class SdJwtVcService {
     { sdJwtVc, presentationFrame, verifierMetadata, additionalPayload }: SdJwtVcPresentOptions<Payload>
   ): Promise<string> {
     const sdjwt = new SDJwtVcInstance(this.getBaseSdJwtConfig(agentContext))
-    const compactSdJwtVc = typeof sdJwtVc === 'string' ? sdJwtVc : sdJwtVc.compact
+    const compactSdJwtVc = sdJwtVc.compact
     const sdJwtVcInstance = await sdjwt.decode(compactSdJwtVc)
 
     const holderBinding = parseHolderBindingFromCredential(sdJwtVcInstance.jwt?.payload)
@@ -211,12 +211,14 @@ export class SdJwtVcService {
       throw new SdJwtVcError("Verifier metadata provided, but credential has no 'cnf' claim to create a KB-JWT from")
     }
 
-    const holder = holderBinding
-      ? await extractKeyFromHolderBinding(agentContext, holderBinding, {
-          forSigning: true,
-          jwkKeyId: typeof sdJwtVc !== 'string' ? sdJwtVc.kmsKeyId : undefined,
-        })
-      : undefined
+    // Only a KB-JWT needs the holder key
+    const holder =
+      holderBinding && verifierMetadata
+        ? await extractKeyFromHolderBinding(agentContext, holderBinding, {
+            forSigning: true,
+            jwkKeyId: sdJwtVc.kmsKeyId,
+          })
+        : undefined
     if (holder) {
       holder.publicJwk.alg = holder.alg
     }

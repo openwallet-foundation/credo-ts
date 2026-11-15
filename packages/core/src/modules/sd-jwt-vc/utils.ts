@@ -30,6 +30,13 @@ export async function resolveDidUrl(
   }
 }
 
+/**
+ * The KMS key id of the holder key of a stored credential. Records stored before the key id was stored use the legacy key id.
+ */
+export function getStoredHolderKmsKeyId(holder: SdJwtVcHolderBinding | undefined, kmsKeyId: string | undefined) {
+  return kmsKeyId ?? (holder?.method === 'jwk' ? holder.jwk.legacyKeyId : undefined)
+}
+
 export async function extractKeyFromHolderBinding(
   agentContext: AgentContext,
   holder: SdJwtVcHolderBinding,
@@ -77,7 +84,13 @@ export async function extractKeyFromHolderBinding(
     const alg = publicJwk.supportedSignatureAlgorithms[0]
 
     if (forSigning) {
-      publicJwk.keyId = jwkKeyId ?? publicJwk.legacyKeyId
+      // The issuer chooses the cnf key, so only a key id the holder stored may select the key to sign with.
+      if (!jwkKeyId) {
+        throw new CredoError(
+          "Unable to create a key binding JWT. Set 'kmsKeyId' on the SD-JWT VC to the KMS key id of its holder key."
+        )
+      }
+      publicJwk.keyId = jwkKeyId
     }
 
     return {
