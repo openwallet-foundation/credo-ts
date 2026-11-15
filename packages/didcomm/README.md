@@ -19,10 +19,10 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@credo-ts/action-menu"
+    <a href="https://www.npmjs.com/package/@credo-ts/didcomm"
     ><img
-      alt="@credo-ts/action-menu version"
-      src="https://img.shields.io/npm/v/@credo-ts/action-menu"
+      alt="@credo-ts/didcomm version"
+      src="https://img.shields.io/npm/v/@credo-ts/didcomm"
   /></a>
 
 </p>

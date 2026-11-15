@@ -123,6 +123,11 @@ interface W3cV2VerifyCredentialOptionsBase<Credential = unknown> {
    * Trusted issuers for the verification, or a callback that resolves them for each credential.
    */
   trustedIssuers?: TrustedIssuerDid[] | GetTrustedIssuersForCredential
+
+  /**
+   * Date that should be used as the current time. If not provided, current time will be used.
+   */
+  now?: Date
 }
 
 export interface W3cV2JwtVerifyCredentialOptions
@@ -200,6 +205,11 @@ interface W3cV2VerifyPresentationOptionsBase<Presentation = unknown> {
    * Trusted issuers for the verification, or a callback that resolves them for each credential.
    */
   trustedIssuers?: TrustedIssuerDid[] | GetTrustedIssuersForCredential
+
+  /**
+   * Date that should be used as the current time. If not provided, current time will be used.
+   */
+  now?: Date
 }
 
 export interface W3cV2JwtVerifyPresentationOptions

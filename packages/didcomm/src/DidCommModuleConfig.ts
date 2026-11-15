@@ -76,6 +76,15 @@ export interface DidCommModuleConfigOptions {
   v2DefaultAnoncryptContentEncryption?: DidCommV2AnoncryptContentEncryptionAlgorithm
 
   /**
+   * Most recipients a DIDComm v1 encrypted message may have before it is rejected unread. Each recipient
+   * costs storage lookups before the sender is authenticated, and a message to one service rarely has
+   * more than one or two.
+   *
+   * @default 8
+   */
+  maxV1EnvelopeRecipients?: number
+
+  /**
    * Configuration for the connection module.
    *
    * The connection module is always enabled
@@ -297,5 +306,9 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
 
   public get maxInvitationBytes() {
     return this.options.maxInvitationBytes
+  }
+
+  public get maxV1EnvelopeRecipients(): number {
+    return this.options.maxV1EnvelopeRecipients ?? 8
   }
 }

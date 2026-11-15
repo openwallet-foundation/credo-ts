@@ -43,7 +43,12 @@ import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './mode
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import { DidCommConnectionRepository } from './modules/connections/repository'
 import { DidCommConnectionMetadataKeys } from './modules/connections/repository/DidCommConnectionMetadataTypes'
-import { findOwnKeyAgreementKey, toAbsoluteDidUrl, toKeyAgreement } from './modules/connections/services/helpers'
+import {
+  findOwnKeyAgreementKey,
+  toAbsoluteDidUrl,
+  toDidUrlOfDid,
+  toKeyAgreement,
+} from './modules/connections/services/helpers'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommOutOfBandRepository } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
@@ -377,6 +382,7 @@ export class DidCommMessageSender {
     if (!connection.did) {
       throw internalError(`Unable to send message using connection '${connection.id}' that doesn't have a did`)
     }
+    const connectionDid = connection.did
 
     const dids = agentContext.resolve(DidsApi)
     const { didDocument, keys } = await dids.resolveCreatedDidDocumentWithKeys(connection.did).catch((error) => {
@@ -428,23 +434,33 @@ export class DidCommMessageSender {
       : services
 
     // Per DIDComm v2 spec section 5.1.4, skid MUST point into the sender's keyAgreement (X25519).
-    const effectiveSenderKeySkid: string = (() => {
-      if (senderKeyAgreement) return senderKeyAgreement.didUrl
-      // Legacy fallback: find first keyAgreement VM (X25519 or P-256)
-      const kaVm = (didDocument.keyAgreement ?? [])
-        .map((ref) => (typeof ref === 'string' ? didDocument.dereferenceVerificationMethod(ref) : ref))
-        .find((vm) => {
-          try {
-            return getPublicJwkFromVerificationMethod(vm).is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)
-          } catch {
-            return false
-          }
-        })
-      if (!kaVm && useV2ForServiceOrder) {
-        throw internalError(`Unable to determine DIDComm v2 sender key for did ${connection.did}, no keyAgreement key`)
-      }
-      return toAbsoluteDidUrl(didDocument.id, kaVm?.id ?? senderVerificationMethod.verificationMethod.id)
-    })()
+    // The peer knows us by connection.did, and `from` follows the skid, so the skid uses that form of the DID.
+    const effectiveSenderKeySkid: string = toDidUrlOfDid(
+      (() => {
+        if (senderKeyAgreement) return senderKeyAgreement.didUrl
+        // Legacy fallback: find first keyAgreement VM (X25519 or P-256)
+        const kaVm = (didDocument.keyAgreement ?? [])
+          .map((ref) => (typeof ref === 'string' ? didDocument.dereferenceVerificationMethod(ref) : ref))
+          .find((vm) => {
+            try {
+              return getPublicJwkFromVerificationMethod(vm).is(
+                Kms.X25519PublicJwk,
+                Kms.P256PublicJwk,
+                Kms.P384PublicJwk
+              )
+            } catch {
+              return false
+            }
+          })
+        if (!kaVm && useV2ForServiceOrder) {
+          throw internalError(
+            `Unable to determine DIDComm v2 sender key for did ${connection.did}, no keyAgreement key`
+          )
+        }
+        return toAbsoluteDidUrl(didDocument.id, kaVm?.id ?? senderVerificationMethod.verificationMethod.id)
+      })(),
+      connectionDid
+    )
 
     // v1 authcrypt keeps the Ed25519 key because the receiver converts it to X25519 itself
     const senderKeysForService = (
@@ -455,7 +471,9 @@ export class DidCommMessageSender {
       }
       for (const recipientKey of service.recipientKeys) {
         const ownKey = findOwnKeyAgreementKey(didDocument, keys, toKeyAgreement(recipientKey))
-        if (ownKey) return { senderKey: ownKey.publicJwk as never, senderKeySkid: ownKey.didUrl }
+        if (ownKey) {
+          return { senderKey: ownKey.publicJwk as never, senderKeySkid: toDidUrlOfDid(ownKey.didUrl, connectionDid) }
+        }
       }
       throw new MessageSendingError(
         `Unable to send DIDComm v2 message to service ${service.id}, did ${connection.did} has no keyAgreement key on the curve of a service recipient key`,

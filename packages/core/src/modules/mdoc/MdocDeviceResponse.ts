@@ -36,6 +36,7 @@ import type {
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
 import {
   assertMdocStatusListChainsMatchIssuanceChain,
+  assertMdocStatusSignerKeyPurpose,
   convertMdocTrustedCertificates,
   mdocTrustedCertificatesToRaw,
   nameSpacesRecordToDeviceNamespaces,
@@ -340,6 +341,11 @@ export class MdocDeviceResponse {
       if (!trustedIssuanceChain) continue
 
       assertMdocStatusListChainsMatchIssuanceChain(trustedCertificates, {
+        trustedIssuanceChain,
+        trustedStatusListChain,
+        trustedIdentifierListChain,
+      })
+      assertMdocStatusSignerKeyPurpose(agentContext, {
         trustedIssuanceChain,
         trustedStatusListChain,
         trustedIdentifierListChain,

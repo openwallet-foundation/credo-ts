@@ -1,7 +1,6 @@
 import { Agent, recordToCursor, utils } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 import { DrizzleStorageModule } from '../src'
-import { actionMenuBundle } from '../src/action-menu/bundle'
 import { anoncredsBundle } from '../src/anoncreds/bundle'
 import { coreBundle } from '../src/core/bundle'
 import { didcommBundle } from '../src/didcomm/bundle'
@@ -27,7 +26,7 @@ describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type)
 
     const drizzleModule = new DrizzleStorageModule({
       database: postgresDatabase?.drizzle ?? (await inMemoryDrizzleSqliteDatabase()),
-      bundles: [coreBundle, didcommBundle, actionMenuBundle, anoncredsBundle],
+      bundles: [coreBundle, didcommBundle, anoncredsBundle],
     })
 
     agent = new Agent({

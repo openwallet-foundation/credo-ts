@@ -1,3 +1,4 @@
+import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
@@ -15,6 +16,13 @@ import { DidCommDiscoverFeaturesModuleConfig } from '../../../DidCommDiscoverFea
 import type { DiscoverFeaturesProtocolMsgReturnType } from '../../../DidCommDiscoverFeaturesServiceOptions'
 import { DidCommDiscoverFeaturesV2Service } from '../DidCommDiscoverFeaturesV2Service'
 import { DidCommFeaturesDisclosuresMessage, DidCommFeaturesQueriesMessage } from '../messages'
+
+// The key the envelope proved as the sender, which assertReadyConnection requires
+const testSenderKey = Kms.PublicJwk.fromPublicKey({
+  kty: 'OKP',
+  crv: 'Ed25519',
+  publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+}) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const featureRegistry = new DidCommFeatureRegistry()
@@ -169,6 +177,7 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
 
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
       const messageContext = new DidCommInboundMessageContext(queryMessage, {
+        senderKey: testSenderKey,
         agentContext: getAgentContext(),
         connection,
       })
@@ -221,6 +230,7 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
 
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
       const messageContext = new DidCommInboundMessageContext(discloseMessage, {
+        senderKey: testSenderKey,
         agentContext: getAgentContext(),
         connection,
       })
@@ -272,6 +282,7 @@ describe('V2DiscoverFeaturesService - auto accept disabled', () => {
 
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
       const messageContext = new DidCommInboundMessageContext(queryMessage, {
+        senderKey: testSenderKey,
         agentContext: getAgentContext(),
         connection,
       })

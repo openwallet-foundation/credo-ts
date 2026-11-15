@@ -45,7 +45,6 @@ import {
   DidCommCredentialRole,
   DidCommCredentialState,
   DidCommDataIntegrityCredentialFormatService,
-  DidCommDataIntegrityLinkSecretBindingProviderToken,
   DidCommProofExchangeRecord,
   DidCommProofRole,
   DidCommProofState,
@@ -97,7 +96,6 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
-    [DidCommDataIntegrityLinkSecretBindingProviderToken, new AnonCredsLinkSecretBindingProvider()],
     [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
@@ -112,7 +110,9 @@ const agentContext = getAgentContext({
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
 
-const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService()
+const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService({
+  linkSecretBinding: new AnonCredsLinkSecretBindingProvider(),
+})
 const anoncredsProofFormatService = new AnonCredsDidCommProofFormatService()
 
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'

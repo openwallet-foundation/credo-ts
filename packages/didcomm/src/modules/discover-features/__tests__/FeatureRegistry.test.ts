@@ -1,8 +1,17 @@
 import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
-import { DidCommFeature, DidCommGoalCode, DidCommProtocol } from '../../../models'
+import { DidCommFeature, DidCommGoalCode, DidCommHeader, DidCommProtocol } from '../../../models'
 
 describe('Feature Registry', () => {
+  test('register headers', () => {
+    const featureRegistry = new DidCommFeatureRegistry()
+
+    featureRegistry.register(new DidCommHeader({ id: 'return_route' }), new DidCommHeader({ id: 'from_prior' }))
+    const found = featureRegistry.query({ featureType: DidCommHeader.type, match: 'return_route' })
+
+    expect(found.map((t) => t.toJSON())).toStrictEqual([{ id: 'return_route', 'feature-type': 'header' }])
+  })
+
   test('register goal codes', () => {
     const featureRegistry = new DidCommFeatureRegistry()
 

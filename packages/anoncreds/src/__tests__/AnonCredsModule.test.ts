@@ -1,12 +1,10 @@
 import type { DependencyManager } from '@credo-ts/core'
 import { AnonCredsW3cCredentialServiceSymbol } from '@credo-ts/core'
-import { DidCommDataIntegrityLinkSecretBindingProviderToken } from '@credo-ts/didcomm'
 import { NativeAnoncreds } from '../../tests/helpers'
 import { AnonCredsModule } from '../AnonCredsModule'
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../anoncreds-rs'
 import { AnonCredsW3cCredentialService } from '../anoncreds-rs/AnonCredsW3cCredentialService'
-import { AnonCredsLinkSecretBindingProvider } from '../formats/AnonCredsLinkSecretBindingProvider'
 import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsCredentialDefinitionRepository,
@@ -35,7 +33,7 @@ describe('AnonCredsModule', () => {
     })
     anonCredsModule.register(dependencyManager)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(13)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(12)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsRegistryService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsSchemaRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsCredentialDefinitionRepository)
@@ -63,16 +61,6 @@ describe('AnonCredsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
       AnonCredsW3cCredentialServiceSymbol,
       AnonCredsW3cCredentialService
-    )
-
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
-      DidCommDataIntegrityLinkSecretBindingProviderToken,
-      AnonCredsLinkSecretBindingProvider
-    )
-
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
-      DidCommDataIntegrityLinkSecretBindingProviderToken,
-      AnonCredsLinkSecretBindingProvider
     )
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
