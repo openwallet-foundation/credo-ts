@@ -27,7 +27,7 @@ export interface MdocStoreOptions {
 }
 
 export type MdocVerifyOptions = {
-  trustedCertificates?: EncodedX509Certificate[] | Array<X509VerificationTrustedCertificates>
+  trustedCertificates?: Array<EncodedX509Certificate | X509Certificate> | Array<X509VerificationTrustedCertificates>
   now?: Date
 }
 
@@ -114,7 +114,7 @@ export type MdocDeviceResponseDcqlQueryOptions = {
 }
 
 export type MdocDeviceResponseVerifyOptions = {
-  trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
+  trustedCertificates?: Array<EncodedX509Certificate | X509Certificate> | X509VerificationTrustedCertificates[]
   sessionTranscriptOptions: MdocSessionTranscriptOptions
   /**
    * The base64Url-encoded device response string.
@@ -404,7 +404,7 @@ export type MdocDcApiVerifyResponseOptions = {
    */
   origin: string
 
-  trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
+  trustedCertificates?: Array<EncodedX509Certificate | X509Certificate> | X509VerificationTrustedCertificates[]
   now?: Date
 }
 

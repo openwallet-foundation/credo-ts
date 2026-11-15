@@ -5,6 +5,7 @@ import type {
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeDefinition,
   EncodedX509Certificate,
+  X509Certificate,
 } from '@credo-ts/core'
 import type { Openid4vpAuthorizationRequestError, ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
@@ -13,7 +14,7 @@ import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
 export type ParsedTransactionDataEntry = NonNullable<ResolvedOpenid4vpAuthorizationRequest['transactionData']>[number]
 
 export interface ResolveOpenId4VpAuthorizationRequestOptions {
-  trustedCertificates?: EncodedX509Certificate[]
+  trustedCertificates?: Array<EncodedX509Certificate | X509Certificate>
   origin?: string
 }
 

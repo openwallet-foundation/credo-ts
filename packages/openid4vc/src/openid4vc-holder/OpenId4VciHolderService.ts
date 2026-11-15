@@ -7,6 +7,7 @@ import {
   injectable,
   Kms,
   type Logger,
+  LogLevel,
   Mdoc,
   MdocApi,
   MdocRecord,
@@ -668,17 +669,20 @@ export class OpenId4VciHolderService {
             jwkThumbprintKmsKeyIdMapping,
           })
 
-          const firstCredential = credential.record.firstCredential
-          this.logger.debug('received credential response', {
-            firstCredential:
-              firstCredential instanceof Mdoc
-                ? {
-                    issuerSignedNamespaces: firstCredential.issuerSignedNamespaces,
-                    base64Url: firstCredential.base64Url,
-                  }
-                : firstCredential,
-            totalNumberOfCredentials: credential.record.credentialInstances.length,
-          })
+          // Decoding the credential is only needed for the log
+          if (this.logger.logLevel <= LogLevel.Debug) {
+            const firstCredential = credential.record.firstCredential
+            this.logger.debug('received credential response', {
+              firstCredential:
+                firstCredential instanceof Mdoc
+                  ? {
+                      issuerSignedNamespaces: firstCredential.issuerSignedNamespaces,
+                      base64Url: firstCredential.base64Url,
+                    }
+                  : firstCredential,
+              totalNumberOfCredentials: credential.record.credentialInstances.length,
+            })
+          }
           receivedCredentials.push(credential)
         }
       }
@@ -788,17 +792,20 @@ export class OpenId4VciHolderService {
           jwkThumbprintKmsKeyIdMapping,
         })
 
-        const firstCredential = credential.record.firstCredential
-        this.logger.debug('received credential response', {
-          firstCredential:
-            firstCredential instanceof Mdoc
-              ? {
-                  issuerSignedNamespaces: firstCredential.issuerSignedNamespaces,
-                  base64Url: firstCredential.base64Url,
-                }
-              : firstCredential,
-          totalNumberOfCredentials: credential.record.credentialInstances.length,
-        })
+        // Decoding the credential is only needed for the log
+        if (this.logger.logLevel <= LogLevel.Debug) {
+          const firstCredential = credential.record.firstCredential
+          this.logger.debug('received credential response', {
+            firstCredential:
+              firstCredential instanceof Mdoc
+                ? {
+                    issuerSignedNamespaces: firstCredential.issuerSignedNamespaces,
+                    base64Url: firstCredential.base64Url,
+                  }
+                : firstCredential,
+            totalNumberOfCredentials: credential.record.credentialInstances.length,
+          })
+        }
         receivedCredentials.push(credential)
       }
     } finally {
@@ -1306,14 +1313,12 @@ export class OpenId4VciHolderService {
           )}`
         )
       }
-      // FIXME: we need to link the credential bound key back to the credential request
-      // so we can store the correct `kmsKeyId` along with the SD-JWT VC for presentations
       if (format === OpenId4VciCredentialFormatProfile.SdJwtDc || credentialConfiguration.vct) {
         const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
         const verificationResults = await Promise.all(
           credentials.map(async (compactSdJwtVc, index) => {
             const result = await sdJwtVcApi.verify({
-              compactSdJwtVc,
+              sdJwtVc: compactSdJwtVc,
               // Only load and verify it for the first instance
               fetchTypeMetadata: index === 0,
             })
@@ -1512,10 +1517,10 @@ export class OpenId4VciHolderService {
             )
           }
 
-          mdoc.deviceKeyId = kmsKeyId
           return {
             result,
-            mdoc,
+            issuerSignedBase64Url: credential,
+            kmsKeyId,
           }
         })
       )
@@ -1532,9 +1537,9 @@ export class OpenId4VciHolderService {
 
       return {
         record: new MdocRecord({
-          credentialInstances: result.map((c) => ({
-            issuerSignedBase64Url: c.mdoc.base64Url,
-            kmsKeyId: c.mdoc.deviceKeyId,
+          credentialInstances: result.map(({ issuerSignedBase64Url, kmsKeyId }) => ({
+            issuerSignedBase64Url,
+            kmsKeyId,
           })) as MdocRecordInstances,
         }),
         notificationId,
@@ -1697,9 +1702,9 @@ export class OpenId4VciHolderService {
     agentContext: AgentContext,
     encryption: CredentialResponseEncryptionKey
   ): Promise<CredentialResponseEncryption> {
-    const publicJwk = await agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId: encryption.keyId })
+    const { publicKey } = await agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId: encryption.keyId })
     return {
-      jwk: { ...publicJwk, kid: encryption.keyId, alg: 'ECDH-ES', use: 'enc' },
+      jwk: { ...publicKey, kid: encryption.keyId, alg: 'ECDH-ES', use: 'enc' },
       enc: encryption.enc,
     }
   }

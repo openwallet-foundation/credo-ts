@@ -127,34 +127,11 @@ See [Supported Features](https://credo.js.org/guides/features) on the Credo webs
       </a>
     </td>
   </tr>
-   <tr>
-    <td>@credo-ts/action-menu</td>
-    <td>
-      <a href="https://npmjs.com/package/@credo-ts/action-menu">
-        <img alt="@credo-ts/action-menu version" src="https://img.shields.io/npm/v/@credo-ts/action-menu"/>
-      </a>
-    </td>
-  </tr>
-    <td>@credo-ts/question-answer</td>
-    <td>
-      <a href="https://npmjs.com/package/@credo-ts/question-answer">
-        <img alt="@credo-ts/question-answer version" src="https://img.shields.io/npm/v/@credo-ts/question-answer"/>
-      </a>
-    </td>
-  </tr>
   <tr>
     <td>@credo-ts/tenants</td>
     <td>
       <a href="https://npmjs.com/package/@credo-ts/tenants">
         <img alt="@credo-ts/tenants version" src="https://img.shields.io/npm/v/@credo-ts/tenants"/>
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td>@credo-ts/drpc</td>
-    <td>
-      <a href="https://npmjs.com/package/@credo-ts/drpc">
-        <img alt="@credo-ts/drpc version" src="https://img.shields.io/npm/v/@credo-ts/drpc"/>
       </a>
     </td>
   </tr>

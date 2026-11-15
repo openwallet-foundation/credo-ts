@@ -11,6 +11,7 @@ import {
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
+import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { getResolvedDidcommServiceWithSigningKeyId, toX25519 } from './modules/connections/services/helpers'
 import { DidCommOutOfBandRole } from './modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandRepository } from './modules/oob/repository/DidCommOutOfBandRepository'
@@ -171,11 +172,22 @@ export class DidCommEnvelopeService {
       encrypted_key: string
     } | null = null
 
+    // The sender is not authenticated yet and each recipient costs storage lookups, so the sender must not choose how many we do
+    const recipientCount = Array.isArray(protectedJson.recipients) ? protectedJson.recipients.length : 0
+    if (recipientCount === 0) {
+      throw new CredoError('DIDComm v1 message has no recipients')
+    }
+    const maxRecipients = agentContext.dependencyManager.resolve(DidCommModuleConfig).maxV1EnvelopeRecipients
+    if (recipientCount > maxRecipients) {
+      throw new CredoError(`DIDComm v1 message has ${recipientCount} recipients, the maximum is ${maxRecipients}`)
+    }
+
     for (const _recipient of protectedJson.recipients) {
       recipientKey = await this.extractOurRecipientKeyWithKeyId(agentContext, _recipient)
 
       if (recipientKey) {
         recipient = _recipient
+        break
       }
     }
 
