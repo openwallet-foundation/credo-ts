@@ -37,7 +37,12 @@ import {
 import { Ed25519Signature2018, Ed25519Signature2020 } from '../../vc/linked-data-proofs/signature-suites'
 import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
 import { DifPresentationExchangeService } from '../DifPresentationExchangeService'
-import { type DifPresentationExchangeDefinitionV2, DifPresentationExchangeSubmissionLocation } from '../models'
+import {
+  type DifPresentationExchangeDefinitionV2,
+  type DifPresentationExchangeSubmission,
+  DifPresentationExchangeSubmissionLocation,
+} from '../models'
+import { extractPresentationsWithDescriptorsFromSubmission } from '../utils'
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -1162,6 +1167,95 @@ describe('DifPresentationExchangeService', () => {
 
     expect(getProofTypeForLdpVc).toThrow(DifPresentationExchangeError)
     expect(getProofTypeForLdpVc).toThrow("No signature suite supports the verification method type 'Multikey'")
+  })
+
+  describe('ldp_vp with an external submission', () => {
+    const definition: DifPresentationExchangeDefinitionV2 = {
+      id: 'degree-definition',
+      input_descriptors: [
+        {
+          id: 'phd',
+          constraints: {
+            fields: [{ path: ['$.credentialSubject.degree.type'], filter: { type: 'string', const: 'PhDDegree' } }],
+          },
+        },
+      ],
+    }
+
+    // Proofs differ per credential, because pex matches an extracted credential to the presentation by its proof
+    const degreeCredential = (degreeType: string, name: string, proofValue: string) => ({
+      '@context': ['https://www.w3.org/2018/credentials/v1'],
+      type: ['VerifiableCredential'],
+      issuer: 'did:example:issuer',
+      issuanceDate: '2025-01-01T00:00:00Z',
+      credentialSubject: { id: 'did:example:holder', name, degree: { type: degreeType } },
+      proof: {
+        type: 'Ed25519Signature2018',
+        created: '2025-01-01T00:00:00Z',
+        proofPurpose: 'assertionMethod',
+        verificationMethod: 'did:example:issuer#key-1',
+        jws: proofValue,
+      },
+    })
+    const phd = degreeCredential('PhDDegree', 'Alice', 'phd-proof')
+    const bsc = degreeCredential('BachelorDegree', 'Alice', 'bsc-proof')
+
+    const presentation = (verifiableCredential: unknown[], extra: Record<string, unknown> = {}) =>
+      JsonTransformer.fromJSON(
+        {
+          '@context': ['https://www.w3.org/2018/credentials/v1'],
+          type: ['VerifiablePresentation'],
+          holder: 'did:example:holder',
+          verifiableCredential,
+          proof: {
+            type: 'Ed25519Signature2018',
+            created: '2025-01-01T00:00:00Z',
+            proofPurpose: 'authentication',
+            verificationMethod: 'did:example:holder#key-1',
+            challenge: 'challenge',
+            jws: 'vp-proof',
+          },
+          ...extra,
+        },
+        W3cJsonLdVerifiablePresentation
+      )
+
+    const submission = (
+      descriptor: Pick<DifPresentationExchangeSubmission['descriptor_map'][number], 'path' | 'path_nested' | 'format'>
+    ): DifPresentationExchangeSubmission => ({
+      id: 'submission',
+      definition_id: definition.id,
+      descriptor_map: [{ id: 'phd', ...descriptor }],
+    })
+    const nestedAt = (path: string) =>
+      submission({ format: 'ldp_vp', path: '$', path_nested: { id: 'phd', format: 'ldp_vc', path } })
+
+    test.each([
+      ['in path_nested', nestedAt('$.fakeCred')],
+      ['in path', submission({ format: 'dc+sd-jwt', path: '$.fakeCred' })],
+    ])('rejects a credential outside verifiableCredential %s', (_, presentationSubmission) => {
+      const fakeCred = degreeCredential('PhDDegree', 'Mallory', 'fake-proof')
+      const { proof: _proof, ...fakeCredWithoutProof } = fakeCred
+
+      for (const fake of [fakeCred, fakeCredWithoutProof, { ...fakeCred, proof: phd.proof }]) {
+        const vp = presentation([phd], { fakeCred: fake })
+        expect(() => extractPresentationsWithDescriptorsFromSubmission(vp, presentationSubmission, definition)).toThrow(
+          'Unable to extract'
+        )
+      }
+    })
+
+    test('evaluates the credential that path_nested points at', () => {
+      expect(() =>
+        pexService.validatePresentation(definition, presentation([phd, bsc]), nestedAt('$.verifiableCredential[1]'))
+      ).toThrow(DifPresentationExchangeError)
+
+      const vp = presentation([bsc, phd])
+      const presentationSubmission = nestedAt('$.verifiableCredential[1]')
+      pexService.validatePresentation(definition, vp, presentationSubmission)
+      const [descriptor] = extractPresentationsWithDescriptorsFromSubmission(vp, presentationSubmission, definition)
+      expect(descriptor.credential).toBe((vp.verifiableCredential as unknown[])[1])
+    })
   })
 
   describe('createPresentation for ldp_vc with an Ed25519VerificationKey2020 holder method', () => {

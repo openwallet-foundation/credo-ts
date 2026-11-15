@@ -1,9 +1,9 @@
 import { JSONPath } from '@astronautlabs/jsonpath'
 import { CredoError } from '../../../error'
 import type { SingleOrArray } from '../../../types'
+import { asArray } from '../../../utils/array'
 import { MdocDeviceResponse } from '../../mdoc'
 import type { SdJwtVc } from '../../sd-jwt-vc'
-import type { W3cJsonLdVerifiableCredential, W3cJwtVerifiableCredential } from '../../vc'
 import {
   ClaimFormat,
   W3cJsonLdVerifiablePresentation,
@@ -30,7 +30,8 @@ export function extractPresentationsWithDescriptorsFromSubmission(
     const [presentation] = JSONPath.query(presentations, descriptor.path) as [VerifiablePresentation | undefined]
     const inputDescriptor = definition.input_descriptors.find(({ id }) => id === descriptor.id)
 
-    if (!presentation) {
+    // The submission comes from the holder, so the path must resolve to one of the presentations, not an object inside one
+    if (!presentation || !asArray(presentations).includes(presentation)) {
       throw new CredoError(
         `Unable to extract presentation at path '${descriptor.path}' for submission descriptor '${descriptor.id}'`
       )
@@ -68,11 +69,14 @@ export function extractPresentationsWithDescriptorsFromSubmission(
         )
       }
 
-      const [verifiableCredential] = JSONPath.query(
-        // Path is `$.vp.verifiableCredential[]` in case of jwt vp
-        presentation.claimFormat === ClaimFormat.JwtVp ? { vp: presentation } : presentation,
-        descriptor.path_nested.path
-      ) as [W3cJwtVerifiableCredential | W3cJsonLdVerifiableCredential | undefined]
+      // Only a direct index into the credentials of the presentation, so the credential is one the presentation contains
+      const nestedPathRegex =
+        presentation.claimFormat === ClaimFormat.JwtVp
+          ? /^\$\.vp\.verifiableCredential\[(\d+)\]$/
+          : /^\$\.verifiableCredential\[(\d+)\]$/
+      const credentialIndex = descriptor.path_nested.path.match(nestedPathRegex)?.[1]
+      const verifiableCredential =
+        credentialIndex !== undefined ? asArray(presentation.verifiableCredential)[Number(credentialIndex)] : undefined
 
       if (!verifiableCredential) {
         throw new CredoError(
