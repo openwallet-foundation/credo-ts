@@ -18,6 +18,7 @@ export * from './error'
 export * from './models'
 export * from './repository'
 export * from './services'
+export type { AnonCredsMigrationProvider } from './updates/AnonCredsMigrationProvider'
 export { type AnonCredsCredentialMetadata, type AnonCredsCredentialValue, dateToTimestamp } from './utils'
 export {
   fetchCredentialDefinition,

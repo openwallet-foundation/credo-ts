@@ -89,6 +89,7 @@ export function parseW3cDataIntegrityProofDocument(
         expectedProofPurpose: options.expectedProofPurpose,
         domain: options.domain,
         challenge: options.challenge,
+        now: options.now,
       },
     },
   }

@@ -31,17 +31,13 @@ export class CachedStorageService<T extends BaseRecord<any, any, any>> implement
 
   public async update(agentContext: AgentContext, record: T): Promise<void> {
     await this.storageService.update(agentContext, record)
-
-    if (record.allowCache) {
-      await this.cache(agentContext).set(agentContext, this.getCacheKey(record), record.toJSON())
-    }
+    // Removed rather than set, as a set that arrives late or out of order can put an older version back.
+    if (record.allowCache) await this.cache(agentContext).remove(agentContext, this.getCacheKey(record))
   }
 
   public async delete(agentContext: AgentContext, record: T): Promise<void> {
-    if (record.allowCache) {
-      await this.cache(agentContext).remove(agentContext, this.getCacheKey(record))
-    }
-    return await this.storageService.delete(agentContext, record)
+    await this.storageService.delete(agentContext, record)
+    if (record.allowCache) await this.cache(agentContext).remove(agentContext, this.getCacheKey(record))
   }
 
   public async deleteById(
@@ -49,10 +45,10 @@ export class CachedStorageService<T extends BaseRecord<any, any, any>> implement
     recordClass: BaseRecordConstructor<T>,
     id: string
   ): Promise<void> {
+    await this.storageService.deleteById(agentContext, recordClass, id)
     if (recordClass.allowCache) {
-      await this.cache(agentContext).remove(agentContext, this.getCacheKey({ ...recordClass, id }))
+      await this.cache(agentContext).remove(agentContext, this.getCacheKey({ type: recordClass.type, id }))
     }
-    return await this.storageService.deleteById(agentContext, recordClass, id)
   }
 
   public async getById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {

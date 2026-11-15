@@ -626,7 +626,11 @@ export class OpenId4VcIssuerService {
 
   public async createCredentialResponse(
     agentContext: AgentContext,
-    options: OpenId4VciCreateCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
+    options: OpenId4VciCreateCredentialResponseOptions & {
+      issuanceSession: OpenId4VcIssuanceSessionRecord
+      /** The issuer of the session, when the caller already has it. */
+      issuer?: OpenId4VcIssuerRecord
+    }
   ): Promise<{
     issuanceSession: OpenId4VcIssuanceSessionRecord
     credentialResponse: CredentialResponse
@@ -641,7 +645,7 @@ export class OpenId4VcIssuerService {
       OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
     ])
     const { issuanceSession } = options
-    const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
+    const issuer = await this.getIssuerForIssuanceSession(agentContext, issuanceSession, options.issuer)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
@@ -829,7 +833,11 @@ export class OpenId4VcIssuerService {
 
   public async createDeferredCredentialResponse(
     agentContext: AgentContext,
-    options: OpenId4VciCreateDeferredCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
+    options: OpenId4VciCreateDeferredCredentialResponseOptions & {
+      issuanceSession: OpenId4VcIssuanceSessionRecord
+      /** The issuer of the session, when the caller already has it. */
+      issuer?: OpenId4VcIssuerRecord
+    }
   ): Promise<{
     issuanceSession: OpenId4VcIssuanceSessionRecord
     deferredCredentialResponse: DeferredCredentialResponse
@@ -853,7 +861,7 @@ export class OpenId4VcIssuerService {
       })
     }
 
-    const issuer = await this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
+    const issuer = await this.getIssuerForIssuanceSession(agentContext, issuanceSession, options.issuer)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
 
     // Optimization: if the deferral interval hasn't passed yet, we immediately
@@ -1294,18 +1302,6 @@ export class OpenId4VcIssuerService {
           })
         }
 
-        // Set previous nonce if not yet set (first iteration)
-        if (!firstNonce) firstNonce = payload.nonce
-        if (firstNonce !== payload.nonce) {
-          const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
-          throw new Oauth2ServerErrorResponseError({
-            error: Oauth2ErrorCodes.InvalidProof,
-            error_description: 'Not all nonce values in proofs are equal',
-            c_nonce: cNonce,
-            c_nonce_expires_in: cNonceExpiresInSeconds,
-          })
-        }
-
         // IF nonce is provided in the key attestation (not required with jwt proof) then
         // it MUST match with the nonce of the JWT proof
         if (keyAttestation?.payload.nonce && keyAttestation.payload.nonce !== payload.nonce) {
@@ -1316,21 +1312,32 @@ export class OpenId4VcIssuerService {
           })
         }
 
-        // Verify the nonce
-        await this.verifyNonce(agentContext, issuer, payload.nonce).catch(async (error) => {
+        // The first nonce is verified, the nonces of the other proofs must be equal to it
+        if (!firstNonce) {
+          await this.verifyNonce(agentContext, issuer, payload.nonce).catch(async (error) => {
+            const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
+            throw new Oauth2ServerErrorResponseError(
+              {
+                error: Oauth2ErrorCodes.InvalidNonce,
+                error_description: 'Invalid nonce in credential request',
+                c_nonce: cNonce,
+                c_nonce_expires_in: cNonceExpiresInSeconds,
+              },
+              {
+                cause: error,
+              }
+            )
+          })
+          firstNonce = payload.nonce
+        } else if (firstNonce !== payload.nonce) {
           const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
-          throw new Oauth2ServerErrorResponseError(
-            {
-              error: Oauth2ErrorCodes.InvalidNonce,
-              error_description: 'Invalid nonce in credential request',
-              c_nonce: cNonce,
-              c_nonce_expires_in: cNonceExpiresInSeconds,
-            },
-            {
-              cause: error,
-            }
-          )
-        })
+          throw new Oauth2ServerErrorResponseError({
+            error: Oauth2ErrorCodes.InvalidProof,
+            error_description: 'Not all nonce values in proofs are equal',
+            c_nonce: cNonce,
+            c_nonce_expires_in: cNonceExpiresInSeconds,
+          })
+        }
 
         if (keyAttestation) {
           return {
@@ -1420,6 +1427,23 @@ export class OpenId4VcIssuerService {
 
   public async getIssuerByIssuerId(agentContext: AgentContext, issuerId: string) {
     return this.openId4VcIssuerRepository.getByIssuerId(agentContext, issuerId)
+  }
+
+  private async getIssuerForIssuanceSession(
+    agentContext: AgentContext,
+    issuanceSession: OpenId4VcIssuanceSessionRecord,
+    issuer?: OpenId4VcIssuerRecord
+  ) {
+    if (!issuer) return this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
+
+    // The issuer's metadata and keys are used to sign, so it must be the issuer of the session.
+    if (issuer.issuerId !== issuanceSession.issuerId) {
+      throw new CredoError(
+        `Issuer '${issuer.issuerId}' is not the issuer '${issuanceSession.issuerId}' of issuance session '${issuanceSession.id}'.`
+      )
+    }
+
+    return issuer
   }
 
   public async updateIssuer(

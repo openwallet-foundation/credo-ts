@@ -1,9 +1,10 @@
 import { utils } from '@credo-ts/core'
 import type {
+  AnonCredsNonRevokedInterval,
   AnonCredsPresentationPreviewAttribute,
   AnonCredsPresentationPreviewPredicate,
-} from '../formats/AnonCredsDidCommProofFormat'
-import type { AnonCredsNonRevokedInterval, AnonCredsProofRequest } from '../models'
+  AnonCredsProofRequest,
+} from '../models'
 
 export function createRequestFromPreview({
   name,

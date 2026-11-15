@@ -111,7 +111,7 @@ describe('TokenStatusListService', () => {
     test('throws error when key has no algorithm', async () => {
       // Create a mock key without alg
       const keyWithoutAlg = { ...key.toJson(), alg: undefined }
-      vi.spyOn(kms, 'getPublicKey').mockResolvedValueOnce(keyWithoutAlg)
+      vi.spyOn(kms, 'getPublicKey').mockResolvedValueOnce({ publicKey: keyWithoutAlg, backend: 'node' })
 
       const options = {
         format: 'cwt',

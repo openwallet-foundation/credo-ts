@@ -10,8 +10,6 @@ import {
   WebDidResolver,
 } from './methods'
 
-const DEFAULT_PUBLIC_DID_METHODS = ['web', 'indy', 'cheqd', 'hedera', 'webvh']
-
 /**
  * DidsModuleConfigOptions defines the interface for the options of the DidsModuleConfig class.
  * This can contain optional parameters that have default values in the config class itself.
@@ -42,14 +40,10 @@ export interface DidsModuleConfigOptions {
   resolvers?: DidResolver[]
 
   /**
-   * Did methods whose documents live in public, context-independent sources: resolving them
-   * yields the same result in any agent context, so their documents can be cached in the global
-   * scope shared across all agent contexts (when the resolver allows caching). Documents of
-   * other did methods are cached per agent context.
-   *
-   * @default ['web', 'indy', 'cheqd', 'hedera', 'webvh']
+   * Per-method cache scope overrides for cache-enabled resolvers. Unspecified methods use global
+   * scope, shared across agent contexts. Use context scope for tenant-dependent resolution.
    */
-  publicDidMethods?: string[]
+  cacheScope?: Partial<Record<string, 'global' | 'context'>>
 }
 
 export class DidsModuleConfig {
@@ -120,8 +114,13 @@ export class DidsModuleConfig {
     this.resolvers.push(resolver)
   }
 
-  /** See {@link DidsModuleConfigOptions.publicDidMethods} */
-  public get publicDidMethods(): string[] {
-    return this.options.publicDidMethods ?? DEFAULT_PUBLIC_DID_METHODS
+  /** See {@link DidsModuleConfigOptions.cacheScope} */
+  public get cacheScope() {
+    return this.options.cacheScope ?? {}
+  }
+
+  public getCacheScope(method: string): 'global' | 'context' {
+    const overrides = this.cacheScope
+    return Object.hasOwn(overrides, method) ? (overrides[method] ?? 'global') : 'global'
   }
 }
