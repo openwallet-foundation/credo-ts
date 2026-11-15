@@ -56,9 +56,9 @@ export class Mdoc {
    * Get the device key to which the mdoc is bound
    */
   public get deviceKey(): PublicJwk {
-    const publicJwk = PublicJwk.fromUnknown(
-      this.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.deviceKey.jwk
-    )
+    // The issuer chooses the COSE `kid`, so it must not select the key we sign with.
+    const { kid: _kid, ...deviceKeyJwk } = this.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.deviceKey.jwk
+    const publicJwk = PublicJwk.fromUnknown(deviceKeyJwk)
 
     if (this.#deviceKeyId) publicJwk.keyId = this.#deviceKeyId
     return publicJwk
@@ -69,10 +69,7 @@ export class Mdoc {
   }
 
   public get deviceKeyId() {
-    const deviceKey = this.deviceKey
-
-    if (deviceKey.hasKeyId) return deviceKey.keyId
-    return undefined
+    return this.#deviceKeyId
   }
 
   public static fromBase64Url(mdocBase64Url: string): Mdoc {

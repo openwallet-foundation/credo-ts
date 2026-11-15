@@ -259,6 +259,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
 
       return {
         signature: new Uint8Array(signature),
+        publicJwk: Kms.publicJwkFromPrivateJwk(key),
       }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error

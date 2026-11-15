@@ -651,6 +651,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
           data: payload,
           algorithm: publicJwk.signatureAlgorithm,
           keyId: kmsKeyId,
+          expectedPublicJwk: publicJwk.toJson(),
         })
 
         // EC signatures need to be sent as DER encoded for Cheqd

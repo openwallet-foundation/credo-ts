@@ -11,6 +11,7 @@ import type { X509CertificateExtensionsOptions } from '../../x509/X509ServiceOpt
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
 import { assertMdocStatusSignerKeyPurpose } from '../mdocUtil'
+import { MdocRecord } from '../repository'
 import { sprindFunkeTestVectorBase64Url, sprindFunkeX509TrustedCertificate } from './mdoc.fixtures'
 
 const agentConfig = getAgentConfig('mdoc')
@@ -79,6 +80,26 @@ describe('mdoc service test', () => {
     const deviceKey = mdoc.deviceKey
     expect(deviceKey?.is(P256PublicJwk)).toBe(true)
     expect(deviceKey?.fingerprint).toBe('zDnaeq8nbXthvXNTYAzxdyvdWXgm5ev5xLEUtjZpfj1YtQ5g2')
+  })
+
+  test('ignores the kid of the device key in the mso', async () => {
+    const otherKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const signedMdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk({ ...holderKey.publicJwk, kid: otherKey.keyId }),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+    })
+
+    const mdoc = Mdoc.fromBase64Url(signedMdoc.base64Url)
+    expect(mdoc.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.deviceKey.jwk.kid).toEqual(otherKey.keyId)
+    expect(mdoc.deviceKeyId).toBeUndefined()
+    expect(mdoc.deviceKey.hasKeyId).toBe(false)
+    expect(MdocRecord.fromMdoc(mdoc).firstCredential.deviceKeyId).toEqual(mdoc.deviceKey.legacyKeyId)
+
+    mdoc.deviceKeyId = holderKey.keyId
+    expect(mdoc.deviceKey.keyId).toEqual(holderKey.keyId)
   })
 
   test('can create and verify mdoc', async () => {
@@ -254,6 +275,7 @@ describe('mdoc service test', () => {
       },
       issuerCertificate: certificate,
     })
+    mdoc.deviceKeyId = holderKey.keyId
 
     expect(mdoc.alg).toBe('ES256')
     expect(mdoc.docType).toBe('org.iso.18013.5.1.mDL')

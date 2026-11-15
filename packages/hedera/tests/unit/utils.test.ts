@@ -40,6 +40,7 @@ describe('createOrGetKey', () => {
     kmsMock.createKey.mockResolvedValue({
       keyId,
       publicJwk,
+      backend: 'node',
     })
 
     const result = await createOrGetKey(kmsMock, undefined)
@@ -56,7 +57,7 @@ describe('createOrGetKey', () => {
     const result = await createOrGetKey(kmsMock, keyId)
 
     expect(kmsMock.getPublicKey).toHaveBeenCalledWith({ keyId })
-    expect(result).toEqual(Kms.PublicJwk.fromPublicJwk(publicJwk))
+    expect(result).toEqual(Kms.PublicJwk.fromPublicJwk({ ...publicJwk, kid: keyId }))
   })
 
   it('should throw an error if key with given keyId is not found', async () => {

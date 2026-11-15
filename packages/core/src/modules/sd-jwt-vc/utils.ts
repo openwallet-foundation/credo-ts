@@ -142,6 +142,7 @@ export function getSdJwtSigner(agentContext: AgentContext, key: PublicJwk): Sign
   return async (input: string) => {
     const result = await kms.sign({
       keyId: key.keyId,
+      expectedPublicJwk: key.toJson(),
       data: TypedArrayEncoder.fromUtf8String(input),
       algorithm: key.signatureAlgorithm,
     })

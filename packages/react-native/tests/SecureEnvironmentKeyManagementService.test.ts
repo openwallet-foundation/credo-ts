@@ -50,7 +50,13 @@ describe('SecureEnvironmentKeyManagementService', () => {
   })
 
   const sign = (keyId: string) =>
-    kms.sign({ keyId, algorithm: 'ES256', data: new Uint8Array([0]), backend: 'secureEnvironment' })
+    kms.sign({
+      keyId,
+      algorithm: 'ES256',
+      data: new Uint8Array([0]),
+      backend: 'secureEnvironment',
+      expectedPublicJwk: null,
+    })
 
   test('creates a key with the backend options of the secure environment', async () => {
     const backendOptions = {
@@ -125,10 +131,13 @@ describe('SecureEnvironmentKeyManagementService', () => {
       )
 
       expect(secureEnvironment.withUserAuthentication).toHaveBeenCalledWith(expect.any(Function), options)
-      expect(signatures).toEqual([{ signature: new Uint8Array([2]) }, { signature: new Uint8Array([2]) }])
+      expect(signatures).toEqual([
+        { signature: new Uint8Array([2]), backend: 'secureEnvironment' },
+        { signature: new Uint8Array([2]), backend: 'secureEnvironment' },
+      ])
       expect(secureEnvironment.sessionSign).toHaveBeenCalledTimes(2)
 
-      expect(await sign('key-1')).toEqual({ signature: new Uint8Array([1]) })
+      expect(await sign('key-1')).toEqual({ signature: new Uint8Array([1]), backend: 'secureEnvironment' })
       expect(secureEnvironment.sign).toHaveBeenCalledWith('key-1', new Uint8Array([0]), { prompt: undefined })
     })
 
@@ -139,7 +148,10 @@ describe('SecureEnvironmentKeyManagementService', () => {
         { keyIds: ['key-1'] }
       )
 
-      expect(signatures).toEqual([{ signature: new Uint8Array([2]) }, { signature: new Uint8Array([1]) }])
+      expect(signatures).toEqual([
+        { signature: new Uint8Array([2]), backend: 'secureEnvironment' },
+        { signature: new Uint8Array([1]), backend: 'secureEnvironment' },
+      ])
       expect(secureEnvironment.sessionSign).toHaveBeenCalledWith('key-1', new Uint8Array([0]), { prompt: undefined })
       expect(secureEnvironment.sign).toHaveBeenCalledWith('other-key', new Uint8Array([0]), { prompt: undefined })
     })

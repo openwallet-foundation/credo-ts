@@ -272,7 +272,7 @@ describe('AskarKeyManagementService', () => {
     })
 
     it('signs with ES256', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'EC', crv: 'P-256' },
       })
 
@@ -284,11 +284,12 @@ describe('AskarKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with EC ES384', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'EC', crv: 'P-384' },
       })
 
@@ -300,11 +301,12 @@ describe('AskarKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with ES256K', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'EC', crv: 'secp256k1' },
       })
 
@@ -316,11 +318,12 @@ describe('AskarKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with EdDSA', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'OKP', crv: 'Ed25519' },
       })
 
@@ -332,11 +335,12 @@ describe('AskarKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with Ed25519', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'OKP', crv: 'Ed25519' },
       })
 
@@ -348,6 +352,7 @@ describe('AskarKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 

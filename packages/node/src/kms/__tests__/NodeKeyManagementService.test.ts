@@ -256,7 +256,7 @@ describe('NodeKeyManagementService', () => {
     })
 
     it('signs with RS256', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'RSA', modulusLength: 2048 },
       })
 
@@ -268,11 +268,12 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with RS384', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'RSA', modulusLength: 3072 },
       })
 
@@ -284,11 +285,12 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with RS512', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'RSA', modulusLength: 4096 },
       })
 
@@ -300,11 +302,12 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with PS256', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'RSA', modulusLength: 2048 },
       })
 
@@ -316,11 +319,12 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with PS384', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'RSA', modulusLength: 3072 },
       })
 
@@ -332,11 +336,12 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with PS512', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'RSA', modulusLength: 4096 },
       })
 
@@ -348,6 +353,7 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
@@ -370,7 +376,7 @@ describe('NodeKeyManagementService', () => {
     })
 
     it('signs with ES256', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'EC', crv: 'P-256' },
       })
 
@@ -382,11 +388,12 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with ES384', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'EC', crv: 'P-384' },
       })
 
@@ -398,11 +405,12 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with ES512', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'EC', crv: 'P-521' },
       })
 
@@ -414,6 +422,7 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
@@ -436,7 +445,7 @@ describe('NodeKeyManagementService', () => {
     })
 
     it('signs with ES256K', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'EC', crv: 'secp256k1' },
       })
 
@@ -448,11 +457,12 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with EdDSA using Ed25519 key', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'OKP', crv: 'Ed25519' },
       })
 
@@ -464,11 +474,12 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with Ed25519 using Ed25519 key', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'OKP', crv: 'Ed25519' },
       })
 
@@ -480,6 +491,7 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
@@ -502,7 +514,7 @@ describe('NodeKeyManagementService', () => {
     })
 
     it('signs with HS256', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'oct', algorithm: 'hmac', length: 256 },
       })
 
@@ -514,11 +526,12 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with HS384', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'oct', algorithm: 'hmac', length: 384 },
       })
 
@@ -530,11 +543,12 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 
     it('signs with HS512', async () => {
-      const { keyId } = await service.createKey(agentContext, {
+      const { keyId, publicJwk } = await service.createKey(agentContext, {
         type: { kty: 'oct', algorithm: 'hmac', length: 512 },
       })
 
@@ -546,6 +560,7 @@ describe('NodeKeyManagementService', () => {
 
       expect(result).toEqual({
         signature: expect.any(Uint8Array),
+        publicJwk,
       })
     })
 

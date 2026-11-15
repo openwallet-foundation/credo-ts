@@ -298,10 +298,10 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
       // TODO: we should extend this with metadata properties (e.g. use, key_ops)
       const publicJwk = this.publicJwkFromKey(agentContext, key.key, { kid: keyId })
-      const privateJwk = this.privateJwkFromKey(agentContext, key.key, { kid: keyId })
 
       // 2. Validate alg and use for key
-      Kms.assertAllowedSigningAlgForKey(privateJwk, algorithm)
+      Kms.assertJwkAsymmetric(publicJwk, keyId)
+      Kms.assertAllowedSigningAlgForKey(publicJwk, algorithm)
       Kms.assertKeyAllowsSign(publicJwk)
 
       // 3. Perform the signing operation
@@ -312,6 +312,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
       return {
         signature: new Uint8Array(signature),
+        publicJwk,
       }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
