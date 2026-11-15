@@ -15,7 +15,7 @@ import { KeyManagementApi, PublicJwk } from '../kms'
 import { getStatusListSignerKeyPurposeOptions } from '../token-status-list/assertStatusListSignerKeyPurpose'
 import { TokenStatusListModuleConfig } from '../token-status-list/TokenStatusListModuleConfig'
 import { ClaimFormat } from '../vc/index'
-import { type EncodedX509Certificate, X509Certificate, X509ModuleConfig, X509Service } from '../x509'
+import { type EncodedX509Certificate, parseX5c, X509Certificate, X509ModuleConfig, X509Service } from '../x509'
 import { legacyTrustedCertificatesToTrustedIssuers } from '../x509/utils/convertLegacyTrustedCertificates'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
@@ -298,12 +298,7 @@ export class SdJwtVcService {
     try {
       const issuer: SdJwtVcIssuer =
         returnSdJwtVc.issuer.method === 'x5c'
-          ? {
-              ...returnSdJwtVc.issuer,
-              x5c: returnSdJwtVc.issuer.x5c.map((certificate) =>
-                X509Service.parseCertificate(agentContext, { encodedCertificate: certificate })
-              ),
-            }
+          ? { ...returnSdJwtVc.issuer, x5c: parseX5c(agentContext, returnSdJwtVc.issuer.x5c) }
           : returnSdJwtVc.issuer
       const { trustedIssuer } = await this.verifyIssuer(agentContext, returnSdJwtVc, issuer, trustedIssuers)
       const issuerWithKey = await this.extractKeyFromIssuer(agentContext, issuer)
@@ -711,9 +706,7 @@ export class SdJwtVcService {
 
         let statusListChain: X509Certificate[]
         try {
-          statusListChain = header.x5c.map((certificate) =>
-            X509Service.parseCertificate(agentContext, { encodedCertificate: certificate })
-          )
+          statusListChain = parseX5c(agentContext, header.x5c)
 
           // Ensures the status list certificate chain anchors in the status certificates.
           await X509Service.validateCertificateChain(agentContext, {

@@ -9,6 +9,7 @@ import {
   type JwsSignerWithJwk,
   JwtPayload,
   Kms,
+  parseX5c,
   TrustedIssuerContext,
   TypedArrayEncoder,
   type X509Certificate,
@@ -174,10 +175,7 @@ export function getOid4vcJwtVerifyCallback(
     })
 
     // Parsed once, for both resolving the trusted certificates and the key of the signer
-    const certificateChain =
-      signer.method === 'x5c'
-        ? signer.x5c.map((cert) => X509Service.parseCertificate(agentContext, { encodedCertificate: cert }))
-        : undefined
+    const certificateChain = signer.method === 'x5c' ? parseX5c(agentContext, signer.x5c) : undefined
 
     if (verificationContext) {
       if (certificateChain && !trustedCertificates) {

@@ -6,6 +6,6 @@ The X.509 module now keeps parsed certificates in memory and reuses them, so a c
 
 Every agent has its own cache with the 250 most recently used certificates of up to 12 KB. Change the limit with the `parsedCertificateCacheLimit` option of the X.509 module, where 0 parses every certificate again.
 
-Credo now parses certificates through the service where it has an agent context. `extractX509CertificatesFromJwt` therefore takes the `agentContext` as its first argument.
+Credo now parses certificates through the service where it has an agent context. `extractX509CertificatesFromJwt` therefore takes the `agentContext` as its first argument. The new `parseX5c` parses the certificates of an `x5c` header the same way.
 
 `X509Certificate` has the new `clone`, `basicConstraints`, `extensions`, `isPossiblyIssuedBy` and `verifySignature` members. The unused `X509Certificate.privateKey` is removed. `X509Certificate.rawCertificate` and the dates in `X509Certificate.data` are now copies.

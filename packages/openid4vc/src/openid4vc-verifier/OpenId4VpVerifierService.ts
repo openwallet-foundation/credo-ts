@@ -31,6 +31,7 @@ import {
   type MdocSupportedSignatureAlgorithm,
   mapNonEmptyArray,
   type NonEmptyArray,
+  parseX5c,
   type Query,
   type QueryOptions,
   SdJwtVcApi,
@@ -1228,12 +1229,7 @@ export class OpenId4VpVerifierService {
         if (issuer) {
           const signer =
             issuer.method === 'x5c'
-              ? ({
-                  method: 'x509',
-                  certificateChain: issuer.x5c.map((certificate) =>
-                    X509Service.parseCertificate(agentContext, { encodedCertificate: certificate })
-                  ),
-                } as const)
+              ? ({ method: 'x509', certificateChain: parseX5c(agentContext, issuer.x5c) } as const)
               : ({ method: 'did', didUrl: issuer.didUrl } as const)
 
           trustedIssuers = (
