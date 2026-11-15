@@ -280,7 +280,7 @@ describe('OpenId4VP DC API', () => {
   })
 
   it('only verifies one of two concurrent responses for a session', async () => {
-    const { authorizationRequest, verificationSession } =
+    const { authorizationRequestObject, verificationSession } =
       await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'dc_api',
         expectedOrigins: ['https://example.com'],
@@ -291,7 +291,7 @@ describe('OpenId4VP DC API', () => {
       })
 
     const resolvedAuthorizationRequest = await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
-      authorizationRequest,
+      authorizationRequestObject,
       { origin: 'https://example.com' }
     )
     if (!resolvedAuthorizationRequest.dcql) throw new Error('Dcql not defined')
@@ -324,7 +324,7 @@ describe('OpenId4VP DC API', () => {
   })
 
   it('Digital Credentials API v1 with dcql, mdoc, sd-jwt, transaction data. unsigned, unencrypted', async () => {
-    const { authorizationRequest, verificationSession } =
+    const { authorizationRequestObject, verificationSession } =
       await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'dc_api',
         expectedOrigins: ['https://example.com'],
@@ -346,7 +346,7 @@ describe('OpenId4VP DC API', () => {
       })
 
     const resolvedAuthorizationRequest = await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
-      authorizationRequest,
+      authorizationRequestObject,
       {
         origin: 'https://example.com',
       }
@@ -531,7 +531,7 @@ describe('OpenId4VP DC API', () => {
   })
 
   it('Digital Credentials API v1.draft24 with dcql, mdoc, sd-jwt, transaction data. unsigned, unencrypted', async () => {
-    const { authorizationRequest, verificationSession } =
+    const { authorizationRequestObject, verificationSession } =
       await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'dc_api',
         expectedOrigins: ['https://example.com'],
@@ -553,7 +553,7 @@ describe('OpenId4VP DC API', () => {
       })
 
     const resolvedAuthorizationRequest = await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
-      authorizationRequest,
+      authorizationRequestObject,
       {
         origin: 'https://example.com',
       }

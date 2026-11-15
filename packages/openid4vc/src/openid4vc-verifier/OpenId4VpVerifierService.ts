@@ -374,6 +374,9 @@ export class OpenId4VpVerifierService {
       expiresAt,
       openId4VpVersion: version,
     })
+    for (const [key, value] of Object.entries(options.recordMetadata ?? {})) {
+      verificationSession.metadata.set(key, value)
+    }
     await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
     this.emitStateChangedEvent(agentContext, verificationSession, null)
 
@@ -749,6 +752,18 @@ export class OpenId4VpVerifierService {
       transactionData,
     }
 
+    try {
+      await this.config.verifiedAuthorizationResponseHandler?.({
+        agentContext,
+        verificationSession: result.verificationSession,
+        verifiedAuthorizationResponse,
+      })
+    } catch (error) {
+      result.verificationSession.errorMessage = error.message
+      await this.updatePendingState(agentContext, result.verificationSession, OpenId4VcVerificationSessionState.Error)
+      throw error
+    }
+
     result.verificationSession.authorizationResponsePayload = result.authorizationResponsePayload
     await this.updatePendingState(
       agentContext,
@@ -793,7 +808,7 @@ export class OpenId4VpVerifierService {
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
 
     const result = openid4vpVerifier.validateOpenid4vpAuthorizationResponsePayload({
-      authorizationRequestPayload: verificationSession.requestPayload,
+      authorizationRequestPayload,
       authorizationResponsePayload: openid4vpAuthorizationResponsePayload,
     })
 

@@ -13,6 +13,7 @@ import {
   convertToNewDidDocument,
   keyAgreementsEqual,
   routingToServices,
+  toDidUrlOfDid,
   toKeyAgreement,
   toKeyAgreementDidUrl,
 } from '../services/helpers'
@@ -381,6 +382,22 @@ describe('keyAgreementsEqual', () => {
   it('does not match P-256 against Ed25519', () => {
     expect(keyAgreementsEqual(p256A, ed25519A)).toBe(false)
     expect(keyAgreementsEqual(ed25519A, p256A)).toBe(false)
+  })
+})
+
+describe('toDidUrlOfDid', () => {
+  const shortForm = `did:peer:4z${'Q'.repeat(46)}`
+  const longForm = `${shortForm}:zabc123`
+
+  it('uses the given form of a did:peer:4 when the DID URL has the other one', () => {
+    expect(toDidUrlOfDid(`${longForm}#key-1`, shortForm)).toBe(`${shortForm}#key-1`)
+    expect(toDidUrlOfDid(`${shortForm}#key-1`, longForm)).toBe(`${longForm}#key-1`)
+  })
+
+  it('keeps a DID URL of the same DID or of another DID', () => {
+    expect(toDidUrlOfDid(`${longForm}#key-1`, longForm)).toBe(`${longForm}#key-1`)
+    expect(toDidUrlOfDid('did:example:other#key-1', longForm)).toBe('did:example:other#key-1')
+    expect(toDidUrlOfDid(longForm, shortForm)).toBe(longForm)
   })
 })
 

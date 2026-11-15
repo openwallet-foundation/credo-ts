@@ -1,30 +1,23 @@
 import type { DidCommProofFormat } from '@credo-ts/didcomm'
 import type {
+  AnonCredsCredentialsForProofRequest,
+  AnonCredsGetCredentialsForProofRequestOptions,
   AnonCredsNonRevokedInterval,
-  AnonCredsPredicateType,
+  AnonCredsPresentationPreviewAttribute,
+  AnonCredsPresentationPreviewPredicate,
   AnonCredsProof,
   AnonCredsProofRequest,
   AnonCredsRequestedAttribute,
-  AnonCredsRequestedAttributeMatch,
   AnonCredsRequestedPredicate,
-  AnonCredsRequestedPredicateMatch,
   AnonCredsSelectedCredentials,
 } from '../models'
 
-export interface AnonCredsPresentationPreviewAttribute {
-  name: string
-  credentialDefinitionId?: string
-  mimeType?: string
-  value?: string
-  referent?: string
-}
-
-export interface AnonCredsPresentationPreviewPredicate {
-  name: string
-  credentialDefinitionId: string
-  predicate: AnonCredsPredicateType
-  threshold: number
-}
+export type {
+  AnonCredsCredentialsForProofRequest,
+  AnonCredsGetCredentialsForProofRequestOptions,
+  AnonCredsPresentationPreviewAttribute,
+  AnonCredsPresentationPreviewPredicate,
+} from '../models'
 
 /**
  * Interface for creating an anoncreds proof proposal.
@@ -58,18 +51,6 @@ export interface AnonCredsRequestProofFormat {
    * @see https://github.com/anoncreds/anoncreds-clsignatures-rs/blob/5c74d040e842c25d8e9a05ca65dee6fb277a9be0/src/constants.rs#L25
    */
   nonce?: string
-}
-
-/**
- * Interface for getting credentials for an indy proof request.
- */
-export interface AnonCredsCredentialsForProofRequest {
-  attributes: Record<string, AnonCredsRequestedAttributeMatch[]>
-  predicates: Record<string, AnonCredsRequestedPredicateMatch[]>
-}
-
-export interface AnonCredsGetCredentialsForProofRequestOptions {
-  filterByNonRevocationRequirements?: boolean
 }
 
 export interface AnonCredsDidCommProofFormat extends DidCommProofFormat {

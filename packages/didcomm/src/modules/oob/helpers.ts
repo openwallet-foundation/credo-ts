@@ -9,8 +9,8 @@ import {
 import type { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
 
 // This method is kept to support searching for existing connections created by
-// credo-ts <= 0.5.1
-// TODO: Remove in 0.6.0 (when DidCommConnectionRecord.invitationDid will be migrated)
+// credo-ts <= 0.5.1, or migrated from 0.1, which store their invitationDid in this format
+// TODO: Remove when DidCommConnectionRecord.invitationDid is migrated
 export function outOfBandServiceToInlineKeysNumAlgo2Did(service: OutOfBandDidCommService) {
   const didDocument = new DidDocumentBuilder('')
     .addService(

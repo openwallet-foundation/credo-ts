@@ -53,10 +53,10 @@ describe('KeyManagementApi', () => {
       },
     })
 
-    const publicJwk = await agent.kms.getPublicKey({
+    const publicKey = await agent.kms.getPublicKey({
       keyId: 'hello',
     })
-    expect(publicJwk).toEqual(result.publicJwk)
+    expect(publicKey).toEqual({ publicKey: result.publicJwk, backend: 'node' })
 
     const deleted = await agent.kms.deleteKey({
       keyId: 'hello',
@@ -198,7 +198,10 @@ describe('KeyManagementApi', () => {
     await kms.createKey({ keyId: 'same-id', type: { kty: 'EC', crv: 'P-256' } })
     const otherKey = await kms.createKey({ keyId: 'same-id', backend: 'other', type: { kty: 'EC', crv: 'P-256' } })
 
-    expect(await kms.getPublicKey({ keyId: 'same-id', backend: 'other' })).toEqual(otherKey.publicJwk)
+    expect(await kms.getPublicKey({ keyId: 'same-id', backend: 'other' })).toEqual({
+      publicKey: otherKey.publicJwk,
+      backend: 'other',
+    })
   })
 
   test('encrypts, decrypts and verifies with keys that only exist in a backend that is not the default', async () => {

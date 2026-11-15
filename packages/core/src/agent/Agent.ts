@@ -27,6 +27,12 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     const agentConfig = new AgentConfig(options.config ?? {}, options.dependencies)
     const modulesWithDefaultModules = extendModulesWithDefaultModules(options.modules)
 
+    if (!options.modules?.cache) {
+      agentConfig.logger.warn(
+        "No 'cache' module configured, using the default 'SingleContextStorageLruCache'. The default will change to the 'InMemoryLruCache' in a future version. To keep using the 'SingleContextStorageLruCache', register the 'CacheModule' with it explicitly."
+      )
+    }
+
     // Register internal dependencies
     dependencyManager.registerSingleton(EventEmitter)
     dependencyManager.registerSingleton(JwsService)
