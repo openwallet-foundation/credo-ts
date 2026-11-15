@@ -42,7 +42,7 @@ export const didcommProofExchange = pgTable(
     protocolVersion: text('protocol_version').notNull(),
     parentThreadId: text('parent_thread_id'),
     isVerified: boolean('is_verified'),
-    state: didcommProofExchangeRoleEnum().notNull(),
+    state: didcommProofExchangeStateEnum().notNull(),
     role: didcommProofExchangeRoleEnum().notNull(),
     autoAcceptProof: didcommProofExchangeAutoAcceptEnum('auto_accept_proof'),
     errorMessage: text('error_message'),

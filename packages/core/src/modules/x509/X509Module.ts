@@ -1,5 +1,6 @@
 import type { DependencyManager, Module } from '../../plugins'
 import { X509Api } from './X509Api'
+import { X509CertificateCache } from './X509CertificateCache'
 import type { X509ModuleConfigOptions } from './X509ModuleConfig'
 import { X509ModuleConfig } from './X509ModuleConfig'
 import { X509RevocationService } from './X509RevocationService'
@@ -26,6 +27,7 @@ export class X509Module implements Module {
 
     // Services
     dependencyManager.registerSingleton(X509Service)
+    dependencyManager.registerSingleton(X509CertificateCache)
     dependencyManager.registerSingleton(X509RevocationService)
   }
 }
