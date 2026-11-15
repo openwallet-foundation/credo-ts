@@ -556,6 +556,7 @@ describe('DidCommMessageSender', () => {
           info: vi.spyOn(agentConfig.logger, 'info'),
           warn: vi.spyOn(agentConfig.logger, 'warn'),
           error: vi.spyOn(agentConfig.logger, 'error'),
+          debug: vi.spyOn(agentConfig.logger, 'debug'),
         }
       }
 
@@ -738,7 +739,17 @@ describe('DidCommMessageSender', () => {
           },
         })
 
-        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('undeliverable'), expect.anything())
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('undeliverable'), {
+          connectionId: connection.id,
+          messageId: outboundMessageContext.message.id,
+          messageType: outboundMessageContext.message.type,
+          reason: expect.objectContaining({ category: MessageSendingErrorCategory.InternalError }),
+          error: undefined,
+        })
+        expect(logger.debug).toHaveBeenCalledWith(
+          expect.stringContaining('Undeliverable'),
+          expect.objectContaining({ message: outboundMessageContext.message, connection })
+        )
       })
 
       test('logs an error when packing the message fails', async () => {
@@ -834,8 +845,19 @@ describe('DidCommMessageSender', () => {
 
         await expect(sendPackage()).rejects.toThrow('Message is undeliverable to connection test-123 (Test 123)')
 
-        expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining('undeliverable'), expect.anything())
+        expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining('undeliverable'), {
+          connectionId: connection.id,
+          reason: expect.objectContaining({ category: MessageSendingErrorCategory.RecipientUnreachable }),
+        })
         expect(errorSpy).not.toHaveBeenCalled()
+      })
+
+      test('does not send over a session that answers a single request', async () => {
+        didResolverServiceResolveDidServicesMock.mockResolvedValue([queueService])
+
+        await sendPackage()
+
+        expect(transportServiceFindSessionMock).toHaveBeenCalledWith(connection.id, { includeSingleResponse: false })
       })
     })
 

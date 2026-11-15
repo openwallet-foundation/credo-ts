@@ -46,6 +46,12 @@ import { DidCommMediationRecipientService } from './services/DidCommMediationRec
 import type { GetRoutingOptions } from './services/DidCommRoutingService'
 import { DidCommRoutingService } from './services/DidCommRoutingService'
 
+const pickupProtocolVersions = {
+  [DidCommMediatorPickupStrategy.PickUpV1]: 'v1',
+  [DidCommMediatorPickupStrategy.PickUpV2]: 'v2',
+  [DidCommMediatorPickupStrategy.PickUpV4]: 'v4',
+} as const
+
 @injectable()
 export class DidCommMediationRecipientApi {
   public config: DidCommMediationRecipientModuleConfig
@@ -266,7 +272,11 @@ export class DidCommMediationRecipientApi {
         protocolVersion,
       })
     } catch (error) {
-      this.logger.warn(`Unable to pickup messages from mediator connection '${connectionId}'`, { error })
+      // The sender already logged a sending failure at the level of its category
+      this.logger[error instanceof MessageSendingError ? 'debug' : 'warn'](
+        `Unable to pickup messages from mediator connection '${connectionId}'`,
+        { error: error.message }
+      )
     }
   }
 
@@ -300,10 +310,11 @@ export class DidCommMediationRecipientApi {
 
     switch (mediatorPickupStrategy) {
       case DidCommMediatorPickupStrategy.PickUpV1:
-      case DidCommMediatorPickupStrategy.PickUpV2: {
+      case DidCommMediatorPickupStrategy.PickUpV2:
+      case DidCommMediatorPickupStrategy.PickUpV4: {
         const stopConditions$ = merge(this.stop$, this.stopMessagePickup$).pipe()
-        // PickUpV1/PickUpV2 means polling every X seconds with batch message
-        const protocolVersion = mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV2 ? 'v2' : 'v1'
+        // Polling every X seconds with batch message
+        const protocolVersion = pickupProtocolVersions[mediatorPickupStrategy]
 
         this.logger.info(
           `Starting explicit pickup of messages from mediator '${mediatorRecord.id}' using ${protocolVersion}`
@@ -311,20 +322,6 @@ export class DidCommMediationRecipientApi {
         const subscription = interval(mediatorPollingInterval)
           .pipe(
             exhaustMap(() => this.pollMessages(mediatorConnection.id, protocolVersion)),
-            takeUntil(stopConditions$)
-          )
-          .subscribe({
-            complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediatorRecord.id}'`),
-          })
-        return subscription
-      }
-      case DidCommMediatorPickupStrategy.PickUpV4: {
-        const stopConditions$ = merge(this.stop$, this.stopMessagePickup$).pipe()
-
-        this.logger.info(`Starting explicit pickup of messages from mediator '${mediatorRecord.id}' using v4`)
-        const subscription = interval(mediatorPollingInterval)
-          .pipe(
-            exhaustMap(() => this.pollMessages(mediatorConnection.id, 'v4')),
             takeUntil(stopConditions$)
           )
           .subscribe({

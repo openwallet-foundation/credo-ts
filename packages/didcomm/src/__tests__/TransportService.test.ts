@@ -4,22 +4,24 @@ import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { agentDependencies, getAgentContext, getMockConnection } from '../../../core/tests/helpers'
 import { DidCommTransportService } from '../DidCommTransportService'
 import { DidCommDidExchangeRole } from '../modules'
+import { DidCommTransportEventTypes } from '../transport'
 
 import { DummyTransportSession } from './stubs'
 
 describe('DidCommTransportService', () => {
   let transportService: DidCommTransportService
+  let eventEmitter: EventEmitter
 
   beforeEach(() => {
-    transportService = new DidCommTransportService(
-      getAgentContext(),
-      new EventEmitter(agentDependencies, new Subject())
-    )
+    eventEmitter = new EventEmitter(agentDependencies, new Subject())
+    transportService = new DidCommTransportService(getAgentContext(), eventEmitter)
   })
 
-  function saveSession(id: string, connectionId: string) {
+  function saveSession(id: string, connectionId: string, { isSingleResponse = true, type = 'http' } = {}) {
     const session = new DummyTransportSession(id)
     session.connectionId = connectionId
+    session.isSingleResponse = isSingleResponse
+    session.type = type
     transportService.saveSession(session)
     return session
   }
@@ -31,6 +33,21 @@ describe('DidCommTransportService', () => {
 
       expect(transportService.findSessionById('request-a')).toBe(first)
       expect(transportService.findSessionById('request-b')).toBe(second)
+    })
+
+    test('replaces a long-lived session of the same connection and type', () => {
+      saveSession('socket-a', 'connection-1', { isSingleResponse: false, type: 'WebSocket' })
+      const otherType = saveSession('socket-b', 'connection-1', { isSingleResponse: false, type: 'other' })
+      const otherConnection = saveSession('socket-c', 'connection-2', { isSingleResponse: false, type: 'WebSocket' })
+      const request = saveSession('request-a', 'connection-1')
+
+      const replacement = saveSession('socket-d', 'connection-1', { isSingleResponse: false, type: 'WebSocket' })
+
+      expect(transportService.findSessionById('socket-a')).toBeUndefined()
+      expect(transportService.findSessionById('socket-b')).toBe(otherType)
+      expect(transportService.findSessionById('socket-c')).toBe(otherConnection)
+      expect(transportService.findSessionById('request-a')).toBe(request)
+      expect(transportService.findSessionByConnectionId('connection-1')).toBe(replacement)
     })
 
     test('removes closed sessions of the same connection', () => {
@@ -56,8 +73,8 @@ describe('DidCommTransportService', () => {
     })
 
     test('returns a session that was saved again over one that was first saved later', () => {
-      const first = saveSession('socket-a', 'connection-1')
-      saveSession('socket-b', 'connection-1')
+      const first = saveSession('request-a', 'connection-1')
+      saveSession('request-b', 'connection-1')
       transportService.saveSession(first)
 
       expect(transportService.findSessionByConnectionId('connection-1')).toBe(first)
@@ -79,16 +96,14 @@ describe('DidCommTransportService', () => {
     })
 
     test('returns a long-lived session over a more recent single response session', () => {
-      const longLived = saveSession('socket', 'connection-1')
-      const singleResponse = saveSession('request-a', 'connection-1')
-      singleResponse.isSingleResponse = true
+      const longLived = saveSession('socket', 'connection-1', { isSingleResponse: false })
+      saveSession('request-a', 'connection-1')
 
       expect(transportService.findSessionByConnectionId('connection-1')).toBe(longLived)
     })
 
     test('returns a single response session only when there is no long-lived one and it is not skipped', () => {
       const singleResponse = saveSession('request-a', 'connection-1')
-      singleResponse.isSingleResponse = true
 
       expect(transportService.findSessionByConnectionId('connection-1')).toBe(singleResponse)
       expect(
@@ -108,6 +123,17 @@ describe('DidCommTransportService', () => {
 
       transportService.removeSession(session)
       expect(transportService.findSessionByConnectionId(connection.id)).toEqual(undefined)
+    })
+
+    test('emits one removed event for a session that is removed twice', () => {
+      const session = saveSession('request-a', 'connection-1')
+      const listener = vi.fn()
+      eventEmitter.on(DidCommTransportEventTypes.DidCommTransportSessionRemoved, listener)
+
+      transportService.removeSession(session)
+      transportService.removeSession(session)
+
+      expect(listener).toHaveBeenCalledTimes(1)
     })
   })
 })

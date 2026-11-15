@@ -10,7 +10,8 @@ import type { DidCommVersion } from './util/didcommVersion'
 
 @injectable()
 export class DidCommTransportService {
-  public transportSessionTable: TransportSessionTable = {}
+  // A Map keeps insertion order for every key, which the lookups rely on to find the most recent session
+  public transportSessionTable = new Map<string, DidCommTransportSession>()
   private agentContext: AgentContext
   private eventEmitter: EventEmitter
 
@@ -20,19 +21,20 @@ export class DidCommTransportService {
   }
 
   public saveSession(session: DidCommTransportSession) {
-    // Open sessions of the connection are kept. Each concurrent request has its own session, and the
-    // reply to a request must go to the session it came in on. Closed ones are dropped here, in case
-    // their transport didn't remove them.
+    // Single response sessions of the connection are kept. Each concurrent request has its own session,
+    // and the reply to a request must go to the session it came in on. A long-lived session of the same
+    // type is replaced by a new one, as it may be half open after the client reconnected. Closed ones are dropped
+    // here, in case their transport didn't remove them.
     if (session.connectionId) {
-      for (const other of Object.values(this.transportSessionTable)) {
-        if (other?.connectionId === session.connectionId && other.id !== session.id && other.isClosed) {
-          this.removeSession(other)
-        }
+      for (const other of [...this.transportSessionTable.values()]) {
+        if (other.connectionId !== session.connectionId || other.id === session.id) continue
+        const isReplaced = !session.isSingleResponse && !other.isSingleResponse && other.type === session.type
+        if (other.isClosed || isReplaced) this.removeSession(other)
       }
     }
     // Removed first, so a session that is saved again becomes the most recent one
-    delete this.transportSessionTable[session.id]
-    this.transportSessionTable[session.id] = session
+    this.transportSessionTable.delete(session.id)
+    this.transportSessionTable.set(session.id, session)
 
     this.eventEmitter.emit<DidCommTransportSessionSavedEvent>(this.agentContext, {
       type: DidCommTransportEventTypes.DidCommTransportSessionSaved,
@@ -52,9 +54,7 @@ export class DidCommTransportService {
   public findSessionByConnectionId(connectionId: string, { includeSingleResponse = true } = {}) {
     let longLived: DidCommTransportSession | undefined
     let singleResponse: DidCommTransportSession | undefined
-    for (const session of Object.values(this.transportSessionTable).reverse()) {
-      if (!session) continue
-
+    for (const session of [...this.transportSessionTable.values()].reverse()) {
       // Clean up old sessions that were not removed by their transport
       if (session.isClosed) this.removeSession(session)
       else if (session.connectionId === connectionId) {
@@ -83,11 +83,12 @@ export class DidCommTransportService {
   }
 
   public findSessionById(sessionId: string) {
-    return this.transportSessionTable[sessionId]
+    return this.transportSessionTable.get(sessionId)
   }
 
   public removeSession(session: DidCommTransportSession) {
-    delete this.transportSessionTable[session.id]
+    // Transports and lookups can both remove a session, which should emit a single event
+    if (!this.transportSessionTable.delete(session.id)) return
     this.eventEmitter.emit<DidCommTransportSessionRemovedEvent>(this.agentContext, {
       type: DidCommTransportEventTypes.DidCommTransportSessionRemoved,
       payload: {
@@ -95,10 +96,6 @@ export class DidCommTransportService {
       },
     })
   }
-}
-
-interface TransportSessionTable {
-  [sessionId: string]: DidCommTransportSession | undefined
 }
 
 // In the framework Transport sessions are used for communication. A session is

@@ -203,8 +203,9 @@ export class DidCommMessageSender {
   ) {
     const attempts: MessageSendingAttempt[] = []
 
-    // Try to send to already open session
-    const session = this.transportService.findSessionByConnectionId(connection.id)
+    // Try to send to already open session. A packed message is not the reply to a request, so it leaves
+    // the response of an open request to that request.
+    const session = this.transportService.findSessionByConnectionId(connection.id, { includeSingleResponse: false })
     if (session?.inboundMessage?.hasReturnRouting()) {
       try {
         await session.send(agentContext, encryptedMessage)
@@ -290,14 +291,16 @@ export class DidCommMessageSender {
     // Message is undeliverable
     attempts.push({ type: 'queue', result: MessageSendingQueueResult.NotAvailable })
     const category = categorizeMessageSendingAttempts(attempts)
+    const reason = { category, attempts }
     agentContext.config.logger[logLevelByCategory[category]](
       `Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`,
-      {
-        message: encryptedMessage,
-        reason: { category, attempts },
-        connection,
-      }
+      { connectionId: connection.id, reason }
     )
+    // The full objects are only logged at debug level
+    agentContext.config.logger.debug(`Undeliverable message to connection ${connection.id}`, {
+      message: encryptedMessage,
+      connection,
+    })
     throw new CredoError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
   }
 
@@ -624,11 +627,14 @@ export class DidCommMessageSender {
   ) {
     const { agentContext, message, connection } = outboundMessageContext
     agentContext.config.logger[logLevelByCategory[reason.category]](errorMessage, {
-      message,
+      connectionId: connection?.id,
+      messageId: message.id,
+      messageType: message.type,
       reason,
-      error: cause,
-      connection,
+      error: cause?.message,
     })
+    // The full objects are only logged at debug level
+    agentContext.config.logger.debug(`Undeliverable message ${message.id}`, { message, connection, error: cause })
     this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
 
     const reasons = reason.attempts.map((attempt) => `\n\t- ${describeMessageSendingAttempt(attempt)}`).join('')
