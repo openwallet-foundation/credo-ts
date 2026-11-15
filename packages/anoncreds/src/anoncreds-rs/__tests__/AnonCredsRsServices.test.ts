@@ -258,51 +258,6 @@ describe('AnonCredsRsServices', () => {
     })
 
     expect(verifiedProof).toBeTruthy()
-
-    // A restriction with the percent-encoded form of the unencoded ids matches the same credential
-    const encodedRestriction = {
-      schema_id: schemaState.schemaId.replace('Employee Credential', 'Employee%20Credential'),
-      cred_def_id: credentialDefinitionState.credentialDefinitionId.replace(
-        'Employee Credential',
-        'Employee%20Credential'
-      ),
-    }
-    expect(encodedRestriction.cred_def_id).not.toEqual(credentialDefinitionState.credentialDefinitionId)
-
-    const encodedProofRequest: AnonCredsProofRequest = {
-      ...proofRequest,
-      nonce: NativeAnoncreds.instance.generateNonce(),
-      requested_attributes: { attr1_referent: { name: 'name', restrictions: [encodedRestriction] } },
-      requested_predicates: {},
-    }
-
-    const credentialsForRequest = await anonCredsHolderService.getCredentialsForProofRequest(agentContext, {
-      proofRequest: encodedProofRequest,
-      attributeReferent: 'attr1_referent',
-    })
-    expect(credentialsForRequest).toHaveLength(1)
-
-    const encodedProof = await anonCredsHolderService.createProof(agentContext, {
-      credentialDefinitions: { [credentialDefinitionState.credentialDefinitionId]: credentialDefinition },
-      proofRequest: encodedProofRequest,
-      selectedCredentials: {
-        attributes: { attr1_referent: { credentialId, credentialInfo, revealed: true } },
-        predicates: {},
-        selfAttestedAttributes: {},
-      },
-      schemas: { [schemaState.schemaId]: schema },
-      revocationRegistries: {},
-    })
-
-    expect(
-      await anonCredsVerifierService.verifyProof(agentContext, {
-        credentialDefinitions: { [credentialDefinitionState.credentialDefinitionId]: credentialDefinition },
-        proof: encodedProof,
-        proofRequest: encodedProofRequest,
-        schemas: { [schemaState.schemaId]: schema },
-        revocationRegistries: {},
-      })
-    ).toBe(true)
   })
 
   test('issuance and proofs with did:indy ids in both percent-encoded and unencoded form', async () => {
