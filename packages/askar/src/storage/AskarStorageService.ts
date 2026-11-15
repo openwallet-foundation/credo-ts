@@ -198,6 +198,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     const askarQuery = askarQueryFromSearchQuery(query)
 
     const { store, profile } = await this.askarStoreManager.getInitializedStoreWithProfile(agentContext)
+    const isPaginated = queryOptions?.offset !== undefined || queryOptions?.limit !== undefined
     const scan = new Scan({
       category: recordClass.type,
       store,
@@ -205,6 +206,8 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
       profile,
       offset: queryOptions?.offset,
       limit: queryOptions?.limit,
+      // Unordered rows let pages skip or repeat records. Askar's row id follows insertion order.
+      orderBy: isPaginated ? 'id' : undefined,
     })
 
     const instances = []
