@@ -58,7 +58,7 @@ import {
   KeylistUpdateActionV2,
   KeylistUpdateResultV2,
 } from '../protocol/v2/messages'
-import { DidCommMediatorRoutingRecord } from '../repository'
+import { DidCommMediatorRoutingRecord, type DidCommMediatorRoutingRecordRoutingKey } from '../repository'
 import { DidCommMediationRecord } from '../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../repository/DidCommMediationRepository'
 import { DidCommMediatorRoutingRepository } from '../repository/DidCommMediatorRoutingRepository'
@@ -607,6 +607,7 @@ export class DidCommMediatorService {
         {
           routingKeyFingerprint: publicJwk.fingerprint,
           kmsKeyId: routingKey.keyId,
+          kmsBackend: routingKey.backend,
         },
         // DIDComm v2 forwards encrypt to an X25519 key, which the KMS does not derive from the Ed25519 key
         ...(didcommConfig.isSupported('v2') ? [await this.createV2RoutingKey(agentContext)] : []),
@@ -632,9 +633,9 @@ export class DidCommMediatorService {
       if (error instanceof RecordDuplicateError) {
         // the record already exists, which is our intended end state
         // we can ignore this error and fetch the existing record
-        for (const { keyId } of routingRecord.routingKeysWithKeyId) {
+        for (const { keyId, kmsBackend } of routingRecord.routingKeysWithKeyId) {
           try {
-            await kms.deleteKey({ keyId })
+            await kms.deleteKey({ keyId, backend: kmsBackend })
           } catch (error) {
             this.logger.warn(`Unable to delete unused mediator routing key '${keyId}'`, { error })
           }
@@ -675,7 +676,7 @@ export class DidCommMediatorService {
       })
     } catch (error) {
       if (!(error instanceof V2RoutingKeyAlreadyStoredError)) {
-        await this.deleteUnusedRoutingKey(agentContext, v2RoutingKey.kmsKeyId)
+        await this.deleteUnusedRoutingKey(agentContext, v2RoutingKey)
         throw error
       }
     }
@@ -684,7 +685,7 @@ export class DidCommMediatorService {
     const storedRecord = await this.mediatorRoutingRepository.getById(agentContext, routingRecord.id)
     const storedV2RoutingKeys = this.getV2RoutingKeys(storedRecord)
     if (!storedV2RoutingKeys.some((routingKey) => routingKey.keyId === v2RoutingKey.kmsKeyId)) {
-      await this.deleteUnusedRoutingKey(agentContext, v2RoutingKey.kmsKeyId)
+      await this.deleteUnusedRoutingKey(agentContext, v2RoutingKey)
     }
     if (storedV2RoutingKeys.length > 1) {
       this.logger.warn('Mediator routing record has more than one X25519 routing key, DIDComm v2 uses the first one')
@@ -697,22 +698,24 @@ export class DidCommMediatorService {
     return routingRecord.routingKeysWithKeyId.filter((routingKey) => routingKey.is(Kms.X25519PublicJwk))
   }
 
-  private async deleteUnusedRoutingKey(agentContext: AgentContext, keyId: string): Promise<void> {
+  private async deleteUnusedRoutingKey(
+    agentContext: AgentContext,
+    { kmsKeyId, kmsBackend }: DidCommMediatorRoutingRecordRoutingKey
+  ): Promise<void> {
     try {
-      await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId })
+      await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: kmsKeyId, backend: kmsBackend })
     } catch (error) {
-      this.logger.warn(`Unable to delete unused mediator routing key '${keyId}'`, { error })
+      this.logger.warn(`Unable to delete unused mediator routing key '${kmsKeyId}'`, { error })
     }
   }
 
-  private async createV2RoutingKey(
-    agentContext: AgentContext
-  ): Promise<{ routingKeyFingerprint: string; kmsKeyId: string }> {
+  private async createV2RoutingKey(agentContext: AgentContext): Promise<DidCommMediatorRoutingRecordRoutingKey> {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
     const routingKey = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
     return {
       routingKeyFingerprint: Kms.PublicJwk.fromPublicJwk(routingKey.publicJwk).fingerprint,
       kmsKeyId: routingKey.keyId,
+      kmsBackend: routingKey.backend,
     }
   }
 

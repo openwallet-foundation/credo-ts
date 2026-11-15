@@ -14,6 +14,7 @@ export async function multiSignRequest<Request extends IndyVdrRequest>(
     data: TypedArrayEncoder.fromUtf8String(request.signatureInput),
     algorithm: 'EdDSA',
     keyId: signingKey.keyId,
+    backend: signingKey.kmsBackend,
     expectedPublicJwk: signingKey.toJson(),
   })
 

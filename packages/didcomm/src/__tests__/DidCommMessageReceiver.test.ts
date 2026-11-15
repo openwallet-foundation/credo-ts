@@ -109,7 +109,7 @@ describe('DidCommMessageReceiver', () => {
             from: signerDid,
             body: { response_requested: false },
           },
-          { keyId: signingKeyId, kid: toAbsoluteDidUrl(didDocument.id, authentication.id), alg: 'EdDSA' }
+          { key: { keyId: signingKeyId }, kid: toAbsoluteDidUrl(didDocument.id, authentication.id), alg: 'EdDSA' }
         )
         return { signed, signerDid }
       }

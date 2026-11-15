@@ -188,6 +188,7 @@ export class EddsaJcs2022Cryptosuite implements W3cDataIntegrityCryptosuite {
     const publicJwk = await kmsPublicJwkFromVerificationMethodId(this.agentContext, verificationMethod) // 1
     const signResult = await this.keyManagementApi.sign({
       keyId: publicJwk.keyId,
+      backend: publicJwk.kmsBackend,
       expectedPublicJwk: publicJwk.toJson(),
       algorithm: 'EdDSA',
       data: hashData,

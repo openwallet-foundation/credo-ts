@@ -265,11 +265,15 @@ export class DidCommOutOfBandApi {
     } else {
       const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
       mediatorId = routing?.mediatorId
+      Kms.warnMissingKmsBackend(this.agentContext, [
+        { keyId: routing.recipientKey.keyId, backend: routing.recipientKey.kmsBackend },
+      ])
 
       services = routingToServices(routing).map((service) => {
         // Store the key id for the recipient key
         invitationInlineServiceKeys.push({
           kmsKeyId: routing.recipientKey.keyId,
+          kmsBackend: routing.recipientKey.kmsBackend,
           recipientKeyFingerprint: routing.recipientKey.fingerprint,
         })
         return new OutOfBandDidCommService({
@@ -657,11 +661,16 @@ export class DidCommOutOfBandApi {
     // we need to store the routing, so it can be used when we send the first message in response to this invitation
     if (routing && (isConnectionless || !autoAcceptInvitation)) {
       this.logger.debug('Storing routing for out of band invitation.')
+      Kms.warnMissingKmsBackend(this.agentContext, [
+        { keyId: routing.recipientKey.keyId, backend: routing.recipientKey.kmsBackend },
+      ])
       outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.RecipientRouting, {
         recipientKeyFingerprint: routing.recipientKey.fingerprint,
         recipientKeyId: routing.recipientKey.keyId,
+        recipientKmsBackend: routing.recipientKey.kmsBackend,
         keyAgreementKeyFingerprint: routing.keyAgreementKey?.fingerprint,
         keyAgreementKeyId: routing.keyAgreementKey?.keyId,
+        keyAgreementKmsBackend: routing.keyAgreementKey?.kmsBackend,
         routingKeyFingerprints: (routing.routingKeys ?? []).map((key) => key.fingerprint),
         endpoints: routing.endpoints,
         mediatorId: routing.mediatorId,
@@ -755,6 +764,7 @@ export class DidCommOutOfBandApi {
         recipientRouting.recipientKeyFingerprint
       ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
       recipientPublicJwk.keyId = recipientRouting.recipientKeyId ?? recipientPublicJwk.legacyKeyId
+      recipientPublicJwk.kmsBackend = recipientRouting.recipientKmsBackend
 
       // Restore the independent keyAgreement key (X25519 or P-256) from metadata if available.
       let keyAgreementKey: DidCommV2KeyAgreementJwk | undefined
@@ -763,6 +773,7 @@ export class DidCommOutOfBandApi {
           recipientRouting.keyAgreementKeyFingerprint
         ) as DidCommV2KeyAgreementJwk
         keyAgreementKey.keyId = recipientRouting.keyAgreementKeyId ?? keyAgreementKey.legacyKeyId
+        keyAgreementKey.kmsBackend = recipientRouting.keyAgreementKmsBackend
       }
 
       const baseRouting = {

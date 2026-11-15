@@ -142,7 +142,7 @@ const generateStatusList = async (
 
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
   return jwsService.createJwsCompact(agentContext, {
-    keyId: key.keyId,
+    key: { keyId: key.keyId },
     payload: JwtPayload.fromJson(payload),
     protectedHeaderOptions: {
       ...header,
@@ -180,7 +180,7 @@ const generateX509StatusList = async (
 
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
   return jwsService.createJwsCompact(agentContext, {
-    keyId: key.keyId,
+    key: { keyId: key.keyId },
     payload: JwtPayload.fromJson(payload),
     protectedHeaderOptions: {
       alg: 'ES256',
@@ -828,6 +828,22 @@ describe('SdJwtVcService', () => {
   })
 
   describe('SdJwtVcService.receive', () => {
+    test('warns about a jwk-bound credential stored without key id or backend', async () => {
+      const warn = vi.spyOn(agent.context.config.logger, 'warn')
+
+      await sdJwtVcService.store(agent.context, {
+        record: new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVcWithoutHolderBinding }] }),
+      })
+      expect(warn).not.toHaveBeenCalled()
+
+      await sdJwtVcService.store(agent.context, {
+        record: new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVc }] }),
+      })
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('(key without key id or backend)'))
+
+      warn.mockRestore()
+    })
+
     test('Receive sd-jwt-vc from a basic payload without disclosures', async () => {
       const sdJwtVc = sdJwtVcService.fromCompact(simpleJwtVc)
       const sdJwtVcRecord = await sdJwtVcService.store(agent.context, {

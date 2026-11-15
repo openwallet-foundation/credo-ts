@@ -372,10 +372,12 @@ export class DidCommMessageSender {
       .findVerificationMethodsByPurpose(['authentication'])
       .map((verificationMethod) => {
         const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-        const kmsKeyId = keys?.find((key) => verificationMethod.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
+        const key = keys?.find((key) => verificationMethod.id.endsWith(key.didDocumentRelativeKeyId))
+        const kmsKeyId = key?.kmsKeyId
 
         // Set stored key id, or fallback to legacy key id
         publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
+        publicJwk.kmsBackend = key?.kmsBackend
 
         return { verificationMethod, publicJwk, kmsKeyId }
       })

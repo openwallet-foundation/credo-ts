@@ -6,7 +6,6 @@ import {
   JwsService,
   JwtPayload,
   Kms,
-  parseDid,
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../decorators/attachment/DidCommAttachment'
@@ -32,17 +31,7 @@ export async function createDidCommSignedAttachment(
     )
   }
 
-  const parsedDid = parseDid(kid)
-
-  const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-  const { didDocument, keys } = await didsApi.resolveCreatedDidDocumentWithKeys(parsedDid.did)
-  const verificationMethod = didDocument.dereferenceKey(kid)
-
-  // TODO: we need an util 'getPublicJwkWithSigningKeyIdFromVerificationMethodId'
-  const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-  const keyId =
-    keys?.find(({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${parsedDid.fragment}`)?.kmsKeyId ??
-    publicJwk.legacyKeyId
+  const { publicJwk } = await agentContext.resolve(DidsApi).resolveVerificationMethodFromCreatedDidRecord(kid)
 
   if (alg && !publicJwk.supportedSignatureAlgorithms.includes(alg as Kms.KnownJwaSignatureAlgorithm)) {
     throw new CredoError(`jwk ${publicJwk.jwkTypeHumanDescription}, does not support the JWS signature alg '${alg}'`)
@@ -57,7 +46,7 @@ export async function createDidCommSignedAttachment(
 
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
   const jws = await jwsService.createJws(agentContext, {
-    keyId,
+    key: publicJwk,
     header: {},
     payload: new JwtPayload({ additionalClaims: { nonce: data.nonce } }),
     protectedHeaderOptions: {

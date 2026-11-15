@@ -72,7 +72,11 @@ import type {
 } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
-import { credoJwtIssuerToOpenId4VcJwtIssuer, dcqlCredentialQueryToPresentationFormat } from '../shared/utils'
+import {
+  credoJwtIssuerToOpenId4VcJwtIssuer,
+  dcqlCredentialQueryToPresentationFormat,
+  getPublishedJwk,
+} from '../shared/utils'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
 import {
   type OpenId4VcVerificationSessionStateChangedEvent,
@@ -304,7 +308,7 @@ export class OpenId4VpVerifierService {
         ? clientIdPrefix
         : undefined
 
-    const client_metadata = await this.getClientMetadata(agentContext, {
+    const { clientMetadata: client_metadata, responseEncryptionKey } = await this.getClientMetadata(agentContext, {
       responseMode,
       verifier: options.verifier,
       authorizationResponseUrl,
@@ -372,6 +376,7 @@ export class OpenId4VpVerifierService {
       createdAt,
       expiresAt,
       openId4VpVersion: version,
+      responseEncryptionKey,
     })
     for (const [key, value] of Object.entries(options.recordMetadata ?? {})) {
       verificationSession.metadata.set(key, value)
@@ -441,13 +446,24 @@ export class OpenId4VpVerifierService {
 
     const { authorizationResponse, verificationSession, origin } = options
     let parsedAuthorizationResponse: ParsedOpenid4vpAuthorizationResponse | undefined
+    const { responseEncryptionKey } = verificationSession
+    const authorizationRequestPayload = verificationSession.requestPayload
+    // The thumbprint `kid` the request published for `responseEncryptionKey`
+    const responseEncryptionKid = authorizationRequestPayload.client_metadata?.jwks?.keys.find(
+      (key) => key.use === 'enc'
+    )?.kid
 
     try {
       parsedAuthorizationResponse = await openid4vpVerifier.parseOpenid4vpAuthorizationResponse({
         authorizationResponse,
         origin,
-        authorizationRequestPayload: verificationSession.requestPayload,
-        callbacks: getOid4vcCallbacks(agentContext),
+        authorizationRequestPayload,
+        callbacks: getOid4vcCallbacks(agentContext, {
+          decryptionKeys:
+            responseEncryptionKey && responseEncryptionKid
+              ? { [responseEncryptionKid]: responseEncryptionKey }
+              : undefined,
+        }),
       })
 
       if (parsedAuthorizationResponse.jarm && parsedAuthorizationResponse.jarm.type !== JarmMode.Encrypted) {
@@ -993,7 +1009,7 @@ export class OpenId4VpVerifierService {
       dcqlQuery?: DcqlQuery
       version: NonNullable<OpenId4VpCreateAuthorizationRequestOptions['version']>
     }
-  ): Promise<ClientMetadata> {
+  ): Promise<{ clientMetadata: ClientMetadata; responseEncryptionKey?: Kms.KmsKeyReference }> {
     const { responseMode, verifier } = options
 
     const signatureSuiteRegistry = agentContext.resolve(SignatureSuiteRegistry)
@@ -1010,10 +1026,12 @@ export class OpenId4VpVerifierService {
 
     type JarmEncryptionJwk = Kms.Jwk & { kid: string; use: 'enc'; alg: 'ECDH-ES' }
     let jarmEncryptionJwk: JarmEncryptionJwk | undefined
+    let responseEncryptionKey: Kms.KmsKeyReference | undefined
 
     if (isJarmResponseMode(responseMode)) {
       const key = await kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })
-      jarmEncryptionJwk = { ...key.publicJwk, use: 'enc', alg: 'ECDH-ES' }
+      jarmEncryptionJwk = { ...getPublishedJwk(key.publicJwk), use: 'enc', alg: 'ECDH-ES' }
+      responseEncryptionKey = { keyId: key.keyId, kmsBackend: key.backend }
     }
 
     const jarmClientMetadata:
@@ -1045,7 +1063,7 @@ export class OpenId4VpVerifierService {
 
     const dcqlQueryFormats = new Set(options.dcqlQuery?.credentials.map((c) => c.format))
 
-    return {
+    const clientMetadata: ClientMetadata = {
       ...jarmClientMetadata,
       ...verifier.clientMetadata,
 
@@ -1131,6 +1149,8 @@ export class OpenId4VpVerifierService {
             },
           }),
     }
+
+    return { clientMetadata, responseEncryptionKey }
   }
 
   private decodePresentation(

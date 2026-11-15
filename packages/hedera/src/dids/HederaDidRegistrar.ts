@@ -10,6 +10,7 @@ import {
   DidRepository,
   type DidUpdateResult,
   JsonTransformer,
+  Kms,
 } from '@credo-ts/core'
 import {
   type HederaDidCreateOptions,
@@ -83,6 +84,10 @@ export class HederaDidRegistrar implements DidRegistrar {
         }
       }
 
+      Kms.warnMissingKmsBackend(
+        agentContext,
+        (options.secret?.keys ?? []).map((key) => ({ keyId: key.kmsKeyId, backend: key.kmsBackend }))
+      )
       const keys = this.concatKeys(didRecord.keys, options.secret?.keys)
       const { didDocument: updatedDidDocument } = await ledgerService.updateDid(agentContext, {
         ...options,

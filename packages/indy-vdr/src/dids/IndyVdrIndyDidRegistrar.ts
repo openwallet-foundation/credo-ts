@@ -121,16 +121,11 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
 
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
-    const _verificationKey = options.options.keyId
-      ? (await kms.getPublicKey({ keyId: options.options.keyId })).publicKey
-      : (
-          await kms.createKey({
-            type: {
-              kty: 'OKP',
-              crv: 'Ed25519',
-            },
-          })
-        ).publicJwk
+    const { publicKey: _verificationKey, backend } = options.options.keyId
+      ? await kms.getPublicKey({ keyId: options.options.keyId })
+      : await kms
+          .createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+          .then(({ publicJwk, backend }) => ({ publicKey: publicJwk, backend }))
 
     if (_verificationKey.kty !== 'OKP' || _verificationKey.crv !== 'Ed25519') {
       return {
@@ -140,6 +135,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     }
 
     const verificationKey = Kms.PublicJwk.fromPublicJwk(_verificationKey) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+    verificationKey.kmsBackend = backend
 
     // Create a new key and calculate did according to the rules for indy did method
     const buffer = Hasher.hash(verificationKey.publicKey.publicKey, 'sha-256')
@@ -343,6 +339,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
             {
               didDocumentRelativeKeyId: '#verkey',
               kmsKeyId: verificationKey.keyId,
+              kmsBackend: verificationKey.kmsBackend,
             },
           ])
           const didAction: EndorseDidTxAction = {
@@ -368,6 +365,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
           {
             didDocumentRelativeKeyId: '#verkey',
             kmsKeyId: verificationKey.keyId,
+            kmsBackend: verificationKey.kmsBackend,
           },
         ])
       }

@@ -210,6 +210,7 @@ export async function verificationPublicJwkForIndyDid(agentContext: AgentContext
   }
 
   publicJwk.keyId = key?.kmsKeyId ?? publicJwk.legacyKeyId
+  publicJwk.kmsBackend = key?.kmsBackend
   return publicJwk
 }
 

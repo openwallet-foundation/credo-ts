@@ -149,6 +149,7 @@ describe('MediatorService - default config', () => {
       await expect(mediatorService.createMediatorRoutingRecord(agentContext)).resolves.toBe(storedRecord)
 
       const [, unsavedRecord] = mockFunction(mediatorRoutingRepository.save).mock.calls[0]
+      expect(unsavedRecord.routingKeys[0]).toMatchObject({ kmsBackend: 'node' })
       await expect(
         agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId: unsavedRecord.routingKeysWithKeyId[0].keyId })
       ).rejects.toThrow(Kms.KeyManagementKeyNotFoundError)

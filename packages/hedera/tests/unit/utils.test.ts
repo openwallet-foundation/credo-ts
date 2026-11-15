@@ -46,7 +46,9 @@ describe('createOrGetKey', () => {
     const result = await createOrGetKey(kmsMock, undefined)
 
     expect(kmsMock.createKey).toHaveBeenCalledWith({ type: { crv: 'Ed25519', kty: 'OKP' } })
-    expect(result).toEqual(Kms.PublicJwk.fromPublicJwk(publicJwk))
+    const expected = Kms.PublicJwk.fromPublicJwk(publicJwk)
+    expected.kmsBackend = 'node'
+    expect(result).toEqual(expected)
   })
 
   it('should retrieve an existing key if keyId is provided', async () => {
@@ -56,8 +58,10 @@ describe('createOrGetKey', () => {
 
     const result = await createOrGetKey(kmsMock, keyId)
 
-    expect(kmsMock.getPublicKey).toHaveBeenCalledWith({ keyId })
-    expect(result).toEqual(Kms.PublicJwk.fromPublicJwk({ ...publicJwk, kid: keyId }))
+    expect(kmsMock.getPublicKey).toHaveBeenCalledWith({ keyId, backend: undefined })
+    const expected = Kms.PublicJwk.fromPublicJwk({ ...publicJwk, kid: keyId })
+    expected.kmsBackend = 'askar'
+    expect(result).toEqual(expected)
   })
 
   it('should throw an error if key with given keyId is not found', async () => {

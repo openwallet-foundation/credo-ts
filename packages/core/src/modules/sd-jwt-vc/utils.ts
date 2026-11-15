@@ -43,8 +43,9 @@ export async function extractKeyFromHolderBinding(
   {
     forSigning = false,
     jwkKeyId,
+    jwkKmsBackend,
     didPurposes,
-  }: { forSigning?: boolean; jwkKeyId?: string; didPurposes?: DidPurpose[] } = {}
+  }: { forSigning?: boolean; jwkKeyId?: string; jwkKmsBackend?: string; didPurposes?: DidPurpose[] } = {}
 ) {
   if (holder.method === 'did') {
     const parsedDid = parseDid(holder.didUrl)
@@ -91,6 +92,7 @@ export async function extractKeyFromHolderBinding(
         )
       }
       publicJwk.keyId = jwkKeyId
+      publicJwk.kmsBackend = jwkKmsBackend
     }
 
     return {
@@ -155,6 +157,7 @@ export function getSdJwtSigner(agentContext: AgentContext, key: PublicJwk): Sign
   return async (input: string) => {
     const result = await kms.sign({
       keyId: key.keyId,
+      backend: key.kmsBackend,
       expectedPublicJwk: key.toJson(),
       data: TypedArrayEncoder.fromUtf8String(input),
       algorithm: key.signatureAlgorithm,

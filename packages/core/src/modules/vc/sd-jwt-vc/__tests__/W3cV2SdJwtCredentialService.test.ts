@@ -1476,7 +1476,7 @@ describe('W3cV2SdJwtCredentialService', () => {
         const sdJwtWithoutKbJwt = credential.encoded.endsWith('~') ? credential.encoded : `${credential.encoded}~`
         const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(holderVerificationMethod)
         const kbJwt = await new JwsService().createJwsCompact(agentContext, {
-          keyId: publicJwk.keyId,
+          key: { keyId: publicJwk.keyId },
           payload: new JwtPayload({
             iat: 1698151532,
             aud,

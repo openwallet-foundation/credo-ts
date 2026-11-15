@@ -130,17 +130,18 @@ export class JweService {
       ? { encrypted: TypedArrayEncoder.fromBase64Url(recipient.encrypted_key) }
       : undefined
 
+    const recipientKeyId = options.recipientKey.keyId
     let keyAgreement: Extract<KmsDecryptOptions['key'], { keyAgreement: unknown }>['keyAgreement']
     if (alg === 'ECDH-ES') {
       if (encryptedKey) {
         throw new CredoError("A JWE with 'alg' 'ECDH-ES' must not contain an encrypted key")
       }
-      keyAgreement = { algorithm: 'ECDH-ES', keyId: options.recipientKeyId, ephemeralPublicJwk, apu, apv }
+      keyAgreement = { algorithm: 'ECDH-ES', keyId: recipientKeyId, ephemeralPublicJwk, apu, apv }
     } else if (alg === 'ECDH-ES+A128KW' || alg === 'ECDH-ES+A192KW' || alg === 'ECDH-ES+A256KW') {
       if (!encryptedKey) {
         throw new CredoError(`A JWE with 'alg' '${alg}' must contain an encrypted key`)
       }
-      keyAgreement = { algorithm: alg, keyId: options.recipientKeyId, ephemeralPublicJwk, encryptedKey, apu, apv }
+      keyAgreement = { algorithm: alg, keyId: recipientKeyId, ephemeralPublicJwk, encryptedKey, apu, apv }
     } else if (alg === 'ECDH-1PU+A256KW') {
       if (!encryptedKey) {
         throw new CredoError(`A JWE with 'alg' '${alg}' must contain an encrypted key`)
@@ -150,7 +151,7 @@ export class JweService {
       }
       keyAgreement = {
         algorithm: alg,
-        keyId: options.recipientKeyId,
+        keyId: recipientKeyId,
         ephemeralPublicJwk,
         senderPublicJwk: this.ecdhPublicJwk(options.senderPublicJwk),
         encryptedKey,
@@ -163,6 +164,7 @@ export class JweService {
 
     const aad = TypedArrayEncoder.fromUtf8String(jwe.aad !== undefined ? `${jwe.protected}.${jwe.aad}` : jwe.protected)
     const { data } = await kms.decrypt({
+      backend: options.recipientKey.kmsBackend,
       key: { keyAgreement },
       decryption: {
         algorithm: enc,

@@ -27,6 +27,7 @@ const mockAgentContext = {
   config: {
     logger: {
       debug: vi.fn(),
+      warn: vi.fn(),
       error: vi.fn(),
     },
   },

@@ -98,10 +98,11 @@ export function findOwnKeyAgreementKey(
       const jwk = getPublicJwkFromVerificationMethod(vm)
       if (!jwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) continue
       if (sameCurveAs && jwk.JwkClass !== sameCurveAs.JwkClass) continue
-      const kmsKeyId = keys?.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
-      if (!kmsKeyId) continue
+      const key = keys?.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))
+      if (!key) continue
 
-      jwk.keyId = kmsKeyId
+      jwk.keyId = key.kmsKeyId
+      jwk.kmsBackend = key.kmsBackend
       return { publicJwk: jwk, didUrl: toAbsoluteDidUrl(didDocument.id, vm.id) }
     } catch {}
   }
@@ -433,12 +434,18 @@ export async function createPeerDidForV2OOB(
   // Map each verification method to its own KMS key ID.
   // #key-1 (Ed25519 auth) → Ed25519 KMS key
   // #key-2 (keyAgreement) → independent keyAgreement KMS key, or Ed25519 fallback (X25519 only)
-  const keyAgreementKmsKeyId = routing.keyAgreementKey
-    ? (routing.keyAgreementKey.keyId ?? routing.keyAgreementKey.legacyKeyId)
-    : (recipientKey.keyId ?? recipientKey.legacyKeyId)
+  const keyAgreementKey = routing.keyAgreementKey ?? recipientKey
   const keys: DidDocumentKey[] = [
-    { didDocumentRelativeKeyId: '#key-1', kmsKeyId: recipientKey.keyId ?? recipientKey.legacyKeyId },
-    { didDocumentRelativeKeyId: '#key-2', kmsKeyId: keyAgreementKmsKeyId },
+    {
+      didDocumentRelativeKeyId: '#key-1',
+      kmsKeyId: recipientKey.keyId ?? recipientKey.legacyKeyId,
+      kmsBackend: recipientKey.kmsBackend,
+    },
+    {
+      didDocumentRelativeKeyId: '#key-2',
+      kmsKeyId: keyAgreementKey.keyId ?? keyAgreementKey.legacyKeyId,
+      kmsBackend: keyAgreementKey.kmsBackend,
+    },
   ]
 
   await assertNoCreatedDidExistsForKeys(agentContext, [recipientKey])
@@ -507,11 +514,12 @@ export function getResolvedDidcommServiceWithSigningKeyId(
 
   // Make sure the key id is set for service keys
   for (const recipientKey of resolvedService.recipientKeys) {
-    const kmsKeyId = inlineServiceKeys?.find(
+    const inlineServiceKey = inlineServiceKeys?.find(
       ({ recipientKeyFingerprint }) => recipientKeyFingerprint === recipientKey.fingerprint
-    )?.kmsKeyId
+    )
 
-    recipientKey.keyId = kmsKeyId ?? recipientKey.legacyKeyId
+    recipientKey.keyId = inlineServiceKey?.kmsKeyId ?? recipientKey.legacyKeyId
+    recipientKey.kmsBackend = inlineServiceKey?.kmsBackend
   }
 
   return resolvedService

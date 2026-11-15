@@ -27,6 +27,7 @@ export class KmsSigner extends Signer {
   async sign(data: Uint8Array): Promise<Uint8Array> {
     const { signature } = await this.kms.sign({
       keyId: this.publicJwk.keyId,
+      backend: this.publicJwk.kmsBackend,
       expectedPublicJwk: this.publicJwk.toJson(),
       data,
       algorithm: 'EdDSA',
@@ -39,6 +40,7 @@ export class KmsSigner extends Signer {
       data: message,
       signature,
       key: { keyId: this.publicJwk.keyId },
+      backend: this.publicJwk.kmsBackend,
       algorithm: 'EdDSA',
     })
     return verified

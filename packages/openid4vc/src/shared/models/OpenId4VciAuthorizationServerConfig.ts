@@ -85,6 +85,11 @@ export interface OpenId4VciChainedAuthorizationServerConfig {
     keyId?: string
 
     /**
+     * The KMS backend that holds `keyId`, so the key isn't looked up in each backend.
+     */
+    kmsBackend?: string
+
+    /**
      * Restrict the DPoP signing algorithms Credo uses towards this authorization server. Does not affect
      * `dpopSigningAlgValuesSupported`, which sets the algorithms accepted from wallets.
      */

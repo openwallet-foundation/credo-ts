@@ -40,6 +40,7 @@ export class CredoWalletWebCrypto {
 
     const { signature } = await this.kms.sign({
       keyId: key.publicJwk.keyId,
+      backend: key.publicJwk.kmsBackend,
       expectedPublicJwk: key.publicJwk.toJson(),
       data: message,
       algorithm: jwaAlgorithm,

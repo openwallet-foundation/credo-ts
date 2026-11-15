@@ -34,6 +34,7 @@ export class KmsPublisher extends ClientPublisher {
     await frozenTransaction.signWith(this.submitPublicKey, async (message) => {
       const signatureResult = await this.kms.sign({
         keyId: this.publicJwk.keyId,
+        backend: this.publicJwk.kmsBackend,
         expectedPublicJwk: this.publicJwk.toJson(),
         data: message,
         algorithm: 'EdDSA',

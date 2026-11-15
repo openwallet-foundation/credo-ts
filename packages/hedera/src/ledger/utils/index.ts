@@ -8,20 +8,21 @@ export function getMultibasePublicKey(publicJwk: Kms.PublicJwk<Kms.Ed25519Public
 
 export async function createOrGetKey(
   kms: Kms.KeyManagementApi,
-  keyId?: string
+  keyId?: string,
+  kmsBackend?: string
 ): Promise<Kms.PublicJwk<Kms.Ed25519PublicJwk>> {
   if (!keyId) {
-    const { publicJwk } = await kms.createKey({
-      type: {
-        crv: 'Ed25519',
-        kty: 'OKP',
-      },
-    })
-
-    return Kms.PublicJwk.fromPublicJwk(publicJwk)
+    return Kms.PublicJwk.fromKmsKey(
+      await kms.createKey({
+        type: {
+          crv: 'Ed25519',
+          kty: 'OKP',
+        },
+      })
+    )
   }
 
-  const { publicKey: publicJwk } = await kms.getPublicKey({ keyId })
+  const { publicKey: publicJwk, backend } = await kms.getPublicKey({ keyId, backend: kmsBackend })
   if (!publicJwk) {
     throw new Error(`Key with key id '${keyId}' not found`)
   }
@@ -31,9 +32,7 @@ export async function createOrGetKey(
     )
   }
 
-  const ed25519PublicJwk = Kms.PublicJwk.fromPublicJwk(publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
-  ed25519PublicJwk.keyId = keyId
-  return ed25519PublicJwk
+  return Kms.PublicJwk.fromKmsKey({ keyId, backend, publicJwk }) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 }
 
 export function hederaPublicKeyFromPublicJwk(publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>): PublicKey {

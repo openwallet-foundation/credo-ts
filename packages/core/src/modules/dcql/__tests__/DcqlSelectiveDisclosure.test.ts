@@ -151,7 +151,7 @@ describe('DCQL selective disclosure', () => {
     const { payload, disclosures } = packSdJwtPayload(template, randomUUID())
 
     const jwt = await agent.dependencyManager.resolve(JwsService).createJwsCompact(agent.context, {
-      keyId: issuerKeyId,
+      key: { keyId: issuerKeyId },
       payload: new JwtPayload({
         iss: issuerDid,
         additionalClaims: { ...payload, cnf: { jwk: holderKey.toJson() }, _sd_alg: 'sha-256' },

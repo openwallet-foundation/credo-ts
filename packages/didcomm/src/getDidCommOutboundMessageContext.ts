@@ -233,6 +233,7 @@ async function getServicesForMessage(
     if (oobRecordRecipientRouting && ourService) {
       ourService.recipientKeys[0].keyId =
         oobRecordRecipientRouting.recipientKeyId ?? ourService.recipientKeys[0].legacyKeyId
+      ourService.recipientKeys[0].kmsBackend = oobRecordRecipientRouting.recipientKmsBackend
     }
   }
   // we either miss ourService (even though a message was sent) or we miss recipientService
@@ -284,6 +285,7 @@ async function createOurService(
     ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
     recipientPublicJwk.keyId = oobRecordRecipientRouting.recipientKeyId ?? recipientPublicJwk.legacyKeyId
+    recipientPublicJwk.kmsBackend = oobRecordRecipientRouting.recipientKmsBackend
 
     // Restore the independent keyAgreement key (X25519 or P-256) from metadata if available.
     let keyAgreementKey: DidCommV2KeyAgreementJwk | undefined
@@ -292,6 +294,7 @@ async function createOurService(
         oobRecordRecipientRouting.keyAgreementKeyFingerprint
       ) as DidCommV2KeyAgreementJwk
       keyAgreementKey.keyId = oobRecordRecipientRouting.keyAgreementKeyId ?? keyAgreementKey.legacyKeyId
+      keyAgreementKey.kmsBackend = oobRecordRecipientRouting.keyAgreementKmsBackend
     }
 
     const baseRouting = {
@@ -322,8 +325,10 @@ async function createOurService(
       outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.RecipientRouting, {
         recipientKeyFingerprint: routing.recipientKey.fingerprint,
         recipientKeyId: routing.recipientKey.keyId,
+        recipientKmsBackend: routing.recipientKey.kmsBackend,
         keyAgreementKeyFingerprint: routing.keyAgreementKey?.fingerprint,
         keyAgreementKeyId: routing.keyAgreementKey?.keyId,
+        keyAgreementKmsBackend: routing.keyAgreementKey?.kmsBackend,
         routingKeyFingerprints: (routing.routingKeys ?? []).map((key) => key.fingerprint),
         endpoints: routing.endpoints,
         mediatorId: routing.mediatorId,

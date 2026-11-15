@@ -160,7 +160,7 @@ export class Holder extends BaseAgent<ReturnType<ReturnType<typeof getOpenIdHold
         const key = await this.agent.kms.createKeyForSignatureAlgorithm({
           algorithm: proofTypes.jwt?.supportedSignatureAlgorithms[0] ?? 'EdDSA',
         })
-        const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
+        const publicJwk = Kms.PublicJwk.fromKmsKey(key)
 
         if (supportsAllDidMethods || supportedDidMethods?.includes('did:key')) {
           await this.agent.dids.create<KeyDidCreateOptions>({

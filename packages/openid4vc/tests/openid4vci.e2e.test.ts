@@ -3,10 +3,12 @@ import {
   ClaimFormat,
   CredoError,
   DidsApi,
+  JweService,
   JwsService,
   Jwt,
   JwtPayload,
   Kms,
+  TypedArrayEncoder,
   X509Certificate,
   X509Module,
 } from '@credo-ts/core'
@@ -355,7 +357,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         signJwt: async (_signer, { header, payload }) => {
           const jwsService = issuer.agent.dependencyManager.resolve(JwsService)
           const compact = await jwsService.createJwsCompact(issuer.agent.context, {
-            keyId: authorizationServerKey.keyId,
+            key: { keyId: authorizationServerKey.keyId },
             payload: JwtPayload.fromJson(payload),
             protectedHeaderOptions: {
               ...header,
@@ -507,11 +509,19 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const tokenResponseTenant = await holderTenant.modules.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
     })
+    const bindingKey = Kms.PublicJwk.fromPublicJwk(holder1.publicJwk.toJson())
+    bindingKey.kmsBackend = (await holderTenant.kms.getPublicKey({ keyId: bindingKey.keyId })).backend
+    const sign = vi.spyOn(holderTenant.context.resolve(Kms.KeyManagementApi), 'sign')
     const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
       ...tokenResponseTenant,
-      credentialBindingResolver,
+      credentialBindingResolver: () => ({ method: 'jwk', keys: [bindingKey] }),
     })
+    // The proof of possession is signed on the backend of the binding key, without looking the key up
+    expect(sign).toHaveBeenCalledWith(
+      expect.objectContaining({ keyId: bindingKey.keyId, backend: bindingKey.kmsBackend })
+    )
+    sign.mockRestore()
 
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
       state: OpenId4VcIssuanceSessionState.Completed,
@@ -525,6 +535,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     // KMS key id Must be defined for jwk-based credentials
     expect(firstSdJwtVcTenant1.holder?.method).toEqual('jwk')
     expect(firstSdJwtVcTenant1.kmsKeyId).toBeDefined()
+    expect(firstSdJwtVcTenant1.kmsBackend).toEqual(bindingKey.kmsBackend)
 
     expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 
@@ -747,7 +758,18 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     expect(tokenResponseTenant1.accessToken).toBeDefined()
     expect(tokenResponseTenant1.dpop?.jwk).toBeInstanceOf(Kms.PublicJwk)
-    const { payload } = Jwt.fromSerializedJwt(tokenResponseTenant1.accessToken)
+    const { header, payload } = Jwt.fromSerializedJwt(tokenResponseTenant1.accessToken)
+
+    // The kid is the jwk thumbprint of the access token key, not its KMS key id
+    expect(header).toEqual({
+      typ: 'at+jwt',
+      alg: 'EdDSA',
+      kid: await calculateJwkThumbprint({
+        hashAlgorithm: HashAlgorithm.Sha256,
+        hashCallback: getOid4vcCallbacks(holderTenant1.context).hash,
+        jwk: openIdIssuerTenant1.accessTokenKey?.publicJwk as Jwk,
+      }),
+    })
 
     expect(payload.toJson()).toEqual({
       cnf: {
@@ -816,7 +838,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
       },
-      credentialRequestEncryption: { jwks: [requestEncryptionKey.publicJwk] },
+      credentialRequestEncryption: { keys: [Kms.PublicJwk.fromKmsKey(requestEncryptionKey)] },
     })
     const issuerUrl = `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}`
 
@@ -827,8 +849,20 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       version: 'v1',
     })
     const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const { kid: _, ...requestEncryptionPublicJwk } = requestEncryptionKey.publicJwk
+    // The metadata publishes the jwk thumbprint as kid, not the KMS key id
+    const advertisedRequestEncryptionJwk = {
+      ...requestEncryptionPublicJwk,
+      kid: await calculateJwkThumbprint({
+        hashAlgorithm: HashAlgorithm.Sha256,
+        hashCallback: getOid4vcCallbacks(holderTenant.context).hash,
+        jwk: requestEncryptionPublicJwk as Jwk,
+      }),
+      alg: 'ECDH-ES',
+      use: 'enc',
+    }
     expect(resolvedCredentialOffer.metadata.credentialIssuer.credential_request_encryption).toMatchObject({
-      jwks: { keys: [{ kid: requestEncryptionKey.keyId, alg: 'ECDH-ES', use: 'enc' }] },
+      jwks: { keys: [advertisedRequestEncryptionJwk] },
       encryption_required: false,
     })
     const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
@@ -852,7 +886,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     const decryptedResponse = await post(
       'credential',
-      await encrypt(requestEncryptionKey.publicJwk as Jwk, {
+      await encrypt(advertisedRequestEncryptionJwk as Jwk, {
         credential_identifier: 'never-granted',
         proofs: { jwt: ['ey.ey.S'] },
       })
@@ -880,7 +914,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const responseEncryptionKey = await holderTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
     const credentialResponse = await post(
       'credential',
-      await encrypt(requestEncryptionKey.publicJwk as Jwk, {
+      await encrypt(advertisedRequestEncryptionJwk as Jwk, {
         credential_configuration_id: 'universityDegree',
         proofs: { jwt: [jwt] },
         credential_response_encryption: {
@@ -911,7 +945,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
       },
-      credentialRequestEncryption: { required: true, jwks: [requestEncryptionKey.publicJwk] },
+      credentialRequestEncryption: { required: true, keys: [Kms.PublicJwk.fromKmsKey(requestEncryptionKey)] },
       credentialResponseEncryption: { required: true },
     })
 
@@ -953,7 +987,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
       },
-      credentialRequestEncryption: { jwks: [requestEncryptionKey.publicJwk] },
+      credentialRequestEncryption: { keys: [Kms.PublicJwk.fromKmsKey(requestEncryptionKey)] },
     })
 
     const { credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
@@ -968,6 +1002,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const kms = holderTenant.context.resolve(Kms.KeyManagementApi)
     const createKeySpy = vi.spyOn(kms, 'createKey')
     const deleteKeySpy = vi.spyOn(kms, 'deleteKey')
+    const decryptJweSpy = vi.spyOn(JweService.prototype, 'decryptJwe')
 
     const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
@@ -981,11 +1016,29 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       (_result, index) => (createKeySpy.mock.calls[index][0].type as { crv?: string }).crv === 'P-256'
     )
     if (!responseKeyCreation) throw new Error('Expected the holder to create a response encryption key')
-    const { keyId } = await (responseKeyCreation.value as ReturnType<typeof kms.createKey>)
-    expect(deleteKeySpy).toHaveBeenCalledWith({ keyId })
+    const { keyId, backend, publicJwk } = await (responseKeyCreation.value as ReturnType<typeof kms.createKey>)
+    expect(deleteKeySpy).toHaveBeenCalledWith({ keyId, backend })
+
+    // The issuer encrypted to the jwk thumbprint kid the holder sent, which the holder maps to its KMS key and backend
+    const responseDecryption = decryptJweSpy.mock.calls.find(
+      ([, { recipientKey }]) => recipientKey.keyId === keyId && (recipientKey as Kms.PublicJwk).kmsBackend === backend
+    )
+    if (!responseDecryption) throw new Error('Expected the holder to decrypt with its response encryption key')
+    const [, { jwe }] = responseDecryption
+    const jweHeader = JSON.parse(
+      TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64Url((jwe as string).split('.')[0]))
+    )
+    expect(jweHeader.kid).toEqual(
+      await calculateJwkThumbprint({
+        hashAlgorithm: HashAlgorithm.Sha256,
+        hashCallback: getOid4vcCallbacks(holderTenant.context).hash,
+        jwk: publicJwk as Jwk,
+      })
+    )
 
     createKeySpy.mockRestore()
     deleteKeySpy.mockRestore()
+    decryptJweSpy.mockRestore()
     await holderTenant.endSession()
   })
 

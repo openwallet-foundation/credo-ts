@@ -640,7 +640,7 @@ export class DidCommMessageReceiver {
       if (didRecord) await didRepository.delete(agentContext, didRecord)
 
       const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-      for (const key of keys) await kms.deleteKey({ keyId: key.keyId })
+      for (const key of keys) await kms.deleteKey({ keyId: key.keyId, backend: key.kmsBackend })
     } catch (error) {
       this.logger.warn('Failed to clean up the unused DID of a duplicate first message connection', {
         did,

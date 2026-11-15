@@ -596,10 +596,9 @@ export class DifPresentationExchangeService {
 
         // NOTE: we use the kmsKeyId from the first credential. We don't support the new useMode (for single-use credentials) for PEX
         const originalSdJwtVc = sdJwtVcApi.fromCompact(sdJwtInput.compactSdJwtVc)
-        originalSdJwtVc.kmsKeyId = getStoredHolderKmsKeyId(
-          originalSdJwtVc.holder,
-          presentationToCreate.verifiableCredentials[0].credential.credentialInstances[0].kmsKeyId
-        )
+        const [credentialInstance] = presentationToCreate.verifiableCredentials[0].credential.credentialInstances
+        originalSdJwtVc.kmsKeyId = getStoredHolderKmsKeyId(originalSdJwtVc.holder, credentialInstance.kmsKeyId)
+        originalSdJwtVc.kmsBackend = credentialInstance.kmsBackend
 
         const sdJwtVc = await sdJwtVcApi.present({
           sdJwtVc: originalSdJwtVc,

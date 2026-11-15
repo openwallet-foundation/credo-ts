@@ -5,6 +5,7 @@ import { asArray, isDid } from '../../utils'
 import {
   type DidPurpose,
   DidsApi,
+  getDidDocumentKeyForVerificationMethod,
   getPublicJwkFromVerificationMethod,
   parseDid,
   type VerificationMethod,
@@ -40,9 +41,9 @@ export async function validateAndResolveVerificationMethod(
   const verificationMethodObject = didDocument.dereferenceKey(verificationMethod, allowsPurposes)
   const publicJwk = getPublicJwkFromVerificationMethod(verificationMethodObject)
 
-  publicJwk.keyId =
-    keys?.find(({ didDocumentRelativeKeyId }) => verificationMethodObject.id.endsWith(didDocumentRelativeKeyId))
-      ?.kmsKeyId ?? publicJwk.legacyKeyId
+  const key = getDidDocumentKeyForVerificationMethod(verificationMethodObject, keys)
+  publicJwk.keyId = key?.kmsKeyId ?? publicJwk.legacyKeyId
+  publicJwk.kmsBackend = key?.kmsBackend
 
   return publicJwk
 }
@@ -101,18 +102,17 @@ export async function resolvePresentationSigner(
     )
   }
 
-  const getKmsKeyId = (method: VerificationMethod) =>
-    keys?.find(({ didDocumentRelativeKeyId }) => method.id.endsWith(didDocumentRelativeKeyId))?.kmsKeyId
+  const getKmsKeyId = (method: VerificationMethod) => getDidDocumentKeyForVerificationMethod(method, keys)?.kmsKeyId
 
-  // A did record without keys predates kms key ids, and signs with the legacy key id
   const localMethods = didDocument
     .findVerificationMethodsByPurpose(['authentication'])
     .filter(
       (method) =>
-        method.controller === signerDid &&
-        (method.id.startsWith('#') || method.id.startsWith(`${signerDid}#`)) &&
-        (!keys || getKmsKeyId(method))
+        method.controller === signerDid && (method.id.startsWith('#') || method.id.startsWith(`${signerDid}#`))
     )
+  // A did record without keys predates kms key ids, and signs with the legacy key id. A record with keys can miss
+  // methods from before them (a cheqd did updated since), so only a method a credential is bound to may use it then.
+  const keyedMethods = keys ? localMethods.filter((method) => getKmsKeyId(method)) : localMethods
 
   if (localMethods.length === 0) {
     throw new CredoError(
@@ -122,7 +122,7 @@ export async function resolvePresentationSigner(
 
   const notBoundError = (cause?: Error) =>
     new CredoError(
-      localMethods.length > 1
+      keyedMethods.length > 1
         ? `Unable to deterministically resolve signer key for presentation ${party} '${holderDid}'. Multiple locally controlled authentication verification methods found, and the presentation credentials are not bound to any of them.`
         : `Unable to determine signer key for presentation ${party} '${holderDid}'. The presentation credentials are bound to a key that is not a locally controlled authentication verification method of the ${party}.`,
       { cause }
@@ -156,7 +156,7 @@ export async function resolvePresentationSigner(
   const [boundKey] = boundKeys.values()
   const candidateMethods = boundKey
     ? localMethods.filter((method) => getPublicJwkFromVerificationMethod(method).equals(boundKey))
-    : localMethods
+    : keyedMethods
 
   if (candidateMethods.length === 0 || (!boundKey && candidateMethods.length > 1)) throw notBoundError()
 
@@ -168,7 +168,9 @@ export async function resolvePresentationSigner(
 
   const [selectedMethod] = candidateMethods
   const publicJwk = getPublicJwkFromVerificationMethod(selectedMethod)
-  publicJwk.keyId = getKmsKeyId(selectedMethod) ?? publicJwk.legacyKeyId
+  const selectedKey = getDidDocumentKeyForVerificationMethod(selectedMethod, keys)
+  publicJwk.keyId = selectedKey?.kmsKeyId ?? publicJwk.legacyKeyId
+  publicJwk.kmsBackend = selectedKey?.kmsBackend
 
   const [alg] = publicJwk.supportedSignatureAlgorithms
   if (!alg) {

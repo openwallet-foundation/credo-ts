@@ -27,7 +27,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
     const { agentContext, issuer } = getRequestContext(request)
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
     const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer, true)
-    const vcIssuer = openId4VcIssuerService.getIssuer(agentContext)
+    const vcIssuer = openId4VcIssuerService.getIssuer(agentContext, { issuer })
     const resourceServer = openId4VcIssuerService.getResourceServer(agentContext, issuer, issuerMetadata)
 
     const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [

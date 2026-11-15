@@ -2,10 +2,15 @@ import { AgentContext } from '../../agent'
 import { CredoError, RecordNotFoundError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
-import { KeyManagementApi } from '../kms'
+import { KeyManagementApi, warnMissingKmsBackend } from '../kms'
 import type { ImportDidOptions } from './DidsApiOptions'
 import { DidsModuleConfig } from './DidsModuleConfig'
-import { type DidPurpose, getPublicJwkFromVerificationMethod, parseDid } from './domain'
+import {
+  type DidPurpose,
+  getDidDocumentKeyForVerificationMethod,
+  getPublicJwkFromVerificationMethod,
+  parseDid,
+} from './domain'
 import { getAlternativeDidsForPeerDid, isValidPeerDid } from './methods'
 import { DidRecord, DidRepository } from './repository'
 import { DidRegistrarService, DidResolverService } from './services'
@@ -145,6 +150,10 @@ export class DidsApi {
       // Make sure the keys exists in the did document
       didDocument.dereferenceKey(key.didDocumentRelativeKeyId)
     }
+    warnMissingKmsBackend(
+      this.agentContext,
+      keys.map((key) => ({ keyId: key.kmsKeyId, backend: key.kmsBackend }))
+    )
 
     // Update existing did record
     if (existingDidRecord) {
@@ -203,9 +212,9 @@ export class DidsApi {
 
     const verificationMethod = didDocument.dereferenceKey(didUrl, allowedPurposes)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-    publicJwk.keyId =
-      keys?.find(({ didDocumentRelativeKeyId }) => verificationMethod.id.endsWith(didDocumentRelativeKeyId))
-        ?.kmsKeyId ?? publicJwk.legacyKeyId
+    const key = getDidDocumentKeyForVerificationMethod(verificationMethod, keys)
+    publicJwk.keyId = key?.kmsKeyId ?? publicJwk.legacyKeyId
+    publicJwk.kmsBackend = key?.kmsBackend
 
     return {
       verificationMethod,

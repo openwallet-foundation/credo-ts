@@ -112,7 +112,7 @@ export class HederaAnonCredsService {
       throw new Error('The root key not found in the KMS')
     }
 
-    const issuerPublicJwk = await createOrGetKey(kms, rootKey.kmsKeyId)
+    const issuerPublicJwk = await createOrGetKey(kms, rootKey.kmsKeyId, rootKey.kmsBackend)
     return new KmsSigner(kms, issuerPublicJwk)
   }
 }

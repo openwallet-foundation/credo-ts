@@ -6,7 +6,7 @@ import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { asArray, isDid, MessageValidator } from '../../../utils'
 import type { DidPurpose } from '../../dids'
-import { DidsApi, parseDid } from '../../dids'
+import { DidsApi, getDidDocumentKeyForVerificationMethod, parseDid } from '../../dids'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../../kms'
 import { W3cJsonLdVerifiableCredential } from '../linked-data-proofs/models/W3cJsonLdVerifiableCredential'
@@ -60,7 +60,7 @@ export class W3cJwtCredentialService {
 
     const jwt = await this.jwsService.createJwsCompact(agentContext, {
       payload: jwtPayload,
-      keyId: publicJwk.keyId,
+      key: publicJwk,
       protectedHeaderOptions: {
         typ: 'JWT',
         alg: options.alg,
@@ -229,7 +229,7 @@ export class W3cJwtCredentialService {
 
     const jwt = await this.jwsService.createJwsCompact(agentContext, {
       payload: jwtPayload,
-      keyId: publicJwk.keyId,
+      key: publicJwk,
       protectedHeaderOptions: {
         typ: 'JWT',
         alg: options.alg,
@@ -407,9 +407,9 @@ export class W3cJwtCredentialService {
     const verificationMethodObject = didDocument.dereferenceKey(verificationMethod, allowsPurposes)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethodObject)
 
-    publicJwk.keyId =
-      keys?.find(({ didDocumentRelativeKeyId }) => verificationMethodObject.id.endsWith(didDocumentRelativeKeyId))
-        ?.kmsKeyId ?? publicJwk.legacyKeyId
+    const key = getDidDocumentKeyForVerificationMethod(verificationMethodObject, keys)
+    publicJwk.keyId = key?.kmsKeyId ?? publicJwk.legacyKeyId
+    publicJwk.kmsBackend = key?.kmsBackend
 
     return publicJwk
   }
