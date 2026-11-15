@@ -544,5 +544,41 @@ describe('AskarStorageService', () => {
       expect(records.length).toBe(2)
       expect(records).toEqual(expect.arrayContaining([expectedRecord1, expectedRecord2]))
     })
+
+    it('should return paginated records in insertion order, without skipping or repeating records', async () => {
+      // Ids sort in the reverse of insertion order, so only an order by insertion passes this test
+      const ids = ['e', 'd', 'c', 'b', 'a']
+      for (const id of ids) {
+        await insertRecord({ id, tags: { myTag: 'foobar' } })
+      }
+      await insertRecord({ id: 'f', tags: { myTag: 'notfoobar' } })
+
+      const pagedIds: string[] = []
+      for (let offset = 0; offset < ids.length; offset += 2) {
+        const page = await storageService.findByQuery(
+          agentContext,
+          TestRecord,
+          { myTag: 'foobar' },
+          { offset, limit: 2 }
+        )
+        pagedIds.push(...page.map((record) => record.id))
+      }
+
+      expect(pagedIds).toEqual(ids)
+    })
+
+    it('should not repeat records across pages when a record is added between page reads', async () => {
+      await insertRecord({ id: 'b' })
+      await insertRecord({ id: 'c' })
+      await insertRecord({ id: 'd' })
+      await insertRecord({ id: 'e' })
+
+      const firstPage = await storageService.findByQuery(agentContext, TestRecord, {}, { offset: 0, limit: 2 })
+      await insertRecord({ id: 'a' })
+      const secondPage = await storageService.findByQuery(agentContext, TestRecord, {}, { offset: 2, limit: 2 })
+
+      expect(firstPage.map((record) => record.id)).toEqual(['b', 'c'])
+      expect(secondPage.map((record) => record.id)).toEqual(['d', 'e'])
+    })
   })
 })

@@ -490,7 +490,7 @@ export class DidCommSdJwtVcCredentialFormatService
         throw new CredoError("An SD-JWT VC with a DID 'iss' must not have an 'x5c' header")
       }
 
-      const result = await sdJwtVcApi.verify({ compactSdJwtVc: credential, disableStatusValidation: true })
+      const result = await sdJwtVcApi.verify({ sdJwtVc: credential, disableStatusValidation: true })
       if (!result.isValid) throw new CredoError(`Failed to verify the SD-JWT VC. ${result.error.message}`)
 
       const { sdJwtVc } = result
