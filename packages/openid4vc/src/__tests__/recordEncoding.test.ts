@@ -203,6 +203,15 @@ testRecordEncoding(path.join(__dirname, '__fixtures__/records'), {
           },
         },
       ],
+      notifications: [
+        {
+          notificationId: 'notification-accepted',
+          credentialConfigurationId: 'pid-sd-jwt',
+          event: 'credential_accepted',
+          eventDescription: 'Credential stored',
+        },
+        { notificationId: 'notification-pending', credentialConfigurationId: 'diploma-jwt-vc' },
+      ],
       credentialOfferUri: 'https://issuer.example.com/oid4vci/issuer-id/offers/credential-offer-id',
       credentialOfferId: 'credential-offer-id',
       credentialOfferPayload: {
@@ -469,6 +478,8 @@ describe('legacy OpenId4VcIssuanceSessionRecord', () => {
     )
 
     expect(record.state).toEqual(OpenId4VcIssuanceSessionState.Error)
+    // Records stored before notifications were added
+    expect(record.notifications).toEqual([])
     expect(JsonTransformer.toJSON(record).state).toEqual(OpenId4VcIssuanceSessionState.Error)
   })
 })

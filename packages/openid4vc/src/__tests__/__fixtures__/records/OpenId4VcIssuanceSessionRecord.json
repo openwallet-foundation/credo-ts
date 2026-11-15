@@ -83,6 +83,18 @@
       "key": "value"
     }
   },
+  "notifications": [
+    {
+      "credentialConfigurationId": "pid-sd-jwt",
+      "event": "credential_accepted",
+      "eventDescription": "Credential stored",
+      "notificationId": "notification-accepted"
+    },
+    {
+      "credentialConfigurationId": "diploma-jwt-vc",
+      "notificationId": "notification-pending"
+    }
+  ],
   "openId4VciVersion": "v1",
   "pkce": {
     "codeChallenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
