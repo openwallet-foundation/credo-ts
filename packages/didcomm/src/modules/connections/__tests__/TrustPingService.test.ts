@@ -1,3 +1,4 @@
+import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { JsonEncoder } from '../../../../../core/src/utils/JsonEncoder'
@@ -14,6 +15,13 @@ import {
 } from '../messages'
 import { DidCommDidExchangeRole, DidCommDidExchangeState } from '../models'
 import { DidCommConnectionService, DidCommTrustPingService } from '../services'
+
+// The key the envelope proved as the sender, which assertReadyConnection requires
+const testSenderKey = Kms.PublicJwk.fromPublicKey({
+  kty: 'OKP',
+  crv: 'Ed25519',
+  publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+}) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
 vi.mock('../../../../../core/src/agent/EventEmitter')
 vi.mock('../services/DidCommConnectionService')
@@ -61,7 +69,12 @@ describe('DidCommTrustPingService', () => {
       const ping = new DidCommTrustPingV2Message({})
 
       const outboundMessageContext = await trustPingHandler.handle(
-        new DidCommInboundMessageContext(ping, { agentContext, connection, encryptedMessage: v2EncryptedMessage })
+        new DidCommInboundMessageContext(ping, {
+          senderKey: testSenderKey,
+          agentContext,
+          connection,
+          encryptedMessage: v2EncryptedMessage,
+        })
       )
 
       expect(outboundMessageContext?.message).toBeInstanceOf(DidCommTrustPingResponseV2Message)
@@ -77,7 +90,12 @@ describe('DidCommTrustPingService', () => {
       const ping = new DidCommTrustPingMessage({})
 
       const outboundMessageContext = await trustPingHandler.handle(
-        new DidCommInboundMessageContext(ping, { agentContext, connection, encryptedMessage: v1EncryptedMessage })
+        new DidCommInboundMessageContext(ping, {
+          senderKey: testSenderKey,
+          agentContext,
+          connection,
+          encryptedMessage: v1EncryptedMessage,
+        })
       )
 
       expect(outboundMessageContext?.message).toBeInstanceOf(DidCommTrustPingResponseMessage)
@@ -89,7 +107,7 @@ describe('DidCommTrustPingService', () => {
       const ping = new DidCommTrustPingV2Message({ responseRequested: false })
 
       const outboundMessageContext = await trustPingHandler.handle(
-        new DidCommInboundMessageContext(ping, { agentContext, connection })
+        new DidCommInboundMessageContext(ping, { senderKey: testSenderKey, agentContext, connection })
       )
 
       expect(outboundMessageContext).toBeUndefined()
@@ -115,7 +133,7 @@ describe('DidCommTrustPingService', () => {
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed, didcommVersion })
 
       const handle = trustPingHandler.handle(
-        new DidCommInboundMessageContext(ping, { agentContext, connection, encryptedMessage })
+        new DidCommInboundMessageContext(ping, { senderKey: testSenderKey, agentContext, connection, encryptedMessage })
       )
 
       await expect(handle).rejects.toThrow(DidCommProblemReportError)
@@ -133,7 +151,11 @@ describe('DidCommTrustPingService', () => {
 
       await expect(
         trustPingHandler.handle(
-          new DidCommInboundMessageContext(new DidCommTrustPingV2Message({}), { agentContext, connection })
+          new DidCommInboundMessageContext(new DidCommTrustPingV2Message({}), {
+            senderKey: testSenderKey,
+            agentContext,
+            connection,
+          })
         )
       ).rejects.toThrow(DidCommProblemReportError)
       expect(connectionService.updateState).not.toHaveBeenCalled()
@@ -145,7 +167,9 @@ describe('DidCommTrustPingService', () => {
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed, didcommVersion: 'v2' })
       const response = new DidCommTrustPingResponseV2Message({ threadId: 'ping-id' })
 
-      await trustPingResponseHandler.handle(new DidCommInboundMessageContext(response, { agentContext, connection }))
+      await trustPingResponseHandler.handle(
+        new DidCommInboundMessageContext(response, { senderKey: testSenderKey, agentContext, connection })
+      )
 
       expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
         type: DidCommTrustPingEventTypes.DidCommTrustPingResponseReceivedEvent,
@@ -160,7 +184,9 @@ describe('DidCommTrustPingService', () => {
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed, didcommVersion })
 
       await expect(
-        trustPingResponseHandler.handle(new DidCommInboundMessageContext(response, { agentContext, connection }))
+        trustPingResponseHandler.handle(
+          new DidCommInboundMessageContext(response, { senderKey: testSenderKey, agentContext, connection })
+        )
       ).rejects.toThrow(DidCommProblemReportError)
       expect(eventEmitter.emit).not.toHaveBeenCalled()
     })
