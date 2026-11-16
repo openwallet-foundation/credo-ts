@@ -2,11 +2,14 @@ import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { verkeyToDidKey } from '../../../../../../../core/src/modules/dids/helpers'
+import { JsonTransformer } from '../../../../../../../core/src/utils/JsonTransformer'
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../../../core/tests/helpers'
+import { DummyTransportSession } from '../../../../../__tests__/stubs'
 import { DidCommEventTypes } from '../../../../../DidCommEvents'
 import { DidCommMessageSender } from '../../../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../../../DidCommModuleConfig'
+import { DidCommTransportService } from '../../../../../DidCommTransportService'
 import { DidCommAttachment } from '../../../../../decorators/attachment/DidCommAttachment'
 import { DidCommProblemReportError } from '../../../../../errors/problem-reports/DidCommProblemReportError'
 import { DidCommInboundMessageContext } from '../../../../../models'
@@ -74,6 +77,14 @@ const agentContext = getAgentContext({
     [DidCommMessagePickupSessionService, sessionService],
   ],
 })
+const transportService = new DidCommTransportService(agentContext, eventEmitter)
+agentContext.dependencyManager.registerInstance(DidCommTransportService, transportService)
+
+function saveTransportSession(id: string, { isSingleResponse = false } = {}) {
+  const session = new DummyTransportSession(id)
+  session.isSingleResponse = isSingleResponse
+  transportService.saveSession(session)
+}
 
 const encryptedMessage: DidCommEncryptedMessage = {
   protected: 'base64url',
@@ -207,6 +218,36 @@ describe('DidCommMessagePickupV2Protocol', () => {
       const { message } = await pickupProtocol.processLiveDeliveryChange(messageContext)
 
       expect(message.liveDelivery).toBe(false)
+    })
+
+    test('replies that live delivery is off when the transport session carries a single response', async () => {
+      mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(0)
+      saveTransportSession('http-request', { isSingleResponse: true })
+
+      const messageContext = new DidCommInboundMessageContext(
+        new DidCommLiveDeliveryChangeV2Message({ liveDelivery: true }),
+        { senderKey: testSenderKey, connection: mockConnection, agentContext, sessionId: 'http-request' }
+      )
+      const { message } = await pickupProtocol.processLiveDeliveryChange(messageContext)
+
+      expect(message.liveDelivery).toBe(false)
+      expect(
+        sessionService.getLiveSessionByConnectionId(agentContext, { connectionId: mockConnection.id })
+      ).toBeUndefined()
+    })
+
+    test('turns live delivery on over a long-lived transport session', async () => {
+      mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(0)
+      saveTransportSession('socket')
+
+      const messageContext = new DidCommInboundMessageContext(
+        new DidCommLiveDeliveryChangeV2Message({ liveDelivery: true }),
+        { senderKey: testSenderKey, connection: mockConnection, agentContext, sessionId: 'socket' }
+      )
+      const { message } = await pickupProtocol.processLiveDeliveryChange(messageContext)
+
+      expect(message.liveDelivery).toBe(true)
+      sessionService.removeLiveSession(agentContext, { connectionId: mockConnection.id })
     })
   })
 
@@ -412,6 +453,44 @@ describe('DidCommMessagePickupV2Protocol', () => {
         id: expect.any(String),
         recipientKey: 'a-key',
       })
+    })
+  })
+
+  describe('DidCommStatusV2Message', () => {
+    it('leaves the received times unset when they are unknown', () => {
+      const status = new DidCommStatusV2Message({ threadId: uuid(), messageCount: 0 })
+
+      const json = status.toJSON()
+      expect(json.newest_received_time).toBeUndefined()
+      expect(json.oldest_received_time).toBeUndefined()
+
+      const parsed = JsonTransformer.fromJSON(json, DidCommStatusV2Message)
+      expect(parsed.newestReceivedTime).toBeUndefined()
+      expect(parsed.oldestReceivedTime).toBeUndefined()
+    })
+
+    it('leaves the received times unset when they are null', () => {
+      const json = { ...new DidCommStatusV2Message({ threadId: uuid(), messageCount: 0 }).toJSON() }
+      json.newest_received_time = null
+      json.oldest_received_time = null
+
+      const parsed = JsonTransformer.fromJSON(json, DidCommStatusV2Message)
+      expect(parsed.newestReceivedTime).toBeUndefined()
+      expect(parsed.oldestReceivedTime).toBeUndefined()
+    })
+
+    it('keeps the received times when they are set', () => {
+      const receivedTime = new Date('2026-01-01T10:00:00.000Z')
+      const status = new DidCommStatusV2Message({
+        threadId: uuid(),
+        messageCount: 1,
+        newestReceivedTime: receivedTime,
+        oldestReceivedTime: receivedTime,
+      })
+
+      const parsed = JsonTransformer.fromJSON(status.toJSON(), DidCommStatusV2Message)
+      expect(parsed.newestReceivedTime).toEqual(receivedTime)
+      expect(parsed.oldestReceivedTime).toEqual(receivedTime)
     })
   })
 

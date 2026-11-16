@@ -57,7 +57,12 @@ export async function signData(
   const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
   const dataBuffer = TypedArrayEncoder.concat([utils.timestamp(), JsonEncoder.toUint8Array(data)])
 
-  const result = await kms.sign({ data: dataBuffer, algorithm: 'EdDSA', keyId: signerKey.keyId })
+  const result = await kms.sign({
+    data: dataBuffer,
+    algorithm: 'EdDSA',
+    keyId: signerKey.keyId,
+    expectedPublicJwk: signerKey.toJson(),
+  })
 
   const signatureDecorator = new SignatureDecorator({
     signatureType: 'https://didcomm.org/signature/1.0/ed25519Sha512_single',

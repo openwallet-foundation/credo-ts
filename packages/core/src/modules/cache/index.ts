@@ -7,6 +7,7 @@ export { CacheModule, type CacheModuleOptions } from './CacheModule'
 export { CacheModuleConfig } from './CacheModuleConfig'
 // Cache Implementations
 export { InMemoryLruCache, type InMemoryLruCacheOptions } from './InMemoryLruCache'
+export { LruCache, type LruCacheOptions } from './LruCache'
 export {
   type SingleContextLruCacheItem,
   SingleContextLruCacheRecord,

@@ -7,7 +7,7 @@ import {
   DidsApi,
   getPublicJwkFromVerificationMethod,
   Kms,
-  X509Certificate,
+  X509Service,
 } from '@credo-ts/core'
 import type { Jwk, JwkSet, JwtSigner } from '@openid4vc/oauth2'
 import type { CredentialRequestEncryption, IssuerMetadataResult } from '@openid4vc/openid4vci'
@@ -140,7 +140,10 @@ export function encodeJwtIssuer(jwtIssuer: OpenId4VcJwtIssuer): OpenId4VcJwtIssu
   return jwtIssuer
 }
 
-export function decodeJwtIssuer(encodedJwtIssuer: OpenId4VcJwtIssuerEncoded): OpenId4VcJwtIssuer {
+export function decodeJwtIssuer(
+  agentContext: AgentContext,
+  encodedJwtIssuer: OpenId4VcJwtIssuerEncoded
+): OpenId4VcJwtIssuer {
   if (encodedJwtIssuer.method === 'jwk') {
     return {
       method: 'jwk',
@@ -152,7 +155,7 @@ export function decodeJwtIssuer(encodedJwtIssuer: OpenId4VcJwtIssuerEncoded): Op
     return {
       method: 'x5c',
       x5c: encodedJwtIssuer.x5c.map((e, i) => {
-        const c = X509Certificate.fromEncodedCertificate(e)
+        const c = X509Service.parseCertificate(agentContext, { encodedCertificate: e })
         if (i === 0) c.keyId = encodedJwtIssuer.leafCertificateKeyId
         return c
       }),

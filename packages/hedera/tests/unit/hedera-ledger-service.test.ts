@@ -399,6 +399,7 @@ describe('HederaLedgerService', () => {
       expect(result).toHaveProperty('did', did)
       expect(mockKms.sign).toHaveBeenCalledWith({
         keyId: mockKeyId,
+        expectedPublicJwk: expect.objectContaining({ x: mockPublicJwk.x }),
         data: deactivateDidRequest.signingRequest.serializedPayload,
         algorithm: 'EdDSA',
       })

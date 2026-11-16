@@ -26,6 +26,7 @@ export const getSign1Context = (agentContext: AgentContext): Sign1Context => {
         data: input.toBeSigned,
         algorithm: knownJwaFromCoseSignatureAlgorithm(algorithm as KnownCoseSignatureAlgorithm),
         keyId: input.key.keyId,
+        expectedPublicJwk: input.key.jwk as KmsJwkPublicAsymmetric,
       })
 
       return signature

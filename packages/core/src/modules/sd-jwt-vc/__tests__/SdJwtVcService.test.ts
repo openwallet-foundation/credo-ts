@@ -31,7 +31,12 @@ import { type Mock, vi } from 'vitest'
 import { transformSeedToPrivateJwk } from '../../../../../askar/src'
 import { getAgentOptions, mockProperty } from '../../../../tests'
 import { PublicJwk } from '../../kms'
-import { applyDisclosuresForPaths, buildPresentationFrameForPaths } from '../disclosureFrame'
+import { decodeSdJwtVc } from '../decodeSdJwtVc'
+import {
+  applyDisclosuresForPaths,
+  applyDisclosuresForPayload,
+  buildPresentationFrameForPaths,
+} from '../disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from '../repository'
 import {
   type CustomStatusListFetcher,
@@ -194,6 +199,9 @@ describe('SdJwtVcService', () => {
   let holderKey: PublicJwk
   let sdJwtVcService: SdJwtVcService
 
+  // As a holder that stored the fixtures passes them, with the key id of their holder key
+  const withHolderKey = (compact: string): SdJwtVc => ({ ...decodeSdJwtVc(compact), kmsKeyId: holderKey.keyId })
+
   const mockStatusList = (statusList: string) =>
     nock('https://example.com')
       .get('/status-list')
@@ -301,7 +309,7 @@ describe('SdJwtVcService', () => {
     })
 
     test('Sign (x509) sd-jwt-vc from a basic payload without disclosures', async () => {
-      const { compact } = await sdJwtVcService.sign(agent.context, {
+      const { compact, issuer } = await sdJwtVcService.sign(agent.context, {
         payload: {
           claim: 'some-claim',
           vct: 'IdentityCredential',
@@ -327,6 +335,14 @@ describe('SdJwtVcService', () => {
         alg: 'EdDSA',
         x5c: [simpleX509.trustedCertificate],
       })
+
+      // Decoding leaves the certificates encoded, the same as the signed credential
+      expect(sdJwtVc.issuer).toEqual({
+        method: 'x5c',
+        x5c: [simpleX509.trustedCertificate],
+        issuer: simpleX509.certificateIssuer,
+      })
+      expect(issuer).toEqual(sdJwtVc.issuer)
 
       expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
@@ -967,13 +983,15 @@ describe('SdJwtVcService', () => {
     })
   })
 
-  describe('SdJwtVcService.applyDisclosuresForPayload', () => {
+  describe('applyDisclosuresForPayload', () => {
     test('Applies disclosures for given payload', async () => {
-      const presentation = sdJwtVcService.applyDisclosuresForPayload(sdJwtVcPid, {
-        given_name: 'ERIKA',
-        birthdate: '1964-08-12',
-        family_name: 'MUSTERMANN',
-      })
+      const presentation = sdJwtVcService.fromCompact(
+        applyDisclosuresForPayload(sdJwtVcPid, {
+          given_name: 'ERIKA',
+          birthdate: '1964-08-12',
+          family_name: 'MUSTERMANN',
+        })
+      )
 
       expect(presentation.prettyClaims).toStrictEqual({
         place_of_birth: {},
@@ -1000,9 +1018,11 @@ describe('SdJwtVcService', () => {
     })
 
     test('Supports payload that results in no disclosures', async () => {
-      const presentation = sdJwtVcService.applyDisclosuresForPayload(simpleJwtVc, {
-        claim: 'some-claim',
-      })
+      const presentation = sdJwtVcService.fromCompact(
+        applyDisclosuresForPayload(simpleJwtVc, {
+          claim: 'some-claim',
+        })
+      )
 
       expect(presentation.prettyClaims).toStrictEqual({
         claim: 'some-claim',
@@ -1046,7 +1066,7 @@ describe('SdJwtVcService', () => {
         { _sd: ['given_name', 'family_name'] }
       )
 
-      const sdJwtVc = sdJwtVcService.applyDisclosuresForPaths(compact, [['given_name']])
+      const sdJwtVc = sdJwtVcService.fromCompact(applyDisclosuresForPaths(compact, [['given_name']]).compact)
 
       expect(sdJwtVc.prettyClaims.given_name).toBe('Erika')
       expect(sdJwtVc.prettyClaims).not.toHaveProperty('family_name')
@@ -1153,7 +1173,7 @@ describe('SdJwtVcService', () => {
       )
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: compact,
+        sdJwtVc: withHolderKey(compact),
         presentationFrame: buildPresentationFrameForPaths(compact, [['address']]),
       })
 
@@ -1223,8 +1243,9 @@ describe('SdJwtVcService', () => {
       expect(prettyClaims.nationalities).toStrictEqual(['FR'])
       expect(disclosedPaths.filter((path) => path[0] === 'nationalities')).toStrictEqual([['nationalities', 1]])
 
+      // The unsigned credential has no issuer to decode, and present only reads the compact form
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: compact,
+        sdJwtVc: { compact } as SdJwtVc,
         presentationFrame: buildPresentationFrameForPaths(compact, disclosedPaths),
       })
       expect(getClaims(presentation).nationalities).toStrictEqual(['FR'])
@@ -1294,9 +1315,36 @@ describe('SdJwtVcService', () => {
   })
 
   describe('SdJwtVcService.present', () => {
+    test('requires the kms key id of a jwk-bound credential to create a KB-JWT', async () => {
+      await expect(
+        sdJwtVcService.present(agent.context, {
+          sdJwtVc: decodeSdJwtVc(simpleJwtVc),
+          presentationFrame: {},
+          verifierMetadata: { issuedAt: Date.now() / 1000, audience: verifierDid, nonce: 'salt' },
+        })
+      ).rejects.toThrow("Set 'kmsKeyId' on the SD-JWT VC")
+
+      // Without a KB-JWT the holder key isn't needed
+      await expect(
+        sdJwtVcService.present(agent.context, { sdJwtVc: decodeSdJwtVc(simpleJwtVc), presentationFrame: {} })
+      ).resolves.toEqual(expect.any(String))
+    })
+
+    test('stores a jwk-bound credential only with the kms key id of its holder key', () => {
+      expect(() => SdJwtVcRecord.fromSdJwtVc(decodeSdJwtVc(simpleJwtVc))).toThrow("Set 'kmsKeyId' on the SD-JWT VC")
+      expect(SdJwtVcRecord.fromSdJwtVc(withHolderKey(simpleJwtVc)).credentialInstances[0].kmsKeyId).toEqual(
+        holderKey.keyId
+      )
+      expect(() => SdJwtVcRecord.fromSdJwtVc(decodeSdJwtVc(simpleJwtVcWithoutHolderBinding))).not.toThrow()
+
+      // A record stored before the key id was stored uses the legacy key id
+      const record = new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVc }] })
+      expect(record.firstCredential.kmsKeyId).toEqual(holderKey.legacyKeyId)
+    })
+
     test('Present sd-jwt-vc from a basic payload without disclosures', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleJwtVc,
+        sdJwtVc: withHolderKey(simpleJwtVc),
         presentationFrame: {},
         verifierMetadata: {
           issuedAt: Date.now() / 1000,
@@ -1310,7 +1358,7 @@ describe('SdJwtVcService', () => {
 
     test('Present sd-jwt-vc without holder binding', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleJwtVcWithoutHolderBinding,
+        sdJwtVc: withHolderKey(simpleJwtVcWithoutHolderBinding),
         presentationFrame: {},
       })
 
@@ -1321,7 +1369,7 @@ describe('SdJwtVcService', () => {
     test('Errors when providing verifier metadata but SD-JWT VC has no cnf claim', async () => {
       await expect(
         sdJwtVcService.present(agent.context, {
-          sdJwtVc: simpleJwtVcWithoutHolderBinding,
+          sdJwtVc: withHolderKey(simpleJwtVcWithoutHolderBinding),
           presentationFrame: {},
           verifierMetadata: {
             audience: 'verifier',
@@ -1334,7 +1382,7 @@ describe('SdJwtVcService', () => {
 
     test('Present sd-jwt-vc from a basic payload with a disclosure', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: sdJwtVcWithSingleDisclosure,
+        sdJwtVc: withHolderKey(sdJwtVcWithSingleDisclosure),
         presentationFrame: { claim: true },
         verifierMetadata: {
           issuedAt: Date.now() / 1000,
@@ -1356,7 +1404,7 @@ describe('SdJwtVcService', () => {
           given_name: boolean
         } & SdJwtVcPayload
       >(agent.context, {
-        sdJwtVc: complexSdJwtVc,
+        sdJwtVc: withHolderKey(complexSdJwtVc),
         verifierMetadata: {
           issuedAt: Date.now() / 1000,
           audience: verifierDid,
@@ -1378,9 +1426,44 @@ describe('SdJwtVcService', () => {
   })
 
   describe('SdJwtVcService.verify', () => {
+    test('Verify an already decoded sd-jwt-vc', async () => {
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: withHolderKey(simpleJwtVc),
+        presentationFrame: {},
+        verifierMetadata: {
+          issuedAt: Date.now() / 1000,
+          audience: verifierDid,
+          nonce: 'salt',
+        },
+      })
+
+      const sdJwtVc = sdJwtVcService.fromCompact(presentation)
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        sdJwtVc,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+      expect(verificationResult.isValid).toBe(true)
+
+      // The same as verifying the compact form
+      expect(
+        await sdJwtVcService.verify(agent.context, {
+          sdJwtVc: presentation,
+          keyBinding: { audience: verifierDid, nonce: 'salt' },
+          requiredClaimKeys: ['claim'],
+        })
+      ).toEqual(verificationResult)
+
+      // A wrong nonce is still rejected
+      expect(
+        await sdJwtVcService.verify(agent.context, { sdJwtVc, keyBinding: { audience: verifierDid, nonce: 'other' } })
+      ).toMatchObject({ isValid: false })
+    })
+
     test('Verify sd-jwt-vc without disclosures', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleJwtVc,
+        sdJwtVc: withHolderKey(simpleJwtVc),
         // no disclosures
         presentationFrame: {},
         verifierMetadata: {
@@ -1391,7 +1474,7 @@ describe('SdJwtVcService', () => {
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
@@ -1404,7 +1487,7 @@ describe('SdJwtVcService', () => {
 
     test('Verify x509 protected sd-jwt-vc without disclosures', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleX509.sdJwtVc,
+        sdJwtVc: withHolderKey(simpleX509.sdJwtVc),
         // no disclosures
         presentationFrame: {},
         verifierMetadata: {
@@ -1418,7 +1501,7 @@ describe('SdJwtVcService', () => {
       x509ModuleConfig.addTrustedCertificate(simpleX509.trustedCertificate)
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
@@ -1431,7 +1514,7 @@ describe('SdJwtVcService', () => {
 
     test('Verify x509 protected sd-jwt-vc without iss', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleX509WithoutIss.sdJwtVc,
+        sdJwtVc: withHolderKey(simpleX509WithoutIss.sdJwtVc),
         // no disclosures
         presentationFrame: {},
         verifierMetadata: {
@@ -1445,7 +1528,7 @@ describe('SdJwtVcService', () => {
       x509ModuleConfig.addTrustedCertificate(simpleX509WithoutIss.trustedCertificate)
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
@@ -1458,13 +1541,13 @@ describe('SdJwtVcService', () => {
 
     test('Verify sd-jwt-vc without holder binding', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleJwtVcWithoutHolderBinding,
+        sdJwtVc: withHolderKey(simpleJwtVcWithoutHolderBinding),
         // no disclosures
         presentationFrame: {},
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         requiredClaimKeys: ['claim'],
       })
 
@@ -1486,7 +1569,7 @@ describe('SdJwtVcService', () => {
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: funkeX509.sdJwtVc,
+        sdJwtVc: funkeX509.sdJwtVc,
         requiredClaimKeys: ['issuing_country'],
       })
 
@@ -1519,12 +1602,12 @@ describe('SdJwtVcService', () => {
         .reply(200, statusList, { 'Content-Type': 'application/statuslist+jwt' })
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: withHolderKey(simpleSdJwtVcWithStatus),
         presentationFrame: {},
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
       })
 
       expect(verificationResult).toEqual({
@@ -1543,12 +1626,12 @@ describe('SdJwtVcService', () => {
         })
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: withHolderKey(simpleSdJwtVcWithStatus),
         presentationFrame: {},
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
       })
 
       expect(verificationResult).toEqual({
@@ -1565,7 +1648,7 @@ describe('SdJwtVcService', () => {
 
       const statusList = await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [], { ttl: 60 })
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: withHolderKey(simpleSdJwtVcWithStatus),
         presentationFrame: {},
       })
 
@@ -1573,7 +1656,7 @@ describe('SdJwtVcService', () => {
         // Only one response is mocked, so a second fetch would fail the verification
         const scope = mockStatusList(statusList)
         for (let i = 0; i < 2; i++) {
-          const verificationResult = await sdJwtVcService.verify(agent.context, { compactSdJwtVc: presentation })
+          const verificationResult = await sdJwtVcService.verify(agent.context, { sdJwtVc: presentation })
           expect(verificationResult.isValid).toBe(true)
         }
         expect(scope.isDone()).toBe(true)
@@ -1589,12 +1672,12 @@ describe('SdJwtVcService', () => {
       const cacheKey = 'token-status-list:statusListJwt:v1:https://example.com/status-list'
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: withHolderKey(simpleSdJwtVcWithStatus),
         presentationFrame: {},
       })
 
       mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, []))
-      expect((await sdJwtVcService.verify(agent.context, { compactSdJwtVc: presentation })).isValid).toBe(true)
+      expect((await sdJwtVcService.verify(agent.context, { sdJwtVc: presentation })).isValid).toBe(true)
       expect(await cache.get(agent.context, cacheKey, { scope: 'global' })).toBeNull()
 
       const otherKey = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
@@ -1603,7 +1686,7 @@ describe('SdJwtVcService', () => {
           ttl: 60,
         })
       )
-      expect((await sdJwtVcService.verify(agent.context, { compactSdJwtVc: presentation })).isValid).toBe(false)
+      expect((await sdJwtVcService.verify(agent.context, { sdJwtVc: presentation })).isValid).toBe(false)
       expect(await cache.get(agent.context, cacheKey, { scope: 'global' })).toBeNull()
     })
 
@@ -1619,12 +1702,12 @@ describe('SdJwtVcService', () => {
         .reply(200, statusList, { 'Content-Type': 'application/statuslist+jwt' })
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: withHolderKey(simpleSdJwtVcWithStatus),
         presentationFrame: {},
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
       })
 
       expect(verificationResult).toEqual({
@@ -1650,12 +1733,12 @@ describe('SdJwtVcService', () => {
         .reply(200, statusList, { 'Content-Type': 'application/statuslist+jwt' })
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: withHolderKey(simpleSdJwtVcWithStatus),
         presentationFrame: {},
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
       })
 
       expect(verificationResult).toEqual({
@@ -1667,7 +1750,7 @@ describe('SdJwtVcService', () => {
 
     test('Verify sd-jwt-vc with a disclosure', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: sdJwtVcWithSingleDisclosure,
+        sdJwtVc: withHolderKey(sdJwtVcWithSingleDisclosure),
         verifierMetadata: {
           issuedAt: Date.now() / 1000,
           audience: verifierDid,
@@ -1677,7 +1760,7 @@ describe('SdJwtVcService', () => {
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['vct', 'cnf', 'claim', 'iat'],
       })
@@ -1698,7 +1781,7 @@ describe('SdJwtVcService', () => {
           given_name: boolean
         } & SdJwtVcPayload
       >(agent.context, {
-        sdJwtVc: complexSdJwtVc,
+        sdJwtVc: withHolderKey(complexSdJwtVc),
         verifierMetadata: {
           issuedAt: Date.now() / 1000,
           audience: verifierDid,
@@ -1716,7 +1799,7 @@ describe('SdJwtVcService', () => {
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce: 'salt' },
         // FIXME: this should be a requiredFrame to be consistent with the other methods
         // using frames
@@ -1749,7 +1832,7 @@ describe('SdJwtVcService', () => {
         SdJwtVcHeader,
         { address: { country: string } } & SdJwtVcPayload
       >(agent.context, {
-        compactSdJwtVc:
+        sdJwtVc:
           'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFZERTQSIsImtpZCI6IiN6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlcifQ.eyJ2Y3QiOiJPcGVuQmFkZ2VDcmVkZW50aWFsIiwiZGVncmVlIjoiYmFjaGVsb3IiLCJjbmYiOnsiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4Ijoib0VOVnN4T1VpSDU0WDh3SkxhVmtpY0NSazAwd0JJUTRzUmdiazU0TjhNbyJ9fSwiaXNzIjoiZGlkOmtleTp6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlciLCJpYXQiOjE2OTgxNTE1MzIsIl9zZCI6WyJLbE5PM0VfYjRmdUwyOUd2QXdwTGczTGZHZTlxdDdhakUxMzlfU1pIbWk4Il0sIl9zZF9hbGciOiJzaGEtMjU2In0.TBWIECIMmNKNqVtjwHARSnR0Ii9Fefy871sXEK-zfThbTBALdvXBTBQ6iKvvI-CxsniSH1hJMEJTu1vK7esTDg~WyJzYWx0IiwidW5pdmVyc2l0eSIsImlubnNicnVjayJd~eyJ0eXAiOiJrYitqd3QiLCJhbGciOiJFZERTQSJ9.eyJpYXQiOjE2OTgxNTE1MzIsIm5vbmNlIjoic2FsdCIsImF1ZCI6ImRpZDprZXk6elVDNzRWRXFxaEVIUWNndjR6YWdTUGtxRkp4dU5XdW9CUEtqSnVIRVRFVWVITG9TcVd0OTJ2aVNzbWFXank4MnkiLCJzZF9oYXNoIjoiODlyX3JrSjdvb3RuSGJ3TXdjMW9sNzZncU03WU1zNVUzVnpkMHN6N3VkbyJ9.VkrxL06aP8t-G_lVtlAZNgJC2gouqR__rXDgJQPParq5OGxna3ZoQQbjv7e3I2TUaVaMV6xUpJY1KufZlPDwAg',
         keyBinding: {
           audience: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y',
@@ -1769,7 +1852,7 @@ describe('SdJwtVcService', () => {
         return 1716111919 * 1000 + 31000
       })
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: expiredSdJwtVc,
+        sdJwtVc: expiredSdJwtVc,
       })
 
       Date.prototype.getTime = vi.fn(function () {
@@ -1792,7 +1875,7 @@ describe('SdJwtVcService', () => {
 
     test('verify sd-jwt-vc with nbf in future and fails', async () => {
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: notBeforeInFutureSdJwtVc,
+        sdJwtVc: notBeforeInFutureSdJwtVc,
       })
 
       expect(verificationResult).toEqual({
@@ -1808,7 +1891,7 @@ describe('SdJwtVcService', () => {
 
     test('verify sd-jwt-vc with content changed and fails', async () => {
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: contentChangedSdJwtVc,
+        sdJwtVc: contentChangedSdJwtVc,
       })
 
       expect(verificationResult).toEqual({
@@ -1822,9 +1905,32 @@ describe('SdJwtVcService', () => {
       })
     })
 
+    test('verify sd-jwt-vc with an x5c entry that is not a certificate and fails', async () => {
+      const [header, ...rest] = simpleX509.sdJwtVc.split('.')
+      const invalidHeader = JsonEncoder.toBase64Url({
+        ...JsonEncoder.fromBase64Url(header),
+        x5c: ['not-a-certificate'],
+      })
+
+      // Decoding does not parse the certificates, so only verification fails
+      const sdJwtVc = sdJwtVcService.fromCompact([invalidHeader, ...rest].join('.'))
+      expect(sdJwtVc.issuer).toMatchObject({ method: 'x5c', x5c: ['not-a-certificate'] })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        sdJwtVc,
+        trustedCertificates: [simpleX509.trustedCertificate],
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        error: expect.objectContaining({ message: "Argument 'base64Text' is not Base64 encoded" }),
+        sdJwtVc: expect.any(Object),
+      })
+    })
+
     test('verify sd-jwt-vc with invalid signature and fails', async () => {
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: signatureInvalidSdJwtVc,
+        sdJwtVc: signatureInvalidSdJwtVc,
       })
 
       expect(verificationResult).toEqual({
@@ -1851,7 +1957,7 @@ describe('SdJwtVcService', () => {
       ].join('~')
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: sha1SignedSdJwtVc,
+        sdJwtVc: sha1SignedSdJwtVc,
       })
 
       expect(verificationResult).toEqual({
@@ -1879,7 +1985,7 @@ describe('SdJwtVcService', () => {
       validateDisclosureFrameSpy.mockRestore()
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: compact,
+        sdJwtVc: compact,
         trustedCertificates: [simpleX509.trustedCertificate],
       })
 
@@ -1916,11 +2022,11 @@ describe('SdJwtVcService', () => {
       validateDisclosureFrameSpy.mockRestore()
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: compact,
+        sdJwtVc: withHolderKey(compact),
         presentationFrame: {},
       })
 
-      const verificationResult = await sdJwtVcService.verify(agent.context, { compactSdJwtVc: presentation })
+      const verificationResult = await sdJwtVcService.verify(agent.context, { sdJwtVc: presentation })
 
       expect(verificationResult).toEqual({
         isValid: false,
@@ -1937,14 +2043,14 @@ describe('SdJwtVcService', () => {
   describe('SdJwtVcService.verify with getTrustedIssuersForVerification', () => {
     const presentDid = () =>
       sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleJwtVc,
+        sdJwtVc: withHolderKey(simpleJwtVc),
         presentationFrame: {},
         verifierMetadata: { issuedAt: Date.now() / 1000, audience: verifierDid, nonce: 'salt' },
       })
 
     const presentX509 = () =>
       sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleX509.sdJwtVc,
+        sdJwtVc: withHolderKey(simpleX509.sdJwtVc),
         presentationFrame: {},
         verifierMetadata: { issuedAt: Date.now() / 1000, audience: verifierDid, nonce: 'salt' },
       })
@@ -1964,7 +2070,7 @@ describe('SdJwtVcService', () => {
       }))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
@@ -1981,7 +2087,7 @@ describe('SdJwtVcService', () => {
       }))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
@@ -1999,7 +2105,7 @@ describe('SdJwtVcService', () => {
       }))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
@@ -2014,7 +2120,7 @@ describe('SdJwtVcService', () => {
       }))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
@@ -2027,7 +2133,7 @@ describe('SdJwtVcService', () => {
       agent.context.config.setTrustedIssuersForVerification(async () => ({ trustedIssuers: [] }))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
@@ -2048,7 +2154,7 @@ describe('SdJwtVcService', () => {
       }))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
@@ -2062,7 +2168,7 @@ describe('SdJwtVcService', () => {
       // No `getTrustedIssuersForVerification` callback set: did issuers remain allowed by default,
       // preserving the pre-existing (v0.7.0) behavior.
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
@@ -2080,7 +2186,7 @@ describe('SdJwtVcService', () => {
       x509ModuleConfig.setTrustedCertificatesForVerification(async () => [simpleX509.trustedCertificate])
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
@@ -2096,7 +2202,7 @@ describe('SdJwtVcService', () => {
       x509ModuleConfig.setTrustedCertificates([simpleX509.trustedCertificate])
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
@@ -2143,12 +2249,12 @@ describe('SdJwtVcService', () => {
       mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, []))
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: withHolderKey(simpleSdJwtVcWithStatus),
         presentationFrame: {},
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
       })
 
@@ -2170,12 +2276,12 @@ describe('SdJwtVcService', () => {
       mockStatusList(await generateStatusList(agent.context, otherKey, otherDidUrl, 24, []))
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: withHolderKey(simpleSdJwtVcWithStatus),
         presentationFrame: {},
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
       })
 
@@ -2194,12 +2300,12 @@ describe('SdJwtVcService', () => {
       mockStatusList(await generateStatusList(agent.context, otherKey, issuerDidUrl, 24, [], { kid: otherDidUrl }))
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: withHolderKey(simpleSdJwtVcWithStatus),
         presentationFrame: {},
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
       })
 
@@ -2215,12 +2321,12 @@ describe('SdJwtVcService', () => {
       mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [12]))
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: withHolderKey(simpleSdJwtVcWithStatus),
         presentationFrame: {},
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
         disableStatusValidation: true,
       })
@@ -2236,7 +2342,7 @@ describe('SdJwtVcService', () => {
       mockStatusList(await generateX509StatusList(agent.context, status.key, status.certificate, 24, []))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         trustedIssuers: [
           {
             method: 'x509',
@@ -2257,7 +2363,7 @@ describe('SdJwtVcService', () => {
       mockStatusList(await generateX509StatusList(agent.context, status.key, status.certificate, 24, []))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         trustedIssuers: [
           {
             method: 'x509',
@@ -2282,7 +2388,7 @@ describe('SdJwtVcService', () => {
       mockStatusList(await generateX509StatusList(agent.context, issuance.key, issuance.certificate, 24, []))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         trustedIssuers: [{ method: 'x509', issuance: [issuance.certificate.toString('base64')] }],
       })
 
@@ -2319,7 +2425,7 @@ describe('SdJwtVcService', () => {
       mockStatusList(await generateX509StatusList(agent.context, leafKey, leafCertificate, 24, []))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         trustedIssuers: [{ method: 'x509', issuance: [rootCertificate.toString('base64')] }],
       })
 
@@ -2333,7 +2439,7 @@ describe('SdJwtVcService', () => {
       mockStatusList(await generateX509StatusList(agent.context, issuance.key, issuance.certificate, 24, []))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
-        compactSdJwtVc: presentation,
+        sdJwtVc: presentation,
         trustedIssuers: [{ method: 'x509', issuance: [issuance.certificate.toString('base64')], status: [] }],
       })
 
@@ -2386,7 +2492,7 @@ describe('SdJwtVcService', () => {
         mockStatusList(await generateX509StatusList(agent.context, status.leafKey, status.leafCertificate, 24, []))
 
         return sdJwtVcService.verify(agent.context, {
-          compactSdJwtVc: presentation,
+          sdJwtVc: presentation,
           trustedIssuers: [
             {
               method: 'x509',
@@ -2484,7 +2590,7 @@ describe('SdJwtVcService', () => {
         mockStatusList(await generateX509StatusList(agent.context, issuance.key, issuance.certificate, 24, []))
 
         const verificationResult = await sdJwtVcService.verify(agent.context, {
-          compactSdJwtVc: presentation,
+          sdJwtVc: presentation,
           trustedIssuers: [{ method: 'x509', issuance: [issuance.certificate.toString('base64')] }],
         })
 
@@ -2498,7 +2604,7 @@ describe('SdJwtVcService', () => {
         mockStatusList(await generateX509StatusList(agent.context, issuance.key, issuance.certificate, 24, []))
 
         const verificationResult = await sdJwtVcService.verify(agent.context, {
-          compactSdJwtVc: presentation,
+          sdJwtVc: presentation,
           trustedIssuers: [
             {
               method: 'x509',
@@ -2524,7 +2630,7 @@ describe('SdJwtVcService', () => {
         mockStatusList(await generateX509StatusList(agent.context, issuance.key, renewedCertificate, 24, []))
 
         const verificationResult = await sdJwtVcService.verify(agent.context, {
-          compactSdJwtVc: presentation,
+          sdJwtVc: presentation,
           trustedIssuers: [
             {
               method: 'x509',
@@ -2541,12 +2647,12 @@ describe('SdJwtVcService', () => {
         mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, []))
 
         const presentation = await sdJwtVcService.present(agent.context, {
-          sdJwtVc: simpleSdJwtVcWithStatus,
+          sdJwtVc: withHolderKey(simpleSdJwtVcWithStatus),
           presentationFrame: {},
         })
 
         const verificationResult = await sdJwtVcService.verify(agent.context, {
-          compactSdJwtVc: presentation,
+          sdJwtVc: presentation,
           trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
         })
 
@@ -2560,12 +2666,15 @@ describe('SdJwtVcService', () => {
 
     const presentWithStatus = async () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
-      return sdJwtVcService.present(agent.context, { sdJwtVc: simpleSdJwtVcWithStatus, presentationFrame: {} })
+      return sdJwtVcService.present(agent.context, {
+        sdJwtVc: withHolderKey(simpleSdJwtVcWithStatus),
+        presentationFrame: {},
+      })
     }
 
     const verify = async (compactSdJwtVc: string) => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
-      return sdJwtVcService.verify(agent.context, { compactSdJwtVc })
+      return sdJwtVcService.verify(agent.context, { sdJwtVc: compactSdJwtVc })
     }
 
     afterEach(() => {

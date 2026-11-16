@@ -135,7 +135,7 @@ describe.each<Format>(['cwt', 'jwt'])('mdoc status list cache with a %s status l
 
   const signMdoc = async (testAgent: Agent, issuerCertificate: X509Certificate, statusListUri: string) => {
     const holderKey = await testAgent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
-    return Mdoc.sign(testAgent.context, {
+    const mdoc = await Mdoc.sign(testAgent.context, {
       docType,
       holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
       namespaces: { [namespace]: { family_name: 'Jones' } },
@@ -143,6 +143,8 @@ describe.each<Format>(['cwt', 'jwt'])('mdoc status list cache with a %s status l
       validityInfo: { validUntil: notAfter },
       statusInfo: { index: 1, uri: statusListUri },
     })
+    mdoc.deviceKeyId = holderKey.keyId
+    return mdoc
   }
 
   const verifyMdoc = (testAgent: Agent, mdoc: Mdoc, trusted: X509Certificate[]) =>

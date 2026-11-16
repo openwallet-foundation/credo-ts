@@ -40,11 +40,14 @@ export interface TrustedIssuerDid {
 export interface TrustedIssuerX509 {
   method: 'x509'
 
-  /** Base64 DER or PEM encoded certificate that is trusted as an issuer */
-  issuance: string[]
+  /**
+   * Certificates that are trusted as an issuer, as base64 DER or PEM encoded strings or as
+   * {@link X509Certificate} instances. Instances are not parsed again on every verification.
+   */
+  issuance: Array<string | X509Certificate>
 
-  /** Base64 DER or PEM encoded certificate that are trusted as status list signers */
-  status?: string[]
+  /** Certificates that are trusted as status list signers, in the same forms as `issuance` */
+  status?: Array<string | X509Certificate>
 }
 
 export type TrustedIssuer = TrustedIssuerDid | TrustedIssuerX509
