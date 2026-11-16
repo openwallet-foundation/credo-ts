@@ -949,6 +949,70 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
   })
 })
 
+describe('MediatorService - DirectDelivery', () => {
+  const agentConfig = getAgentConfig('MediatorService')
+  const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
+  const messageSender = { sendPackage: vi.fn() }
+
+  const agentContext = getAgentContext({
+    agentConfig,
+    registerInstances: [
+      [EventEmitter, eventEmitter],
+      [DidCommModuleConfig, new DidCommModuleConfig()],
+      [DidCommMessagePickupApi, mediationPickupApi],
+      [DidCommMessageSender, messageSender],
+      [DidCommMediatorModuleConfig, new DidCommMediatorModuleConfig()],
+    ],
+  })
+
+  const mediatorService = new DidCommMediatorService(
+    mediationRepository,
+    mediatorRoutingRepository,
+    eventEmitter,
+    agentConfig.logger,
+    connectionService
+  )
+
+  const recipientDid = 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc'
+  const payload = { protected: 'base64url', iv: 'base64url', ciphertext: 'base64url', tag: 'base64url' }
+
+  beforeEach(() => {
+    messageSender.sendPackage.mockReset()
+    const mediationRecord = new DidCommMediationRecord({
+      connectionId: mockConnection.id,
+      role: DidCommMediationRole.Mediator,
+      state: DidCommMediationState.Granted,
+      threadId: 'threadId',
+      recipientDids: [recipientDid],
+    })
+    mockFunction(mediationRepository.findSingleByRecipientDid).mockResolvedValue(mediationRecord)
+    mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
+  })
+
+  test('delivers every attachment of a v2 forward and reports the ones that failed', async () => {
+    messageSender.sendPackage
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('second is undeliverable'))
+      .mockResolvedValueOnce(undefined)
+    const message = new DidCommForwardV2Message({ to: [], next: recipientDid })
+    message.appendedAttachments = ['first', 'second', 'third'].map(
+      (iv, index) => new DidCommAttachment({ id: `msg-${index + 1}`, data: { json: { ...payload, iv } } })
+    )
+
+    await expect(
+      mediatorService.processForwardMessage(new DidCommInboundMessageContext(message, { agentContext }))
+    ).rejects.toThrow(
+      `Unable to deliver 1 of 3 forwarded messages to connection '${mockConnection.id}': second is undeliverable`
+    )
+
+    expect(messageSender.sendPackage.mock.calls.map(([, options]) => options.encryptedMessage.iv)).toEqual([
+      'first',
+      'second',
+      'third',
+    ])
+  })
+})
+
 describe('MediatorService - QueueAndLiveModeDelivery', () => {
   const agentConfig = getAgentConfig('MediatorService')
   const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())

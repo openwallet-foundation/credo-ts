@@ -295,12 +295,23 @@ export class DidCommMediatorService {
       }
       case DidCommMessageForwardingStrategy.DirectDelivery: {
         const messageSender = agentContext.dependencyManager.resolve(DidCommMessageSender)
+        // The attachments are independent messages and there is no queue, so one failed send must not drop the rest
+        const errors: Error[] = []
         for (const encryptedMessage of encryptedMessages) {
-          await messageSender.sendPackage(agentContext, {
-            connection,
-            recipientKey: recipientDid,
-            encryptedMessage,
-          })
+          try {
+            await messageSender.sendPackage(agentContext, {
+              connection,
+              recipientKey: recipientDid,
+              encryptedMessage,
+            })
+          } catch (error) {
+            errors.push(error)
+          }
+        }
+        if (errors.length > 0) {
+          throw new CredoError(
+            `Unable to deliver ${errors.length} of ${encryptedMessages.length} forwarded messages to connection '${connection.id}': ${errors.map((error) => error.message).join('; ')}`
+          )
         }
       }
     }
