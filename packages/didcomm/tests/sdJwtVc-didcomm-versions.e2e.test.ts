@@ -34,6 +34,7 @@ import {
   DidCommModule,
   DidCommSdJwtVcCredentialFormatService,
   DidCommV2EnvelopeService,
+  type SdJwtVcCredentialOfferPayload,
 } from '../src'
 
 const typeMetadata = {
@@ -314,7 +315,7 @@ describe.each(['v1', 'v2'] as const)('dc+sd-jwt issuance over a DIDComm %s conne
       ...identityCredential(),
       iss: issuerKdv.did,
       status: { status_list: {} },
-    } as unknown as SdJwtVcPayload
+    }
 
     const { prettyClaims } = await issue({ credential, status })
 
@@ -327,7 +328,7 @@ describe.each(['v1', 'v2'] as const)('dc+sd-jwt issuance over a DIDComm %s conne
       ...identityCredential(),
       iss: issuerKdv.did,
       status: { status_list: {} },
-    } as unknown as SdJwtVcPayload
+    }
 
     const shouldAutoRespondToRequest = vi.spyOn(
       DidCommSdJwtVcCredentialFormatService.prototype,
@@ -349,7 +350,7 @@ describe.each(['v1', 'v2'] as const)('dc+sd-jwt issuance over a DIDComm %s conne
       ...identityCredential(),
       iss: issuerKdv.did,
       status: { other_mechanism: {} },
-    } as unknown as SdJwtVcPayload
+    }
 
     await expect(issue({ credential })).rejects.toThrow(
       "The issued 'status.other_mechanism' must have the members the offer left out"
@@ -400,7 +401,7 @@ describe.each(['v1', 'v2'] as const)('dc+sd-jwt issuance over a DIDComm %s conne
     status,
     autoAcceptCredential,
   }: {
-    credential: SdJwtVcPayload
+    credential: SdJwtVcCredentialOfferPayload
     selectivelyDisclosableClaims?: ClaimPath[]
     kid?: string
     status?: SdJwtVcPayload['status']

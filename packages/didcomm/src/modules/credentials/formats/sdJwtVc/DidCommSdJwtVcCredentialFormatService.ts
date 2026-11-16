@@ -20,6 +20,11 @@ import { V2CredentialProblemReportError } from '../../protocol/v2/errors'
 import { DidCommOfferCredentialV2Message } from '../../protocol/v2/messages/DidCommOfferCredentialV2Message'
 import type { DidCommCredentialExchangeRecord } from '../../repository/DidCommCredentialExchangeRecord'
 import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../../util/didCommSignedAttachment'
+import {
+  DidCommSignedAttachmentBindingMethods,
+  type DidCommSignedAttachmentCredentialRequestBindingProof,
+  DidCommSignedAttachmentOfferBindingMethod,
+} from '../../util/didCommSignedAttachmentBinding'
 import { getFormatDataAttachment } from '../../util/formatData'
 import { getIssuerVerificationMethod } from '../../util/verificationMethod'
 import type { DidCommCredentialFormatService } from '../DidCommCredentialFormatService'
@@ -41,11 +46,6 @@ import type {
   DidCommCredentialFormatProcessOptions,
   DidCommCredentialFormatProcessRequestOptions,
 } from '../DidCommCredentialFormatServiceOptions'
-import {
-  W3cV2SdJwtBindingMethods,
-  type W3cV2SdJwtCredentialRequestBindingProof,
-  W3cV2SdJwtDidCommSignedAttachmentBindingMethod,
-} from '../w3cV2SdJwt/w3cV2SdJwtExchange'
 import {
   disclosureFrameFromClaimsPathPointers,
   findNotSelectivelyDisclosable,
@@ -248,7 +248,7 @@ export class DidCommSdJwtVcCredentialFormatService
 
     const { credential, bindingRequired, selectivelyDisclosableClaims, didCommSignedAttachmentBinding } = sdJwtVcFormat
 
-    let bindingMethod: W3cV2SdJwtBindingMethods | undefined
+    let bindingMethod: DidCommSignedAttachmentBindingMethods | undefined
     if (didCommSignedAttachmentBinding) {
       const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
       const didsApi = agentContext.dependencyManager.resolve(DidsApi)
@@ -260,8 +260,8 @@ export class DidCommSdJwtVcCredentialFormatService
       if (algsSupported.length === 0) throw new CredoError('No supported JWA signature algorithms found.')
       if (didMethodsSupported.length === 0 && !jwkSupported) throw new CredoError('No supported DID methods found.')
 
-      bindingMethod = new W3cV2SdJwtBindingMethods({
-        didcommSignedAttachment: new W3cV2SdJwtDidCommSignedAttachmentBindingMethod({
+      bindingMethod = new DidCommSignedAttachmentBindingMethods({
+        didcommSignedAttachment: new DidCommSignedAttachmentOfferBindingMethod({
           algsSupported,
           didMethodsSupported,
           jwkSupported,
@@ -317,7 +317,7 @@ export class DidCommSdJwtVcCredentialFormatService
     const credentialOffer = this.parseOffer(agentContext, offerAttachment)
 
     let signedAttachment: DidCommAttachment | undefined
-    let bindingProof: W3cV2SdJwtCredentialRequestBindingProof | undefined
+    let bindingProof: DidCommSignedAttachmentCredentialRequestBindingProof | undefined
 
     const didCommSignedAttachmentOptions = credentialFormats?.sdJwtVc?.didCommSignedAttachment
     if (didCommSignedAttachmentOptions) {
