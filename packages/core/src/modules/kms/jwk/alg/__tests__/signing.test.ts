@@ -119,10 +119,11 @@ describe('signing algorithm support', () => {
       expect(createKeyTypeForSigningAlgorithm('PS384')).toEqual({ kty: 'RSA', modulusLength: 3072 })
       expect(createKeyTypeForSigningAlgorithm('RS512')).toEqual({ kty: 'RSA', modulusLength: 4096 })
       expect(createKeyTypeForSigningAlgorithm('PS512')).toEqual({ kty: 'RSA', modulusLength: 4096 })
+      expect(createKeyTypeForSigningAlgorithm('ML-DSA-44')).toEqual({ kty: 'AKP', alg: 'ML-DSA-44' })
     })
 
-    test('throws for an unknown signature algorithm', () => {
-      expect(() => createKeyTypeForSigningAlgorithm('ML-DSA-65' as never)).toThrow(KeyManagementError)
+    test.each(['ML-DSA-65', 'ML-DSA-87'] as const)('throws for unsupported signature algorithm %s', (algorithm) => {
+      expect(() => createKeyTypeForSigningAlgorithm(algorithm as never)).toThrow(KeyManagementError)
     })
   })
 
@@ -135,8 +136,8 @@ describe('signing algorithm support', () => {
       expect(isKnownJwaSignatureAlgorithm('PS512')).toBe(true)
     })
 
-    test('does not recognize an unregistered or post-quantum identifier', () => {
-      expect(isKnownJwaSignatureAlgorithm('ML-DSA-44')).toBe(false)
+    test('recognizes ML-DSA-44 and rejects unsupported variants', () => {
+      expect(isKnownJwaSignatureAlgorithm('ML-DSA-44')).toBe(true)
       expect(isKnownJwaSignatureAlgorithm('ML-DSA-65')).toBe(false)
       expect(isKnownJwaSignatureAlgorithm('ML-DSA-87')).toBe(false)
       expect(isKnownJwaSignatureAlgorithm('not-an-algorithm')).toBe(false)

@@ -51,6 +51,7 @@ export function performVerify(
       return timingSafeEqual(expectedHmac, signature)
     }
     default:
+      // @ts-expect-error
       throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${key.kty}'`, 'node')
   }
 }
