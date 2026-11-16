@@ -7,6 +7,7 @@ import type {
   EncodedX509Certificate,
   HashName,
   MdocSessionTranscriptOptions,
+  X509Certificate,
 } from '@credo-ts/core'
 import {
   ClaimFormat,
@@ -56,7 +57,10 @@ export class OpenId4VpHolderService {
 
   private getOpenid4vpClient(
     agentContext: AgentContext,
-    options?: { trustedCertificates?: EncodedX509Certificate[]; isVerifyOpenId4VpAuthorizationRequest?: boolean }
+    options?: {
+      trustedCertificates?: Array<EncodedX509Certificate | X509Certificate>
+      isVerifyOpenId4VpAuthorizationRequest?: boolean
+    }
   ) {
     const callbacks = getOid4vcCallbacks(agentContext, {
       trustedCertificates: options?.trustedCertificates,

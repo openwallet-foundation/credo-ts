@@ -27,6 +27,14 @@ export type WithBackend<T, Backends extends KeyManagementService[] = KeyManageme
   backend?: KmsBackendName<Backends>
 }
 
+/**
+ * The result of an operation, with the backend that ran it. Pass the backend to the operations that follow on the
+ * same key, so the key is not looked up again to find its backend.
+ */
+export type WithReturnedBackend<T, Backends extends KeyManagementService[] = KeyManagementService[]> = T & {
+  backend: Backends[number]['backend']
+}
+
 export const zWithCreateKeyBackend = <Schema extends zBaseSchema>(schema: Schema) =>
   schema
     .and(z.object({ backend: z.optional(z.string()), backendOptions: z.optional(z.unknown()) }))

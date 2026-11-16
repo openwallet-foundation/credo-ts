@@ -1,9 +1,11 @@
 import { DeviceNamespaces, DeviceSignedItems } from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
+import { TypedArrayEncoder } from '../../utils/TypedArrayEncoder'
 import type { PublicJwk } from '../kms'
 import { assertStatusListSignerKeyPurpose } from '../token-status-list/assertStatusListSignerKeyPurpose'
 import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
-import { X509Certificate } from '../x509/X509Certificate'
+import type { X509Certificate } from '../x509/X509Certificate'
+import { X509CertificateCache } from '../x509/X509CertificateCache'
 import type { X509VerificationTrustedCertificates } from '../x509/X509ModuleConfig'
 import { MdocError } from './MdocError'
 import type { MdocNameSpaces } from './MdocOptions'
@@ -42,8 +44,8 @@ export function mdocSigningJwk(publicJwk: PublicJwk) {
 }
 
 export interface MdocTrustedCertificate {
-  issuance: string[]
-  status: string[]
+  issuance: X509Certificate[]
+  status: X509Certificate[]
   hasDedicatedStatusCertificates: boolean
 }
 
@@ -53,23 +55,48 @@ export interface MdocTrustedCertificate {
  * keeps the fallback from widening the trust set.
  */
 export function convertMdocTrustedCertificates(
-  trustedCertificates: string[] | X509VerificationTrustedCertificates[]
+  agentContext: AgentContext,
+  trustedCertificates: Array<string | X509Certificate> | X509VerificationTrustedCertificates[]
 ): MdocTrustedCertificate[] {
-  return convertLegacyTrustedCertificates(trustedCertificates).map(({ issuance, status }) => ({
-    issuance,
-    status: status ?? issuance,
-    hasDedicatedStatusCertificates: status !== undefined,
-  }))
+  const parse = (certificate: string | X509Certificate) =>
+    X509CertificateCache.parseCertificate(agentContext, certificate)
+
+  return convertLegacyTrustedCertificates(trustedCertificates).map(({ issuance, status }) => {
+    const parsedIssuance = issuance.map(parse)
+
+    return {
+      issuance: parsedIssuance,
+      status: status?.map(parse) ?? parsedIssuance,
+      hasDedicatedStatusCertificates: status !== undefined,
+    }
+  })
 }
+
+// The `@owf/mdoc` library passes the bytes it gets from `mdocTrustedCertificatesToRaw` on to the
+// `verifyCertificateChain` callback, which finds the parsed certificate here instead of parsing the bytes
+const parsedTrustedCertificates = new WeakMap<Uint8Array, X509Certificate>()
 
 /**
  * Maps the converted trusted certificates to the raw representation the `@owf/mdoc` library expects.
  */
 export function mdocTrustedCertificatesToRaw(trustedCertificates: MdocTrustedCertificate[]) {
+  const toRaw = (certificate: X509Certificate) => {
+    const rawCertificate = certificate.rawCertificate
+    parsedTrustedCertificates.set(rawCertificate, certificate)
+    return rawCertificate
+  }
+
   return trustedCertificates.map(({ issuance, status }) => ({
-    issuance: issuance.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
-    status: status.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+    issuance: issuance.map(toRaw),
+    status: status.map(toRaw),
   }))
+}
+
+/**
+ * The parsed certificate for bytes from {@link mdocTrustedCertificatesToRaw}, or the bytes when there is none.
+ */
+export function mdocRawToTrustedCertificate(rawCertificate: Uint8Array) {
+  return parsedTrustedCertificates.get(rawCertificate) ?? rawCertificate
 }
 
 /**
@@ -77,6 +104,7 @@ export function mdocTrustedCertificatesToRaw(trustedCertificates: MdocTrustedCer
  * chain, so the fallback can't accept a list signed by a different chain under the same trust anchor.
  */
 export function assertMdocStatusListChainsMatchIssuanceChain(
+  agentContext: AgentContext,
   trustedCertificates: MdocTrustedCertificate[],
   chains: {
     trustedIssuanceChain: Uint8Array[]
@@ -84,22 +112,21 @@ export function assertMdocStatusListChainsMatchIssuanceChain(
     trustedIdentifierListChain?: Uint8Array[]
   }
 ) {
-  const issuanceChain = chains.trustedIssuanceChain.map((cert) => X509Certificate.fromRawCertificate(cert))
-  const issuanceTrustAnchor = issuanceChain[issuanceChain.length - 1]
+  const issuanceTrustAnchor = X509CertificateCache.parseCertificate(
+    agentContext,
+    chains.trustedIssuanceChain[chains.trustedIssuanceChain.length - 1]
+  )
 
   const matchedTrustedCertificate = trustedCertificates.find(({ issuance }) =>
-    issuance.some((cert) => X509Certificate.fromEncodedCertificate(cert).equal(issuanceTrustAnchor))
+    issuance.some((cert) => cert.equal(issuanceTrustAnchor))
   )
 
   // With dedicated status certs the library already validated the lists against them.
   if (matchedTrustedCertificate?.hasDedicatedStatusCertificates) return
 
-  const chainMatchesIssuanceChain = (chain: Uint8Array[]) => {
-    const resolvedChain = chain.map((cert) => X509Certificate.fromRawCertificate(cert))
-    return (
-      resolvedChain.length === issuanceChain.length && resolvedChain.every((cert, i) => cert.equal(issuanceChain[i]))
-    )
-  }
+  const chainMatchesIssuanceChain = (chain: Uint8Array[]) =>
+    chain.length === chains.trustedIssuanceChain.length &&
+    chain.every((cert, i) => TypedArrayEncoder.equals(cert, chains.trustedIssuanceChain[i]))
 
   if (chains.trustedIdentifierListChain && !chainMatchesIssuanceChain(chains.trustedIdentifierListChain)) {
     throw new MdocError(
@@ -137,8 +164,8 @@ export function assertMdocStatusSignerKeyPurpose(
 
     assertStatusListSignerKeyPurpose(agentContext, {
       list,
-      statusListSigner: X509Certificate.fromRawCertificate(signerChain[0]),
-      credentialSigner: X509Certificate.fromRawCertificate(chains.trustedIssuanceChain[0]),
+      statusListSigner: X509CertificateCache.parseCertificate(agentContext, signerChain[0]),
+      credentialSigner: X509CertificateCache.parseCertificate(agentContext, chains.trustedIssuanceChain[0]),
     })
   }
 }

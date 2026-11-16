@@ -29,6 +29,13 @@
       "when": 1781619726392,
       "tag": "0003_jittery_spitfire",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794484345740,
+      "tag": "0004_fix_proof_exchange_state_enum",
+      "breakpoints": true
     }
   ]
 }

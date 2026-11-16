@@ -2,10 +2,16 @@ import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../../../../core/src/modules/vc/constants'
 import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
 import type { EventReplaySubject, JsonLdTestsAgent } from '../../../../../../../core/tests'
-import { setupJsonLdTests, waitForCredentialRecordSubject } from '../../../../../../../core/tests'
+import {
+  setupJsonLdTests,
+  waitForAgentMessageProcessedEventSubject,
+  waitForCredentialRecordSubject,
+} from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
+import { DidCommEventTypes } from '../../../../../DidCommEvents'
 import { DidCommCredentialState } from '../../../models'
 import { DidCommCredentialExchangeRecord } from '../../../repository'
+import { DidCommRevocationNotificationV2Message } from '../../revocation-notification/messages'
 import type { DidCommOfferCredentialV2Message } from '../messages/DidCommOfferCredentialV2Message'
 
 const signCredentialOptions = {
@@ -168,6 +174,59 @@ describe('credentials', () => {
       createdAt: expect.any(Date),
       state: DidCommCredentialState.Done,
       threadId: expect.any(String),
+    })
+  })
+
+  test('Faber can send a revocation notification that Alice unpacks after a connection-less out of band credential exchange', async () => {
+    const { message, credentialExchangeRecord } = await faberAgent.didcomm.credentials.createOffer({
+      credentialFormats: {
+        jsonld: signCredentialOptions,
+      },
+      protocolVersion: 'v2',
+    })
+    const { outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation({
+      handshake: false,
+      messages: [message],
+    })
+    await aliceAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, { label: 'alice' })
+
+    let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
+      threadId: credentialExchangeRecord.threadId,
+      state: DidCommCredentialState.OfferReceived,
+    })
+    await aliceAgent.didcomm.credentials.acceptOffer({ credentialExchangeRecordId: aliceCredentialRecord.id })
+
+    let faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
+      threadId: credentialExchangeRecord.threadId,
+      state: DidCommCredentialState.RequestReceived,
+    })
+    await faberAgent.didcomm.credentials.acceptRequest({ credentialExchangeRecordId: faberCredentialRecord.id })
+
+    aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
+      threadId: credentialExchangeRecord.threadId,
+      state: DidCommCredentialState.CredentialReceived,
+    })
+    await aliceAgent.didcomm.credentials.acceptCredential({ credentialExchangeRecordId: aliceCredentialRecord.id })
+
+    faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
+      threadId: credentialExchangeRecord.threadId,
+      state: DidCommCredentialState.Done,
+    })
+    expect(faberCredentialRecord.connectionId).toBeUndefined()
+
+    const revocationNotificationProcessed = waitForAgentMessageProcessedEventSubject(
+      aliceAgent.events.observable(DidCommEventTypes.DidCommMessageProcessed),
+      { messageType: DidCommRevocationNotificationV2Message.type.messageTypeUri }
+    )
+
+    await faberAgent.didcomm.credentials.sendRevocationNotification({
+      credentialExchangeRecordId: faberCredentialRecord.id,
+      revocationFormat: 'anoncreds',
+      revocationId: 'did:indy:local:LjgpST2rjsoxYegQDRm7EL/anoncreds/v0/REV_REG_DEF/1/1/default::1',
+    })
+
+    await expect(revocationNotificationProcessed).resolves.toMatchObject({
+      credentialId: 'did:indy:local:LjgpST2rjsoxYegQDRm7EL/anoncreds/v0/REV_REG_DEF/1/1/default::1',
     })
   })
 })

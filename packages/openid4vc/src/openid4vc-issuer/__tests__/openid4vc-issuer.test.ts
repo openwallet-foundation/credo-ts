@@ -361,7 +361,7 @@ describe('OpenId4VcIssuer', () => {
       }
 
       const api = agentContext.dependencyManager.resolve(SdJwtVcApi)
-      await api.verify({ compactSdJwtVc: credentialInResponse })
+      await api.verify({ sdJwtVc: credentialInResponse })
       return
     }
 

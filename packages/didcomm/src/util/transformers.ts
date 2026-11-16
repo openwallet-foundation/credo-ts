@@ -16,3 +16,8 @@ export function DateParser(value: string): Date {
   }
   return new Date()
 }
+
+// DateParser turns an unset value into the current time, or 1970 for null
+export function OptionalDateParser(value?: string | null): Date | undefined {
+  return value == null ? undefined : DateParser(value)
+}

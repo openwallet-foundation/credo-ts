@@ -59,7 +59,11 @@ async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
       ],
     }),
   })
-  await agent.mdoc.store({ record: MdocRecord.fromMdoc(Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url)) })
+  await agent.mdoc.store({
+    record: new MdocRecord({
+      credentialInstances: [{ issuerSignedBase64Url: Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url).base64Url }],
+    }),
+  })
   await agent.w3cCredentials.store({
     record: W3cCredentialRecord.fromCredential(
       JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED, W3cJsonLdVerifiableCredential)
