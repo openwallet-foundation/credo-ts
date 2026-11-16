@@ -1,4 +1,4 @@
-import { createServer, type Server } from 'node:http'
+import { createServer, request as httpRequest, type Server } from 'node:http'
 import type { AgentContext } from '@credo-ts/core'
 import { EventEmitter, JsonEncoder } from '@credo-ts/core'
 import type { DidCommEncryptedMessage } from '@credo-ts/didcomm'
@@ -216,6 +216,55 @@ describe('DIDComm inbound transports', () => {
       agentContext,
       expect.objectContaining({ payload: expect.objectContaining({ message: { protected: 'e30' } }) })
     )
+  })
+
+  it('removes the HTTP session when the client closes the connection, not when the request body is read', async () => {
+    const app = createApp()
+    const agentContext = createAgentContext()
+    const transportService = agentContext.dependencyManager.resolve(DidCommTransportService)
+    const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
+    // The message stays in processing, so no response is sent
+    const received = new Promise<void>((resolve) => vi.mocked(eventEmitter.emit).mockImplementation(() => resolve()))
+    const transport = new DidCommHttpInboundTransport({
+      app,
+      path: '/didcomm',
+      processedMessageListenerTimeoutMs: 2000,
+    })
+
+    await transport.start(agentContext)
+    const port = await listen(createServer(app))
+    const request = httpRequest({
+      port,
+      path: '/didcomm',
+      method: 'POST',
+      headers: { 'content-type': DidCommMimeType.V1 },
+    })
+    request.on('error', () => {})
+    request.end('{}')
+
+    await received
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(transportService.removeSession).not.toHaveBeenCalled()
+
+    request.destroy()
+    await vi.waitFor(() => expect(transportService.removeSession).toHaveBeenCalledTimes(1))
+  })
+
+  it('reports an HTTP session as closed once it is answered', async () => {
+    const agentContext = createAgentContext()
+    const app = createApp()
+    const closed: boolean[] = []
+    app.post('/didcomm', async (req, res) => {
+      const session = new HttpTransportSession('session', req, res)
+      closed.push(session.isClosed)
+      await session.send(agentContext, { protected: 'e30' } as DidCommEncryptedMessage)
+      closed.push(session.isClosed)
+    })
+
+    const port = await listen(createServer(app))
+    await fetch(`http://127.0.0.1:${port}/didcomm`, { method: 'POST', body: '{}' })
+
+    expect(closed).toEqual([false, true])
   })
 
   it('accepts a DIDComm v2 signed message sent as application/didcomm-signed+json', async () => {

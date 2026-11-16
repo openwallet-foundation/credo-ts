@@ -98,6 +98,7 @@ import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceO
 
 interface CredentialResponseEncryptionKey {
   keyId: string
+  publicJwk: Kms.KmsJwkPublic
   enc: string
 }
 
@@ -633,7 +634,7 @@ export class OpenId4VciHolderService {
           proofs: !proof ? proofs : undefined,
           proof,
           credentialResponseEncryption: credentialResponseEncryption
-            ? await this.getCredentialResponseEncryptionParameters(agentContext, credentialResponseEncryption)
+            ? this.getCredentialResponseEncryptionParameters(credentialResponseEncryption)
             : undefined,
           credentialRequestEncryption: getCredentialRequestEncryption(
             agentContext,
@@ -757,7 +758,7 @@ export class OpenId4VciHolderService {
             })
           : undefined,
         credentialResponseEncryption: credentialResponseEncryption
-          ? await this.getCredentialResponseEncryptionParameters(agentContext, credentialResponseEncryption)
+          ? this.getCredentialResponseEncryptionParameters(credentialResponseEncryption)
           : undefined,
         credentialRequestEncryption: getCredentialRequestEncryption(
           agentContext,
@@ -1694,17 +1695,17 @@ export class OpenId4VciHolderService {
     agentContext: AgentContext,
     enc: string
   ): Promise<CredentialResponseEncryptionKey> {
-    const { keyId } = await agentContext.resolve(Kms.KeyManagementApi).createKey({ type: { kty: 'EC', crv: 'P-256' } })
-    return { keyId, enc }
+    const { keyId, publicJwk } = await agentContext
+      .resolve(Kms.KeyManagementApi)
+      .createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    return { keyId, publicJwk, enc }
   }
 
-  private async getCredentialResponseEncryptionParameters(
-    agentContext: AgentContext,
+  private getCredentialResponseEncryptionParameters(
     encryption: CredentialResponseEncryptionKey
-  ): Promise<CredentialResponseEncryption> {
-    const { publicKey } = await agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId: encryption.keyId })
+  ): CredentialResponseEncryption {
     return {
-      jwk: { ...publicKey, kid: encryption.keyId, alg: 'ECDH-ES', use: 'enc' },
+      jwk: { ...encryption.publicJwk, kid: encryption.keyId, alg: 'ECDH-ES', use: 'enc' },
       enc: encryption.enc,
     }
   }

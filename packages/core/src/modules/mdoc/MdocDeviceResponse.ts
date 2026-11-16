@@ -240,9 +240,11 @@ export class MdocDeviceResponse {
         deviceKeyJwkJson.alg = MdocDeviceResponse.getAlgForDeviceKeyJwk(deviceKeyJwk)
       }
 
-      // Set keyId to legacy key id if it doesn't have a key id set
+      // The legacy key id would let the issuer pick any of our keys stored under it.
       if (!deviceKeyJwk.hasKeyId) {
-        deviceKeyJwk.keyId = deviceKeyJwk.legacyKeyId
+        throw new MdocError(
+          "Unable to create device response. Set 'deviceKeyId' on the mdoc to the KMS key id of its device key."
+        )
       }
 
       const deviceRequestForDocument = DeviceRequest.create({

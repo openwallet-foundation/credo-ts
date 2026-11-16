@@ -134,7 +134,11 @@ export class SdJwtVcService {
     const issuer = await this.extractKeyFromIssuer(agentContext, options.issuer, true)
 
     // holer binding is optional
-    const holderBinding = options.holder ? await extractKeyFromHolderBinding(agentContext, options.holder) : undefined
+    const holderBinding = options.holder
+      ? await extractKeyFromHolderBinding(agentContext, options.holder, {
+          didPurposes: ['authentication', 'assertionMethod'],
+        })
+      : undefined
 
     const header = {
       alg: issuer.alg,
@@ -203,7 +207,7 @@ export class SdJwtVcService {
     { sdJwtVc, presentationFrame, verifierMetadata, additionalPayload }: SdJwtVcPresentOptions<Payload>
   ): Promise<string> {
     const sdjwt = new SDJwtVcInstance(this.getBaseSdJwtConfig(agentContext))
-    const compactSdJwtVc = typeof sdJwtVc === 'string' ? sdJwtVc : sdJwtVc.compact
+    const compactSdJwtVc = sdJwtVc.compact
     const sdJwtVcInstance = await sdjwt.decode(compactSdJwtVc)
 
     const holderBinding = parseHolderBindingFromCredential(sdJwtVcInstance.jwt?.payload)
@@ -211,12 +215,14 @@ export class SdJwtVcService {
       throw new SdJwtVcError("Verifier metadata provided, but credential has no 'cnf' claim to create a KB-JWT from")
     }
 
-    const holder = holderBinding
-      ? await extractKeyFromHolderBinding(agentContext, holderBinding, {
-          forSigning: true,
-          jwkKeyId: typeof sdJwtVc !== 'string' ? sdJwtVc.kmsKeyId : undefined,
-        })
-      : undefined
+    // Only a KB-JWT needs the holder key
+    const holder =
+      holderBinding && verifierMetadata
+        ? await extractKeyFromHolderBinding(agentContext, holderBinding, {
+            forSigning: true,
+            jwkKeyId: sdJwtVc.kmsKeyId,
+          })
+        : undefined
     if (holder) {
       holder.publicJwk.alg = holder.alg
     }
@@ -418,22 +424,29 @@ export class SdJwtVcService {
    */
   public async fetchTypeMetadata(
     agentContext: AgentContext,
-    sdJwtVc: SdJwtVc,
+    sdJwtVcOrVct: SdJwtVc | { vct: string; 'vct#integrity'?: string },
     {
       throwErrorOnFetchError = true,
       throwErrorOnUnsupportedVctValue = true,
     }: { throwErrorOnFetchError?: boolean; throwErrorOnUnsupportedVctValue?: boolean } = {}
   ) {
+    const baseVct = 'payload' in sdJwtVcOrVct ? sdJwtVcOrVct.payload.vct : sdJwtVcOrVct.vct
     const sdjwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       vctFetcher: this.getVctFetcher(agentContext, {
-        baseVct: sdJwtVc.payload.vct,
+        baseVct,
         throwErrorOnFetchError,
         throwErrorOnUnsupportedVctValue,
       }),
     })
 
-    const typeMetadata = await sdjwt.getVct(sdJwtVc.compact)
+    // getVct only decodes the JWT payload, it never verifies the signature
+    const compact =
+      'payload' in sdJwtVcOrVct
+        ? sdJwtVcOrVct.compact
+        : `${JsonEncoder.toBase64Url({ alg: 'none' })}.${JsonEncoder.toBase64Url({ vct: sdJwtVcOrVct.vct, 'vct#integrity': sdJwtVcOrVct['vct#integrity'] })}.~`
+
+    const typeMetadata = await sdjwt.getVct(compact)
     return typeMetadata
   }
 

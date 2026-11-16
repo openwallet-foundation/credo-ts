@@ -10,8 +10,10 @@ import { uuid } from '../../../utils/uuid'
 import { zNonEmptyArray, zTypedObject } from '../../../utils/zod'
 import type { KnownJwaSignatureAlgorithm } from '../../kms'
 import { decodeSdJwtVc } from '../decodeSdJwtVc'
+import { SdJwtVcError } from '../SdJwtVcError'
 import type { SdJwtVc } from '../SdJwtVcService'
 import type { SdJwtVcTypeMetadata } from '../typeMetadata'
+import { getStoredHolderKmsKeyId } from '../utils'
 
 export type DefaultSdJwtVcRecordTags = {
   vct: string
@@ -144,13 +146,19 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
   }
 
   public get firstCredential(): SdJwtVc {
+    const sdJwtVc = decodeSdJwtVc(this.credentialInstances[0].compactSdJwtVc, this.typeMetadata)
     return {
-      ...decodeSdJwtVc(this.credentialInstances[0].compactSdJwtVc, this.typeMetadata),
-      kmsKeyId: this.credentialInstances[0].kmsKeyId,
+      ...sdJwtVc,
+      kmsKeyId: getStoredHolderKmsKeyId(sdJwtVc.holder, this.credentialInstances[0].kmsKeyId),
     }
   }
 
   public static fromSdJwtVc(sdJwtVc: SdJwtVc) {
+    // Only the caller knows which key it created for this credential, the issuer could bind it to any of our keys.
+    if (sdJwtVc.holder?.method === 'jwk' && !sdJwtVc.kmsKeyId) {
+      throw new SdJwtVcError("Set 'kmsKeyId' on the SD-JWT VC to the KMS key id of its holder key before storing it.")
+    }
+
     return new SdJwtVcRecord({
       credentialInstances: [
         {

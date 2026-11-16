@@ -1978,15 +1978,20 @@ export class OpenId4VcIssuerService {
         ? [persisted.alg].filter((algorithm) => dpopConfig?.signingAlgValuesSupported?.includes(algorithm) ?? true)
         : dpopConfig?.signingAlgValuesSupported,
       keyId: persisted?.keyId ?? dpopConfig?.keyId,
+      jwk: persisted?.publicJwk
+        ? Kms.PublicJwk.fromPublicJwk({ ...persisted.publicJwk, kid: persisted.keyId })
+        : undefined,
       nonce: persisted?.nonce,
     })
 
+    const publicJwk = Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk)
     return {
       dpop,
       session: persisted
         ? { ...persisted }
         : {
-            keyId: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk).keyId,
+            keyId: publicJwk.keyId,
+            publicJwk: publicJwk.toJson(),
             alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
             keyGeneratedForSession: !dpopConfig?.keyId,
           },
