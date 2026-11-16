@@ -1,4 +1,4 @@
-import type { ClaimPath, SdJwtVcPayload } from '@credo-ts/core'
+import type { ClaimPath, JsonObject, SdJwtVcPayload } from '@credo-ts/core'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsBoolean, IsObject, IsOptional, ValidateNested } from 'class-validator'
 import {
@@ -6,11 +6,21 @@ import {
   type DidCommSignedAttachmentCredentialRequestBindingProof,
 } from '../../util/didCommSignedAttachmentBinding'
 
+// `Omit` would drop the named claims, as `SdJwtVcPayload` has an index signature
+export type SdJwtVcCredentialOfferPayload = Pick<
+  SdJwtVcPayload,
+  'iss' | 'nbf' | 'exp' | 'aud' | 'jti' | 'cnf' | 'vct' | 'vct#integrity' | 'sub' | 'iat'
+> &
+  Record<string, unknown> & {
+    /** A status mechanism can omit its members, as in `{ status_list: {} }`, for the issuer to set them in `acceptRequest`. */
+    status?: SdJwtVcPayload['status'] | Record<string, JsonObject>
+  }
+
 export interface SdJwtVcCredentialOfferOptions {
   bindingRequired?: boolean
   bindingMethod?: DidCommSignedAttachmentBindingMethods
   selectivelyDisclosableClaims?: ClaimPath[]
-  credential: SdJwtVcPayload
+  credential: SdJwtVcCredentialOfferPayload
 }
 
 /**
@@ -44,7 +54,7 @@ export class SdJwtVcCredentialOffer {
 
   @IsObject()
   @Expose({ name: 'credential' })
-  public credential!: SdJwtVcPayload
+  public credential!: SdJwtVcCredentialOfferPayload
 }
 
 /**

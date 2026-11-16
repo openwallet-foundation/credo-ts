@@ -1,10 +1,15 @@
-import type { ClaimPath, Kms, SdJwtVcPayload, XOR } from '@credo-ts/core'
+import type { ClaimPath, Kms, XOR } from '@credo-ts/core'
 import type {
   DidCommSignedAttachmentCreateOfferOptions,
   DidCommSignedAttachmentCredentialRequestOptions,
 } from '../../util/didCommSignedAttachmentBinding'
 import type { DidCommCredentialFormat } from '../DidCommCredentialFormat'
-import type { SdJwtVcCredential, SdJwtVcCredentialOffer, SdJwtVcCredentialRequest } from './sdJwtVcExchange'
+import type {
+  SdJwtVcCredential,
+  SdJwtVcCredentialOffer,
+  SdJwtVcCredentialOfferPayload,
+  SdJwtVcCredentialRequest,
+} from './sdJwtVcExchange'
 
 export interface DidCommSdJwtVcSignedAttachmentCreateOfferOptions extends DidCommSignedAttachmentCreateOfferOptions {
   /** Accept a binding proof signed with a bare key in a `jwk` header. `didMethodsSupported` can then be empty. */
@@ -12,11 +17,8 @@ export interface DidCommSdJwtVcSignedAttachmentCreateOfferOptions extends DidCom
 }
 
 export interface DidCommSdJwtVcOfferCredentialFormat {
-  /**
-   * `iss` must be the issuer DID, without a path, query or fragment. A `status` mechanism can omit its members,
-   * as in `{ status_list: {} }`, and `acceptRequest` then sets them with `status`.
-   */
-  credential: SdJwtVcPayload
+  /** `iss` must be the issuer DID, without a path, query or fragment. */
+  credential: SdJwtVcCredentialOfferPayload
   bindingRequired?: boolean
   selectivelyDisclosableClaims?: ClaimPath[]
   didCommSignedAttachmentBinding?: DidCommSdJwtVcSignedAttachmentCreateOfferOptions
@@ -30,7 +32,7 @@ export interface DidCommSdJwtVcAcceptRequestFormat {
   /** The `assertionMethod` verification method of the issuer to sign with. Defaults to the first one. */
   issuerVerificationMethod?: string
   /** Merged into the offered `status`, to fill the status mechanisms the offer named with their members omitted. */
-  status?: SdJwtVcPayload['status']
+  status?: SdJwtVcCredentialOfferPayload['status']
 }
 
 export interface DidCommSdJwtVcCredentialFormat extends DidCommCredentialFormat {
