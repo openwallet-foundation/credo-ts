@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../../agent/context'
-import { Hasher } from '../../../crypto'
+import { Hasher, type HashName } from '../../../crypto'
 import { areObjectsEqual, asArray, MultiBaseEncoder, TypedArrayEncoder } from '../../../utils'
 import { KeyManagementApi, type KnownJwaSignatureAlgorithm, type PublicJwk } from '../../kms'
 import { isXsdDateTimeStamp } from '../proof-processing/iso8601Datetime'
@@ -18,7 +18,7 @@ import type {
 } from './types'
 
 export interface JcsCryptosuiteKeyParameters {
-  hashName: 'sha-256' | 'sha-384'
+  hashName: Extract<HashName, 'sha-256' | 'sha-384'>
   signatureAlgorithm: KnownJwaSignatureAlgorithm
   signatureLength: number
 }
