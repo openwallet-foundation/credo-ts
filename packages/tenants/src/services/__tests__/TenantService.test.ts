@@ -167,14 +167,13 @@ describe('TenantRecordService', () => {
         storageVersion: '0.5',
       })
       mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
-      mockFunction(tenantRoutingRepository.findByQuery).mockResolvedValue([])
 
       await tenantRecordService.deleteTenantById(agentContext, 'tenant-id')
 
       expect(tenantRepository.delete).toHaveBeenCalledWith(agentContext, tenantRecord)
     })
 
-    test('deletes associated tenant routing records', async () => {
+    test('deletes associated tenant routing records by query', async () => {
       const tenantRecord = new TenantRecord({
         id: 'tenant-id',
         config: {
@@ -182,29 +181,13 @@ describe('TenantRecordService', () => {
         },
         storageVersion: '0.5',
       })
-      const tenantRoutingRecords = [
-        new TenantRoutingRecord({
-          recipientKeyFingerprint: '1',
-          tenantId: 'tenant-id',
-        }),
-        new TenantRoutingRecord({
-          recipientKeyFingerprint: '2',
-          tenantId: 'tenant-id',
-        }),
-      ]
-
       mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
-      mockFunction(tenantRoutingRepository.findByQuery).mockResolvedValue(tenantRoutingRecords)
 
       await tenantRecordService.deleteTenantById(agentContext, 'tenant-id')
 
-      expect(tenantRoutingRepository.findByQuery).toHaveBeenCalledWith(agentContext, {
-        tenantId: 'tenant-id',
-      })
-
-      expect(tenantRoutingRepository.delete).toHaveBeenCalledTimes(2)
-      expect(tenantRoutingRepository.delete).toHaveBeenNthCalledWith(1, agentContext, tenantRoutingRecords[0])
-      expect(tenantRoutingRepository.delete).toHaveBeenNthCalledWith(2, agentContext, tenantRoutingRecords[1])
+      expect(tenantRoutingRepository.deleteByQuery).toHaveBeenCalledWith(agentContext, { tenantId: 'tenant-id' })
+      expect(tenantRoutingRepository.findByQuery).not.toHaveBeenCalled()
+      expect(tenantRoutingRepository.delete).not.toHaveBeenCalled()
     })
   })
 
