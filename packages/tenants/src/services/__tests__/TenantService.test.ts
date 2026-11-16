@@ -67,6 +67,18 @@ describe('TenantRecordService', () => {
       expect(tenantRepository.getById).toHaveBeenCalledTimes(4)
     })
 
+    test('removes the session properties from the cache after a locked update', async () => {
+      const { cachedContext } = getCachedContext()
+      mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
+      mockFunction(tenantRepository.updateByIdWithLock).mockResolvedValue(tenantRecord)
+
+      await tenantRecordService.getTenantByIdForSession(cachedContext, 'tenant-id')
+      await tenantRecordService.updateTenantByIdWithLock(cachedContext, 'tenant-id', async (record) => record)
+      await tenantRecordService.getTenantByIdForSession(cachedContext, 'tenant-id')
+
+      expect(tenantRepository.getById).toHaveBeenCalledTimes(2)
+    })
+
     test('caches only the id, status and storage version of the tenant record', async () => {
       const { cache, cachedContext } = getCachedContext()
       const recordWithStoreKey = new TenantRecord({

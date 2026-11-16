@@ -1629,6 +1629,63 @@ describe('OpenId4VcIssuer', () => {
     )
   })
 
+  it('deletes an issuer and the keys it references after its issuance sessions are deleted', async () => {
+    const requestEncryptionKey = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const previousRequestEncryptionKey = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const created = await issuer.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: { openBadgeCredential },
+      credentialRequestEncryption: {
+        jwks: [requestEncryptionKey.publicJwk],
+        previousJwks: [previousRequestEncryptionKey.publicJwk],
+      },
+    })
+    const { issuanceSession } = await issuer.openid4vc.issuer.createCredentialOffer({
+      issuerId: created.issuerId,
+      credentialConfigurationIds: ['openBadgeCredential'],
+      preAuthorizedCodeFlowConfig: {},
+    })
+    const keyIds = [
+      created.resolvedAccessTokenPublicJwk.keyId,
+      requestEncryptionKey.keyId,
+      previousRequestEncryptionKey.keyId,
+    ]
+
+    await expect(issuer.openid4vc.issuer.deleteIssuer(created.issuerId)).rejects.toThrow(
+      `Issuer with issuer id '${created.issuerId}' still has issuance sessions`
+    )
+    await expect(issuer.openid4vc.issuer.getIssuerByIssuerId(created.issuerId)).resolves.toBeDefined()
+    for (const keyId of keyIds) {
+      await expect(issuer.kms.getPublicKey({ keyId })).resolves.toBeDefined()
+    }
+
+    await issuer.openid4vc.issuer.deleteIssuanceSessionById(issuanceSession.id)
+    await issuer.openid4vc.issuer.deleteIssuer(created.issuerId)
+    await expect(issuer.openid4vc.issuer.getIssuerByIssuerId(created.issuerId)).rejects.toThrow(RecordNotFoundError)
+    for (const keyId of keyIds) {
+      await expect(issuer.kms.getPublicKey({ keyId })).rejects.toThrow(Kms.KeyManagementKeyNotFoundError)
+    }
+  })
+
+  it('deletes an issuer and keeps the keys it references', async () => {
+    const created = await issuer.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: { openBadgeCredential },
+    })
+
+    await issuer.openid4vc.issuer.deleteIssuer(created.issuerId, { deleteAssociatedKeys: false })
+
+    await expect(issuer.openid4vc.issuer.getIssuerByIssuerId(created.issuerId)).rejects.toThrow(RecordNotFoundError)
+    await expect(issuer.kms.getPublicKey({ keyId: created.resolvedAccessTokenPublicJwk.keyId })).resolves.toBeDefined()
+  })
+
+  it('rejects creating an issuer with an issuer id that already exists', async () => {
+    await expect(
+      issuer.openid4vc.issuer.createIssuer({
+        issuerId: openId4VcIssuer.issuerId,
+        credentialConfigurationsSupported: { openBadgeCredential },
+      })
+    ).rejects.toThrow(`An issuer with issuer id '${openId4VcIssuer.issuerId}' already exists`)
+  })
+
   it('creates, updates and removes issuer info in stored and signed metadata', async () => {
     const issuerInfo: OpenId4VciIssuerInfo = [
       { format: 'registration_cert', data: 'registration.certificate.jwt' },

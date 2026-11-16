@@ -38,9 +38,22 @@ export class OpenId4VcVerifierApi {
 
   /**
    * Create a new verifier and store the new verifier record.
+   *
+   * Throws if a verifier with the verifier id already exists, or with multi-tenancy if another tenant has an
+   * issuer or verifier with that id.
    */
   public async createVerifier(options?: OpenId4VpCreateVerifierOptions) {
     return this.openId4VpVerifierService.createVerifier(this.agentContext, options)
+  }
+
+  /**
+   * Delete the verifier, so requests for its verifier id are no longer handled.
+   *
+   * Throws if the verifier still has verification sessions. Delete them first with
+   * {@link deleteVerificationSessionById}.
+   */
+  public async deleteVerifier(verifierId: string) {
+    return this.openId4VpVerifierService.deleteVerifier(this.agentContext, verifierId)
   }
 
   public async updateVerifierMetadata(options: OpenId4VcUpdateVerifierRecordOptions) {

@@ -108,6 +108,17 @@ export class TenantsApi<AgentModules extends AgentModulesInput = DefaultAgentMod
   }
 
   /**
+   * Update a tenant record while holding a lock on it, so concurrent updates are not lost. Storage backends
+   * without locking read and update the record without a lock. Keep the callback free of side effects.
+   */
+  public async updateTenantByIdWithLock(
+    tenantId: string,
+    updateCallback: (tenantRecord: TenantRecord) => Promise<TenantRecord>
+  ) {
+    return this.tenantRecordService.updateTenantByIdWithLock(this.rootAgentContext, tenantId, updateCallback)
+  }
+
+  /**
    * Update the status of a tenant. When a tenant is set to inactive, new sessions can not be
    * opened for the tenant anymore. This also means inbound DIDComm messages and endpoints such
    * as OpenID4VC will result in an error for the tenant. Already open sessions are not ended.

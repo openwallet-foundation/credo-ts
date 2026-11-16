@@ -1,6 +1,8 @@
 import type { AgentContext, AgentContextProvider } from '@credo-ts/core'
-import { getApiForModuleByName, InjectionSymbols } from '@credo-ts/core'
+import { CredoError, getApiForModuleByName, InjectionSymbols } from '@credo-ts/core'
 import type { TenantsModule } from '@credo-ts/tenants'
+import { OpenId4VcIssuerRepository } from '../../openid4vc-issuer/repository'
+import { OpenId4VcVerifierRepository } from '../../openid4vc-verifier/repository'
 
 const OPENID4VC_ACTOR_IDS_METADATA_KEY = '_openid4vc/openId4VcActorIds'
 
@@ -26,6 +28,49 @@ export async function getAgentContextForActorId(rootAgentContext: AgentContext, 
 }
 
 /**
+ * The tenants api and tenant id of the agent context, or `undefined` if multi-tenancy is not used or the
+ * agent context is the root context.
+ */
+function getTenantForAgentContext(agentContext: AgentContext) {
+  const tenantsApi = getApiForModuleByName<TenantsModule>(agentContext, 'TenantsModule')
+  if (!tenantsApi || tenantsApi.rootAgentContext.contextCorrelationId === agentContext.contextCorrelationId) return
+
+  return { tenantsApi, tenantId: agentContext.contextCorrelationId.replace('tenant-', '') }
+}
+
+async function updateActorIdsForContextCorrelationId(
+  agentContext: AgentContext,
+  updateActorIds: (actorIds: string[]) => string[]
+) {
+  const tenant = getTenantForAgentContext(agentContext)
+  if (!tenant) return
+
+  // Locked, so concurrent updates in the same tenant don't drop each other's actor ids
+  await tenant.tenantsApi.updateTenantByIdWithLock(tenant.tenantId, async (tenantRecord) => {
+    const actorIds = updateActorIds(tenantRecord.metadata.get<string[]>(OPENID4VC_ACTOR_IDS_METADATA_KEY) ?? [])
+
+    tenantRecord.metadata.set(OPENID4VC_ACTOR_IDS_METADATA_KEY, actorIds)
+    tenantRecord.setTag(OPENID4VC_ACTOR_IDS_METADATA_KEY, actorIds)
+    return tenantRecord
+  })
+}
+
+/**
+ * Throws if the actor id is mapped to a tenant other than the one of the agent context, as requests for
+ * the actor id would be routed to that tenant. From the root context, any tenant counts.
+ */
+export async function assertActorIdNotMappedToOtherTenant(agentContext: AgentContext, actorId: string) {
+  const tenantsApi = getApiForModuleByName<TenantsModule>(agentContext, 'TenantsModule')
+  if (!tenantsApi) return
+
+  const tenantId = getTenantForAgentContext(agentContext)?.tenantId
+  const tenants = await tenantsApi.findTenantsByQuery({ [OPENID4VC_ACTOR_IDS_METADATA_KEY]: [actorId] })
+  if (tenants.some((tenant) => tenant.id !== tenantId)) {
+    throw new CredoError(`An issuer or verifier with id '${actorId}' already exists`)
+  }
+}
+
+/**
  * Store the actor id associated with a context correlation id. If multi-tenancy is not used
  * this method won't do anything as we can just use the actor from the default context. However
  * if multi-tenancy is used, we will store the actor id in the tenant record metadata so it can
@@ -39,17 +84,31 @@ export async function storeActorIdForContextCorrelationId(agentContext: AgentCon
   // It's kind of hacky, but we add support for the tenants module specifically here to map an actorId to
   // a specific tenant. Otherwise we have to expose /:contextCorrelationId/:actorId in all the public URLs
   // which is of course not so nice.
-  const tenantsApi = getApiForModuleByName<TenantsModule>(agentContext, 'TenantsModule')
+  await updateActorIdsForContextCorrelationId(agentContext, (actorIds) =>
+    actorIds.includes(actorId) ? actorIds : [...actorIds, actorId]
+  )
+}
 
-  // We don't want to query the tenant record if the current context is the root context
-  if (tenantsApi && tenantsApi.rootAgentContext.contextCorrelationId !== agentContext.contextCorrelationId) {
-    const tenantRecord = await tenantsApi.getTenantById(agentContext.contextCorrelationId.replace('tenant-', ''))
+/**
+ * Remove the actor id stored by {@link storeActorIdForContextCorrelationId}, unless the other actor type
+ * in the agent context still uses it. Call it after deleting the issuer or verifier record.
+ */
+export async function removeActorIdForContextCorrelationId(
+  agentContext: AgentContext,
+  actorId: string,
+  deleted: 'issuer' | 'verifier'
+) {
+  if (!getTenantForAgentContext(agentContext)) return
 
-    const currentOpenId4VcActorIds = tenantRecord.metadata.get<string[]>(OPENID4VC_ACTOR_IDS_METADATA_KEY) ?? []
-    const openId4VcActorIds = [...currentOpenId4VcActorIds, actorId]
+  // An issuer and a verifier in the same tenant can share an id
+  const { dependencyManager } = agentContext
+  const otherActor =
+    deleted === 'verifier'
+      ? dependencyManager.isRegistered(OpenId4VcIssuerRepository, true) &&
+        (await agentContext.resolve(OpenId4VcIssuerRepository).findByIssuerId(agentContext, actorId))
+      : dependencyManager.isRegistered(OpenId4VcVerifierRepository, true) &&
+        (await agentContext.resolve(OpenId4VcVerifierRepository).findByVerifierId(agentContext, actorId))
+  if (otherActor) return
 
-    tenantRecord.metadata.set(OPENID4VC_ACTOR_IDS_METADATA_KEY, openId4VcActorIds)
-    tenantRecord.setTag(OPENID4VC_ACTOR_IDS_METADATA_KEY, openId4VcActorIds)
-    await tenantsApi.updateTenant(tenantRecord)
-  }
+  await updateActorIdsForContextCorrelationId(agentContext, (actorIds) => actorIds.filter((id) => id !== actorId))
 }

@@ -70,7 +70,11 @@ import type {
   OpenId4VcVerificationTypes,
   OpenId4VpAuthorizationRequestPayload,
 } from '../shared/index'
-import { storeActorIdForContextCorrelationId } from '../shared/router'
+import {
+  assertActorIdNotMappedToOtherTenant,
+  removeActorIdForContextCorrelationId,
+  storeActorIdForContextCorrelationId,
+} from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import { credoJwtIssuerToOpenId4VcJwtIssuer, dcqlCredentialQueryToPresentationFormat } from '../shared/utils'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
@@ -958,14 +962,41 @@ export class OpenId4VpVerifierService {
   }
 
   public async createVerifier(agentContext: AgentContext, options?: OpenId4VpCreateVerifierOptions) {
+    // A generated uuid can't clash, so only a provided verifier id is checked
+    if (options?.verifierId) {
+      if (await this.openId4VcVerifierRepository.findByVerifierId(agentContext, options.verifierId)) {
+        throw new CredoError(`A verifier with verifier id '${options.verifierId}' already exists`)
+      }
+      await assertActorIdNotMappedToOtherTenant(agentContext, options.verifierId)
+    }
+    const verifierId = options?.verifierId ?? utils.uuid()
+
     const openId4VcVerifier = new OpenId4VcVerifierRecord({
-      verifierId: options?.verifierId ?? utils.uuid(),
+      verifierId,
       clientMetadata: options?.clientMetadata,
     })
 
     await this.openId4VcVerifierRepository.save(agentContext, openId4VcVerifier)
     await storeActorIdForContextCorrelationId(agentContext, openId4VcVerifier.verifierId)
     return openId4VcVerifier
+  }
+
+  public async deleteVerifier(agentContext: AgentContext, verifierId: string) {
+    const verifier = await this.openId4VcVerifierRepository.getByVerifierId(agentContext, verifierId)
+    const verificationSessions = await this.openId4VcVerificationSessionRepository.findByQuery(
+      agentContext,
+      { verifierId },
+      { limit: 1 }
+    )
+    if (verificationSessions.length) {
+      throw new CredoError(
+        `Verifier with verifier id '${verifierId}' still has verification sessions. Delete them first.`
+      )
+    }
+
+    // The verifier record references no KMS keys, the response encryption keys belong to the verification sessions
+    await this.openId4VcVerifierRepository.delete(agentContext, verifier)
+    await removeActorIdForContextCorrelationId(agentContext, verifierId, 'verifier')
   }
 
   public async findVerificationSessionsByQuery(

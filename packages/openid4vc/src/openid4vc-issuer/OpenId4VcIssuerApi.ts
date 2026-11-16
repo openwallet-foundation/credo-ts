@@ -37,9 +37,25 @@ export class OpenId4VcIssuerApi {
   /**
    * Creates an issuer and stores the corresponding issuer metadata. Multiple issuers can be created, to allow different sets of
    * credentials to be issued with each issuer.
+   *
+   * Throws if an issuer with the issuer id already exists, or with multi-tenancy if another tenant has an issuer or
+   * verifier with that id.
    */
   public async createIssuer(options: OpenId4VciCreateIssuerOptions) {
     return this.openId4VcIssuerService.createIssuer(this.agentContext, options)
+  }
+
+  /**
+   * Deletes the issuer, so requests for its issuer id are no longer handled.
+   *
+   * Throws if the issuer still has issuance sessions. Delete them first with {@link deleteIssuanceSessionById}.
+   *
+   * @param options.deleteAssociatedKeys Also delete the KMS keys the issuer record references: the access token signing
+   * key and the credential request encryption keys in `jwks` and `previousJwks`. Set it to `false` if other issuers or
+   * code still use the request encryption keys. Defaults to `true`.
+   */
+  public async deleteIssuer(issuerId: string, options?: { deleteAssociatedKeys?: boolean }) {
+    return this.openId4VcIssuerService.deleteIssuer(this.agentContext, issuerId, options)
   }
 
   /**

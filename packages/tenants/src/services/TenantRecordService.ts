@@ -100,6 +100,16 @@ export class TenantRecordService {
     await this.removeFromCache(agentContext, tenantRecord.id)
   }
 
+  public async updateTenantByIdWithLock(
+    agentContext: AgentContext,
+    tenantId: string,
+    updateCallback: (tenantRecord: TenantRecord) => Promise<TenantRecord>
+  ) {
+    const tenantRecord = await this.tenantRepository.updateByIdWithLock(agentContext, tenantId, updateCallback)
+    await this.removeFromCache(agentContext, tenantId)
+    return tenantRecord
+  }
+
   public async findTenantsByQuery(agentContext: AgentContext, query: Query<TenantRecord>, queryOptions?: QueryOptions) {
     return this.tenantRepository.findByQuery(agentContext, query, queryOptions)
   }
