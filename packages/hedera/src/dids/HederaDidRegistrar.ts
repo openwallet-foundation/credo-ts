@@ -84,7 +84,7 @@ export class HederaDidRegistrar implements DidRegistrar {
         }
       }
 
-      Kms.warnMissingKmsBackend(
+      Kms.checkKmsKeyReferences(
         agentContext,
         (options.secret?.keys ?? []).map((key) => ({ keyId: key.kmsKeyId, backend: key.kmsBackend }))
       )

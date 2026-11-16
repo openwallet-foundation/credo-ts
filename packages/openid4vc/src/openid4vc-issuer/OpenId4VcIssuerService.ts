@@ -2652,7 +2652,7 @@ function warnMissingIssuerKmsBackends(
   options: Pick<OpenId4VcIssuerRecord, 'authorizationServerConfigs'>,
   metadataSigner: OpenId4VcJwtIssuer | null | undefined
 ) {
-  Kms.warnMissingKmsBackend(agentContext, [
+  Kms.checkKmsKeyReferences(agentContext, [
     ...(options.authorizationServerConfigs ?? []).flatMap((config) =>
       config.type === 'chained' && config.dpop?.keyId
         ? [{ keyId: config.dpop.keyId, backend: config.dpop.kmsBackend }]

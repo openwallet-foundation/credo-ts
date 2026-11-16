@@ -265,7 +265,7 @@ export class DidCommOutOfBandApi {
     } else {
       const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
       mediatorId = routing?.mediatorId
-      Kms.warnMissingKmsBackend(this.agentContext, [
+      Kms.checkKmsKeyReferences(this.agentContext, [
         { keyId: routing.recipientKey.keyId, backend: routing.recipientKey.kmsBackend },
       ])
 
@@ -661,7 +661,7 @@ export class DidCommOutOfBandApi {
     // we need to store the routing, so it can be used when we send the first message in response to this invitation
     if (routing && (isConnectionless || !autoAcceptInvitation)) {
       this.logger.debug('Storing routing for out of band invitation.')
-      Kms.warnMissingKmsBackend(this.agentContext, [
+      Kms.checkKmsKeyReferences(this.agentContext, [
         { keyId: routing.recipientKey.keyId, backend: routing.recipientKey.kmsBackend },
       ])
       outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.RecipientRouting, {

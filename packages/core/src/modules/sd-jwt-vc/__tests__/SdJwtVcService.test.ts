@@ -829,7 +829,7 @@ describe('SdJwtVcService', () => {
   })
 
   describe('SdJwtVcService.receive', () => {
-    test('warns about a jwk-bound credential stored without key id or backend', async () => {
+    test('throws for a jwk-bound credential without key id and warns without backend', async () => {
       const warn = vi.spyOn(agent.context.config.logger, 'warn')
 
       await sdJwtVcService.store(agent.context, {
@@ -837,10 +837,16 @@ describe('SdJwtVcService', () => {
       })
       expect(warn).not.toHaveBeenCalled()
 
+      await expect(
+        sdJwtVcService.store(agent.context, {
+          record: new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVc }] }),
+        })
+      ).rejects.toThrow('(key without key id or backend)')
+
       await sdJwtVcService.store(agent.context, {
-        record: new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVc }] }),
+        record: new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVc, kmsKeyId: 'key-id' }] }),
       })
-      expect(warn).toHaveBeenCalledWith(expect.stringContaining('(key without key id or backend)'))
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("('key-id' without backend)"))
 
       warn.mockRestore()
     })
@@ -852,6 +858,7 @@ describe('SdJwtVcService', () => {
           credentialInstances: [
             {
               compactSdJwtVc: simpleJwtVc,
+              kmsKeyId: holderKey.keyId,
             },
           ],
         }),

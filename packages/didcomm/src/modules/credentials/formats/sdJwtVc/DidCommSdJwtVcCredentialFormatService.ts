@@ -59,6 +59,7 @@ const DC_SD_JWT_OFFER = 'didcomm/dc-sd-jwt-offer@v1.0'
 const DC_SD_JWT_REQUEST = 'didcomm/dc-sd-jwt-request@v1.0'
 const DC_SD_JWT_CREDENTIAL = 'didcomm/dc-sd-jwt@v1.0'
 const DC_SD_JWT_REQUEST_METADATA_KEY = '_sdJwtVc/credentialRequest'
+type HolderKmsKey = { kmsKeyId?: string; kmsBackend?: string }
 
 // SD-JWT VC section 2.2.2.3: never selectively disclosable, and neither is anything inside them
 const NON_SELECTIVELY_DISCLOSABLE_CLAIMS = ['iss', 'nbf', 'exp', 'cnf', 'vct', 'vct#integrity', 'aka_vcts', 'status']
@@ -329,6 +330,7 @@ export class DidCommSdJwtVcCredentialFormatService
         if (!bindingMethod.jwkSupported) throw new CredoError("The offer does not accept a 'jwk' binding proof")
         credentialExchangeRecord.metadata.set(DC_SD_JWT_REQUEST_METADATA_KEY, {
           kmsKeyId: didCommSignedAttachmentOptions.jwk.keyId,
+          kmsBackend: didCommSignedAttachmentOptions.jwk.kmsBackend,
         })
       }
 
@@ -509,7 +511,7 @@ export class DidCommSdJwtVcCredentialFormatService
         )
       }
 
-      const kmsKeyId = this.verifyCredentialBinding(
+      const holderKey = this.verifyCredentialBinding(
         credentialExchangeRecord,
         sdJwtVc.payload.cnf,
         requestAttachment,
@@ -520,7 +522,7 @@ export class DidCommSdJwtVcCredentialFormatService
         assertValidStatus(sdJwtVc.prettyClaims.status, { allowOmittedMembers: false })
       }
 
-      record = SdJwtVcRecord.fromSdJwtVc({ ...sdJwtVc, kmsKeyId })
+      record = SdJwtVcRecord.fromSdJwtVc({ ...sdJwtVc, ...holderKey })
     } catch (error) {
       throw new V2CredentialProblemReportError(error.message, {
         problemCode: DidCommCredentialProblemReportReason.IssuanceAbandoned,
@@ -637,7 +639,7 @@ export class DidCommSdJwtVcCredentialFormatService
     cnf: unknown,
     requestAttachment: DidCommAttachment,
     requestAppendAttachments?: DidCommAttachment[]
-  ): string | undefined {
+  ): HolderKmsKey | undefined {
     const bindingProof =
       requestAttachment.getDataAsJson<SdJwtVcCredentialRequest>().binding_proof?.didcomm_signed_attachment
     if (!bindingProof) {
@@ -669,6 +671,6 @@ export class DidCommSdJwtVcCredentialFormatService
       throw new CredoError("The credential 'cnf.jwk' is not the key of the binding proof")
     }
 
-    return credentialExchangeRecord.metadata.get<{ kmsKeyId: string }>(DC_SD_JWT_REQUEST_METADATA_KEY)?.kmsKeyId
+    return credentialExchangeRecord.metadata.get<HolderKmsKey>(DC_SD_JWT_REQUEST_METADATA_KEY) ?? undefined
   }
 }

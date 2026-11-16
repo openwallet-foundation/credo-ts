@@ -2,7 +2,7 @@ import { AgentContext } from '../../agent'
 import { CredoError, RecordNotFoundError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
-import { KeyManagementApi, warnMissingKmsBackend } from '../kms'
+import { checkKmsKeyReferences, KeyManagementApi } from '../kms'
 import type { ImportDidOptions } from './DidsApiOptions'
 import { DidsModuleConfig } from './DidsModuleConfig'
 import {
@@ -150,7 +150,7 @@ export class DidsApi {
       // Make sure the keys exists in the did document
       didDocument.dereferenceKey(key.didDocumentRelativeKeyId)
     }
-    warnMissingKmsBackend(
+    checkKmsKeyReferences(
       this.agentContext,
       keys.map((key) => ({ keyId: key.kmsKeyId, backend: key.kmsBackend }))
     )

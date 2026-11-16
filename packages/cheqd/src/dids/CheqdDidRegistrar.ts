@@ -121,7 +121,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         for (const didDocumentKeyId of didDocumentRelativeKeyIds) {
           didDocument.dereferenceKey(didDocumentKeyId)
         }
-        Kms.warnMissingKmsBackend(
+        Kms.checkKmsKeyReferences(
           agentContext,
           keys.map((key) => ({ keyId: key.kmsKeyId, backend: key.kmsBackend }))
         )

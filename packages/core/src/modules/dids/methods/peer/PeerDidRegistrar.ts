@@ -2,12 +2,12 @@ import type { AgentContext } from '../../../../agent'
 import type { XOR } from '../../../../types'
 import { JsonTransformer } from '../../../../utils'
 import {
+  checkKmsKeyReferences,
   KeyManagementApi,
   type KmsCreateKeyOptions,
   type KmsCreateKeyTypeAsymmetric,
   PublicJwk,
   type WithCreateKeyBackend,
-  warnMissingKmsBackend,
 } from '../../../kms'
 import type { DidDocumentKey } from '../../DidsApiOptions'
 import { DidDocument } from '../../domain'
@@ -138,7 +138,7 @@ export class PeerDidRegistrar implements DidRegistrar {
         }
       }
 
-      warnMissingKmsBackend(
+      checkKmsKeyReferences(
         agentContext,
         keys.map((key) => ({ keyId: key.kmsKeyId, backend: key.kmsBackend }))
       )

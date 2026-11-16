@@ -1,9 +1,9 @@
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
 import { getAgentContext } from '../../../../tests/helpers'
 import { X509Service } from '../../x509'
+import { checkKmsKeyReferences } from '../checkKmsKeyReferences'
 import { Ed25519PublicJwk, PublicJwk, X25519PublicJwk } from '../jwk'
 import { KeyManagementApi } from '../KeyManagementApi'
-import { warnMissingKmsBackend } from '../warnMissingKmsBackend'
 
 const otherBackend = () =>
   Object.assign(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), { backend: 'other' })
@@ -37,10 +37,10 @@ describe('kms key references', () => {
     const agentContext = getAgentContext({ kmsBackends: [otherBackend()] })
     const warn = vi.spyOn(agentContext.config.logger, 'warn')
 
-    warnMissingKmsBackend(agentContext, [{ keyId: 'key-id', backend: 'other' }])
+    checkKmsKeyReferences(agentContext, [{ keyId: 'key-id', backend: 'other' }])
     expect(warn).not.toHaveBeenCalled()
 
-    warnMissingKmsBackend(agentContext, [
+    checkKmsKeyReferences(agentContext, [
       { keyId: 'key-id', backend: 'other' },
       { keyId: 'key-id', backend: undefined },
       { keyId: undefined, backend: 'other' },
@@ -51,6 +51,16 @@ describe('kms key references', () => {
       expect.stringContaining(
         "('key-id' without backend, key without key id in backend 'other', key without key id or backend)"
       )
+    )
+  })
+
+  test('throws for keys without key id or backend when configured', () => {
+    const agentContext = getAgentContext({ kmsBackends: [otherBackend()] })
+    const keys = [{ keyId: 'key-id', backend: undefined }]
+
+    expect(() => checkKmsKeyReferences(agentContext, keys, { missingKeyId: 'throw' })).not.toThrow()
+    expect(() => checkKmsKeyReferences(agentContext, keys, { missingBackend: 'throw' })).toThrow(
+      "Unable to store KMS keys without their key id or backend ('key-id' without backend)"
     )
   })
 })

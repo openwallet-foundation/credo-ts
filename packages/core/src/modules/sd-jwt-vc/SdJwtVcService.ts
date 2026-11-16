@@ -11,7 +11,7 @@ import type { Query, QueryOptions } from '../../storage/StorageService'
 import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArrayEncoder } from '../../utils'
 import { isAllowedHttpUrl } from '../../utils/uri'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
-import { KeyManagementApi, PublicJwk, warnMissingKmsBackend } from '../kms'
+import { checkKmsKeyReferences, KeyManagementApi, PublicJwk } from '../kms'
 import { getStatusListSignerKeyPurposeOptions } from '../token-status-list/assertStatusListSignerKeyPurpose'
 import { TokenStatusListModuleConfig } from '../token-status-list/TokenStatusListModuleConfig'
 import { ClaimFormat } from '../vc/index'
@@ -458,7 +458,7 @@ export class SdJwtVcService {
   }
 
   public async store(agentContext: AgentContext, options: SdJwtVcStoreOptions) {
-    warnMissingKmsBackend(
+    checkKmsKeyReferences(
       agentContext,
       options.record.credentialInstances
         // A did-bound credential keeps its key reference on the did record, so only a jwk-bound one needs it here.
@@ -466,7 +466,8 @@ export class SdJwtVcService {
           ({ compactSdJwtVc, kmsKeyId }) =>
             kmsKeyId || (decodeRawSignedSdJwtVcPayload(compactSdJwtVc).cnf as CnfPayload | undefined)?.jwk
         )
-        .map(({ kmsKeyId, kmsBackend }) => ({ keyId: kmsKeyId, backend: kmsBackend }))
+        .map(({ kmsKeyId, kmsBackend }) => ({ keyId: kmsKeyId, backend: kmsBackend })),
+      { missingKeyId: 'throw' }
     )
     await this.sdJwtVcRepository.save(agentContext, options.record)
     return options.record
