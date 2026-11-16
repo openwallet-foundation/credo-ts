@@ -153,10 +153,6 @@ describe('DIDComm v2 modules', () => {
         disclosures: expect.arrayContaining([
           expect.objectContaining({
             type: 'protocol',
-            id: 'https://didcomm.org/revocation_notification/1.0',
-          }),
-          expect.objectContaining({
-            type: 'protocol',
             id: 'https://didcomm.org/revocation_notification/2.0',
           }),
         ]),

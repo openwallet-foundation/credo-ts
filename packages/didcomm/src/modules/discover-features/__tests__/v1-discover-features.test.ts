@@ -80,10 +80,7 @@ describe('v1 discover features', () => {
 
     expect(disclosure).toMatchObject({
       protocolVersion: 'v1',
-      disclosures: [
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/1.0', roles: ['holder'] },
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/2.0', roles: ['holder'] },
-      ],
+      disclosures: [{ type: 'protocol', id: 'https://didcomm.org/revocation_notification/2.0', roles: ['holder'] }],
     })
   })
 
@@ -96,10 +93,7 @@ describe('v1 discover features', () => {
     })
 
     expect(matchingFeatures).toMatchObject({
-      features: [
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/1.0', roles: ['holder'] },
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/2.0', roles: ['holder'] },
-      ],
+      features: [{ type: 'protocol', id: 'https://didcomm.org/revocation_notification/2.0', roles: ['holder'] }],
     })
   })
 })

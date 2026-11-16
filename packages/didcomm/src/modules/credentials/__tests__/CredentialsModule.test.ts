@@ -74,10 +74,6 @@ describe('CredentialsModule', () => {
     expect(featureRegistry.register).toHaveBeenCalledTimes(1)
     expect(featureRegistry.register).toHaveBeenCalledWith(
       new DidCommProtocol({
-        id: 'https://didcomm.org/revocation_notification/1.0',
-        roles: ['holder'],
-      }),
-      new DidCommProtocol({
         id: 'https://didcomm.org/revocation_notification/2.0',
         roles: ['holder'],
       })

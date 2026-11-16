@@ -6,10 +6,7 @@ import { DidCommCredentialsApi } from './DidCommCredentialsApi'
 import type { DidCommCredentialsModuleConfigOptions } from './DidCommCredentialsModuleConfig'
 import { DidCommCredentialsModuleConfig } from './DidCommCredentialsModuleConfig'
 import type { DidCommCredentialProtocol } from './protocol/DidCommCredentialProtocol'
-import {
-  DidCommRevocationNotificationV1Handler,
-  DidCommRevocationNotificationV2Handler,
-} from './protocol/revocation-notification/handlers'
+import { DidCommRevocationNotificationV2Handler } from './protocol/revocation-notification/handlers'
 import { DidCommRevocationNotificationService } from './protocol/revocation-notification/services'
 import { DidCommCredentialV2Protocol } from './protocol/v2'
 import { DidCommCredentialExchangeRepository } from './repository'
@@ -64,17 +61,10 @@ export class DidCommCredentialsModule<
     const revocationNotificationService = agentContext.resolve(DidCommRevocationNotificationService)
 
     messageHandlerRegistry.registerMessageHandler(
-      new DidCommRevocationNotificationV1Handler(revocationNotificationService)
-    )
-    messageHandlerRegistry.registerMessageHandler(
       new DidCommRevocationNotificationV2Handler(revocationNotificationService)
     )
 
     featureRegistry.register(
-      new DidCommProtocol({
-        id: 'https://didcomm.org/revocation_notification/1.0',
-        roles: ['holder'],
-      }),
       new DidCommProtocol({
         id: 'https://didcomm.org/revocation_notification/2.0',
         roles: ['holder'],
