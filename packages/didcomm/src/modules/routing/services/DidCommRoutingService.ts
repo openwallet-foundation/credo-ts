@@ -60,8 +60,9 @@ export class DidCommRoutingService {
       useDefaultMediator,
     })
 
-    // Emit event so other parts of the framework can react on keys created
-    this.eventEmitter.emit<DidCommRoutingCreatedEvent>(agentContext, {
+    // Emit event so other parts of the framework can react on keys created. Awaited, as the tenants module must have
+    // registered the keys before they're shared, or messages sent to them can't be routed to the tenant
+    await this.eventEmitter.emit<DidCommRoutingCreatedEvent>(agentContext, {
       type: DidCommRoutingEventTypes.RoutingCreatedEvent,
       payload: {
         routing,

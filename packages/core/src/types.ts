@@ -54,6 +54,23 @@ export interface InitConfig {
   fetchLimits?: FetchLimits
 
   /**
+   * Receives work that Credo starts but doesn't await, such as async event listeners and the processing of
+   * received DIDComm messages. The promise never rejects, errors are logged.
+   *
+   * Serverless platforms can stop the CPU once a response is sent. Where the platform can keep work running after the
+   * response, pass its primitive: `ctx.waitUntil` on Cloudflare Workers, `waitUntil` on Vercel, or
+   * `(promise) => after(() => promise)` in Next.js. Elsewhere, such as on Google Cloud Run, track the promises per
+   * request with `AsyncLocalStorage` and wait for them before responding. That holds up the response, so keep the
+   * work it waits for short, such as publishing an event to a pub/sub channel, not the heavy processing itself.
+   *
+   * @see https://developers.cloudflare.com/workers/runtime-apis/context/#waituntil
+   * @see https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package#waituntil
+   * @see https://nextjs.org/docs/app/api-reference/functions/after
+   * @see https://nodejs.org/api/async_context.html#class-asynclocalstorage
+   */
+  waitUntil?: (promise: Promise<unknown>) => void
+
+  /**
    * Optional callback to dynamically resolve trusted issuers for a verification context.
    *
    * This is the primary trust anchor resolution hook. It is called before the X.509-module-level

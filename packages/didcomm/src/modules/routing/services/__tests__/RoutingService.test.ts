@@ -61,5 +61,19 @@ describe('DidCommRoutingService', () => {
         },
       })
     })
+
+    test('waits for async RoutingCreatedEvent listeners', async () => {
+      let registered = false
+      const routingListener = async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10))
+        registered = true
+      }
+      eventEmitter.on(DidCommRoutingEventTypes.RoutingCreatedEvent, routingListener)
+
+      await routingService.getRouting(agentContext)
+
+      expect(registered).toBe(true)
+      eventEmitter.off(DidCommRoutingEventTypes.RoutingCreatedEvent, routingListener)
+    })
   })
 })

@@ -1,10 +1,10 @@
 import { createServer, type Server } from 'node:http'
+import { setTimeout as sleep } from 'node:timers/promises'
 import type { AgentContext } from '@credo-ts/core'
 import { EventEmitter, JsonEncoder } from '@credo-ts/core'
 import type { DidCommEncryptedMessage } from '@credo-ts/didcomm'
-import { DidCommEventTypes, DidCommMimeType, DidCommModuleConfig, DidCommTransportService } from '@credo-ts/didcomm'
+import { DidCommMimeType, DidCommModuleConfig, DidCommTransportService } from '@credo-ts/didcomm'
 import express from 'express'
-import { Subject } from 'rxjs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket, { WebSocketServer } from 'ws'
 
@@ -23,17 +23,27 @@ afterEach(async () => {
   )
 })
 
-function createAgentContext({ v2 = false } = {}) {
+type ReceivedEvent = { payload: { message: unknown; session: HttpTransportSession } }
+
+function createAgentContext({
+  v2 = false,
+  processMessage = async () => {},
+}: {
+  v2?: boolean
+  processMessage?: (event: ReceivedEvent, failProcessing: (error: Error) => void) => Promise<void>
+} = {}) {
   const transportService = {
     removeSession: vi.fn(),
   }
-  const processedEvents = new Subject()
+  // The transport only listens for processing failures
+  const processingFailedListeners = new Set<(event: unknown) => void>()
   const eventEmitter = {
-    observable: () => processedEvents,
-    emit: vi.fn((_agentContext, event: { payload: { message: unknown } }) =>
-      processedEvents.next({
-        type: DidCommEventTypes.DidCommMessageProcessed,
-        payload: { encryptedMessage: event.payload.message },
+    on: vi.fn((_type, listener) => processingFailedListeners.add(listener)),
+    off: vi.fn((_type, listener) => processingFailedListeners.delete(listener)),
+    emit: vi.fn((_agentContext, event: ReceivedEvent) =>
+      processMessage(event, (error) => {
+        for (const listener of processingFailedListeners)
+          listener({ payload: { message: event.payload.message, error } })
       })
     ),
   }
@@ -216,6 +226,55 @@ describe('DIDComm inbound transports', () => {
       agentContext,
       expect.objectContaining({ payload: expect.objectContaining({ message: { protected: 'e30' } }) })
     )
+  })
+
+  it.each([
+    { respondAfterProcessing: false, processedBeforeResponse: false },
+    { respondAfterProcessing: true, processedBeforeResponse: true },
+  ])(
+    'with respondAfterProcessing $respondAfterProcessing, processing has finished before the response: $processedBeforeResponse',
+    async ({ respondAfterProcessing, processedBeforeResponse }) => {
+      let processed = false
+      const agentContext = createAgentContext({
+        processMessage: async (event) => {
+          // The message receiver closes the session when no response is sent over it
+          await event.payload.session.close()
+          await sleep(50)
+          processed = true
+        },
+      })
+      const app = createApp()
+      const transport = new DidCommHttpInboundTransport({ app, respondAfterProcessing })
+
+      await transport.start(agentContext)
+      const port = await listen(createServer(app))
+      const response = await fetch(`http://127.0.0.1:${port}/`, {
+        method: 'POST',
+        headers: { 'content-type': DidCommMimeType.V1 },
+        body: '{}',
+      })
+
+      expect(response.status).toBe(202)
+      expect(processed).toBe(processedBeforeResponse)
+    }
+  )
+
+  it('responds with 500 when processing the message fails', async () => {
+    const agentContext = createAgentContext({
+      processMessage: async (_event, failProcessing) => failProcessing(new Error('Processing failed')),
+    })
+    const app = createApp()
+    const transport = new DidCommHttpInboundTransport({ app })
+
+    await transport.start(agentContext)
+    const port = await listen(createServer(app))
+    const response = await fetch(`http://127.0.0.1:${port}/`, {
+      method: 'POST',
+      headers: { 'content-type': DidCommMimeType.V1 },
+      body: '{}',
+    })
+
+    expect(response.status).toBe(500)
   })
 
   it('accepts a DIDComm v2 signed message sent as application/didcomm-signed+json', async () => {

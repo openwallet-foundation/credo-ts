@@ -4,7 +4,7 @@ import 'reflect-metadata'
 export * from './agent'
 export { Agent } from './agent/Agent'
 export { AgentConfig } from './agent/AgentConfig'
-export type { AgentDependencies } from './agent/AgentDependencies'
+export type { AgentDependencies, EventEmitterLike } from './agent/AgentDependencies'
 export type {
   AgentApi,
   AgentModulesInput,
