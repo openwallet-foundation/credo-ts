@@ -779,7 +779,12 @@ describe('DidCommMessageSender', () => {
   })
 
   describe('peer DID fallback', () => {
-    async function retrieveServicesViaMediatorDid(mediatorDid: string): Promise<ResolvedDidCommService[]> {
+    const retrieveServicesViaMediatorDid = (mediatorDid: string) =>
+      retrieveServicesViaEndpoints(new NewDidCommV2ServiceEndpoint({ uri: mediatorDid }))
+
+    async function retrieveServicesViaEndpoints(
+      serviceEndpoint: NewDidCommV2ServiceEndpoint | NewDidCommV2ServiceEndpoint[]
+    ): Promise<ResolvedDidCommService[]> {
       const theirDid = didDocumentToNumAlgo2Did(
         new DidDocumentBuilder('')
           .addKeyAgreement(
@@ -789,12 +794,7 @@ describe('DidCommMessageSender', () => {
               controller: '#id',
             })
           )
-          .addService(
-            new NewDidCommV2Service({
-              id: '#dm',
-              serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: mediatorDid }),
-            })
-          )
+          .addService(new NewDidCommV2Service({ id: '#dm', serviceEndpoint }))
           .build()
       )
       didResolverServiceResolveDidServicesMock.mockResolvedValue([])
@@ -828,6 +828,19 @@ describe('DidCommMessageSender', () => {
       )
       return services
     }
+
+    test('resolves one service per serviceEndpoint entry of a did:peer:2 service, in order', async () => {
+      const services = await retrieveServicesViaEndpoints([
+        new NewDidCommV2ServiceEndpoint({ uri: 'https://primary.example/didcomm' }),
+        new NewDidCommV2ServiceEndpoint({ uri: 'wss://fallback.example/didcomm' }),
+      ])
+
+      expect(services.map((service) => service.serviceEndpoint)).toEqual([
+        'https://primary.example/didcomm',
+        'wss://fallback.example/didcomm',
+      ])
+      expect(services.every((service) => service.recipientKeys.length === 1)).toBe(true)
+    })
 
     test('uses one keyAgreement hop for a v2 mediator DID endpoint', async () => {
       const mediatorKeyAgreementKey = Kms.PublicJwk.fromPublicKey({
