@@ -23,7 +23,7 @@ const reservedBodyKeys = [
 
 /**
  * Normalize a DIDComm v2 plaintext message to v1 shape so existing handlers work.
- * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→lang and ~l10n, please_ack→~please_ack, ack→ack, attachments→~attach (or formats + the named *~attach array for 2.0 credential and proof messages), created_time/expires_time→~timing.
+ * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→lang and ~l10n, please_ack→~please_ack, ack→ack, attachments→~attach (or formats + the named *~attach array for 2.0 credential and proof messages), created_time/expires_time→~timing, return_route/return_route_thread→~transport.
  * This allows v2 plaintext to be processed by v1 message handlers without changes.
  *
  * @param v2 - The DIDComm v2 plaintext message
@@ -43,6 +43,7 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?:
     created_time,
     expires_time,
     return_route,
+    return_route_thread,
     please_ack,
     ack,
     from_prior,
@@ -112,8 +113,11 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?:
     v1['~attach'] = otherAttachments.map(mapV2AttachmentToV1)
   }
 
+  // https://github.com/decentralized-identity/didcomm-messaging/blob/main/extensions/return_route/main.md
   if (return_route !== undefined) {
-    v1['~transport'] = { return_route }
+    const transport: Record<string, unknown> = { return_route }
+    if (return_route_thread !== undefined) transport.return_route_thread = return_route_thread
+    v1['~transport'] = transport
   }
 
   // The headers become the ~timing decorator and nothing else, so a body field with the same name stays protocol data

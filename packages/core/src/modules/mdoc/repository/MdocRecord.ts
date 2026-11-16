@@ -9,6 +9,7 @@ import { uuid } from '../../../utils/uuid'
 import { zNonEmptyArray } from '../../../utils/zod'
 import type { KnownJwaSignatureAlgorithm } from '../../kms'
 import { Mdoc } from '../Mdoc'
+import { MdocError } from '../MdocError'
 
 export type DefaultMdocRecordTags = {
   docType: string
@@ -120,6 +121,11 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
   }
 
   public static fromMdoc(mdoc: Mdoc) {
+    // Only the caller knows which key it created for this mdoc, the issuer could bind it to any of our keys.
+    if (!mdoc.deviceKeyId) {
+      throw new MdocError("Set 'deviceKeyId' on the mdoc to the KMS key id of its device key before storing it.")
+    }
+
     return new MdocRecord({
       credentialInstances: [
         {

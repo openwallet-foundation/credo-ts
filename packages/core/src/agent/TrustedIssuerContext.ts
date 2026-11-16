@@ -1,6 +1,6 @@
 import { CredoError } from '../error'
 import { parseDid } from '../modules/dids'
-import { X509Certificate } from '../modules/x509/X509Certificate'
+import { X509CertificateCache } from '../modules/x509/X509CertificateCache'
 import { X509Service } from '../modules/x509/X509Service'
 import type { AgentContext } from './context'
 import type {
@@ -72,17 +72,20 @@ export class TrustedIssuerContext {
       }
 
       const x509Issuers = trustedIssuers.filter((t) => t.method === 'x509')
+      // Parsed once, for both the validation and finding the matched trusted issuer
+      const issuanceCertificates = x509Issuers.map((t) =>
+        t.issuance.map((certificate) => X509CertificateCache.parseCertificate(agentContext, certificate))
+      )
       const validatedChain = await X509Service.validateCertificateChain(agentContext, {
-        // TODO: we should allow x509 cert instance here
-        certificateChain: signer.certificateChain.map((certificate) => certificate.toString('base64')),
-        trustedCertificates: x509Issuers.flatMap((t) => t.issuance),
+        certificateChain: signer.certificateChain,
+        trustedCertificates: issuanceCertificates.flat(),
       })
 
       // validateCertificateChain returns the chain, where the first element is
       // always the matched trusted certificate from the list we provided
       const trustAnchor = validatedChain[0]
-      const trustedIssuer = x509Issuers.find((t) =>
-        t.issuance.some((certificate) => X509Certificate.fromEncodedCertificate(certificate).equal(trustAnchor))
+      const trustedIssuer = x509Issuers.find((_, index) =>
+        issuanceCertificates[index].some((certificate) => certificate.equal(trustAnchor))
       )
 
       return { trustedIssuer: trustedIssuer as TrustedIssuerForSigner<Signer['method']> }

@@ -28,6 +28,7 @@ export interface DidCommV2PlaintextMessage {
   expires_time?: number
   lang?: string
   return_route?: string
+  return_route_thread?: string
   please_ack?: string[]
   ack?: string[]
   attachments?: DidCommV2Attachment[]

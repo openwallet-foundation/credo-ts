@@ -123,7 +123,7 @@ describe('mdoc device-response status list verification', () => {
 
   const signMdoc = async (leafCertificate: X509Certificate, statusListUri: string) => {
     const holderKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
-    return Mdoc.sign(agent.context, {
+    const mdoc = await Mdoc.sign(agent.context, {
       docType,
       holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
       namespaces: { [namespace]: { family_name: 'Jones' } },
@@ -131,6 +131,8 @@ describe('mdoc device-response status list verification', () => {
       validityInfo: { validUntil: nextDay },
       statusInfo: { index: 1, uri: statusListUri },
     })
+    mdoc.deviceKeyId = holderKey.keyId
+    return mdoc
   }
 
   test('verify succeeds when status list shares the issuance leaf and only the root is trusted', async () => {

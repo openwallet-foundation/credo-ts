@@ -5,6 +5,7 @@ import { MdocRecord, type MdocRecordInstances, MdocRepository } from '../modules
 import { decodeSdJwtVc } from '../modules/sd-jwt-vc/decodeSdJwtVc'
 import { SdJwtVcRecord, type SdJwtVcRecordInstances, SdJwtVcRepository } from '../modules/sd-jwt-vc/repository'
 import type { SdJwtVc } from '../modules/sd-jwt-vc/SdJwtVcService'
+import { getStoredHolderKmsKeyId } from '../modules/sd-jwt-vc/utils'
 import {
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
@@ -179,9 +180,10 @@ export async function useInstanceFromCredentialRecord<Record extends CredentialR
   } else if (credentialRecord instanceof SdJwtVcRecord) {
     const { compactSdJwtVc, kmsKeyId } = extractResult.credentialInstance as SdJwtVcRecordInstances[0]
 
+    const sdJwtVc = decodeSdJwtVc(compactSdJwtVc, credentialRecord.typeMetadata)
     transformedCredentialInstance = {
-      ...decodeSdJwtVc(compactSdJwtVc, credentialRecord.typeMetadata),
-      kmsKeyId,
+      ...sdJwtVc,
+      kmsKeyId: getStoredHolderKmsKeyId(sdJwtVc.holder, kmsKeyId),
     }
   } else if (credentialRecord instanceof W3cCredentialRecord) {
     const { credential } = extractResult.credentialInstance as W3cCredentialRecordInstances[0]

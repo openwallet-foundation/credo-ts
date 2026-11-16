@@ -6,10 +6,12 @@ import { KmsSigner } from '../../src/ledger/signer/KmsSigner'
 import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../../src/ledger/utils'
 
 const mockKeyId = 'test-key-id'
+const mockJwk = { kty: 'OKP', crv: 'Ed25519', x: 'AQID', kid: mockKeyId }
 const mockPublicJwk = {
   keyId: mockKeyId,
   publicKey: { publicKey: new Uint8Array([1, 2, 3]) },
-} as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  toJson: () => mockJwk,
+} as unknown as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
 vi.mock('../../../core/src/modules/kms/jwk/PublicJwk')
 vi.mock('../../../core/src/modules/kms/KeyManagementApi')
@@ -68,6 +70,7 @@ describe('KmsSigner', () => {
 
     expect(kmsMock.sign).toHaveBeenCalledWith({
       keyId: mockKeyId,
+      expectedPublicJwk: mockJwk,
       data,
       algorithm: 'EdDSA',
     })
