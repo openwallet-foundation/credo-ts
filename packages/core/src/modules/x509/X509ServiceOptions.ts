@@ -51,10 +51,26 @@ export interface X509ParseOptions {
   maxContentLength?: number
 }
 
-export interface X509ValidateCertificateChainOptions {
-  certificateChain: EncodedX509Certificate[]
+export interface X509CertificateValidationOptions {
+  /**
+   * Key usages the certificate must have. A certificate without a Key Usage extension passes this
+   * check, as the extension is optional and its absence means the key is unrestricted.
+   */
+  requiredKeyUsages?: X509KeyUsage[]
 
-  certificate?: EncodedX509Certificate
+  /**
+   * Extended key usages the certificate must have. `anyExtendedKeyUsage` does not satisfy a required
+   * extended key usage.
+   */
+  requiredExtendedKeyUsages?: X509ExtendedKeyUsage[]
+}
+
+export interface X509ValidateCertificateChainOptions {
+  /**
+   * The chain to validate, leaf first, as base64/PEM-encoded strings, DER bytes or {@link X509Certificate}
+   * instances. Instances are not parsed again, so `parseOptions` does not apply to them.
+   */
+  certificateChain: Array<EncodedX509Certificate | Uint8Array | X509Certificate>
 
   /**
    * The date for which the certificate chain should be valid
@@ -66,7 +82,11 @@ export interface X509ValidateCertificateChainOptions {
    */
   verificationDate?: Date
 
-  trustedCertificates?: EncodedX509Certificate[]
+  /**
+   * The certificates that are trusted. The chain is only valid when it contains one of these, or is
+   * completed by them. A self-signed root that is not in this list is not trusted.
+   */
+  trustedCertificates: Array<EncodedX509Certificate | Uint8Array | X509Certificate>
 
   /**
    * Whether to allow trusting intermediate or leaf certificates (non-root certificates)
@@ -91,6 +111,16 @@ export interface X509ValidateCertificateChainOptions {
   allowNonRootTrustedCertificate?: boolean
 
   /**
+   * Additional checks on certificates in the chain.
+   */
+  validation?: {
+    /**
+     * Checks on the leaf certificate, which is `certificate` or else the first certificate in the chain.
+     */
+    leaf?: X509CertificateValidationOptions
+  }
+
+  /**
    * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured
    * `parseOptions` in full rather than being merged with them. When omitted, the configured
    * options are used, falling back to {@link defaultX509ParseOptions}.
@@ -110,7 +140,10 @@ export interface X509GetLeafCertificateOptions {
 }
 
 export interface X509ParseCertificateOptions {
-  encodedCertificate: string
+  /**
+   * The certificate as a base64/PEM-encoded string, or as DER bytes.
+   */
+  encodedCertificate: EncodedX509Certificate | Uint8Array
 
   /**
    * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured

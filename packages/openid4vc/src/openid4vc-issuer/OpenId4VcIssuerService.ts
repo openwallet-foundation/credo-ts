@@ -77,7 +77,6 @@ import {
   credoJwtIssuerToOpenId4VcJwtIssuer,
   decodeJwtIssuer,
   encodeJwtIssuer,
-  getProofTypeFromPublicJwk,
   getPublicJwkFromDid,
   supportedResponseEncryptionContentAlgorithms,
   supportedResponseEncryptionKeyAgreementAlgorithms,
@@ -621,7 +620,11 @@ export class OpenId4VcIssuerService {
 
   public async createCredentialResponse(
     agentContext: AgentContext,
-    options: OpenId4VciCreateCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
+    options: OpenId4VciCreateCredentialResponseOptions & {
+      issuanceSession: OpenId4VcIssuanceSessionRecord
+      /** The issuer of the session, when the caller already has it. */
+      issuer?: OpenId4VcIssuerRecord
+    }
   ): Promise<{
     issuanceSession: OpenId4VcIssuanceSessionRecord
     credentialResponse: CredentialResponse
@@ -636,7 +639,7 @@ export class OpenId4VcIssuerService {
       OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
     ])
     const { issuanceSession } = options
-    const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
+    const issuer = await this.getIssuerForIssuanceSession(agentContext, issuanceSession, options.issuer)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
@@ -821,7 +824,11 @@ export class OpenId4VcIssuerService {
 
   public async createDeferredCredentialResponse(
     agentContext: AgentContext,
-    options: OpenId4VciCreateDeferredCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
+    options: OpenId4VciCreateDeferredCredentialResponseOptions & {
+      issuanceSession: OpenId4VcIssuanceSessionRecord
+      /** The issuer of the session, when the caller already has it. */
+      issuer?: OpenId4VcIssuerRecord
+    }
   ): Promise<{
     issuanceSession: OpenId4VcIssuanceSessionRecord
     deferredCredentialResponse: DeferredCredentialResponse
@@ -845,7 +852,7 @@ export class OpenId4VcIssuerService {
       })
     }
 
-    const issuer = await this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
+    const issuer = await this.getIssuerForIssuanceSession(agentContext, issuanceSession, options.issuer)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
 
     // Optimization: if the deferral interval hasn't passed yet, we immediately
@@ -1222,18 +1229,6 @@ export class OpenId4VcIssuerService {
           })
         }
 
-        // Set previous nonce if not yet set (first iteration)
-        if (!firstNonce) firstNonce = payload.nonce
-        if (firstNonce !== payload.nonce) {
-          const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
-          throw new Oauth2ServerErrorResponseError({
-            error: Oauth2ErrorCodes.InvalidProof,
-            error_description: 'Not all nonce values in proofs are equal',
-            c_nonce: cNonce,
-            c_nonce_expires_in: cNonceExpiresInSeconds,
-          })
-        }
-
         // IF nonce is provided in the key attestation (not required with jwt proof) then
         // it MUST match with the nonce of the JWT proof
         if (keyAttestation?.payload.nonce && keyAttestation.payload.nonce !== payload.nonce) {
@@ -1244,21 +1239,32 @@ export class OpenId4VcIssuerService {
           })
         }
 
-        // Verify the nonce
-        await this.verifyNonce(agentContext, issuer, payload.nonce).catch(async (error) => {
+        // The first nonce is verified, the nonces of the other proofs must be equal to it
+        if (!firstNonce) {
+          await this.verifyNonce(agentContext, issuer, payload.nonce).catch(async (error) => {
+            const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
+            throw new Oauth2ServerErrorResponseError(
+              {
+                error: Oauth2ErrorCodes.InvalidNonce,
+                error_description: 'Invalid nonce in credential request',
+                c_nonce: cNonce,
+                c_nonce_expires_in: cNonceExpiresInSeconds,
+              },
+              {
+                cause: error,
+              }
+            )
+          })
+          firstNonce = payload.nonce
+        } else if (firstNonce !== payload.nonce) {
           const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
-          throw new Oauth2ServerErrorResponseError(
-            {
-              error: Oauth2ErrorCodes.InvalidNonce,
-              error_description: 'Invalid nonce in credential request',
-              c_nonce: cNonce,
-              c_nonce_expires_in: cNonceExpiresInSeconds,
-            },
-            {
-              cause: error,
-            }
-          )
-        })
+          throw new Oauth2ServerErrorResponseError({
+            error: Oauth2ErrorCodes.InvalidProof,
+            error_description: 'Not all nonce values in proofs are equal',
+            c_nonce: cNonce,
+            c_nonce_expires_in: cNonceExpiresInSeconds,
+          })
+        }
 
         if (keyAttestation) {
           return {
@@ -1350,6 +1356,23 @@ export class OpenId4VcIssuerService {
     return this.openId4VcIssuerRepository.getByIssuerId(agentContext, issuerId)
   }
 
+  private async getIssuerForIssuanceSession(
+    agentContext: AgentContext,
+    issuanceSession: OpenId4VcIssuanceSessionRecord,
+    issuer?: OpenId4VcIssuerRecord
+  ) {
+    if (!issuer) return this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
+
+    // The issuer's metadata and keys are used to sign, so it must be the issuer of the session.
+    if (issuer.issuerId !== issuanceSession.issuerId) {
+      throw new CredoError(
+        `Issuer '${issuer.issuerId}' is not the issuer '${issuanceSession.issuerId}' of issuance session '${issuanceSession.id}'.`
+      )
+    }
+
+    return issuer
+  }
+
   public async updateIssuer(
     agentContext: AgentContext,
     issuer: OpenId4VcIssuerRecord,
@@ -1364,7 +1387,7 @@ export class OpenId4VcIssuerService {
       options?.metadataSigner !== undefined
         ? options.metadataSigner
         : issuer.signedMetadata
-          ? decodeJwtIssuer(issuer.signedMetadata.signer)
+          ? decodeJwtIssuer(agentContext, issuer.signedMetadata.signer)
           : undefined
 
     if (metadataSigner) {
@@ -1429,6 +1452,13 @@ export class OpenId4VcIssuerService {
     credentialIssuerMetadata: OpenId4VciCredentialIssuerMetadata,
     metadataSigner: OpenId4VcJwtIssuer
   ) {
+    // Wallets must establish trust in the metadata signer (OID4VCI 1.0 section 12.2.3), which a bare jwk can't provide.
+    if (metadataSigner.method === 'jwk') {
+      throw new CredoError(
+        `Signing the credential issuer metadata with a 'jwk' signer is not supported. Use 'x5c' or 'did' to sign the credential issuer metadata, or set 'metadataSigner' to null to stop signing it.`
+      )
+    }
+
     const issuer = this.getIssuer(agentContext)
     const credentialIssuerMetadataJwt = await issuer.createSignedCredentialIssuerMetadataJwt({
       credentialIssuerMetadata,
@@ -1948,15 +1978,20 @@ export class OpenId4VcIssuerService {
         ? [persisted.alg].filter((algorithm) => dpopConfig?.signingAlgValuesSupported?.includes(algorithm) ?? true)
         : dpopConfig?.signingAlgValuesSupported,
       keyId: persisted?.keyId ?? dpopConfig?.keyId,
+      jwk: persisted?.publicJwk
+        ? Kms.PublicJwk.fromPublicJwk({ ...persisted.publicJwk, kid: persisted.keyId })
+        : undefined,
       nonce: persisted?.nonce,
     })
 
+    const publicJwk = Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk)
     return {
       dpop,
       session: persisted
         ? { ...persisted }
         : {
-            keyId: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk).keyId,
+            keyId: publicJwk.keyId,
+            publicJwk: publicJwk.toJson(),
             alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
             keyGeneratedForSession: !dpopConfig?.keyId,
           },
@@ -2407,8 +2442,8 @@ export class OpenId4VcIssuerService {
     format: `${ClaimFormat.JwtVc}` | `${ClaimFormat.LdpVc}`,
     options: OpenId4VciSignW3cCredentials['credentials'][number]
   ) {
-    const publicJwk = await getPublicJwkFromDid(agentContext, options.verificationMethod)
     if (format === ClaimFormat.JwtVc) {
+      const publicJwk = await getPublicJwkFromDid(agentContext, options.verificationMethod)
       return await this.w3cCredentialService.signCredential(agentContext, {
         format: ClaimFormat.JwtVc,
         credential: options.credential,
@@ -2417,12 +2452,11 @@ export class OpenId4VcIssuerService {
       })
     }
 
-    const proofType = getProofTypeFromPublicJwk(agentContext, publicJwk)
+    // No proofType, so signing picks the suite from the verification method type, as the key type alone is not enough
     return await this.w3cCredentialService.signCredential(agentContext, {
       format: ClaimFormat.LdpVc,
       credential: options.credential,
       verificationMethod: options.verificationMethod,
-      proofType: proofType,
     })
   }
 
@@ -2460,20 +2494,46 @@ function getCredentialResponseEncryptionMetadata(agentContext: AgentContext, iss
   }
 }
 
+function toCredentialRequestEncryptionJwk(jwk: Kms.KmsJwkPublic & { kid: string }) {
+  return { ...Kms.PublicJwk.fromUnknown(jwk).toJson(), kid: jwk.kid, use: 'enc', alg: 'ECDH-ES' }
+}
+
 function getCredentialRequestEncryptionMetadata(issuerRecord: OpenId4VcIssuerRecord) {
   if (!issuerRecord.credentialRequestEncryption) return undefined
 
   return {
     jwks: {
-      keys: issuerRecord.credentialRequestEncryption.jwks.map((jwk) => ({
-        ...Kms.PublicJwk.fromUnknown(jwk).toJson(),
-        kid: jwk.kid,
-        use: 'enc',
-        alg: 'ECDH-ES',
-      })),
+      keys: issuerRecord.credentialRequestEncryption.jwks.map(toCredentialRequestEncryptionJwk),
     },
     enc_values_supported: [...supportedResponseEncryptionContentAlgorithms],
     encryption_required: issuerRecord.credentialRequestEncryption.required ?? false,
+  }
+}
+
+/**
+ * Issuer metadata to parse (deferred) credential requests with. The library only decrypts with keys
+ * from the metadata, so this adds the previous request encryption keys that are not advertised.
+ */
+export function getCredentialRequestDecryptionMetadata(
+  issuerMetadata: OpenId4VciMetadata,
+  issuerRecord: OpenId4VcIssuerRecord
+): OpenId4VciMetadata {
+  const requestEncryption = issuerMetadata.credentialIssuer.credential_request_encryption
+  const previousJwks = issuerRecord.credentialRequestEncryption?.previousJwks
+  if (!requestEncryption || !previousJwks?.length) return issuerMetadata
+
+  return {
+    ...issuerMetadata,
+    credentialIssuer: {
+      ...issuerMetadata.credentialIssuer,
+      credential_request_encryption: {
+        ...requestEncryption,
+        jwks: {
+          ...requestEncryption.jwks,
+          keys: [...requestEncryption.jwks.keys, ...previousJwks.map(toCredentialRequestEncryptionJwk)],
+        },
+      },
+    },
   }
 }
 
@@ -2486,7 +2546,22 @@ export function assertCredentialEncryptionConfiguration(
     )
   }
 
-  const unsupportedKey = options.credentialRequestEncryption?.jwks.find(
+  const requestEncryptionJwks = [
+    ...(options.credentialRequestEncryption?.jwks ?? []),
+    ...(options.credentialRequestEncryption?.previousJwks ?? []),
+  ]
+
+  // Requests are matched to a decryption key by kid, so a kid must identify a single key
+  const duplicateKey = requestEncryptionJwks.find(
+    (jwk, index) => requestEncryptionJwks.findIndex(({ kid }) => kid === jwk.kid) !== index
+  )
+  if (duplicateKey) {
+    throw new CredoError(
+      `Credential request encryption key '${duplicateKey.kid}' must be unique across 'jwks' and 'previousJwks'.`
+    )
+  }
+
+  const unsupportedKey = requestEncryptionJwks.find(
     (jwk) => jwk.kty === 'oct' || !Kms.allowedKeyDerivationAlgsForKey(jwk).includes('ECDH-ES')
   )
   if (unsupportedKey) {

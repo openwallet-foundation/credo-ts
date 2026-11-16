@@ -31,6 +31,7 @@ import {
   type MdocSupportedSignatureAlgorithm,
   mapNonEmptyArray,
   type NonEmptyArray,
+  parseX5c,
   type Query,
   type QueryOptions,
   SdJwtVcApi,
@@ -46,7 +47,6 @@ import {
   W3cJwtVerifiablePresentation,
   W3cV2CredentialService,
   W3cV2SdJwtVerifiablePresentation,
-  X509Certificate,
   X509ModuleConfig,
   X509Service,
 } from '@credo-ts/core'
@@ -98,6 +98,16 @@ import {
   OpenId4VcVerifierRecord,
   OpenId4VcVerifierRepository,
 } from './repository'
+
+// Includes the legacy polymorphic algorithms, as some wallets only match those literally.
+const mdocSupportedCoseSignatureAlgorithms: NonEmptyArray<Kms.KnownCoseSignatureAlgorithm> = [
+  Kms.KnownCoseSignatureAlgorithms.ESP256,
+  Kms.KnownCoseSignatureAlgorithms.ES256,
+  Kms.KnownCoseSignatureAlgorithms.ESP384,
+  Kms.KnownCoseSignatureAlgorithms.ES384,
+  Kms.KnownCoseSignatureAlgorithms.Ed25519,
+  Kms.KnownCoseSignatureAlgorithms.EdDSA,
+]
 
 /**
  * @internal
@@ -234,10 +244,7 @@ export class OpenId4VpVerifierService {
     } else if (jwtIssuer?.method === 'x5c') {
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c })
 
-      if (
-        !authorizationResponseUrl.startsWith('https://') &&
-        !(authorizationResponseUrl.startsWith('http://') && agentContext.config.allowInsecureHttpUrls)
-      ) {
+      if (!utils.isAllowedHttpUrl(authorizationResponseUrl, agentContext.config.allowInsecureHttpUrls)) {
         throw new CredoError('The X509 certificate issuer must be a HTTPS URI.')
       }
 
@@ -366,6 +373,9 @@ export class OpenId4VpVerifierService {
       expiresAt,
       openId4VpVersion: version,
     })
+    for (const [key, value] of Object.entries(options.recordMetadata ?? {})) {
+      verificationSession.metadata.set(key, value)
+    }
     await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
     this.emitStateChangedEvent(agentContext, verificationSession, null)
 
@@ -540,9 +550,9 @@ export class OpenId4VpVerifierService {
         ? undefined
         : authorizationRequest.response_uri
 
-      // NOTE: apu is needed for mDOC over OID4VP without DC API up to draft 24
+      // apu can be binary, so keep the raw bytes and only decode them as UTF-8 for the draft 18 mdoc session transcript.
       const mdocGeneratedNonce = result.jarm?.jarmHeader.apu
-        ? TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64Url(result.jarm?.jarmHeader.apu))
+        ? TypedArrayEncoder.fromBase64Url(result.jarm.jarmHeader.apu)
         : undefined
 
       if (result.type === 'dcql') {
@@ -749,6 +759,18 @@ export class OpenId4VpVerifierService {
       transactionData,
     }
 
+    try {
+      await this.config.verifiedAuthorizationResponseHandler?.({
+        agentContext,
+        verificationSession: result.verificationSession,
+        verifiedAuthorizationResponse,
+      })
+    } catch (error) {
+      result.verificationSession.errorMessage = error.message
+      await this.updateState(agentContext, result.verificationSession, OpenId4VcVerificationSessionState.Error)
+      throw error
+    }
+
     result.verificationSession.authorizationResponsePayload = result.authorizationResponsePayload
     await this.updateState(
       agentContext,
@@ -795,7 +817,7 @@ export class OpenId4VpVerifierService {
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
 
     const result = openid4vpVerifier.validateOpenid4vpAuthorizationResponsePayload({
-      authorizationRequestPayload: verificationSession.requestPayload,
+      authorizationRequestPayload,
       authorizationResponsePayload: openid4vpAuthorizationResponsePayload,
     })
 
@@ -1052,16 +1074,8 @@ export class OpenId4VpVerifierService {
               ...(dcqlQueryFormats.has('mso_mdoc')
                 ? {
                     mso_mdoc: {
-                      deviceauth_alg_values: [
-                        Kms.KnownCoseSignatureAlgorithms.ESP256,
-                        Kms.KnownCoseSignatureAlgorithms.ESP384,
-                        Kms.KnownCoseSignatureAlgorithms.Ed25519,
-                      ],
-                      issuerauth_alg_values: [
-                        Kms.KnownCoseSignatureAlgorithms.ESP256,
-                        Kms.KnownCoseSignatureAlgorithms.ESP384,
-                        Kms.KnownCoseSignatureAlgorithms.Ed25519,
-                      ],
+                      deviceauth_alg_values: mdocSupportedCoseSignatureAlgorithms,
+                      issuerauth_alg_values: mdocSupportedCoseSignatureAlgorithms,
                     },
                   }
                 : {}),
@@ -1167,7 +1181,7 @@ export class OpenId4VpVerifierService {
       audience: string
       clientId: string
       responseUri?: string
-      mdocGeneratedNonce?: string
+      mdocGeneratedNonce?: string | Uint8Array
       origin?: string
       verificationSession: OpenId4VcVerificationSessionRecord
       presentation: string | Record<string, unknown>
@@ -1228,15 +1242,14 @@ export class OpenId4VpVerifierService {
         // `trustedIssuers` undefined and let `sdJwtVcApi.verify` surface the unsupported-issuer error.
         let trustedIssuers: TrustedIssuer[] | undefined
         if (issuer) {
+          const signer =
+            issuer.method === 'x5c'
+              ? ({ method: 'x509', certificateChain: parseX5c(agentContext, issuer.x5c) } as const)
+              : ({ method: 'did', didUrl: issuer.didUrl } as const)
+
           trustedIssuers = (
             await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
-              signer:
-                issuer.method === 'x5c'
-                  ? {
-                      method: 'x509',
-                      certificateChain: issuer.x5c,
-                    }
-                  : { method: 'did', didUrl: issuer.didUrl },
+              signer,
               verification: {
                 type: 'openId4VpCredential',
                 credential: sdJwtVc,
@@ -1246,10 +1259,10 @@ export class OpenId4VpVerifierService {
             })
           )?.trustedIssuers
 
-          if (!trustedIssuers && issuer.method === 'x5c') {
+          if (!trustedIssuers && signer.method === 'x509') {
             const legacyTrustedCertificates =
               (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-                certificateChain: issuer.x5c,
+                certificateChain: signer.certificateChain,
                 verification: {
                   type: 'credential',
                   credential: sdJwtVc,
@@ -1264,7 +1277,7 @@ export class OpenId4VpVerifierService {
         }
 
         const verificationResult = await sdJwtVcApi.verify({
-          compactSdJwtVc: presentation,
+          sdJwtVc,
           keyBinding: {
             audience: options.audience,
             nonce: options.nonce,
@@ -1289,7 +1302,7 @@ export class OpenId4VpVerifierService {
           const mdoc = new Mdoc(documentResponse.deviceResponse.documents![0].issuerSigned)
 
           const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
-            X509Certificate.fromRawCertificate(cert)
+            X509Service.parseCertificate(agentContext, { encodedCertificate: cert })
           )
 
           const trustedCertificates =

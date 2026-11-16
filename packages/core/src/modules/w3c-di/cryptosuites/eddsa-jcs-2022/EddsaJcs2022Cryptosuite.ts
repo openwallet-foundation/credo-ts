@@ -6,7 +6,10 @@ import { asArray, MultiBaseEncoder, TypedArrayEncoder } from '../../../../utils'
 import { isObject } from '../../../../utils/object'
 import { KeyManagementApi } from '../../../kms'
 import { isXsdDateTimeStamp } from '../../proof-processing/iso8601Datetime'
-import { publicJwkFromVerificationMethodId, publicKeyIdFromVerificationMethodId } from '../../proof-processing/keyUtils'
+import {
+  kmsPublicJwkFromVerificationMethodId,
+  publicJwkFromVerificationMethodId,
+} from '../../proof-processing/keyUtils'
 import { omitUndefinedFields } from '../../proof-processing/normalization'
 import { W3cDataIntegrityProcessingError, W3cDataIntegrityProcessingErrorCode } from '../../W3cDataIntegrityError'
 import type {
@@ -182,9 +185,10 @@ export class EddsaJcs2022Cryptosuite implements W3cDataIntegrityCryptosuite {
     // This method intentionally focuses on §3.3.6 signing semantics only.
 
     const verificationMethod = options.verificationMethod
-    const keyId = await publicKeyIdFromVerificationMethodId(this.agentContext, verificationMethod) // 1
+    const publicJwk = await kmsPublicJwkFromVerificationMethodId(this.agentContext, verificationMethod) // 1
     const signResult = await this.keyManagementApi.sign({
-      keyId,
+      keyId: publicJwk.keyId,
+      expectedPublicJwk: publicJwk.toJson(),
       algorithm: 'EdDSA',
       data: hashData,
     })

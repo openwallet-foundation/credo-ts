@@ -4,8 +4,10 @@ import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@cre
 import queryString from 'query-string'
 
 import { DidCommMessage } from '../DidCommMessage'
+import { convertV2InvitationToOutOfBandInvitation } from '../modules/oob/converters'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from '../modules/oob/messages'
+import { DidCommOutOfBandInvitationV2 } from '../modules/oob/messages/DidCommOutOfBandInvitationV2'
 
 import { parseMessageType, supportsIncomingMessageType } from './messageType'
 
@@ -45,6 +47,16 @@ const decodeInvitationJson = (encoded: string): Record<string, unknown> => {
   }
 }
 
+// A higher minor version of the v2 invitation is accepted: https://identity.foundation/didcomm-messaging/spec/v2.1/#out-of-band-messages
+const isV2OutOfBandInvitationType = (type: unknown): boolean => {
+  if (typeof type !== 'string') return false
+  try {
+    return supportsIncomingMessageType(parseMessageType(type), DidCommOutOfBandInvitationV2.type)
+  } catch {
+    return false
+  }
+}
+
 /**
  * Parses a JSON containing an invitation message and returns an DidCommOutOfBandInvitation instance
  *
@@ -52,6 +64,13 @@ const decodeInvitationJson = (encoded: string): Record<string, unknown> => {
  * @returns DidCommOutOfBandInvitation
  */
 export const parseInvitationJson = (invitationJson: Record<string, unknown>): DidCommOutOfBandInvitation => {
+  // DIDComm v2 OOB uses "type" not "@type"
+  if (isV2OutOfBandInvitationType(invitationJson.type)) {
+    const v2Invitation = DidCommOutOfBandInvitationV2.fromJson(invitationJson)
+    MessageValidator.validateSync(v2Invitation)
+    return convertV2InvitationToOutOfBandInvitation(v2Invitation)
+  }
+
   const messageType = invitationJson['@type'] as string
 
   if (!messageType) {
@@ -82,13 +101,13 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Di
 export const parseInvitationUrl = (invitationUrl: string): DidCommOutOfBandInvitation => {
   const parsedUrl = queryString.parseUrl(invitationUrl).query
 
-  const encodedInvitation = parsedUrl.oob ?? parsedUrl.d_m
+  const encodedInvitation = parsedUrl._oob ?? parsedUrl.oob ?? parsedUrl.d_m
 
   if (typeof encodedInvitation === 'string') {
     return parseInvitationJson(decodeInvitationJson(encodedInvitation))
   }
   throw new CredoError(
-    'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob` or `d_m`.'
+    'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `_oob`, `oob` or `d_m`.'
   )
 }
 
@@ -151,7 +170,7 @@ export const parseInvitationShortUrl = async (
   dependencies: AgentDependencies
 ): Promise<DidCommOutOfBandInvitation> => {
   const parsedUrl = queryString.parseUrl(invitationUrl).query
-  if (parsedUrl.oob) {
+  if (parsedUrl._oob || parsedUrl.oob) {
     return parseInvitationUrl(invitationUrl)
   }
   // Legacy connectionless invitation
@@ -159,12 +178,11 @@ export const parseInvitationShortUrl = async (
     return transformLegacyConnectionlessInvitationToOutOfBandInvitation(decodeInvitationJson(parsedUrl.d_m as string))
   }
   try {
-    const outOfBandInvitation = await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
-    outOfBandInvitation.invitationType = DidCommInvitationType.OutOfBand
-    return outOfBandInvitation
+    // The parser sets the invitation type, which a v2 or legacy connectionless invitation needs to keep
+    return await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
   } catch (_error) {
     throw new CredoError(
-      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob` or `d_m`, or be valid shortened URL'
+      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `_oob`, `oob` or `d_m`, or be valid shortened URL'
     )
   }
 }

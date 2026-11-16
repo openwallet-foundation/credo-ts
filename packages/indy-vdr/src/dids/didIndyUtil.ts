@@ -1,4 +1,3 @@
-import { parseIndyDid } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
 import {
   CredoError,
@@ -15,9 +14,28 @@ import {
 import { GetAttribRequest, GetNymRequest } from '@hyperledger/indy-vdr-shared'
 import { IndyVdrError, IndyVdrNotFoundError } from '../error'
 import type { IndyVdrPool } from '../pool'
-import type { GetNymResponseData, IndyEndpointAttrib } from './didSovUtil'
+import type { GetNymResponseData, IndyEndpointAttrib } from './didIndyEndpointUtil'
 
-import { addServicesFromEndpointsAttrib, getFullVerkey } from './didSovUtil'
+import { addServicesFromEndpointsAttrib, getFullVerkey } from './didIndyEndpointUtil'
+
+export const didIndyRegex = /^did:indy:((?:[a-z][_a-z0-9-]*)(?::[a-z][_a-z0-9-]*)?):([1-9A-HJ-NP-Za-km-z]{21,22})$/
+
+export function isIndyDid(identifier: string): boolean {
+  return identifier.startsWith('did:indy:')
+}
+
+export function parseIndyDid(did: string) {
+  const match = did.match(didIndyRegex)
+  if (match) {
+    const [, namespace, namespaceIdentifier] = match
+    return { namespace, namespaceIdentifier }
+  }
+  throw new CredoError(`${did} is not a valid did:indy did`)
+}
+
+export function getIndyNamespaceFromIndyDid(identifier: string): string {
+  return parseIndyDid(identifier).namespace
+}
 
 // Create a base DIDDoc template according to https://hyperledger.github.io/indy-did-method/#base-diddoc-template
 export function indyDidDocumentFromDid(did: string, verKeyBase58: string) {
@@ -271,7 +289,7 @@ export async function buildDidDocument(agentContext: AgentContext, pool: IndyVdr
         })
         .addKeyAgreement(keyAgreementId)
 
-      // Process endpoint attrib following the same rules as for did:sov
+      // Add the services from the endpoint ATTRIB transaction
       addServicesFromEndpointsAttrib(builder, did, endpoints, keyAgreementId)
     }
     return builder.build()

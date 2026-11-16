@@ -15,9 +15,22 @@ const unqualifiedRevocationRegistryIdRegex =
   /^([a-zA-Z0-9]{21,22}):4:[a-zA-Z0-9]{21,22}:3:CL:([1-9][0-9]*):(.+):CL_ACCUM:(.+)$/
 // <namespaceIdentifier> or did:sov:<namespaceIdentifier>
 const unqualifiedIndyDidRegex = /^(did:sov:)?([a-zA-Z0-9]{21,22})$/
+const didIndyIdentifierWithOptionalAnonCredsObjectRegex =
+  /^did:indy:((?:[a-z][_a-z0-9-]*)(?::[a-z][_a-z0-9-]*)?):([1-9A-HJ-NP-Za-km-z]{21,22})(?:\/anoncreds\/v0\/(?:SCHEMA\/.+\/[0-9.]+|CLAIM_DEF\/[1-9][0-9]*\/.+|REV_REG_DEF\/[1-9][0-9]*\/.+\/.+))?$/
 
 export function isUnqualifiedIndyDid(did: string) {
   return unqualifiedIndyDidRegex.test(did)
+}
+
+export function isIndyDid(identifier: string): boolean {
+  return identifier.startsWith('did:indy:')
+}
+
+export function getIndyNamespaceFromIndyDid(identifier: string): string {
+  const match = identifier.match(didIndyIdentifierWithOptionalAnonCredsObjectRegex)
+  if (match) return match[1]
+
+  throw new CredoError(`${identifier} is not a valid did:indy did`)
 }
 
 export function isUnqualifiedCredentialDefinitionId(credentialDefinitionId: string) {

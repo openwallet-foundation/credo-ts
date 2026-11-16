@@ -5,17 +5,6 @@ import type {
   AnonCredsLinkSecretDataIntegrityBindingProof,
 } from './dataIntegrityExchange'
 
-/**
- * Injection token for a {@link DidCommDataIntegrityLinkSecretBindingProvider}.
- *
- * The provider is optional. When it is not registered, the data integrity credential format simply
- * does not support the `anoncreds_link_secret` binding method, and the remaining binding methods
- * keep working.
- */
-export const DidCommDataIntegrityLinkSecretBindingProviderToken = Symbol(
-  'DidCommDataIntegrityLinkSecretBindingProvider'
-)
-
 export interface DidCommDataIntegrityLinkSecretCreateOfferBindingMethodOptions {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialDefinitionId: string
@@ -55,8 +44,7 @@ export interface DidCommDataIntegrityLinkSecretStoreCredentialOptions {
  *
  * The binding method itself is defined by the RFC and therefore lives here, but binding a credential
  * to an anoncreds link secret requires anoncreds. An implementation is provided by
- * `@credo-ts/anoncreds` and registered by the `AnonCredsModule`, which keeps this package free of an
- * anoncreds dependency.
+ * `@credo-ts/anoncreds/didcomm` and passed to the format service through its `linkSecretBinding` option.
  */
 export interface DidCommDataIntegrityLinkSecretBindingProvider {
   /** Issuer: create the `binding_method.anoncreds_link_secret` entry of the credential offer */

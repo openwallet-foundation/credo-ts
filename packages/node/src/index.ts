@@ -1,9 +1,10 @@
-import type { AgentDependencies } from '@credo-ts/core'
+import { type AgentDependencies, Hasher } from '@credo-ts/core'
 
 import { EventEmitter } from 'events'
 import { WebSocket } from 'ws'
 
 import { NodeFileSystem } from './NodeFileSystem'
+import { nodeHash } from './nodeHash'
 import { DidCommHttpInboundTransport } from './transport/DidCommHttpInboundTransport'
 import { DidCommWsInboundTransport } from './transport/DidCommWsInboundTransport'
 
@@ -11,6 +12,8 @@ export { NodeInMemoryKeyManagementStorage } from './kms/NodeInMemoryKeyManagemen
 export { NodeKeyManagementService } from './kms/NodeKeyManagementService'
 export type { NodeKeyManagementStorage } from './kms/NodeKeyManagementStorage'
 export type { DidCommWsInboundTransportOptions } from './transport/DidCommWsInboundTransport'
+
+Hasher.setImplementation(nodeHash)
 
 const agentDependencies: AgentDependencies = {
   FileSystem: NodeFileSystem,

@@ -30,7 +30,7 @@ export class JwkDidRegistrar implements DidRegistrar {
         publicJwk = createKeyResult.publicJwk
         keyId = createKeyResult.keyId
       } else if (options.options.keyId) {
-        const _publicJwk = await kms.getPublicKey({ keyId: options.options.keyId })
+        const { publicKey: _publicJwk } = await kms.getPublicKey({ keyId: options.options.keyId })
         keyId = options.options.keyId
         if (!_publicJwk) {
           return {

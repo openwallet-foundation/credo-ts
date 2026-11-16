@@ -48,7 +48,9 @@ export const openid4vcIssuer = sqliteTable(
     clientAttestationPopSigningAlgValuesSupported: text('client_attestation_pop_signing_alg_values_supported', {
       mode: 'json',
     }).$type<[Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]>(),
-    batchCredentialIssuance: text('batch_credential_issuance').$type<OpenId4VciBatchCredentialIssuanceOptions>(),
+    batchCredentialIssuance: text('batch_credential_issuance', {
+      mode: 'json',
+    }).$type<OpenId4VciBatchCredentialIssuanceOptions>(),
     credentialResponseEncryption: text('credential_response_encryption', {
       mode: 'json',
     }).$type<OpenId4VciCredentialResponseEncryptionOptions>(),

@@ -31,6 +31,8 @@ export const getMac0Context = (agentContext: AgentContext): Mac0Context => {
         data: input.toBeAuthenticated,
         algorithm: knownJwaFromCoseSignatureAlgorithm(algorithm as unknown as KnownCoseSignatureAlgorithm),
         keyId: input.key.keyId,
+        // Mac0 uses a symmetric key, which has no public key to check
+        expectedPublicJwk: null,
       })
 
       return signature

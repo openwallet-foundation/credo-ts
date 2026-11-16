@@ -1,7 +1,18 @@
 import type { BaseAgent } from '@credo-ts/core'
-import type { DidCommCredentialExchangeRecord } from '@credo-ts/didcomm'
+import { resolveAnonCredsMigrationProvider } from '../optionalDependencies'
 
-import { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
+interface CredentialExchangeRecord {
+  id: string
+  credentials: Array<{
+    credentialRecordId: string
+    credentialRecordType: string
+  }>
+  metadata: {
+    get(key: string): Record<string, unknown> | null
+    set(key: string, value: Record<string, unknown>): void
+    delete(key: string): void
+  }
+}
 
 /**
  * Migrates the {@link DidCommCredentialExchangeRecord} to 0.4 compatible format. It fetches all credential exchange records from
@@ -14,27 +25,15 @@ import { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
  */
 export async function migrateCredentialExchangeRecordToV0_4<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating credential exchange records to storage version 0.4')
-  const credentialRepository = agent.dependencyManager.resolve(DidCommCredentialExchangeRepository)
-
-  agent.config.logger.debug('Fetching all credential records from storage')
-  const credentialRecords = await credentialRepository.getAll(agent.context)
-
-  agent.config.logger.debug(`Found a total of ${credentialRecords.length} credential exchange records to update.`)
-  for (const credentialRecord of credentialRecords) {
-    agent.config.logger.debug(
-      `Migrating credential exchange record with id ${credentialRecord.id} to storage version 0.4`
+  const { provider, unavailableReason } = resolveAnonCredsMigrationProvider(agent.dependencyManager)
+  if (!provider) {
+    agent.config.logger.warn(
+      `Skipping credential exchange record migration to storage version 0.4 because ${unavailableReason}.`
     )
-
-    migrateIndyCredentialTypeToAnonCredsCredential(agent, credentialRecord)
-    migrateIndyCredentialMetadataToAnonCredsMetadata(agent, credentialRecord)
-
-    // Save updated record
-    await credentialRepository.update(agent.context, credentialRecord)
-
-    agent.config.logger.debug(
-      `Successfully migrated credential exchange record with id ${credentialRecord.id} to storage version 0.4`
-    )
+    return
   }
+
+  await provider.migrateCredentialExchangeRecordsToV0_4(agent)
 }
 
 /**
@@ -75,7 +74,7 @@ export async function migrateCredentialExchangeRecordToV0_4<Agent extends BaseAg
  */
 export function migrateIndyCredentialTypeToAnonCredsCredential<Agent extends BaseAgent>(
   agent: Agent,
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialRecord: CredentialExchangeRecord
 ) {
   agent.config.logger.debug(
     `Migrating credential record with id ${credentialRecord.id} to anoncreds credential binding for version 0.4`
@@ -118,7 +117,7 @@ export function migrateIndyCredentialTypeToAnonCredsCredential<Agent extends Bas
  */
 export function migrateIndyCredentialMetadataToAnonCredsMetadata<Agent extends BaseAgent>(
   agent: Agent,
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialRecord: CredentialExchangeRecord
 ) {
   agent.config.logger.debug(
     `Migrating credential record with id ${credentialRecord.id} to anoncreds metadata for version 0.4`

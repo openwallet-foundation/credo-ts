@@ -27,18 +27,18 @@ describe('AskarStorageService', () => {
   beforeEach(async () => {
     const agentConfig = getAgentConfig('AskarStorageServiceTest')
 
+    const askarModuleConfig = new AskarModuleConfig({
+      askar: NativeAskar,
+      store: getAskarStoreConfig('AskarStorageServiceTest', {
+        inMemory: true,
+      }),
+    })
+
     agentContext = getAgentContext({
       agentConfig,
+      registerInstances: [[AskarModuleConfig, askarModuleConfig]],
     })
-    storeManager = new AskarStoreManager(
-      new NodeFileSystem(),
-      new AskarModuleConfig({
-        askar: NativeAskar,
-        store: getAskarStoreConfig('AskarStorageServiceTest', {
-          inMemory: true,
-        }),
-      })
-    )
+    storeManager = new AskarStoreManager(new NodeFileSystem(), askarModuleConfig)
     storageService = new AskarStorageService<TestRecord>(storeManager)
 
     await storeManager.provisionStore(agentContext)
@@ -320,6 +320,70 @@ describe('AskarStorageService', () => {
     })
   })
 
+  describe('deleteByQuery()', () => {
+    const expectRemaining = async (expected: TestRecord[]) => {
+      const records = await storageService.getAll(agentContext, TestRecord)
+      expect(records).toHaveLength(expected.length)
+      expect(records).toEqual(expect.arrayContaining(expected))
+    }
+
+    it('should only delete the records that match the query', async () => {
+      await insertRecord({ tags: { myTag: 'foobar' } })
+      await insertRecord({ tags: { myTag: 'foobar' } })
+      const kept = await insertRecord({ tags: { myTag: 'notfoobar' } })
+
+      expect(await storageService.deleteByQuery(agentContext, TestRecord, { myTag: 'foobar' })).toBe(2)
+
+      await expectRemaining([kept])
+    })
+
+    it('should not delete records of another type with matching tags', async () => {
+      const genericStorageService = storageService as unknown as AskarStorageService<GenericRecord>
+      const genericRecord = new GenericRecord({ content: {}, tags: { myTag: 'foobar' } })
+      await genericStorageService.save(agentContext, genericRecord)
+      await insertRecord({ tags: { myTag: 'foobar' } })
+
+      expect(await storageService.deleteByQuery(agentContext, TestRecord, { myTag: 'foobar' })).toBe(1)
+
+      await expectRemaining([])
+      expect(await genericStorageService.getById(agentContext, GenericRecord, genericRecord.id)).toEqual(genericRecord)
+    })
+
+    it('should delete records using $and statements', async () => {
+      await insertRecord({ tags: { myTag: 'foo', anotherTag: 'bar' } })
+      const kept = await insertRecord({ tags: { myTag: 'foo', anotherTag: 'notbar' } })
+
+      expect(
+        await storageService.deleteByQuery(agentContext, TestRecord, {
+          $and: [{ myTag: 'foo' }, { anotherTag: 'bar' }],
+        })
+      ).toBe(1)
+
+      await expectRemaining([kept])
+    })
+
+    it('should delete records using $or statements', async () => {
+      await insertRecord({ tags: { myTag: 'foo' } })
+      await insertRecord({ tags: { anotherTag: 'bar' } })
+      const kept = await insertRecord({ tags: { myTag: 'notfoobar' } })
+
+      expect(
+        await storageService.deleteByQuery(agentContext, TestRecord, { $or: [{ myTag: 'foo' }, { anotherTag: 'bar' }] })
+      ).toBe(2)
+
+      await expectRemaining([kept])
+    })
+
+    it('should transform boolean and array tag values in the query', async () => {
+      await insertRecord({ tags: { isTrue: true, someList: ['a', 'b'] } })
+      const kept = await insertRecord({ tags: { isTrue: false, someList: ['a', 'b'] } })
+
+      expect(await storageService.deleteByQuery(agentContext, TestRecord, { isTrue: true, someList: ['a'] })).toBe(1)
+
+      await expectRemaining([kept])
+    })
+  })
+
   describe('getAll()', () => {
     it('should retrieve all records', async () => {
       const createdRecords = await Promise.all(
@@ -543,6 +607,42 @@ describe('AskarStorageService', () => {
 
       expect(records.length).toBe(2)
       expect(records).toEqual(expect.arrayContaining([expectedRecord1, expectedRecord2]))
+    })
+
+    it('should return paginated records in insertion order, without skipping or repeating records', async () => {
+      // Ids sort in the reverse of insertion order, so only an order by insertion passes this test
+      const ids = ['e', 'd', 'c', 'b', 'a']
+      for (const id of ids) {
+        await insertRecord({ id, tags: { myTag: 'foobar' } })
+      }
+      await insertRecord({ id: 'f', tags: { myTag: 'notfoobar' } })
+
+      const pagedIds: string[] = []
+      for (let offset = 0; offset < ids.length; offset += 2) {
+        const page = await storageService.findByQuery(
+          agentContext,
+          TestRecord,
+          { myTag: 'foobar' },
+          { offset, limit: 2 }
+        )
+        pagedIds.push(...page.map((record) => record.id))
+      }
+
+      expect(pagedIds).toEqual(ids)
+    })
+
+    it('should not repeat records across pages when a record is added between page reads', async () => {
+      await insertRecord({ id: 'b' })
+      await insertRecord({ id: 'c' })
+      await insertRecord({ id: 'd' })
+      await insertRecord({ id: 'e' })
+
+      const firstPage = await storageService.findByQuery(agentContext, TestRecord, {}, { offset: 0, limit: 2 })
+      await insertRecord({ id: 'a' })
+      const secondPage = await storageService.findByQuery(agentContext, TestRecord, {}, { offset: 2, limit: 2 })
+
+      expect(firstPage.map((record) => record.id)).toEqual(['b', 'c'])
+      expect(secondPage.map((record) => record.id)).toEqual(['d', 'e'])
     })
   })
 })

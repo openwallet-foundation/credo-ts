@@ -52,7 +52,6 @@ describe('DidRecord', () => {
       expect(didRecord.getTags()).toEqual({
         role: DidDocumentRole.Created,
         method: 'example',
-        legacyUnqualifiedDid: 'unqualifiedDid',
         did: 'did:example:123456789abcdefghi',
         methodSpecificIdentifier: '123456789abcdefghi',
       })

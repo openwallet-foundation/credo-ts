@@ -3,6 +3,7 @@ import {
   AgentContext,
   DidResolverService,
   DidsModuleConfig,
+  defaultDocumentLoader,
   Ed25519Signature2018,
   InjectionSymbols,
   JsonLdModuleConfig,
@@ -98,7 +99,7 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [X509ModuleConfig, new X509ModuleConfig()],
     [SignatureSuiteRegistry, signatureSuiteRegistry],
     [

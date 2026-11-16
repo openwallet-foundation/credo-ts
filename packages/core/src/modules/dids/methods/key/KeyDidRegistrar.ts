@@ -29,7 +29,7 @@ export class KeyDidRegistrar implements DidRegistrar {
         publicJwk = createKeyResult.publicJwk
         keyId = createKeyResult.keyId
       } else {
-        const _publicJwk = await kms.getPublicKey({
+        const { publicKey: _publicJwk } = await kms.getPublicKey({
           keyId: options.options.keyId,
         })
         keyId = options.options.keyId

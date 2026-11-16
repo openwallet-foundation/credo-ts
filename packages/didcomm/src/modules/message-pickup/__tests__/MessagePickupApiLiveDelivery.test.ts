@@ -7,14 +7,18 @@ import { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { DidCommTransportService } from '../../../DidCommTransportService'
-import { MessageSendingError } from '../../../errors'
+import { MessageSendingError, MessageSendingErrorCategory } from '../../../errors'
 import type { DidCommOutboundMessageContext } from '../../../models'
 import { DidCommDidExchangeState } from '../../connections/models/DidCommDidExchangeState'
 import type { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
 import { DidCommMessagePickupApi } from '../DidCommMessagePickupApi'
 import { DidCommMessagePickupModuleConfig } from '../DidCommMessagePickupModuleConfig'
 import { DidCommMessagePickupSessionRole } from '../DidCommMessagePickupSession'
-import { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol } from '../protocol'
+import {
+  DidCommMessagePickupV1Protocol,
+  DidCommMessagePickupV2Protocol,
+  DidCommMessagePickupV4Protocol,
+} from '../protocol'
 import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'
 
 describe('DidCommMessagePickupApi live delivery', () => {
@@ -24,6 +28,7 @@ describe('DidCommMessagePickupApi live delivery', () => {
   const recipientDid = 'did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'
   const sendError = new MessageSendingError('Message is undeliverable', {
     outboundMessageContext: {} as DidCommOutboundMessageContext,
+    reason: { category: MessageSendingErrorCategory.RemoteError, attempts: [] },
   })
 
   let sessionService: DidCommMessagePickupSessionService
@@ -75,7 +80,11 @@ describe('DidCommMessagePickupApi live delivery', () => {
       eventEmitter,
       sessionService,
       new DidCommMessagePickupModuleConfig({
-        protocols: [new DidCommMessagePickupV1Protocol(), new DidCommMessagePickupV2Protocol()],
+        protocols: [
+          new DidCommMessagePickupV1Protocol(),
+          new DidCommMessagePickupV2Protocol(),
+          new DidCommMessagePickupV4Protocol(),
+        ],
       }),
       new Subject(),
       testLogger

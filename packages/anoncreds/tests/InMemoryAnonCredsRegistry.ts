@@ -1,10 +1,17 @@
 import type { AgentContext } from '@credo-ts/core'
 import { Hasher, utils } from '@credo-ts/core'
+import { isIndyDid, parseIndyDid } from '@credo-ts/indy-vdr'
 import {
   getDidIndyCredentialDefinitionId,
   getDidIndyRevocationRegistryDefinitionId,
   getDidIndySchemaId,
-} from '../../indy-vdr/src/anoncreds/utils/identifiers'
+  isDidIndyCredentialDefinitionId,
+  isDidIndyRevocationRegistryId,
+  isDidIndySchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndyRevocationRegistryId,
+  parseIndySchemaId,
+} from '@credo-ts/indy-vdr/anoncreds'
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsRegistry,
@@ -25,16 +32,6 @@ import type {
   RegisterSchemaReturn,
 } from '../src'
 import { bytesToBigint } from '../src/utils/bytesToBigint'
-import {
-  isDidIndyCredentialDefinitionId,
-  isDidIndyRevocationRegistryId,
-  isDidIndySchemaId,
-  isIndyDid,
-  parseIndyCredentialDefinitionId,
-  parseIndyDid,
-  parseIndyRevocationRegistryId,
-  parseIndySchemaId,
-} from '../src/utils/indyIdentifiers'
 import { dateToTimestamp } from '../src/utils/timestamp'
 
 /**

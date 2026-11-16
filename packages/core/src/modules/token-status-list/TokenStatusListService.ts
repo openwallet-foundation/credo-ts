@@ -15,7 +15,6 @@ import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import { dateToSeconds } from '../../utils'
 import { DidsApi, parseDid } from '../dids'
-import { KeyManagementApi } from '../kms'
 import { TokenStatusListModuleConfig } from './TokenStatusListModuleConfig'
 import type {
   CreateTokenStatusListOptions,
@@ -70,9 +69,6 @@ export class TokenStatusListService {
     const now = options.now ?? new Date()
     const issuedAt = options.issuedAt ?? now
 
-    const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
-    const jwk = await kms.getPublicKey({ keyId })
-
     try {
       if (options.format === 'cwt') {
         if (options.signer.method !== 'x5c') {
@@ -93,15 +89,16 @@ export class TokenStatusListService {
             [RegisteredCwtHeaderClaimKey.Algorithm, jwkToCoseKey.alg(options.alg)],
           ]),
         })
-        const shouldAuthenticate = jwk.alg?.toUpperCase().startsWith('HS')
+        const coseKey = CoseKey.fromJwk({ ...options.signer.x5c[0].publicJwk.toJson(), kid: keyId })
+        const shouldAuthenticate = options.alg.startsWith('HS')
 
         return {
           format: options.format,
           // Mac0 vs Sign1
           statusList: shouldAuthenticate
-            ? await cwtFull.authenticateAndEncode({ key: CoseKey.fromJwk(jwk) }, getMac0Context(agentContext))
+            ? await cwtFull.authenticateAndEncode({ key: coseKey }, getMac0Context(agentContext))
             : await cwtFull.signAndEncode(
-                { signingKey: CoseKey.fromJwk(jwk), algorithm: jwkToCoseKey.alg(options.alg) as SignatureAlgorithm },
+                { signingKey: coseKey, algorithm: jwkToCoseKey.alg(options.alg) as SignatureAlgorithm },
                 getSign1Context(agentContext)
               ),
           parsed: cwtFull,
@@ -180,9 +177,6 @@ export class TokenStatusListService {
       )
     }
 
-    const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
-    const jwk = await kms.getPublicKey({ keyId })
-
     const now = options.now ?? new Date()
     const issuedAt = options.issuedAt ?? now
 
@@ -216,12 +210,13 @@ export class TokenStatusListService {
           ]),
         })
 
-        const shouldAuthenticate = jwk.alg?.toUpperCase().startsWith('HS')
+        const coseKey = CoseKey.fromJwk({ ...options.signer.x5c[0].publicJwk.toJson(), kid: keyId })
+        const shouldAuthenticate = options.alg.startsWith('HS')
         if (shouldAuthenticate) {
           const mac0Context = getMac0Context(agentContext)
           return {
             format: 'cwt',
-            statusList: await updatedCwt.authenticateAndEncode({ key: CoseKey.fromJwk(jwk) }, mac0Context),
+            statusList: await updatedCwt.authenticateAndEncode({ key: coseKey }, mac0Context),
             parsed: updatedCwt,
           } as Extract<TokenStatusListResult, { format: Format }>
         } else {
@@ -229,7 +224,7 @@ export class TokenStatusListService {
           return {
             format: 'cwt',
             statusList: await updatedCwt.signAndEncode(
-              { signingKey: CoseKey.fromJwk(jwk), algorithm: jwkToCoseKey.alg(options.alg) as SignatureAlgorithm },
+              { signingKey: coseKey, algorithm: jwkToCoseKey.alg(options.alg) as SignatureAlgorithm },
               sign1Context
             ),
             parsed: updatedCwt,

@@ -81,7 +81,7 @@
   "14720230-54b4-4735-8072-0e1902982429": {
     "value": {
       "metadata": {},
-      "id": "9ec1f4c6-6b58-4c54-84d0-2fa74f83f70f",
+      "id": "14720230-54b4-4735-8072-0e1902982429",
       "credentialId": "e1548638-fbe6-4e26-96fc-d536d453b380",
       "credential": {
         "schema_id": "6LHqdUeWDWsL94zRc1ULEx:2:test0.1599221872308001:1.0",
@@ -113,7 +113,7 @@
       "methodName": "indy",
       "updatedAt": "2024-02-28T09:36:42.994Z"
     },
-    "id": "bb30d3ee-651a-4ffc-b1d9-30e4df23a045",
+    "id": "14720230-54b4-4735-8072-0e1902982429",
     "tags": {
       "attr": [""],
       "attr::test::value": "test",

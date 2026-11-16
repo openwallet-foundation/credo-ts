@@ -1,0 +1,7 @@
+export * from './DidCommDeliveryRequestV4Handler'
+export * from './DidCommLiveDeliveryChangeV4Handler'
+export * from './DidCommMessageDeliveryV4Handler'
+export * from './DidCommMessagePickupV4ProblemReportHandler'
+export * from './DidCommMessagesReceivedV4Handler'
+export * from './DidCommStatusRequestV4Handler'
+export * from './DidCommStatusV4Handler'

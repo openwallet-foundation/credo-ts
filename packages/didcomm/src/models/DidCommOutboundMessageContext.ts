@@ -9,6 +9,8 @@ export interface ServiceMessageParams {
   senderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   service: ResolvedDidCommService
   returnRoute?: boolean
+  /** DID URL of the sender key (e.g. verification method id); used as skid in DIDComm v2 so recipient can resolve it */
+  senderKeySkid?: string
 }
 
 export interface DidCommOutboundMessageContextParams {

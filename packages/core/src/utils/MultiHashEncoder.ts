@@ -1,21 +1,25 @@
 import type { HashName } from '../crypto/hashes'
 import { Hasher } from '../crypto/hashes/Hasher'
+import { CredoError } from '../error'
 import { TypedArrayEncoder } from './TypedArrayEncoder'
 import { VarintEncoder } from './VarintEncoder'
 
-type MultiHashNameMap = {
-  [key in HashName]: number
-}
+type MultiHashName = Exclude<HashName, 'sha-1'>
 
 type MultiHashCodeMap = {
-  [key: number]: HashName
+  [key: number]: MultiHashName | undefined
 }
 
-const multiHashNameMap: MultiHashNameMap = {
-  'sha-1': 0x11,
+const multiHashNameMap: Record<MultiHashName, number> = {
   'sha-256': 0x12,
   'sha-512': 0x13,
   'sha-384': 0x20,
+}
+
+const hashExpectedDigestLength: Record<MultiHashName, number> = {
+  'sha-256': 32,
+  'sha-384': 48,
+  'sha-512': 64,
 }
 
 const multiHashCodeMap: MultiHashCodeMap = Object.entries(multiHashNameMap).reduce(
@@ -36,8 +40,16 @@ export class MultiHashEncoder {
    * @returns a multihash
    */
   public static encode(data: Uint8Array, hashName: HashName): Uint8Array {
-    const hash = Hasher.hash(data, hashName)
+    if (hashName === 'sha-1') {
+      throw new CredoError(`Unsupported hash algorithm '${hashName}'`)
+    }
+
     const hashCode = multiHashNameMap[hashName]
+    if (hashCode === undefined) {
+      throw new CredoError(`Unsupported hash algorithm '${hashName}'`)
+    }
+
+    const hash = Hasher.hash(data, hashName)
 
     const hashPrefix = VarintEncoder.encode(hashCode)
     const hashLengthPrefix = VarintEncoder.encode(hash.length)
@@ -57,18 +69,27 @@ export class MultiHashEncoder {
     const [hashPrefix, hashPrefixByteLength] = VarintEncoder.decode(data)
     const withoutHashPrefix = data.slice(hashPrefixByteLength)
 
-    const [, lengthPrefixByteLength] = VarintEncoder.decode(withoutHashPrefix)
+    const [digestLength, lengthPrefixByteLength] = VarintEncoder.decode(withoutHashPrefix)
     const withoutLengthPrefix = withoutHashPrefix.slice(lengthPrefixByteLength)
 
     const hashName = multiHashCodeMap[hashPrefix]
 
     if (!hashName) {
-      throw new Error(`Unsupported hash code 0x${hashPrefix.toString(16)}`)
+      throw new CredoError(`Unsupported hash code 0x${hashPrefix.toString(16)}`)
+    }
+
+    if (digestLength !== withoutLengthPrefix.length) {
+      throw new CredoError('Multihash digest length prefix does not match digest length')
+    }
+
+    const expectedDigestLength = hashExpectedDigestLength[hashName]
+    if (digestLength !== expectedDigestLength) {
+      throw new CredoError(`Invalid digest length for hash algorithm '${hashName}'`)
     }
 
     return {
       data: new Uint8Array(withoutLengthPrefix),
-      hashName: multiHashCodeMap[hashPrefix],
+      hashName,
     }
   }
 

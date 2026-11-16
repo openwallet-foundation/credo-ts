@@ -267,7 +267,7 @@ describe('W3cV2CredentialService routing', () => {
     expect(result.isValid).toBe(true)
   })
 
-  test('verifyPresentation passes the trusted issuers to every enclosed credential', async () => {
+  test('verifyPresentation passes the trusted issuers and now to every enclosed credential', async () => {
     diService.verifyPresentation.mockResolvedValue({
       isValid: true,
       presentation: { isValid: true, validations: {} },
@@ -277,11 +277,13 @@ describe('W3cV2CredentialService routing', () => {
     sdJwtService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
     diService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
     const trustedIssuers = [{ method: 'did' as const, issuance: 'did:example:issuer' }]
+    const now = new Date('2030-01-01T00:00:00Z')
 
     await service.verifyPresentation(agentContext, {
       presentation: mixedDiOuterVpWithAllEntries,
       challenge: 'challenge-123',
       trustedIssuers,
+      now,
     } as never)
 
     for (const verifyCredential of [
@@ -289,7 +291,7 @@ describe('W3cV2CredentialService routing', () => {
       sdJwtService.verifyCredential,
       diService.verifyCredential,
     ]) {
-      expect(verifyCredential).toHaveBeenCalledWith(agentContext, expect.objectContaining({ trustedIssuers }))
+      expect(verifyCredential).toHaveBeenCalledWith(agentContext, expect.objectContaining({ trustedIssuers, now }))
     }
   })
 

@@ -69,7 +69,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
     }
     const agentContext = getAgentContext({
       registerInstances: [
-        [IndyVdrPoolService, { getPoolForDid: vi.fn().mockResolvedValue({ pool }) }],
+        [IndyVdrPoolService, { getPoolForDid: vi.fn().mockReturnValue({ pool }) }],
         [
           AnonCredsRegistryService,
           {

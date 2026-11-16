@@ -10,11 +10,14 @@ import {
   W3cCredentialService,
   W3cJwtVerifiableCredential,
 } from '@credo-ts/core'
+import type { IssuerMetadataResult } from '@openid4vc/openid4vci'
 import nock from 'nock'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcModule } from '../../OpenId4VcModule'
+import { OpenId4VciCredentialFormatProfile } from '../../shared'
+import { OpenId4VciHolderService } from '../OpenId4VciHolderService'
 import { OpenId4VciAuthorizationFlow } from '../OpenId4VciHolderServiceOptions'
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
 
@@ -385,6 +388,36 @@ describe('OpenId4VcHolder', () => {
         // FIXME: credential returned by walt.id has nbf and issuanceDate that do not match
         // but we know that we at least received the credential if we got to this error
         .rejects.toThrow('JWT nbf and vc.issuanceDate do not match')
+    })
+  })
+
+  describe('proof of possession requirements', () => {
+    const getSupportedSignatureAlgorithms = (proofSigningAlgValuesSupported: string[]) => {
+      const holderService = holder.dependencyManager.resolve(OpenId4VciHolderService)
+
+      // biome-ignore lint/complexity/useLiteralKeys: bracket access calls the private method with its real types
+      return holderService['getProofOfPossessionRequirements'](holder.context, {
+        // Only read when the configuration has no proof_types_supported
+        metadata: {} as IssuerMetadataResult,
+        credentialToRequest: {
+          id: 'ldpVc',
+          configuration: {
+            format: OpenId4VciCredentialFormatProfile.LdpVc,
+            credential_definition: { '@context': [], type: ['VerifiableCredential'] },
+            proof_types_supported: { jwt: { proof_signing_alg_values_supported: proofSigningAlgValuesSupported } },
+          },
+        },
+        possibleProofOfPossessionSignatureAlgorithms: ['EdDSA', 'ES256'],
+      }).proofTypes.jwt?.supportedSignatureAlgorithms
+    }
+
+    it.each([
+      [['Ed25519Signature2018'], ['EdDSA']],
+      [['Ed25519Signature2020'], ['EdDSA']],
+      [['Ed25519Signature2018', 'Ed25519Signature2020'], ['EdDSA']],
+      [['EcdsaSecp256r1Signature2019'], []],
+    ])('keeps the algorithms for which a suite with an ldp_vc proof type in %j exists', (proofTypes, algorithms) => {
+      expect(getSupportedSignatureAlgorithms(proofTypes)).toEqual(algorithms)
     })
   })
 })
