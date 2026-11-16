@@ -85,19 +85,14 @@ export class DidCommOutOfBandInvitationV2 extends DidCommMessage {
   }
 
   public toJSON(): DidCommPlaintextMessage {
-    const attachments = this.attachments
+    // v2.1 makes body optional, but it is always sent for v2.0 receivers: https://identity.foundation/didcomm-messaging/spec/v2.1/#message-structure
+    const { body, attachments } = this.toV2Plaintext()
     const wire = {
       typ: DIDCOMM_V2_PLAIN_MIME_TYPE,
       type: DidCommOutOfBandInvitationV2.type.messageTypeUri,
       id: this.id,
       from: this.from,
-      body: this.body
-        ? {
-            goal_code: this.goalCode,
-            goal: this.goal,
-            accept: this.accept,
-          }
-        : undefined,
+      body,
       attachments,
     }
     return wire as unknown as DidCommPlaintextMessage

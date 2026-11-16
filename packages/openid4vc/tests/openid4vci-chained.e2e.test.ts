@@ -1805,8 +1805,13 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       it('creates the key at PAR and reuses it in later requests', async () => {
         const issuanceSession = await startAuthorization()
         const persistedDpop = issuanceSession.chainedIdentity?.externalDpop
-        expect(persistedDpop).toMatchObject({ keyId: expect.any(String), keyGeneratedForSession: true })
+        expect(persistedDpop).toMatchObject({
+          keyId: expect.any(String),
+          publicJwk: expect.objectContaining({ kty: 'EC' }),
+          keyGeneratedForSession: true,
+        })
         const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
+        const getPublicKey = vi.spyOn(dpopAgent.agent.kms, 'getPublicKey')
 
         const result = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
           issuanceSession,
@@ -1817,6 +1822,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
         expect(result.session).toEqual(persistedDpop)
         expect(createKey).not.toHaveBeenCalled()
+        expect(getPublicKey).not.toHaveBeenCalled()
       })
 
       it('keeps the PAR key even if the configured key changes', async () => {
@@ -1848,15 +1854,13 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         })
       })
 
-      it.each(['missing key', 'unsupported algorithm', 'missing DPoP support'] as const)(
+      it.each(['unsupported algorithm', 'missing DPoP support'] as const)(
         'fails without replacing the session key after %s',
         async (failure) => {
           const issuanceSession = await startAuthorization()
           const originalDpop = issuanceSession.chainedIdentity?.externalDpop
           if (!originalDpop) throw new Error('Expected generated chained DPoP metadata')
-          if (failure === 'missing key') {
-            await dpopAgent.agent.kms.deleteKey({ keyId: originalDpop.keyId })
-          } else if (failure === 'unsupported algorithm') {
+          if (failure === 'unsupported algorithm') {
             upstreamMetadata.dpop_signing_alg_values_supported = ['EdDSA']
           } else {
             upstreamMetadata.dpop_signing_alg_values_supported = undefined

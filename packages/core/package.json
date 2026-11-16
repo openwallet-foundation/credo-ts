@@ -67,7 +67,7 @@
     "json-canonicalize": "^3.0.0",
     "jsonld": "^9.0.0",
     "jsonld-signatures": "^11.6.0",
-    "lru_map": "^0.4.1",
+    "lru-cache": "^11.2.5",
     "object-inspect": "^1.13.4",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",

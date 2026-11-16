@@ -95,7 +95,7 @@ export class HederaLedgerService {
       const publicJwk = await createOrGetKey(kms, secret?.rootKeyId)
       const rootKey = { kmsKeyId: publicJwk.keyId, didDocumentRelativeKeyId: DID_ROOT_KEY_ID }
 
-      const publisher = await this.getPublisher(agentContext, client, publicJwk.keyId)
+      const publisher = this.getPublisher(agentContext, client, publicJwk)
 
       const { state, signingRequest } = await generateCreateDIDRequest(
         {
@@ -111,6 +111,7 @@ export class HederaLedgerService {
 
       const signatureResult = await kms.sign({
         keyId: publicJwk.keyId,
+        expectedPublicJwk: publicJwk.toJson(),
         data: signingRequest.serializedPayload,
         algorithm: 'EdDSA',
       })
@@ -178,7 +179,8 @@ export class HederaLedgerService {
         didDocumentOperation
       )
 
-      const publisher = await this.getPublisher(agentContext, client, rootKey.kmsKeyId)
+      const rootPublicJwk = await createOrGetKey(kms, rootKey.kmsKeyId)
+      const publisher = this.getPublisher(agentContext, client, rootPublicJwk)
 
       const { states, signingRequests } = await generateUpdateDIDRequest(
         {
@@ -192,7 +194,7 @@ export class HederaLedgerService {
         }
       )
 
-      const signatures = await this.signRequests(signingRequests, kms, rootKey.kmsKeyId)
+      const signatures = await this.signRequests(signingRequests, kms, rootPublicJwk)
       return await submitUpdateDIDRequest(
         {
           states,
@@ -224,7 +226,8 @@ export class HederaLedgerService {
     return this.clientService.withClient({ networkName }, async (client: Client) => {
       const topicReader = this.getHederaHcsTopicReader(agentContext)
 
-      const publisher = await this.getPublisher(agentContext, client, rootKey.kmsKeyId)
+      const rootPublicJwk = await createOrGetKey(kms, rootKey.kmsKeyId)
+      const publisher = this.getPublisher(agentContext, client, rootPublicJwk)
 
       const { state, signingRequest } = await generateDeactivateDIDRequest(
         {
@@ -237,7 +240,8 @@ export class HederaLedgerService {
         }
       )
       const signatureResult = await kms.sign({
-        keyId: rootKey.kmsKeyId,
+        keyId: rootPublicJwk.keyId,
+        expectedPublicJwk: rootPublicJwk.toJson(),
         data: signingRequest.serializedPayload,
         algorithm: 'EdDSA',
       })
@@ -259,9 +263,11 @@ export class HederaLedgerService {
     return new TopicReaderHederaHcs({ ...this.config.options, cache: this.cache })
   }
 
-  private async getPublisher(agentContext: AgentContext, client: Client, keyId: string): Promise<KmsPublisher> {
-    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-    const publicJwk = await createOrGetKey(kms, keyId)
+  private getPublisher(
+    agentContext: AgentContext,
+    client: Client,
+    publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  ): KmsPublisher {
     return new KmsPublisher(agentContext, client, publicJwk)
   }
 
@@ -287,13 +293,14 @@ export class HederaLedgerService {
   private async signRequests(
     signingRequests: Record<string, { serializedPayload: Uint8Array }>,
     kms: Kms.KeyManagementApi,
-    keyId: string
+    publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   ): Promise<Record<string, Uint8Array>> {
     const result: Record<string, Uint8Array> = {}
 
     for (const [key, request] of Object.entries(signingRequests)) {
       const { signature } = await kms.sign({
-        keyId,
+        keyId: publicJwk.keyId,
+        expectedPublicJwk: publicJwk.toJson(),
         data: request.serializedPayload,
         algorithm: 'EdDSA',
       })
