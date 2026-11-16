@@ -88,16 +88,7 @@ export class TenantRecordService {
   public async deleteTenantById(agentContext: AgentContext, tenantId: string) {
     const tenantRecord = await this.getTenantById(agentContext, tenantId)
 
-    const tenantRoutingRecords = await this.tenantRoutingRepository.findByQuery(agentContext, {
-      tenantId: tenantRecord.id,
-    })
-
-    // Delete all tenant routing records
-    await Promise.all(
-      tenantRoutingRecords.map((tenantRoutingRecord) =>
-        this.tenantRoutingRepository.delete(agentContext, tenantRoutingRecord)
-      )
-    )
+    await this.tenantRoutingRepository.deleteByQuery(agentContext, { tenantId: tenantRecord.id })
 
     // Delete tenant record
     await this.tenantRepository.delete(agentContext, tenantRecord)

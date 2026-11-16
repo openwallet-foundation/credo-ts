@@ -483,6 +483,7 @@ export class DidCommCredentialFormatCoordinator<CFs extends DidCommCredentialFor
       await formatService.processRequest(agentContext, {
         attachment,
         credentialExchangeRecord,
+        requestAppendAttachments: message.appendedAttachments,
       })
     }
 

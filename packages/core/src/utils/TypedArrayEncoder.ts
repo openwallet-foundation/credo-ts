@@ -1,4 +1,4 @@
-import { base58, base64, base64urlnopad, hex, utf8 } from '@scure/base'
+import { base58, base64, base64url, hex, utf8 } from '@scure/base'
 import { CredoError } from '../error'
 
 // biome-ignore lint/complexity/noStaticOnlyClass: no explanation
@@ -32,7 +32,8 @@ export class TypedArrayEncoder {
    */
   public static toBase64Url(data: Uint8Array) {
     try {
-      return base64urlnopad.encode(data)
+      // scure only uses the native Uint8Array base64 methods for the padded coder
+      return base64url.encode(data).replace(/=+$/, '')
     } catch (error) {
       throw new CredoError(`Could not encode data to base64url string`, { cause: error })
     }
@@ -45,7 +46,8 @@ export class TypedArrayEncoder {
    */
   public static fromBase64Url(data: string) {
     try {
-      return base64urlnopad.decode(data)
+      if (data.includes('=')) throw new Error('Unexpected padding in base64url string')
+      return base64url.decode(data + '==='.slice((data.length + 3) % 4))
     } catch (error) {
       throw new CredoError(`Could not decode data from base64url string`, { cause: error })
     }

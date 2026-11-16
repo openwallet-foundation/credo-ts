@@ -343,6 +343,10 @@ export class AnonCredsLinkSecretBindingProvider implements DidCommDataIntegrityL
         AnonCredsCredentialMetadataKey,
         linkSecretMetadata
       )
+      credentialExchangeRecord.setTags({
+        anonCredsRevocationRegistryId: linkSecretMetadata.revocationRegistryId,
+        anonCredsCredentialRevocationId: linkSecretMetadata.credentialRevocationId,
+      })
     }
 
     await this.assertCredentialAttributesMatchSchemaAttributes(

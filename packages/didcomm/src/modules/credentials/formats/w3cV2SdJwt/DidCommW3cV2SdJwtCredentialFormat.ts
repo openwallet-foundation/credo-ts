@@ -6,31 +6,22 @@ import type {
   W3cV2Credential,
   W3cV2Issuer,
 } from '@credo-ts/core'
+import type {
+  DidCommSignedAttachmentCreateOfferOptions,
+  DidCommSignedAttachmentCredentialRequestOptions,
+} from '../../util/didCommSignedAttachmentBinding'
 import type { DidCommCredentialFormat } from '../DidCommCredentialFormat'
 import type { W3cV2SdJwtCredential, W3cV2SdJwtCredentialOffer, W3cV2SdJwtCredentialRequest } from './w3cV2SdJwtExchange'
-
-export interface DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions {
-  didMethodsSupported?: string[]
-  algsSupported?: string[]
-}
-
-/**
- * Options for the holder to create a `didcomm_signed_attachment` binding proof, sent in the request.
- */
-export interface DidCommW3cV2SdJwtSignedAttachmentCredentialRequestOptions {
-  kid: string
-  alg?: string
-}
 
 export interface DidCommW3cV2SdJwtOfferCredentialFormat {
   credential: W3cV2Credential | JsonObject
   bindingRequired?: boolean
   disclosureFrame?: IDisclosureFrame
-  didCommSignedAttachmentBinding?: DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions
+  didCommSignedAttachmentBinding?: DidCommSignedAttachmentCreateOfferOptions
 }
 
 export interface DidCommW3cV2SdJwtAcceptOfferFormat {
-  didCommSignedAttachment?: DidCommW3cV2SdJwtSignedAttachmentCredentialRequestOptions
+  didCommSignedAttachment?: DidCommSignedAttachmentCredentialRequestOptions
 }
 
 export interface DidCommW3cV2SdJwtAcceptRequestFormat {

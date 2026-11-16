@@ -53,6 +53,10 @@ export interface DidCommCredentialFormatProcessOptions {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
 }
 
+export interface DidCommCredentialFormatProcessRequestOptions extends DidCommCredentialFormatProcessOptions {
+  requestAppendAttachments?: DidCommAttachment[]
+}
+
 export interface DidCommCredentialFormatProcessCredentialOptions extends DidCommCredentialFormatProcessOptions {
   offerAttachment: DidCommAttachment
   requestAttachment: DidCommAttachment
