@@ -750,7 +750,9 @@ describe('DCQL selective disclosure', () => {
       const vct = `urn:vct:${randomUUID()}`
       await agent.sdJwtVc.store({
         record: new SdJwtVcRecord({
-          credentialInstances: [{ compactSdJwtVc: await signSdJwt({ vct, ...template }, 'dc+sd-jwt') }],
+          credentialInstances: [
+            { compactSdJwtVc: await signSdJwt({ vct, ...template }, 'dc+sd-jwt'), kmsKeyId: holderKey.keyId },
+          ],
         }),
       })
 
