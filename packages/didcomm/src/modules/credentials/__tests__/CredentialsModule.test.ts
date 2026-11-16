@@ -7,6 +7,7 @@ import { DidCommCredentialsModule } from '../DidCommCredentialsModule'
 import { DidCommCredentialsModuleConfig } from '../DidCommCredentialsModuleConfig'
 import { DidCommCredentialV2Protocol } from '../protocol'
 import type { DidCommCredentialProtocol } from '../protocol/DidCommCredentialProtocol'
+import type { DidCommRevocationNotificationFormatService } from '../protocol/revocation-notification/DidCommRevocationNotificationFormatService'
 import { DidCommRevocationNotificationService } from '../protocol/revocation-notification/services'
 import { DidCommCredentialExchangeRepository } from '../repository'
 
@@ -78,5 +79,18 @@ describe('CredentialsModule', () => {
         roles: ['holder'],
       })
     )
+  })
+
+  test('configures revocation notification formats', () => {
+    const formatService: DidCommRevocationNotificationFormatService = {
+      supportedRevocationFormats: ['example'],
+      findCredentialExchangeRecord: vi.fn(),
+      getCredentialId: vi.fn(),
+    }
+    const credentialsModule = new DidCommCredentialsModule({
+      revocationNotificationFormats: [formatService],
+    })
+
+    expect(credentialsModule.config.revocationNotificationFormats).toEqual([formatService])
   })
 })

@@ -1,5 +1,6 @@
 import { DidCommAutoAcceptCredential } from './models'
 import type { DidCommCredentialProtocol } from './protocol/DidCommCredentialProtocol'
+import type { DidCommRevocationNotificationFormatService } from './protocol/revocation-notification/DidCommRevocationNotificationFormatService'
 
 /**
  * CredentialsModuleConfigOptions defines the interface for the options of the CredentialsModuleConfig class.
@@ -25,6 +26,11 @@ export interface DidCommCredentialsModuleConfigOptions<CredentialProtocols exten
    * ```
    */
   credentialProtocols: CredentialProtocols
+
+  /**
+   * Revocation notification format services to make available to the credentials module.
+   */
+  revocationNotificationFormats?: DidCommRevocationNotificationFormatService[]
 }
 
 export class DidCommCredentialsModuleConfig<CredentialProtocols extends DidCommCredentialProtocol[]> {
@@ -42,5 +48,10 @@ export class DidCommCredentialsModuleConfig<CredentialProtocols extends DidCommC
   /** See {@link DidCommCredentialsModuleConfigOptions.credentialProtocols} */
   public get credentialProtocols() {
     return this.options.credentialProtocols
+  }
+
+  /** See {@link DidCommCredentialsModuleConfigOptions.revocationNotificationFormats} */
+  public get revocationNotificationFormats() {
+    return this.options.revocationNotificationFormats ?? []
   }
 }
