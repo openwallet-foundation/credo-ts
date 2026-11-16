@@ -44,9 +44,13 @@ export class DidCommRevocationNotificationService {
   ) {
     const { agentContext } = messageContext
     // TODO: can we extract support for this revocation notification handler to the anoncreds module?
-    const query = connection
-      ? { anonCredsRevocationRegistryId, anonCredsCredentialRevocationId, connectionId: connection.id }
-      : { anonCredsRevocationRegistryId, anonCredsCredentialRevocationId, role: DidCommCredentialRole.Holder }
+    // Only the holder's record, the issuer's record of the same exchange has the same revocation tags
+    const query = {
+      anonCredsRevocationRegistryId,
+      anonCredsCredentialRevocationId,
+      role: DidCommCredentialRole.Holder,
+      ...(connection && { connectionId: connection.id }),
+    }
 
     this.logger.trace('Getting record by query for revocation notification:', query)
     const credentialExchangeRecord = await this.credentialRepository.getSingleByQuery(agentContext, query)

@@ -134,7 +134,11 @@ export class SdJwtVcService {
     const issuer = await this.extractKeyFromIssuer(agentContext, options.issuer, true)
 
     // holer binding is optional
-    const holderBinding = options.holder ? await extractKeyFromHolderBinding(agentContext, options.holder) : undefined
+    const holderBinding = options.holder
+      ? await extractKeyFromHolderBinding(agentContext, options.holder, {
+          didPurposes: ['authentication', 'assertionMethod'],
+        })
+      : undefined
 
     const header = {
       alg: issuer.alg,
@@ -304,8 +308,11 @@ export class SdJwtVcService {
           : returnSdJwtVc.issuer
       const { trustedIssuer } = await this.verifyIssuer(agentContext, returnSdJwtVc, issuer, trustedIssuers)
       const issuerWithKey = await this.extractKeyFromIssuer(agentContext, issuer)
+      // assertionMethod stays accepted for holders that already rely on it
       const holder = returnSdJwtVc.holder
-        ? await extractKeyFromHolderBinding(agentContext, returnSdJwtVc.holder)
+        ? await extractKeyFromHolderBinding(agentContext, returnSdJwtVc.holder, {
+            didPurposes: ['authentication', 'assertionMethod'],
+          })
         : undefined
 
       const statusValidationDisabled = disableStatusValidation === true || verifyCredentialStatus === false
@@ -417,22 +424,29 @@ export class SdJwtVcService {
    */
   public async fetchTypeMetadata(
     agentContext: AgentContext,
-    sdJwtVc: SdJwtVc,
+    sdJwtVcOrVct: SdJwtVc | { vct: string; 'vct#integrity'?: string },
     {
       throwErrorOnFetchError = true,
       throwErrorOnUnsupportedVctValue = true,
     }: { throwErrorOnFetchError?: boolean; throwErrorOnUnsupportedVctValue?: boolean } = {}
   ) {
+    const baseVct = 'payload' in sdJwtVcOrVct ? sdJwtVcOrVct.payload.vct : sdJwtVcOrVct.vct
     const sdjwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       vctFetcher: this.getVctFetcher(agentContext, {
-        baseVct: sdJwtVc.payload.vct,
+        baseVct,
         throwErrorOnFetchError,
         throwErrorOnUnsupportedVctValue,
       }),
     })
 
-    const typeMetadata = await sdjwt.getVct(sdJwtVc.compact)
+    // getVct only decodes the JWT payload, it never verifies the signature
+    const compact =
+      'payload' in sdJwtVcOrVct
+        ? sdJwtVcOrVct.compact
+        : `${JsonEncoder.toBase64Url({ alg: 'none' })}.${JsonEncoder.toBase64Url({ vct: sdJwtVcOrVct.vct, 'vct#integrity': sdJwtVcOrVct['vct#integrity'] })}.~`
+
+    const typeMetadata = await sdjwt.getVct(compact)
     return typeMetadata
   }
 

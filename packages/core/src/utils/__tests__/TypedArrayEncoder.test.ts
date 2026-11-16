@@ -76,4 +76,19 @@ describe('TypedArrayEncoder', () => {
       ).toEqual(true)
     })
   })
+
+  describe('base64url', () => {
+    test('round-trips every padding length', () => {
+      for (let length = 0; length < 8; length++) {
+        const data = Uint8Array.from({ length }, (_, i) => 250 + i)
+        const encoded = TypedArrayEncoder.toBase64Url(data)
+        expect(encoded).not.toContain('=')
+        expect(TypedArrayEncoder.fromBase64Url(encoded)).toEqual(data)
+      }
+    })
+
+    test.each(['AA==', 'AAA=', 'A', 'AB', 'AAB', 'AB C', 'AB+/'])('rejects non-canonical base64url %j', (value) => {
+      expect(() => TypedArrayEncoder.fromBase64Url(value)).toThrow('Could not decode data from base64url string')
+    })
+  })
 })

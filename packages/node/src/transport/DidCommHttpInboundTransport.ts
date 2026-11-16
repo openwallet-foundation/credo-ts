@@ -127,7 +127,8 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
       })
       // We want to make sure the session is removed if the connection is closed, as it
       // can't be used anymore then. This could happen if the client abruptly closes the connection.
-      req.once('close', () => transportService.removeSession(session))
+      // The request closes as soon as its body is read, so this listens on the response.
+      res.once('close', () => transportService.removeSession(session))
 
       const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
       let encryptedMessage: DidCommEncryptedMessage | undefined
@@ -188,6 +189,12 @@ export class HttpTransportSession implements DidCommTransportSession {
     this.req = req
     this.res = res
     this.respondAfterProcessing = options.respondAfterProcessing ?? false
+  }
+
+  public readonly isSingleResponse = true
+
+  public get isClosed() {
+    return this.res.headersSent || this.res.destroyed
   }
 
   public async close(): Promise<void> {
