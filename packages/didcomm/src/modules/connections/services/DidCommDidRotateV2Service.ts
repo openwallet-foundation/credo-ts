@@ -38,6 +38,8 @@ import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMe
 import { DidCommConnectionService } from './DidCommConnectionService'
 import { addSharedDid, createPeerDidForV2OOB, toAbsoluteDidUrl } from './helpers'
 
+const FROM_PRIOR_CLAIMS = ['iss', 'sub', 'iat']
+
 export interface FromPriorPayload {
   iss: string
   sub?: string
@@ -453,9 +455,10 @@ export class DidCommDidRotateV2Service {
     if (typ !== undefined && typ !== 'JWT') {
       throw new CredoError(`from_prior JWT has typ '${typ}', expected 'JWT'`)
     }
-    const unknownClaims = Object.keys(payload.additionalClaims)
+    // The spec defines only these claims, so any other one is another kind of JWT or an extension we cannot interpret
+    const unknownClaims = Object.keys(payload.toJson()).filter((claim) => !FROM_PRIOR_CLAIMS.includes(claim))
     if (unknownClaims.length > 0) {
-      throw new CredoError(`from_prior JWT has claims other than the registered ones: ${unknownClaims.join(', ')}`)
+      throw new CredoError(`from_prior JWT has claims other than iss, sub and iat: ${unknownClaims.join(', ')}`)
     }
 
     if (typeof payload.iss !== 'string') throw new CredoError("from_prior JWT missing 'iss'")

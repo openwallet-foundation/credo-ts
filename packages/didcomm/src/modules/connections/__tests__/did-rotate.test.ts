@@ -1208,9 +1208,15 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
         await expect(verifyOnBob(await signAsAlice({}, 'dc+sd-jwt'))).rejects.toThrow(/typ 'dc\+sd-jwt'/)
       })
 
-      test('rejects a JWT with claims other than the registered ones', async () => {
+      test('rejects a JWT with a claim the spec does not define', async () => {
         await expect(verifyOnBob(await signAsAlice({ vct: 'https://example.com/vct' }, 'JWT'))).rejects.toThrow(
-          /claims other than the registered ones: vct/
+          /claims other than iss, sub and iat: vct/
+        )
+      })
+
+      test('rejects a JWT with a registered claim the spec does not define', async () => {
+        await expect(verifyOnBob(await signAsAlice({ aud: 'https://example.com' }))).rejects.toThrow(
+          /claims other than iss, sub and iat: aud/
         )
       })
     })
