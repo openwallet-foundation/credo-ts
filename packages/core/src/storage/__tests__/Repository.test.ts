@@ -9,7 +9,12 @@ import { CacheModuleConfig, InMemoryLruCache } from '../../modules/cache'
 import { GenericRecord } from '../../modules/generic-records/repository/GenericRecord'
 import type { TagsBase } from '../BaseRecord'
 import { Repository } from '../Repository'
-import type { RecordDeletedEvent, RecordSavedEvent, RecordUpdatedEvent } from '../RepositoryEvents'
+import type {
+  RecordDeletedEvent,
+  RecordSavedEvent,
+  RecordsDeletedByQueryEvent,
+  RecordUpdatedEvent,
+} from '../RepositoryEvents'
 import { RepositoryEventTypes } from '../RepositoryEvents'
 import type { StorageService } from '../StorageService'
 import { TestRecord } from './TestRecord'
@@ -192,6 +197,92 @@ describe('Repository', () => {
         },
       })
     })
+  })
+
+  describe('deleteByQuery()', () => {
+    const query = { $or: [{ myTag: 'foo' }, { myTag: 'bar' }] }
+
+    it('should delete the records using deleteByQuery of the storage service', async () => {
+      storageMock.deleteByQuery = vi.fn().mockResolvedValue(3)
+
+      expect(await repository.deleteByQuery(agentContext, query)).toBe(3)
+
+      expect(storageMock.deleteByQuery).toHaveBeenCalledWith(agentContext, TestRecord, query)
+      expect(storageMock.findByQuery).not.toHaveBeenCalled()
+      expect(storageMock.delete).not.toHaveBeenCalled()
+    })
+
+    it('should find and delete each record if the storage service does not implement deleteByQuery', async () => {
+      storageMock.deleteByQuery = undefined
+      const records = [getRecord({ id: 'test-id-1' }), getRecord({ id: 'test-id-2' })]
+      mockFunction(storageMock.findByQuery).mockResolvedValue(records)
+
+      expect(await repository.deleteByQuery(agentContext, query)).toBe(2)
+
+      expect(storageMock.findByQuery).toHaveBeenCalledTimes(1)
+      expect(storageMock.findByQuery).toHaveBeenCalledWith(agentContext, TestRecord, query, { limit: 100 })
+      expect(storageMock.delete).toHaveBeenCalledTimes(2)
+      expect(storageMock.delete).toHaveBeenNthCalledWith(1, agentContext, records[0])
+      expect(storageMock.delete).toHaveBeenNthCalledWith(2, agentContext, records[1])
+    })
+
+    it('should find and delete the records in pages of 100 if the storage service does not implement deleteByQuery', async () => {
+      storageMock.deleteByQuery = undefined
+      const firstPage = Array.from({ length: 100 }, (_, index) => getRecord({ id: `test-id-${index}` }))
+      const secondPage = [getRecord({ id: 'test-id-100' })]
+      mockFunction(storageMock.findByQuery).mockResolvedValueOnce(firstPage).mockResolvedValueOnce(secondPage)
+
+      expect(await repository.deleteByQuery(agentContext, query)).toBe(101)
+
+      expect(storageMock.findByQuery).toHaveBeenCalledTimes(2)
+      expect(storageMock.findByQuery).toHaveBeenNthCalledWith(2, agentContext, TestRecord, query, { limit: 100 })
+      expect(storageMock.delete).toHaveBeenCalledTimes(101)
+      expect(storageMock.delete).toHaveBeenLastCalledWith(agentContext, secondPage[0])
+    })
+
+    it.each([
+      [
+        'with',
+        () => {
+          storageMock.deleteByQuery = vi.fn().mockResolvedValue(2)
+        },
+      ],
+      [
+        'without',
+        () => {
+          storageMock.deleteByQuery = undefined
+          mockFunction(storageMock.findByQuery).mockResolvedValue([getRecord({ id: 'test-id-1' }), getRecord()])
+        },
+      ],
+    ])(
+      'should emit one deleted by query event and no deleted events %s deleteByQuery in the storage service',
+      async (_, setup) => {
+        setup()
+        const deletedByQueryListener = vi.fn()
+        const deletedListener = vi.fn()
+        eventEmitter.on<RecordsDeletedByQueryEvent<TestRecord>>(
+          RepositoryEventTypes.RecordsDeletedByQuery,
+          deletedByQueryListener
+        )
+        eventEmitter.on<RecordDeletedEvent<TestRecord>>(RepositoryEventTypes.RecordDeleted, deletedListener)
+
+        await repository.deleteByQuery(agentContext, query)
+
+        expect(deletedByQueryListener).toHaveBeenCalledTimes(1)
+        expect(deletedByQueryListener).toHaveBeenCalledWith({
+          type: 'RecordsDeletedByQuery',
+          metadata: {
+            contextCorrelationId: 'mock',
+          },
+          payload: {
+            recordType: TestRecord.type,
+            query,
+            count: 2,
+          },
+        })
+        expect(deletedListener).not.toHaveBeenCalled()
+      }
+    )
   })
 
   describe('getById()', () => {

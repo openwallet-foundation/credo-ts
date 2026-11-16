@@ -1,4 +1,12 @@
-import { Agent, GenericRecord, RecordDecodingError, RecordDuplicateError, RecordNotFoundError } from '@credo-ts/core'
+import {
+  Agent,
+  AgentContext,
+  GenericRecord,
+  RecordDecodingError,
+  RecordDuplicateError,
+  RecordNotFoundError,
+  type TagsBase,
+} from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 import { GenericRecordsRepository } from '../../../../core/src/modules/generic-records/repository/GenericRecordsRepository'
 import {
@@ -17,6 +25,7 @@ describe.each(['postgres', 'sqlite'] as const)('DrizzleStorageService with %s', 
   let postgresDatabase: DrizzlePostgresTestDatabase | undefined
   let database: DrizzleDatabase
   let agent: Agent
+  let drizzleModule: DrizzleStorageModule
 
   beforeAll(async () => {
     if (drizzleDialect === 'postgres') {
@@ -24,7 +33,7 @@ describe.each(['postgres', 'sqlite'] as const)('DrizzleStorageService with %s', 
     }
 
     database = postgresDatabase?.drizzle ?? (await inMemoryDrizzleSqliteDatabase())
-    const drizzleModule = new DrizzleStorageModule({
+    drizzleModule = new DrizzleStorageModule({
       database,
       bundles: [coreBundle],
     })
@@ -110,6 +119,81 @@ describe.each(['postgres', 'sqlite'] as const)('DrizzleStorageService with %s', 
     const error = await genericRecordsRepository.getById(agent.context, 'invalid').catch((error) => error)
     expect(error).toBeInstanceOf(RecordDecodingError)
     expect(error).toMatchObject({ recordType: 'GenericRecord', recordId: 'invalid' })
+  })
+
+  describe('deleteByQuery', () => {
+    const save = async (tags: TagsBase, agentContext = agent.context) => {
+      const record = new GenericRecord({ content: {}, tags })
+      await agent.context.resolve(GenericRecordsRepository).save(agentContext, record)
+      return record
+    }
+
+    const remainingIds = async (test: string) =>
+      (await agent.context.resolve(GenericRecordsRepository).findByQuery(agent.context, { test }))
+        .map((record) => record.id)
+        .sort()
+
+    test('only deletes the records that match the query', async () => {
+      await save({ test: 'simple', myTag: 'foo' })
+      await save({ test: 'simple', myTag: 'foo' })
+      const kept = await save({ test: 'simple', myTag: 'bar' })
+
+      expect(
+        await agent.context
+          .resolve(GenericRecordsRepository)
+          .deleteByQuery(agent.context, { test: 'simple', myTag: 'foo' })
+      ).toBe(2)
+
+      expect(await remainingIds('simple')).toEqual([kept.id])
+    })
+
+    test('deletes records using $and statements', async () => {
+      await save({ test: 'and', myTag: 'foo', anotherTag: 'bar' })
+      const kept = await save({ test: 'and', myTag: 'foo', anotherTag: 'notbar' })
+
+      expect(
+        await agent.context
+          .resolve(GenericRecordsRepository)
+          .deleteByQuery(agent.context, { $and: [{ test: 'and' }, { myTag: 'foo' }, { anotherTag: 'bar' }] })
+      ).toBe(1)
+
+      expect(await remainingIds('and')).toEqual([kept.id])
+    })
+
+    test('deletes records using $or statements', async () => {
+      await save({ test: 'or', myTag: 'foo' })
+      await save({ test: 'or', anotherTag: 'bar' })
+      const kept = await save({ test: 'or', myTag: 'notfoo' })
+
+      expect(
+        await agent.context
+          .resolve(GenericRecordsRepository)
+          .deleteByQuery(agent.context, { test: 'or', $or: [{ myTag: 'foo' }, { anotherTag: 'bar' }] })
+      ).toBe(2)
+
+      expect(await remainingIds('or')).toEqual([kept.id])
+    })
+
+    test('does not delete matching records of another agent context', async () => {
+      const otherContext = new AgentContext({
+        dependencyManager: agent.dependencyManager,
+        contextCorrelationId: 'other-context',
+      })
+      await drizzleModule.onProvisionContext(otherContext)
+      const kept = await save({ test: 'context' }, otherContext)
+      await save({ test: 'context' })
+
+      expect(
+        await agent.context.resolve(GenericRecordsRepository).deleteByQuery(agent.context, { test: 'context' })
+      ).toBe(1)
+
+      expect(await remainingIds('context')).toEqual([])
+      expect(
+        (await agent.context.resolve(GenericRecordsRepository).findByQuery(otherContext, { test: 'context' })).map(
+          (record) => record.id
+        )
+      ).toEqual([kept.id])
+    })
   })
 
   describe('updateByIdWithLock', () => {
