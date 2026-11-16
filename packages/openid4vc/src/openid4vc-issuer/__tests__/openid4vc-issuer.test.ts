@@ -515,6 +515,56 @@ describe('OpenId4VcIssuer', () => {
     await expect(issuer.kms.getPublicKey({ keyId: secondKeyId })).resolves.toBeDefined()
   })
 
+  it('keeps a previous access token signing key that failed to delete and deletes the others', async () => {
+    const createdIssuer = await issuer.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: { openBadgeCredential },
+    })
+    const firstKeyId = createdIssuer.resolvedAccessTokenPublicJwk.keyId
+    await issuer.openid4vc.issuer.rotateAccessTokenSigningKey(createdIssuer.issuerId)
+    const secondKeyId = (await issuer.openid4vc.issuer.getIssuerByIssuerId(createdIssuer.issuerId))
+      .resolvedAccessTokenPublicJwk.keyId
+    await issuer.openid4vc.issuer.rotateAccessTokenSigningKey(createdIssuer.issuerId)
+
+    // Previous keys are newest first, so the second key is deleted first
+    const deleteError = new Error('delete failed')
+    vi.spyOn(issuer.kms, 'deleteKey').mockRejectedValueOnce(deleteError)
+
+    await expect(
+      issuer.openid4vc.issuer.deletePreviousAccessTokenSigningKeys(createdIssuer.issuerId)
+    ).rejects.toMatchObject({ keys: [{ keyId: secondKeyId, cause: deleteError }] })
+    expect(
+      (await issuer.openid4vc.issuer.getIssuerByIssuerId(createdIssuer.issuerId)).previousAccessTokenKeys?.map(
+        ({ keyId }) => keyId
+      )
+    ).toEqual([secondKeyId])
+    await expect(issuer.kms.getPublicKey({ keyId: firstKeyId })).rejects.toThrow()
+    await expect(issuer.kms.getPublicKey({ keyId: secondKeyId })).resolves.toBeDefined()
+
+    await issuer.openid4vc.issuer.deletePreviousAccessTokenSigningKeys(createdIssuer.issuerId)
+    expect((await issuer.openid4vc.issuer.getIssuerByIssuerId(createdIssuer.issuerId)).previousAccessTokenKeys).toBe(
+      undefined
+    )
+    await expect(issuer.kms.getPublicKey({ keyId: secondKeyId })).rejects.toThrow()
+  })
+
+  it('removes the previous access token signing keys and keeps them in the KMS with deleteFromKms false', async () => {
+    const createdIssuer = await issuer.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: { openBadgeCredential },
+    })
+    const previousKeyId = createdIssuer.resolvedAccessTokenPublicJwk.keyId
+    await issuer.openid4vc.issuer.rotateAccessTokenSigningKey(createdIssuer.issuerId)
+    // The backend of the key may be gone, so the KMS must not be called
+    const deleteKey = vi.spyOn(issuer.kms, 'deleteKey')
+
+    await issuer.openid4vc.issuer.deletePreviousAccessTokenSigningKeys(createdIssuer.issuerId, { deleteFromKms: false })
+
+    expect((await issuer.openid4vc.issuer.getIssuerByIssuerId(createdIssuer.issuerId)).previousAccessTokenKeys).toBe(
+      undefined
+    )
+    expect(deleteKey).not.toHaveBeenCalled()
+    await expect(issuer.kms.getPublicKey({ keyId: previousKeyId })).resolves.toBeDefined()
+  })
+
   it('signs nonces and client attestation challenges with the jwk thumbprint as kid', async () => {
     const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
     const createdIssuer = await issuer.openid4vc.issuer.createIssuer({
@@ -2374,6 +2424,106 @@ describe('OpenId4VcIssuer', () => {
       await expect(
         parse(issuerRecord, await encryptRequest(advertisedJwk(previousKey.publicJwk), credentialRequest))
       ).resolves.toMatchObject({ credentialRequest })
+    })
+
+    it('rotates the encryption key in the backend of the current key and keeps decrypting with the previous key', async () => {
+      const { key: previousKey, issuerRecord: previousIssuerRecord } = await configureRequestEncryption({
+        required: true,
+      })
+
+      await issuer.openid4vc.issuer.rotateCredentialRequestEncryptionKey(openId4VcIssuer.issuerId)
+      const issuerRecord = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+
+      const newKey = issuerRecord.credentialRequestEncryption?.keys[0]
+      if (!newKey) throw new Error('No credential request encryption key')
+      expect(newKey.keyId).not.toEqual(previousKey.keyId)
+      expect(issuerRecord.credentialRequestEncryption).toEqual({
+        required: true,
+        keys: [
+          {
+            publicJwk: expect.objectContaining({ kty: 'EC', crv: 'P-256' }),
+            keyId: newKey.keyId,
+            kmsBackend: previousKey.backend,
+          },
+        ],
+        previousKeys: previousIssuerRecord.credentialRequestEncryption?.keys,
+      })
+      const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+      expect(issuerMetadata.credentialIssuer.credential_request_encryption?.jwks.keys).toEqual([
+        advertisedJwk(newKey.publicJwk),
+      ])
+      await expect(
+        parse(issuerRecord, await encryptRequest(advertisedJwk(previousKey.publicJwk), credentialRequest))
+      ).resolves.toMatchObject({ credentialRequest })
+    })
+
+    it('rotates to a given encryption key', async () => {
+      await configureRequestEncryption()
+      const key = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-384' } })
+
+      await issuer.openid4vc.issuer.rotateCredentialRequestEncryptionKey(openId4VcIssuer.issuerId, {
+        key: { keyId: key.keyId },
+      })
+
+      const issuerRecord = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+      expect(issuerRecord.credentialRequestEncryption?.keys).toEqual([
+        expect.objectContaining({ keyId: key.keyId, kmsBackend: key.backend }),
+      ])
+      await expect(
+        issuer.openid4vc.issuer.rotateCredentialRequestEncryptionKey(openId4VcIssuer.issuerId, {
+          key: { keyId: key.keyId },
+        })
+      ).rejects.toThrow(`Key with key id '${key.keyId}' is already a credential request encryption key of the issuer.`)
+    })
+
+    it('deletes the created encryption key when storing the rotation fails', async () => {
+      await configureRequestEncryption()
+      const createKey = vi.spyOn(issuer.kms, 'createKey')
+      vi.spyOn(OpenId4VcIssuerRepository.prototype, 'update').mockRejectedValueOnce(new Error('update failed'))
+
+      await expect(
+        issuer.openid4vc.issuer.rotateCredentialRequestEncryptionKey(openId4VcIssuer.issuerId)
+      ).rejects.toThrow('update failed')
+
+      const { keyId } = await (createKey.mock.results[0].value as ReturnType<Kms.KeyManagementApi['createKey']>)
+      await expect(issuer.kms.getPublicKey({ keyId })).rejects.toThrow('not found')
+    })
+
+    it('deletes only the previous encryption keys with the given key ids', async () => {
+      const { key: firstKey } = await configureRequestEncryption()
+      await issuer.openid4vc.issuer.rotateCredentialRequestEncryptionKey(openId4VcIssuer.issuerId)
+      const currentRequestEncryptionKey = async () => {
+        const issuerRecord = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+        if (!issuerRecord.credentialRequestEncryption) throw new Error('No credential request encryption')
+        return issuerRecord.credentialRequestEncryption.keys[0]
+      }
+      const secondKey = await currentRequestEncryptionKey()
+      await issuer.openid4vc.issuer.rotateCredentialRequestEncryptionKey(openId4VcIssuer.issuerId)
+      const currentKey = await currentRequestEncryptionKey()
+
+      await expect(
+        issuer.openid4vc.issuer.deletePreviousCredentialRequestEncryptionKeys(openId4VcIssuer.issuerId, {
+          keyIds: [firstKey.keyId, currentKey.keyId],
+        })
+      ).rejects.toThrow(`No previous credential request encryption keys found with key ids '${currentKey.keyId}'.`)
+
+      await issuer.openid4vc.issuer.deletePreviousCredentialRequestEncryptionKeys(openId4VcIssuer.issuerId, {
+        keyIds: [firstKey.keyId],
+      })
+      const issuerRecord = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+      expect(issuerRecord.credentialRequestEncryption?.previousKeys?.map(({ keyId }) => keyId)).toEqual([
+        secondKey.keyId,
+      ])
+      await expect(issuer.kms.getPublicKey({ keyId: firstKey.keyId })).rejects.toThrow('not found')
+      await expect(
+        parse(issuerRecord, await encryptRequest(advertisedJwk(firstKey.publicJwk), credentialRequest))
+      ).rejects.toMatchObject({ errorResponse: { error: 'invalid_encryption_parameters' } })
+
+      await issuer.openid4vc.issuer.deletePreviousCredentialRequestEncryptionKeys(openId4VcIssuer.issuerId)
+      const issuerWithoutPreviousKeys = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+      expect(issuerWithoutPreviousKeys.credentialRequestEncryption?.previousKeys).toBeUndefined()
+      await expect(issuer.kms.getPublicKey({ keyId: secondKey.keyId })).rejects.toThrow('not found')
+      await expect(issuer.kms.getPublicKey({ keyId: currentKey.keyId })).resolves.toBeDefined()
     })
 
     it('stores the keys with their KMS key id and backend, and no kid', async () => {

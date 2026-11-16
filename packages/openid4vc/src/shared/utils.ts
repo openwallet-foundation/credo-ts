@@ -299,3 +299,21 @@ export function dcqlCredentialQueryToPresentationFormat(credential: DcqlQuery['c
       return ClaimFormat.MsoMdoc
   }
 }
+
+/**
+ * Deletes a key that was created for an operation that failed. A failed delete is logged, not thrown, so the error of
+ * the operation is the one that surfaces.
+ */
+export async function deleteCreatedKeyAfterFailure(
+  agentContext: AgentContext,
+  key: { keyId: string; backend?: string }
+) {
+  await agentContext
+    .resolve(Kms.KeyManagementApi)
+    .deleteKey({ keyId: key.keyId, backend: key.backend })
+    .catch((deleteError) => {
+      agentContext.config.logger.error(`Failed to delete key ${key.keyId} created for a failed operation`, {
+        deleteError,
+      })
+    })
+}

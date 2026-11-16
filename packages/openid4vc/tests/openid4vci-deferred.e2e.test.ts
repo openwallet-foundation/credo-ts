@@ -3,6 +3,7 @@ import {
   ClaimFormat,
   CredoError,
   DidsApi,
+  getCredentialHolderBindingDids,
   JsonEncoder,
   JwsService,
   Jwt,
@@ -672,6 +673,49 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(new Set(deleteKeySpy.mock.calls.map(([{ keyId }]) => keyId)).size).toEqual(4)
 
     deleteKeySpy.mockRestore()
+    await holderTenant.endSession()
+  })
+
+  it('holder stores the DIDs created for a deferred credential on its record', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+      dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+    })
+
+    const { credentialOffer } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+    const credentialResponse = await holderTenant.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponse,
+      credentialBindingResolver: () => ({
+        method: 'did',
+        didUrls: [holder1.verificationMethod.id],
+        createdForCredential: true,
+      }),
+    })
+    const [deferred] = credentialResponse.deferredCredentials
+    expect(deferred.holderBindingDids).toEqual([holder1.did])
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    const deferredResponse = await holderTenant.openid4vc.holder.requestDeferredCredentials({
+      ...tokenResponse,
+      ...deferred,
+      issuerMetadata: resolvedCredentialOffer.metadata,
+    })
+    expect(getCredentialHolderBindingDids(deferredResponse.credentials[0].record)).toEqual([holder1.did])
+
     await holderTenant.endSession()
   })
 

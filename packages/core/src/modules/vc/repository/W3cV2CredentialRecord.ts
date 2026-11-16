@@ -23,6 +23,12 @@ export type W3cV2CredentialRecordInstances = NonEmptyArray<{
   credential: string
 
   // no kmsKeyId for w3c credential record, since all credentials are bound to a DID
+
+  /**
+   * How many times this instance was used. Not counted yet: DCQL presentations use
+   * the first instance without counting it.
+   */
+  usageCount?: number
 }>
 
 export type DefaultW3cV2CredentialTags = {
@@ -45,7 +51,9 @@ export type DefaultW3cV2CredentialTags = {
 
 const w3cV2CredentialRecordEncodingSchema = createRecordEncodingSchema(
   {
-    credentialInstances: zNonEmptyArray(z.object({ credential: z.string() })).nullish(),
+    credentialInstances: zNonEmptyArray(
+      z.object({ credential: z.string(), usageCount: z.number().optional() })
+    ).nullish(),
     multiInstanceState: z.string().nullish(),
   },
   {

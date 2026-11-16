@@ -41,8 +41,14 @@ import { buildV2PlaintextFromMessage } from '../../v2/plaintextBuilder'
 import type { DidCommV2Attachment, DidCommV2KeyAgreementJwk } from '../../v2/types'
 import { DidCommConnectionRecord, DidCommDidExchangeState, DidCommHandshakeProtocol } from '../connections'
 import { DidCommConnectionsApi } from '../connections/DidCommConnectionsApi'
-import { createPeerDidForV2OOB, routingToServices } from '../connections/services/helpers'
+import {
+  DidCommConnectionMetadataKeys,
+  type DidCommCreatedKey,
+} from '../connections/repository/DidCommConnectionMetadataTypes'
+import { deleteCreatedDidsAndKeys } from '../connections/services/deleteCreatedDidsAndKeys'
+import { createPeerDidForV2OOB, routingKmsKeys, routingToServices } from '../connections/services/helpers'
 import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
+import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 import { convertV2InvitationToOutOfBandInvitation, didCommAttachmentToV2Attachment } from './converters'
 import { DidCommOutOfBandService } from './DidCommOutOfBandService'
 import type { DidCommHandshakeReusedEvent } from './domain/DidCommOutOfBandEvents'
@@ -58,6 +64,19 @@ import { type DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRecord } from '.
 import { DidCommOutOfBandRecordMetadataKeys } from './repository/outOfBandRecordMetadataTypes'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
+
+export interface DidCommDeleteOutOfBandOptions {
+  /**
+   * Also delete the KMS keys and the did:peer DID Credo created for the invitation. Keys and DIDs you passed in
+   * (`routing`, `ourDid`, `invitationDid`), and the ones a connection from the invitation still has, are kept, unless
+   * the routing has `deleteWithRecord`. A DID Credo created for the invitation is deleted even when you passed it as
+   * `ourDid` elsewhere, so don't reuse it. Nothing is deleted for out-of-band records created before this option
+   * existed, as they don't record which keys are theirs.
+   *
+   * @default false
+   */
+  deleteAssociatedKeys?: boolean
+}
 
 export interface CreateOutOfBandInvitationConfig {
   label?: string
@@ -260,14 +279,19 @@ export class DidCommOutOfBandApi {
     }
 
     const invitationInlineServiceKeys: DidCommOutOfBandInlineServiceKey[] = []
+    let createdKmsKeys: DidCommCreatedKey[] = []
     if (config.invitationDid) {
       services = [config.invitationDid]
     } else {
-      const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
+      const routing = config.routing ?? {
+        ...(await this.routingService.getRouting(this.agentContext, {})),
+        deleteWithRecord: true,
+      }
       mediatorId = routing?.mediatorId
       Kms.checkKmsKeyReferences(this.agentContext, [
         { keyId: routing.recipientKey.keyId, backend: routing.recipientKey.kmsBackend },
       ])
+      if (routing.deleteWithRecord) createdKmsKeys = routingKmsKeys(routing)
 
       services = routingToServices(routing).map((service) => {
         // Store the key id for the recipient key
@@ -320,6 +344,10 @@ export class DidCommOutOfBandApi {
         recipientKeyFingerprints,
       },
     })
+    outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.CreatedKeys, {
+      dids: [],
+      keys: createdKmsKeys,
+    })
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)
     this.outOfBandService.emitStateChangedEvent(this.agentContext, outOfBandRecord, null)
@@ -348,10 +376,10 @@ export class DidCommOutOfBandApi {
       throw new CredoError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined.")
     }
 
-    const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
-
     let did: string
     let recipientKeyFingerprints: string[]
+    let mediatorId: string | undefined
+    let createdKmsKeys: DidCommCreatedKey[] = []
 
     if (config.ourDid) {
       // Reuse existing DID (e.g. from first connection in bidirectional setup)
@@ -363,7 +391,14 @@ export class DidCommOutOfBandApi {
       // not derived from the Ed25519 key, so mapX25519ToEd25519 would fail.
       const recipientKeys = didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
       recipientKeyFingerprints = recipientKeys.map((k) => k.publicJwk.fingerprint)
+      mediatorId = (await getMediationRecordForDidDocument(this.agentContext, didDocument))?.id
     } else {
+      const routing = config.routing ?? {
+        ...(await this.routingService.getRouting(this.agentContext, {})),
+        deleteWithRecord: true,
+      }
+      mediatorId = routing.mediatorId
+      if (routing.deleteWithRecord) createdKmsKeys = routingKmsKeys(routing)
       const numAlgo = config.peerDidNumAlgoForV2OOB ?? this.didCommModuleConfig.peerDidNumAlgoForV2OOB
       const result = await createPeerDidForV2OOB(this.agentContext, routing, numAlgo)
       did = result.did
@@ -413,7 +448,7 @@ export class DidCommOutOfBandApi {
     MessageValidator.validateSync(v2Invitation)
 
     const outOfBandRecord = new DidCommOutOfBandRecord({
-      mediatorId: routing.mediatorId,
+      mediatorId,
       role: DidCommOutOfBandRole.Sender,
       state: DidCommOutOfBandState.AwaitResponse,
       alias: config.alias,
@@ -427,6 +462,10 @@ export class DidCommOutOfBandApi {
       },
     })
     outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.V2Invitation, v2Invitation.toJSON())
+    outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.CreatedKeys, {
+      dids: config.ourDid ? [] : [did],
+      keys: createdKmsKeys,
+    })
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)
     this.outOfBandService.emitStateChangedEvent(this.agentContext, outOfBandRecord, null)
@@ -963,8 +1002,9 @@ export class DidCommOutOfBandApi {
    * Delete an out of band record by id
    *
    * @param outOfBandId the out of band record id
+   * @param options.deleteAssociatedKeys also delete the keys and DID Credo created for the invitation
    */
-  public async deleteById(outOfBandId: string) {
+  public async deleteById(outOfBandId: string, options?: DidCommDeleteOutOfBandOptions) {
     const outOfBandRecord = await this.getById(outOfBandId)
 
     const relatedConnections = await this.connectionsApi.findAllByOutOfBandId(outOfBandId)
@@ -988,6 +1028,15 @@ export class DidCommOutOfBandApi {
         recipientKeys,
         mediatorId: outOfBandRecord.mediatorId,
       })
+    }
+
+    const createdKeys = outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.CreatedKeys)
+    if (options?.deleteAssociatedKeys && createdKeys) {
+      await deleteCreatedDidsAndKeys(
+        this.agentContext,
+        createdKeys,
+        relatedConnections.map((connection) => connection.metadata.get(DidCommConnectionMetadataKeys.CreatedKeys))
+      )
     }
 
     return this.outOfBandService.deleteById(this.agentContext, outOfBandId)

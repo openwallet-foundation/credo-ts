@@ -3,9 +3,14 @@ import type { MockedClassConstructor } from '../../../../tests/types'
 import { DidKey, EventEmitter, Kms, RecordNotFoundError, TypedArrayEncoder } from '../../../core/src'
 import { getAgentConfig, getAgentContext, getMockOutOfBand, mockFunction } from '../../../core/tests/helpers'
 import { TestMessage } from '../../../core/tests/TestMessage'
+import { DidCommMessage } from '../DidCommMessage'
 import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { ServiceDecorator } from '../decorators/service/ServiceDecorator'
-import { getConnectionlessOutboundMessageContext } from '../getDidCommOutboundMessageContext'
+import {
+  getConnectionlessOutboundMessageContext,
+  getOutboundDidCommMessageContext,
+} from '../getDidCommOutboundMessageContext'
+import { DidCommCredentialExchangeRecord, DidCommCredentialRole, DidCommCredentialState } from '../modules/credentials'
 import {
   DidCommOutOfBandInvitation,
   DidCommOutOfBandRole,
@@ -182,5 +187,34 @@ describe('getConnectionlessOutboundMessageContext', () => {
 
     expect(outboundMessageContext.serviceParams?.senderKey.keyId).toEqual('our-kms-key-id')
     expect(outOfBandRepository.findByQuery).not.toHaveBeenCalled()
+  })
+})
+
+describe('getOutboundDidCommMessageContext', () => {
+  test('throws for a connection-less exchange without an out of band record', async () => {
+    const agentContext = getAgentContext({
+      registerInstances: [
+        [
+          DidCommOutOfBandRepository,
+          { findSingleByQuery: vi.fn().mockResolvedValue(null) } as unknown as DidCommOutOfBandRepository,
+        ],
+      ],
+    })
+    const lastReceivedMessage = new DidCommMessage()
+    const message = new DidCommMessage()
+    message.setThread({ threadId: lastReceivedMessage.threadId })
+
+    await expect(
+      getOutboundDidCommMessageContext(agentContext, {
+        message,
+        lastReceivedMessage,
+        associatedRecord: new DidCommCredentialExchangeRecord({
+          protocolVersion: 'v2',
+          role: DidCommCredentialRole.Issuer,
+          state: DidCommCredentialState.RequestReceived,
+          threadId: lastReceivedMessage.threadId,
+        }),
+      })
+    ).rejects.toThrow('No out of band record found for connection-less exchange')
   })
 })

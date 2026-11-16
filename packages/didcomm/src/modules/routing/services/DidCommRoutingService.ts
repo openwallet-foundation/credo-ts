@@ -1,11 +1,21 @@
 import type { AgentContext } from '@credo-ts/core'
-import { CredoError, EventEmitter, getDidPeer4ShortFormForEquivalence, injectable, Kms } from '@credo-ts/core'
+import {
+  CredoError,
+  DidKey,
+  EventEmitter,
+  getDidPeer4ShortFormForEquivalence,
+  injectable,
+  Kms,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommRouting } from '../../../models'
 import type { DidCommV2KeyAgreementJwk } from '../../../v2/types'
 import { keyTypeForCurve } from '../../../v2/types'
-import type { DidCommRoutingCreatedEvent } from '../DidCommRoutingEvents'
+import type { DidCommCreatedKey } from '../../connections/repository/DidCommConnectionMetadataTypes'
+import type { DidCommRoutingCreatedEvent, DidCommRoutingDeletedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
+import { DidCommMediationRole } from '../models'
 import { KeylistUpdateActionV2 } from '../protocol/v2/messages'
 
 import { DidCommMediationRecipientService } from './DidCommMediationRecipientService'
@@ -95,6 +105,51 @@ export class DidCommRoutingService {
 
   public async removeRouting(agentContext: AgentContext, options: RemoveRoutingOptions) {
     await this.mediationRecipientService.removeMediationRouting(agentContext, options)
+  }
+
+  /**
+   * Delete routing keys from the KMS, after removing them (and `did`) from the mediators that route them. Emits a
+   * {@link DidCommRoutingDeletedEvent}, so the tenants module removes their tenant routing.
+   *
+   * Removing them from a mediator is best-effort: when it fails, it logs a warning and still deletes the keys.
+   */
+  public async deleteRouting(agentContext: AgentContext, { keys, did }: { keys: DidCommCreatedKey[]; did?: string }) {
+    const publicJwks = keys.map(({ publicJwk }) => Kms.PublicJwk.fromUnknown(publicJwk))
+    const recipientKeys = publicJwks.filter((publicJwk) =>
+      publicJwk.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk)
+    ) as RemoveRoutingOptions['recipientKeys']
+    const recipientDid = did ? (getDidPeer4ShortFormForEquivalence(did) ?? did) : undefined
+    // A 1.0 mediator registers base58 keys, a 2.0 mediator the did:key of each key and the did
+    const query = [
+      ...recipientKeys.flatMap((recipientKey) => [
+        { recipientKeys: [TypedArrayEncoder.toBase58(recipientKey.publicKey.publicKey)] },
+        { recipientDids: [new DidKey(recipientKey).did] },
+      ]),
+      ...(recipientDid ? [{ recipientDids: [recipientDid] }] : []),
+    ]
+    const mediationRecords =
+      query.length > 0
+        ? await this.mediationRecipientService.findAllMediatorsByQuery(agentContext, {
+            role: DidCommMediationRole.Recipient,
+            $or: query,
+          })
+        : []
+
+    for (const mediationRecord of mediationRecords) {
+      await this.removeRouting(agentContext, { recipientKeys, mediatorId: mediationRecord.id, did }).catch((error) => {
+        agentContext.config.logger.warn(`Failed to remove routing from mediator '${mediationRecord.id}'`, {
+          did,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      })
+    }
+
+    this.eventEmitter.emit<DidCommRoutingDeletedEvent>(agentContext, {
+      type: DidCommRoutingEventTypes.RoutingDeletedEvent,
+      payload: { recipientKeys: publicJwks },
+    })
+
+    await Kms.deleteKmsKeys(agentContext, keys)
   }
 }
 

@@ -1,4 +1,4 @@
-import type { BaseEvent } from '@credo-ts/core'
+import type { BaseEvent, Kms } from '@credo-ts/core'
 import type { DidCommRouting } from '../../models'
 import type { DidCommMediationState } from './models/DidCommMediationState'
 import type { DidCommKeylistUpdate } from './protocol/v1/messages/DidCommKeylistUpdateMessage'
@@ -10,12 +10,20 @@ export enum DidCommRoutingEventTypes {
   RecipientKeylistUpdated = 'DidCommRecipientKeylistUpdated',
   RecipientKeylistUpdatedV2 = 'DidCommRecipientKeylistUpdatedV2',
   RoutingCreatedEvent = 'DidCommRoutingCreatedEvent',
+  RoutingDeletedEvent = 'DidCommRoutingDeletedEvent',
 }
 
 export interface DidCommRoutingCreatedEvent extends BaseEvent {
   type: typeof DidCommRoutingEventTypes.RoutingCreatedEvent
   payload: {
     routing: DidCommRouting
+  }
+}
+
+export interface DidCommRoutingDeletedEvent extends BaseEvent {
+  type: typeof DidCommRoutingEventTypes.RoutingDeletedEvent
+  payload: {
+    recipientKeys: Kms.PublicJwk[]
   }
 }
 

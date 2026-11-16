@@ -1,5 +1,6 @@
 import {
   AgentContext,
+  addCredentialHolderBindingDids,
   CredoError,
   DidsApi,
   InjectionSymbols,
@@ -611,20 +612,23 @@ export class OpenId4VciHolderService {
 
     try {
       for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationsToRequest) {
-        const { proofs, jwkThumbprintKmsKeyIdMapping } = await this.getCredentialRequestOptions(agentContext, {
-          allowedProofOfPossessionAlgorithms:
-            allowedProofOfPossessionSignatureAlgorithms ??
-            agentContext.resolve(Kms.KeyManagementApi).supportedJwaSignatureAlgorithms(),
-          metadata,
-          offeredCredential: {
-            id: offeredCredentialId,
-            configuration: offeredCredentialConfiguration,
-          },
-          clientId: options.clientId,
-          // We already checked whether nonce exists above
-          cNonce: cNonce as string,
-          credentialBindingResolver,
-        })
+        const { proofs, jwkThumbprintKmsKeyIdMapping, holderBindingDids } = await this.getCredentialRequestOptions(
+          agentContext,
+          {
+            allowedProofOfPossessionAlgorithms:
+              allowedProofOfPossessionSignatureAlgorithms ??
+              agentContext.resolve(Kms.KeyManagementApi).supportedJwaSignatureAlgorithms(),
+            metadata,
+            offeredCredential: {
+              id: offeredCredentialId,
+              configuration: offeredCredentialConfiguration,
+            },
+            clientId: options.clientId,
+            // We already checked whether nonce exists above
+            cNonce: cNonce as string,
+            credentialBindingResolver,
+          }
+        )
 
         this.logger.debug('Generated credential request proof of possession', { proofs })
 
@@ -682,6 +686,7 @@ export class OpenId4VciHolderService {
             interval: credentialResponse.interval,
             notificationId: credentialResponse.notification_id,
             jwkThumbprintKmsKeyIdMapping,
+            holderBindingDids,
             credentialResponseEncryption: credentialResponseEncryptionMode,
           }
 
@@ -696,6 +701,7 @@ export class OpenId4VciHolderService {
             credentialConfiguration: offeredCredentialConfiguration,
             jwkThumbprintKmsKeyIdMapping,
           })
+          addCredentialHolderBindingDids(credential.record, holderBindingDids ?? [])
 
           // Decoding the credential is only needed for the log
           if (this.logger.logLevel <= LogLevel.Debug) {
@@ -749,6 +755,7 @@ export class OpenId4VciHolderService {
       verifyCredentialStatus,
       accessToken,
       jwkThumbprintKmsKeyIdMapping,
+      holderBindingDids,
       credentialResponseEncryption: credentialResponseEncryptionMode,
     } = options
     const responseDecryptionKeys: Record<string, Kms.KmsKeyReference> = {}
@@ -806,6 +813,7 @@ export class OpenId4VciHolderService {
           interval: deferredCredentialResponse.interval,
           notificationId: deferredCredentialResponse.notification_id,
           jwkThumbprintKmsKeyIdMapping,
+          holderBindingDids,
           credentialResponseEncryption: credentialResponseEncryptionMode,
         }
 
@@ -820,6 +828,7 @@ export class OpenId4VciHolderService {
           credentialConfiguration: credentialConfiguration,
           jwkThumbprintKmsKeyIdMapping,
         })
+        addCredentialHolderBindingDids(credential.record, holderBindingDids ?? [])
 
         // Decoding the credential is only needed for the log
         if (this.logger.logLevel <= LogLevel.Debug) {
@@ -994,6 +1003,9 @@ export class OpenId4VciHolderService {
 
       const client = this.getClient(agentContext)
       return {
+        holderBindingDids: credentialBinding.createdForCredential
+          ? credentialBinding.didUrls.map((didUrl) => parseDid(didUrl).did)
+          : undefined,
         proofs: {
           jwt: await Promise.all(
             keys.map((key) =>

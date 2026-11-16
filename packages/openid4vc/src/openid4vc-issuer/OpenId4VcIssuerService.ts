@@ -76,6 +76,7 @@ import { storeActorIdForContextCorrelationId } from '../shared/router'
 import {
   credoJwtIssuerToOpenId4VcJwtIssuer,
   decodeJwtIssuer,
+  deleteCreatedKeyAfterFailure,
   encodeJwtIssuer,
   getJwkSignerKey,
   getPublicJwkFromDid,
@@ -88,6 +89,7 @@ import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import { type OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import type {
+  OpenId4VcDeleteIssuanceSessionOptions,
   OpenId4VciAccessTokenSigner,
   OpenId4VciAuthorizationCodeFlowConfig,
   OpenId4VciCreateCredentialOfferOptions,
@@ -96,6 +98,7 @@ import type {
   OpenId4VciCreateIssuerOptions,
   OpenId4VciCreateStatelessCredentialOfferOptions,
   OpenId4VciCredentialRequestAuthorization,
+  OpenId4VciCredentialRequestEncryptionKey,
   OpenId4VciCredentialRequestEncryptionOptions,
   OpenId4VciCredentialRequestToCredentialMapperOptions,
   OpenId4VciDynamicIssuanceAuthorizationFlow,
@@ -1340,19 +1343,19 @@ export class OpenId4VcIssuerService {
   public async deleteIssuanceSessionById(
     agentContext: AgentContext,
     issuanceSessionId: string,
-    options?: { deleteChainedDpopKey?: boolean }
+    options?: OpenId4VcDeleteIssuanceSessionOptions
   ) {
     const issuanceSession = await this.openId4VcIssuanceSessionRepository.getById(agentContext, issuanceSessionId)
     const chainedDpop = issuanceSession?.chainedIdentity?.externalDpop
 
-    await this.openId4VcIssuanceSessionRepository.deleteById(agentContext, issuanceSessionId)
-
-    // Deleted after the record, so a failed delete leaves an unused key rather than a session without its key
-    if ((options?.deleteChainedDpopKey ?? true) && chainedDpop?.keyGeneratedForSession) {
+    // Deleted before the record, so a failed delete keeps the session and deleting it again retries the key
+    if ((options?.deleteAssociatedDpopKey ?? true) && chainedDpop?.keyGeneratedForSession) {
       await agentContext
         .resolve(Kms.KeyManagementApi)
         .deleteKey({ keyId: chainedDpop.keyId, backend: chainedDpop.kmsBackend })
     }
+
+    await this.openId4VcIssuanceSessionRepository.deleteById(agentContext, issuanceSessionId)
   }
 
   public async getAllIssuers(agentContext: AgentContext) {
@@ -1481,12 +1484,10 @@ export class OpenId4VcIssuerService {
     options?: Pick<OpenId4VciCreateIssuerOptions, 'accessTokenSigner'>
   ) {
     const previousKey = issuer.resolvedAccessTokenPublicJwk
-    const accessTokenSignerKey = await getOrCreateAccessTokenSignerKey(
-      agentContext,
-      options?.accessTokenSigner ?? {
-        createKey: { type: { kty: 'OKP', crv: 'Ed25519' }, backend: previousKey.kmsBackend },
-      }
-    )
+    const signer = options?.accessTokenSigner ?? {
+      createKey: { type: { kty: 'OKP', crv: 'Ed25519' }, backend: previousKey.kmsBackend },
+    }
+    const accessTokenSignerKey = await getOrCreateAccessTokenSignerKey(agentContext, signer)
     // Deleting the previous keys would otherwise delete the key that signs
     if (issuer.resolvedAccessTokenPublicJwks.some((key) => key.keyId === accessTokenSignerKey.keyId)) {
       throw new CredoError(
@@ -1504,35 +1505,93 @@ export class OpenId4VcIssuerService {
     issuer.accessTokenPublicJwk = undefined
     issuer.accessTokenSignerKmsBackend = undefined
     issuer.accessTokenPublicKeyFingerprint = undefined
-    await this.openId4VcIssuerRepository.update(agentContext, issuer)
+
+    try {
+      await this.openId4VcIssuerRepository.update(agentContext, issuer)
+    } catch (error) {
+      if ('createKey' in signer) await deleteCreatedKeyAfterFailure(agentContext, accessTokenSignerKey)
+      throw error
+    }
   }
 
   /**
    * Deletes the access token signing keys that were rotated out, so tokens they signed no longer verify.
-   * Pass `keyIds` to only delete those previous keys.
+   * Pass `keyIds` to only delete those previous keys, and `deleteFromKms: false` to keep them in the KMS.
    */
   public async deletePreviousAccessTokenSigningKeys(
     agentContext: AgentContext,
     issuer: OpenId4VcIssuerRecord,
-    options?: { keyIds?: string[] }
+    options?: { keyIds?: string[]; deleteFromKms?: boolean }
   ) {
-    const kms = agentContext.resolve(Kms.KeyManagementApi)
-
     const previousKeys = issuer.previousAccessTokenKeys ?? []
     const unknownKeyIds = options?.keyIds?.filter((keyId) => !previousKeys.some((key) => key.keyId === keyId))
     if (unknownKeyIds?.length) {
       throw new CredoError(`No previous access token signing keys found with key ids '${unknownKeyIds.join("', '")}'.`)
     }
 
-    const shouldDelete = (keyId: string) => !options?.keyIds || options.keyIds.includes(keyId)
-    const remainingKeys = previousKeys.filter((key) => !shouldDelete(key.keyId))
-    issuer.previousAccessTokenKeys = remainingKeys.length ? remainingKeys : undefined
+    const { remainingKeys, deleteError } = await deletePreviousKeys(agentContext, previousKeys, options)
+    issuer.previousAccessTokenKeys = remainingKeys
     await this.openId4VcIssuerRepository.update(agentContext, issuer)
+    if (deleteError) throw deleteError
+  }
 
-    // Deleted after the record, so a failed delete leaves an unused key rather than a record pointing to a deleted key
-    for (const previousKey of previousKeys.filter((key) => shouldDelete(key.keyId))) {
-      await kms.deleteKey({ keyId: previousKey.keyId, backend: previousKey.kmsBackend })
+  public async rotateCredentialRequestEncryptionKey(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    options?: { key?: OpenId4VciCredentialRequestEncryptionKey }
+  ) {
+    const current = issuer.credentialRequestEncryption
+    const currentKeys = [...(current?.keys ?? []), ...(current?.previousKeys ?? [])]
+
+    const key = options?.key ?? {
+      createKey: { type: { kty: 'EC', crv: 'P-256' }, backend: current?.keys[0].kmsBackend },
     }
+    const encryptionKey = await getOrCreateCredentialRequestEncryptionKey(agentContext, key)
+    // Deleting the previous keys would otherwise delete the key that decrypts
+    if (currentKeys.some(({ keyId }) => keyId === encryptionKey.keyId)) {
+      throw new CredoError(
+        `Key with key id '${encryptionKey.keyId}' is already a credential request encryption key of the issuer.`
+      )
+    }
+
+    // The previous keys keep decrypting requests until they're deleted with deletePreviousCredentialRequestEncryptionKeys
+    issuer.credentialRequestEncryption = {
+      required: current?.required,
+      keys: [toOpenId4VcIssuerRecordKey(Kms.PublicJwk.fromKmsKey(encryptionKey))],
+      previousKeys: currentKeys.length ? currentKeys : undefined,
+    }
+
+    try {
+      await this.updateIssuer(agentContext, issuer)
+    } catch (error) {
+      if ('createKey' in key) await deleteCreatedKeyAfterFailure(agentContext, encryptionKey)
+      throw error
+    }
+  }
+
+  /**
+   * Deletes the credential request encryption keys that were rotated out, so requests encrypted to them no longer
+   * decrypt. Pass `keyIds` to only delete those previous keys, and `deleteFromKms: false` to keep them in the KMS.
+   */
+  public async deletePreviousCredentialRequestEncryptionKeys(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    options?: { keyIds?: string[]; deleteFromKms?: boolean }
+  ) {
+    const current = issuer.credentialRequestEncryption
+    const previousKeys = current?.previousKeys ?? []
+    const unknownKeyIds = options?.keyIds?.filter((keyId) => !previousKeys.some((key) => key.keyId === keyId))
+    if (unknownKeyIds?.length) {
+      throw new CredoError(
+        `No previous credential request encryption keys found with key ids '${unknownKeyIds.join("', '")}'.`
+      )
+    }
+    if (!current) return
+
+    const { remainingKeys, deleteError } = await deletePreviousKeys(agentContext, previousKeys, options)
+    issuer.credentialRequestEncryption = { ...current, previousKeys: remainingKeys }
+    await this.openId4VcIssuerRepository.update(agentContext, issuer)
+    if (deleteError) throw deleteError
   }
 
   /**
@@ -2644,6 +2703,47 @@ async function getOrCreateAccessTokenSignerKey(
   }
 
   return { keyId: signer.keyId, backend, publicJwk: publicKey }
+}
+
+async function getOrCreateCredentialRequestEncryptionKey(
+  agentContext: AgentContext,
+  key: OpenId4VciCredentialRequestEncryptionKey
+) {
+  const kms = agentContext.resolve(Kms.KeyManagementApi)
+  if ('createKey' in key) return kms.createKey(key.createKey)
+
+  const { publicKey, backend } = await kms.getPublicKey({ keyId: key.keyId, backend: key.kmsBackend })
+  if (publicKey.kty === 'oct' || !Kms.allowedKeyDerivationAlgsForKey(publicKey).includes('ECDH-ES')) {
+    throw new CredoError(`Key with key id '${key.keyId}' can't decrypt credential requests.`)
+  }
+
+  return { keyId: key.keyId, backend, publicJwk: publicKey }
+}
+
+/**
+ * Deletes the previous keys, or only those in `keyIds`, and returns the keys to keep. A key that failed to delete is
+ * kept, so deleting again retries it. With `deleteFromKms: false` the keys are only removed from the record.
+ */
+async function deletePreviousKeys<Key extends Kms.KmsKeyReference>(
+  agentContext: AgentContext,
+  previousKeys: Key[],
+  { keyIds, deleteFromKms = true }: { keyIds?: string[]; deleteFromKms?: boolean } = {}
+) {
+  const shouldDelete = (keyId: string) => !keyIds || keyIds.includes(keyId)
+  const deleteError = await Kms.deleteKmsKeys(
+    agentContext,
+    deleteFromKms ? previousKeys.filter((key) => shouldDelete(key.keyId)) : []
+  ).then(
+    () => undefined,
+    (error) => {
+      if (error instanceof Kms.KeyManagementKeysNotDeletedError) return error
+      throw error
+    }
+  )
+  const failedKeyIds = deleteError?.keys.map(({ keyId }) => keyId) ?? []
+
+  const remainingKeys = previousKeys.filter((key) => !shouldDelete(key.keyId) || failedKeyIds.includes(key.keyId))
+  return { remainingKeys: remainingKeys.length ? remainingKeys : undefined, deleteError }
 }
 
 function warnMissingIssuerKmsBackends(

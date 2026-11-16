@@ -18,6 +18,14 @@ export interface DidCommSignedAttachmentWithJwkCreateOfferOptions extends DidCom
 export interface DidCommSignedAttachmentCredentialRequestOptions {
   kid: string
   alg?: string
+
+  /**
+   * Whether the DID of `kid` was created only for this credential. The credential record then stores it, and deleting
+   * the credential with `deleteAssociatedKeys` deletes the DID record and its keys.
+   *
+   * @default false
+   */
+  createdForCredential?: boolean
 }
 
 export type DidCommSignedAttachmentWithJwkCredentialRequestOptions = XOR<

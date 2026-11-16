@@ -1,5 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
 import {
+  addCredentialHolderBindingDids,
+  asArray,
   ClaimFormat,
   CredoError,
   DidResolverService,
@@ -16,6 +18,8 @@ import {
 } from '@credo-ts/core'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../../decorators/attachment/DidCommAttachment'
 import { DidCommCredentialFormatSpec } from '../../models/DidCommCredentialFormatSpec'
+import type { DidCommCredentialExchangeRecord } from '../../repository/DidCommCredentialExchangeRecord'
+import { addExchangeHolderBindingDids, takeExchangeHolderBindingDids } from '../../util/holderBinding'
 import type { DidCommCredentialFormatService } from '../DidCommCredentialFormatService'
 import type {
   DidCommCredentialFormatAcceptOfferOptions,
@@ -60,7 +64,10 @@ export class DidCommJsonLdCredentialFormatService
    */
   public async createProposal(
     _agentContext: AgentContext,
-    { credentialFormats }: DidCommCredentialFormatCreateProposalOptions<DidCommJsonLdCredentialFormat>
+    {
+      credentialFormats,
+      credentialExchangeRecord,
+    }: DidCommCredentialFormatCreateProposalOptions<DidCommJsonLdCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateProposalReturn> {
     const format = new DidCommCredentialFormatSpec({
       format: JSONLD_VC_DETAIL,
@@ -70,12 +77,14 @@ export class DidCommJsonLdCredentialFormatService
     if (!jsonLdFormat) {
       throw new CredoError('Missing jsonld payload in createProposal')
     }
+    const { didCreatedForCredential, ...credentialDetail } = jsonLdFormat
 
     // this does the validation
-    JsonTransformer.fromJSON(jsonLdFormat.credential, DidCommJsonLdCredentialDetail)
+    JsonTransformer.fromJSON(credentialDetail.credential, DidCommJsonLdCredentialDetail)
+    this.addDidCreatedForCredential(credentialExchangeRecord, credentialDetail.credential, didCreatedForCredential)
 
-    // jsonLdFormat is now of type JsonLdFormatDataCredentialDetail
-    const attachment = this.getFormatData(jsonLdFormat, format.attachmentId)
+    // credentialDetail is now of type JsonLdFormatDataCredentialDetail
+    const attachment = this.getFormatData(credentialDetail, format.attachmentId)
     return { format, attachment }
   }
 
@@ -177,12 +186,22 @@ export class DidCommJsonLdCredentialFormatService
 
   public async acceptOffer(
     _agentContext: AgentContext,
-    { attachmentId, offerAttachment }: DidCommCredentialFormatAcceptOfferOptions<DidCommJsonLdCredentialFormat>
+    {
+      attachmentId,
+      offerAttachment,
+      credentialFormats,
+      credentialExchangeRecord,
+    }: DidCommCredentialFormatAcceptOfferOptions<DidCommJsonLdCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateReturn> {
     const credentialOffer = offerAttachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
     // validate
     JsonTransformer.fromJSON(credentialOffer, DidCommJsonLdCredentialDetail)
+    this.addDidCreatedForCredential(
+      credentialExchangeRecord,
+      credentialOffer.credential,
+      credentialFormats?.jsonld?.didCreatedForCredential
+    )
 
     const format = new DidCommCredentialFormatSpec({
       attachmentId,
@@ -202,7 +221,10 @@ export class DidCommJsonLdCredentialFormatService
    */
   public async createRequest(
     _agentContext: AgentContext,
-    { credentialFormats }: DidCommCredentialFormatCreateRequestOptions<DidCommJsonLdCredentialFormat>
+    {
+      credentialFormats,
+      credentialExchangeRecord,
+    }: DidCommCredentialFormatCreateRequestOptions<DidCommJsonLdCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateReturn> {
     const jsonLdFormat = credentialFormats?.jsonld
 
@@ -213,11 +235,13 @@ export class DidCommJsonLdCredentialFormatService
     if (!jsonLdFormat) {
       throw new CredoError('Missing jsonld payload in createRequest')
     }
+    const { didCreatedForCredential, ...credentialDetail } = jsonLdFormat
 
     // this does the validation
-    JsonTransformer.fromJSON(jsonLdFormat.credential, DidCommJsonLdCredentialDetail)
+    JsonTransformer.fromJSON(credentialDetail.credential, DidCommJsonLdCredentialDetail)
+    this.addDidCreatedForCredential(credentialExchangeRecord, credentialDetail.credential, didCreatedForCredential)
 
-    const attachment = this.getFormatData(jsonLdFormat, format.attachmentId)
+    const attachment = this.getFormatData(credentialDetail, format.attachmentId)
 
     return { format, attachment }
   }
@@ -344,9 +368,12 @@ export class DidCommJsonLdCredentialFormatService
       throw new CredoError(`Failed to validate credential, error = ${result.error}`)
     }
 
-    const verifiableCredential = await w3cCredentialService.storeCredential(agentContext, {
-      record: W3cCredentialRecord.fromCredential(credential),
-    })
+    const credentialRecord = W3cCredentialRecord.fromCredential(credential)
+    addCredentialHolderBindingDids(
+      credentialRecord,
+      takeExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey)
+    )
+    const verifiableCredential = await w3cCredentialService.storeCredential(agentContext, { record: credentialRecord })
 
     credentialExchangeRecord.credentials.push({
       credentialRecordType: this.credentialRecordType,
@@ -400,6 +427,24 @@ export class DidCommJsonLdCredentialFormatService
     // TODO: add check for the credentialStatus once this is supported in Credo
   }
 
+  private addDidCreatedForCredential(
+    credentialExchangeRecord: DidCommCredentialExchangeRecord,
+    credential: JsonCredential,
+    didCreatedForCredential?: string
+  ) {
+    if (!didCreatedForCredential) return
+
+    // The issuer writes the subject of an offer, so the holder can only mark a DID the credential is bound to
+    const subjectIds = asArray(credential.credentialSubject).map((subject) => subject.id)
+    if (!subjectIds.includes(didCreatedForCredential)) {
+      throw new CredoError(
+        `didCreatedForCredential '${didCreatedForCredential}' is not a credentialSubject id of the credential`
+      )
+    }
+
+    addExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey, [didCreatedForCredential])
+  }
+
   /**
    * Returns the requested credential with the `@context` of the agreed proof type's signature suite
    * appended, mirroring what the issuer's suite does when signing. Returns the requested credential
@@ -423,10 +468,14 @@ export class DidCommJsonLdCredentialFormatService
     return supportedFormats.includes(format)
   }
 
-  public async deleteCredentialById(agentContext: AgentContext, credentialRecordId: string): Promise<void> {
+  public async deleteCredentialById(
+    agentContext: AgentContext,
+    credentialRecordId: string,
+    options?: { deleteAssociatedKeys?: boolean }
+  ): Promise<void> {
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
 
-    await w3cCredentialService.removeCredentialRecord(agentContext, credentialRecordId)
+    await w3cCredentialService.removeCredentialRecord(agentContext, credentialRecordId, options)
   }
 
   public areCredentialsEqual = (message1: DidCommAttachment, message2: DidCommAttachment): boolean => {

@@ -75,6 +75,7 @@ import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import {
   credoJwtIssuerToOpenId4VcJwtIssuer,
   dcqlCredentialQueryToPresentationFormat,
+  deleteCreatedKeyAfterFailure,
   getPublishedJwk,
 } from '../shared/utils'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
@@ -88,6 +89,7 @@ import type {
   OpenId4VpCreateAuthorizationRequestOptions,
   OpenId4VpCreateAuthorizationRequestReturn,
   OpenId4VpCreateVerifierOptions,
+  OpenId4VpDeleteVerificationSessionOptions,
   OpenId4VpVerifiedAuthorizationResponse,
   OpenId4VpVerifiedAuthorizationResponseDcql,
   OpenId4VpVerifiedAuthorizationResponsePresentationExchange,
@@ -330,76 +332,86 @@ export class OpenId4VpVerifierService {
       dcqlQuery: options.dcql?.query,
     })
 
-    const requestParamsBase = {
-      nonce,
-      presentation_definition: options.presentationExchange?.definition,
-      dcql_query: options.dcql?.query,
-      transaction_data: options.transactionData?.map((entry) => JsonEncoder.toBase64Url(entry)),
-      response_mode: responseMode,
-      response_type: 'vp_token',
-      client_metadata,
-      verifier_info: options.verifierInfo,
-    } as const
+    try {
+      const requestParamsBase = {
+        nonce,
+        presentation_definition: options.presentationExchange?.definition,
+        dcql_query: options.dcql?.query,
+        transaction_data: options.transactionData?.map((entry) => JsonEncoder.toBase64Url(entry)),
+        response_mode: responseMode,
+        response_type: 'vp_token',
+        client_metadata,
+        verifier_info: options.verifierInfo,
+      } as const
 
-    const expiresInSeconds = options.expirationInSeconds ?? this.config.authorizationRequestExpiresInSeconds
-    const createdAt = new Date()
-    const expiresAt = utils.addSecondsToDate(createdAt, expiresInSeconds)
+      const expiresInSeconds = options.expirationInSeconds ?? this.config.authorizationRequestExpiresInSeconds
+      const createdAt = new Date()
+      const expiresAt = utils.addSecondsToDate(createdAt, expiresInSeconds)
 
-    const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
-    const authorizationRequest = await openid4vpVerifier.createOpenId4vpAuthorizationRequest({
-      jar: jwtIssuer
-        ? {
-            jwtSigner: jwtIssuer,
-            requestUri: hostedAuthorizationRequestUri,
-            expiresInSeconds,
-          }
-        : undefined,
-      authorizationRequestPayload:
-        requestParamsBase.response_mode === 'dc_api.jwt' || requestParamsBase.response_mode === 'dc_api'
+      const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
+      const authorizationRequest = await openid4vpVerifier.createOpenId4vpAuthorizationRequest({
+        jar: jwtIssuer
           ? {
-              ...requestParamsBase,
-              // No client_id for unsigned DC API requests
-              client_id: jwtIssuer ? client_id : undefined,
-              response_mode: requestParamsBase.response_mode,
-              expected_origins: options.expectedOrigins,
+              jwtSigner: jwtIssuer,
+              requestUri: hostedAuthorizationRequestUri,
+              expiresInSeconds,
             }
-          : {
-              ...requestParamsBase,
-              response_mode: requestParamsBase.response_mode,
-              client_id: client_id as string,
-              state,
-              response_uri: authorizationResponseUrl,
-              client_id_scheme: legacyClientIdScheme,
-            },
-    })
+          : undefined,
+        authorizationRequestPayload:
+          requestParamsBase.response_mode === 'dc_api.jwt' || requestParamsBase.response_mode === 'dc_api'
+            ? {
+                ...requestParamsBase,
+                // No client_id for unsigned DC API requests
+                client_id: jwtIssuer ? client_id : undefined,
+                response_mode: requestParamsBase.response_mode,
+                expected_origins: options.expectedOrigins,
+              }
+            : {
+                ...requestParamsBase,
+                response_mode: requestParamsBase.response_mode,
+                client_id: client_id as string,
+                state,
+                response_uri: authorizationResponseUrl,
+                client_id_scheme: legacyClientIdScheme,
+              },
+      })
 
-    const verificationSession = new OpenId4VcVerificationSessionRecord({
-      authorizationResponseRedirectUri: options.authorizationResponseRedirectUri,
+      const verificationSession = new OpenId4VcVerificationSessionRecord({
+        authorizationResponseRedirectUri: options.authorizationResponseRedirectUri,
 
-      // Only store payload for unsigned requests
-      authorizationRequestPayload: authorizationRequest.jar
-        ? undefined
-        : (authorizationRequest.authorizationRequestPayload as OpenId4VpAuthorizationRequestPayload),
-      authorizationRequestJwt: authorizationRequest.jar?.authorizationRequestJwt,
-      authorizationRequestUri: hostedAuthorizationRequestUri,
-      authorizationRequestId,
-      state: OpenId4VcVerificationSessionState.RequestCreated,
-      verifierId: options.verifier.verifierId,
-      createdAt,
-      expiresAt,
-      openId4VpVersion: version,
-      responseEncryptionKey,
-    })
-    for (const [key, value] of Object.entries(options.recordMetadata ?? {})) {
-      verificationSession.metadata.set(key, value)
-    }
-    await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
-    this.emitStateChangedEvent(agentContext, verificationSession, null)
+        // Only store payload for unsigned requests
+        authorizationRequestPayload: authorizationRequest.jar
+          ? undefined
+          : (authorizationRequest.authorizationRequestPayload as OpenId4VpAuthorizationRequestPayload),
+        authorizationRequestJwt: authorizationRequest.jar?.authorizationRequestJwt,
+        authorizationRequestUri: hostedAuthorizationRequestUri,
+        authorizationRequestId,
+        state: OpenId4VcVerificationSessionState.RequestCreated,
+        verifierId: options.verifier.verifierId,
+        createdAt,
+        expiresAt,
+        openId4VpVersion: version,
+        responseEncryptionKey,
+      })
+      for (const [key, value] of Object.entries(options.recordMetadata ?? {})) {
+        verificationSession.metadata.set(key, value)
+      }
+      await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
+      this.emitStateChangedEvent(agentContext, verificationSession, null)
 
-    return {
-      authorizationRequest: authorizationRequest.authorizationRequest,
-      verificationSession,
-      authorizationRequestObject: authorizationRequest.authorizationRequestObject,
+      return {
+        authorizationRequest: authorizationRequest.authorizationRequest,
+        verificationSession,
+        authorizationRequestObject: authorizationRequest.authorizationRequestObject,
+      }
+    } catch (error) {
+      if (responseEncryptionKey) {
+        await deleteCreatedKeyAfterFailure(agentContext, {
+          keyId: responseEncryptionKey.keyId,
+          backend: responseEncryptionKey.kmsBackend,
+        })
+      }
+      throw error
     }
   }
 
@@ -1008,8 +1020,38 @@ export class OpenId4VpVerifierService {
     return this.openId4VcVerificationSessionRepository.getById(agentContext, verificationSessionId)
   }
 
-  public async deleteVerificationSessionById(agentContext: AgentContext, verificationSessionId: string) {
-    await this.openId4VcVerificationSessionRepository.deleteById(agentContext, verificationSessionId)
+  public async deleteVerificationSessionById(
+    agentContext: AgentContext,
+    verificationSessionId: string,
+    options?: OpenId4VpDeleteVerificationSessionOptions
+  ) {
+    const verificationSession = await this.openId4VcVerificationSessionRepository.getById(
+      agentContext,
+      verificationSessionId
+    )
+
+    const clientJwks = verificationSession.requestPayload.client_metadata?.jwks
+    const deleteAssociatedKey = options?.deleteAssociatedKey ?? true
+
+    // Sessions from before `responseEncryptionKey` published the KMS key id as the `kid` of the encryption key,
+    // or before Credo 0.6 the fingerprint of a key stored under its legacy key id
+    const encryptionJwk = clientJwks?.keys.find((key) => key.use === 'enc')
+    let legacyKeyId = encryptionJwk?.kid
+    if (encryptionJwk && legacyKeyId) {
+      const publicJwk = Kms.PublicJwk.fromUnknown(encryptionJwk)
+      if (publicJwk.fingerprint === legacyKeyId) legacyKeyId = publicJwk.legacyKeyId
+    }
+    const responseEncryptionKey =
+      verificationSession.responseEncryptionKey ?? (legacyKeyId ? { keyId: legacyKeyId } : undefined)
+
+    if (deleteAssociatedKey && responseEncryptionKey) {
+      // Returns false if the key was already gone, which is the state we want it in
+      await agentContext
+        .resolve(Kms.KeyManagementApi)
+        .deleteKey({ keyId: responseEncryptionKey.keyId, backend: responseEncryptionKey.kmsBackend })
+    }
+
+    await this.openId4VcVerificationSessionRepository.delete(agentContext, verificationSession)
   }
 
   private async getClientMetadata(

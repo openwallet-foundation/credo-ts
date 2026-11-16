@@ -2,11 +2,13 @@ import { AgentContext, injectable } from '@credo-ts/core'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService, toCredentialRequestEncryptionRecord } from './OpenId4VcIssuerService'
 import type {
+  OpenId4VcDeleteIssuanceSessionOptions,
   OpenId4VciCreateCredentialOfferOptions,
   OpenId4VciCreateCredentialResponseOptions,
   OpenId4VciCreateDeferredCredentialResponseOptions,
   OpenId4VciCreateIssuerOptions,
   OpenId4VciCreateStatelessCredentialOfferOptions,
+  OpenId4VciCredentialRequestEncryptionKey,
   OpenId4VcUpdateIssuerOptions,
   OpenId4VcUpdateIssuerRecordOptions,
 } from './OpenId4VcIssuerServiceOptions'
@@ -58,13 +60,47 @@ export class OpenId4VcIssuerApi {
 
   /**
    * Deletes the access token signing keys that were rotated out. Tokens they signed no longer verify, so call this once
-   * those tokens have expired. Pass `keyIds` to only delete those previous keys.
+   * those tokens have expired. Pass `keyIds` to only delete those previous keys, and `deleteFromKms: false` to only
+   * remove them from the issuer and keep them in the KMS, for example when their backend no longer exists.
    *
    * The issuer record isn't locked, so don't run this while the issuer is updated elsewhere, or one update is lost.
    */
-  public async deletePreviousAccessTokenSigningKeys(issuerId: string, options?: { keyIds?: string[] }) {
+  public async deletePreviousAccessTokenSigningKeys(
+    issuerId: string,
+    options?: { keyIds?: string[]; deleteFromKms?: boolean }
+  ) {
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
     return this.openId4VcIssuerService.deletePreviousAccessTokenSigningKeys(this.agentContext, issuer, options)
+  }
+
+  /**
+   * Rotate the credential request encryption key of the issuer with the given issuerId. The metadata advertises the new
+   * key instead of the current keys. Without `key`, a new P-256 key is created in the backend of the current key.
+   *
+   * The issuer record isn't locked, so don't run this while the issuer is updated elsewhere, or one update is lost.
+   */
+  public async rotateCredentialRequestEncryptionKey(
+    issuerId: string,
+    options?: { key?: OpenId4VciCredentialRequestEncryptionKey }
+  ) {
+    const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
+    return this.openId4VcIssuerService.rotateCredentialRequestEncryptionKey(this.agentContext, issuer, options)
+  }
+
+  /**
+   * Deletes the credential request encryption keys that were rotated out. Requests encrypted to them no longer
+   * decrypt, so call this once wallets use the new key. Pass `keyIds` to only delete those previous keys, and
+   * `deleteFromKms: false` to only remove them from the issuer and keep them in the KMS, for example when their backend
+   * no longer exists.
+   *
+   * The issuer record isn't locked, so don't run this while the issuer is updated elsewhere, or one update is lost.
+   */
+  public async deletePreviousCredentialRequestEncryptionKeys(
+    issuerId: string,
+    options?: { keyIds?: string[]; deleteFromKms?: boolean }
+  ) {
+    const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
+    return this.openId4VcIssuerService.deletePreviousCredentialRequestEncryptionKeys(this.agentContext, issuer, options)
   }
 
   public async updateIssuerMetadata(options: OpenId4VcUpdateIssuerRecordOptions) {
@@ -172,12 +208,9 @@ export class OpenId4VcIssuerApi {
   }
 
   /**
-   * Delete an issuance session record by id.
-   *
-   * @param options.deleteChainedDpopKey Delete the chained authorization server DPoP key that Credo
-   * generated for this session. Caller-configured keys are never deleted. Defaults to `true`.
+   * Delete an issuance session record by id, and by default the DPoP key Credo generated for it.
    */
-  public async deleteIssuanceSessionById(issuanceSessionId: string, options?: { deleteChainedDpopKey?: boolean }) {
+  public async deleteIssuanceSessionById(issuanceSessionId: string, options?: OpenId4VcDeleteIssuanceSessionOptions) {
     return this.openId4VcIssuerService.deleteIssuanceSessionById(this.agentContext, issuanceSessionId, options)
   }
 }

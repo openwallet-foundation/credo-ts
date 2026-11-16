@@ -1,5 +1,4 @@
 import type {
-  DidRepository,
   IDisclosureFrame,
   JsonObject,
   JwsDetachedFormat,
@@ -11,9 +10,11 @@ import {
   CacheModuleConfig,
   ClaimFormat,
   DidDocumentBuilder,
+  DidRepository,
   DidResolverService,
   DidsApi,
   DidsModuleConfig,
+  getCredentialHolderBindingDids,
   getEd25519VerificationKey2018,
   InjectionSymbols,
   InMemoryLruCache,
@@ -58,6 +59,10 @@ import {
   V2CredentialProblemReportError,
 } from '../src'
 import { createDidCommSignedAttachment } from '../src/modules/credentials/util/didCommSignedAttachment'
+import {
+  addExchangeHolderBindingDids,
+  deleteExchangeHolderBinding,
+} from '../src/modules/credentials/util/holderBinding'
 
 const agentConfig = getAgentConfig('W3cV2SdJwt format service test')
 const inMemoryStorageService = new InMemoryStorageService()
@@ -113,6 +118,51 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
 
   test('issuance flow with didcomm_signed_attachment binding', async () => {
     await issuanceFlowTest({ issuerKdv, holderKdv, bindingRequired: true })
+  })
+
+  test('deletes the holder DID created for the credential with deleteAssociatedKeys', async () => {
+    const createdHolderKdv = await createDidKidVerificationMethod(agentContext)
+    const { credentialRecordId } = await issuanceFlowTest({
+      issuerKdv,
+      holderKdv: createdHolderKdv,
+      bindingRequired: true,
+      createdForCredential: true,
+    })
+
+    const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
+    const storedRecord = await w3cV2CredentialService.getCredentialRecordById(agentContext, credentialRecordId)
+    expect(getCredentialHolderBindingDids(storedRecord)).toEqual([createdHolderKdv.did])
+
+    const didRepository = agentContext.resolve(DidRepository)
+    const [didRecord] = await didRepository.getCreatedDids(agentContext, { did: createdHolderKdv.did })
+    const keyId = didRecord.keys?.[0].kmsKeyId as string
+
+    await formatService.deleteCredentialById(agentContext, credentialRecordId, { deleteAssociatedKeys: true })
+
+    expect(await didRepository.findCreatedDid(agentContext, createdHolderKdv.did)).toBeNull()
+    await expect(agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId })).rejects.toThrow('not found')
+  })
+
+  test('stores only its own holder DID when another format in the exchange has one', async () => {
+    const createdHolderKdv = await createDidKidVerificationMethod(agentContext)
+    const otherFormatKdv = await createDidKidVerificationMethod(agentContext)
+    const { credentialRecordId, holderCredentialRecord } = await issuanceFlowTest({
+      issuerKdv,
+      holderKdv: createdHolderKdv,
+      bindingRequired: true,
+      createdForCredential: true,
+      otherFormatHolderBindingDid: otherFormatKdv.did,
+    })
+
+    const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
+    const storedRecord = await w3cV2CredentialService.getCredentialRecordById(agentContext, credentialRecordId)
+    expect(getCredentialHolderBindingDids(storedRecord)).toEqual([createdHolderKdv.did])
+
+    await deleteExchangeHolderBinding(agentContext, holderCredentialRecord)
+
+    const didRepository = agentContext.resolve(DidRepository)
+    expect(await didRepository.findCreatedDid(agentContext, otherFormatKdv.did)).toBeNull()
+    expect(await didRepository.findCreatedDid(agentContext, createdHolderKdv.did)).not.toBeNull()
   })
 
   test('sets the credential subject id from the credentialSubjectId option for a bearer credential', async () => {
@@ -1055,8 +1105,10 @@ async function issuanceFlowTest(options: {
   issuerKdv: CreateDidKidVerificationMethodReturn
   holderKdv: CreateDidKidVerificationMethodReturn
   bindingRequired: boolean
+  createdForCredential?: boolean
+  otherFormatHolderBindingDid?: string
 }) {
-  const { issuerKdv: issuer, holderKdv: holder, bindingRequired } = options
+  const { issuerKdv: issuer, holderKdv: holder, bindingRequired, createdForCredential } = options
 
   const holderCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v2',
@@ -1064,6 +1116,9 @@ async function issuanceFlowTest(options: {
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
     role: DidCommCredentialRole.Holder,
   })
+  if (options.otherFormatHolderBindingDid) {
+    addExchangeHolderBindingDids(holderCredentialRecord, 'dataIntegrity', [options.otherFormatHolderBindingDid])
+  }
 
   const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v2',
@@ -1114,7 +1169,7 @@ async function issuanceFlowTest(options: {
       credentialExchangeRecord: holderCredentialRecord,
       offerAttachment,
       credentialFormats: bindingRequired
-        ? { w3cV2SdJwt: { didCommSignedAttachment: { kid: holder.kid } } }
+        ? { w3cV2SdJwt: { didCommSignedAttachment: { kid: holder.kid, createdForCredential } } }
         : { w3cV2SdJwt: {} },
     })
 
@@ -1166,4 +1221,6 @@ async function issuanceFlowTest(options: {
       expect(credential.sdJwt.prettyClaims.cnf).toBeDefined()
     }
   }
+
+  return { credentialRecordId, holderCredentialRecord }
 }

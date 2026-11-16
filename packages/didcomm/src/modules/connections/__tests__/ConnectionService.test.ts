@@ -5,9 +5,16 @@ import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { Kms, TypedArrayEncoder } from '../../../../../core/src/index'
 import { DidDocumentRole } from '../../../../../core/src/modules/dids/domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../../../../core/src/modules/dids/repository'
-import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../core/tests/helpers'
+import {
+  getAgentConfig,
+  getAgentContext,
+  getMockConnection,
+  getMockOutOfBand,
+  mockFunction,
+} from '../../../../../core/tests/helpers'
 import { DidCommMessage } from '../../../DidCommMessage'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
+import { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
 import type { DidCommRouting } from '../../../models'
 import { DidCommInboundMessageContext } from '../../../models'
 import { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
@@ -144,6 +151,16 @@ describe('DidCommConnectionService', () => {
   })
 
   describe('assertConnectionOrOutOfBandExchange', () => {
+    beforeEach(() => {
+      mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(getMockOutOfBand())
+      mockFunction(outOfBandService.getResolvedServiceForOutOfBandServices).mockResolvedValue({
+        id: '#inline-0',
+        serviceEndpoint: '',
+        recipientKeys: [],
+        routingKeys: [],
+      })
+    })
+
     it('should throw an error when a expectedConnectionId is present, but no connection is present in the messageContext', async () => {
       expect.assertions(1)
 
@@ -197,7 +214,7 @@ describe('DidCommConnectionService', () => {
       )
     })
 
-    it('should not throw an error when no connection record is present in the messageContext and no additional data, but the message has a ~service decorator', async () => {
+    it('should throw an error when no connection record and no out of band record are present, but the message has a ~service decorator', async () => {
       expect.assertions(1)
 
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(null)
@@ -210,7 +227,9 @@ describe('DidCommConnectionService', () => {
       })
       const messageContext = new DidCommInboundMessageContext(message, { agentContext })
 
-      await expect(connectionService.assertConnectionOrOutOfBandExchange(messageContext)).resolves.not.toThrow()
+      await expect(connectionService.assertConnectionOrOutOfBandExchange(messageContext)).rejects.toThrow(
+        'No out of band record found for connection-less message'
+      )
     })
 
     it('should not throw when a fully valid connection-less input is passed', async () => {
@@ -234,12 +253,13 @@ describe('DidCommConnectionService', () => {
         routingKeys: [],
       })
 
-      const lastReceivedMessage = new DidCommMessage()
-      lastReceivedMessage.setService({
+      const theirService = new ServiceDecorator({
         recipientKeys: [TypedArrayEncoder.toBase58(senderKey.publicKey.publicKey)],
         serviceEndpoint: '',
         routingKeys: [],
       })
+      const lastReceivedMessage = new DidCommMessage()
+      lastReceivedMessage.service = theirService
 
       const message = new DidCommMessage()
       message.setService({
@@ -248,6 +268,9 @@ describe('DidCommConnectionService', () => {
         routingKeys: [],
       })
       const messageContext = new DidCommInboundMessageContext(message, { agentContext, recipientKey, senderKey })
+      mockFunction(outOfBandService.getResolvedServiceForOutOfBandServices).mockResolvedValue(
+        theirService.resolvedDidCommService
+      )
 
       await expect(
         connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
@@ -351,11 +374,12 @@ describe('DidCommConnectionService', () => {
       const anotherKeyBase58 = '6fioC1zcDPyPEL19pXRS2E4iJ46zH7xP6uSgAaPdwDrx'
 
       const lastReceivedMessage = new DidCommMessage()
-      lastReceivedMessage.setService({
+      const theirService = new ServiceDecorator({
         recipientKeys: [anotherKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
       })
+      lastReceivedMessage.service = theirService
 
       const lastSentMessage = new DidCommMessage()
       lastSentMessage.setService({
@@ -378,6 +402,9 @@ describe('DidCommConnectionService', () => {
           publicKey: TypedArrayEncoder.fromBase58(ourRecipientKeyBase58),
         }),
       })
+      mockFunction(outOfBandService.getResolvedServiceForOutOfBandServices).mockResolvedValue(
+        theirService.resolvedDidCommService
+      )
 
       await expect(
         connectionService.assertConnectionOrOutOfBandExchange(messageContext, {

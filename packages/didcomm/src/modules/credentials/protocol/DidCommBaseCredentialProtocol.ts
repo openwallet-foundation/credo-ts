@@ -14,6 +14,7 @@ import type { DidCommCredentialRole } from '../models'
 import { DidCommCredentialState } from '../models/DidCommCredentialState'
 import type { DidCommCredentialExchangeRecord } from '../repository'
 import { DidCommCredentialExchangeRepository } from '../repository'
+import { deleteExchangeHolderBinding } from '../util/holderBinding'
 import type { DidCommCredentialProtocol } from './DidCommCredentialProtocol'
 import type {
   AcceptCredentialOfferOptions,
@@ -283,9 +284,14 @@ export abstract class DidCommBaseCredentialProtocol<
     if (deleteAssociatedCredentials) {
       for (const credential of credentialExchangeRecord.credentials) {
         const formatService = this.getFormatServiceForRecordType(credential.credentialRecordType)
-        await formatService.deleteCredentialById(agentContext, credential.credentialRecordId)
+        await formatService.deleteCredentialById(agentContext, credential.credentialRecordId, {
+          deleteAssociatedKeys: options?.deleteAssociatedKeys,
+        })
       }
     }
+
+    // Only DIDs of credentials that weren't stored: a stored credential record took over its own
+    if (options?.deleteAssociatedKeys) await deleteExchangeHolderBinding(agentContext, credentialExchangeRecord)
 
     if (deleteAssociatedDidCommMessages) {
       const didCommMessages = await didCommMessageRepository.findByQuery(agentContext, {

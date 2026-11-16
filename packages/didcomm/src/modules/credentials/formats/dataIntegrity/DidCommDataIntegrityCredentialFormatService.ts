@@ -1,14 +1,18 @@
 import {
   type AgentContext,
   ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE,
+  addCredentialHolderBindingDids,
+  asArray,
   ClaimFormat,
   CredoError,
   DidsApi,
   deepEquality,
+  deleteCredentialHolderBinding,
   getPublicJwkFromVerificationMethod,
   type JsonObject,
   JsonTransformer,
   Kms,
+  parseDid,
   RecordNotFoundError,
   SignatureSuiteRegistry,
   type SingleOrArray,
@@ -35,6 +39,7 @@ import type { DidCommCredentialExchangeRecord } from '../../repository/DidCommCr
 import { assertAndSetCredentialSubjectId, assertCredentialSubjectMatchesOffer } from '../../util/credentialSubject'
 import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../../util/didCommSignedAttachment'
 import { getFormatDataAttachment } from '../../util/formatData'
+import { addExchangeHolderBindingDids, takeExchangeHolderBindingDids } from '../../util/holderBinding'
 import { getIssuerVerificationMethod } from '../../util/verificationMethod'
 import type { DidCommCredentialFormatService } from '../DidCommCredentialFormatService'
 import type {
@@ -280,6 +285,11 @@ export class DidCommDataIntegrityCredentialFormatService
       )
 
       didCommSignedAttachmentBindingProof = { attachment_id: didCommSignedAttachment.id }
+
+      if (dataIntegrityFormat.didCommSignedAttachment.createdForCredential) {
+        const { did } = parseDid(dataIntegrityFormat.didCommSignedAttachment.kid)
+        addExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey, [did])
+      }
     }
 
     const bindingProof: DataIntegrityCredentialRequestBindingProof | undefined =
@@ -420,8 +430,8 @@ export class DidCommDataIntegrityCredentialFormatService
 
     let credentialToBeSigned = credential
     if (credential instanceof W3cJsonLdVerifiableCredential) {
-      const { proof, ..._credentialToBeSigned } = credential
-      credentialToBeSigned = _credentialToBeSigned as W3cCredential
+      const { proof, ...credentialJson } = JsonTransformer.toJSON(credential)
+      credentialToBeSigned = JsonTransformer.fromJSON(credentialJson, W3cCredential)
     }
 
     const w3cJsonLdVerifiableCredential = (await w3cCredentialService.signCredential(agentContext, {
@@ -613,8 +623,13 @@ export class DidCommDataIntegrityCredentialFormatService
         throw new CredoError(`Failed to validate credential, error = ${result.error}`)
       }
 
+      const credentialRecord = W3cV2CredentialRecord.fromCredential(credential)
+      addCredentialHolderBindingDids(
+        credentialRecord,
+        takeExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey)
+      )
       const w3cV2CredentialRecord = await w3cV2CredentialService.storeCredential(agentContext, {
-        record: W3cV2CredentialRecord.fromCredential(credential),
+        record: credentialRecord,
       })
 
       credentialExchangeRecord.credentials.push({
@@ -625,28 +640,47 @@ export class DidCommDataIntegrityCredentialFormatService
       return
     }
 
+    const bindingProof = credentialRequest.binding_proof
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+    const verifyCredential = async (credential: W3cJsonLdVerifiableCredential) => {
+      const result = await w3cCredentialService.verifyCredential(agentContext, { credential })
+      if (!result.isValid) {
+        throw new CredoError(`Failed to validate credential, error = ${result.error}`)
+      }
+    }
+
     let credentialRecordId: string
-    if (credentialRequest.binding_proof?.anoncreds_link_secret) {
+    if (bindingProof?.anoncreds_link_secret) {
+      // The provider verifies the anoncreds proof. A credential also bound to a DID has an issuer proof next to it.
+      if (bindingProof.didcomm_signed_attachment) await verifyCredential(withoutAnonCredsProof(credentialJson))
+
       credentialRecordId = await this.getLinkSecretBindingProvider().storeBoundCredential(agentContext, {
         credentialExchangeRecord,
         credentialJson,
         offeredCredentialJson,
       })
     } else {
-      const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
       const w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)
+      await verifyCredential(w3cJsonLdVerifiableCredential)
 
-      const result = await w3cCredentialService.verifyCredential(agentContext, {
-        credential: w3cJsonLdVerifiableCredential,
-      })
-      if (!result.isValid) {
-        throw new CredoError(`Failed to validate credential, error = ${result.error}`)
-      }
-
-      const w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, {
-        record: W3cCredentialRecord.fromCredential(w3cJsonLdVerifiableCredential),
-      })
+      const credentialRecord = W3cCredentialRecord.fromCredential(w3cJsonLdVerifiableCredential)
+      addCredentialHolderBindingDids(
+        credentialRecord,
+        takeExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey)
+      )
+      const w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, { record: credentialRecord })
       credentialRecordId = w3cCredentialRecord.id
+    }
+
+    // The link secret binding provider stores the record itself, so the DIDs are added afterwards
+    if (bindingProof?.anoncreds_link_secret && bindingProof.didcomm_signed_attachment) {
+      const holderBindingDids = takeExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey)
+      if (holderBindingDids.length > 0) {
+        const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
+        const credentialRecord = await w3cCredentialRepository.getById(agentContext, credentialRecordId)
+        addCredentialHolderBindingDids(credentialRecord, holderBindingDids)
+        await w3cCredentialRepository.update(agentContext, credentialRecord)
+      }
     }
 
     credentialExchangeRecord.credentials.push({
@@ -697,10 +731,16 @@ export class DidCommDataIntegrityCredentialFormatService
    * - A data model 2.0 credential, secured with a `DataIntegrityProof`, is a `W3cV2CredentialRecord`
    *   and is deleted from the 2.0 repository directly.
    */
-  public async deleteCredentialById(agentContext: AgentContext, credentialRecordId: string): Promise<void> {
+  public async deleteCredentialById(
+    agentContext: AgentContext,
+    credentialRecordId: string,
+    options?: { deleteAssociatedKeys?: boolean }
+  ): Promise<void> {
     const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
     const w3cCredentialRecord = await w3cCredentialRepository.findById(agentContext, credentialRecordId)
     if (w3cCredentialRecord) {
+      if (options?.deleteAssociatedKeys) await deleteCredentialHolderBinding(agentContext, w3cCredentialRecord)
+
       const linkSecretBindingProvider = this.linkSecretBinding
 
       if (linkSecretBindingProvider?.isBoundCredentialRecord(w3cCredentialRecord)) {
@@ -715,6 +755,7 @@ export class DidCommDataIntegrityCredentialFormatService
     const w3cV2CredentialRepository = agentContext.dependencyManager.resolve(W3cV2CredentialRepository)
     const w3cV2CredentialRecord = await w3cV2CredentialRepository.findById(agentContext, credentialRecordId)
     if (w3cV2CredentialRecord) {
+      if (options?.deleteAssociatedKeys) await deleteCredentialHolderBinding(agentContext, w3cV2CredentialRecord)
       await w3cV2CredentialRepository.delete(agentContext, w3cV2CredentialRecord)
       return
     }
@@ -911,4 +952,13 @@ export class DidCommDataIntegrityCredentialFormatService
   public getFormatData(data: unknown, id: string): DidCommAttachment {
     return getFormatDataAttachment(data, id)
   }
+}
+
+function withoutAnonCredsProof(credentialJson: JsonObject) {
+  const proofs = asArray(credentialJson.proof as JsonObject | JsonObject[]).filter(
+    (proof) => proof.cryptosuite !== ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE
+  )
+  if (proofs.length === 0) throw new CredoError('Credential bound to a DID is missing an issuer proof')
+
+  return JsonTransformer.fromJSON({ ...credentialJson, proof: proofs }, W3cJsonLdVerifiableCredential)
 }

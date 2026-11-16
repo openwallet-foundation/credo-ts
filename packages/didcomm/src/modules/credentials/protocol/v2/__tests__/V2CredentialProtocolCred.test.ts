@@ -798,7 +798,25 @@ describe('credentialProtocol', () => {
       expect(deleteCredentialMock).toHaveBeenNthCalledWith(
         1,
         agentContext,
-        credentialExchangeRecord.credentials[0].credentialRecordId
+        credentialExchangeRecord.credentials[0].credentialRecordId,
+        { deleteAssociatedKeys: undefined }
+      )
+    })
+
+    it('passes deleteAssociatedKeys to deleteCredentialById', async () => {
+      const deleteCredentialMock = mockFunction(testCredentialFormatService.deleteCredentialById)
+
+      const credentialExchangeRecord = mockCredentialRecord()
+      await credentialProtocol.delete(agentContext, credentialExchangeRecord, {
+        deleteAssociatedDidCommMessages: false,
+        deleteAssociatedKeys: true,
+      })
+
+      expect(deleteCredentialMock).toHaveBeenNthCalledWith(
+        1,
+        agentContext,
+        credentialExchangeRecord.credentials[0].credentialRecordId,
+        { deleteAssociatedKeys: true }
       )
     })
 
@@ -827,7 +845,8 @@ describe('credentialProtocol', () => {
       expect(deleteCredentialMock).toHaveBeenNthCalledWith(
         1,
         agentContext,
-        credentialExchangeRecord.credentials[0].credentialRecordId
+        credentialExchangeRecord.credentials[0].credentialRecordId,
+        { deleteAssociatedKeys: undefined }
       )
     })
     it('deleteAssociatedDidCommMessages should default to true', async () => {
@@ -841,7 +860,8 @@ describe('credentialProtocol', () => {
       expect(deleteCredentialMock).toHaveBeenNthCalledWith(
         1,
         agentContext,
-        credentialExchangeRecord.credentials[0].credentialRecordId
+        credentialExchangeRecord.credentials[0].credentialRecordId,
+        { deleteAssociatedKeys: undefined }
       )
       expect(didCommMessageRepository.delete).toHaveBeenCalledTimes(3)
     })

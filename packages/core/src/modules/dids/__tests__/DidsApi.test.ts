@@ -2,8 +2,10 @@ import {
   createPeerDidDocumentFromServices,
   DidDocument,
   DidDocumentService,
+  type KeyDidCreateOptions,
   type PeerDidCreateOptions,
   PeerDidNumAlgo,
+  RecordNotFoundError,
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import { transformPrivateKeyToPrivateJwk } from '../../../../../askar/src'
@@ -256,5 +258,29 @@ describe('DidsApi', () => {
     const didDocumentFromShortFormDid = await agent.dids.resolveDidDocument(shortFormDid)
 
     expect(didDocumentFromLongFormDid).toEqual(didDocumentFromShortFormDid)
+  })
+
+  test('deleteCreatedDid removes the created did, and its keys when deleteAssociatedKeys is set', async () => {
+    const { didState: keptKeys } = await agent.dids.create<KeyDidCreateOptions>({
+      method: 'key',
+      options: { createKey: { type: { kty: 'OKP', crv: 'Ed25519' } } },
+    })
+    const { didState: deletedKeys } = await agent.dids.create<KeyDidCreateOptions>({
+      method: 'key',
+      options: { createKey: { type: { kty: 'OKP', crv: 'Ed25519' } } },
+    })
+    const [keptKeysRecord] = await agent.dids.getCreatedDids({ did: keptKeys.did })
+    const [deletedKeysRecord] = await agent.dids.getCreatedDids({ did: deletedKeys.did })
+
+    await agent.dids.deleteCreatedDid({ did: keptKeys.did as string, deleteAssociatedKeys: false })
+    await agent.dids.deleteCreatedDid({ did: deletedKeys.did as string, deleteAssociatedKeys: true })
+
+    expect(await agent.dids.getCreatedDids({ did: keptKeys.did })).toHaveLength(0)
+    expect(await agent.dids.getCreatedDids({ did: deletedKeys.did })).toHaveLength(0)
+    await expect(agent.kms.getPublicKey({ keyId: keptKeysRecord.keys?.[0].kmsKeyId as string })).resolves.toBeDefined()
+    await expect(agent.kms.getPublicKey({ keyId: deletedKeysRecord.keys?.[0].kmsKeyId as string })).rejects.toThrow()
+    await expect(
+      agent.dids.deleteCreatedDid({ did: deletedKeys.did as string, deleteAssociatedKeys: true })
+    ).rejects.toThrow(RecordNotFoundError)
   })
 })

@@ -2,8 +2,8 @@ import { AgentContext } from '../../agent'
 import { CredoError, RecordNotFoundError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
-import { checkKmsKeyReferences, KeyManagementApi } from '../kms'
-import type { ImportDidOptions } from './DidsApiOptions'
+import { checkKmsKeyReferences, deleteKmsKeys, KeyManagementApi } from '../kms'
+import type { DeleteCreatedDidOptions, ImportDidOptions } from './DidsApiOptions'
 import { DidsModuleConfig } from './DidsModuleConfig'
 import {
   type DidPurpose,
@@ -176,6 +176,29 @@ export class DidsApi {
         alternativeDids: isValidPeerDid(didDocument.id) ? getAlternativeDidsForPeerDid(did) : undefined,
       },
     })
+  }
+
+  /**
+   * Deletes the record of a did created by the agent, and with `deleteAssociatedKeys` its keys.
+   *
+   * This doesn't deactivate the did. If the did method supports it, deactivate the did with {@link deactivate} first:
+   * without its record and keys the agent can no longer deactivate or update it, and the did stays resolvable.
+   *
+   * The keys are deleted before the record, so a call that failed on a key can be retried.
+   */
+  public async deleteCreatedDid({ did, deleteAssociatedKeys }: DeleteCreatedDidOptions) {
+    const didRecord = await this.didRepository.findCreatedDid(this.agentContext, did)
+    if (!didRecord) {
+      throw new RecordNotFoundError(`Created did '${did}' not found`, { recordType: DidRecord.type })
+    }
+
+    if (deleteAssociatedKeys) {
+      await deleteKmsKeys(
+        this.agentContext,
+        (didRecord.keys ?? []).map(({ kmsKeyId, kmsBackend }) => ({ keyId: kmsKeyId, kmsBackend }))
+      )
+    }
+    await this.didRepository.delete(this.agentContext, didRecord)
   }
 
   public async resolveCreatedDidDocumentWithKeys(did: string) {

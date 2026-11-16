@@ -135,40 +135,32 @@ export class DidCommConnectionService {
         messageContext.message?.service?.resolvedDidCommService ?? lastReceivedMessage?.service?.resolvedDidCommService
       let ourService = lastSentMessage?.service?.resolvedDidCommService
 
-      // FIXME: we should remove support for the flow where no out of band record is used.
-      // Users have had enough time to update to the OOB API which supports legacy connectionsless
-      // invitations as well
-      // 1. check if there's an oob record associated.
       const outOfBandRepository = messageContext.agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
       const outOfBandService = messageContext.agentContext.dependencyManager.resolve(DidCommOutOfBandService)
       const outOfBandRecord = await outOfBandRepository.findSingleByQuery(messageContext.agentContext, {
         invitationRequestsThreadIds: [message.threadId],
       })
+      if (!outOfBandRecord) {
+        throw new CredoError(
+          `No out of band record found for connection-less message with thread id ${message.threadId}. Use the out of band API to start a connection-less exchange.`
+        )
+      }
 
-      // If we have an out of band record, we can extract the service for our/the other party from the oob record
-      if (outOfBandRecord?.role === DidCommOutOfBandRole.Sender) {
+      // Extract the service for our/the other party from the oob record
+      if (outOfBandRecord.role === DidCommOutOfBandRole.Sender) {
         ourService = await outOfBandService.getResolvedServiceForOutOfBandServices(
           messageContext.agentContext,
           outOfBandRecord.outOfBandInvitation.getServices(),
           outOfBandRecord.invitationInlineServiceKeys
         )
-      } else if (outOfBandRecord?.role === DidCommOutOfBandRole.Receiver) {
+      } else {
         theirService = await outOfBandService.getResolvedServiceForOutOfBandServices(
           messageContext.agentContext,
           outOfBandRecord.outOfBandInvitation.getServices()
         )
       }
 
-      // theirService can be null when we receive an oob invitation and process the message.
-      // In this case there MUST be an oob record, otherwise there is no way for us to reply
-      // to the message
-      if (!theirService && !outOfBandRecord) {
-        throw new CredoError(
-          'No service for incoming connection-less message and no associated out of band record found.'
-        )
-      }
-
-      // ourService can be null when we receive an oob invitation or legacy connectionless message and process the message.
+      // ourService can be null when we receive an oob invitation and process the message.
       // In this case lastSentMessage and lastReceivedMessage MUST be null, because there shouldn't be any previous exchange
       if (!ourService && (lastReceivedMessage || lastSentMessage)) {
         throw new CredoError(
