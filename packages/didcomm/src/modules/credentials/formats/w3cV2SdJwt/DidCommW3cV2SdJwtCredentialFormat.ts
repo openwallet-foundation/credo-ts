@@ -7,8 +7,8 @@ import type {
   W3cV2Issuer,
 } from '@credo-ts/core'
 import type {
-  DidCommSignedAttachmentCreateOfferOptions,
-  DidCommSignedAttachmentCredentialRequestOptions,
+  DidCommSignedAttachmentWithJwkCreateOfferOptions,
+  DidCommSignedAttachmentWithJwkCredentialRequestOptions,
 } from '../../util/didCommSignedAttachmentBinding'
 import type { DidCommCredentialFormat } from '../DidCommCredentialFormat'
 import type { W3cV2SdJwtCredential, W3cV2SdJwtCredentialOffer, W3cV2SdJwtCredentialRequest } from './w3cV2SdJwtExchange'
@@ -17,11 +17,11 @@ export interface DidCommW3cV2SdJwtOfferCredentialFormat {
   credential: W3cV2Credential | JsonObject
   bindingRequired?: boolean
   disclosureFrame?: IDisclosureFrame
-  didCommSignedAttachmentBinding?: DidCommSignedAttachmentCreateOfferOptions
+  didCommSignedAttachmentBinding?: DidCommSignedAttachmentWithJwkCreateOfferOptions
 }
 
 export interface DidCommW3cV2SdJwtAcceptOfferFormat {
-  didCommSignedAttachment?: DidCommSignedAttachmentCredentialRequestOptions
+  didCommSignedAttachment?: DidCommSignedAttachmentWithJwkCredentialRequestOptions
 }
 
 export interface DidCommW3cV2SdJwtAcceptRequestFormat {

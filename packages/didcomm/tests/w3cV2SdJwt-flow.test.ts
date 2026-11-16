@@ -765,10 +765,63 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
     ).rejects.toThrow('The holder must be the key of the binding proof in the request')
   })
 
-  test.each<[string, () => SdJwtVcHolderBinding | undefined]>([
-    ['no cnf', () => undefined],
-    ['the cnf of another key', () => ({ method: 'did', didUrl: issuerKdv.kid })],
-  ])('processCredential rejects a credential with %s for a request with a binding proof', async (_, holder) => {
+  test('issues a credential bound to the jwk of the binding proof', async () => {
+    const { issuerCredentialRecord, offerAttachment, requestAttachment, requestAppendAttachments } =
+      await offerAndBoundRequest({
+        jwk: holderKdv.publicJwk,
+        offerBinding: { algsSupported: ['EdDSA'], didMethodsSupported: [], jwkSupported: true },
+      })
+
+    await formatService.processRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      attachment: requestAttachment,
+      requestAppendAttachments,
+    })
+    const { attachment: credentialAttachment } = await formatService.acceptRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      offerAttachment,
+      requestAttachment,
+      requestAppendAttachments,
+      credentialFormats: {
+        w3cV2SdJwt: {
+          holder: { method: 'jwk', jwk: Kms.PublicJwk.fromUnknown(holderKdv.publicJwk.toJson({ includeKid: false })) },
+        },
+      },
+    })
+
+    const { credential } = credentialAttachment.getDataAsJson<{ credential: string }>()
+    expect(W3cV2SdJwtVerifiableCredential.fromCompact(credential).sdJwt.payload.cnf).toEqual({
+      jwk: holderKdv.publicJwk.toJson({ includeKid: false }),
+    })
+
+    await formatService.processCredential(agentContext, {
+      credentialExchangeRecord: new DidCommCredentialExchangeRecord({
+        protocolVersion: 'v2',
+        state: DidCommCredentialState.CredentialReceived,
+        threadId: '3d4e5f6a-7b8c-4d9e-8f0a-1b2c3d4e5f6a',
+        role: DidCommCredentialRole.Holder,
+      }),
+      attachment: credentialAttachment,
+      offerAttachment,
+      requestAttachment,
+      requestAppendAttachments,
+    })
+  })
+
+  test('acceptOffer rejects a jwk binding proof when the offer does not set jwk_supported', async () => {
+    await expect(offerAndBoundRequest({ jwk: holderKdv.publicJwk })).rejects.toThrow(
+      "The offer does not accept a 'jwk' binding proof"
+    )
+  })
+
+  test.each<[string, () => SdJwtVcHolderBinding | undefined, string]>([
+    ['no cnf', () => undefined, "The credential must have a 'cnf' claim with exactly one member"],
+    [
+      'the cnf of another key',
+      () => ({ method: 'did', didUrl: issuerKdv.kid }),
+      "The credential 'cnf.kid' is not the key of the binding proof",
+    ],
+  ])('processCredential rejects a credential with %s for a request with a binding proof', async (_, holder, error) => {
     const { offerAttachment, requestAttachment, requestAppendAttachments } = await offerAndBoundRequest({
       kid: holderKdv.kid,
     })
@@ -799,20 +852,22 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
         requestAttachment,
         requestAppendAttachments,
       })
-    ).rejects.toThrow("The credential must have a 'cnf' claim with only the 'kid' of the binding proof")
+    ).rejects.toThrow(error)
   })
 
   /**
    * Offers an optional `didcomm_signed_attachment` binding, saves the sent offer for `processRequest`,
-   * and has the holder sign a binding proof with `kid` against its own copy of the offer.
+   * and has the holder sign a binding proof with `kid` or `jwk` against its own copy of the offer.
    */
   async function offerAndBoundRequest({
     kid,
+    jwk,
     offerBinding = { algsSupported: ['EdDSA'], didMethodsSupported: ['key', 'peer'] },
     tamperHolderOffer = (bindingMethod) => bindingMethod,
   }: {
-    kid: string
-    offerBinding?: { algsSupported?: string[]; didMethodsSupported?: string[] }
+    kid?: string
+    jwk?: Kms.PublicJwk
+    offerBinding?: { algsSupported?: string[]; didMethodsSupported?: string[]; jwkSupported?: boolean }
     tamperHolderOffer?: (bindingMethod: JsonObject) => JsonObject
   }) {
     const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
@@ -849,7 +904,7 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
             didcomm_signed_attachment: tamperHolderOffer(offer.binding_method.didcomm_signed_attachment),
           },
         }),
-        credentialFormats: { w3cV2SdJwt: { didCommSignedAttachment: { kid } } },
+        credentialFormats: { w3cV2SdJwt: { didCommSignedAttachment: jwk ? { jwk } : { kid: kid as string } } },
       })
 
     return { issuerCredentialRecord, offerAttachment, requestAttachment, requestAppendAttachments }

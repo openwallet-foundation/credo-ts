@@ -1,9 +1,15 @@
+import type { Kms, XOR } from '@credo-ts/core'
 import { Expose, Type } from 'class-transformer'
 import { IsBoolean, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 export interface DidCommSignedAttachmentCreateOfferOptions {
   didMethodsSupported?: string[]
   algsSupported?: string[]
+}
+
+export interface DidCommSignedAttachmentWithJwkCreateOfferOptions extends DidCommSignedAttachmentCreateOfferOptions {
+  /** Accept a binding proof signed with a bare key in a `jwk` header. `didMethodsSupported` can then be empty. */
+  jwkSupported?: boolean
 }
 
 /**
@@ -13,6 +19,11 @@ export interface DidCommSignedAttachmentCredentialRequestOptions {
   kid: string
   alg?: string
 }
+
+export type DidCommSignedAttachmentWithJwkCredentialRequestOptions = XOR<
+  DidCommSignedAttachmentCredentialRequestOptions,
+  { alg?: string; jwk: Kms.PublicJwk }
+>
 
 export interface DidCommSignedAttachmentOfferBindingMethodOptions {
   algsSupported: string[]
