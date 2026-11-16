@@ -118,6 +118,7 @@ export class IndyVdrPool {
       data: TypedArrayEncoder.fromUtf8String(request.signatureInput),
       algorithm: 'EdDSA',
       keyId: signingKey.keyId,
+      expectedPublicJwk: signingKey.toJson(),
     })
 
     request.setSignature({

@@ -106,7 +106,10 @@ export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayl
 
 // TODO: use the payload type once types are fixed
 export type SdJwtVcPresentOptions<_Payload extends SdJwtVcPayload = SdJwtVcPayload> = {
-  sdJwtVc: string | SdJwtVc
+  /**
+   * The credential to present. A KB-JWT for a credential bound to a jwk needs its `kmsKeyId`.
+   */
+  sdJwtVc: SdJwtVc
 
   /**
    * Use true to disclose everything

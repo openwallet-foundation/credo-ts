@@ -31,7 +31,9 @@ export async function createOrGetKey(
     )
   }
 
-  return Kms.PublicJwk.fromPublicJwk(publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  const ed25519PublicJwk = Kms.PublicJwk.fromPublicJwk(publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  ed25519PublicJwk.keyId = keyId
+  return ed25519PublicJwk
 }
 
 export function hederaPublicKeyFromPublicJwk(publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>): PublicKey {
