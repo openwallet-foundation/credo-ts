@@ -121,6 +121,27 @@ describe('SecureEnvironmentKeyManagementService', () => {
     expectTypeOf<{ type: { kty: 'EC'; crv: 'P-256' }; backend: 'other' }>().toExtend<CreateKeyOptions>()
   })
 
+  describe('sign with expectedPublicJwk', () => {
+    const signOptions = { keyId: 'key-1', algorithm: 'ES256', data: new Uint8Array([0]) } as const
+
+    test('returns the signature and public key when the key matches', async () => {
+      const publicJwk = (await backend.getPublicKey(agentContext, 'key-1')) as Kms.KmsJwkPublicAsymmetric
+
+      const result = await kms.sign({ ...signOptions, backend: 'secureEnvironment', expectedPublicJwk: publicJwk })
+
+      expect(result).toEqual({ signature: new Uint8Array([1]), publicJwk, backend: 'secureEnvironment' })
+    })
+
+    test('throws without signing when the key does not match', async () => {
+      const otherPublicKey = Kms.PublicJwk.fromPublicKey({ kty: 'EC', crv: 'P-256', publicKey: createPublicKeyBytes() })
+
+      await expect(
+        kms.sign({ ...signOptions, backend: 'secureEnvironment', expectedPublicJwk: otherPublicKey.toJson() })
+      ).rejects.toThrow("Key with key id 'key-1' does not match the expected EC key with crv 'P-256'")
+      expect(secureEnvironment.sign).not.toHaveBeenCalled()
+    })
+  })
+
   describe('withUserAuthentication', () => {
     test('signs with the authentication while the callback runs, and asks for every signature after', async () => {
       const options: SecureEnvironmentUserAuthenticationOptions = { prompt: { title: 'Share 2 credentials' } }
@@ -160,7 +181,12 @@ describe('SecureEnvironmentKeyManagementService', () => {
       const otherAgentContext = getAgentContext({ contextCorrelationId: 'other' })
 
       const signature = await backend.withUserAuthentication(agentContext, () =>
-        backend.sign(otherAgentContext, { keyId: 'key-1', algorithm: 'ES256', data: new Uint8Array([0]) })
+        backend.sign(otherAgentContext, {
+          expectedPublicJwk: null,
+          keyId: 'key-1',
+          algorithm: 'ES256',
+          data: new Uint8Array([0]),
+        })
       )
 
       expect(signature).toEqual({ signature: new Uint8Array([1]) })
@@ -170,7 +196,12 @@ describe('SecureEnvironmentKeyManagementService', () => {
       let language = 'en'
       const prompt = () => (language === 'en' ? { title: 'Sign' } : { title: 'Ondertekenen' })
       const promptBackend = new SecureEnvironmentKeyManagementService({ prompt })
-      const signOptions = { keyId: 'key-1', algorithm: 'ES256', data: new Uint8Array([0]) } as const
+      const signOptions = {
+        keyId: 'key-1',
+        algorithm: 'ES256',
+        data: new Uint8Array([0]),
+        expectedPublicJwk: null,
+      } as const
 
       await promptBackend.sign(agentContext, signOptions)
       language = 'nl'

@@ -1,6 +1,11 @@
 import { KeyManagementError } from '../error/KeyManagementError'
 import { getJwkHumanDescription } from './humanDescription'
-import type { KmsJwkPrivateAsymmetric, KmsJwkPublicAsymmetric } from './knownJwk'
+import {
+  isJwkAsymmetric,
+  type KmsJwkPrivateAsymmetric,
+  type KmsJwkPublic,
+  type KmsJwkPublicAsymmetric,
+} from './knownJwk'
 
 /**
  * Checks if two JWK public keys have matching key types
@@ -71,4 +76,19 @@ export function asymmetricPublicJwkMatches(first: KmsJwkPublicAsymmetric, second
 
   // Unknown key type
   return false
+}
+
+/**
+ * Asserts the key with `keyId` matches the `expectedPublicJwk` of a sign operation.
+ */
+export function assertExpectedSigningKey(
+  keyId: string,
+  publicJwk: KmsJwkPublic,
+  expectedPublicJwk: KmsJwkPublicAsymmetric
+) {
+  if (!isJwkAsymmetric(publicJwk) || !asymmetricPublicJwkMatches(publicJwk, expectedPublicJwk)) {
+    throw new KeyManagementError(
+      `Key with key id '${keyId}' does not match the expected ${getJwkHumanDescription(expectedPublicJwk)}`
+    )
+  }
 }

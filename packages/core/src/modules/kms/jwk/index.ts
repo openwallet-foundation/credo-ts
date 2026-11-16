@@ -1,6 +1,11 @@
 export * from './alg'
 export { assertSupportedEncryptionAlgorithm, assertSupportedKeyAgreementAlgorithm } from './assertSupported'
-export { assertAsymmetricJwkKeyTypeMatches, asymmetricJwkKeyTypeMatches, asymmetricPublicJwkMatches } from './equals'
+export {
+  assertAsymmetricJwkKeyTypeMatches,
+  assertExpectedSigningKey,
+  asymmetricJwkKeyTypeMatches,
+  asymmetricPublicJwkMatches,
+} from './equals'
 export { getJwkHumanDescription } from './humanDescription'
 export type {
   KnownJwaContentEncryptionAlgorithm,

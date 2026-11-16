@@ -19,26 +19,24 @@ export const zKmsSignOptions = z.object({
    * The data to sign
    */
   data: zAnyUint8Array.describe('The data to sign'),
-})
 
-export type KmsSignOptions = z.output<typeof zKmsSignOptions>
-
-export const zKmsSignApiOptions = zKmsSignOptions.extend({
   /**
    * The public key `keyId` must have. The signature is only returned if it matches. Pass `null` for symmetric keys or
    * when the public key isn't known.
+   *
+   * A backend that gets a public key must check the key matches it before signing, and throw a `KeyManagementError`
+   * if it doesn't (see `assertExpectedSigningKey`). It must then also return the `publicJwk`.
    */
   expectedPublicJwk: zKmsJwkPublicAsymmetric.nullable(),
 })
 
-export type KmsSignApiOptions = z.output<typeof zKmsSignApiOptions>
+export type KmsSignOptions = z.output<typeof zKmsSignOptions>
 
 export interface KmsSignReturn {
   signature: Uint8Array
 
   /**
-   * The public key that signed. Backends that hold the key while signing should return it, so callers that need it
-   * don't read the key again.
+   * The public key that signed. Required when `expectedPublicJwk` is passed.
    */
   publicJwk?: KmsJwkPublic
 }

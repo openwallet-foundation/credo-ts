@@ -284,7 +284,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
   }
 
   public async sign(agentContext: AgentContext, options: Kms.KmsSignOptions): Promise<Kms.KmsSignReturn> {
-    const { keyId, algorithm, data } = options
+    const { keyId, algorithm, data, expectedPublicJwk } = options
 
     // 1. Retrieve the key
     const key = await this.getKeyAsserted(agentContext, keyId)
@@ -303,6 +303,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       Kms.assertJwkAsymmetric(publicJwk, keyId)
       Kms.assertAllowedSigningAlgForKey(publicJwk, algorithm)
       Kms.assertKeyAllowsSign(publicJwk)
+      if (expectedPublicJwk) Kms.assertExpectedSigningKey(keyId, publicJwk, expectedPublicJwk)
 
       // 3. Perform the signing operation
       const signature = key.key.signMessage({

@@ -68,5 +68,5 @@ export {
   keyAgreementPublicJwks,
 } from './KmsOperation'
 export type { KmsRandomBytesOptions, KmsRandomBytesReturn } from './KmsRandomBytesOptions'
-export type { KmsSignApiOptions, KmsSignOptions, KmsSignReturn } from './KmsSignOptions'
+export type { KmsSignOptions, KmsSignReturn } from './KmsSignOptions'
 export type { KmsVerifyOptions, KmsVerifyReturn } from './KmsVerifyOptions'

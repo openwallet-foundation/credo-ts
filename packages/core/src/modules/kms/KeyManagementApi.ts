@@ -4,9 +4,8 @@ import { zParseWithErrorHandling } from '../../utils/zod'
 import { KeyManagementError } from './error/KeyManagementError'
 import { KeyManagementKeyNotFoundError } from './error/KeyManagementKeyNotFoundError'
 import {
-  asymmetricPublicJwkMatches,
+  assertExpectedSigningKey,
   getJwkHumanDescription,
-  isJwkAsymmetric,
   type KmsJwkPrivate,
   type KmsJwkPublic,
   type KmsJwkPublicAsymmetric,
@@ -53,7 +52,7 @@ import {
 import { zKmsGetPublicKeyOptions } from './options/KmsGetPublicKeyOptions'
 import { type KmsImportKeyReturn, zKmsImportKeyOptions } from './options/KmsImportKeyOptions'
 import { zKmsRandomBytesOptions } from './options/KmsRandomBytesOptions'
-import { type KmsSignApiOptions, type KmsSignReturn, zKmsSignApiOptions } from './options/KmsSignOptions'
+import { type KmsSignOptions, type KmsSignReturn, zKmsSignOptions } from './options/KmsSignOptions'
 import { type KmsVerifyOptions, type KmsVerifyReturn, zKmsVerifyOptions } from './options/KmsVerifyOptions'
 
 @injectable()
@@ -166,16 +165,16 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
    * Sign using a key. With `expectedPublicJwk`, the result always has the `publicJwk`.
    */
   public async sign(
-    options: WithBackend<KmsSignApiOptions & { expectedPublicJwk: KmsJwkPublicAsymmetric }, Backends>
-  ): Promise<WithReturnedBackend<KmsSignReturn & { publicJwk: KmsJwkPublicAsymmetric }, Backends>>
+    options: WithBackend<KmsSignOptions & { expectedPublicJwk: KmsJwkPublicAsymmetric }, Backends>
+  ): Promise<WithReturnedBackend<KmsSignReturn & { publicJwk: KmsJwkPublic }, Backends>>
   public async sign(
-    options: WithBackend<KmsSignApiOptions, Backends>
+    options: WithBackend<KmsSignOptions, Backends>
   ): Promise<WithReturnedBackend<KmsSignReturn, Backends>>
   public async sign(
-    options: WithBackend<KmsSignApiOptions, Backends>
+    options: WithBackend<KmsSignOptions, Backends>
   ): Promise<WithReturnedBackend<KmsSignReturn, Backends>> {
     const { backend, expectedPublicJwk, ...kmsOptions } = zParseWithErrorHandling(
-      zWithBackend(zKmsSignApiOptions),
+      zWithBackend(zKmsSignOptions),
       options,
       'Invalid options provided to sign method'
     )
@@ -195,17 +194,23 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
     const { kms, publicKey } = backend
       ? { kms: this.getKms(this.agentContext, backend, operation), publicKey: undefined }
       : await this.getKmsForKeyOperation(options.keyId, operation)
-    const result = await kms.sign(this.agentContext, kmsOptions)
-    if (!expectedPublicJwk) return { ...result, backend: kms.backend }
 
-    const publicJwk = result.publicJwk ?? publicKey ?? (await kms.getPublicKey(this.agentContext, options.keyId))
-    if (!publicJwk || !isJwkAsymmetric(publicJwk) || !asymmetricPublicJwkMatches(publicJwk, expectedPublicJwk)) {
-      throw new KeyManagementError(
-        `Key with key id '${options.keyId}' does not match the expected ${getJwkHumanDescription(expectedPublicJwk)}`
-      )
+    // A key read to find the backend is checked here, otherwise the backend checks it before signing
+    if (expectedPublicJwk && publicKey) assertExpectedSigningKey(options.keyId, publicKey, expectedPublicJwk)
+    const backendExpectedPublicJwk = publicKey ? null : expectedPublicJwk
+    const result = await kms.sign(this.agentContext, { ...kmsOptions, expectedPublicJwk: backendExpectedPublicJwk })
+
+    if (backendExpectedPublicJwk) {
+      if (!result.publicJwk) {
+        throw new KeyManagementError(
+          `Backend '${kms.backend}' did not return the publicJwk for key id '${options.keyId}' with expectedPublicJwk`
+        )
+      }
+      // Don't rely only on the backend's check before signing
+      assertExpectedSigningKey(options.keyId, result.publicJwk, backendExpectedPublicJwk)
     }
 
-    return { ...result, publicJwk, backend: kms.backend }
+    return { ...result, publicJwk: result.publicJwk ?? publicKey, backend: kms.backend }
   }
 
   /**

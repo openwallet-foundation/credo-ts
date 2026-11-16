@@ -264,11 +264,27 @@ describe('AskarKeyManagementService', () => {
     it('throws error if key is not found', async () => {
       await expect(
         service.sign(agentContext, {
+          expectedPublicJwk: null,
           keyId: 'nonexistent',
           algorithm: 'RS256',
           data: new Uint8Array([1, 2, 3]),
         })
       ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', [service.backend]))
+    })
+
+    it('signs when the key matches expectedPublicJwk and throws when it does not', async () => {
+      const { keyId, publicJwk } = await service.createKey(agentContext, { type: { kty: 'EC', crv: 'P-256' } })
+      const other = await service.createKey(agentContext, { type: { kty: 'EC', crv: 'P-256' } })
+      const data = new Uint8Array([1, 2, 3])
+
+      await expect(
+        service.sign(agentContext, { keyId, algorithm: 'ES256', data, expectedPublicJwk: publicJwk })
+      ).resolves.toEqual({ signature: expect.any(Uint8Array), publicJwk })
+      await expect(
+        service.sign(agentContext, { keyId, algorithm: 'ES256', data, expectedPublicJwk: other.publicJwk })
+      ).rejects.toThrow(
+        new Kms.KeyManagementError(`Key with key id '${keyId}' does not match the expected EC key with crv 'P-256'`)
+      )
     })
 
     it('signs with ES256', async () => {
@@ -277,6 +293,7 @@ describe('AskarKeyManagementService', () => {
       })
 
       const result = await service.sign(agentContext, {
+        expectedPublicJwk: null,
         keyId,
         algorithm: 'ES256',
         data: new Uint8Array([1, 2, 3]),
@@ -294,6 +311,7 @@ describe('AskarKeyManagementService', () => {
       })
 
       const result = await service.sign(agentContext, {
+        expectedPublicJwk: null,
         keyId,
         algorithm: 'ES384',
         data: new Uint8Array([1, 2, 3]),
@@ -311,6 +329,7 @@ describe('AskarKeyManagementService', () => {
       })
 
       const result = await service.sign(agentContext, {
+        expectedPublicJwk: null,
         keyId,
         algorithm: 'ES256K',
         data: new Uint8Array([1, 2, 3]),
@@ -328,6 +347,7 @@ describe('AskarKeyManagementService', () => {
       })
 
       const result = await service.sign(agentContext, {
+        expectedPublicJwk: null,
         keyId,
         algorithm: 'EdDSA',
         data: new Uint8Array([1, 2, 3]),
@@ -345,6 +365,7 @@ describe('AskarKeyManagementService', () => {
       })
 
       const result = await service.sign(agentContext, {
+        expectedPublicJwk: null,
         keyId,
         algorithm: 'Ed25519',
         data: new Uint8Array([1, 2, 3]),
@@ -363,6 +384,7 @@ describe('AskarKeyManagementService', () => {
 
       await expect(
         service.sign(agentContext, {
+          expectedPublicJwk: null,
           keyId,
           algorithm: 'RS256',
           data: new Uint8Array([1, 2, 3]),
@@ -382,6 +404,7 @@ describe('AskarKeyManagementService', () => {
 
       await expect(
         service.sign(agentContext, {
+          expectedPublicJwk: null,
           keyId,
           algorithm: 'ES384',
           data: new Uint8Array([1, 2, 3]),
@@ -400,6 +423,7 @@ describe('AskarKeyManagementService', () => {
 
       await expect(
         service.sign(agentContext, {
+          expectedPublicJwk: null,
           keyId,
           algorithm: 'EdDSA',
           data: new Uint8Array([1, 2, 3]),
@@ -475,6 +499,7 @@ describe('AskarKeyManagementService', () => {
 
       const data = new Uint8Array([1, 2, 3])
       const { signature } = await service.sign(agentContext, {
+        expectedPublicJwk: null,
         keyId,
         algorithm: 'ES256',
         data,
@@ -516,6 +541,7 @@ describe('AskarKeyManagementService', () => {
 
       const data = new Uint8Array([1, 2, 3])
       const { signature } = await service.sign(agentContext, {
+        expectedPublicJwk: null,
         keyId,
         algorithm: 'ES384',
         data,
@@ -553,6 +579,7 @@ describe('AskarKeyManagementService', () => {
 
       const data = new Uint8Array([1, 2, 3])
       const { signature } = await service.sign(agentContext, {
+        expectedPublicJwk: null,
         keyId,
         algorithm: 'EdDSA',
         data,
@@ -628,6 +655,7 @@ describe('AskarKeyManagementService', () => {
 
       const data = new Uint8Array([1, 2, 3])
       const { signature } = await service.sign(agentContext, {
+        expectedPublicJwk: null,
         keyId,
         algorithm: 'ES384',
         data,
@@ -1036,6 +1064,7 @@ describe('AskarKeyManagementService', () => {
       // Verify we can't use the deleted key
       await expect(
         service.sign(agentContext, {
+          expectedPublicJwk: null,
           keyId,
           algorithm: 'ES256',
           data: new Uint8Array([1, 2, 3]),
