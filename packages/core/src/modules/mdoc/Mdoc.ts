@@ -13,7 +13,7 @@ import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
 import { ClaimFormat } from '../vc/index'
-import { X509Certificate } from '../x509'
+import { X509Service } from '../x509'
 import { X509ModuleConfig } from '../x509/X509ModuleConfig'
 import { MdocError } from './MdocError'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
@@ -56,9 +56,9 @@ export class Mdoc {
    * Get the device key to which the mdoc is bound
    */
   public get deviceKey(): PublicJwk {
-    const publicJwk = PublicJwk.fromUnknown(
-      this.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.deviceKey.jwk
-    )
+    // The issuer chooses the COSE `kid`, so it must not select the key we sign with.
+    const { kid: _kid, ...deviceKeyJwk } = this.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.deviceKey.jwk
+    const publicJwk = PublicJwk.fromUnknown(deviceKeyJwk)
 
     if (this.#deviceKeyId) publicJwk.keyId = this.#deviceKeyId
     return publicJwk
@@ -69,10 +69,7 @@ export class Mdoc {
   }
 
   public get deviceKeyId() {
-    const deviceKey = this.deviceKey
-
-    if (deviceKey.hasKeyId) return deviceKey.keyId
-    return undefined
+    return this.#deviceKeyId
   }
 
   public static fromBase64Url(mdocBase64Url: string): Mdoc {
@@ -192,7 +189,7 @@ export class Mdoc {
   ): Promise<{ isValid: true } | { isValid: false; error: string }> {
     const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
     const certificateChain = this.issuerSigned.issuerAuth.certificateChain.map((certificate) =>
-      X509Certificate.fromRawCertificate(certificate)
+      X509Service.parseCertificate(agentContext, { encodedCertificate: certificate })
     )
 
     let trustedCertificates = options?.trustedCertificates
@@ -226,7 +223,7 @@ export class Mdoc {
     })
 
     try {
-      const convertedTrustedCertificates = convertMdocTrustedCertificates(trustedCertificates)
+      const convertedTrustedCertificates = convertMdocTrustedCertificates(agentContext, trustedCertificates)
 
       const { trustedIssuanceChain, trustedStatusListChain, trustedIdentifierListChain } =
         await Holder.verifyIssuerSigned(
@@ -245,7 +242,9 @@ export class Mdoc {
         throw new MdocError('Unable to determine a trusted issuance chain')
       }
 
-      const issuanceChain = trustedIssuanceChain.map((c) => X509Certificate.fromRawCertificate(c))
+      const issuanceChain = trustedIssuanceChain.map((c) =>
+        X509Service.parseCertificate(agentContext, { encodedCertificate: c })
+      )
 
       // The mdoc x5chain is leaf-first and does not include the trust anchor. The validated chain returned by
       // the library is leaf-first with the resolved trust anchor appended, so the mdoc chain must equal its leaf-end prefix.
@@ -256,7 +255,7 @@ export class Mdoc {
         throw new MdocError('Certificate chain does not match the trusted issuance chain')
       }
 
-      assertMdocStatusListChainsMatchIssuanceChain(convertedTrustedCertificates, {
+      assertMdocStatusListChainsMatchIssuanceChain(agentContext, convertedTrustedCertificates, {
         trustedIssuanceChain,
         trustedStatusListChain,
         trustedIdentifierListChain,

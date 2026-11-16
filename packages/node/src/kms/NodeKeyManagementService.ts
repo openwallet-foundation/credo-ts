@@ -244,7 +244,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
   }
 
   public async sign(agentContext: AgentContext, options: Kms.KmsSignOptions): Promise<Kms.KmsSignReturn> {
-    const { keyId, algorithm, data } = options
+    const { keyId, algorithm, data, expectedPublicJwk } = options
 
     // 1. Retrieve the key
     const key = await this.getKeyAsserted(agentContext, keyId)
@@ -253,12 +253,15 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       // 2. Validate alg and use for key
       Kms.assertAllowedSigningAlgForKey(key, algorithm)
       Kms.assertKeyAllowsSign(key)
+      const publicJwk = Kms.publicJwkFromPrivateJwk(key)
+      if (expectedPublicJwk) Kms.assertExpectedSigningKey(keyId, publicJwk, expectedPublicJwk)
 
       // 3. Perform the signing operation
       const signature = await performSign(key, algorithm, data)
 
       return {
         signature: new Uint8Array(signature),
+        publicJwk,
       }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error

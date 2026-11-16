@@ -15,9 +15,12 @@ export interface CacheOptions {
 }
 
 /**
- * A cache is an optimization, so `get` and `set` should not throw when the cache can't be reached:
- * `get` returns `null` and `set` does nothing. `remove` must throw, as the entry would otherwise
- * stay in the cache.
+ * A cache is optional, so it must not fail the flow that uses it. When the cache can't be reached, `get`
+ * returns `null`, and `set` and `remove` do nothing. A failed `remove` leaves an outdated entry until it
+ * expires, so log it as an error.
+ *
+ * Values must survive JSON serialization, since a cache may store them as JSON: a `Uint8Array`,
+ * `Date` or class instance comes back as a plain object.
  */
 export interface Cache {
   get<CacheValue>(agentContext: AgentContext, key: string, options?: CacheOptions): Promise<CacheValue | null>
@@ -29,4 +32,7 @@ export interface Cache {
     options?: CacheOptions
   ): Promise<void>
   remove(agentContext: AgentContext, key: string, options?: CacheOptions): Promise<void>
+
+  /** Called when the agent shuts down, for example to close a connection the cache opened. */
+  shutdown?(agentContext: AgentContext): Promise<void>
 }

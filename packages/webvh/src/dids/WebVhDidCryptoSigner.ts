@@ -50,6 +50,8 @@ export class WebVhDidCryptoSigner implements Signer {
 
       const { signature } = await kms.sign({
         keyId: this.keyId,
+        // The multibase public key is the did:key fingerprint of the key
+        expectedPublicJwk: Kms.PublicJwk.fromFingerprint(this.publicKeyMultibase).toJson(),
         algorithm: 'EdDSA',
         data,
       })
