@@ -6,6 +6,7 @@ import type { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
 import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
+import { DidCommTransportService } from '../../../../DidCommTransportService'
 import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
 import type { DidCommInboundMessageContext } from '../../../../models'
 import { DidCommOutboundMessageContext, DidCommProtocol } from '../../../../models'
@@ -295,7 +296,11 @@ export class DidCommMessagePickupV4Protocol extends DidCommBaseMessagePickupProt
     const sessionService = messageContext.agentContext.dependencyManager.resolve(DidCommMessagePickupSessionService)
 
     if (message.liveDelivery) {
-      if (!sessionId) {
+      const transportSession = sessionId
+        ? agentContext.dependencyManager.resolve(DidCommTransportService).findSessionById(sessionId)
+        : undefined
+      // A session that carries a single response, such as HTTP, is gone after the status reply
+      if (!transportSession || transportSession.isSingleResponse) {
         throw new DidCommMessagePickupV4ProblemReportError('Connection does not support Live Delivery', {
           problemCode: DidCommMessagePickupV4ProblemReportReason.LiveModeNotSupported,
         })
@@ -304,7 +309,7 @@ export class DidCommMessagePickupV4Protocol extends DidCommBaseMessagePickupProt
         connectionId: connection.id,
         protocolVersion: 'v4',
         role: DidCommMessagePickupSessionRole.MessageHolder,
-        transportSessionId: sessionId,
+        transportSessionId: transportSession.id,
       })
     } else {
       sessionService.removeLiveSession(agentContext, { connectionId: connection.id })

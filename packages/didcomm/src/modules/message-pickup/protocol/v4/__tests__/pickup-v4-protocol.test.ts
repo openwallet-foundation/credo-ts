@@ -3,8 +3,10 @@ import type { MockedClassConstructor } from '../../../../../../../../tests/types
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../../../core/tests/helpers'
+import { DummyTransportSession } from '../../../../../__tests__/stubs'
 import { DidCommMessageSender } from '../../../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../../../DidCommModuleConfig'
+import { DidCommTransportService } from '../../../../../DidCommTransportService'
 import { DidCommAttachment } from '../../../../../decorators/attachment/DidCommAttachment'
 import { DidCommInboundMessageContext } from '../../../../../models'
 import { InMemoryQueueTransportRepository } from '../../../../../transport/queue/InMemoryQueueTransportRepository'
@@ -79,6 +81,14 @@ const agentContext = getAgentContext({
     [DidCommMessagePickupSessionService, messagePickupSessionService],
   ],
 })
+const transportService = new DidCommTransportService(agentContext, eventEmitter)
+agentContext.dependencyManager.registerInstance(DidCommTransportService, transportService)
+
+function saveTransportSession(id: string, { isSingleResponse = false } = {}) {
+  const session = new DummyTransportSession(id)
+  session.isSingleResponse = isSingleResponse
+  transportService.saveSession(session)
+}
 
 const encryptedMessage: DidCommEncryptedMessage = {
   protected: 'base64url',
@@ -476,8 +486,22 @@ describe('DidCommMessagePickupV4Protocol', () => {
       })
     })
 
+    test('throws problem report when the transport session carries a single response', async () => {
+      saveTransportSession('http-request', { isSingleResponse: true })
+
+      const messageContext = new DidCommInboundMessageContext(
+        new DidCommLiveDeliveryChangeV4Message({ liveDelivery: true }),
+        { senderKey: testSenderKey, connection: mockConnection, agentContext, sessionId: 'http-request' }
+      )
+
+      const error = await pickupProtocol.processLiveDeliveryChange(messageContext).catch((e) => e)
+      expect(error).toBeInstanceOf(DidCommMessagePickupV4ProblemReportError)
+      expect(error.problemReport.toV2Plaintext().body.code).toBe('e.m.live-mode-not-supported')
+    })
+
     test('saves live session when live_delivery is true and sessionId is present', async () => {
       mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(3)
+      saveTransportSession('test-session-id')
 
       const liveDeliveryChange = new DidCommLiveDeliveryChangeV4Message({ liveDelivery: true })
 
