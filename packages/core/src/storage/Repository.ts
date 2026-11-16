@@ -4,9 +4,15 @@ import { RecordDuplicateError, RecordNotFoundError } from '../error'
 import { CachedStorageService } from '../modules/cache/CachedStorageService'
 import { CacheModuleConfig } from '../modules/cache/CacheModuleConfig'
 import type { BaseRecord } from './BaseRecord'
-import type { RecordDeletedEvent, RecordSavedEvent, RecordUpdatedEvent } from './RepositoryEvents'
+import type {
+  RecordDeletedEvent,
+  RecordSavedEvent,
+  RecordsDeletedByQueryEvent,
+  RecordUpdatedEvent,
+} from './RepositoryEvents'
 import { RepositoryEventTypes } from './RepositoryEvents'
 import type { BaseRecordConstructor, Query, QueryOptions, StorageService } from './StorageService'
+import { deleteByQueryOneByOne } from './StorageService'
 
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 export class Repository<T extends BaseRecord<any, any, any>> {
@@ -125,6 +131,30 @@ export class Repository<T extends BaseRecord<any, any, any>> {
         record: { id, type: this.recordClass.type },
       },
     })
+  }
+
+  /**
+   * Delete all records matching the query. Emits one {@link RecordsDeletedByQueryEvent}, and no
+   * {@link RecordDeletedEvent} for the deleted records.
+   * @param query the query to use for finding the records to delete
+   * @returns the number of deleted records
+   */
+  public async deleteByQuery(agentContext: AgentContext, query: Query<T>): Promise<number> {
+    const storageService = this.getStorageService(agentContext)
+    const deletedCount = storageService.deleteByQuery
+      ? await storageService.deleteByQuery(agentContext, this.recordClass, query)
+      : await deleteByQueryOneByOne(agentContext, storageService, this.recordClass, query)
+
+    this.eventEmitter.emit<RecordsDeletedByQueryEvent<T>>(agentContext, {
+      type: RepositoryEventTypes.RecordsDeletedByQuery,
+      payload: {
+        recordType: this.recordClass.type,
+        query,
+        count: deletedCount,
+      },
+    })
+
+    return deletedCount
   }
 
   /** @inheritDoc {StorageService#getById} */

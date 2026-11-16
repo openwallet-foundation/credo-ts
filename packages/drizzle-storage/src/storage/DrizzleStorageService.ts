@@ -76,6 +76,16 @@ export class DrizzleStorageService<T extends BaseRecord> implements StorageServi
     await adapter.delete(agentContext, id)
   }
 
+  public async deleteByQuery(
+    agentContext: AgentContext,
+    recordClass: BaseRecordConstructor<T>,
+    query: Query<T>
+  ): Promise<number> {
+    const adapter = this.getAdapterForRecordType(recordClass.type)
+
+    return adapter.deleteByQuery(agentContext, query)
+  }
+
   public async getById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
     const adapter = this.getAdapterForRecordType(recordClass.type)
 

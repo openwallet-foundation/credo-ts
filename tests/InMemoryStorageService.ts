@@ -167,6 +167,25 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
   }
 
   /** @inheritDoc */
+  public async deleteByQuery(
+    agentContext: AgentContext,
+    recordClass: BaseRecordConstructor<T>,
+    query: Query<T>
+  ): Promise<number> {
+    const records = this.getRecordsForContext(agentContext)
+    let deletedCount = 0
+
+    for (const record of Object.values(records)) {
+      if (record.type === recordClass.type && filterByQuery(record, query)) {
+        delete records[record.id]
+        deletedCount++
+      }
+    }
+
+    return deletedCount
+  }
+
+  /** @inheritDoc */
   public async getById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
     const record = this.getRecordsForContext(agentContext)[id]
 

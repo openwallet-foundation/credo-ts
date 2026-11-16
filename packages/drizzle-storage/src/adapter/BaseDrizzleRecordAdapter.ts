@@ -692,4 +692,42 @@ export abstract class BaseDrizzleRecordAdapter<
 
     throw new CredoDrizzleStorageError('Unsupported database type')
   }
+
+  public async deleteByQuery(agentContext: AgentContext, query: Query<CredoRecord>): Promise<number> {
+    try {
+      if (isDrizzlePostgresDatabase(this.database)) {
+        const deleted = await this.database
+          .delete(this.table.postgres)
+          .where(
+            and(
+              eq(this.table.postgres.contextCorrelationId, agentContext.contextCorrelationId),
+              queryToDrizzlePostgres(query, this.table.postgres, this.tagKeyMapping)
+            )
+          )
+          .returning({ id: this.table.postgres.id })
+        return deleted.length
+      }
+
+      if (isDrizzleSqliteDatabase(this.database)) {
+        const deleted = await this.database
+          .delete(this.table.sqlite)
+          .where(
+            and(
+              eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId),
+              queryToDrizzleSqlite(query, this.table.sqlite, this.tagKeyMapping)
+            )
+          )
+          .returning({ id: this.table.sqlite.id })
+        return deleted.length
+      }
+    } catch (error) {
+      if (error instanceof CredoError) throw error
+
+      throw new CredoDrizzleStorageError(`Error deleting '${this.recordClass.type}' records by query`, {
+        cause: error,
+      })
+    }
+
+    throw new CredoDrizzleStorageError('Unsupported database type')
+  }
 }
