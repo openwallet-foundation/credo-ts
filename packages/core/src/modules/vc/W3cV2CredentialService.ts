@@ -3,7 +3,7 @@ import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import { asArray } from '../../utils/array'
-import { deleteCredentialHolderBinding } from '../../utils/credentialHolderBinding'
+import { deleteHolderBinding, getCredentialHolderBindingDids } from '../../utils/credentialHolderBinding'
 import { getPublicJwkFromVerificationMethod } from '../dids'
 import { extractKeyFromHolderBinding, parseHolderBindingFromCredential } from '../sd-jwt-vc/utils'
 import {
@@ -536,7 +536,7 @@ export class W3cV2CredentialService {
     const credentialRecord = await this.w3cV2CredentialRepository.getById(agentContext, id)
 
     if (options?.deleteAssociatedKeys) {
-      await deleteCredentialHolderBinding(agentContext, credentialRecord)
+      await deleteHolderBinding(agentContext, getCredentialHolderBindingDids(credentialRecord))
     }
 
     await this.w3cV2CredentialRepository.delete(agentContext, credentialRecord)

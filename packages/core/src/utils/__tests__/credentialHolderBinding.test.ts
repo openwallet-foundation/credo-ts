@@ -2,9 +2,9 @@ import { getAgentOptions } from '../../../tests'
 import { Agent } from '../../agent/Agent'
 import type { KeyDidCreateOptions } from '../../modules/dids'
 import { KeyManagementApi, KeyManagementKeysNotDeletedError } from '../../modules/kms'
-import { deleteHolderBindingDids } from '../credentialHolderBinding'
+import { deleteHolderBinding } from '../credentialHolderBinding'
 
-describe('deleteHolderBindingDids', () => {
+describe('deleteHolderBinding', () => {
   const agent = new Agent(getAgentOptions('credential-holder-binding-test-agent', {}))
 
   beforeAll(async () => {
@@ -36,7 +36,7 @@ describe('deleteHolderBindingDids', () => {
       return deleteKey.call(this, options)
     })
 
-    const error = await deleteHolderBindingDids(agent.context, [failing.did, deleted.did]).catch((error) => error)
+    const error = await deleteHolderBinding(agent.context, [failing.did, deleted.did]).catch((error) => error)
     expect(error).toBeInstanceOf(KeyManagementKeysNotDeletedError)
     expect(error.keys).toMatchObject([{ keyId: failing.keyId }])
     expect(await agent.dids.getCreatedDids({ did: failing.did })).toHaveLength(1)
@@ -44,7 +44,7 @@ describe('deleteHolderBindingDids', () => {
     await expect(agent.kms.getPublicKey({ keyId: deleted.keyId })).rejects.toThrow('not found')
 
     deleteKeySpy.mockRestore()
-    await deleteHolderBindingDids(agent.context, [failing.did, deleted.did])
+    await deleteHolderBinding(agent.context, [failing.did, deleted.did])
     expect(await agent.dids.getCreatedDids({ did: failing.did })).toHaveLength(0)
     await expect(agent.kms.getPublicKey({ keyId: failing.keyId })).rejects.toThrow('not found')
   })

@@ -76,6 +76,7 @@ export class OpenId4VcIssuerApi {
   /**
    * Rotate the credential request encryption key of the issuer with the given issuerId. The metadata advertises the new
    * key instead of the current keys. Without `key`, a new P-256 key is created in the backend of the current key.
+   * Throws when the issuer has no credential request encryption.
    *
    * The issuer record isn't locked, so don't run this while the issuer is updated elsewhere, or one update is lost.
    */

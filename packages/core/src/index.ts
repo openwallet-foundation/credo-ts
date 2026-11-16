@@ -125,8 +125,7 @@ export {
 } from './utils'
 export {
   addCredentialHolderBindingDids,
-  deleteCredentialHolderBinding,
-  deleteHolderBindingDids,
+  deleteHolderBinding,
   getCredentialHolderBindingDids,
 } from './utils/credentialHolderBinding'
 export type {

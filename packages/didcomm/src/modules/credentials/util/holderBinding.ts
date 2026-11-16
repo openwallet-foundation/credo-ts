@@ -1,4 +1,4 @@
-import { type AgentContext, deleteHolderBindingDids } from '@credo-ts/core'
+import { type AgentContext, deleteHolderBinding } from '@credo-ts/core'
 import type { DidCommCredentialExchangeRecord } from '../repository/DidCommCredentialExchangeRecord'
 
 const holderBindingDidsMetadataKey = '_internal/holderBindingDids'
@@ -50,5 +50,5 @@ export async function deleteExchangeHolderBinding(
   credentialExchangeRecord: DidCommCredentialExchangeRecord
 ) {
   const dids = Object.values(getHolderBindingDids(credentialExchangeRecord)).flat()
-  if (dids.length > 0) await deleteHolderBindingDids(agentContext, dids)
+  if (dids.length > 0) await deleteHolderBinding(agentContext, dids)
 }

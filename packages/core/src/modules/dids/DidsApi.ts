@@ -193,12 +193,39 @@ export class DidsApi {
     }
 
     if (deleteAssociatedKeys) {
-      await deleteKmsKeys(
-        this.agentContext,
-        (didRecord.keys ?? []).map(({ kmsKeyId, kmsBackend }) => ({ keyId: kmsKeyId, kmsBackend }))
-      )
+      await deleteKmsKeys(this.agentContext, await this.getCreatedDidKmsKeys(didRecord))
     }
     await this.didRepository.delete(this.agentContext, didRecord)
+  }
+
+  private async getCreatedDidKmsKeys(didRecord: DidRecord) {
+    if (didRecord.keys?.length) {
+      return didRecord.keys.map(({ kmsKeyId, kmsBackend }) => ({ keyId: kmsKeyId, kmsBackend }))
+    }
+
+    // Records without keys sign with the legacy key id of each verification method
+    let didDocument = didRecord.didDocument
+    if (!didDocument) {
+      try {
+        didDocument = await this.didResolverService.resolveDidDocument(this.agentContext, didRecord.did)
+      } catch (error) {
+        this.agentContext.config.logger.warn(
+          `Unable to resolve did '${didRecord.did}' to determine its keys. Deleting the did record without its keys.`,
+          { error }
+        )
+        return []
+      }
+    }
+    const verificationMethods = didDocument.findVerificationMethodsByPurpose([
+      'verificationMethod',
+      'authentication',
+      'assertionMethod',
+      'keyAgreement',
+      'capabilityInvocation',
+      'capabilityDelegation',
+    ])
+    const keyIds = new Set(verificationMethods.map((method) => getPublicJwkFromVerificationMethod(method).legacyKeyId))
+    return Array.from(keyIds, (keyId) => ({ keyId }))
   }
 
   public async resolveCreatedDidDocumentWithKeys(did: string) {

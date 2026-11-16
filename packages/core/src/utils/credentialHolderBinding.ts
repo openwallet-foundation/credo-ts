@@ -28,28 +28,17 @@ export function addCredentialHolderBindingDids(record: BaseRecordAny, dids: stri
 }
 
 /**
- * Deletes the holder binding keys of the credential, and the DIDs created to bind it together with their keys. It
+ * Deletes the holder binding keys of a credential, and the DIDs created to bind it together with their keys. It
  * doesn't delete the record itself, and doesn't check whether another record still uses a key.
  *
  * A key that fails to delete doesn't stop the others. A DID whose keys failed to delete is kept. It then throws for the
  * keys that weren't deleted, and calling it again retries them.
  */
-export async function deleteCredentialHolderBinding(
+export async function deleteHolderBinding(
   agentContext: AgentContext,
-  record: BaseRecordAny,
+  dids: string[],
   holderKeys: KmsKeyReference[] = []
 ) {
-  await deleteHolderBinding(agentContext, getCredentialHolderBindingDids(record), holderKeys)
-}
-
-/**
- * Deletes DIDs that were created only to bind a credential, together with their keys.
- */
-export async function deleteHolderBindingDids(agentContext: AgentContext, dids: string[]) {
-  await deleteHolderBinding(agentContext, dids, [])
-}
-
-async function deleteHolderBinding(agentContext: AgentContext, dids: string[], recordKeys: KmsKeyReference[]) {
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
   const failedKeys: KeyManagementNotDeletedKey[] = []
   const collectFailedKeys = (error: unknown) => {
@@ -60,7 +49,7 @@ async function deleteHolderBinding(agentContext: AgentContext, dids: string[], r
   }
 
   // Credentials bound directly to a key (not a DID) first
-  await deleteKmsKeys(agentContext, recordKeys).catch(collectFailedKeys)
+  await deleteKmsKeys(agentContext, holderKeys).catch(collectFailedKeys)
   for (const did of dids) {
     await didsApi.deleteCreatedDid({ did, deleteAssociatedKeys: true }).catch(collectFailedKeys)
   }

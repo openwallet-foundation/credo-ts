@@ -2,7 +2,7 @@ import type { AgentContext } from '../../agent/context'
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
-import { deleteCredentialHolderBinding } from '../../utils/credentialHolderBinding'
+import { deleteHolderBinding, getCredentialHolderBindingDids } from '../../utils/credentialHolderBinding'
 import { CREDENTIALS_CONTEXT_V1_URL } from './constants'
 import { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from './jwt-vc'
 import { W3cJwtCredentialService } from './jwt-vc/W3cJwtCredentialService'
@@ -186,7 +186,7 @@ export class W3cCredentialService {
     const credentialRecord = await this.w3cCredentialRepository.getById(agentContext, id)
 
     if (options?.deleteAssociatedKeys) {
-      await deleteCredentialHolderBinding(agentContext, credentialRecord)
+      await deleteHolderBinding(agentContext, getCredentialHolderBindingDids(credentialRecord))
     }
 
     await this.w3cCredentialRepository.delete(agentContext, credentialRecord)

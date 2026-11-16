@@ -5,6 +5,7 @@ import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { type AgentType, createAgentFromModules } from '../../../tests/utils'
 import { openBadgeDcqlQuery, universityDegreePresentationDefinition } from '../../../tests/utilsVp'
 import { OpenId4VcModule } from '../../OpenId4VcModule'
+import { OpenId4VcVerifierEvents } from '../OpenId4VcVerifierEvents'
 import { OpenId4VcVerificationSessionRepository } from '../repository'
 
 const modules = {
@@ -338,6 +339,28 @@ describe('OpenId4VcVerifier', () => {
       const { keyId } = await (createKeySpy.mock.results[0].value as ReturnType<Kms.KeyManagementApi['createKey']>)
       vi.restoreAllMocks()
       await expect(verifier.agent.kms.getPublicKey({ keyId })).rejects.toThrow('not found')
+    })
+
+    it('keeps the response encryption key when a listener throws after the session is stored', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const createKeySpy = vi.spyOn(Kms.KeyManagementApi.prototype, 'createKey')
+      const listener = () => {
+        throw new Error('listener failed')
+      }
+      verifier.agent.events.on(OpenId4VcVerifierEvents.VerificationSessionStateChanged, listener)
+
+      await expect(
+        verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+          requestSigner: { method: 'did', didUrl: verifier.kid },
+          verifierId: openIdVerifier.verifierId,
+          dcql: { query: openBadgeDcqlQuery },
+        })
+      ).rejects.toThrow('listener failed')
+
+      verifier.agent.events.off(OpenId4VcVerifierEvents.VerificationSessionStateChanged, listener)
+      const { keyId } = await (createKeySpy.mock.results[0].value as ReturnType<Kms.KeyManagementApi['createKey']>)
+      vi.restoreAllMocks()
+      await expect(verifier.agent.kms.getPublicKey({ keyId })).resolves.toBeDefined()
     })
 
     it('throws an error when deleting a non-existent verification session', async () => {

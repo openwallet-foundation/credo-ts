@@ -137,9 +137,18 @@ export class DidCommConnectionService {
 
       const outOfBandRepository = messageContext.agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
       const outOfBandService = messageContext.agentContext.dependencyManager.resolve(DidCommOutOfBandService)
-      const outOfBandRecord = await outOfBandRepository.findSingleByQuery(messageContext.agentContext, {
+      let outOfBandRecord = await outOfBandRepository.findSingleByQuery(messageContext.agentContext, {
         invitationRequestsThreadIds: [message.threadId],
       })
+
+      // A message on a new thread, such as a revocation notification, belongs to the exchange of the previous messages.
+      const previousThreadId = (lastSentMessage ?? lastReceivedMessage)?.threadId
+      if (!outOfBandRecord && previousThreadId) {
+        outOfBandRecord = await outOfBandRepository.findSingleByQuery(messageContext.agentContext, {
+          invitationRequestsThreadIds: [previousThreadId],
+        })
+      }
+
       if (!outOfBandRecord) {
         throw new CredoError(
           `No out of band record found for connection-less message with thread id ${message.threadId}. Use the out of band API to start a connection-less exchange.`
@@ -191,6 +200,16 @@ export class DidCommConnectionService {
         if (!senderKeyFound) {
           throw new CredoError(`Sender key ${senderKey.fingerprint} not found in their service.`)
         }
+      }
+
+      // Their incoming ~service may rotate their keys, but must be sent with a key from their previous ~service.
+      const previousService = lastReceivedMessage?.service?.resolvedDidCommService
+      if (
+        senderKey &&
+        previousService &&
+        !previousService.recipientKeys.some((key) => keyAgreementsEqual(senderKey, key))
+      ) {
+        throw new CredoError(`Sender key ${senderKey.fingerprint} not found in their previously received service.`)
       }
     }
   }

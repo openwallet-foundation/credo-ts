@@ -35,6 +35,8 @@ export interface DidCommDeleteConnectionOptions {
    * you passed it as `ourDid` elsewhere, so don't reuse it. Nothing is deleted for connections created before this
    * option existed, as they don't record which keys are theirs.
    *
+   * Delete an invitation and its connections one after the other. Run in parallel, each keeps the keys they share.
+   *
    * @default false
    */
   deleteAssociatedKeys?: boolean

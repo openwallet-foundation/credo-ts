@@ -1,4 +1,4 @@
-import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { DidKey, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import type { MockedClassConstructor } from '../../../../../../../tests/types'
@@ -7,6 +7,7 @@ import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../..
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../../node/src'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import { DidCommRoutingEventTypes } from '../../DidCommRoutingEvents'
+import { DidCommMediationRole } from '../../models'
 import type { DidCommMediationRecord } from '../../repository'
 import { DidCommMediationRecipientService } from '../DidCommMediationRecipientService'
 import { DidCommRoutingService } from '../DidCommRoutingService'
@@ -100,6 +101,30 @@ describe('DidCommRoutingService', () => {
         Kms.KeyManagementKeyNotFoundError
       )
       expect(routingListener).toHaveBeenCalledTimes(1)
+    })
+
+    test('removes P-256 keyAgreement keys from the mediator', async () => {
+      const kms = agentContext.resolve(Kms.KeyManagementApi)
+      const { keyId, publicJwk } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const keyAgreementKey = Kms.PublicJwk.fromPublicJwk(publicJwk)
+      mockFunction(mediationRecipientService.findAllMediatorsByQuery).mockResolvedValue([
+        { id: 'mediator' } as DidCommMediationRecord,
+      ])
+
+      await routingService.deleteRouting(agentContext, {
+        keys: [{ keyId, publicJwk: keyAgreementKey.toJson({ includeKid: false }) }],
+      })
+
+      const recipientDid = new DidKey(keyAgreementKey).did
+      expect(mediationRecipientService.findAllMediatorsByQuery).toHaveBeenCalledWith(agentContext, {
+        role: DidCommMediationRole.Recipient,
+        $or: [{ recipientDids: [recipientDid] }],
+      })
+      expect(mediationRecipientService.removeMediationRouting).toHaveBeenCalledWith(agentContext, {
+        recipientKeys: [expect.objectContaining({ fingerprint: keyAgreementKey.fingerprint })],
+        mediatorId: 'mediator',
+        did: undefined,
+      })
     })
   })
 })

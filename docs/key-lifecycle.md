@@ -59,7 +59,7 @@ The holder's device key is a credential binding key, see OpenID4VC.
 
 ## DIDs
 
-A DID record links its document to KMS keys in `keys[{ kmsKeyId, didDocumentRelativeKeyId }]`. The keys live as long as the DID. The DID registrars don't delete keys on deactivate, update or a failed create, so delete them yourself with `kms.deleteKey`. `dids.deleteCreatedDid` with `deleteAssociatedKeys: true` deletes a DID record and its keys. It doesn't deactivate the DID, so deactivate it first when the DID method supports it. The did:peer DIDs Credo creates for DIDComm are deleted with their records, see DIDComm.
+A DID record links its document to KMS keys in `keys[{ kmsKeyId, didDocumentRelativeKeyId }]`. The keys live as long as the DID. The DID registrars don't delete keys on deactivate, update or a failed create, so delete them yourself with `kms.deleteKey`. `dids.deleteCreatedDid` with `deleteAssociatedKeys: true` deletes a DID record and its keys. For a record without `keys` it deletes the legacy key id of each verification method in the stored DID document, or else in the resolved one. When the DID doesn't resolve, it logs a warning and deletes only the record. It doesn't deactivate the DID, so deactivate it first when the DID method supports it. The did:peer DIDs Credo creates for DIDComm are deleted with their records, see DIDComm.
 
 ## DIDComm
 
@@ -103,7 +103,7 @@ A recorded DID or key stays while a related record recorded it too:
 - Deleting a connection keeps what its invitation, or another connection from that invitation, recorded.
 - Deleting an invitation keeps what its connections recorded, such as the key a single-use invitation passed on.
 
-Whichever record is deleted last deletes the shared DID or key. Credo doesn't check other records, see Ownership.
+Whichever record is deleted last deletes the shared DID or key. Credo doesn't check other records, see Ownership. Delete an invitation and its connections one after the other. When they are deleted in parallel, each sees the other and keeps the shared DID or key, so nothing deletes it.
 
 Examples:
 

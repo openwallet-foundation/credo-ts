@@ -1541,10 +1541,14 @@ export class OpenId4VcIssuerService {
     options?: { key?: OpenId4VciCredentialRequestEncryptionKey }
   ) {
     const current = issuer.credentialRequestEncryption
-    const currentKeys = [...(current?.keys ?? []), ...(current?.previousKeys ?? [])]
+    // Rotating shouldn't turn on encryption, that's a configuration change through updateIssuerMetadata
+    if (!current) {
+      throw new CredoError(`Issuer '${issuer.issuerId}' has no credential request encryption keys to rotate.`)
+    }
+    const currentKeys = [...current.keys, ...(current.previousKeys ?? [])]
 
     const key = options?.key ?? {
-      createKey: { type: { kty: 'EC', crv: 'P-256' }, backend: current?.keys[0].kmsBackend },
+      createKey: { type: { kty: 'EC', crv: 'P-256' }, backend: current.keys[0].kmsBackend },
     }
     const encryptionKey = await getOrCreateCredentialRequestEncryptionKey(agentContext, key)
     // Deleting the previous keys would otherwise delete the key that decrypts
@@ -1556,7 +1560,7 @@ export class OpenId4VcIssuerService {
 
     // The previous keys keep decrypting requests until they're deleted with deletePreviousCredentialRequestEncryptionKeys
     issuer.credentialRequestEncryption = {
-      required: current?.required,
+      required: current.required,
       keys: [toOpenId4VcIssuerRecordKey(Kms.PublicJwk.fromKmsKey(encryptionKey))],
       previousKeys: currentKeys.length ? currentKeys : undefined,
     }

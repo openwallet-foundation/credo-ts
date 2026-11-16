@@ -18,6 +18,7 @@ import { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
 import type { DidCommRouting } from '../../../models'
 import { DidCommInboundMessageContext } from '../../../models'
 import { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
+import { DidCommOutOfBandRole } from '../../oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandRepository } from '../../oob/repository/DidCommOutOfBandRepository'
 import { DidCommTrustPingMessage, DidCommTrustPingV2Message } from '../messages'
 import { DidCommDidExchangeState } from '../models'
@@ -412,6 +413,54 @@ describe('DidCommConnectionService', () => {
           lastSentMessage,
         })
       ).rejects.toThrow('Sender key z6MkkbTaLstV4fwr1rNf5CSxdS2rGbwxi3V5y6NnVFTZ2V1w not found in their service.')
+    })
+
+    describe('with our own out of band invitation', () => {
+      const toPublicJwk = (base58: string) =>
+        Kms.PublicJwk.fromPublicKey({ kty: 'OKP', crv: 'Ed25519', publicKey: TypedArrayEncoder.fromBase58(base58) })
+      const ourKey = '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'
+      const previousKey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const rotatedKey = '6fioC1zcDPyPEL19pXRS2E4iJ46zH7xP6uSgAaPdwDrx'
+
+      const assertExchange = (senderKey: string) => {
+        const lastSentMessage = new DidCommMessage()
+        lastSentMessage.setService({ recipientKeys: [ourKey], serviceEndpoint: '', routingKeys: [] })
+        const lastReceivedMessage = new DidCommMessage()
+        lastReceivedMessage.setService({ recipientKeys: [previousKey], serviceEndpoint: '', routingKeys: [] })
+
+        const message = new DidCommMessage()
+        message.setService({ recipientKeys: [senderKey, rotatedKey], serviceEndpoint: '', routingKeys: [] })
+        const messageContext = new DidCommInboundMessageContext(message, {
+          agentContext,
+          senderKey: toPublicJwk(senderKey),
+          recipientKey: toPublicJwk(ourKey),
+        })
+
+        return connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
+          lastReceivedMessage,
+          lastSentMessage,
+        })
+      }
+
+      beforeEach(() => {
+        mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(
+          getMockOutOfBand({ role: DidCommOutOfBandRole.Sender })
+        )
+        mockFunction(outOfBandService.getResolvedServiceForOutOfBandServices).mockResolvedValue({
+          id: '#inline-0',
+          serviceEndpoint: '',
+          recipientKeys: [toPublicJwk(ourKey)],
+          routingKeys: [],
+        })
+      })
+
+      it('accepts a new ~service sent with their previous key', async () => {
+        await expect(assertExchange(previousKey)).resolves.not.toThrow()
+      })
+
+      it('refuses a new ~service sent with a key not in their previous ~service', async () => {
+        await expect(assertExchange(rotatedKey)).rejects.toThrow('not found in their previously received service')
+      })
     })
   })
 

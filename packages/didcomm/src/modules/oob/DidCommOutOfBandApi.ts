@@ -73,6 +73,8 @@ export interface DidCommDeleteOutOfBandOptions {
    * `ourDid` elsewhere, so don't reuse it. Nothing is deleted for out-of-band records created before this option
    * existed, as they don't record which keys are theirs.
    *
+   * Delete an invitation and its connections one after the other. Run in parallel, each keeps the keys they share.
+   *
    * @default false
    */
   deleteAssociatedKeys?: boolean
@@ -715,6 +717,13 @@ export class DidCommOutOfBandApi {
         mediatorId: routing.mediatorId,
         routingDid: routing.routingDid,
       })
+      // The connection or connection-less exchange picks the keys up from here
+      if (routing.deleteWithRecord) {
+        outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.CreatedKeys, {
+          dids: [],
+          keys: routingKmsKeys(routing),
+        })
+      }
       outOfBandRecord.setTags({ recipientRoutingKeyFingerprint: routing.recipientKey.fingerprint })
     }
 

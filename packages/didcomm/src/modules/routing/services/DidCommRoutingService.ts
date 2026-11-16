@@ -114,15 +114,16 @@ export class DidCommRoutingService {
    * Removing them from a mediator is best-effort: when it fails, it logs a warning and still deletes the keys.
    */
   public async deleteRouting(agentContext: AgentContext, { keys, did }: { keys: DidCommCreatedKey[]; did?: string }) {
-    const publicJwks = keys.map(({ publicJwk }) => Kms.PublicJwk.fromUnknown(publicJwk))
-    const recipientKeys = publicJwks.filter((publicJwk) =>
-      publicJwk.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk)
+    const recipientKeys = keys.map(({ publicJwk }) =>
+      Kms.PublicJwk.fromUnknown(publicJwk)
     ) as RemoveRoutingOptions['recipientKeys']
     const recipientDid = did ? (getDidPeer4ShortFormForEquivalence(did) ?? did) : undefined
-    // A 1.0 mediator registers base58 keys, a 2.0 mediator the did:key of each key and the did
+    // A 1.0 mediator registers base58 Ed25519 keys, a 2.0 mediator the did:key of each key and the did
     const query = [
       ...recipientKeys.flatMap((recipientKey) => [
-        { recipientKeys: [TypedArrayEncoder.toBase58(recipientKey.publicKey.publicKey)] },
+        ...(recipientKey.is(Kms.Ed25519PublicJwk)
+          ? [{ recipientKeys: [TypedArrayEncoder.toBase58(recipientKey.publicKey.publicKey)] }]
+          : []),
         { recipientDids: [new DidKey(recipientKey).did] },
       ]),
       ...(recipientDid ? [{ recipientDids: [recipientDid] }] : []),
@@ -146,7 +147,7 @@ export class DidCommRoutingService {
 
     this.eventEmitter.emit<DidCommRoutingDeletedEvent>(agentContext, {
       type: DidCommRoutingEventTypes.RoutingDeletedEvent,
-      payload: { recipientKeys: publicJwks },
+      payload: { recipientKeys },
     })
 
     await Kms.deleteKmsKeys(agentContext, keys)
@@ -168,11 +169,11 @@ export interface GetRoutingOptions {
 
 export interface RemoveRoutingOptions {
   /**
-   * Recipient keys to remove routing from. May include both Ed25519 and X25519 keys.
-   * V1 mediators only use Ed25519 keys; V2 mediators use both directly (as did:key).
+   * Recipient keys to remove routing from: Ed25519 keys and DIDComm v2 keyAgreement keys.
+   * V1 mediators only use Ed25519 keys; V2 mediators use all of them directly (as did:key).
    * X25519 keys are passed through as-is without birational derivation.
    */
-  recipientKeys: (Kms.PublicJwk<Kms.Ed25519PublicJwk> | Kms.PublicJwk<Kms.X25519PublicJwk>)[]
+  recipientKeys: (Kms.PublicJwk<Kms.Ed25519PublicJwk> | DidCommV2KeyAgreementJwk)[]
 
   /**
    * Identifier of the mediator used when routing has been set up

@@ -7,7 +7,8 @@ import {
   CredoError,
   DidsApi,
   deepEquality,
-  deleteCredentialHolderBinding,
+  deleteHolderBinding,
+  getCredentialHolderBindingDids,
   getPublicJwkFromVerificationMethod,
   type JsonObject,
   JsonTransformer,
@@ -739,7 +740,8 @@ export class DidCommDataIntegrityCredentialFormatService
     const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
     const w3cCredentialRecord = await w3cCredentialRepository.findById(agentContext, credentialRecordId)
     if (w3cCredentialRecord) {
-      if (options?.deleteAssociatedKeys) await deleteCredentialHolderBinding(agentContext, w3cCredentialRecord)
+      if (options?.deleteAssociatedKeys)
+        await deleteHolderBinding(agentContext, getCredentialHolderBindingDids(w3cCredentialRecord))
 
       const linkSecretBindingProvider = this.linkSecretBinding
 
@@ -755,7 +757,8 @@ export class DidCommDataIntegrityCredentialFormatService
     const w3cV2CredentialRepository = agentContext.dependencyManager.resolve(W3cV2CredentialRepository)
     const w3cV2CredentialRecord = await w3cV2CredentialRepository.findById(agentContext, credentialRecordId)
     if (w3cV2CredentialRecord) {
-      if (options?.deleteAssociatedKeys) await deleteCredentialHolderBinding(agentContext, w3cV2CredentialRecord)
+      if (options?.deleteAssociatedKeys)
+        await deleteHolderBinding(agentContext, getCredentialHolderBindingDids(w3cV2CredentialRecord))
       await w3cV2CredentialRepository.delete(agentContext, w3cV2CredentialRecord)
       return
     }

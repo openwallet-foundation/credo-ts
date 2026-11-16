@@ -234,6 +234,24 @@ describe('deleteById with deleteAssociatedKeys', () => {
     expect(await keyExists(alice, routing.recipientKey.keyId)).toBe(false)
   })
 
+  test('deletes the keys of routing passed to receiveInvitation with deleteWithRecord when accepting later', async () => {
+    const outOfBandRecord = await faber.didcomm.oob.createInvitation({
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+    })
+    const routing = await alice.didcomm.mediationRecipient.getRouting({})
+    const { outOfBandRecord: aliceOutOfBandRecord } = await alice.didcomm.oob.receiveInvitation(
+      outOfBandRecord.outOfBandInvitation,
+      { label: '', routing: { ...routing, deleteWithRecord: true }, autoAcceptInvitation: false }
+    )
+    const { connectionRecord } = await alice.didcomm.oob.acceptInvitation(aliceOutOfBandRecord.id, { label: '' })
+
+    await alice.didcomm.connections.deleteById(connectionRecord?.id as string, { deleteAssociatedKeys: true })
+    expect(await keyExists(alice, routing.recipientKey.keyId)).toBe(true)
+
+    await alice.didcomm.oob.deleteById(aliceOutOfBandRecord.id, { deleteAssociatedKeys: true })
+    expect(await keyExists(alice, routing.recipientKey.keyId)).toBe(false)
+  })
+
   test('creates no keys for a v2 invitation with ourDid and keeps that DID', async () => {
     const { did } = await createPeerDidForV2OOB(faber.context, await faber.didcomm.mediationRecipient.getRouting({}))
     const keyIds = await didKeyIds(faber, did)

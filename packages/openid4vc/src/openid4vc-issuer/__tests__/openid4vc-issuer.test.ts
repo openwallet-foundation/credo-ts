@@ -2457,6 +2457,12 @@ describe('OpenId4VcIssuer', () => {
       ).resolves.toMatchObject({ credentialRequest })
     })
 
+    it('does not rotate the encryption key of an issuer without credential request encryption', async () => {
+      await expect(
+        issuer.openid4vc.issuer.rotateCredentialRequestEncryptionKey(openId4VcIssuer.issuerId)
+      ).rejects.toThrow(`Issuer '${openId4VcIssuer.issuerId}' has no credential request encryption keys to rotate.`)
+    })
+
     it('rotates to a given encryption key', async () => {
       await configureRequestEncryption()
       const key = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-384' } })

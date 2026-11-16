@@ -98,7 +98,7 @@ export async function getConnectionlessOutboundMessageContext(
     `Creating outbound message context for message ${message.id} using connection-less exchange`
   )
 
-  const outOfBandRecord = await getOutOfBandRecordForMessage(agentContext, message)
+  const outOfBandRecord = await getOutOfBandRecordForMessage(agentContext, message, lastReceivedMessage)
   if (!outOfBandRecord) {
     throw new CredoError(
       `No out of band record found for connection-less exchange for message ${message.id}. Use the out of band API to start a connection-less exchange.`
@@ -149,36 +149,25 @@ export async function getConnectionlessOutboundMessageContext(
   })
 }
 
-// A sent ~service only holds the base58 key. The kms key id lives on the out of band record or did record we created.
+// A sent ~service only holds the base58 key. The kms key id lives on our out of band record or the did record we created.
 async function setSenderKeyId(
   agentContext: AgentContext,
   senderKey: Kms.PublicJwk,
-  outOfBandRecord?: DidCommOutOfBandRecord
+  outOfBandRecord: DidCommOutOfBandRecord
 ): Promise<void> {
-  const senderOutOfBandRecords =
-    outOfBandRecord?.role === DidCommOutOfBandRole.Sender
-      ? [outOfBandRecord]
-      : await agentContext.dependencyManager.resolve(DidCommOutOfBandRepository).findByQuery(agentContext, {
-          role: DidCommOutOfBandRole.Sender,
-          recipientKeyFingerprints: [senderKey.fingerprint],
-        })
-  const inlineOutOfBandRecord = senderOutOfBandRecords.find((record) =>
-    record.invitationInlineServiceKeys?.some(
-      ({ recipientKeyFingerprint }) => recipientKeyFingerprint === senderKey.fingerprint
-    )
+  if (outOfBandRecord.role !== DidCommOutOfBandRole.Sender) return
+
+  const hasInlineKey = outOfBandRecord.invitationInlineServiceKeys?.some(
+    ({ recipientKeyFingerprint }) => recipientKeyFingerprint === senderKey.fingerprint
   )
-
-  if (!inlineOutOfBandRecord && (await setCreatedDidKeyId(agentContext, senderKey))) return
-
-  const senderOutOfBandRecord = inlineOutOfBandRecord ?? senderOutOfBandRecords[0]
-  if (!senderOutOfBandRecord) return
+  if (!hasInlineKey && (await setCreatedDidKeyId(agentContext, senderKey))) return
 
   const ourService = await agentContext.dependencyManager
     .resolve(DidCommOutOfBandService)
     .getResolvedServiceForOutOfBandServices(
       agentContext,
-      senderOutOfBandRecord.outOfBandInvitation.getServices(),
-      senderOutOfBandRecord.invitationInlineServiceKeys
+      outOfBandRecord.outOfBandInvitation.getServices(),
+      outOfBandRecord.invitationInlineServiceKeys
     )
 
   const ourKey = ourService.recipientKeys.find(({ fingerprint }) => fingerprint === senderKey.fingerprint)
@@ -207,8 +196,14 @@ async function setCreatedDidKeyId(agentContext: AgentContext, publicJwk: Kms.Pub
 
 /**
  * Retrieves the out of band record associated with the message based on the thread id of the message.
+ *
+ * A message on a new thread, such as a revocation notification, falls back to the thread of the last received message.
  */
-async function getOutOfBandRecordForMessage(agentContext: AgentContext, message: DidCommMessage) {
+async function getOutOfBandRecordForMessage(
+  agentContext: AgentContext,
+  message: DidCommMessage,
+  lastReceivedMessage: DidCommMessage
+) {
   agentContext.config.logger.debug(
     `Looking for out-of-band record for message ${message.id} with thread id ${message.threadId} and type ${message.type}`
   )
@@ -217,8 +212,11 @@ async function getOutOfBandRecordForMessage(agentContext: AgentContext, message:
   const outOfBandRecord = await outOfBandRepository.findSingleByQuery(agentContext, {
     invitationRequestsThreadIds: [message.threadId],
   })
+  if (outOfBandRecord || lastReceivedMessage.threadId === message.threadId) return outOfBandRecord
 
-  return outOfBandRecord
+  return outOfBandRepository.findSingleByQuery(agentContext, {
+    invitationRequestsThreadIds: [lastReceivedMessage.threadId],
+  })
 }
 
 /**

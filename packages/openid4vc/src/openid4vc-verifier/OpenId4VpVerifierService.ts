@@ -332,6 +332,7 @@ export class OpenId4VpVerifierService {
       dcqlQuery: options.dcql?.query,
     })
 
+    let result: OpenId4VpCreateAuthorizationRequestReturn
     try {
       const requestParamsBase = {
         nonce,
@@ -397,9 +398,8 @@ export class OpenId4VpVerifierService {
         verificationSession.metadata.set(key, value)
       }
       await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
-      this.emitStateChangedEvent(agentContext, verificationSession, null)
 
-      return {
+      result = {
         authorizationRequest: authorizationRequest.authorizationRequest,
         verificationSession,
         authorizationRequestObject: authorizationRequest.authorizationRequestObject,
@@ -413,6 +413,10 @@ export class OpenId4VpVerifierService {
       }
       throw error
     }
+
+    // The session is stored, so a throwing listener must not delete its key
+    this.emitStateChangedEvent(agentContext, result.verificationSession, null)
+    return result
   }
 
   private async getDcqlVerifiedResponse(
@@ -1030,21 +1034,12 @@ export class OpenId4VpVerifierService {
       verificationSessionId
     )
 
-    const clientJwks = verificationSession.requestPayload.client_metadata?.jwks
     const deleteAssociatedKey = options?.deleteAssociatedKey ?? true
+    const responseEncryptionKey = deleteAssociatedKey
+      ? (verificationSession.responseEncryptionKey ?? this.getLegacyResponseEncryptionKey(verificationSession))
+      : undefined
 
-    // Sessions from before `responseEncryptionKey` published the KMS key id as the `kid` of the encryption key,
-    // or before Credo 0.6 the fingerprint of a key stored under its legacy key id
-    const encryptionJwk = clientJwks?.keys.find((key) => key.use === 'enc')
-    let legacyKeyId = encryptionJwk?.kid
-    if (encryptionJwk && legacyKeyId) {
-      const publicJwk = Kms.PublicJwk.fromUnknown(encryptionJwk)
-      if (publicJwk.fingerprint === legacyKeyId) legacyKeyId = publicJwk.legacyKeyId
-    }
-    const responseEncryptionKey =
-      verificationSession.responseEncryptionKey ?? (legacyKeyId ? { keyId: legacyKeyId } : undefined)
-
-    if (deleteAssociatedKey && responseEncryptionKey) {
+    if (responseEncryptionKey) {
       // Returns false if the key was already gone, which is the state we want it in
       await agentContext
         .resolve(Kms.KeyManagementApi)
@@ -1052,6 +1047,22 @@ export class OpenId4VpVerifierService {
     }
 
     await this.openId4VcVerificationSessionRepository.delete(agentContext, verificationSession)
+  }
+
+  /**
+   * Sessions from before `responseEncryptionKey` published the KMS key id as the `kid` of the encryption key,
+   * or before Credo 0.6 the fingerprint of a key stored under its legacy key id.
+   */
+  private getLegacyResponseEncryptionKey(
+    verificationSession: OpenId4VcVerificationSessionRecord
+  ): Kms.KmsKeyReference | undefined {
+    const encryptionJwk = verificationSession.requestPayload.client_metadata?.jwks?.keys.find(
+      (key) => key.use === 'enc'
+    )
+    if (!encryptionJwk?.kid) return undefined
+
+    const publicJwk = Kms.PublicJwk.fromUnknown(encryptionJwk)
+    return { keyId: publicJwk.fingerprint === encryptionJwk.kid ? publicJwk.legacyKeyId : encryptionJwk.kid }
   }
 
   private async getClientMetadata(

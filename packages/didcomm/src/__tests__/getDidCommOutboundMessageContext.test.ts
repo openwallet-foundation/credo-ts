@@ -99,35 +99,32 @@ describe('getConnectionlessOutboundMessageContext', () => {
     vi.resetAllMocks()
   })
 
-  test('sets the sender key id from the out of band record tagged with our key for a message on a new thread', async () => {
-    mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(null)
-    mockFunction(outOfBandRepository.findByQuery).mockResolvedValue([senderOutOfBandRecord])
+  // A message on a new thread, such as a revocation notification, finds the out of band record by the exchange thread
+  const getMessagesForExchange = (outOfBandRecord: DidCommOutOfBandRecord) => {
+    const messages = getMessages()
+    mockFunction(outOfBandRepository.findSingleByQuery).mockImplementation(async (_, query) =>
+      'invitationRequestsThreadIds' in query &&
+      query.invitationRequestsThreadIds?.includes(messages.lastReceivedMessage.threadId)
+        ? outOfBandRecord
+        : null
+    )
+    return messages
+  }
+
+  test('sets the sender key id from the out of band record of the exchange for a message on a new thread', async () => {
+    const messages = getMessagesForExchange(senderOutOfBandRecord)
 
     const outboundMessageContext = await getConnectionlessOutboundMessageContext(agentContext, {
-      ...getMessages(),
+      ...messages,
       message: new TestMessage(),
       associatedRecord: senderOutOfBandRecord,
     })
 
     expect(outboundMessageContext.serviceParams?.senderKey.keyId).toEqual('our-kms-key-id')
     expect(outboundMessageContext.serviceParams?.senderKey.kmsBackend).toEqual('askar')
-    expect(outOfBandRepository.findByQuery).toHaveBeenCalledWith(agentContext, {
-      role: DidCommOutOfBandRole.Sender,
-      recipientKeyFingerprints: [ourPublicJwk.fingerprint],
+    expect(outOfBandRepository.findSingleByQuery).toHaveBeenCalledWith(agentContext, {
+      invitationRequestsThreadIds: [messages.lastReceivedMessage.threadId],
     })
-  })
-
-  test('prefers the out of band record with our key inline when several records are tagged with our key', async () => {
-    mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(null)
-    mockFunction(outOfBandRepository.findByQuery).mockResolvedValue([didOutOfBandRecord, senderOutOfBandRecord])
-
-    const outboundMessageContext = await getConnectionlessOutboundMessageContext(agentContext, {
-      ...getMessages(),
-      message: new TestMessage(),
-      associatedRecord: senderOutOfBandRecord,
-    })
-
-    expect(outboundMessageContext.serviceParams?.senderKey.keyId).toEqual('our-kms-key-id')
     expect(didCommDocumentService.resolveCreatedDidDocumentWithKeysByRecipientKey).not.toHaveBeenCalled()
     expect(didCommDocumentService.resolveServicesFromDid).not.toHaveBeenCalled()
   })
@@ -143,11 +140,9 @@ describe('getConnectionlessOutboundMessageContext', () => {
         },
       ],
     })
-    mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(null)
-    mockFunction(outOfBandRepository.findByQuery).mockResolvedValue([didOutOfBandRecord])
 
     const outboundMessageContext = await getConnectionlessOutboundMessageContext(agentContext, {
-      ...getMessages(),
+      ...getMessagesForExchange(didOutOfBandRecord),
       message: new TestMessage(),
       associatedRecord: didOutOfBandRecord,
     })
@@ -162,11 +157,9 @@ describe('getConnectionlessOutboundMessageContext', () => {
       didDocument: ourDidKey.didDocument,
       keys: [],
     })
-    mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(null)
-    mockFunction(outOfBandRepository.findByQuery).mockResolvedValue([didOutOfBandRecord])
 
     const outboundMessageContext = await getConnectionlessOutboundMessageContext(agentContext, {
-      ...getMessages(),
+      ...getMessagesForExchange(didOutOfBandRecord),
       message: new TestMessage(),
       associatedRecord: didOutOfBandRecord,
     })
@@ -186,7 +179,6 @@ describe('getConnectionlessOutboundMessageContext', () => {
     })
 
     expect(outboundMessageContext.serviceParams?.senderKey.keyId).toEqual('our-kms-key-id')
-    expect(outOfBandRepository.findByQuery).not.toHaveBeenCalled()
   })
 })
 

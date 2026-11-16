@@ -2,7 +2,10 @@ import {
   createPeerDidDocumentFromServices,
   DidDocument,
   DidDocumentService,
+  DidKey,
+  DidRecord,
   type KeyDidCreateOptions,
+  Kms,
   type PeerDidCreateOptions,
   PeerDidNumAlgo,
   RecordNotFoundError,
@@ -282,5 +285,35 @@ describe('DidsApi', () => {
     await expect(
       agent.dids.deleteCreatedDid({ did: deletedKeys.did as string, deleteAssociatedKeys: true })
     ).rejects.toThrow(RecordNotFoundError)
+  })
+
+  test('deleteCreatedDid deletes the keys of a record without keys under their legacy key id', async () => {
+    const { privateJwk } = transformPrivateKeyToPrivateJwk({
+      privateKey: TypedArrayEncoder.fromUtf8String('another-sample-seed-of-32-bytes!'),
+      type: { kty: 'OKP', crv: 'Ed25519' },
+    })
+    const { d, ...publicJwk } = privateJwk
+    const legacyKeyId = Kms.PublicJwk.fromUnknown(publicJwk).legacyKeyId
+    await agent.kms.importKey({ privateJwk: { ...privateJwk, kid: legacyKeyId } })
+    const did = new DidKey(Kms.PublicJwk.fromUnknown(publicJwk)).did
+    await agent.dependencyManager
+      .resolve(DidRepository)
+      .save(agent.context, new DidRecord({ did, role: DidDocumentRole.Created }))
+
+    await agent.dids.deleteCreatedDid({ did, deleteAssociatedKeys: true })
+
+    expect(await agent.dids.getCreatedDids({ did })).toHaveLength(0)
+    await expect(agent.kms.getPublicKey({ keyId: legacyKeyId })).rejects.toThrow()
+  })
+
+  test('deleteCreatedDid deletes a record without keys whose did can not be resolved', async () => {
+    const did = 'did:example:legacy'
+    await agent.dependencyManager
+      .resolve(DidRepository)
+      .save(agent.context, new DidRecord({ did, role: DidDocumentRole.Created }))
+
+    await agent.dids.deleteCreatedDid({ did, deleteAssociatedKeys: true })
+
+    expect(await agent.dids.getCreatedDids({ did })).toHaveLength(0)
   })
 })
