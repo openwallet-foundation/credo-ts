@@ -457,7 +457,10 @@ describe('DCQL proof format over a DIDComm connection', () => {
     const bearer = await signSdJwtVc({ vct }, false)
 
     const createPresentationSpy = mockPidPresentation(() =>
-      holderAgent.sdJwtVc.present({ sdJwtVc: holderAgent.sdJwtVc.fromCompact(bearer), presentationFrame: { given_name: true } })
+      holderAgent.sdJwtVc.present({
+        sdJwtVc: holderAgent.sdJwtVc.fromCompact(bearer),
+        presentationFrame: { given_name: true },
+      })
     )
     const { vpToken } = await requestAndPresent(pidQuery(vct, false))
     createPresentationSpy.mockRestore()
@@ -492,7 +495,10 @@ describe('DCQL proof format over a DIDComm connection', () => {
     const bearer = await signSdJwtVc({ vct }, false)
 
     const createPresentationSpy = mockPidPresentation(() =>
-      holderAgent.sdJwtVc.present({ sdJwtVc: holderAgent.sdJwtVc.fromCompact(bearer), presentationFrame: { given_name: true } })
+      holderAgent.sdJwtVc.present({
+        sdJwtVc: holderAgent.sdJwtVc.fromCompact(bearer),
+        presentationFrame: { given_name: true },
+      })
     )
     const errorMessage = await presentationRejected(pidQuery(vct))
     createPresentationSpy.mockRestore()
