@@ -40,5 +40,9 @@ describe('CreateKeyOptions', () => {
         crv: 'Ed25519',
       })
     ).not.toThrow()
+
+    for (const alg of ['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'] as const) {
+      expect(() => zKmsCreateKeyType.parse({ kty: 'AKP', alg })).not.toThrow()
+    }
   })
 })

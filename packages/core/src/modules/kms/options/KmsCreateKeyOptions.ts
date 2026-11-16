@@ -10,7 +10,7 @@ import { zKmsKeyId } from './common'
 
 const zKmsCreateKeyTypeAkp = z.object({
   kty: z.literal('AKP'),
-  alg: z.literal('ML-DSA-44'),
+  alg: z.enum(['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87']),
 })
 export type KmsCreateKeyTypeAkp = z.output<typeof zKmsCreateKeyTypeAkp>
 

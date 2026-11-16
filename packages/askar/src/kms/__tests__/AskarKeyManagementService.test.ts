@@ -84,35 +84,38 @@ describe('AskarKeyManagementService', () => {
   })
 
   describe('createKey', () => {
-    it('supports creating an ML-DSA-44 key through KeyManagementApi', async () => {
-      expect(keyManagementApi.supportedJwaSignatureAlgorithms()).toContain('ML-DSA-44')
-      const result = await keyManagementApi.createKeyForSignatureAlgorithm({ algorithm: 'ML-DSA-44' })
-      expect(result.publicJwk).toMatchObject({ kty: 'AKP', alg: 'ML-DSA-44', pub: expect.any(String) })
+    test.each(['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'] as const)(
+      'supports creating an %s key through KeyManagementApi',
+      async (algorithm) => {
+        expect(keyManagementApi.supportedJwaSignatureAlgorithms()).toContain(algorithm)
+        const result = await keyManagementApi.createKeyForSignatureAlgorithm({ algorithm })
+        expect(result.publicJwk).toMatchObject({ kty: 'AKP', alg: algorithm, pub: expect.any(String) })
 
-      const data = new Uint8Array([3, 2, 1])
-      const { signature } = await keyManagementApi.sign({
-        keyId: result.keyId,
-        algorithm: 'ML-DSA-44',
-        data,
-        expectedPublicJwk: result.publicJwk,
-      })
-      await expect(
-        keyManagementApi.verify({ key: { publicJwk: result.publicJwk }, algorithm: 'ML-DSA-44', data, signature })
-      ).resolves.toMatchObject({ verified: true })
-    })
+        const data = new Uint8Array([3, 2, 1])
+        const { signature } = await keyManagementApi.sign({
+          keyId: result.keyId,
+          algorithm,
+          data,
+          expectedPublicJwk: result.publicJwk,
+        })
+        await expect(
+          keyManagementApi.verify({ key: { publicJwk: result.publicJwk }, algorithm, data, signature })
+        ).resolves.toMatchObject({ verified: true })
+      }
+    )
 
-    it('creates an ML-DSA-44 key successfully', async () => {
+    test.each(['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'] as const)('creates an %s key successfully', async (algorithm) => {
       expect(
-        service.isOperationSupported(agentContext, { operation: 'createKey', type: { kty: 'AKP', alg: 'ML-DSA-44' } })
+        service.isOperationSupported(agentContext, { operation: 'createKey', type: { kty: 'AKP', alg: algorithm } })
       ).toBe(true)
 
       const result = await service.createKey(agentContext, {
-        type: { kty: 'AKP', alg: 'ML-DSA-44' },
+        type: { kty: 'AKP', alg: algorithm },
       })
 
       expect(result.publicJwk).toMatchObject({
         kty: 'AKP',
-        alg: 'ML-DSA-44',
+        alg: algorithm,
         pub: expect.any(String),
         kid: result.keyId,
       })
@@ -420,20 +423,25 @@ describe('AskarKeyManagementService', () => {
       })
     })
 
-    it('signs with ML-DSA-44', async () => {
+    test.each([
+      { algorithm: 'ML-DSA-44', signatureLength: 2420 },
+      { algorithm: 'ML-DSA-65', signatureLength: 3309 },
+      { algorithm: 'ML-DSA-87', signatureLength: 4627 },
+    ] as const)('signs with $algorithm', async ({ algorithm, signatureLength }) => {
       const { keyId } = await service.createKey(agentContext, {
-        type: { kty: 'AKP', alg: 'ML-DSA-44' },
+        type: { kty: 'AKP', alg: algorithm },
       })
       const data = new Uint8Array([1, 2, 3])
 
-      expect(service.isOperationSupported(agentContext, { operation: 'sign', algorithm: 'ML-DSA-44' })).toBe(true)
+      expect(service.isOperationSupported(agentContext, { operation: 'sign', algorithm })).toBe(true)
       const { signature } = await service.sign(agentContext, {
         keyId,
-        algorithm: 'ML-DSA-44',
+        algorithm,
         data,
+        expectedPublicJwk: null,
       })
 
-      expect(signature).toHaveLength(2420)
+      expect(signature).toHaveLength(signatureLength)
     })
 
     it('throws error if algorithm is not supported by backend', async () => {
@@ -551,33 +559,38 @@ describe('AskarKeyManagementService', () => {
       ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', [service.backend]))
     })
 
-    it('verifies ML-DSA-44 signature with key id and external public JWK', async () => {
-      const { keyId, publicJwk } = await service.createKey(agentContext, {
-        type: { kty: 'AKP', alg: 'ML-DSA-44' },
-      })
-      const data = new Uint8Array([1, 2, 3])
-      const { signature } = await service.sign(agentContext, {
-        keyId,
-        algorithm: 'ML-DSA-44',
-        data,
-      })
-
-      expect(service.isOperationSupported(agentContext, { operation: 'verify', algorithm: 'ML-DSA-44' })).toBe(true)
-      await expect(
-        service.verify(agentContext, { key: { keyId }, algorithm: 'ML-DSA-44', data, signature })
-      ).resolves.toEqual({ verified: true, publicJwk })
-      await expect(
-        service.verify(agentContext, { key: { publicJwk }, algorithm: 'ML-DSA-44', data, signature })
-      ).resolves.toEqual({ verified: true, publicJwk })
-      await expect(
-        service.verify(agentContext, {
-          key: { publicJwk },
-          algorithm: 'ML-DSA-44',
-          data: new Uint8Array([1, 2, 4]),
-          signature,
+    test.each(['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'] as const)(
+      'verifies %s signature with key id and external public JWK',
+      async (algorithm) => {
+        const { keyId, publicJwk } = await service.createKey(agentContext, {
+          type: { kty: 'AKP', alg: algorithm },
         })
-      ).resolves.toEqual({ verified: false })
-    })
+        const data = new Uint8Array([1, 2, 3])
+        const { signature } = await service.sign(agentContext, {
+          keyId,
+          algorithm,
+          data,
+          expectedPublicJwk: null,
+        })
+
+        expect(service.isOperationSupported(agentContext, { operation: 'verify', algorithm })).toBe(true)
+        await expect(service.verify(agentContext, { key: { keyId }, algorithm, data, signature })).resolves.toEqual({
+          verified: true,
+          publicJwk,
+        })
+        await expect(service.verify(agentContext, { key: { publicJwk }, algorithm, data, signature })).resolves.toEqual(
+          { verified: true, publicJwk }
+        )
+        await expect(
+          service.verify(agentContext, {
+            key: { publicJwk },
+            algorithm,
+            data: new Uint8Array([1, 2, 4]),
+            signature,
+          })
+        ).resolves.toEqual({ verified: false })
+      }
+    )
 
     it('verifies ES256 signature', async () => {
       const { keyId, publicJwk } = await service.createKey(agentContext, {
@@ -842,16 +855,24 @@ describe('AskarKeyManagementService', () => {
   })
 
   describe('importKey', () => {
-    it('imports an ML-DSA-44 private JWK', async () => {
-      const generatedKey = Key.generate('mldsa44' as KeyAlgorithm)
+    test.each([
+      { algorithm: 'ML-DSA-44', askarAlgorithm: 'mldsa44' },
+      { algorithm: 'ML-DSA-65', askarAlgorithm: 'mldsa65' },
+      { algorithm: 'ML-DSA-87', askarAlgorithm: 'mldsa87' },
+    ] as const)('imports an $algorithm private JWK', async ({ algorithm, askarAlgorithm }) => {
+      const generatedKey = Key.generate(askarAlgorithm as KeyAlgorithm)
       const privateJwk = JSON.parse(JSON.stringify(generatedKey.jwkSecret)) as Kms.KmsJwkPrivateAkp
       const generatedPublicJwk = JSON.parse(JSON.stringify(generatedKey.jwkPublic)) as Kms.KmsJwkPublicAkp
       generatedKey.handle.free()
 
-      const result = await service.importKey(agentContext, { privateJwk: { ...privateJwk, kid: 'imported-mldsa' } })
+      expect(privateJwk.alg).toBe(algorithm)
+      expect(service.isOperationSupported(agentContext, { operation: 'importKey', privateJwk })).toBe(true)
+      const result = await service.importKey(agentContext, {
+        privateJwk: { ...privateJwk, kid: `imported-${algorithm}` },
+      })
       expect(result).toEqual({
-        keyId: 'imported-mldsa',
-        publicJwk: { ...generatedPublicJwk, kid: 'imported-mldsa' },
+        keyId: `imported-${algorithm}`,
+        publicJwk: { ...generatedPublicJwk, kid: `imported-${algorithm}` },
       })
     })
 

@@ -36,6 +36,8 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
   private static algToSigType: Partial<Record<Kms.KnownJwaSignatureAlgorithm, SignatureAlgorithm>> = {
     'ML-DSA-44': 'mldsa44' as SignatureAlgorithm,
+    'ML-DSA-65': 'mldsa65' as SignatureAlgorithm,
+    'ML-DSA-87': 'mldsa87' as SignatureAlgorithm,
     EdDSA: SignatureAlgorithm.EdDSA,
     Ed25519: SignatureAlgorithm.EdDSA,
     ES256K: SignatureAlgorithm.ES256K,
@@ -83,7 +85,6 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
     if (operation.operation === 'sign' || operation.operation === 'verify') {
       if (operation.operation === 'verify' && operation.algorithm === 'ES512') return true
-      if (operation.algorithm === 'ML-DSA-44') return true
 
       return AskarKeyManagementService.algToSigType[operation.algorithm] !== undefined
     }

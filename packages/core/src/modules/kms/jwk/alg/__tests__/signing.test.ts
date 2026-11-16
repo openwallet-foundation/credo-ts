@@ -40,6 +40,12 @@ describe('signing algorithm support', () => {
       expect(supportedSigningAlgsForKey(ed25519PublicJwk)).toEqual(['EdDSA', 'Ed25519'])
     })
 
+    test('uses the AKP key algorithm for ML-DSA signing', () => {
+      expect(supportedSigningAlgsForKey({ kty: 'AKP', alg: 'ML-DSA-44', pub: 'public-key' })).toEqual(['ML-DSA-44'])
+      expect(supportedSigningAlgsForKey({ kty: 'AKP', alg: 'ML-DSA-65', pub: 'public-key' })).toEqual(['ML-DSA-65'])
+      expect(supportedSigningAlgsForKey({ kty: 'AKP', alg: 'ML-DSA-87', pub: 'public-key' })).toEqual(['ML-DSA-87'])
+    })
+
     test('returns no algorithms for an X25519 key agreement key', () => {
       expect(supportedSigningAlgsForKey(x25519PublicJwk)).toEqual([])
     })
@@ -120,10 +126,8 @@ describe('signing algorithm support', () => {
       expect(createKeyTypeForSigningAlgorithm('RS512')).toEqual({ kty: 'RSA', modulusLength: 4096 })
       expect(createKeyTypeForSigningAlgorithm('PS512')).toEqual({ kty: 'RSA', modulusLength: 4096 })
       expect(createKeyTypeForSigningAlgorithm('ML-DSA-44')).toEqual({ kty: 'AKP', alg: 'ML-DSA-44' })
-    })
-
-    test.each(['ML-DSA-65', 'ML-DSA-87'] as const)('throws for unsupported signature algorithm %s', (algorithm) => {
-      expect(() => createKeyTypeForSigningAlgorithm(algorithm as never)).toThrow(KeyManagementError)
+      expect(createKeyTypeForSigningAlgorithm('ML-DSA-65')).toEqual({ kty: 'AKP', alg: 'ML-DSA-65' })
+      expect(createKeyTypeForSigningAlgorithm('ML-DSA-87')).toEqual({ kty: 'AKP', alg: 'ML-DSA-87' })
     })
   })
 
@@ -136,10 +140,10 @@ describe('signing algorithm support', () => {
       expect(isKnownJwaSignatureAlgorithm('PS512')).toBe(true)
     })
 
-    test('recognizes ML-DSA-44 and rejects unsupported variants', () => {
+    test('recognizes all ML-DSA variants and rejects unknown algorithms', () => {
       expect(isKnownJwaSignatureAlgorithm('ML-DSA-44')).toBe(true)
-      expect(isKnownJwaSignatureAlgorithm('ML-DSA-65')).toBe(false)
-      expect(isKnownJwaSignatureAlgorithm('ML-DSA-87')).toBe(false)
+      expect(isKnownJwaSignatureAlgorithm('ML-DSA-65')).toBe(true)
+      expect(isKnownJwaSignatureAlgorithm('ML-DSA-87')).toBe(true)
       expect(isKnownJwaSignatureAlgorithm('not-an-algorithm')).toBe(false)
     })
   })
