@@ -998,7 +998,7 @@ export class OpenId4VpVerifierService {
 
     const signatureSuiteRegistry = agentContext.resolve(SignatureSuiteRegistry)
     const kms = agentContext.resolve(Kms.KeyManagementApi)
-    const supportedAlgs = kms.supportedJwaSignatureAlgorithms() as [
+    const supportedAlgs = kms.supportedJwaSignatureAlgorithms({ operation: 'verify' }) as [
       Kms.KnownJwaSignatureAlgorithm,
       ...Kms.KnownJwaSignatureAlgorithm[],
     ]
