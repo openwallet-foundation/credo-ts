@@ -101,6 +101,7 @@ import type {
   OpenId4VciPreAuthorizedCodeFlowConfig,
   OpenId4VciSignCredentials,
   OpenId4VciSignW3cCredentials,
+  OpenId4VciVersion,
   OpenId4VcUpdateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import {
@@ -786,10 +787,7 @@ export class OpenId4VcIssuerService {
         expectedLength: verifiedCredentialRequestProofs.keys.length,
       })
 
-      // Older sessions have no version. Requests use credential_configuration_id from draft 15 on
-      const openId4VciVersion =
-        issuanceSession.openId4VciVersion ??
-        (parsedCredentialRequest.credentialConfigurationId ? 'v1' : 'v1.draft11-14')
+      const openId4VciVersion = getOpenId4VciVersion(issuanceSession, parsedCredentialRequest)
 
       const immediateResult = await vcIssuer.createCredentialResponse({
         credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
@@ -981,6 +979,14 @@ export class OpenId4VcIssuerService {
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
+    // Before draft 15 there is no nonce endpoint, so a wallet gets the next c_nonce from the error response
+    const legacyErrorNonce = async () => {
+      if (getOpenId4VciVersion(issuanceSession, parsedCredentialRequest) !== 'v1.draft11-14') return {}
+
+      const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
+      return { c_nonce: cNonce, c_nonce_expires_in: cNonceExpiresInSeconds }
+    }
+
     const allowedProofTypes = credentialConfiguration.proof_types_supported ?? {
       jwt: {
         proof_signing_alg_values_supported: agentContext
@@ -991,12 +997,10 @@ export class OpenId4VcIssuerService {
 
     const [proofType, proofValue] = (Object.entries(proofs ?? {})[0] as [string, string[]] | undefined) ?? []
     if (!proofType || !proofValue || proofValue.length === 0) {
-      const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.InvalidProof,
         error_description: 'Missing required proof(s) in credential request',
-        c_nonce: cNonce,
-        c_nonce_expires_in: cNonceExpiresInSeconds,
+        ...(await legacyErrorNonce()),
       })
     }
 
@@ -1060,13 +1064,11 @@ export class OpenId4VcIssuerService {
       }
 
       if (!keyAttestation.payload.nonce) {
-        const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
         throw new Oauth2ServerErrorResponseError({
           error: Oauth2ErrorCodes.InvalidProof,
           error_description:
             'Missing nonce in attestation proof in credential request. If no nonce is present in the attestation, use the jwt proof type instead',
-          c_nonce: cNonce,
-          c_nonce_expires_in: cNonceExpiresInSeconds,
+          ...(await legacyErrorNonce()),
         })
       }
 
@@ -1096,13 +1098,11 @@ export class OpenId4VcIssuerService {
       }
 
       await this.verifyNonce(agentContext, issuer, keyAttestation.payload.nonce).catch(async (error) => {
-        const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
         throw new Oauth2ServerErrorResponseError(
           {
             error: Oauth2ErrorCodes.InvalidNonce,
             error_description: 'Invalid nonce in credential request',
-            c_nonce: cNonce,
-            c_nonce_expires_in: cNonceExpiresInSeconds,
+            ...(await legacyErrorNonce()),
           },
           {
             cause: error,
@@ -1220,12 +1220,10 @@ export class OpenId4VcIssuerService {
         }
 
         if (!payload.nonce) {
-          const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
           throw new Oauth2ServerErrorResponseError({
             error: Oauth2ErrorCodes.InvalidProof,
             error_description: 'Missing nonce in proof(s) in credential request',
-            c_nonce: cNonce,
-            c_nonce_expires_in: cNonceExpiresInSeconds,
+            ...(await legacyErrorNonce()),
           })
         }
 
@@ -1242,13 +1240,11 @@ export class OpenId4VcIssuerService {
         // The first nonce is verified, the nonces of the other proofs must be equal to it
         if (!firstNonce) {
           await this.verifyNonce(agentContext, issuer, payload.nonce).catch(async (error) => {
-            const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
             throw new Oauth2ServerErrorResponseError(
               {
                 error: Oauth2ErrorCodes.InvalidNonce,
                 error_description: 'Invalid nonce in credential request',
-                c_nonce: cNonce,
-                c_nonce_expires_in: cNonceExpiresInSeconds,
+                ...(await legacyErrorNonce()),
               },
               {
                 cause: error,
@@ -1257,12 +1253,10 @@ export class OpenId4VcIssuerService {
           })
           firstNonce = payload.nonce
         } else if (firstNonce !== payload.nonce) {
-          const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
           throw new Oauth2ServerErrorResponseError({
             error: Oauth2ErrorCodes.InvalidProof,
             error_description: 'Not all nonce values in proofs are equal',
-            c_nonce: cNonce,
-            c_nonce_expires_in: cNonceExpiresInSeconds,
+            ...(await legacyErrorNonce()),
           })
         }
 
@@ -2508,6 +2502,16 @@ function getCredentialRequestEncryptionMetadata(issuerRecord: OpenId4VcIssuerRec
     enc_values_supported: [...supportedResponseEncryptionContentAlgorithms],
     encryption_required: issuerRecord.credentialRequestEncryption.required ?? false,
   }
+}
+
+/**
+ * Older sessions have no version. Requests use `credential_configuration_id` from draft 15 on.
+ */
+export function getOpenId4VciVersion(
+  issuanceSession: Pick<OpenId4VcIssuanceSessionRecord, 'openId4VciVersion'>,
+  credentialRequest: { credentialConfigurationId?: string }
+): OpenId4VciVersion {
+  return issuanceSession.openId4VciVersion ?? (credentialRequest.credentialConfigurationId ? 'v1' : 'v1.draft11-14')
 }
 
 /**

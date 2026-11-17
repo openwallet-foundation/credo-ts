@@ -1082,7 +1082,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     await holderTenant.endSession()
   })
 
-  it('keeps the issuance session retryable after an invalid_proof or invalid_nonce error', async () => {
+  it('fails the issuance session after an invalid_proof error, without a c_nonce in the error', async () => {
     const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
     const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
 
@@ -1112,7 +1112,38 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       body: JSON.stringify({ credential_configuration_id: 'universityDegree' }),
     })
     expect(missingProofResponse.status).toBe(400)
-    expect(await missingProofResponse.json()).toMatchObject({ error: 'invalid_proof' })
+    expect(await missingProofResponse.json()).toEqual({
+      error: 'invalid_proof',
+      error_description: 'Missing required proof(s) in credential request',
+    })
+
+    const issuanceSessionAfterError = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
+      issuanceSession.id
+    )
+    expect(issuanceSessionAfterError.state).toBe(OpenId4VcIssuanceSessionState.Error)
+
+    await holderTenant.endSession()
+  })
+
+  it('keeps the issuance session retryable after an invalid_nonce error', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: 'b4f1c3a8-2e0f-4a3d-9f5e-7c1b8d6a2e41',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
 
     await expect(
       holderTenant.modules.openid4vc.holder.requestCredentials({
@@ -1123,15 +1154,76 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       })
     ).rejects.toThrow('invalid_nonce')
 
-    const issuanceSessionAfterErrors = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
+    const issuanceSessionAfterError = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
       issuanceSession.id
     )
-    expect(issuanceSessionAfterErrors.state).not.toBe(OpenId4VcIssuanceSessionState.Error)
+    expect(issuanceSessionAfterError.state).not.toBe(OpenId4VcIssuanceSessionState.Error)
 
     const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
       ...tokenResponse,
       cNonce: undefined,
+      credentialBindingResolver,
+    })
+    expect(credentialResponse.credentials).toHaveLength(1)
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.Completed,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
+    })
+
+    await holderTenant.endSession()
+  })
+
+  // Before draft 15 there is no nonce endpoint, so the wallet retries with the c_nonce from the error.
+  it('keeps a draft 11-14 issuance session retryable after an invalid_proof error, with a c_nonce in the error', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: 'e0a7d2c9-5b1f-4c8e-a3d6-9f2b7e4c1a58',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1.draft11-14',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    const credentialEndpoint = `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/credential`
+    const missingProofResponse = await fetch(credentialEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await getDpopAuthorizationHeaders(holderTenant.context, credentialEndpoint, tokenResponse)),
+      },
+      body: JSON.stringify({ credential_configuration_id: 'universityDegree' }),
+    })
+    expect(missingProofResponse.status).toBe(400)
+    const missingProofError = (await missingProofResponse.json()) as { c_nonce: string }
+    expect(missingProofError).toEqual({
+      error: 'invalid_proof',
+      error_description: 'Missing required proof(s) in credential request',
+      c_nonce: expect.any(String),
+      c_nonce_expires_in: expect.any(Number),
+    })
+
+    const issuanceSessionAfterError = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
+      issuanceSession.id
+    )
+    expect(issuanceSessionAfterError.state).not.toBe(OpenId4VcIssuanceSessionState.Error)
+
+    const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponse,
+      cNonce: missingProofError.c_nonce,
       credentialBindingResolver,
     })
     expect(credentialResponse.credentials).toHaveLength(1)
