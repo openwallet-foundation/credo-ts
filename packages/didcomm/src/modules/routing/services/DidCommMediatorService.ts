@@ -24,14 +24,12 @@ import {
 } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
-import { DidCommTransportService } from '../../../DidCommTransportService'
-import { MessageSendingError } from '../../../errors'
 import type { DidCommInboundMessageContext } from '../../../models'
 import type { DidCommEncryptedMessage } from '../../../types'
 import type { DidCommConnectionRecord } from '../../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../../connections/services'
-import { DidCommMessagePickupApi, DidCommMessagePickupSessionService } from '../../message-pickup'
+import { DidCommMessagePickupApi } from '../../message-pickup'
 import { DidCommMessagePickupSessionRole } from '../../message-pickup/DidCommMessagePickupSession'
 import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
 import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
@@ -214,7 +212,10 @@ export class DidCommMediatorService {
       recipientDid = getDidPeer4ShortFormForEquivalence(rawDid) ?? rawDid
       // A v1 client registers the key, a v2 client registers its did:key. Both indexes are read, so a
       // key one mediatee holds in each index does not route the traffic of the other one.
-      const byKey = await this.mediationRepository.findSingleByRecipientKey(agentContext, message.to)
+      const byKey = await this.mediationRepository.findSingleByRecipientKey(
+        agentContext,
+        isDidKey(message.to) ? didKeyToVerkey(message.to) : message.to
+      )
       const byDid = await this.mediationRepository.findSingleByRecipientDid(agentContext, recipientDid)
       if (byKey && byDid && byKey.id !== byDid.id) {
         throw new CredoError(`Forward recipient '${message.to}' is registered by two mediation records`)
@@ -248,12 +249,14 @@ export class DidCommMediatorService {
         }
         break
       case DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery: {
+        const messageIds: string[] = []
         for (const encryptedMessage of encryptedMessages) {
-          await messagePickupApi.queueMessage({
+          const { messageId } = await messagePickupApi.queueMessage({
             connectionId: mediationRecord.connectionId,
             recipientDids: [recipientDid],
             message: encryptedMessage,
           })
+          messageIds.push(messageId)
         }
         const session = await messagePickupApi.getLiveModeSession({
           connectionId: mediationRecord.connectionId,
@@ -264,31 +267,12 @@ export class DidCommMediatorService {
             await messagePickupApi.deliverMessagesFromQueue({
               pickupSessionId: session.id,
               recipientDid,
+              messageIds,
             })
           } catch (error) {
-            const sessionService = agentContext.dependencyManager.resolve(DidCommMessagePickupSessionService)
-            const endSession =
-              error instanceof MessageSendingError &&
-              sessionService.getLiveSession(agentContext, session.id) !== undefined
-            this.logger.warn(
-              `Live mode delivery failed for connection '${mediationRecord.connectionId}'${endSession ? ', ending its live mode session' : ''}`,
-              { error: error.message }
-            )
-            if (endSession) {
-              sessionService.removeLiveSession(agentContext, { connectionId: mediationRecord.connectionId })
-              // a Credo recipient only restarts pickup when its socket closes
-              try {
-                await agentContext.dependencyManager
-                  .resolve(DidCommTransportService)
-                  .findSessionById(session.transportSessionId)
-                  ?.close()
-              } catch (closeError) {
-                this.logger.warn(
-                  `Unable to close the transport session of connection '${mediationRecord.connectionId}'`,
-                  { error: closeError.message }
-                )
-              }
-            }
+            this.logger.warn(`Live mode delivery failed for connection '${mediationRecord.connectionId}'`, {
+              error: error.message,
+            })
           }
         }
         break

@@ -1,7 +1,7 @@
-import type { ClaimPath, Kms, XOR } from '@credo-ts/core'
+import type { ClaimPath } from '@credo-ts/core'
 import type {
-  DidCommSignedAttachmentCreateOfferOptions,
-  DidCommSignedAttachmentCredentialRequestOptions,
+  DidCommSignedAttachmentWithJwkCreateOfferOptions,
+  DidCommSignedAttachmentWithJwkCredentialRequestOptions,
 } from '../../util/didCommSignedAttachmentBinding'
 import type { DidCommCredentialFormat } from '../DidCommCredentialFormat'
 import type {
@@ -11,21 +11,16 @@ import type {
   SdJwtVcCredentialRequest,
 } from './sdJwtVcExchange'
 
-export interface DidCommSdJwtVcSignedAttachmentCreateOfferOptions extends DidCommSignedAttachmentCreateOfferOptions {
-  /** Accept a binding proof signed with a bare key in a `jwk` header. `didMethodsSupported` can then be empty. */
-  jwkSupported?: boolean
-}
-
 export interface DidCommSdJwtVcOfferCredentialFormat {
   /** `iss` must be the issuer DID, without a path, query or fragment. */
   credential: SdJwtVcCredentialOfferPayload
   bindingRequired?: boolean
   selectivelyDisclosableClaims?: ClaimPath[]
-  didCommSignedAttachmentBinding?: DidCommSdJwtVcSignedAttachmentCreateOfferOptions
+  didCommSignedAttachmentBinding?: DidCommSignedAttachmentWithJwkCreateOfferOptions
 }
 
 export interface DidCommSdJwtVcAcceptOfferFormat {
-  didCommSignedAttachment?: XOR<DidCommSignedAttachmentCredentialRequestOptions, { alg?: string; jwk: Kms.PublicJwk }>
+  didCommSignedAttachment?: DidCommSignedAttachmentWithJwkCredentialRequestOptions
 }
 
 export interface DidCommSdJwtVcAcceptRequestFormat {

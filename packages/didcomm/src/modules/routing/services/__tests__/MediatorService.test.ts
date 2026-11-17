@@ -16,10 +16,8 @@ import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
 import { isDidKey } from '../../../../../../core/src/modules/dids/helpers'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
-import { DummyTransportSession } from '../../../../__tests__/stubs'
 import { DidCommMessageSender } from '../../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
-import { DidCommTransportService } from '../../../../DidCommTransportService'
 import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
 import { MessageSendingError, MessageSendingErrorCategory } from '../../../../errors'
 import type { DidCommOutboundMessageContext } from '../../../../models'
@@ -1053,7 +1051,6 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
   const agentConfig = getAgentConfig('MediatorService')
   const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
   const sessionService = new DidCommMessagePickupSessionService()
-  const transportService = new DidCommTransportService(getAgentContext(), eventEmitter)
 
   const agentContext = getAgentContext({
     agentConfig,
@@ -1063,7 +1060,6 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
       [DidCommMessagePickupApi, mediationPickupApi],
       [DidCommMessagePickupSessionService, sessionService],
       [DidCommMessageSender, {}],
-      [DidCommTransportService, transportService],
       [
         DidCommMediatorModuleConfig,
         new DidCommMediatorModuleConfig({
@@ -1098,15 +1094,10 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
     })
   }
 
-  function liveTransportSessionId(): string | undefined {
-    return sessionService.getLiveSessionByConnectionId(agentContext, { connectionId: mockConnection.id })
-      ?.transportSessionId
-  }
-
-  async function forward(version: 'v1' | 'v2' = 'v1'): Promise<void> {
+  async function forward(version: 'v1' | 'v2' = 'v1', to = recipientKey): Promise<void> {
     let message: DidCommForwardMessage | DidCommForwardV2Message
     if (version === 'v1') {
-      message = new DidCommForwardMessage({ to: recipientKey, message: payload })
+      message = new DidCommForwardMessage({ to, message: payload })
     } else {
       message = new DidCommForwardV2Message({ to: [], next: recipientDid })
       message.appendedAttachments = [new DidCommAttachment({ id: 'msg-1', data: { json: payload } })]
@@ -1114,12 +1105,7 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
     await mediatorService.processForwardMessage(new DidCommInboundMessageContext(message, { agentContext }))
   }
 
-  let transportSession: DummyTransportSession
-
   beforeEach(() => {
-    transportSession = new DummyTransportSession('transportSessionId')
-    vi.spyOn(transportSession, 'close').mockResolvedValue()
-    transportService.saveSession(transportSession)
     const mediationRecord = new DidCommMediationRecord({
       connectionId: mockConnection.id,
       role: DidCommMediationRole.Mediator,
@@ -1131,56 +1117,52 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
     mockFunction(mediationRepository.findSingleByRecipientDid).mockResolvedValue(mediationRecord)
     mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
     saveLiveSession('transportSessionId')
-    vi.spyOn(mediationPickupApi, 'queueMessage').mockResolvedValue(undefined)
+    vi.spyOn(mediationPickupApi, 'queueMessage').mockResolvedValue({ messageId: 'messageId' })
     vi.spyOn(mediationPickupApi, 'getLiveModeSession').mockImplementation(async (options) =>
       sessionService.getLiveSessionByConnectionId(agentContext, options)
     )
   })
 
+  test('queues the message and delivers only that message to the live mode session', async () => {
+    const deliverSpy = vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockResolvedValue(undefined)
+
+    await forward()
+
+    expect(mediationPickupApi.queueMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ connectionId: mockConnection.id })
+    )
+    expect(deliverSpy).toHaveBeenCalledWith({
+      pickupSessionId: sessionService.getLiveSessionByConnectionId(agentContext, { connectionId: mockConnection.id })
+        ?.id,
+      recipientDid: expect.stringContaining('did:key:'),
+      messageIds: ['messageId'],
+    })
+  })
+
   test.each(['v1', 'v2'] as const)(
-    'ends the live mode session, closes its transport and completes the %s forward when the live delivery send fails',
+    'completes the %s forward and logs the failure when the live delivery send fails',
     async (version) => {
       vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(sendError)
       const warnSpy = vi.spyOn(agentConfig.logger, 'warn')
 
-      await forward(version)
+      await expect(forward(version)).resolves.toBeUndefined()
 
-      expect(transportSession.close).toHaveBeenCalledTimes(1)
-      expect(liveTransportSessionId()).toBeUndefined()
+      expect(mediationPickupApi.queueMessage).toHaveBeenCalled()
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(`'${mockConnection.id}'`), {
         error: 'Message is undeliverable',
       })
     }
   )
 
-  test('completes the forward when closing the transport throws', async () => {
-    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(sendError)
-    vi.spyOn(transportSession, 'close').mockRejectedValue(new Error('close failed'))
+  test('looks up the mediation record by base58 key when forwarded to a did:key', async () => {
+    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockResolvedValue(undefined)
 
-    await expect(forward()).resolves.toBeUndefined()
+    await forward('v1', verkeyToDidKey(recipientKey))
 
-    expect(liveTransportSessionId()).toBeUndefined()
-  })
-
-  test('keeps a live mode session that replaced the failed one', async () => {
-    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockImplementation(async () => {
-      saveLiveSession('newTransportSessionId')
-      throw sendError
-    })
-
-    await forward()
-
-    expect(transportSession.close).not.toHaveBeenCalled()
-    expect(liveTransportSessionId()).toBe('newTransportSessionId')
-  })
-
-  test('keeps the live mode session when live delivery fails before sending', async () => {
-    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(new Error('storage unavailable'))
-
-    await forward()
-
-    expect(transportSession.close).not.toHaveBeenCalled()
-    expect(liveTransportSessionId()).toBe('transportSessionId')
+    expect(mediationRepository.findSingleByRecipientKey).toHaveBeenLastCalledWith(agentContext, recipientKey)
+    expect(mediationPickupApi.queueMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ recipientDids: [verkeyToDidKey(recipientKey)] })
+    )
   })
 
   test('queues every attachment of a v2 forward and delivers once', async () => {
@@ -1198,5 +1180,6 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
       { ...payload, iv: 'second' },
     ])
     expect(deliver).toHaveBeenCalledTimes(1)
+    expect(deliver).toHaveBeenCalledWith(expect.objectContaining({ messageIds: ['messageId', 'messageId'] }))
   })
 })
