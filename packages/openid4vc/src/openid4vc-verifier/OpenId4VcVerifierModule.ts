@@ -5,6 +5,7 @@ import {
   getAgentContextForActorId,
   importExpress,
   registerRequestSession,
+  sendBodyParserErrorResponse,
   sendPayloadTooLargeResponse,
 } from '../shared/router'
 import { OpenId4VcVerifierApi } from './OpenId4VcVerifierApi'
@@ -97,7 +98,7 @@ export class OpenId4VcVerifierModule implements Module {
         // End the session first, so an early return below can't skip it
         await endRequestSession(req)
 
-        if (sendPayloadTooLargeResponse(res, error)) return
+        if (sendPayloadTooLargeResponse(res, error) || sendBodyParserErrorResponse(res, error)) return
 
         if (!res.headersSent) {
           logger.warn(

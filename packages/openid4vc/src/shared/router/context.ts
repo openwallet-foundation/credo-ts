@@ -1,7 +1,7 @@
 import type { AgentContext, Logger } from '@credo-ts/core'
 import { CredoError } from '@credo-ts/core'
-import type { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
-import { Oauth2ResourceUnauthorizedError, SupportedAuthenticationScheme } from '@openid4vc/oauth2'
+import type { Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { Oauth2ErrorCodes, Oauth2ResourceUnauthorizedError, SupportedAuthenticationScheme } from '@openid4vc/oauth2'
 import type { NextFunction, Request, Response } from 'express'
 
 export interface OpenId4VcRequest<RC extends Record<string, unknown> = Record<string, never>> extends Request {
@@ -131,6 +131,33 @@ export function sendPayloadTooLargeResponse(response: Response, error: unknown) 
   response.status(413).json({
     error: 'invalid_request',
     message: 'The request body exceeds the maximum allowed limit.',
+  })
+  return true
+}
+
+/**
+ * Sends the client error status if the body parser rejected the request body, for example because it is not valid
+ * JSON. Returns whether it did.
+ */
+export function sendBodyParserErrorResponse(response: Response, error: unknown) {
+  // Body parser errors have a type, and expose is only set for client errors whose message is safe to send
+  if (
+    !(error instanceof Error) ||
+    !('type' in error) ||
+    !('expose' in error) ||
+    error.expose !== true ||
+    !('status' in error) ||
+    typeof error.status !== 'number'
+  ) {
+    return false
+  }
+
+  // Bodies that are too large are handled by sendPayloadTooLargeResponse, which keeps its existing response
+  if (error.status === 413) return false
+
+  response.status(error.status).json({
+    error: Oauth2ErrorCodes.InvalidRequest,
+    error_description: error.message,
   })
   return true
 }

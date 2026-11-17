@@ -312,6 +312,32 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     warnSpy.mockRestore()
   })
 
+  it.each([
+    { name: 'is not valid json', contentType: 'application/json', status: 400, errorDescription: 'JSON' },
+    {
+      name: 'has an unsupported charset',
+      contentType: 'application/json; charset=latin1',
+      status: 415,
+      errorDescription: 'unsupported charset',
+    },
+  ])('returns $status when the request body $name', async ({ contentType, status, errorDescription }) => {
+    const { issuerId } = await issuer.agent.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: { universityDegree: universityDegreeCredentialConfigurationSupported },
+    })
+
+    const response = await fetch(`${issuanceBaseUrl}/${issuerId}/credential`, {
+      method: 'POST',
+      headers: { 'Content-Type': contentType },
+      body: '{"format":',
+    })
+
+    expect(response.status).toBe(status)
+    expect(await response.json()).toEqual({
+      error: 'invalid_request',
+      error_description: expect.stringContaining(errorDescription),
+    })
+  })
+
   it('ends the tenant session after serving signed issuer metadata', async () => {
     const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
     const key = await issuerTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })

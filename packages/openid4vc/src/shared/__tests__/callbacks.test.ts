@@ -1,5 +1,5 @@
 import type { AgentContext, KeyDidCreateOptions } from '@credo-ts/core'
-import { Agent, DidKey, JwtPayload, Kms, utils, X509ModuleConfig } from '@credo-ts/core'
+import { Agent, DidKey, JweService, JwtPayload, Kms, TypedArrayEncoder, utils, X509ModuleConfig } from '@credo-ts/core'
 import type { Jwk, JwtSigner } from '@openid4vc/oauth2'
 import { decodeJwt } from '@openid4vc/oauth2'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
@@ -345,6 +345,29 @@ describe('getOid4vcDecryptJweCallback', () => {
     await expect(getOid4vcDecryptJweCallback(agent.context)(jwe, { jwk: encryptionJwk })).resolves.toMatchObject({
       decrypted: false,
       header: { kid: otherJwk.kid },
+    })
+  })
+
+  test.each([
+    { alg: 'ECDH-ES', enc: 'A256CBC-HS512' },
+    { alg: 'ECDH-ES+A128KW', enc: 'A256GCM' },
+  ] as const)('does not decrypt a jwe with alg $alg and enc $enc', async ({ alg, enc }) => {
+    const encryptionJwk = await createEncryptionKey()
+    const recipient = { publicJwk: Kms.PublicJwk.fromUnknown(encryptionJwk) }
+    const keyId = recipient.publicJwk.keyId
+    const jweService = agent.context.resolve(JweService)
+    const jwe = await jweService.encryptJweCompact(agent.context, {
+      keyAgreement: alg === 'ECDH-ES' ? { algorithm: alg, recipient } : { algorithm: alg, recipients: [recipient] },
+      enc,
+      protectedHeaderOptions: { kid: keyId },
+      data: TypedArrayEncoder.fromUtf8String('secret payload'),
+    })
+
+    // The jwe itself can be decrypted, so it is only rejected because of its alg or enc
+    await expect(jweService.decryptJwe(agent.context, { jwe, recipientKeyId: keyId })).resolves.toBeDefined()
+    await expect(getOid4vcDecryptJweCallback(agent.context)(jwe, { jwk: encryptionJwk })).resolves.toMatchObject({
+      decrypted: false,
+      header: { alg, enc },
     })
   })
 })
