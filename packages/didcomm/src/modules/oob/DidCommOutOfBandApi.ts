@@ -15,6 +15,7 @@ import {
   type Logger,
   MessageValidator,
   PeerDidNumAlgo,
+  parseDid,
   utils,
 } from '@credo-ts/core'
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
@@ -283,6 +284,8 @@ export class DidCommOutOfBandApi {
     const invitationInlineServiceKeys: DidCommOutOfBandInlineServiceKey[] = []
     let createdKmsKeys: DidCommCreatedKey[] = []
     if (config.invitationDid) {
+      // Throws when invitationDid isn't a DID we created or is deactivated
+      await this.agentContext.resolve(DidsApi).getActiveCreatedDid(parseDid(config.invitationDid).did)
       services = [config.invitationDid]
     } else {
       const routing = config.routing ?? {

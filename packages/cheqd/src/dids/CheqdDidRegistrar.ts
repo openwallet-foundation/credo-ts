@@ -605,13 +605,23 @@ export class CheqdDidRegistrar implements DidRegistrar {
     const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
     const { didDocument, didDocumentMetadata } = await cheqdLedgerService.resolve(did)
     const didRecord = await didRepository.findCreatedDid(agentContext, did)
-    if (!didDocument || didDocumentMetadata.deactivated || !didRecord) {
+    if (!didDocument || !didRecord) {
       return {
         resourceMetadata: {},
         resourceRegistrationMetadata: {},
         resourceState: {
           state: 'failed',
           reason: `DID: ${did} not found`,
+        },
+      }
+    }
+    if (didDocumentMetadata.deactivated || didRecord.status === DidRecordStatus.Deactivated) {
+      return {
+        resourceMetadata: {},
+        resourceRegistrationMetadata: {},
+        resourceState: {
+          state: 'failed',
+          reason: `did '${did}' is deactivated`,
         },
       }
     }

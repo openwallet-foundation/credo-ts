@@ -38,6 +38,27 @@ describe('CheqdDidRegistrar', () => {
     expect(result.didState).toMatchObject({ state: 'finished', did: validDid, didDocument: { id: validDid } })
   })
 
+  it('fails creating a resource for a deactivated did', async () => {
+    const didDocument = { id: validDid, '@context': ['https://www.w3.org/ns/did/v1'] }
+    const agentContext = getCheqdAgentContext({
+      resolve: vi.fn().mockResolvedValue({ didDocument, didDocumentMetadata: { deactivated: true } }),
+    })
+    await agentContext.resolve(DidRepository).storeCreatedDid(agentContext, {
+      did: validDid,
+      didDocument: new DidDocument({ id: validDid }),
+    })
+
+    const result = await new CheqdDidRegistrar().createResource(agentContext, validDid, {
+      id: 'b7ef4b7a-bd8b-4b7a-9f22-0ab6a8e1e2c4',
+      name: 'schema',
+      resourceType: 'anonCredsSchema',
+      data: {},
+      version: '1.0',
+    })
+
+    expect(result.resourceState).toEqual({ state: 'failed', reason: `did '${validDid}' is deactivated` })
+  })
+
   it('deletes the created key when the ledger rejects the write', async () => {
     const agentContext = getCheqdAgentContext({ create: vi.fn().mockResolvedValue({ code: 1, rawLog: 'rejected' }) })
     const deleteKeySpy = vi.spyOn(agentContext.resolve(Kms.KeyManagementApi), 'deleteKey')
