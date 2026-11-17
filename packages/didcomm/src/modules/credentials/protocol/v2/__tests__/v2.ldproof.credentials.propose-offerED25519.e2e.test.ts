@@ -1,9 +1,9 @@
-import { getAnonCredsModules, prepareForAnonCredsIssuance } from '../../../../../../../anoncreds/tests/anoncredsSetup'
 import {
   AnonCredsDidCommCredentialFormatService,
   AnonCredsDidCommProofFormatService,
   AnonCredsLinkSecretBindingProvider,
 } from '../../../../../../../anoncreds/src/didcomm'
+import { getAnonCredsModules, prepareForAnonCredsIssuance } from '../../../../../../../anoncreds/tests/anoncredsSetup'
 import { InMemoryAnonCredsRegistry } from '../../../../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { Agent } from '../../../../../../../core/src/agent/Agent'
