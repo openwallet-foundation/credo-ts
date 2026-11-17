@@ -45,6 +45,20 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   public readonly allowsCaching = true
   public readonly allowsLocalRecord = true
 
+  // shortcut: only percent-encodes spaces in did:indy ids, which is all the tests use
+  public getIdentifierVariants(identifier: string) {
+    if (
+      !isDidIndySchemaId(identifier) &&
+      !isDidIndyCredentialDefinitionId(identifier) &&
+      !isDidIndyRevocationRegistryId(identifier)
+    ) {
+      return [identifier]
+    }
+
+    const unencoded = identifier.replaceAll('%20', ' ')
+    return [...new Set([unencoded.replaceAll(' ', '%20'), identifier, unencoded])]
+  }
+
   private schemas: Record<string, AnonCredsSchema>
   private credentialDefinitions: Record<string, AnonCredsCredentialDefinition>
   private revocationRegistryDefinitions: Record<string, AnonCredsRevocationRegistryDefinition>
