@@ -286,7 +286,7 @@ export class MdocDcApiService {
     verificationSession: MdocVerificationSessionRecord
   ) {
     const certificateChain = mdoc.issuerSignedCertificateChain.map((certificate) =>
-      X509Certificate.fromRawCertificate(certificate)
+      X509Service.parseCertificate(agentContext, { encodedCertificate: certificate })
     )
     const trustedIssuers = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
       signer: {
@@ -325,9 +325,7 @@ export class MdocDcApiService {
     }
   ) {
     const trustedCertificates =
-      options.trustedReaderCertificates?.map((certificate) =>
-        typeof certificate === 'string' ? certificate : certificate.toString('pem')
-      ) ??
+      options.trustedReaderCertificates ??
       (
         await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
           signer: {
@@ -347,7 +345,7 @@ export class MdocDcApiService {
     const onCheck = onCategoryCheck(defaultVerificationCallback, 'READER_AUTH')
     try {
       await X509Service.validateCertificateChain(agentContext, {
-        certificateChain: options.certificateChain.map((certificate) => certificate.toString('pem')),
+        certificateChain: options.certificateChain,
         trustedCertificates,
         verificationDate: options.now,
       })
@@ -435,7 +433,7 @@ export class MdocDcApiService {
       const readerAuth = docRequest.hasReaderAuth
         ? {
             certificateChain: (docRequest.readerCertificateChain ?? []).map((certificate) =>
-              X509Certificate.fromRawCertificate(certificate)
+              X509Service.parseCertificate(agentContext, { encodedCertificate: certificate })
             ),
           }
         : undefined

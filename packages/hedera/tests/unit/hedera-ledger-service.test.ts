@@ -83,7 +83,7 @@ const mockPublicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } = {
 
 const mockKms = {
   sign: vi.fn().mockResolvedValue({ signature: new Uint8Array([1, 2, 3]) }),
-  getPublicKey: vi.fn().mockReturnValue(mockPublicJwk),
+  getPublicKey: vi.fn().mockReturnValue({ publicKey: mockPublicJwk, backend: 'askar' }),
 } as unknown as Kms.KeyManagementApi
 
 const mockDidRepository = {
@@ -399,6 +399,7 @@ describe('HederaLedgerService', () => {
       expect(result).toHaveProperty('did', did)
       expect(mockKms.sign).toHaveBeenCalledWith({
         keyId: mockKeyId,
+        expectedPublicJwk: expect.objectContaining({ x: mockPublicJwk.x }),
         data: deactivateDidRequest.signingRequest.serializedPayload,
         algorithm: 'EdDSA',
       })

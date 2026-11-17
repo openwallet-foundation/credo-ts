@@ -2,7 +2,6 @@
 '@credo-ts/drizzle-storage': patch
 '@credo-ts/core': patch
 '@credo-ts/anoncreds': patch
-'@credo-ts/drpc': patch
 '@credo-ts/openid4vc': patch
 ---
 
@@ -16,6 +15,6 @@ This fixes several issues with records stored using drizzle:
 - Custom tags of SD-JWT VC records were not restored when loaded.
 - Clearing an optional property (for example `errorMessage`) was not persisted on update.
 
-`DrpcRecord`, `AnonCredsLinkSecretRecord` and `AnonCredsRevocationRegistryDefinitionPrivateRecord` now set `createdAt` when they are created.
+`AnonCredsLinkSecretRecord` and `AnonCredsRevocationRegistryDefinitionPrivateRecord` now set `createdAt` when they are created.
 
 `getRecordPropertyNames` is added to `@credo-ts/core`, to get the property names of a record that defines its `encodingSchema` with `createRecordEncodingSchema`. It also works for schemas from a different zod instance.

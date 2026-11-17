@@ -1,5 +1,6 @@
 import { defaultX509ParseOptions } from './utils/parseOptions'
 import { X509Certificate } from './X509Certificate'
+import { X509Error } from './X509Error'
 import type { X509ParseOptions } from './X509ServiceOptions'
 import {
   withX509RevocationCheckDefaults,
@@ -8,8 +9,8 @@ import {
 } from './X509ValidationOptions'
 
 export type X509VerificationTrustedCertificates = {
-  issuance: string[]
-  status?: string[]
+  issuance: Array<string | X509Certificate>
+  status?: Array<string | X509Certificate>
 }
 
 export interface X509ModuleConfigOptions {
@@ -38,12 +39,28 @@ export interface X509ModuleConfigOptions {
    * the other parsing factories directly to control those.
    */
   parseOptions?: X509ParseOptions
+
+  /**
+   * How many parsed certificates the X.509 service of the agent keeps in memory, so a certificate
+   * that is seen on every request is parsed once. The least recently used certificate is dropped
+   * first. Set to 0 to parse every certificate again.
+   *
+   * A certificate of more than 12 KB is parsed every time, which bounds the memory an entry can
+   * hold. Certificates are usually 0.5 to 2 KB.
+   *
+   * `X509Certificate` instances are used as they are and do not go through this cache. Pass trusted
+   * certificates as instances when there are more of them than this limit.
+   *
+   * @default 250
+   */
+  parsedCertificateCacheLimit?: number
 }
 
 export class X509ModuleConfig {
   #trustedCertificates?: X509Certificate[]
   #revocationCheck?: X509RevocationCheckOptions
   #parseOptions: X509ParseOptions
+  #parsedCertificateCacheLimit: number
 
   public constructor(options?: X509ModuleConfigOptions) {
     // NOTE: must be set before the trusted certificates are parsed below
@@ -53,12 +70,29 @@ export class X509ModuleConfig {
     if (options?.revocationCheck) {
       this.#revocationCheck = options.revocationCheck
     }
+    this.#parsedCertificateCacheLimit = 250
+    if (options?.parsedCertificateCacheLimit !== undefined) {
+      this.setParsedCertificateCacheLimit(options.parsedCertificateCacheLimit)
+    }
   }
 
-  public get trustedCertificates() {
-    // TODO: we should probably update this API to return the instances, but don't want to
-    // break too much now
-    return this.#trustedCertificates?.map((cert) => cert.toString('pem'))
+  public get parsedCertificateCacheLimit() {
+    return this.#parsedCertificateCacheLimit
+  }
+
+  /**
+   * Another limit empties the cache. See {@link X509ModuleConfigOptions.parsedCertificateCacheLimit}.
+   */
+  public setParsedCertificateCacheLimit(limit: number) {
+    if (!Number.isInteger(limit) || limit < 0) {
+      throw new X509Error(`parsedCertificateCacheLimit must be 0 or a positive integer, received '${limit}'`)
+    }
+
+    this.#parsedCertificateCacheLimit = limit
+  }
+
+  public get trustedCertificates(): X509Certificate[] | undefined {
+    return this.#trustedCertificates && [...this.#trustedCertificates]
   }
 
   public get revocationCheck(): X509RevocationCheckOptionsWithDefaults {

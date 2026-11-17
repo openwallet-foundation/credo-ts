@@ -3,6 +3,7 @@ import { InjectionSymbols } from '../../constants'
 import { inject, injectable } from '../../plugins'
 import { BaseRecord } from '../../storage/BaseRecord'
 import type { BaseRecordConstructor, Query, QueryOptions, StorageService } from '../../storage/StorageService'
+import { deleteByQueryOneByOne } from '../../storage/StorageService'
 import { JsonTransformer } from '../../utils'
 import { CacheModuleConfig } from './CacheModuleConfig'
 
@@ -31,17 +32,13 @@ export class CachedStorageService<T extends BaseRecord<any, any, any>> implement
 
   public async update(agentContext: AgentContext, record: T): Promise<void> {
     await this.storageService.update(agentContext, record)
-
-    if (record.allowCache) {
-      await this.cache(agentContext).set(agentContext, this.getCacheKey(record), record.toJSON())
-    }
+    // Removed rather than set, as a set that arrives late or out of order can put an older version back.
+    if (record.allowCache) await this.cache(agentContext).remove(agentContext, this.getCacheKey(record))
   }
 
   public async delete(agentContext: AgentContext, record: T): Promise<void> {
-    if (record.allowCache) {
-      await this.cache(agentContext).remove(agentContext, this.getCacheKey(record))
-    }
-    return await this.storageService.delete(agentContext, record)
+    await this.storageService.delete(agentContext, record)
+    if (record.allowCache) await this.cache(agentContext).remove(agentContext, this.getCacheKey(record))
   }
 
   public async deleteById(
@@ -49,10 +46,36 @@ export class CachedStorageService<T extends BaseRecord<any, any, any>> implement
     recordClass: BaseRecordConstructor<T>,
     id: string
   ): Promise<void> {
+    await this.storageService.deleteById(agentContext, recordClass, id)
     if (recordClass.allowCache) {
-      await this.cache(agentContext).remove(agentContext, this.getCacheKey({ ...recordClass, id }))
+      await this.cache(agentContext).remove(agentContext, this.getCacheKey({ type: recordClass.type, id }))
     }
-    return await this.storageService.deleteById(agentContext, recordClass, id)
+  }
+
+  public async deleteByQuery(
+    agentContext: AgentContext,
+    recordClass: BaseRecordConstructor<T>,
+    query: Query<T>
+  ): Promise<number> {
+    // Passes this service, so delete also removes the records from the cache
+    if (!this.storageService.deleteByQuery) return deleteByQueryOneByOne(agentContext, this, recordClass, query)
+
+    if (!recordClass.allowCache) return this.storageService.deleteByQuery(agentContext, recordClass, query)
+
+    // The cache is keyed by id, so the ids of the matching records are needed to remove them from the cache
+    const limit = 100
+    const ids: string[] = []
+    let records: T[]
+    do {
+      records = await this.storageService.findByQuery(agentContext, recordClass, query, { limit, offset: ids.length })
+      ids.push(...records.map((record) => record.id))
+    } while (records.length >= limit)
+
+    const deletedCount = await this.storageService.deleteByQuery(agentContext, recordClass, query)
+    for (const id of ids) {
+      await this.cache(agentContext).remove(agentContext, this.getCacheKey({ type: recordClass.type, id }))
+    }
+    return deletedCount
   }
 
   public async getById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {

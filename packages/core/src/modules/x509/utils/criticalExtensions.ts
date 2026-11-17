@@ -1,4 +1,4 @@
-import * as x509 from '@peculiar/x509'
+import type * as x509 from '@peculiar/x509'
 import { X509Error } from '../X509Error'
 import type { X509CertificateSingleValidationResult } from '../X509ValidationResult'
 import { X509CrlExtensionIdentifier, X509ExtensionIdentifier } from './extensions'
@@ -30,6 +30,8 @@ export const knownCriticalCrlExtensions = [
   X509CrlExtensionIdentifier.DeltaCrlIndicator,
 ]
 
+type CertificateWithExtensions = { extensions: ReadonlyArray<{ type: string; critical: boolean }> }
+
 export interface CriticalExtensionValidationResult {
   isValid: boolean
   unknownCriticalExtensions: string[]
@@ -41,7 +43,7 @@ export interface CriticalExtensionValidationResult {
  * Per RFC 5280 Section 4.2: "A certificate-using system MUST reject the certificate if it encounters
  * a critical extension it does not recognize or a critical extension that contains information that it cannot process"
  */
-export function validateCriticalExtensions(certificate: x509.X509Certificate): CriticalExtensionValidationResult {
+export function validateCriticalExtensions(certificate: CertificateWithExtensions): CriticalExtensionValidationResult {
   const unknownCriticalExtensions: string[] = []
 
   for (const extension of certificate.extensions) {
@@ -68,7 +70,7 @@ export function validateCriticalExtensions(certificate: x509.X509Certificate): C
  * Validates critical extensions for all certificates in a chain
  */
 export function validateCriticalExtensionsForChain(
-  certificates: x509.X509Certificate[]
+  certificates: CertificateWithExtensions[]
 ): X509CertificateSingleValidationResult {
   for (const cert of certificates) {
     const result = validateCriticalExtensions(cert)

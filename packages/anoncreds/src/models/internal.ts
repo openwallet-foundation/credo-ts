@@ -1,4 +1,32 @@
 import type { AnonCredsClaimRecord } from '../utils/credential'
+import type { AnonCredsPredicateType } from './exchange'
+
+export interface AnonCredsPresentationPreviewAttribute {
+  name: string
+  credentialDefinitionId?: string
+  mimeType?: string
+  value?: string
+  referent?: string
+}
+
+export interface AnonCredsPresentationPreviewPredicate {
+  name: string
+  credentialDefinitionId: string
+  predicate: AnonCredsPredicateType
+  threshold: number
+}
+
+/**
+ * Interface for getting credentials for an indy proof request.
+ */
+export interface AnonCredsCredentialsForProofRequest {
+  attributes: Record<string, AnonCredsRequestedAttributeMatch[]>
+  predicates: Record<string, AnonCredsRequestedPredicateMatch[]>
+}
+
+export interface AnonCredsGetCredentialsForProofRequestOptions {
+  filterByNonRevocationRequirements?: boolean
+}
 
 export interface AnonCredsCredentialInfo {
   credentialId: string

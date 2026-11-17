@@ -44,7 +44,7 @@ describe('TrustedIssuerContext', () => {
       x509ModuleConfig.setTrustedCertificates([simpleX509.trustedCertificate])
 
       await expect(TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, x509Context)).resolves.toEqual({
-        trustedIssuers: [{ method: 'x509', issuance: [expect.any(String)] }],
+        trustedIssuers: [{ method: 'x509', issuance: [expect.any(X509Certificate)] }],
       })
     })
 

@@ -1,11 +1,17 @@
-import { getAgentContext } from '../../../../tests/helpers'
+import { Subject } from 'rxjs'
+import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
+import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { RecordNotFoundError } from '../../../error'
 import { TestRecord } from '../../../storage/__tests__/TestRecord'
+import { Repository } from '../../../storage/Repository'
 import type { StorageService } from '../../../storage/StorageService'
 import { CachedStorageService } from '../CachedStorageService'
 import { CacheModuleConfig } from '../CacheModuleConfig'
 import { InMemoryLruCache } from '../InMemoryLruCache'
 
 class CachedTestRecord extends TestRecord {
+  public static readonly allowCache = true
   public readonly allowCache = true
 }
 
@@ -26,5 +32,106 @@ describe('CachedStorageService', () => {
     await expect(cachedStorageService.update(agentContext, record)).rejects.toThrow('update failed')
 
     expect(await cache.get(agentContext, `${record.type}:${record.id}`)).toBeNull()
+  })
+
+  test('removes an updated record from the cache', async () => {
+    const cache = new InMemoryLruCache({ limit: 10 })
+    const agentContext = getAgentContext({
+      registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache, useCachedStorageService: true })]],
+    })
+    const storageService = { save: vi.fn(), update: vi.fn() } as unknown as StorageService<CachedTestRecord>
+    const cachedStorageService = new CachedStorageService(storageService)
+    const record = new CachedTestRecord({ id: 'test-id', foo: 'bar' })
+
+    await cachedStorageService.save(agentContext, record)
+    await cachedStorageService.update(agentContext, record)
+    expect(await cache.get(agentContext, `${record.type}:${record.id}`)).toBeNull()
+  })
+
+  test('removes a deleted record from the cache', async () => {
+    const cache = new InMemoryLruCache({ limit: 10 })
+    const agentContext = getAgentContext({
+      registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache, useCachedStorageService: true })]],
+    })
+    const storageService = {
+      save: vi.fn(),
+      delete: vi.fn(),
+      deleteById: vi.fn(),
+    } as unknown as StorageService<CachedTestRecord>
+    const cachedStorageService = new CachedStorageService(storageService)
+    const record = new CachedTestRecord({ id: 'test-id', foo: 'bar' })
+
+    await cachedStorageService.save(agentContext, record)
+    await cachedStorageService.delete(agentContext, record)
+    expect(await cache.get(agentContext, `${record.type}:${record.id}`)).toBeNull()
+
+    await cachedStorageService.save(agentContext, record)
+    await cachedStorageService.deleteById(agentContext, CachedTestRecord, record.id)
+    expect(await cache.get(agentContext, `${record.type}:${record.id}`)).toBeNull()
+  })
+
+  test.each([
+    ['with', false],
+    ['without', true],
+  ])(
+    'deleteByQuery removes only the deleted records from the cache %s deleteByQuery in storage',
+    async (_, withoutDeleteByQuery) => {
+      const cache = new InMemoryLruCache({ limit: 10 })
+      const agentContext = getAgentContext({
+        registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache, useCachedStorageService: true })]],
+      })
+      const storageService = new InMemoryStorageService<CachedTestRecord>()
+      if (withoutDeleteByQuery) (storageService as StorageService<CachedTestRecord>).deleteByQuery = undefined
+      const cachedStorageService = new CachedStorageService(storageService)
+      const deleted = new CachedTestRecord({ id: 'deleted', foo: 'bar', tags: { myTag: 'delete' } })
+      const kept = new CachedTestRecord({ id: 'kept', foo: 'bar', tags: { myTag: 'keep' } })
+
+      await cachedStorageService.save(agentContext, deleted)
+      await cachedStorageService.save(agentContext, kept)
+      expect(await cachedStorageService.deleteByQuery(agentContext, CachedTestRecord, { myTag: 'delete' })).toBe(1)
+
+      expect(await cache.get(agentContext, `${deleted.type}:${deleted.id}`)).toBeNull()
+      await expect(cachedStorageService.getById(agentContext, CachedTestRecord, deleted.id)).rejects.toThrow(
+        RecordNotFoundError
+      )
+      expect(await cache.get(agentContext, `${kept.type}:${kept.id}`)).not.toBeNull()
+      expect(await cachedStorageService.getById(agentContext, CachedTestRecord, kept.id)).toMatchObject({ id: kept.id })
+    }
+  )
+
+  test('findSingleByQuery with a cache key returns the updated record and skips records that do not allow caching', async () => {
+    const storageService = {
+      update: vi.fn(),
+      findByQuery: vi.fn(),
+      getById: vi.fn(),
+    } as unknown as StorageService<TestRecord>
+    const agentContext = getAgentContext({
+      registerInstances: [
+        [
+          CacheModuleConfig,
+          new CacheModuleConfig({ cache: new InMemoryLruCache({ limit: 10 }), useCachedStorageService: true }),
+        ],
+        [CachedStorageService, new CachedStorageService(storageService)],
+      ],
+    })
+    const eventEmitter = new EventEmitter(getAgentConfig('CachedStorageService').agentDependencies, new Subject())
+
+    const record = new CachedTestRecord({ id: 'test-id', foo: 'bar' })
+    vi.mocked(storageService.findByQuery).mockResolvedValue([record.clone()])
+    vi.mocked(storageService.getById).mockImplementation(async () => record.clone())
+    const repository = new Repository<TestRecord>(CachedTestRecord, storageService, eventEmitter)
+
+    await repository.findSingleByQuery(agentContext, { foo: 'bar' }, { cacheKey: 'key' })
+    record.foo = 'updated'
+    await repository.update(agentContext, record)
+    const found = await repository.findSingleByQuery(agentContext, { foo: 'bar' }, { cacheKey: 'key' })
+
+    expect(found?.foo).toEqual('updated')
+    expect(storageService.findByQuery).toHaveBeenCalledTimes(1)
+
+    const uncachedRepository = new Repository(TestRecord, storageService, eventEmitter)
+    await uncachedRepository.findSingleByQuery(agentContext, { foo: 'bar' }, { cacheKey: 'other' })
+    await uncachedRepository.findSingleByQuery(agentContext, { foo: 'bar' }, { cacheKey: 'other' })
+    expect(storageService.findByQuery).toHaveBeenCalledTimes(3)
   })
 })

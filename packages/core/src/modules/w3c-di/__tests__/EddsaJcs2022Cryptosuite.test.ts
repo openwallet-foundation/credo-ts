@@ -812,6 +812,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
       expect(mockKeyManagementApi.sign).toHaveBeenCalledWith({
         keyId: '3Dn1SJNPaCXcvvJvSbsFWP2xaCjMom3can8CQNhWrTRx',
+        expectedPublicJwk: expect.objectContaining({ kty: 'OKP', crv: 'Ed25519' }),
         algorithm: 'EdDSA',
         data: hashData,
       })
@@ -917,7 +918,12 @@ describe('EddsaJcs2022Cryptosuite', () => {
     // Spec: VC DI EdDSA v1.0 Appendix B.3 Example 37 — Ed25519 is deterministic; the spec private key over hashData must produce the exact known signature.
     it('signing spec hashData with spec private key produces Example 37 signature bytes', async () => {
       const hashData = TypedArrayEncoder.fromHex(specHashDataHex)
-      const { signature } = await specKms.sign({ keyId: specKeyId, algorithm: 'EdDSA', data: hashData })
+      const { signature } = await specKms.sign({
+        keyId: specKeyId,
+        algorithm: 'EdDSA',
+        data: hashData,
+        expectedPublicJwk: null,
+      })
       expect(TypedArrayEncoder.toHex(signature)).toBe(specSignatureHex)
     })
 

@@ -32,7 +32,6 @@ import { customDocumentLoader } from '../../core/src/modules/vc/linked-data-proo
 import { Ed25519Signature2018Fixtures } from '../../core/src/modules/vc/linked-data-proofs/__tests__/fixtures'
 import { CredoEs256DidJwkJwtVc as CredoEs256DidJwkSdJwtVc } from '../../core/src/modules/vc/sd-jwt-vc/__tests__/fixtures/credo-sd-jwt-vc'
 import testLogger from '../../core/tests/logger'
-import { actionMenuBundle } from '../../drizzle-storage/src/action-menu/bundle'
 import { anoncredsBundle } from '../../drizzle-storage/src/anoncreds/bundle'
 import { coreBundle } from '../../drizzle-storage/src/core/bundle'
 import { didcommBundle } from '../../drizzle-storage/src/didcomm/bundle'
@@ -60,7 +59,11 @@ async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
       ],
     }),
   })
-  await agent.mdoc.store({ record: MdocRecord.fromMdoc(Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url)) })
+  await agent.mdoc.store({
+    record: new MdocRecord({
+      credentialInstances: [{ issuerSignedBase64Url: Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url).base64Url }],
+    }),
+  })
   await agent.w3cCredentials.store({
     record: W3cCredentialRecord.fromCredential(
       JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED, W3cJsonLdVerifiableCredential)
@@ -181,7 +184,7 @@ describe('Askar to Drizzle Migration', () => {
       const database = postgresDatabase?.drizzle ?? (await inMemoryDrizzleSqliteDatabase())
 
       const drizzleModule = new DrizzleStorageModule({
-        bundles: [coreBundle, didcommBundle, actionMenuBundle, anoncredsBundle],
+        bundles: [coreBundle, didcommBundle, anoncredsBundle],
         database,
       })
 
@@ -242,7 +245,7 @@ describe('Askar to Drizzle Migration', () => {
       await migrator.deleteStorageRecords()
 
       // It should not have deleted the keys
-      expect(await askarAgent.kms.getPublicKey({ keyId: 'consistent-kid' })).toEqual({
+      expect((await askarAgent.kms.getPublicKey({ keyId: 'consistent-kid' })).publicKey).toEqual({
         crv: 'Ed25519',
         kid: 'consistent-kid',
         kty: 'OKP',
@@ -265,7 +268,7 @@ describe('Askar to Drizzle Migration', () => {
 
     const database = postgresDatabase?.drizzle ?? (await inMemoryDrizzleSqliteDatabase())
     const drizzleModule = new DrizzleStorageModule({
-      bundles: [coreBundle, didcommBundle, actionMenuBundle, anoncredsBundle, tenantsBundle],
+      bundles: [coreBundle, didcommBundle, anoncredsBundle, tenantsBundle],
       database,
     })
 
@@ -368,7 +371,7 @@ describe('Askar to Drizzle Migration', () => {
     await migrator.deleteStorageRecords()
 
     // It should not have deleted the keys
-    expect(await askarAgent.kms.getPublicKey({ keyId: 'consistent-kid' })).toEqual({
+    expect((await askarAgent.kms.getPublicKey({ keyId: 'consistent-kid' })).publicKey).toEqual({
       crv: 'Ed25519',
       kid: 'consistent-kid',
       kty: 'OKP',

@@ -108,7 +108,8 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
       const session = new HttpTransportSession(utils.uuid(), req, res)
       // We want to make sure the session is removed if the connection is closed, as it
       // can't be used anymore then. This could happen if the client abruptly closes the connection.
-      req.once('close', () => transportService.removeSession(session))
+      // The request closes as soon as its body is read, so this listens on the response.
+      res.once('close', () => transportService.removeSession(session))
 
       try {
         const message = req.body as string
@@ -144,8 +145,9 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
         await firstValueFrom(subject)
 
         // If agent did not use session when processing message we need to send response here.
+        // 202 Accepted, as no response travels back on this connection: https://identity.foundation/didcomm-messaging/spec/v2.1/#https
         if (!res.headersSent) {
-          res.status(200).end()
+          res.status(202).end()
         }
       } catch (error) {
         agentContext.config.logger.error(`Error processing inbound message: ${error.message}`, error)
@@ -172,9 +174,15 @@ export class HttpTransportSession implements DidCommTransportSession {
     this.res = res
   }
 
+  public readonly isSingleResponse = true
+
+  public get isClosed() {
+    return this.res.headersSent || this.res.destroyed
+  }
+
   public async close(): Promise<void> {
     if (!this.res.headersSent) {
-      this.res.status(200).end()
+      this.res.status(202).end()
     }
   }
 

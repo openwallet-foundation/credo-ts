@@ -133,6 +133,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       recipientKey: v2Keys.recipients[0].key,
       connection: options?.connection,
       contentEncryptionAlgorithm: this.config.v2DefaultAnoncryptContentEncryption,
+      expiresTime: plaintext.expires_time,
     })
   }
 
@@ -172,12 +173,18 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       (typeof tagsTheirDid === 'string' && tagsTheirDid.length > 0 ? tagsTheirDid : undefined)
     const skidDid = keys.senderKeySkid.startsWith('did:') ? keys.senderKeySkid.split('#')[0] : undefined
 
-    return buildV2PlaintextFromMessage(message, {
-      from:
-        connection?.did && skidDid && areEquivalentDidPeer4Forms(connection.did, skidDid) ? connection.did : skidDid,
+    const plaintext = buildV2PlaintextFromMessage(message, {
+      // from MUST match the skid, byte for byte for a strict peer, so it never takes another did:peer:4 form
+      // from the connection: https://identity.foundation/didcomm-messaging/spec/v2.1/#message-layer-addressing-consistency
+      from: skidDid,
       to: theirDid ? [theirDid] : undefined,
       fromPrior: connection?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.fromPriorJwt,
     })
+
+    // created_time is RECOMMENDED: https://identity.foundation/didcomm-messaging/spec/v2.1/#message-headers
+    if (plaintext.created_time === undefined) plaintext.created_time = utils.dateToSeconds(new Date())
+
+    return plaintext
   }
 
   // ── Unpacking ─────────────────────────────────────────────────────────
@@ -229,12 +236,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       }
     }
 
-    // Lenient on purpose: authcrypt without from falls back to the skid DID, though the spec requires from.
-    // https://identity.foundation/didcomm-messaging/spec/v2.1/#message-headers
-    const from = unwrapped.from
-    if (senderDid && from !== undefined && (typeof from !== 'string' || !areEquivalentDidPeer4Forms(from, senderDid))) {
-      throw new CredoError(`DIDComm v2 plaintext 'from' (${from}) does not match the authcrypt sender '${senderDid}'`)
-    }
+    const authenticatedSenderDid = senderDid ? assertAuthcryptFrom(unwrapped.from, senderDid) : undefined
 
     this.warnIfNotAddressedToUs(agentContext, unwrapped.to, matchedKid)
 
@@ -252,7 +254,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       plaintextMessage: normalizeV2PlaintextToV1(unwrapped, agentContext.config.logger),
       senderKey: senderKey ?? undefined,
       recipientKey,
-      authenticatedSenderDid: senderDid ? (from ?? senderDid) : undefined,
+      authenticatedSenderDid,
       recipientDid: matchedKid.split('#')[0],
     }
   }
@@ -268,7 +270,8 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
   }
 
   /**
-   * Verify a standalone DIDComm v2 signed message and return the payload in v1 shape.
+   * Verify a standalone DIDComm v2 signed message and return the payload in v1 shape, with the DID
+   * of the signer as the authenticated sender.
    *
    * Signed envelopes exist only in v2, so this is not part of the shared envelope contract. The
    * message receiver resolves this class directly for that path.
@@ -276,12 +279,12 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
   public async unpackSigned(
     agentContext: AgentContext,
     signedMessage: DidCommV2SignedMessageWire
-  ): Promise<DidCommPlaintextMessage> {
-    const { plaintext } = await this.verifySignedPlaintext(agentContext, signedMessage)
+  ): Promise<{ plaintextMessage: DidCommPlaintextMessage; signerDid: string }> {
+    const { plaintext, signerDid } = await this.verifySignedPlaintext(agentContext, signedMessage)
     agentContext.config.logger.info(
       `Verified DIDComm v2 signed message of type '${plaintext.type}' from '${plaintext.from}'`
     )
-    return normalizeV2PlaintextToV1(plaintext, agentContext.config.logger)
+    return { plaintextMessage: normalizeV2PlaintextToV1(plaintext, agentContext.config.logger), signerDid }
   }
 
   /**
@@ -416,6 +419,17 @@ export function toV2EnvelopeRecipients(
   return sameDidAndCurve
 }
 
+// Authcrypt: `from` is REQUIRED and MUST match the skid DID: https://identity.foundation/didcomm-messaging/spec/v2.1/#message-headers
+function assertAuthcryptFrom(from: unknown, senderDid: string): string {
+  if (typeof from !== 'string') {
+    throw new CredoError(`DIDComm v2 authcrypt message from '${senderDid}' has no 'from' header`)
+  }
+  if (!areEquivalentDidPeer4Forms(from, senderDid)) {
+    throw new CredoError(`DIDComm v2 plaintext 'from' (${from}) does not match the authcrypt sender '${senderDid}'`)
+  }
+  return from
+}
+
 function isAddressedTo(to: unknown, matchedKid: string): boolean {
   const ourDid = matchedKid.split('#')[0]
   return (
@@ -426,6 +440,8 @@ function isAddressedTo(to: unknown, matchedKid: string): boolean {
 
 /**
  * Wrap the envelope in one anoncrypt Forward message for every routing key, outermost hop last.
+ *
+ * The expiry of the wrapped message is copied onto each forward: https://identity.foundation/didcomm-messaging/spec/v2.1/#routing-protocol-20
  */
 export async function wrapInV2Forward(
   agentContext: AgentContext,
@@ -436,6 +452,7 @@ export async function wrapInV2Forward(
     recipientKey: Kms.PublicJwk
     connection?: DidCommPackOptions['connection']
     contentEncryptionAlgorithm: DidCommV2AnoncryptContentEncryptionAlgorithm
+    expiresTime?: number
   }
 ): Promise<DidCommEncryptedMessage> {
   let payload = encryptedMessage
@@ -456,6 +473,7 @@ export async function wrapInV2Forward(
       to: [toKeyAgreementDidUrl(routingKey).split('#')[0]],
       next,
       attachments: [attachment],
+      expiresTime: options.expiresTime,
     })
 
     payload = await envelopeService.packAnoncrypt(agentContext, forwardPlaintext, {

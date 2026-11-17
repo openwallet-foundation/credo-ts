@@ -58,7 +58,6 @@ import type {
   DidCommDataIntegrityOfferCredentialFormat,
 } from './DidCommDataIntegrityCredentialFormat'
 import type { DidCommDataIntegrityLinkSecretBindingProvider } from './DidCommDataIntegrityLinkSecretBinding'
-import { DidCommDataIntegrityLinkSecretBindingProviderToken } from './DidCommDataIntegrityLinkSecretBinding'
 import type {
   AnonCredsLinkSecretBindingMethod,
   AnonCredsLinkSecretDataIntegrityBindingProof,
@@ -75,6 +74,10 @@ const W3C_DATA_INTEGRITY_CREDENTIAL_OFFER = 'didcomm/w3c-di-vc-offer@v0.1'
 const W3C_DATA_INTEGRITY_CREDENTIAL_REQUEST = 'didcomm/w3c-di-vc-request@v0.1'
 const W3C_DATA_INTEGRITY_CREDENTIAL = 'didcomm/w3c-di-vc@v0.1'
 
+export interface DidCommDataIntegrityCredentialFormatServiceOptions {
+  linkSecretBinding?: DidCommDataIntegrityLinkSecretBindingProvider
+}
+
 export class DidCommDataIntegrityCredentialFormatService
   implements DidCommCredentialFormatService<DidCommDataIntegrityCredentialFormat>
 {
@@ -86,6 +89,12 @@ export class DidCommDataIntegrityCredentialFormatService
    * record binding in the credential exchange record.
    */
   public readonly credentialRecordType = 'w3c' as const
+
+  private readonly linkSecretBinding?: DidCommDataIntegrityLinkSecretBindingProvider
+
+  public constructor(options: DidCommDataIntegrityCredentialFormatServiceOptions = {}) {
+    this.linkSecretBinding = options.linkSecretBinding
+  }
 
   /**
    * Create a {@link AttachmentFormats} object dependent on the message type.
@@ -154,28 +163,12 @@ export class DidCommDataIntegrityCredentialFormatService
     return { format, attachment, previewAttributes }
   }
 
-  /**
-   * Resolves the provider implementing the `anoncreds_link_secret` binding method, which is
-   * registered by the `AnonCredsModule`. Throws when the binding method is used without it.
-   */
-  private findLinkSecretBindingProvider(
-    agentContext: AgentContext
-  ): DidCommDataIntegrityLinkSecretBindingProvider | undefined {
-    if (!agentContext.dependencyManager.isRegistered(DidCommDataIntegrityLinkSecretBindingProviderToken, true)) {
-      return undefined
-    }
-
-    return agentContext.dependencyManager.resolve<DidCommDataIntegrityLinkSecretBindingProvider>(
-      DidCommDataIntegrityLinkSecretBindingProviderToken
-    )
-  }
-
-  private getLinkSecretBindingProvider(agentContext: AgentContext): DidCommDataIntegrityLinkSecretBindingProvider {
-    const provider = this.findLinkSecretBindingProvider(agentContext)
+  private getLinkSecretBindingProvider(): DidCommDataIntegrityLinkSecretBindingProvider {
+    const provider = this.linkSecretBinding
 
     if (!provider) {
       throw new CredoError(
-        'The anoncreds link secret binding method is not supported. Register the AnonCredsModule to add support for it.'
+        'The anoncreds link secret binding method is not supported. Pass a linkSecretBinding provider to DidCommDataIntegrityCredentialFormatService to add support for it.'
       )
     }
 
@@ -262,13 +255,14 @@ export class DidCommDataIntegrityCredentialFormatService
         throw new CredoError('Cannot request credential with a binding method that was not offered.')
       }
 
-      anonCredsLinkSecretDataIntegrityBindingProof = await this.getLinkSecretBindingProvider(
-        agentContext
-      ).createBindingProof(agentContext, {
-        credentialExchangeRecord,
-        bindingMethod: credentialOffer.bindingMethod.anoncredsLinkSecret,
-        linkSecretId: dataIntegrityFormat?.anonCredsLinkSecret?.linkSecretId,
-      })
+      anonCredsLinkSecretDataIntegrityBindingProof = await this.getLinkSecretBindingProvider().createBindingProof(
+        agentContext,
+        {
+          credentialExchangeRecord,
+          bindingMethod: credentialOffer.bindingMethod.anoncredsLinkSecret,
+          linkSecretId: dataIntegrityFormat?.anonCredsLinkSecret?.linkSecretId,
+        }
+      )
     }
 
     let didCommSignedAttachmentBindingProof: DidCommSignedAttachmentDataIntegrityBindingProof | undefined
@@ -511,15 +505,12 @@ export class DidCommDataIntegrityCredentialFormatService
         throw new CredoError('Cannot issue credential with a binding method that was not offered')
       }
 
-      const issuedCredential = await this.getLinkSecretBindingProvider(agentContext).issueBoundCredential(
-        agentContext,
-        {
-          credentialExchangeRecord,
-          bindingMethod: credentialOffer.bindingMethod.anoncredsLinkSecret,
-          bindingProof: credentialRequest.binding_proof.anoncreds_link_secret,
-          credentialSubjectId: dataIntegrityFormat?.credentialSubjectId,
-        }
-      )
+      const issuedCredential = await this.getLinkSecretBindingProvider().issueBoundCredential(agentContext, {
+        credentialExchangeRecord,
+        bindingMethod: credentialOffer.bindingMethod.anoncredsLinkSecret,
+        bindingProof: credentialRequest.binding_proof.anoncreds_link_secret,
+        credentialSubjectId: dataIntegrityFormat?.credentialSubjectId,
+      })
 
       signedCredential = JsonTransformer.fromJSON(issuedCredential, W3cJsonLdVerifiableCredential)
     }
@@ -636,7 +627,7 @@ export class DidCommDataIntegrityCredentialFormatService
 
     let credentialRecordId: string
     if (credentialRequest.binding_proof?.anoncreds_link_secret) {
-      credentialRecordId = await this.getLinkSecretBindingProvider(agentContext).storeBoundCredential(agentContext, {
+      credentialRecordId = await this.getLinkSecretBindingProvider().storeBoundCredential(agentContext, {
         credentialExchangeRecord,
         credentialJson,
         offeredCredentialJson,
@@ -710,7 +701,7 @@ export class DidCommDataIntegrityCredentialFormatService
     const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
     const w3cCredentialRecord = await w3cCredentialRepository.findById(agentContext, credentialRecordId)
     if (w3cCredentialRecord) {
-      const linkSecretBindingProvider = this.findLinkSecretBindingProvider(agentContext)
+      const linkSecretBindingProvider = this.linkSecretBinding
 
       if (linkSecretBindingProvider?.isBoundCredentialRecord(w3cCredentialRecord)) {
         await linkSecretBindingProvider.deleteCredentialRecord(agentContext, w3cCredentialRecord)
@@ -844,7 +835,7 @@ export class DidCommDataIntegrityCredentialFormatService
 
     let anonCredsLinkSecretBindingMethod: AnonCredsLinkSecretBindingMethod | undefined
     if (anonCredsLinkSecretBindingMethodOptions) {
-      anonCredsLinkSecretBindingMethod = await this.getLinkSecretBindingProvider(agentContext).createOfferBindingMethod(
+      anonCredsLinkSecretBindingMethod = await this.getLinkSecretBindingProvider().createOfferBindingMethod(
         agentContext,
         {
           credentialExchangeRecord,

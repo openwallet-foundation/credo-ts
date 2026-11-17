@@ -21,7 +21,7 @@ export async function createOrGetKey(
     return Kms.PublicJwk.fromPublicJwk(publicJwk)
   }
 
-  const publicJwk = await kms.getPublicKey({ keyId })
+  const { publicKey: publicJwk } = await kms.getPublicKey({ keyId })
   if (!publicJwk) {
     throw new Error(`Key with key id '${keyId}' not found`)
   }
@@ -31,7 +31,9 @@ export async function createOrGetKey(
     )
   }
 
-  return Kms.PublicJwk.fromPublicJwk(publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  const ed25519PublicJwk = Kms.PublicJwk.fromPublicJwk(publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  ed25519PublicJwk.keyId = keyId
+  return ed25519PublicJwk
 }
 
 export function hederaPublicKeyFromPublicJwk(publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>): PublicKey {

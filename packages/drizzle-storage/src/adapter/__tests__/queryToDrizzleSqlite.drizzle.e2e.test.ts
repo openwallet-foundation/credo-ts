@@ -1,3 +1,4 @@
+import type { Query } from '@credo-ts/core'
 import { DidCommConnectionRecord, DidCommDidExchangeRole, DidCommDidExchangeState } from '@credo-ts/didcomm'
 import { pushSQLiteSchema } from 'drizzle-kit/api'
 import { drizzle } from 'drizzle-orm/libsql'
@@ -34,6 +35,7 @@ describe('queryToDrizzleSqlite', () => {
       customTags: {
         myCustomTag: ['First', 'Second'],
         anotherCustomTag: true,
+        stringCustomTag: 'true',
       },
     })
   })
@@ -145,6 +147,20 @@ describe('queryToDrizzleSqlite', () => {
           )
         )
     ).toHaveLength(0)
+  })
+
+  test('should compare custom tag values with their type', async () => {
+    const select = (query: Query<DidCommConnectionRecord>) =>
+      db.select().from(didcommConnection).where(queryToDrizzleSqlite(query, didcommConnection))
+
+    expect(await select({ anotherCustomTag: true })).toHaveLength(1)
+    expect(await select({ anotherCustomTag: 'true' })).toHaveLength(0)
+    expect(await select({ stringCustomTag: 'true' })).toHaveLength(1)
+    expect(await select({ stringCustomTag: true })).toHaveLength(0)
+    expect(await select({ stringCustomTag: ['true'] })).toHaveLength(0)
+    expect(await select({ myCustomTag: ['Second', 'First'] })).toHaveLength(1)
+    expect(await select({ myCustomTag: ['First', 'Third'] })).toHaveLength(0)
+    expect(await select({ myCustomTag: 'First' })).toHaveLength(0)
   })
 
   test('should correctly query custom tag column array value', async () => {

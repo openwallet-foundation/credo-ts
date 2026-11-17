@@ -188,11 +188,7 @@ export class DidCommV2EnvelopeService {
       )
     }
 
-    if (plaintext.from && !areEquivalentDidPeer4Forms(plaintext.from, signer.kid.split('#')[0])) {
-      throw new CredoError(
-        `Plaintext 'from' (${plaintext.from}) does not match signer DID (${signer.kid.split('#')[0]})`
-      )
-    }
+    assertSignedFrom(plaintext.from, signer.kid.split('#')[0])
 
     // kid goes only in the unprotected header, as in the spec's Appendix C.2 vectors.
     // didcomm-rust and didcomm-python require it there.
@@ -388,7 +384,7 @@ export class DidCommV2EnvelopeService {
   /**
    * Verify a single-signer DIDComm v2 signed message, in the General or the Flattened JWS JSON
    * serialization, and return its plaintext.
-   * Enforces typ, alg allowlist, and that the plaintext `from` matches the signer DID.
+   * Enforces typ, alg allowlist, and that the plaintext `from` is present and matches the signer DID.
    */
   public async verifySignedMessage(
     agentContext: AgentContext,
@@ -453,10 +449,7 @@ export class DidCommV2EnvelopeService {
     }
 
     const plaintext = JsonEncoder.fromBase64Url(signedMessage.payload) as DidCommV2PlaintextMessage
-    const signerDid = kid.split('#')[0]
-    if (plaintext.from && !areEquivalentDidPeer4Forms(plaintext.from, signerDid)) {
-      throw new CredoError(`Plaintext 'from' (${plaintext.from}) does not match signer DID (${signerDid})`)
-    }
+    assertSignedFrom(plaintext.from, kid.split('#')[0])
 
     this.logger.debug('Verified DIDComm v2 signed message', { type: plaintext.type, kid, alg })
 
@@ -496,6 +489,16 @@ export class DidCommV2EnvelopeService {
       throw new CredoError('apv in protected header does not match recipient kids')
     }
     return received
+  }
+}
+
+// A signed message MUST have a `from` that matches the signer: https://identity.foundation/didcomm-messaging/spec/v2.1/#message-headers
+function assertSignedFrom(from: unknown, signerDid: string): void {
+  if (typeof from !== 'string') {
+    throw new CredoError("A DIDComm v2 signed message must have a 'from' header")
+  }
+  if (!areEquivalentDidPeer4Forms(from, signerDid)) {
+    throw new CredoError(`Plaintext 'from' (${from}) does not match signer DID (${signerDid})`)
   }
 }
 

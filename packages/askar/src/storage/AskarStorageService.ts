@@ -16,6 +16,7 @@ import {
 } from '@credo-ts/core'
 import { Scan, Session } from '@openwallet-foundation/askar-shared'
 
+import { AskarModuleConfig } from '../AskarModuleConfig'
 import { AskarStoreManager } from '../AskarStoreManager'
 import { AskarError } from '../error'
 import { AskarErrorCode, isAskarError } from '../utils/askarError'
@@ -153,6 +154,30 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
   }
 
   /** @inheritDoc */
+  public async deleteByQuery(
+    agentContext: AgentContext,
+    recordClass: BaseRecordConstructor<T>,
+    query: Query<T>
+  ): Promise<number> {
+    const askarQuery = askarQueryFromSearchQuery(query)
+
+    try {
+      // Calls askar directly, as Session.removeAll drops the number of removed records
+      return await this.withSession(agentContext, (session) => {
+        if (!session.handle) throw new CredoError('Cannot delete records by query with a closed session')
+
+        return agentContext.resolve(AskarModuleConfig).askar.sessionRemoveAll({
+          sessionHandle: session.handle,
+          category: recordClass.type,
+          tagFilter: askarQuery,
+        })
+      })
+    } catch (error) {
+      throw new AskarError(`Error deleting records ${recordClass.name} by query`, { cause: error })
+    }
+  }
+
+  /** @inheritDoc */
   public async getById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
     try {
       const record = await this.withSession(agentContext, (session) =>
@@ -198,6 +223,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     const askarQuery = askarQueryFromSearchQuery(query)
 
     const { store, profile } = await this.askarStoreManager.getInitializedStoreWithProfile(agentContext)
+    const isPaginated = queryOptions?.offset !== undefined || queryOptions?.limit !== undefined
     const scan = new Scan({
       category: recordClass.type,
       store,
@@ -205,6 +231,8 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
       profile,
       offset: queryOptions?.offset,
       limit: queryOptions?.limit,
+      // Unordered rows let pages skip or repeat records. Askar's row id follows insertion order.
+      orderBy: isPaginated ? 'id' : undefined,
     })
 
     const instances = []

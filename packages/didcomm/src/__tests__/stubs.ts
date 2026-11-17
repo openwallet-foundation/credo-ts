@@ -4,10 +4,12 @@ import type { DidCommTransportSession } from '../DidCommTransportService'
 
 export class DummyTransportSession implements DidCommTransportSession {
   public id: string
-  public readonly type = 'http'
+  public type = 'http'
   public keys?: EnvelopeKeys
   public inboundMessage?: DidCommMessage
   public connectionId?: string
+  public isClosed?: boolean
+  public isSingleResponse?: boolean
 
   public constructor(id: string) {
     this.id = id

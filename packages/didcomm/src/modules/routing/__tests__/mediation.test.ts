@@ -17,7 +17,7 @@ import {
 } from '../../../../../core/tests/helpers'
 import { DidCommModule } from '../../../DidCommModule'
 import { DidCommModuleConfig, type DidCommModuleConfigOptions } from '../../../DidCommModuleConfig'
-import { MessageSendingError } from '../../../errors'
+import { MessageSendingError, MessageSendingErrorCategory } from '../../../errors'
 import type { DidCommOutboundMessageContext } from '../../../models'
 import { type DidCommOutboundWebSocketClosedEvent, DidCommTransportEventTypes } from '../../../transport'
 import { DidCommBasicMessageEventTypes } from '../../basic-messages'
@@ -408,6 +408,7 @@ describe('DidCommMediationRecipientApi live mode', () => {
   function socketNotOpen(): MessageSendingError {
     return new MessageSendingError('Socket is not open', {
       outboundMessageContext: {} as DidCommOutboundMessageContext,
+      reason: { category: MessageSendingErrorCategory.RemoteError, attempts: [] },
     })
   }
 
@@ -433,6 +434,35 @@ describe('DidCommMediationRecipientApi live mode', () => {
     await vi.advanceTimersByTimeAsync(749)
     expect(messagePickupApi.pickupMessages).toHaveBeenCalledTimes(1)
     await vi.advanceTimersByTimeAsync(1)
+    expect(messagePickupApi.pickupMessages).toHaveBeenCalledTimes(2)
+  })
+
+  test('does not start a polling round while the previous one is still sending', async () => {
+    let finishRound = () => {}
+    messagePickupApi.pickupMessages.mockImplementationOnce(
+      () => new Promise<void>((resolve) => (finishRound = resolve))
+    )
+    await liveModeRecipient({ mediatorPollingInterval: 1000 }).initiateMessagePickup(
+      mediationRecord,
+      DidCommMediatorPickupStrategy.PickUpV2
+    )
+
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(messagePickupApi.pickupMessages).toHaveBeenCalledTimes(1)
+
+    finishRound()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(messagePickupApi.pickupMessages).toHaveBeenCalledTimes(2)
+  })
+
+  test('keeps polling after a round fails', async () => {
+    messagePickupApi.pickupMessages.mockRejectedValueOnce(socketNotOpen())
+    await liveModeRecipient({ mediatorPollingInterval: 1000 }).initiateMessagePickup(
+      mediationRecord,
+      DidCommMediatorPickupStrategy.PickUpV2
+    )
+
+    await vi.advanceTimersByTimeAsync(2000)
     expect(messagePickupApi.pickupMessages).toHaveBeenCalledTimes(2)
   })
 

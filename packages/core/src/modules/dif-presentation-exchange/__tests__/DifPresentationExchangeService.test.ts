@@ -516,7 +516,7 @@ describe('DifPresentationExchangeService', () => {
 
     const selectedCredentials = pexService.selectCredentialsForRequest(credentialsForRequest)
 
-    vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]) })
+    vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]), backend: 'node' })
     const presentation = await pexService.createPresentation(agentContext, {
       credentialsForInputDescriptor: selectedCredentials,
       challenge: 'something',
@@ -705,7 +705,7 @@ describe('DifPresentationExchangeService', () => {
 
     const selectedCredentials = pexService.selectCredentialsForRequest(credentialsForRequest)
 
-    vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]) })
+    vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]), backend: 'node' })
 
     const presentation = await pexService.createPresentation(agentContext, {
       credentialsForInputDescriptor: selectedCredentials,
@@ -847,7 +847,7 @@ describe('DifPresentationExchangeService', () => {
 
     const selectedCredentials = pexService.selectCredentialsForRequest(credentialsForRequest)
 
-    vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]) })
+    vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]), backend: 'node' })
 
     const presentation = await pexService.createPresentation(agentContext, {
       credentialsForInputDescriptor: selectedCredentials,

@@ -30,6 +30,7 @@ import {
   type MdocSupportedSignatureAlgorithm,
   mapNonEmptyArray,
   type NonEmptyArray,
+  parseX5c,
   type Query,
   type QueryOptions,
   SdJwtVcApi,
@@ -45,7 +46,6 @@ import {
   W3cJwtVerifiablePresentation,
   W3cV2CredentialService,
   W3cV2SdJwtVerifiablePresentation,
-  X509Certificate,
   X509Service,
 } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
@@ -371,6 +371,9 @@ export class OpenId4VpVerifierService {
       expiresAt,
       openId4VpVersion: version,
     })
+    for (const [key, value] of Object.entries(options.recordMetadata ?? {})) {
+      verificationSession.metadata.set(key, value)
+    }
     await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
     this.emitStateChangedEvent(agentContext, verificationSession, null)
 
@@ -754,6 +757,18 @@ export class OpenId4VpVerifierService {
       transactionData,
     }
 
+    try {
+      await this.config.verifiedAuthorizationResponseHandler?.({
+        agentContext,
+        verificationSession: result.verificationSession,
+        verifiedAuthorizationResponse,
+      })
+    } catch (error) {
+      result.verificationSession.errorMessage = error.message
+      await this.updateState(agentContext, result.verificationSession, OpenId4VcVerificationSessionState.Error)
+      throw error
+    }
+
     result.verificationSession.authorizationResponsePayload = result.authorizationResponsePayload
     await this.updateState(
       agentContext,
@@ -800,7 +815,7 @@ export class OpenId4VpVerifierService {
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
 
     const result = openid4vpVerifier.validateOpenid4vpAuthorizationResponsePayload({
-      authorizationRequestPayload: verificationSession.requestPayload,
+      authorizationRequestPayload,
       authorizationResponsePayload: openid4vpAuthorizationResponsePayload,
     })
 
@@ -1224,15 +1239,14 @@ export class OpenId4VpVerifierService {
         // `trustedIssuers` undefined and let `sdJwtVcApi.verify` surface the unsupported-issuer error.
         let trustedIssuers: TrustedIssuer[] | undefined
         if (issuer) {
+          const signer =
+            issuer.method === 'x5c'
+              ? ({ method: 'x509', certificateChain: parseX5c(agentContext, issuer.x5c) } as const)
+              : ({ method: 'did', didUrl: issuer.didUrl } as const)
+
           trustedIssuers = (
             await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
-              signer:
-                issuer.method === 'x5c'
-                  ? {
-                      method: 'x509',
-                      certificateChain: issuer.x5c,
-                    }
-                  : { method: 'did', didUrl: issuer.didUrl },
+              signer,
               verification: {
                 type: 'openId4VpCredential',
                 credential: sdJwtVc,
@@ -1244,7 +1258,7 @@ export class OpenId4VpVerifierService {
         }
 
         const verificationResult = await sdJwtVcApi.verify({
-          compactSdJwtVc: presentation,
+          sdJwtVc,
           keyBinding: {
             audience: options.audience,
             nonce: options.nonce,
@@ -1269,7 +1283,7 @@ export class OpenId4VpVerifierService {
           const mdoc = new Mdoc(documentResponse.deviceResponse.documents![0].issuerSigned)
 
           const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
-            X509Certificate.fromRawCertificate(cert)
+            X509Service.parseCertificate(agentContext, { encodedCertificate: cert })
           )
 
           const trustedCertificates =

@@ -54,7 +54,12 @@ import type {
 } from '../src'
 import { AnonCredsModule } from '../src'
 import type { AnonCredsDidCommOfferCredentialFormat } from '../src/didcomm'
-import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService } from '../src/didcomm'
+import {
+  AnonCredsDidCommCredentialFormatService,
+  AnonCredsDidCommProofFormatService,
+  AnonCredsDidCommRevocationNotificationFormatService,
+  AnonCredsLinkSecretBindingProvider,
+} from '../src/didcomm'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
 import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
@@ -80,7 +85,9 @@ export const getAnonCredsModules = ({
   }
   extraDidCommConfig?: Omit<DidCommModuleConfigOptions, 'proofs' | 'credentials'>
 } = {}) => {
-  const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService()
+  const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService({
+    linkSecretBinding: new AnonCredsLinkSecretBindingProvider(),
+  })
   // Add support for resolving pre-created credential definitions and schemas
   const inMemoryAnonCredsRegistry = new InMemoryAnonCredsRegistry({
     existingCredentialDefinitions: {
@@ -93,6 +100,7 @@ export const getAnonCredsModules = ({
   })
 
   const anonCredsCredentialFormatService = new AnonCredsDidCommCredentialFormatService()
+  const anonCredsRevocationNotificationFormatService = new AnonCredsDidCommRevocationNotificationFormatService()
   const anonCredsProofFormatService = new AnonCredsDidCommProofFormatService()
   const presentationExchangeProofFormatService = new DidCommDifPresentationExchangeProofFormatService()
 
@@ -106,6 +114,7 @@ export const getAnonCredsModules = ({
       ...extraDidCommConfig,
       credentials: {
         autoAcceptCredentials,
+        revocationNotificationFormats: [anonCredsRevocationNotificationFormatService],
         credentialProtocols: [
           new DidCommCredentialV2Protocol({
             credentialFormats: [dataIntegrityCredentialFormatService, anonCredsCredentialFormatService],

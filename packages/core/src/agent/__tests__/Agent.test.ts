@@ -27,7 +27,10 @@ import {
   DidCommMediatorService,
 } from '../../../../didcomm/src/modules/routing'
 import { getAgentOptions } from '../../../tests/helpers'
+import { TestLogger } from '../../../tests/logger'
 import { InjectionSymbols } from '../../constants'
+import { LogLevel } from '../../logger'
+import { CacheModule, InMemoryLruCache } from '../../modules/cache'
 import { DidsModuleConfig, WebDidResolver } from '../../modules/dids'
 import type { KeyManagementApi, KeyManagementService } from '../../modules/kms'
 import { JsonLdModule, JsonLdModuleConfig } from '../../modules/vc/jsonld'
@@ -95,6 +98,23 @@ describe('Agent', () => {
       // Should be custom module config property, not the default value
       expect(agent.didcomm.mediationRecipient.config.maximumMessagePickup).toBe(42)
       expect(agent.modules.myModule).toEqual(expect.any(MyApi))
+    })
+
+    test('warns only when the default cache is used', () => {
+      const logger = new TestLogger(LogLevel.Off)
+      const warn = vi.spyOn(logger, 'warn')
+      const config = { ...agentOptions.config, logger }
+      const cacheWarning = expect.stringContaining("No 'cache' module configured")
+
+      new Agent({
+        ...agentOptions,
+        config,
+        modules: { ...agentOptions.modules, cache: new CacheModule({ cache: new InMemoryLruCache({ limit: 1 }) }) },
+      })
+      expect(warn).not.toHaveBeenCalledWith(cacheWarning)
+
+      new Agent({ ...agentOptions, config })
+      expect(warn).toHaveBeenCalledWith(cacheWarning)
     })
 
     test('creates a default module from config options', () => {
@@ -248,7 +268,8 @@ describe('Agent', () => {
 
     const protocols = registry.query({ featureType: 'protocol', match: '*' }).map((p) => p.id)
 
-    expect(protocols.length).toEqual(13)
+    expect(protocols.length).toEqual(11)
+    expect(protocols).not.toContain('https://didcomm.org/revocation_notification/2.0')
 
     expect(protocols).toEqual(
       expect.arrayContaining([
@@ -263,8 +284,6 @@ describe('Agent', () => {
         'https://didcomm.org/messagepickup/1.0',
         'https://didcomm.org/messagepickup/2.0',
         'https://didcomm.org/out-of-band/1.1',
-        'https://didcomm.org/revocation_notification/1.0',
-        'https://didcomm.org/revocation_notification/2.0',
       ])
     )
   })

@@ -56,7 +56,7 @@ export class TenantSessionCoordinator {
    * @parm tenantRecord The tenant record for which to get the agent context
    */
   public async getContextForSession(
-    tenantRecord: TenantRecord,
+    tenantRecord: Pick<TenantRecord, 'id'>,
     {
       runInMutex,
       provisionContext = false,
@@ -300,7 +300,10 @@ export class TenantSessionCoordinator {
     return tenantSessions.mutex
   }
 
-  private async createAgentContext(tenantRecord: TenantRecord, { provisionContext }: { provisionContext: boolean }) {
+  private async createAgentContext(
+    tenantRecord: Pick<TenantRecord, 'id'>,
+    { provisionContext }: { provisionContext: boolean }
+  ) {
     // The tenant shares the root agent config, which it resolves from the parent dependency manager.
     const tenantDependencyManager = this.rootAgentContext.dependencyManager.createChild()
 

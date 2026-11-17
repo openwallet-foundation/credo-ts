@@ -45,7 +45,6 @@ import {
   DidCommCredentialRole,
   DidCommCredentialState,
   DidCommDataIntegrityCredentialFormatService,
-  DidCommDataIntegrityLinkSecretBindingProviderToken,
   DidCommProofExchangeRecord,
   DidCommProofRole,
   DidCommProofState,
@@ -97,7 +96,6 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
-    [DidCommDataIntegrityLinkSecretBindingProviderToken, new AnonCredsLinkSecretBindingProvider()],
     [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
@@ -112,7 +110,9 @@ const agentContext = getAgentContext({
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
 
-const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService()
+const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService({
+  linkSecretBinding: new AnonCredsLinkSecretBindingProvider(),
+})
 const anoncredsProofFormatService = new AnonCredsDidCommProofFormatService()
 
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
@@ -442,6 +442,12 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   expect(issuerCredentialRecord.metadata.data).toEqual({
     '_anoncreds/credential': expectedCredentialMetadata,
   })
+
+  // Revocation notifications find the holder's record by these tags
+  expect(holderCredentialRecord.getTag('anonCredsRevocationRegistryId')).toEqual(
+    revocable ? revocationRegistryDefinitionId : undefined
+  )
+  expect(holderCredentialRecord.getTag('anonCredsCredentialRevocationId')).toEqual(revocable ? '1' : undefined)
 
   const holderProofRecord = new DidCommProofExchangeRecord({
     protocolVersion: 'v1',

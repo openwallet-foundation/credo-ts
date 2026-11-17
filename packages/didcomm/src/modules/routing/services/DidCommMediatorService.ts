@@ -24,13 +24,12 @@ import {
 } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
-import { DidCommTransportService } from '../../../DidCommTransportService'
-import { MessageSendingError } from '../../../errors'
 import type { DidCommInboundMessageContext } from '../../../models'
+import type { DidCommEncryptedMessage } from '../../../types'
 import type { DidCommConnectionRecord } from '../../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../../connections/services'
-import { DidCommMessagePickupApi, DidCommMessagePickupSessionService } from '../../message-pickup'
+import { DidCommMessagePickupApi } from '../../message-pickup'
 import { DidCommMessagePickupSessionRole } from '../../message-pickup/DidCommMessagePickupSession'
 import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
 import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
@@ -185,31 +184,43 @@ export class DidCommMediatorService {
     const messagePickupApi = agentContext.resolve(DidCommMessagePickupApi)
 
     let recipientDid: string
-    let encryptedMessage: import('../../../types').DidCommEncryptedMessage
+    let encryptedMessages: DidCommEncryptedMessage[]
     let mediationRecord: DidCommMediationRecord | null
 
     if (message instanceof DidCommForwardV2Message) {
       if (!message.next) {
         throw new CredoError('Invalid v2 Forward: Missing required attribute "next"')
       }
-      const attachment = message.getMessage()
-      if (!attachment) {
+      encryptedMessages = message.getMessages()
+      if (encryptedMessages.length === 0) {
         throw new CredoError('Invalid v2 Forward: Missing or empty attachment')
       }
-      encryptedMessage = attachment
-      // v2 `next` is always a DID; canonicalize did:peer:4 long→short so it matches keylist entries
-      recipientDid = getDidPeer4ShortFormForEquivalence(message.next) ?? message.next
+      // `next` is a DID, or a key of the recipient on the last hop, while the keylist holds canonical
+      // (did:peer:4 short form) DIDs: https://identity.foundation/didcomm-messaging/spec/v2.1/#routing-protocol-20
+      const nextDid = message.next.split('#')[0]
+      recipientDid = getDidPeer4ShortFormForEquivalence(nextDid) ?? nextDid
       mediationRecord = await this.mediationRepository.findSingleByRecipientDid(agentContext, recipientDid)
+      if (!mediationRecord && isDidKey(nextDid)) {
+        mediationRecord = await this.mediationRepository.findSingleByRecipientKey(agentContext, didKeyToVerkey(nextDid))
+      }
     } else {
       if (!message.to) {
         throw new CredoError('Invalid v1 Forward: Missing required attribute "to"')
       }
-      encryptedMessage = message.message
+      encryptedMessages = [message.message]
       const rawDid = message.to.startsWith('did:') ? message.to : verkeyToDidKey(message.to)
       recipientDid = getDidPeer4ShortFormForEquivalence(rawDid) ?? rawDid
-      mediationRecord =
-        (await this.mediationRepository.findSingleByRecipientKey(agentContext, message.to)) ??
-        (await this.mediationRepository.findSingleByRecipientDid(agentContext, recipientDid))
+      // A v1 client registers the key, a v2 client registers its did:key. Both indexes are read, so a
+      // key one mediatee holds in each index does not route the traffic of the other one.
+      const byKey = await this.mediationRepository.findSingleByRecipientKey(
+        agentContext,
+        isDidKey(message.to) ? didKeyToVerkey(message.to) : message.to
+      )
+      const byDid = await this.mediationRepository.findSingleByRecipientDid(agentContext, recipientDid)
+      if (byKey && byDid && byKey.id !== byDid.id) {
+        throw new CredoError(`Forward recipient '${message.to}' is registered by two mediation records`)
+      }
+      mediationRecord = byKey ?? byDid
     }
 
     if (!mediationRecord) {
@@ -229,18 +240,24 @@ export class DidCommMediatorService {
 
     switch (messageForwardingStrategy) {
       case DidCommMessageForwardingStrategy.QueueOnly:
-        await messagePickupApi.queueMessage({
-          connectionId: mediationRecord.connectionId,
-          recipientDids: [recipientDid],
-          message: encryptedMessage,
-        })
+        for (const encryptedMessage of encryptedMessages) {
+          await messagePickupApi.queueMessage({
+            connectionId: mediationRecord.connectionId,
+            recipientDids: [recipientDid],
+            message: encryptedMessage,
+          })
+        }
         break
       case DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery: {
-        await messagePickupApi.queueMessage({
-          connectionId: mediationRecord.connectionId,
-          recipientDids: [recipientDid],
-          message: encryptedMessage,
-        })
+        const messageIds: string[] = []
+        for (const encryptedMessage of encryptedMessages) {
+          const { messageId } = await messagePickupApi.queueMessage({
+            connectionId: mediationRecord.connectionId,
+            recipientDids: [recipientDid],
+            message: encryptedMessage,
+          })
+          messageIds.push(messageId)
+        }
         const session = await messagePickupApi.getLiveModeSession({
           connectionId: mediationRecord.connectionId,
           role: DidCommMessagePickupSessionRole.MessageHolder,
@@ -250,42 +267,36 @@ export class DidCommMediatorService {
             await messagePickupApi.deliverMessagesFromQueue({
               pickupSessionId: session.id,
               recipientDid,
+              messageIds,
             })
           } catch (error) {
-            const sessionService = agentContext.dependencyManager.resolve(DidCommMessagePickupSessionService)
-            const endSession =
-              error instanceof MessageSendingError &&
-              sessionService.getLiveSession(agentContext, session.id) !== undefined
-            this.logger.warn(
-              `Live mode delivery failed for connection '${mediationRecord.connectionId}'${endSession ? ', ending its live mode session' : ''}`,
-              { error: error.message }
-            )
-            if (endSession) {
-              sessionService.removeLiveSession(agentContext, { connectionId: mediationRecord.connectionId })
-              // a Credo recipient only restarts pickup when its socket closes
-              try {
-                await agentContext.dependencyManager
-                  .resolve(DidCommTransportService)
-                  .findSessionById(session.transportSessionId)
-                  ?.close()
-              } catch (closeError) {
-                this.logger.warn(
-                  `Unable to close the transport session of connection '${mediationRecord.connectionId}'`,
-                  { error: closeError.message }
-                )
-              }
-            }
+            this.logger.warn(`Live mode delivery failed for connection '${mediationRecord.connectionId}'`, {
+              error: error.message,
+            })
           }
         }
         break
       }
       case DidCommMessageForwardingStrategy.DirectDelivery: {
         const messageSender = agentContext.dependencyManager.resolve(DidCommMessageSender)
-        await messageSender.sendPackage(agentContext, {
-          connection,
-          recipientKey: recipientDid,
-          encryptedMessage,
-        })
+        // The attachments are independent messages and there is no queue, so one failed send must not drop the rest
+        const errors: Error[] = []
+        for (const encryptedMessage of encryptedMessages) {
+          try {
+            await messageSender.sendPackage(agentContext, {
+              connection,
+              recipientKey: recipientDid,
+              encryptedMessage,
+            })
+          } catch (error) {
+            errors.push(error)
+          }
+        }
+        if (errors.length > 0) {
+          throw new CredoError(
+            `Unable to deliver ${errors.length} of ${encryptedMessages.length} forwarded messages to connection '${connection.id}': ${errors.map((error) => error.message).join('; ')}`
+          )
+        }
       }
     }
   }
@@ -323,8 +334,16 @@ export class DidCommMediatorService {
       const publicKeyBase58 = didKeyToVerkey(update.recipientKey)
 
       if (update.action === DidCommKeylistUpdateAction.add) {
-        mediationRecord.addRecipientKey(publicKeyBase58)
-        updated.result = DidCommKeylistUpdateResult.Success
+        const taken = await this.isRegisteredToAnotherMediatee(messageContext.agentContext, mediationRecord, {
+          key: publicKeyBase58,
+          did: verkeyToDidKey(publicKeyBase58),
+        })
+        if (taken) {
+          updated.result = DidCommKeylistUpdateResult.ClientError
+        } else {
+          mediationRecord.addRecipientKey(publicKeyBase58)
+          updated.result = DidCommKeylistUpdateResult.Success
+        }
 
         keylist.push(updated)
       } else if (update.action === DidCommKeylistUpdateAction.remove) {
@@ -337,6 +356,30 @@ export class DidCommMediatorService {
     await this.mediationRepository.update(messageContext.agentContext, mediationRecord)
 
     return new DidCommKeylistUpdateResponseMessage({ keylist, threadId: message.threadId })
+  }
+
+  /**
+   * A recipient key or DID stays with the mediatee that registered it first. Any mediatee can learn the
+   * keys of another one from its invitations, and registering them too would make every forward for them
+   * ambiguous, so the first mediatee stops receiving messages.
+   *
+   * A v1 client registers a key and a v2 client registers its did:key, so both indexes are checked.
+   */
+  private async isRegisteredToAnotherMediatee(
+    agentContext: AgentContext,
+    mediationRecord: DidCommMediationRecord,
+    recipient: { key?: string; did?: string }
+  ): Promise<boolean> {
+    const queries: Query<DidCommMediationRecord>[] = []
+    if (recipient.key) queries.push({ recipientKeys: [recipient.key] })
+    if (recipient.did) queries.push({ recipientDids: [recipient.did] })
+
+    for (const query of queries) {
+      // One record is enough: the own record only comes back when it already holds the key, and then the add changes nothing
+      const [record] = await this.mediationRepository.findByQuery(agentContext, query, { limit: 1 })
+      if (record && record.id !== mediationRecord.id) return true
+    }
+    return false
   }
 
   public async createGrantMediationMessage(agentContext: AgentContext, mediationRecord: DidCommMediationRecord) {
@@ -466,8 +509,16 @@ export class DidCommMediatorService {
       let result = KeylistUpdateResultV2.NoChange
       const canonicalRecipientDid = getDidPeer4ShortFormForEquivalence(update.recipientDid) ?? update.recipientDid
       if (update.action === KeylistUpdateActionV2.add) {
-        mediationRecord.addRecipientDid(canonicalRecipientDid)
-        result = KeylistUpdateResultV2.Success
+        const taken = await this.isRegisteredToAnotherMediatee(messageContext.agentContext, mediationRecord, {
+          did: canonicalRecipientDid,
+          key: isDidKey(canonicalRecipientDid) ? didKeyToVerkey(canonicalRecipientDid) : undefined,
+        })
+        if (taken) {
+          result = KeylistUpdateResultV2.ClientError
+        } else {
+          mediationRecord.addRecipientDid(canonicalRecipientDid)
+          result = KeylistUpdateResultV2.Success
+        }
       } else if (update.action === KeylistUpdateActionV2.remove) {
         const success = mediationRecord.removeRecipientDid(canonicalRecipientDid)
         result = success ? KeylistUpdateResultV2.Success : KeylistUpdateResultV2.NoChange

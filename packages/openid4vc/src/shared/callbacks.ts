@@ -9,9 +9,10 @@ import {
   type JwsSignerWithJwk,
   JwtPayload,
   Kms,
+  parseX5c,
   TrustedIssuerContext,
   TypedArrayEncoder,
-  X509Certificate,
+  type X509Certificate,
   X509Service,
   type X509VerificationTrustedCertificates,
 } from '@credo-ts/core'
@@ -103,7 +104,7 @@ function getOid4vcJwtVerificationContext(options: {
 export function getOid4vcJwtVerifyCallback(
   agentContext: AgentContext,
   options?: {
-    trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
+    trustedCertificates?: Array<EncodedX509Certificate | X509Certificate> | X509VerificationTrustedCertificates[]
 
     issuanceSession?: OpenId4VcIssuanceSessionRecord
 
@@ -137,21 +138,21 @@ export function getOid4vcJwtVerifyCallback(
       isAuthorizationRequestJwt: options?.isAuthorizationRequestJwt,
     })
 
+    // Parsed once, for both resolving the trusted certificates and the key of the signer
+    const certificateChain = signer.method === 'x5c' ? parseX5c(agentContext, signer.x5c) : undefined
+
     if (!verification) {
       if (!options?.isIdTokenJwt && !(typ && jwtTypesWithoutTrustedSigner.includes(typ))) {
         throw new CredoError(
           `Unable to verify jwt with typ '${header.typ}'. The signer can't be checked against the trusted issuers, as the jwt type is not supported${options?.issuanceSession ? '' : ' without an issuance session'}.`
         )
       }
-    } else if (signer.method === 'x5c') {
+    } else if (certificateChain) {
       // NOTE: we can't use `ensureTrustedSigner` here (unlike for did and jwk), as `JwsService`
       // already validates the certificate chain.
       trustedCertificates ??= (
         await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
-          signer: {
-            method: 'x509',
-            certificateChain: signer.x5c.map((cert) => X509Certificate.fromEncodedCertificate(cert)),
-          },
+          signer: { method: 'x509', certificateChain },
           verification,
         })
       )?.trustedIssuers
@@ -184,11 +185,11 @@ export function getOid4vcJwtVerifyCallback(
         method: 'jwk',
         jwk: Kms.PublicJwk.fromUnknown(signer.publicJwk),
       }
-    } else if (signer.method === 'x5c') {
+    } else if (signer.method === 'x5c' && certificateChain) {
       jwsSigner = {
         method: 'x5c',
         x5c: signer.x5c,
-        jwk: X509Certificate.fromEncodedCertificate(signer.x5c[0]).publicJwk,
+        jwk: certificateChain[0].publicJwk,
       }
     }
 
@@ -262,14 +263,14 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
 }
 
 export function getOid4vcDecryptJweCallback(agentContext: AgentContext): DecryptJweCallback {
-  const kms = agentContext.resolve(Kms.KeyManagementApi)
   return async (jwe, options) => {
     // TODO: use custom header zod schema to limit which algorithms can be used
     const { header } = decodeJwtHeader({ jwt: jwe })
 
     // The header kid is chosen by the sender, so only decrypt with the key the caller bound to the session or request
-    let kid = options?.jwk?.kid
-    if (!kid) {
+    const decryptionJwk = options?.jwk
+    let kid = decryptionJwk?.kid
+    if (!decryptionJwk || !kid) {
       agentContext.config.logger.error('Unable to decrypt JWE. No jwk with kid was provided to decrypt with')
       return {
         decrypted: false,
@@ -302,18 +303,10 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
     }
 
     let decryptedPayload: string
-    let publicJwk: Kms.PublicJwk
 
     try {
       const jweService = agentContext.dependencyManager.resolve(JweService)
       const decrypted = await jweService.decryptJwe(agentContext, { jwe, recipientKeyId: kid })
-
-      // TODO: decrypt should return the public jwk instance
-      publicJwk = Kms.PublicJwk.fromUnknown(
-        await kms.getPublicKey({
-          keyId: kid,
-        })
-      )
 
       decryptedPayload = TypedArrayEncoder.toUtf8String(decrypted.data)
     } catch (error) {
@@ -330,7 +323,8 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
 
     return {
       decrypted: true,
-      decryptionJwk: publicJwk.toJson() as Jwk,
+      // The key that was decrypted with, without reading it from the kms again
+      decryptionJwk,
       payload: decryptedPayload,
       header,
     }
@@ -386,7 +380,7 @@ export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCal
 export function getOid4vcCallbacks(
   agentContext: AgentContext,
   options?: {
-    trustedCertificates?: string[]
+    trustedCertificates?: Array<EncodedX509Certificate | X509Certificate>
     isVerifyOpenId4VpAuthorizationRequest?: boolean
     isVerifyIdToken?: boolean
     issuanceSession?: OpenId4VcIssuanceSessionRecord

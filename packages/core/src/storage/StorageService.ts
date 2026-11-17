@@ -85,6 +85,30 @@ export interface BaseRecordConstructor<T> extends Constructor<T> {
   allowCache: boolean
 }
 
+/**
+ * Fallback for {@link StorageService.deleteByQuery}, finds the records in pages and deletes them one by one.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
+export async function deleteByQueryOneByOne<T extends BaseRecord<any, any, any>>(
+  agentContext: AgentContext,
+  storageService: StorageService<T>,
+  recordClass: BaseRecordConstructor<T>,
+  query: Query<T>
+): Promise<number> {
+  const limit = 100
+  let deletedCount = 0
+  let records: T[]
+  do {
+    // Always the first page, as the records of the previous page are deleted by now
+    records = await storageService.findByQuery(agentContext, recordClass, query, { limit })
+    for (const record of records) {
+      await storageService.delete(agentContext, record)
+    }
+    deletedCount += records.length
+  } while (records.length >= limit)
+  return deletedCount
+}
+
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 export interface StorageService<T extends BaseRecord<any, any, any>> {
   supportsCursorPagination: boolean
@@ -120,6 +144,16 @@ export interface StorageService<T extends BaseRecord<any, any, any>> {
    * @throws {RecordNotFoundError} if a record with this id and type does not exist
    */
   deleteById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<void>
+
+  /**
+   * Delete all records matching the query. When not implemented, the repository finds the records and
+   * deletes them one by one.
+   *
+   * @param recordClass the record class to delete records for
+   * @param query the query to use for finding the records to delete
+   * @returns the number of deleted records
+   */
+  deleteByQuery?(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, query: Query<T>): Promise<number>
 
   /**
    * Get record by id.

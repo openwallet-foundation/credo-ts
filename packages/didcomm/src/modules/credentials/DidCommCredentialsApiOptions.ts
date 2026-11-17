@@ -135,7 +135,10 @@ export interface AcceptCredentialOptions {
 export interface SendRevocationNotificationOptions {
   connectionId?: string
   credentialExchangeRecordId?: string
-  revocationId: string
+  /**
+   * Format-specific credential identifier. If omitted, it is derived from credentialExchangeRecordId.
+   */
+  revocationId?: string
   revocationFormat: string
   comment?: string
   requestAck?: boolean

@@ -168,9 +168,31 @@ export class DidCommMessageReceiver {
     this.envelopeRegistry.assertVersionEnabled(signedMessage)
 
     const envelope = this.envelopeRegistry.getEnvelopeForDidCommVersion('v2')
-    const plaintextMessage = await envelope.unpackSigned(agentContext, signedMessage)
+    const { plaintextMessage, signerDid } = await envelope.unpackSigned(agentContext, signedMessage)
 
-    await this.receivePlaintextMessage(agentContext, plaintextMessage, connection, receivedAt)
+    // Trust comes from the signature, not from the transport that delivered the message:
+    // https://identity.foundation/didcomm-messaging/spec/v2.1/#transports
+    if (connection) {
+      if (!connection.theirDid || !areEquivalentDidPeer4Forms(connection.theirDid, signerDid)) {
+        throw new CredoError(
+          `DIDComm v2 signed message signer '${signerDid}' is not the peer of connection '${connection.id}'`
+        )
+      }
+    } else {
+      const to = Array.isArray(plaintextMessage.to) ? (plaintextMessage.to as string[]) : undefined
+      const found = await this.findConnectionByDids(agentContext, signerDid, to)
+      // As for encrypted messages, only a ready connection reaches the handlers
+      connection = found?.isReady ? found : undefined
+    }
+
+    const message = await this.transformAndValidate(agentContext, plaintextMessage, connection)
+    const messageContext = new DidCommInboundMessageContext(message, {
+      connection,
+      senderDid: signerDid,
+      agentContext,
+      receivedAt,
+    })
+    await this.dispatcher.dispatch(messageContext)
   }
 
   private async receiveEncryptedMessage(
@@ -195,6 +217,8 @@ export class DidCommMessageReceiver {
       agentContext,
       decryptedMessage
     )
+    // The peer that ends the relationship may authenticate as the DID it ends, so it is still the peer for this message
+    const theirDidBeforeFromPrior = connection?.theirDid
 
     if (connection) {
       // DIDComm v2.1 DID Rotation: messages sent before a rotation that arrive after it MUST be ignored
@@ -235,9 +259,26 @@ export class DidCommMessageReceiver {
       }
     }
 
-    const message = await this.transformAndValidate(agentContext, plaintextMessage, connection)
-    if (authenticatedSenderDid && recipientDid && connection?.isReady) {
-      await this.outOfBandService.processHandshakeReuseV2(agentContext, connection, message, recipientDid)
+    // A v1 connection is selected by the sender key. A v2 connection can also be selected by a from_prior,
+    // which is a bearer JWT and proves nothing about who sent this envelope, so the connection only goes
+    // with the message when the authcrypt sender is its peer once the from_prior is applied.
+    const senderIsPeer =
+      envelope.version === 'v1' ||
+      (authenticatedSenderDid !== undefined &&
+        [connection?.theirDid, theirDidBeforeFromPrior].some(
+          (did) => did !== undefined && areEquivalentDidPeer4Forms(did, authenticatedSenderDid)
+        ))
+    const peerConnection = senderIsPeer ? connection : null
+    if (connection && !senderIsPeer) {
+      this.logger.debug('Processing v2 message without its connection, the sender is not the peer', {
+        connectionId: connection.id,
+        senderDid: authenticatedSenderDid,
+      })
+    }
+
+    const message = await this.transformAndValidate(agentContext, plaintextMessage, peerConnection)
+    if (authenticatedSenderDid && recipientDid && peerConnection?.isReady) {
+      await this.outOfBandService.processHandshakeReuseV2(agentContext, peerConnection, message, recipientDid)
     }
 
     // A v1 envelope carries Ed25519 keys, a v2 envelope carries key agreement keys; the context names each kind
@@ -247,7 +288,7 @@ export class DidCommMessageReceiver {
       // Only make the connection available in message context if the connection is ready
       // To prevent unwanted usage of unready connections. Connections can still be retrieved from
       // Storage if the specific protocol allows an unready connection to be used.
-      connection: connection?.isReady ? connection : undefined,
+      connection: peerConnection?.isReady ? peerConnection : undefined,
       senderKey: sender.ed25519Key,
       recipientKey: recipient.ed25519Key,
       senderKeyAgreementKey: sender.keyAgreementKey,
@@ -269,14 +310,14 @@ export class DidCommMessageReceiver {
         senderKey,
         recipientKey,
         plaintextMessage,
-        connection: connection ?? undefined,
+        connection: peerConnection ?? undefined,
       })
       session.didcommVersion = envelope.version
       session.inboundMessage = message
       // We allow unready connections to be attached to the session as we want to be able to
       // use return routing to make connections. This is especially useful for creating connections
       // with mediators when you don't have a public endpoint yet.
-      session.connectionId = connection?.id
+      session.connectionId = peerConnection?.id
       messageContext.sessionId = session.id
       this.transportService.saveSession(session)
     }
@@ -361,39 +402,14 @@ export class DidCommMessageReceiver {
     const fromPriorJws = plaintextMessage.from_prior as string | undefined
 
     if (from !== undefined) {
-      // v2 plaintext includes `to` (our DIDs). Multiple connections can share the same `theirDid`
-      // (e.g. several implicit sessions to one did:web); disambiguate with (ourDid, theirDid).
-      if (to?.length) {
-        const byPair = await this.connectionService.findByDids(agentContext, {
-          ourDid: to[0],
-          theirDid: from,
-        })
-        if (byPair) return { connection: byPair }
-      }
-
-      let connection: DidCommConnectionRecord | null = null
-      try {
-        connection = await this.connectionService.findByTheirDid(agentContext, from)
-      } catch (error) {
-        if (error instanceof RecordDuplicateError) {
-          const candidates = await this.connectionService.findAllByQuery(agentContext, { theirDid: from })
-          if (to?.length) {
-            connection = candidates.find((c) => c.did === to[0]) ?? null
-          }
-          if (!connection && candidates.length === 1) {
-            connection = candidates[0]
-          }
-        } else {
-          throw error
-        }
-      }
-      if (connection) return { connection }
+      const byDids = await this.findConnectionByDids(agentContext, from, to)
+      if (byDids) return { connection: byDids }
 
       // Fallback: try findByKeys. With v1 connections + v2 envelope, findByTheirDid can fail in edge cases.
       // With v2 OOB, findByKeys may work if DidRecords exist for the keys. DID record tags index
       // X25519 and P-256/P-384 fingerprints too, so v2 key-agreement keys can match.
       if (recipientKey && senderKey) {
-        connection = await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
+        const connection = await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
         if (connection) {
           const keyOwner = await agentContext.dependencyManager
             .resolve(DidRepository)
@@ -509,6 +525,31 @@ export class DidCommMessageReceiver {
     // v1: use sender/recipient keys
     if (!recipientKey || !senderKey) return { connection: null }
     return { connection: await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey }) }
+  }
+
+  /**
+   * Find the connection with a peer DID. Several connections can share one `theirDid`, such as
+   * several implicit sessions to one did:web, so our DID from the plaintext `to` picks between them.
+   */
+  private async findConnectionByDids(
+    agentContext: AgentContext,
+    theirDid: string,
+    to?: string[]
+  ): Promise<DidCommConnectionRecord | null> {
+    if (to?.length) {
+      const byPair = await this.connectionService.findByDids(agentContext, { ourDid: to[0], theirDid })
+      if (byPair) return byPair
+    }
+
+    try {
+      return await this.connectionService.findByTheirDid(agentContext, theirDid)
+    } catch (error) {
+      if (!(error instanceof RecordDuplicateError)) throw error
+
+      const candidates = await this.connectionService.findAllByQuery(agentContext, { theirDid })
+      const byOurDid = to?.length ? candidates.find((c) => c.did === to[0]) : undefined
+      return byOurDid ?? (candidates.length === 1 ? candidates[0] : null)
+    }
   }
 
   private async isImplicitInvitationDid(agentContext: AgentContext, dids: string[]): Promise<boolean> {
