@@ -10,3 +10,4 @@ export {
   type CheqdDidUpdateOptions,
 } from './dids'
 export { CheqdLedgerService } from './ledger'
+export * from './status-list'

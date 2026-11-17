@@ -47,6 +47,7 @@
     "buffer": "^6.0.3",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
+    "pako": "^3.0.3",
     "rxjs": "catalog:",
     "tsyringe": "catalog:"
   },
