@@ -3,7 +3,12 @@ import { getAgentContext } from '../../../tests/helpers'
 import { CredoError } from '../../error'
 import { MdocRepository } from '../../modules/mdoc'
 import { SdJwtVcRecord, type SdJwtVcRecordInstances, SdJwtVcRepository } from '../../modules/sd-jwt-vc'
-import { W3cCredentialRepository, W3cV2CredentialRepository } from '../../modules/vc'
+import {
+  ClaimFormat,
+  W3cCredentialRepository,
+  W3cV2CredentialRecord,
+  W3cV2CredentialRepository,
+} from '../../modules/vc'
 import {
   CredentialMultiInstanceState,
   CredentialMultiInstanceUseMode,
@@ -806,6 +811,33 @@ describe('credentialUse', () => {
             })
           ).rejects.toThrow(CredoError)
         })
+      })
+    })
+
+    describe('W3cV2CredentialRecord', () => {
+      test('decodes a data integrity instance', async () => {
+        const credential = JSON.stringify({
+          '@context': ['https://www.w3.org/ns/credentials/v2'],
+          type: ['VerifiableCredential'],
+          issuer: 'did:example:issuer',
+          credentialSubject: { id: 'did:example:holder' },
+          proof: {
+            type: 'DataIntegrityProof',
+            cryptosuite: 'eddsa-jcs-2022',
+            verificationMethod: 'did:example:issuer#key-1',
+            proofPurpose: 'assertionMethod',
+            proofValue: 'z1',
+          },
+        })
+
+        const { credentialInstance } = await useInstanceFromCredentialRecord({
+          agentContext,
+          credentialRecord: new W3cV2CredentialRecord({ credentialInstances: [{ credential }] }),
+          useMode: CredentialMultiInstanceUseMode.First,
+          updateMode: CredentialMultiInstanceUseUpdateMode.None,
+        })
+
+        expect(credentialInstance.claimFormat).toBe(ClaimFormat.DiVc)
       })
     })
   })

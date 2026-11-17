@@ -880,6 +880,38 @@ describe('DCQL selective disclosure', () => {
       const presentation = dcqlPresentation.credential[0] as W3cV2SdJwtVerifiablePresentation
       expect(presentation.resolvedPresentation.holderId).toBe(holderDid)
     })
+
+    test('presents and counts a new instance of a W3C VC SD-JWT', async () => {
+      const type = `urn:type:${randomUUID()}`
+      const sign = () =>
+        signSdJwt(
+          {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential', type],
+            issuer: issuerDid,
+            credentialSubject: { id: holderDid, given_name: sd('Erika') },
+          },
+          'vc+sd-jwt'
+        )
+      const record = await agent.w3cV2Credentials.store({
+        record: new W3cV2CredentialRecord({
+          credentialInstances: [{ credential: await sign() }, { credential: await sign() }],
+        }),
+      })
+
+      const dcqlQuery = {
+        credentials: [{ id: 'credential', format: 'vc+sd-jwt', meta: { type_values: [[type]] } }],
+      } as unknown as DcqlQuery
+      const queryResult = await dcqlService.getCredentialsForRequest(agent.context, dcqlQuery)
+      await dcqlService.createPresentation(agent.context, {
+        credentialQueryToCredential: dcqlService.selectCredentialsForRequest(queryResult),
+        challenge,
+        domain,
+      })
+
+      const { credentialInstances } = await agent.w3cV2Credentials.getById(record.id)
+      expect(credentialInstances.map(({ usageCount }) => usageCount)).toStrictEqual([undefined, 1])
+    })
   })
 })
 

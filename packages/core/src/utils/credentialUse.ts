@@ -9,11 +9,10 @@ import { getStoredHolderKmsKeyId } from '../modules/sd-jwt-vc/utils'
 import {
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
-  W3cV2JwtVerifiableCredential,
-  W3cV2SdJwtVerifiableCredential,
   type W3cV2VerifiableCredential,
   type W3cVerifiableCredential,
 } from '../modules/vc'
+import { decodeW3cV2VerifiableCredential } from '../modules/vc/models/credential/W3cV2VerifiableCredential'
 import {
   W3cCredentialRecord,
   type W3cCredentialRecordInstances,
@@ -197,9 +196,7 @@ export async function useInstanceFromCredentialRecord<Record extends CredentialR
   } else if (credentialRecord instanceof W3cV2CredentialRecord) {
     const { credential } = extractResult.credentialInstance as W3cV2CredentialRecordInstances[0]
 
-    transformedCredentialInstance = credential.includes('~')
-      ? W3cV2SdJwtVerifiableCredential.fromCompact(credential)
-      : W3cV2JwtVerifiableCredential.fromCompact(credential)
+    transformedCredentialInstance = decodeW3cV2VerifiableCredential(credential)
   } else {
     throw new CredoError('Unsupported record type')
   }

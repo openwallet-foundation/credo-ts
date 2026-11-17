@@ -30,9 +30,10 @@ export type W3cCredentialRecordInstances = NonEmptyArray<{
   // no kmsKeyId for w3c credential record, since all credentials are bound to a DID
 
   /**
-   * How many times this instance was used through DCQL. Presentation Exchange and
-   * AnonCreds proofs use the first instance without counting it. Not set before its
-   * first use. Counting started in Credo 0.8, so uses before that are not counted.
+   * How many times this instance was used. Only uses through `useInstanceFromCredentialRecord`
+   * (as used by DCQL, DIF Presentation Exchange and AnonCreds proofs) are counted. Use it when
+   * you present a credential from this record yourself, as direct uses are not counted. Not set
+   * before its first use. Counting started in Credo 0.8, so uses before that are not counted.
    */
   usageCount?: number
 }>

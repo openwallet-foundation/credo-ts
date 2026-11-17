@@ -20,7 +20,6 @@ import { MdocApi, MdocRecord, type MdocSessionTranscriptOptions } from '../mdoc'
 import { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
 import { SdJwtVcApi } from '../sd-jwt-vc'
-import { getStoredHolderKmsKeyId } from '../sd-jwt-vc/utils'
 import type { W3cCredentialRecord, W3cJsonPresentation } from '../vc'
 import {
   ClaimFormat,
@@ -185,7 +184,7 @@ export class DifPresentationExchangeService {
       claimFormat: PresentationToCreate['claimFormat']
     }> = []
 
-    const presentationsToCreate = getPresentationsToCreate(options.credentialsForInputDescriptor)
+    const presentationsToCreate = await getPresentationsToCreate(agentContext, options.credentialsForInputDescriptor)
     for (const presentationToCreate of presentationsToCreate) {
       // We create a presentation for each subject
       // Thus for each subject we need to filter all the related input descriptors and credentials
@@ -215,10 +214,10 @@ export class DifPresentationExchangeService {
           )
         }
 
-        const { credential, inputDescriptorId } = presentationToCreate.verifiableCredentials[0]
+        const { credentialInstance, inputDescriptorId } = presentationToCreate.verifiableCredentials[0]
 
         const deviceResponse = await MdocDeviceResponse.createDeviceResponseWithPresentationDefinition(agentContext, {
-          mdocs: [credential.firstCredential],
+          mdocs: [credentialInstance],
           presentationDefinition,
           sessionTranscriptOptions: mdocSessionTranscript,
         })
@@ -250,7 +249,7 @@ export class DifPresentationExchangeService {
       } else {
         // Get all the credentials for the presentation
         const credentialsForPresentation = presentationToCreate.verifiableCredentials.map((c) =>
-          getSphereonOriginalVerifiableCredential(c.credential)
+          getSphereonOriginalVerifiableCredential(c.credentialInstance)
         )
 
         const extraProofOptions = this.shouldSignWithAnonCredsW3cService(presentationToCreate)
@@ -598,10 +597,9 @@ export class DifPresentationExchangeService {
 
         const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
 
-        // NOTE: we use the kmsKeyId from the first credential. We don't support the new useMode (for single-use credentials) for PEX
         const originalSdJwtVc = sdJwtVcApi.fromCompact(sdJwtInput.compactSdJwtVc)
-        const [credentialInstance] = presentationToCreate.verifiableCredentials[0].credential.credentialInstances
-        originalSdJwtVc.kmsKeyId = getStoredHolderKmsKeyId(originalSdJwtVc.holder, credentialInstance.kmsKeyId)
+        const { credentialInstance } = presentationToCreate.verifiableCredentials[0]
+        originalSdJwtVc.kmsKeyId = credentialInstance.kmsKeyId
         originalSdJwtVc.kmsBackend = credentialInstance.kmsBackend
 
         const sdJwtVc = await sdJwtVcApi.present({
