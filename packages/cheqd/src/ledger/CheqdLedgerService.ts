@@ -14,6 +14,7 @@ import { CredoError, InjectionSymbols, inject, injectable, type Logger } from '@
 import { parseCheqdDid } from '../anoncreds/utils/identifiers'
 import { CheqdModuleConfig } from '../CheqdModuleConfig'
 import { getCosmosPayerWallet } from '../dids/didCheqdUtil'
+import { retryOnTransientError } from './retryTransient'
 
 export interface ICheqdLedgerConfig {
   network: string
@@ -171,9 +172,17 @@ export class CheqdLedgerService {
     )
   }
 
+  /** Retries idempotent chain reads on transient transport errors only. Never use for transactions. */
+  private retryRead<T>(operation: () => Promise<T>): Promise<T> {
+    return retryOnTransientError(operation, {
+      onRetry: (error, attempt, delayMs) =>
+        this.logger.debug(`Retrying cheqd read after transient error (attempt ${attempt}, in ${delayMs}ms)`, { error }),
+    })
+  }
+
   public async resolve(did: string, version?: string) {
     const sdk = await this.getSdk(did)
-    return version ? sdk.queryDidDocVersion(did, version) : sdk.queryDidDoc(did)
+    return this.retryRead(() => (version ? sdk.queryDidDocVersion(did, version) : sdk.queryDidDoc(did)))
   }
 
   public async resolveMetadata(did: string): Promise<{
@@ -181,7 +190,7 @@ export class CheqdLedgerService {
     pagination: QueryAllDidDocVersionsMetadataResponse['pagination']
   }> {
     const sdk = await this.getSdk(did)
-    return sdk.queryAllDidDocVersionsMetadata(did)
+    return this.retryRead(() => sdk.queryAllDidDocVersionsMetadata(did))
   }
 
   public async createResource(
@@ -204,7 +213,18 @@ export class CheqdLedgerService {
 
   public async resolveResource(did: string, collectionId: string, resourceId: string): Promise<ResourceWithMetadata> {
     const sdk = await this.getSdk(did)
-    return sdk.queryLinkedResource(collectionId, resourceId)
+    return this.retryRead(() => sdk.queryLinkedResource(collectionId, resourceId))
+  }
+
+  /** The latest version of a resource, in one request, however many resources the collection holds */
+  public async resolveLatestResource(
+    did: string,
+    collectionId: string,
+    name: string,
+    type: string
+  ): Promise<ResourceWithMetadata> {
+    const sdk = await this.getSdk(did)
+    return this.retryRead(() => sdk.queryLatestLinkedResourceVersion(collectionId, name, type))
   }
 
   public async resolveCollectionResources(
@@ -212,11 +232,11 @@ export class CheqdLedgerService {
     collectionId: string
   ): Promise<QueryCollectionResourcesResponse> {
     const sdk = await this.getSdk(did)
-    return sdk.queryLinkedResources(collectionId)
+    return this.retryRead(() => sdk.queryLinkedResources(collectionId))
   }
 
   public async resolveResourceMetadata(did: string, collectionId: string, resourceId: string): Promise<Metadata> {
     const sdk = await this.getSdk(did)
-    return sdk.queryLinkedResourceMetadata(collectionId, resourceId)
+    return this.retryRead(() => sdk.queryLinkedResourceMetadata(collectionId, resourceId))
   }
 }
