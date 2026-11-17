@@ -4,9 +4,11 @@ import {
   DidDocumentRole,
   DidDocumentService,
   DidRecord,
+  DidRecordStatus,
   DidRepository,
   InjectionSymbols,
   InMemoryLruCache,
+  Kms,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
@@ -139,6 +141,18 @@ describe('WebVhDidRegistrar Integration Tests', () => {
         },
       })
     })
+
+    it('deletes the created key when creation fails', async () => {
+      const createKeySpy = vi.spyOn(Kms.KeyManagementApi.prototype, 'createKey')
+      vi.spyOn(DidRepository.prototype, 'save').mockRejectedValueOnce(new Error('save failed'))
+
+      const result = await registrar.create(agentContext, { domain: 'id.test-suite.app' })
+      const { keyId } = await (createKeySpy.mock.results[0].value as ReturnType<Kms.KeyManagementApi['createKey']>)
+      vi.restoreAllMocks()
+
+      expect(result.didState).toEqual({ state: 'failed', reason: 'save failed' })
+      await expect(agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId })).rejects.toThrow('not found')
+    })
   })
 
   describe('DID WebVH update', () => {
@@ -174,5 +188,20 @@ describe('WebVhDidRegistrar Integration Tests', () => {
         },
       })
     })
+  })
+
+  it('should fail to update a deactivated did', async () => {
+    const { didState } = await registrar.create(agentContext, { domain: 'id.test-suite.app' })
+    if (didState.state !== 'finished') throw new Error('did:webvh not created')
+    const didRecord = await repository.getSingleByQuery(agentContext, { did: didState.did })
+    didRecord.status = DidRecordStatus.Deactivated
+    await repository.update(agentContext, didRecord)
+
+    const result = await registrar.update(agentContext, {
+      did: didState.did,
+      didDocument: new DidDocument({ id: didState.did }),
+    })
+
+    expect(result.didState).toEqual({ state: 'failed', reason: `did '${didState.did}' is deactivated` })
   })
 })

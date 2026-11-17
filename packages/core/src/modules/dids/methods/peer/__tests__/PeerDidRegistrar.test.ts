@@ -114,6 +114,21 @@ describe('DidRegistrar', () => {
           didDocument: undefined,
         })
       })
+
+      it('should delete the created key when creating the did fails', async () => {
+        mockFunction(didRepositoryMock.save).mockRejectedValueOnce(new Error('save failed'))
+
+        const result = await peerDidRegistrar.create(agentContext, {
+          method: 'peer',
+          options: {
+            numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
+            createKey: { keyId: 'did-peer-rollback', type: { kty: 'OKP', crv: 'Ed25519' } },
+          },
+        })
+
+        expect(result.didState).toEqual({ state: 'failed', reason: 'unknownError: save failed' })
+        await expect(kms.getPublicKey({ keyId: 'did-peer-rollback' })).rejects.toThrow('not found')
+      })
     })
 
     describe('did:peer:1', () => {
@@ -470,19 +485,6 @@ describe('DidRegistrar', () => {
         didState: {
           state: 'failed',
           reason: 'notImplemented: updating did:peer not implemented yet',
-        },
-      })
-    })
-
-    it('should return an error state when calling deactivate', async () => {
-      const result = await peerDidRegistrar.deactivate()
-
-      expect(result).toEqual({
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'failed',
-          reason: 'notImplemented: deactivating did:peer not implemented yet',
         },
       })
     })

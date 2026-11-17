@@ -5,33 +5,37 @@ import {
   type KmsCreateKeyOptions,
   type KmsCreateKeyTypeAsymmetric,
   type KmsJwkPublicAsymmetric,
+  type KmsKeyReference,
   PublicJwk,
   type WithCreateKeyBackend,
 } from '../../../kms'
 
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
-import type { DidRegistrar } from '../../domain/DidRegistrar'
+import { type DidRegistrar, deleteDidKeys } from '../../domain/DidRegistrar'
 import { DidRecord, DidRepository } from '../../repository'
-import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
+import type { DidCreateOptions, DidCreateResult, DidDeactivateOptions, DidUpdateResult } from '../../types'
 import { DidJwk } from './DidJwk'
 
 export class JwkDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['jwk']
+  public readonly deactivationSupport = 'notSupportedByMethod'
 
   public async create(agentContext: AgentContext, options: JwkDidCreateOptions): Promise<DidCreateResult> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+    const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
+    let createdKey: KmsKeyReference | undefined
 
     try {
       let publicJwk: KmsJwkPublicAsymmetric
       let keyId: string
       let kmsBackend: string
-      const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
       if (options.options.createKey) {
         const createKeyResult = await kms.createKey(options.options.createKey)
         publicJwk = createKeyResult.publicJwk
         keyId = createKeyResult.keyId
         kmsBackend = createKeyResult.backend
+        createdKey = { keyId, kmsBackend }
       } else if (options.options.keyId) {
         const { publicKey: _publicJwk, backend } = await kms.getPublicKey({ keyId: options.options.keyId })
         keyId = options.options.keyId
@@ -96,6 +100,7 @@ export class JwkDidRegistrar implements DidRegistrar {
         },
       }
     } catch (error) {
+      if (createdKey) await deleteDidKeys(agentContext, [createdKey], 'after failed did:jwk creation')
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
@@ -117,17 +122,6 @@ export class JwkDidRegistrar implements DidRegistrar {
       },
     }
   }
-
-  public async deactivate(): Promise<DidDeactivateResult> {
-    return {
-      didDocumentMetadata: {},
-      didRegistrationMetadata: {},
-      didState: {
-        state: 'failed',
-        reason: 'notSupported: cannot deactivate did:jwk did',
-      },
-    }
-  }
 }
 
 export interface JwkDidCreateOptions extends DidCreateOptions {
@@ -144,6 +138,6 @@ export interface JwkDidCreateOptions extends DidCreateOptions {
   options: XOR<{ createKey: WithCreateKeyBackend<KmsCreateKeyOptions<KmsCreateKeyTypeAsymmetric>> }, { keyId: string }>
 }
 
-// Update and Deactivate not supported for did:jwk
+// Update not supported for did:jwk
 export type JwkDidUpdateOptions = never
-export type JwkDidDeactivateOptions = never
+export type JwkDidDeactivateOptions = DidDeactivateOptions

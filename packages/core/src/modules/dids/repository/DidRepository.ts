@@ -1,6 +1,7 @@
 import type { AgentContext } from '../../../agent'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
+import { RecordNotFoundError } from '../../../error'
 import { inject, injectable } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
 import type { StorageService } from '../../../storage/StorageService'
@@ -62,6 +63,19 @@ export class DidRepository extends Repository<DidRecord> {
       $or: [{ alternativeDids: [createdDid] }, { did: createdDid }],
       role: DidDocumentRole.Created,
     })
+  }
+
+  public async getCreatedDid(agentContext: AgentContext, createdDid: string) {
+    const [didRecord] = await this.findByQuery(
+      agentContext,
+      { $or: [{ alternativeDids: [createdDid] }, { did: createdDid }], role: DidDocumentRole.Created },
+      { limit: 1 }
+    )
+    if (!didRecord) {
+      throw new RecordNotFoundError(`Created did '${createdDid}' not found`, { recordType: DidRecord.type })
+    }
+
+    return didRecord
   }
 
   public getCreatedDids(agentContext: AgentContext, { method, did }: { method?: string; did?: string }) {

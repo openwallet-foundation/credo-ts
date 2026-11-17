@@ -7,7 +7,7 @@ import type { DidResolver } from '../../domain'
 import { DidDocument, DidDocumentRole } from '../../domain'
 import { parseDid } from '../../domain/parse'
 import type { DidRepository } from '../../repository'
-import { DidRecord } from '../../repository'
+import { DidRecord, DidRecordStatus } from '../../repository'
 import { DidResolverService } from '../DidResolverService'
 
 const didResolverMock = {
@@ -426,6 +426,25 @@ describe('DidResolverService', () => {
     expect(didRepositoryMock.getCreatedDids).toHaveBeenCalledWith(agentContext, {
       did: 'did:record:stored',
     })
+  })
+
+  it('should resolve a deactivated did from the did record with deactivated metadata', async () => {
+    const didDocument = new DidDocument({ id: 'did:record:deactivated' })
+    mockFunction(didRepositoryMock.getCreatedDids).mockResolvedValue([
+      new DidRecord({
+        did: 'did:record:deactivated',
+        didDocument,
+        role: DidDocumentRole.Created,
+        status: DidRecordStatus.Deactivated,
+      }),
+    ])
+
+    const result = await didResolverService.resolve(agentContext, 'did:record:deactivated')
+
+    expect(result.didDocument).toBe(didDocument)
+    expect(result.didDocumentMetadata).toEqual({ deactivated: true })
+    expect(result.didResolutionMetadata.servedFromDidRecord).toBe(true)
+    expect(recordResolverMock.resolve).not.toHaveBeenCalled()
   })
 
   it("should return an error with 'invalidDid' if the did string couldn't be parsed", async () => {

@@ -20,12 +20,13 @@ export interface DidCommSignedAttachmentCredentialRequestOptions {
   alg?: string
 
   /**
-   * Whether the DID of `kid` was created only for this credential. The credential record then stores it, and deleting
-   * the credential with `deleteAssociatedKeys` deletes the DID record and its keys.
+   * Delete the DID of `kid` with the credential record. The credential record then stores it, and deleting the
+   * credential with `deleteAssociatedKeys` deletes the DID record and its keys. Throws for a DID whose method has
+   * deactivation, such as did:cheqd. Only a DID whose method has none, such as did:key, can be deleted with the record.
    *
    * @default false
    */
-  createdForCredential?: boolean
+  deleteWithRecord?: boolean
 }
 
 export type DidCommSignedAttachmentWithJwkCredentialRequestOptions = XOR<

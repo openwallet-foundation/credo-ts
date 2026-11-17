@@ -51,6 +51,7 @@ describe('DidRecord', () => {
 
       expect(didRecord.getTags()).toEqual({
         role: DidDocumentRole.Created,
+        status: 'active',
         method: 'example',
         did: 'did:example:123456789abcdefghi',
         methodSpecificIdentifier: '123456789abcdefghi',

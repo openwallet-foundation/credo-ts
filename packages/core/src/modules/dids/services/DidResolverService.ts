@@ -10,7 +10,7 @@ import { DidDocument } from '../domain'
 import type { DidResolver } from '../domain/DidResolver'
 import { parseDid } from '../domain/parse'
 import { getAlternativeDidsForNumAlgo4Did } from '../methods/peer/peerDidNumAlgo4'
-import { DidRepository } from '../repository'
+import { DidRecordStatus, DidRepository } from '../repository'
 import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
 
 @injectable()
@@ -102,7 +102,7 @@ export class DidResolverService {
       if (didRecord?.didDocument) {
         return this.ensureDidDocumentIdMatchesDid(parsed, {
           didDocument: didRecord.didDocument,
-          didDocumentMetadata: {},
+          didDocumentMetadata: didRecord.status === DidRecordStatus.Deactivated ? { deactivated: true } : {},
           didResolutionMetadata: {
             servedFromCache: false,
             servedFromDidRecord: true,

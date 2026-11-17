@@ -1,6 +1,7 @@
 import type { AgentContext } from '../agent'
-import { RecordNotFoundError } from '../error'
+import { CredoError, RecordNotFoundError } from '../error'
 import { DidsApi } from '../modules/dids/DidsApi'
+import { DidRegistrarService } from '../modules/dids/services/DidRegistrarService'
 import {
   deleteKmsKeys,
   KeyManagementKeysNotDeletedError,
@@ -16,6 +17,19 @@ const holderBindingDidsMetadataKey = '_internal/holderBindingDids'
  */
 export function getCredentialHolderBindingDids(record: BaseRecordAny): string[] {
   return record.metadata.get<{ dids: string[] }>(holderBindingDidsMetadataKey)?.dids ?? []
+}
+
+/**
+ * Throws for a DID that can't be deleted with the credential record. Only a DID whose method has no deactivation, such
+ * as did:key, can, because deleting the record doesn't deactivate it.
+ */
+export function assertDidDeletableWithRecord(agentContext: AgentContext, did: string) {
+  const deactivationSupport = agentContext.dependencyManager.resolve(DidRegistrarService).getDeactivationSupport(did)
+  if (deactivationSupport !== 'notSupportedByMethod') {
+    throw new CredoError(
+      `Did '${did}' can't be deleted with the credential record, because its did method has deactivation. Only dids whose method has no deactivation, such as did:key, can.`
+    )
+  }
 }
 
 /**

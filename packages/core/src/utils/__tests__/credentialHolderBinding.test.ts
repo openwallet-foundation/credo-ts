@@ -2,7 +2,7 @@ import { getAgentOptions } from '../../../tests'
 import { Agent } from '../../agent/Agent'
 import type { KeyDidCreateOptions } from '../../modules/dids'
 import { KeyManagementApi, KeyManagementKeysNotDeletedError } from '../../modules/kms'
-import { deleteHolderBinding } from '../credentialHolderBinding'
+import { assertDidDeletableWithRecord, deleteHolderBinding } from '../credentialHolderBinding'
 
 describe('deleteHolderBinding', () => {
   const agent = new Agent(getAgentOptions('credential-holder-binding-test-agent', {}))
@@ -47,5 +47,13 @@ describe('deleteHolderBinding', () => {
     await deleteHolderBinding(agent.context, [failing.did, deleted.did])
     expect(await agent.dids.getCreatedDids({ did: failing.did })).toHaveLength(0)
     await expect(agent.kms.getPublicKey({ keyId: failing.keyId })).rejects.toThrow('not found')
+  })
+
+  test('only allows dids whose method has no deactivation to be deleted with the record', () => {
+    expect(() => assertDidDeletableWithRecord(agent.context, 'did:key:z6MkholderDid')).not.toThrow()
+    // No registrar for did:example, so it can't tell whether the method has deactivation
+    expect(() => assertDidDeletableWithRecord(agent.context, 'did:example:123')).toThrow(
+      "can't be deleted with the credential record"
+    )
   })
 })

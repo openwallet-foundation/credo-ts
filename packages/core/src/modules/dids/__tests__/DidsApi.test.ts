@@ -1,5 +1,6 @@
 import {
   createPeerDidDocumentFromServices,
+  DidDeactivatedError,
   DidDocument,
   DidDocumentService,
   DidKey,
@@ -16,7 +17,8 @@ import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { isLongFormDidPeer4, isShortFormDidPeer4 } from '../methods/peer/peerDidNumAlgo4'
-import { DidRepository } from '../repository'
+import { DidRecordStatus, DidRepository } from '../repository'
+import { DidRegistrarService } from '../services'
 
 const agentOptions = getAgentOptions('DidsApi', undefined, undefined, undefined, { requireDidcomm: true })
 
@@ -68,6 +70,7 @@ describe('DidsApi', () => {
       method: 'key',
       methodSpecificIdentifier: 'z6MkjEayvPpjVJKFLirX8SomBTPDboHm1XSCkUev2M4siQty',
       role: 'created',
+      status: 'active',
       alternativeDids: undefined,
       recipientKeyFingerprints: [],
     })
@@ -138,6 +141,7 @@ describe('DidsApi', () => {
       method: 'peer',
       methodSpecificIdentifier: '0z6Mkhu3G8viiebsWmCiSgWiQoCZrTeuX76oLDow81YNYvJQM',
       role: 'created',
+      status: 'active',
       alternativeDids: undefined,
       recipientKeyFingerprints: [],
     })
@@ -263,6 +267,17 @@ describe('DidsApi', () => {
     expect(didDocumentFromLongFormDid).toEqual(didDocumentFromShortFormDid)
   })
 
+  test('resolveCreatedDidDocumentWithKeys throws for a deactivated did', async () => {
+    const { didState } = await agent.dids.create<KeyDidCreateOptions>({
+      method: 'key',
+      options: { createKey: { type: { kty: 'OKP', crv: 'Ed25519' } } },
+    })
+    const did = didState.did as string
+    await agent.dids.deactivate({ did })
+
+    await expect(agent.dids.resolveCreatedDidDocumentWithKeys(did)).rejects.toThrow(DidDeactivatedError)
+  })
+
   test('deleteCreatedDid removes the created did, and its keys when deleteAssociatedKeys is set', async () => {
     const { didState: keptKeys } = await agent.dids.create<KeyDidCreateOptions>({
       method: 'key',
@@ -285,6 +300,61 @@ describe('DidsApi', () => {
     await expect(
       agent.dids.deleteCreatedDid({ did: deletedKeys.did as string, deleteAssociatedKeys: true })
     ).rejects.toThrow(RecordNotFoundError)
+  })
+
+  test('deleteCreatedDid only deletes an active did with deleteActiveDid when its registrar does not support deactivation', async () => {
+    const didRegistrarService = agent.dependencyManager.resolve(DidRegistrarService)
+    const getDeactivationSupport = vi
+      .spyOn(didRegistrarService, 'getDeactivationSupport')
+      .mockReturnValue('notSupportedByRegistrar')
+
+    try {
+      const { didState } = await agent.dids.create<KeyDidCreateOptions>({
+        method: 'key',
+        options: { createKey: { type: { kty: 'OKP', crv: 'Ed25519' } } },
+      })
+      const did = didState.did as string
+      await expect(agent.dids.deleteCreatedDid({ did, deleteAssociatedKeys: false })).rejects.toThrow(
+        "registrar can't deactivate it"
+      )
+
+      await agent.dids.deleteCreatedDid({ did, deleteAssociatedKeys: false, deleteActiveDid: true })
+      expect(await agent.dids.getCreatedDids({ did })).toHaveLength(0)
+    } finally {
+      getDeactivationSupport.mockRestore()
+    }
+  })
+
+  test('deleteCreatedDid only deletes an active did with deleteActiveDid when its registrar supports deactivation', async () => {
+    const didRegistrarService = agent.dependencyManager.resolve(DidRegistrarService)
+    const getDeactivationSupport = vi.spyOn(didRegistrarService, 'getDeactivationSupport').mockReturnValue('supported')
+    const createDid = async () => {
+      const { didState } = await agent.dids.create<KeyDidCreateOptions>({
+        method: 'key',
+        options: { createKey: { type: { kty: 'OKP', crv: 'Ed25519' } } },
+      })
+      return didState.did as string
+    }
+
+    try {
+      const activeDid = await createDid()
+      await expect(agent.dids.deleteCreatedDid({ did: activeDid, deleteAssociatedKeys: false })).rejects.toThrow(
+        'still active'
+      )
+      expect(await agent.dids.getCreatedDids({ did: activeDid })).toHaveLength(1)
+
+      await agent.dids.deleteCreatedDid({ did: activeDid, deleteAssociatedKeys: false, deleteActiveDid: true })
+      expect(await agent.dids.getCreatedDids({ did: activeDid })).toHaveLength(0)
+
+      const deactivatedDid = await createDid()
+      await agent.dids.deactivate({ did: deactivatedDid })
+      const [deactivatedRecord] = await agent.dids.getCreatedDids({ did: deactivatedDid })
+      expect(deactivatedRecord.status).toEqual(DidRecordStatus.Deactivated)
+      await agent.dids.deleteCreatedDid({ did: deactivatedDid, deleteAssociatedKeys: false })
+      expect(await agent.dids.getCreatedDids({ did: deactivatedDid })).toHaveLength(0)
+    } finally {
+      getDeactivationSupport.mockRestore()
+    }
   })
 
   test('deleteCreatedDid deletes the keys of a record without keys under their legacy key id', async () => {
@@ -312,7 +382,7 @@ describe('DidsApi', () => {
       .resolve(DidRepository)
       .save(agent.context, new DidRecord({ did, role: DidDocumentRole.Created }))
 
-    await agent.dids.deleteCreatedDid({ did, deleteAssociatedKeys: true })
+    await agent.dids.deleteCreatedDid({ did, deleteAssociatedKeys: true, deleteActiveDid: true })
 
     expect(await agent.dids.getCreatedDids({ did })).toHaveLength(0)
   })

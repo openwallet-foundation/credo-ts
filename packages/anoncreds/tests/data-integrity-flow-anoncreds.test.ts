@@ -395,7 +395,7 @@ async function anonCredsFlowTest(options: {
           anonCredsLinkSecret: {
             linkSecretId: linkSecret.linkSecretId,
           },
-          didCommSignedAttachment: didBinding && { kid: didBinding.holderKdv.kid, createdForCredential: true },
+          didCommSignedAttachment: didBinding && { kid: didBinding.holderKdv.kid, deleteWithRecord: true },
         },
       },
     })

@@ -3,6 +3,7 @@ import {
   ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE,
   addCredentialHolderBindingDids,
   asArray,
+  assertDidDeletableWithRecord,
   ClaimFormat,
   CredoError,
   DidsApi,
@@ -287,8 +288,9 @@ export class DidCommDataIntegrityCredentialFormatService
 
       didCommSignedAttachmentBindingProof = { attachment_id: didCommSignedAttachment.id }
 
-      if (dataIntegrityFormat.didCommSignedAttachment.createdForCredential) {
+      if (dataIntegrityFormat.didCommSignedAttachment.deleteWithRecord) {
         const { did } = parseDid(dataIntegrityFormat.didCommSignedAttachment.kid)
+        assertDidDeletableWithRecord(agentContext, did)
         addExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey, [did])
       }
     }

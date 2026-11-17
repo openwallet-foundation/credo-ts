@@ -23,7 +23,7 @@ import type {
 import {
   type AgentContext,
   CredoError,
-  DidRepository,
+  DidsApi,
   getPublicJwkFromVerificationMethod,
   JsonTransformer,
   Kms,
@@ -823,12 +823,9 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     issuerId: string,
     explicitVerificationMethod?: string
   ): Promise<string> {
-    const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
 
-    const didRecord = await didRepository.findCreatedDid(agentContext, issuerId)
-    if (!didRecord) {
-      throw new CredoError(`No DID found for issuer ${issuerId}`)
-    }
+    const didRecord = await didsApi.getActiveCreatedDid(issuerId)
 
     const didDocument = didRecord.didDocument
     if (!didDocument) {

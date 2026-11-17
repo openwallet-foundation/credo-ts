@@ -15,7 +15,9 @@ import {
   DidDocument,
   DidDocumentRole,
   DidRecord,
+  DidRecordStatus,
   DidRepository,
+  deleteDidKeys,
   getDidDocumentKeyForVerificationMethod,
   JsonTransformer,
   Kms,
@@ -52,6 +54,7 @@ const normalizeMethodArray = (arr?: (string | { id: string })[]) =>
  */
 export class WebVhDidRegistrar implements DidRegistrar {
   public readonly supportedMethods: string[] = ['webvh']
+  public readonly deactivationSupport = 'notSupportedByRegistrar'
 
   /**
    * Creates a new DID document and saves it in the repository.
@@ -63,6 +66,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
    * @returns The result of the DID creation, with error handling.
    */
   public async create(agentContext: AgentContext, options: WebVhDidCreateOptions): Promise<DidCreateResult> {
+    let createdKey: Kms.KmsKeyReference | undefined
     try {
       const { domain, path } = options
       const paths = path?.replace(/^\/|\/$/g, '').split('/')
@@ -78,6 +82,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
 
       // Create crypto instance
       const { publicKeyMultibase, keyId, kmsBackend } = await this.generatePublicKey(agentContext)
+      createdKey = { keyId, kmsBackend }
       const signer = new WebVhDidCryptoSigner(agentContext, publicKeyMultibase, keyId, kmsBackend)
       const verifier = new WebVhDidCrypto(agentContext)
       const baseDid = `did:webvh:{SCID}:${encodeURIComponent(domain)}`
@@ -144,6 +149,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
         },
       }
     } catch (error) {
+      if (createdKey) await deleteDidKeys(agentContext, [createdKey], 'after failed did:webvh creation')
       return this.handleError(error instanceof Error ? error.message : 'Unknown error occurred.')
     }
   }
@@ -165,6 +171,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
         method: 'webvh',
       })
       if (!didRecord) return this.handleError('DID not found')
+      if (didRecord.status === DidRecordStatus.Deactivated) return this.handleError(`did '${did}' is deactivated`)
 
       const log = didRecord.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as DIDLog
       const domain = didRecord.getTag('domain') as string

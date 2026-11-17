@@ -2,6 +2,7 @@ import type { AgentContext } from '@credo-ts/core'
 import {
   addCredentialHolderBindingDids,
   asArray,
+  assertDidDeletableWithRecord,
   ClaimFormat,
   CredoError,
   DidResolverService,
@@ -63,7 +64,7 @@ export class DidCommJsonLdCredentialFormatService
    *
    */
   public async createProposal(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     {
       credentialFormats,
       credentialExchangeRecord,
@@ -77,11 +78,16 @@ export class DidCommJsonLdCredentialFormatService
     if (!jsonLdFormat) {
       throw new CredoError('Missing jsonld payload in createProposal')
     }
-    const { didCreatedForCredential, ...credentialDetail } = jsonLdFormat
+    const { deleteDidWithRecord, ...credentialDetail } = jsonLdFormat
 
     // this does the validation
     JsonTransformer.fromJSON(credentialDetail.credential, DidCommJsonLdCredentialDetail)
-    this.addDidCreatedForCredential(credentialExchangeRecord, credentialDetail.credential, didCreatedForCredential)
+    this.markDidDeletedWithRecord(
+      agentContext,
+      credentialExchangeRecord,
+      credentialDetail.credential,
+      deleteDidWithRecord
+    )
 
     // credentialDetail is now of type JsonLdFormatDataCredentialDetail
     const attachment = this.getFormatData(credentialDetail, format.attachmentId)
@@ -185,7 +191,7 @@ export class DidCommJsonLdCredentialFormatService
   }
 
   public async acceptOffer(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     {
       attachmentId,
       offerAttachment,
@@ -197,10 +203,11 @@ export class DidCommJsonLdCredentialFormatService
 
     // validate
     JsonTransformer.fromJSON(credentialOffer, DidCommJsonLdCredentialDetail)
-    this.addDidCreatedForCredential(
+    this.markDidDeletedWithRecord(
+      agentContext,
       credentialExchangeRecord,
       credentialOffer.credential,
-      credentialFormats?.jsonld?.didCreatedForCredential
+      credentialFormats?.jsonld?.deleteDidWithRecord
     )
 
     const format = new DidCommCredentialFormatSpec({
@@ -220,7 +227,7 @@ export class DidCommJsonLdCredentialFormatService
    *
    */
   public async createRequest(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     {
       credentialFormats,
       credentialExchangeRecord,
@@ -235,11 +242,16 @@ export class DidCommJsonLdCredentialFormatService
     if (!jsonLdFormat) {
       throw new CredoError('Missing jsonld payload in createRequest')
     }
-    const { didCreatedForCredential, ...credentialDetail } = jsonLdFormat
+    const { deleteDidWithRecord, ...credentialDetail } = jsonLdFormat
 
     // this does the validation
     JsonTransformer.fromJSON(credentialDetail.credential, DidCommJsonLdCredentialDetail)
-    this.addDidCreatedForCredential(credentialExchangeRecord, credentialDetail.credential, didCreatedForCredential)
+    this.markDidDeletedWithRecord(
+      agentContext,
+      credentialExchangeRecord,
+      credentialDetail.credential,
+      deleteDidWithRecord
+    )
 
     const attachment = this.getFormatData(credentialDetail, format.attachmentId)
 
@@ -427,22 +439,24 @@ export class DidCommJsonLdCredentialFormatService
     // TODO: add check for the credentialStatus once this is supported in Credo
   }
 
-  private addDidCreatedForCredential(
+  private markDidDeletedWithRecord(
+    agentContext: AgentContext,
     credentialExchangeRecord: DidCommCredentialExchangeRecord,
     credential: JsonCredential,
-    didCreatedForCredential?: string
+    deleteDidWithRecord?: string
   ) {
-    if (!didCreatedForCredential) return
+    if (!deleteDidWithRecord) return
 
     // The issuer writes the subject of an offer, so the holder can only mark a DID the credential is bound to
     const subjectIds = asArray(credential.credentialSubject).map((subject) => subject.id)
-    if (!subjectIds.includes(didCreatedForCredential)) {
+    if (!subjectIds.includes(deleteDidWithRecord)) {
       throw new CredoError(
-        `didCreatedForCredential '${didCreatedForCredential}' is not a credentialSubject id of the credential`
+        `deleteDidWithRecord '${deleteDidWithRecord}' is not a credentialSubject id of the credential`
       )
     }
 
-    addExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey, [didCreatedForCredential])
+    assertDidDeletableWithRecord(agentContext, deleteDidWithRecord)
+    addExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey, [deleteDidWithRecord])
   }
 
   /**

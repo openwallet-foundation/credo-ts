@@ -2,7 +2,7 @@ import { getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
 import type { AgentContext } from '../../../../agent/context'
 import { CredoError } from '../../../../error'
 import { DidDocument, DidResolverService, DidsApi, VerificationMethod } from '../../../dids'
-import { KeyManagementApi } from '../../../kms'
+import { KeyManagementApi, PublicJwk } from '../../../kms'
 import { Ed25519PublicJwk } from '../../../kms/jwk'
 import {
   W3cDataIntegrityCryptosuiteRegistry as DataIntegrityCryptosuiteRegistry,
@@ -1015,7 +1015,11 @@ describe('W3cV2DataIntegrityCredentialService', () => {
       })
 
       const mockDidsApi = {
-        getCreatedDids: vi.fn().mockResolvedValue([]),
+        resolveVerificationMethodFromCreatedDidRecord: vi.fn(async () => {
+          const signingKey = PublicJwk.fromUnknown(publicJwk)
+          signingKey.keyId = signingKey.legacyKeyId
+          return { publicJwk: signingKey }
+        }),
         resolveDidDocument: vi.fn().mockResolvedValue({
           id: verificationMethod.split('#')[0],
           dereferenceKey: vi.fn().mockReturnValue({

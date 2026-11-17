@@ -183,6 +183,30 @@ describe('Cheqd DID registrar', () => {
     expect(updateResult.didState.didDocument?.toJSON()).toMatchObject(didDocument.toJSON())
   })
 
+  it('should add a verification method for a key created in the update', async () => {
+    const createResult = await agent.dids.create<CheqdDidCreateOptions>({
+      method: 'cheqd',
+      options: {
+        createKey: { type: { crv: 'Ed25519', kty: 'OKP' } },
+        network: 'testnet',
+        methodSpecificIdAlgo: 'uuid',
+      },
+    })
+    expect(createResult.didState).toMatchObject({ state: 'finished' })
+    const did = createResult.didState.did as string
+
+    const updateResult = await agent.dids.update<CheqdDidUpdateOptions>({
+      did,
+      didDocument: createResult.didState.didDocument as DidDocument,
+      options: { createKey: { type: { crv: 'Ed25519', kty: 'OKP' } } },
+    })
+
+    expect(updateResult.didState).toMatchObject({ state: 'finished' })
+    expect(updateResult.didState.didDocument?.verificationMethod).toHaveLength(2)
+    const [didRecord] = await agent.dids.getCreatedDids({ did })
+    expect(didRecord.keys).toHaveLength(2)
+  })
+
   it('should create a did:cheqd did using custom did document containing Ed25519 key', async () => {
     const did = `did:cheqd:testnet:${utils.uuid()}`
 
@@ -272,5 +296,49 @@ describe('Cheqd DID registrar', () => {
         state: 'finished',
       },
     })
+  })
+
+  it('should delete the key of a removed verification method when deleteRemovedKeys is set', async () => {
+    const did = `did:cheqd:testnet:${utils.uuid()}`
+    const [authenticationKey, assertionKey] = await Promise.all(
+      [0, 1].map(() => agent.kms.createKey({ type: { crv: 'Ed25519', kty: 'OKP' } }))
+    )
+    const [authenticationJwk, assertionJwk] = [authenticationKey, assertionKey].map(({ publicJwk }) =>
+      Kms.PublicJwk.fromPublicJwk(publicJwk)
+    )
+    const verificationMethod = (publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>) =>
+      getEd25519VerificationKey2018({ publicJwk, controller: did, id: `${did}#${publicJwk.fingerprint}` })
+
+    const createResult = await agent.dids.create<CheqdDidCreateOptions>({
+      method: 'cheqd',
+      didDocument: new DidDocumentBuilder(did)
+        .addController(did)
+        .addVerificationMethod(verificationMethod(authenticationJwk))
+        .addVerificationMethod(verificationMethod(assertionJwk))
+        .addAuthentication(`${did}#${authenticationJwk.fingerprint}`)
+        .addAssertionMethod(`${did}#${assertionJwk.fingerprint}`)
+        .build(),
+      options: {
+        keys: [
+          { didDocumentRelativeKeyId: `#${authenticationJwk.fingerprint}`, kmsKeyId: authenticationKey.keyId },
+          { didDocumentRelativeKeyId: `#${assertionJwk.fingerprint}`, kmsKeyId: assertionKey.keyId },
+        ],
+      },
+    })
+    expect(createResult.didState).toMatchObject({ state: 'finished' })
+
+    const updateResult = await agent.dids.update<CheqdDidUpdateOptions>({
+      did,
+      didDocument: new DidDocumentBuilder(did)
+        .addController(did)
+        .addVerificationMethod(verificationMethod(authenticationJwk))
+        .addAuthentication(`${did}#${authenticationJwk.fingerprint}`)
+        .build(),
+      deleteRemovedKeys: true,
+    })
+    expect(updateResult.didState).toMatchObject({ state: 'finished' })
+
+    await expect(agent.kms.getPublicKey({ keyId: assertionKey.keyId })).rejects.toThrow('not found')
+    await expect(agent.kms.getPublicKey({ keyId: authenticationKey.keyId })).resolves.toBeDefined()
   })
 })

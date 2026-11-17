@@ -1,4 +1,5 @@
 import type { DIDDocumentMetadata, DIDResolutionMetadata, DIDResolutionOptions, ParsedDID } from 'did-resolver'
+import type { KmsKeyReference } from '../kms'
 import type { DidDocument } from './domain'
 
 export type ParsedDid = ParsedDID
@@ -117,6 +118,15 @@ export interface DidUpdateOptions {
   secret?: DidRegistrationSecretOptions
   didDocumentOperation?: DidDocumentOperation
   didDocument: DidDocument | Partial<DidDocument>
+
+  /**
+   * Delete the KMS keys of the verification methods that the update removes from the did document. This includes keys
+   * you passed in and keys another DID still uses. Only works for registrars that return `removedKeys`, such as did:cheqd
+   * and did:hedera.
+   *
+   * @default false
+   */
+  deleteRemovedKeys?: boolean
 }
 
 export interface DidUpdateResult {
@@ -124,6 +134,11 @@ export interface DidUpdateResult {
   didState: DidOperationStateWait | DidOperationStateActionBase | DidOperationStateFinished | DidOperationStateFailed
   didRegistrationMetadata: DidRegistrationMetadata
   didDocumentMetadata: DidResolutionMetadata
+
+  /**
+   * The keys of the verification methods the update removed, that no remaining verification method uses.
+   */
+  removedKeys?: KmsKeyReference[]
 }
 
 export interface DidDeactivateOptions {

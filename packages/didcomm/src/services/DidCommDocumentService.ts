@@ -7,6 +7,7 @@ import {
   DidRecord,
   DidRepository,
   DidResolverService,
+  DidsApi,
   didToNumAlgo2DidDocument,
   didToNumAlgo4DidDocument,
   findMatchingEd25519Key,
@@ -357,6 +358,7 @@ export class DidCommDocumentService {
         recordType: DidRecord.type,
       })
     }
+    didRecord.assertActive()
 
     if (didRecord.didDocument) {
       return {
@@ -400,10 +402,7 @@ export class DidCommDocumentService {
     did: string,
     publicJwk: Kms.PublicJwk
   ): Promise<{ didDocument: import('@credo-ts/core').DidDocument; keys?: import('@credo-ts/core').DidDocumentKey[] }> {
-    const didRecord = await this.didRepository.findCreatedDid(agentContext, did)
-    if (!didRecord) {
-      throw new RecordNotFoundError(`Created did for ${did} not found`, { recordType: DidRecord.type })
-    }
+    const didRecord = await agentContext.resolve(DidsApi).getActiveCreatedDid(did)
     const didDocument = didRecord.didDocument ?? (await this.didResolverService.resolveDidDocument(agentContext, did))
     didDocument.findVerificationMethodByPublicKey(publicJwk)
     return { didDocument, keys: didRecord.keys }

@@ -18,7 +18,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
   let cryptosuite: EddsaJcs2022Cryptosuite
   let mockDidsApi: {
     resolveDidDocument: ReturnType<typeof vi.fn>
-    getCreatedDids: ReturnType<typeof vi.fn>
+    resolveVerificationMethodFromCreatedDidRecord: ReturnType<typeof vi.fn>
   }
   let mockKeyManagementApi: {
     sign: ReturnType<typeof vi.fn>
@@ -99,16 +99,11 @@ describe('EddsaJcs2022Cryptosuite', () => {
           publicKeyBase58: '3Dn1SJNPaCXcvvJvSbsFWP2xaCjMom3can8CQNhWrTRx',
         }),
       }),
-      getCreatedDids: vi.fn().mockResolvedValue([
-        {
-          keys: [
-            {
-              didDocumentRelativeKeyId: '#key-1',
-              kmsKeyId: 'mock-kms-key-id',
-            },
-          ],
-        },
-      ]),
+      resolveVerificationMethodFromCreatedDidRecord: vi.fn(async () => {
+        const publicJwk = PublicJwk.fromUnknown(mockPublicJwkJson)
+        publicJwk.keyId = publicJwk.legacyKeyId
+        return { publicJwk }
+      }),
     }
 
     mockKeyManagementApi = {

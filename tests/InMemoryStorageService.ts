@@ -230,9 +230,7 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
 function filterByQuery<T extends BaseRecord<any, any, any>>(record: StorageRecord, query: Query<T>) {
   const { $and, $or, $not, ...restQuery } = query
 
-  if ($not) {
-    throw new Error('$not query not supported in in memory storage')
-  }
+  if ($not && filterByQuery(record, $not as Query<T>)) return false
 
   // Top level query
   if (!matchSimpleQuery(record, restQuery)) return false

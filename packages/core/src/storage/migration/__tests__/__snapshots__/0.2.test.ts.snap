@@ -251,6 +251,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
         "z6Mkpg6nDPuYdLMuzNEjaa2Xprh3J2MC1WtNakWUEFqC4wvU",
       ],
       "role": "created",
+      "status": undefined,
     },
     "type": "DidRecord",
     "value": {
@@ -315,6 +316,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
         "z6MkuLL6bQykGpposTrQhfYceQRR4JDzvdm133xpwb7Dv1oz",
       ],
       "role": "received",
+      "status": undefined,
     },
     "type": "DidRecord",
     "value": {
@@ -377,6 +379,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
         "z6Mkv6Kd744JcBL5P9gi5Ddtehxn1gSMTgM9kbTdfQ9soB8G",
       ],
       "role": "created",
+      "status": undefined,
     },
     "type": "DidRecord",
     "value": {
@@ -439,6 +442,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
         "z6MkvcuHjVcNRBM78E3xWy7MnVqQV9hAvTawBsPmg3bR1DaE",
       ],
       "role": "created",
+      "status": undefined,
     },
     "type": "DidRecord",
     "value": {
@@ -503,6 +507,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
         "z6Mkp1wyxzqoUrZ3TvnerfZBq48o1XLDSPH8ibFALkNABSgh",
       ],
       "role": "received",
+      "status": undefined,
     },
     "type": "DidRecord",
     "value": {
@@ -565,6 +570,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
         "z6MkrQzQqPtNjJHGLGjWC7H3mjMSNA36bCBTYJeoR44JoFvH",
       ],
       "role": "received",
+      "status": undefined,
     },
     "type": "DidRecord",
     "value": {
@@ -627,6 +633,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
         "z6Mkt4ohp4uT74HdENeGVGAyVFTerCzzuDXP8kpU3yo6SqqM",
       ],
       "role": "received",
+      "status": undefined,
     },
     "type": "DidRecord",
     "value": {
@@ -689,6 +696,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did recor
         "z6MktdgEKUiH5kt5t2dKAH14WzFYhzj3JFobUf2PFFQAg2ma",
       ],
       "role": "created",
+      "status": undefined,
     },
     "type": "DidRecord",
     "value": {

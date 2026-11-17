@@ -42,13 +42,14 @@ export interface OpenId4VcCredentialHolderDidBinding {
   didUrls: string[]
 
   /**
-   * Whether the DIDs were created only for this credential. The credential record then stores them, and deleting it
-   * with `deleteAssociatedKeys` deletes the DID records and their keys. Don't set it for DIDs that need deactivating
-   * or that something else uses.
+   * Delete the DIDs with the credential record. The credential record then stores them, and deleting it with
+   * `deleteAssociatedKeys` deletes the DID records and their keys. Throws for a DID whose method has deactivation, such
+   * as did:cheqd. Only a DID whose method has none, such as did:key, can be deleted with the record. Don't set it for
+   * DIDs that something else uses.
    *
    * @default false
    */
-  createdForCredential?: boolean
+  deleteWithRecord?: boolean
 }
 
 export interface OpenId4VcCredentialHolderJwkBinding {
