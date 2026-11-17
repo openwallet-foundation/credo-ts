@@ -7,9 +7,8 @@ import { omitUndefinedFields } from './normalization'
 /**
  * Applies the JSON Canonicalization Scheme (RFC 8785) after dropping undefined object fields.
  *
- * Values that have no JSON representation (undefined in arrays, functions, symbols, bigints,
- * non-finite numbers and circular references) raise a PROOF_TRANSFORMATION_ERROR instead of
- * being silently coerced.
+ * Values that have no JSON representation (undefined in arrays, functions, symbols, bigints and
+ * non-finite numbers) raise a PROOF_TRANSFORMATION_ERROR instead of being silently coerced.
  */
 export function canonicalizeJcsStrict(value: unknown): string {
   const normalized = omitUndefinedFields(value)
