@@ -320,6 +320,18 @@ describe('KeyManagementApi', () => {
         'ES256',
       ])
     })
+
+    test('returns algorithms a backend can verify with when operation is verify', () => {
+      const verifyOnlyBackend = {
+        backend: 'verify-only',
+        isOperationSupported: (_agentContext: unknown, operation: KmsOperation) =>
+          operation.operation === 'verify' && operation.algorithm === 'PS256',
+      } as unknown as KeyManagementService
+      const kms = new KeyManagementApi(new KeyManagementModuleConfig({ backends: [verifyOnlyBackend] }), agent.context)
+
+      expect(kms.supportedJwaSignatureAlgorithms()).toEqual([])
+      expect(kms.supportedJwaSignatureAlgorithms({ operation: 'verify' })).toEqual(['PS256'])
+    })
   })
 
   test('getPublicKey returns the key from the provided backend', async () => {
