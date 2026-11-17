@@ -409,7 +409,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
                 methodSpecificId: didDocument.id.split(':')[3],
                 didUrl: didDocument.id,
                 keyId: `${didDocument.id}${createdKey.didDocumentRelativeKeyId}` as `${string}#${string}-${number}`,
-                publicKey: TypedArrayEncoder.toHex(jwk.publicKey.publicKey),
+                publicKey: TypedArrayEncoder.toBase64(jwk.publicKey.publicKey),
               },
             ]
           )

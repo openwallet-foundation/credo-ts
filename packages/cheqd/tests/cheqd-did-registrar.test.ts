@@ -66,4 +66,32 @@ describe('CheqdDidRegistrar', () => {
       agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId: 'timed-out-key' })
     ).resolves.toBeDefined()
   })
+
+  it('adds the verification method of a key created in the update', async () => {
+    const update = vi.fn().mockResolvedValue({ code: 0 })
+    const agentContext = getCheqdAgentContext({ create: vi.fn().mockResolvedValue({ code: 0 }), update })
+    const registrar = new CheqdDidRegistrar()
+    const createResult = await registrar.create(agentContext, {
+      method: 'cheqd',
+      options: { createKey: { type: { kty: 'OKP', crv: 'Ed25519' } }, network: 'testnet' },
+    })
+    const didDocument = createResult.didState.didDocument as DidDocument
+    agentContext.resolve(CheqdLedgerService).resolve = vi
+      .fn()
+      .mockResolvedValue({ didDocument: didDocument.toJSON(), didDocumentMetadata: {} })
+
+    const result = await registrar.update(agentContext, {
+      did: didDocument.id,
+      didDocument,
+      options: { createKey: { type: { kty: 'OKP', crv: 'Ed25519' }, keyId: 'update-key' } },
+    })
+
+    expect(result.didState.state).toBe('finished')
+    const { publicKey } = await agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId: 'update-key' })
+    expect(update.mock.calls[0][0].verificationMethod[1].publicKeyJwk).toEqual({
+      kty: 'OKP',
+      crv: 'Ed25519',
+      x: (publicKey as Kms.KmsJwkPublicOkp).x,
+    })
+  })
 })
