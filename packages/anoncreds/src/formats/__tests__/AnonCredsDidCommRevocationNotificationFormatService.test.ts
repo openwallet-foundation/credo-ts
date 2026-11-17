@@ -8,14 +8,26 @@ import {
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { getAgentConfig, getAgentContext, getMockConnection } from '../../../../core/tests/helpers'
+import { NativeAnoncreds } from '../../../tests/helpers'
+import { AnonCredsModuleConfig } from '../../AnonCredsModuleConfig'
+import type { AnonCredsRegistry } from '../../services'
 import { AnonCredsDidCommRevocationNotificationFormatService } from '../AnonCredsDidCommRevocationNotificationFormatService'
 
 describe('AnonCredsDidCommRevocationNotificationFormatService', () => {
   const connection = getMockConnection()
   const revocationRegistryId = 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt/anoncreds/v0/REV_REG_DEF/1/My Registry'
+  const encodedRevocationRegistryId =
+    'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt/anoncreds/v0/REV_REG_DEF/1/My%20Registry'
   const indyRevocationRegistryId =
     'AsB27X6KRrJFsqZ3unNAH6:4:AsB27X6KRrJFsqZ3unNAH6:3:cl:48187:default:CL_ACCUM:3b24a9b0-a979-41e0-9964-2292f2b1b7e9'
   const credentialRevocationId = '1'
+  const identifierVariantsRegistry = {
+    supportedIdentifier: /^did:indy:/,
+    getIdentifierVariants: (identifier: string) =>
+      [revocationRegistryId, encodedRevocationRegistryId].includes(identifier)
+        ? [revocationRegistryId, encodedRevocationRegistryId]
+        : [identifier],
+  } as AnonCredsRegistry
   let credentialRepository: DidCommCredentialExchangeRepository
   let credentialRecord: DidCommCredentialExchangeRecord
   let indyCredentialRecord: DidCommCredentialExchangeRecord
@@ -29,6 +41,13 @@ describe('AnonCredsDidCommRevocationNotificationFormatService', () => {
     agentContext = getAgentContext({
       registerInstances: [
         [CacheModuleConfig, new CacheModuleConfig({ cache: new InMemoryLruCache({ limit: 500 }) })],
+        [
+          AnonCredsModuleConfig,
+          new AnonCredsModuleConfig({
+            registries: [identifierVariantsRegistry],
+            anoncreds: NativeAnoncreds,
+          }),
+        ],
         [DidCommCredentialExchangeRepository, credentialRepository],
       ],
     })
@@ -83,6 +102,17 @@ describe('AnonCredsDidCommRevocationNotificationFormatService', () => {
     )
 
     expect(record.id).toBe(recordType === 'record' ? credentialRecord.id : indyCredentialRecord.id)
+  })
+
+  test('finds an exchange when the notification uses another registry identifier variant', async () => {
+    const record = await service.findCredentialExchangeRecord(
+      agentContext,
+      `${encodedRevocationRegistryId}::${credentialRevocationId}`,
+      'anoncreds',
+      connection.id
+    )
+
+    expect(record.id).toBe(credentialRecord.id)
   })
 
   test('builds credential ids for both AnonCreds formats from revocation tags', async () => {

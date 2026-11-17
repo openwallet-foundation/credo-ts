@@ -2,6 +2,7 @@ import type { AgentContext, Query } from '@credo-ts/core'
 import { CredoError } from '@credo-ts/core'
 import type { DidCommCredentialExchangeRecord, DidCommRevocationNotificationFormatService } from '@credo-ts/didcomm'
 import { DidCommCredentialExchangeRepository, DidCommCredentialRole } from '@credo-ts/didcomm'
+import { identifierQuery } from '../utils/identifierVariants'
 
 const indyAnoncredsFormat = 'indy-anoncreds'
 const anoncredsFormat = 'anoncreds'
@@ -31,10 +32,18 @@ export class AnonCredsDidCommRevocationNotificationFormatService implements DidC
 
     const [, revocationRegistryId, credentialRevocationId] = groups
     const query: Query<DidCommCredentialExchangeRecord> = {
-      anonCredsRevocationRegistryId: revocationRegistryId,
-      anonCredsCredentialRevocationId: credentialRevocationId,
-      role: DidCommCredentialRole.Holder,
-      ...(connectionId && { connectionId }),
+      $and: [
+        identifierQuery<DidCommCredentialExchangeRecord>(
+          agentContext,
+          'anonCredsRevocationRegistryId',
+          revocationRegistryId
+        ),
+        {
+          anonCredsCredentialRevocationId: credentialRevocationId,
+          role: DidCommCredentialRole.Holder,
+          ...(connectionId && { connectionId }),
+        },
+      ],
     }
 
     return agentContext.dependencyManager
