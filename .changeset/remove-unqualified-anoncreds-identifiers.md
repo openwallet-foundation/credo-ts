@@ -1,6 +1,5 @@
 ---
 '@credo-ts/anoncreds': minor
-'@credo-ts/indy-vdr': minor
 '@credo-ts/didcomm': minor
 '@credo-ts/drizzle-storage': minor
 ---
