@@ -21,10 +21,14 @@ import {
 } from '../protocol'
 import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'
 
-describe('DidCommMessagePickupApi live delivery', () => {
+describe.each([
+  { protocolVersion: 'v2', Protocol: DidCommMessagePickupV2Protocol },
+  { protocolVersion: 'v4', Protocol: DidCommMessagePickupV4Protocol },
+] as const)('DidCommMessagePickupApi live delivery ($protocolVersion)', ({ protocolVersion, Protocol }) => {
   const agentConfig = getAgentConfig('MessagePickupApiLiveDelivery')
   const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
   const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
+  if (protocolVersion === 'v4') connection.didcommVersion = 'v2'
   const recipientDid = 'did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'
   const sendError = new MessageSendingError('Message is undeliverable', {
     outboundMessageContext: {} as DidCommOutboundMessageContext,
@@ -41,7 +45,7 @@ describe('DidCommMessagePickupApi live delivery', () => {
   const saveLiveSession = (transportSessionId: string) =>
     sessionService.saveLiveSession(agentContext, {
       connectionId: connection.id,
-      protocolVersion: 'v2',
+      protocolVersion,
       role: DidCommMessagePickupSessionRole.MessageHolder,
       transportSessionId,
     })
@@ -112,9 +116,7 @@ describe('DidCommMessagePickupApi live delivery', () => {
     sessionService.getLiveSessionByConnectionId(agentContext, { connectionId: connection.id })?.id as string
 
   const mockDelivery = () =>
-    vi
-      .spyOn(DidCommMessagePickupV2Protocol.prototype, 'createDeliveryMessage')
-      .mockResolvedValue({ message: new DidCommMessage() })
+    vi.spyOn(Protocol.prototype, 'createDeliveryMessage').mockResolvedValue({ message: new DidCommMessage() })
 
   test('delivers only the given messages on the transport session of the live mode session', async () => {
     saveLiveSession('transportSessionId')
@@ -177,9 +179,7 @@ describe('DidCommMessagePickupApi live delivery', () => {
 
   test('keeps the live mode session when delivery fails before sending', async () => {
     saveLiveSession('transportSessionId')
-    vi.spyOn(DidCommMessagePickupV2Protocol.prototype, 'createDeliveryMessage').mockRejectedValue(
-      new Error('storage unavailable')
-    )
+    vi.spyOn(Protocol.prototype, 'createDeliveryMessage').mockRejectedValue(new Error('storage unavailable'))
 
     await expect(api.deliverMessagesFromQueue({ pickupSessionId: livePickupSessionId() })).rejects.toThrow(
       'storage unavailable'

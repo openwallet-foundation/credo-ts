@@ -16,10 +16,8 @@ import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
 import { isDidKey } from '../../../../../../core/src/modules/dids/helpers'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
-import { DummyTransportSession } from '../../../../__tests__/stubs'
 import { DidCommMessageSender } from '../../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
-import { DidCommTransportService } from '../../../../DidCommTransportService'
 import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
 import { MessageSendingError, MessageSendingErrorCategory } from '../../../../errors'
 import type { DidCommOutboundMessageContext } from '../../../../models'
@@ -1053,7 +1051,6 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
   const agentConfig = getAgentConfig('MediatorService')
   const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
   const sessionService = new DidCommMessagePickupSessionService()
-  const transportService = new DidCommTransportService(getAgentContext(), eventEmitter)
 
   const agentContext = getAgentContext({
     agentConfig,
@@ -1063,7 +1060,6 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
       [DidCommMessagePickupApi, mediationPickupApi],
       [DidCommMessagePickupSessionService, sessionService],
       [DidCommMessageSender, {}],
-      [DidCommTransportService, transportService],
       [
         DidCommMediatorModuleConfig,
         new DidCommMediatorModuleConfig({
@@ -1098,11 +1094,6 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
     })
   }
 
-  function _liveTransportSessionId(): string | undefined {
-    return sessionService.getLiveSessionByConnectionId(agentContext, { connectionId: mockConnection.id })
-      ?.transportSessionId
-  }
-
   async function forward(version: 'v1' | 'v2' = 'v1', to = recipientKey): Promise<void> {
     let message: DidCommForwardMessage | DidCommForwardV2Message
     if (version === 'v1') {
@@ -1114,12 +1105,7 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
     await mediatorService.processForwardMessage(new DidCommInboundMessageContext(message, { agentContext }))
   }
 
-  let transportSession: DummyTransportSession
-
   beforeEach(() => {
-    transportSession = new DummyTransportSession('transportSessionId')
-    vi.spyOn(transportSession, 'close').mockResolvedValue()
-    transportService.saveSession(transportSession)
     const mediationRecord = new DidCommMediationRecord({
       connectionId: mockConnection.id,
       role: DidCommMediationRole.Mediator,
