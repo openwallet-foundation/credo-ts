@@ -702,8 +702,9 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
 
     const aliceDidBeforeHangup = aliceBobConnection?.did
 
+    // makeConnection advertises Alice's DID in an open ourDid invitation, so a hang-up must opt in
     // biome-ignore lint/style/noNonNullAssertion: no explanation
-    await aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection?.id! })
+    await aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection?.id!, allowSharedDid: true })
 
     // Bob receives an empty/1.0/empty message carrying from_prior, processes it,
     // and emits the same rotated event used for v1 hangup.
@@ -1105,7 +1106,7 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     test('an anoncrypt termination is applied and processed once and a retransmission is dropped', async () => {
       const termination = await captureFromAlice(() =>
         // biome-ignore lint/style/noNonNullAssertion: no explanation
-        aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection!.id })
+        aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection!.id, allowSharedDid: true })
       )
 
       const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
@@ -1370,7 +1371,7 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
         {}
       )
       // biome-ignore lint/style/noNonNullAssertion: no explanation
-      await aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection!.id })
+      await aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection!.id, allowSharedDid: true })
       await terminated
 
       const otherDid = await createAliceDid()
@@ -2025,6 +2026,22 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
       accepterTwo.didcomm.basicMessages.sendMessage(connectionRecord!.id, 'stranger')
     )
   }
+
+  test('hangup refuses to sign a termination for a shared DID unless allowed', async () => {
+    const { did } = await createPeerDidForV2OOB(
+      inviter.context,
+      await inviter.didcomm.mediationRecipient.getRouting({})
+    )
+    const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2', ourDid: did })
+    await acceptAndSendFirst(invitation)
+    const [connection] = await inviter.didcomm.connections.findAllByOutOfBandId(invitation.id)
+
+    await expect(inviter.didcomm.connections.hangup({ connectionId: connection.id })).rejects.toThrow(/shared/)
+    expect((await inviter.didcomm.connections.getById(connection.id)).did).toEqual(connection.did)
+
+    await inviter.didcomm.connections.hangup({ connectionId: connection.id, allowSharedDid: true })
+    expect((await inviter.didcomm.connections.getById(connection.id)).did).toBeUndefined()
+  })
 
   test('a DID minted for one invitation and then passed as ourDid takes implicit first messages', async () => {
     const minted = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })

@@ -794,7 +794,8 @@ describe('out of band implicit', () => {
       [aliceAgent],
       [DidCommConnectionEventTypes.DidCommConnectionDidRotated]
     )
-    await faberAgent.didcomm.connections.hangup({ connectionId: faberConnection.id })
+    // The connection is on Faber's public DID, so the hang-up must opt in to a termination that could be replayed
+    await faberAgent.didcomm.connections.hangup({ connectionId: faberConnection.id, allowSharedDid: true })
     await waitForDidRotateSubject(aliceRotateReplay, {})
 
     const secondInvitation = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2', ourDid: publicDid })
