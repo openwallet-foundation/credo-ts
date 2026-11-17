@@ -137,17 +137,12 @@ export class DidCommConnectionService {
 
       const outOfBandRepository = messageContext.agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
       const outOfBandService = messageContext.agentContext.dependencyManager.resolve(DidCommOutOfBandService)
-      let outOfBandRecord = await outOfBandRepository.findSingleByQuery(messageContext.agentContext, {
-        invitationRequestsThreadIds: [message.threadId],
-      })
-
-      // A message on a new thread, such as a revocation notification, belongs to the exchange of the previous messages.
+      // The sender picks the thread id, so with previous messages the exchange is found by their thread instead.
+      // This also covers a message on a new thread, such as a revocation notification.
       const previousThreadId = (lastSentMessage ?? lastReceivedMessage)?.threadId
-      if (!outOfBandRecord && previousThreadId) {
-        outOfBandRecord = await outOfBandRepository.findSingleByQuery(messageContext.agentContext, {
-          invitationRequestsThreadIds: [previousThreadId],
-        })
-      }
+      const outOfBandRecord = await outOfBandRepository.findSingleByQuery(messageContext.agentContext, {
+        invitationRequestsThreadIds: [previousThreadId ?? message.threadId],
+      })
 
       if (!outOfBandRecord) {
         throw new CredoError(

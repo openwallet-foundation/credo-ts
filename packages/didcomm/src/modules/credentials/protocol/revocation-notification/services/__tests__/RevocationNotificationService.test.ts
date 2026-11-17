@@ -331,6 +331,40 @@ describe('DidCommRevocationNotificationService', () => {
       expectRefused('not found in their previously received service')
     })
 
+    test('finds the out of band record by the credential exchange thread, not the thread the sender picked', async () => {
+      // Any other thread, such as the notification's own, points at an invitation the attacker gave the holder
+      const exchangeOutOfBandRecord = getMockOutOfBand({ role: DidCommOutOfBandRole.Receiver })
+      const attackerOutOfBandRecord = getMockOutOfBand({
+        role: DidCommOutOfBandRole.Receiver,
+        serviceEndpoint: 'rxjs:attacker',
+      })
+      mockFunction(outOfBandRepository.findSingleByQuery).mockImplementation(async (_, query) =>
+        'invitationRequestsThreadIds' in query && query.invitationRequestsThreadIds?.includes('thread-id')
+          ? exchangeOutOfBandRecord
+          : attackerOutOfBandRecord
+      )
+      mockFunction(outOfBandService.getResolvedServiceForOutOfBandServices).mockImplementation(async (_, services) => ({
+        id: 'service',
+        serviceEndpoint: 'rxjs:issuer',
+        recipientKeys: [
+          verkeyToPublicJwk(
+            services.some((service) => typeof service !== 'string' && service.serviceEndpoint === 'rxjs:attacker')
+              ? otherVerkey
+              : issuerVerkey
+          ),
+        ],
+        routingKeys: [],
+      }))
+      // Without a credential message ~service only the invitation authenticates the issuer
+      const credentialMessage = new DidCommMessage()
+      credentialMessage.setThread({ threadId: 'thread-id' })
+      mockFunction(credentialProtocol.findCredentialMessage).mockResolvedValue(credentialMessage)
+
+      await process({ senderVerkey: otherVerkey, serviceVerkey: otherVerkey })
+
+      expectRefused('not found in their service')
+    })
+
     test('refuses a notification when the credential exchange has no out of band record', async () => {
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(null)
 
