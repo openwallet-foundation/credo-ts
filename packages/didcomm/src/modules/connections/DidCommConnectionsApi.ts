@@ -7,6 +7,7 @@ import { DidCommEmptyMessage } from '../../messages'
 import type { DidCommRouting } from '../../models'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommOutOfBandService } from '../oob/DidCommOutOfBandService'
+import { DidCommOutOfBandRole } from '../oob/domain'
 import type { DidCommOutOfBandRecord } from '../oob/repository'
 import { DidCommOutOfBandRecordMetadataKeys } from '../oob/repository/outOfBandRecordMetadataTypes'
 import { DidCommRoutingService, type RemoveRoutingOptions } from '../routing/services/DidCommRoutingService'
@@ -382,14 +383,42 @@ export class DidCommConnectionsApi {
     return { newDid: message.toDid }
   }
 
+  private async isSharedDid(connection: DidCommConnectionRecord): Promise<boolean> {
+    const did = connection.did
+    if (!did) return false
+
+    const sharedDids = connection.metadata.get(DidCommConnectionMetadataKeys.SharedDid)?.dids ?? []
+    if (connection.invitationDid === did || sharedDids.includes(did)) return true
+
+    const connections = await this.connectionService.findAllByQuery(this.agentContext, { did })
+    if (connections.some((other) => other.id !== connection.id)) return true
+
+    const invitations = await this.outOfBandService.findAllByQuery(
+      this.agentContext,
+      { role: DidCommOutOfBandRole.Sender, recipientDid: did, sharedRecipientDid: true },
+      { limit: 1 }
+    )
+    return invitations.length > 0
+  }
+
   /**
    * Terminate a connection by sending a hang-up message to the other party. The connection record itself and any
    * keys used for mediation will only be deleted if `deleteAfterHangup` flag is set.
    *
-   * @param options connectionId
+   * A DIDComm v2 termination is a bearer JWT that names only the DID it ends, so one signed for a DID that other
+   * connections or invitations share can be replayed to end every relationship on that DID. The hang-up is refused
+   * for such a DID unless `allowSharedDid` is set. Rotate the connection to a pairwise DID first to avoid this.
    */
-  public async hangup(options: { connectionId: string; deleteAfterHangup?: boolean }) {
+  public async hangup(options: { connectionId: string; deleteAfterHangup?: boolean; allowSharedDid?: boolean }) {
     const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
+
+    if (connection.didcommVersion === 'v2' && !options.allowSharedDid && (await this.isSharedDid(connection))) {
+      throw new CredoError(
+        `Connection '${connection.id}' uses DID '${connection.did}' that is shared with other connections or invitations. ` +
+          'A v2 termination for it could be replayed to end every relationship on that DID. ' +
+          "Rotate the connection to a pairwise DID first, or pass 'allowSharedDid' to send it anyway."
+      )
+    }
 
     const connectionBeforeHangup = connection.clone()
 
