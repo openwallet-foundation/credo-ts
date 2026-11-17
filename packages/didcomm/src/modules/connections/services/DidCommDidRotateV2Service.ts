@@ -38,6 +38,8 @@ import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMe
 import { DidCommConnectionService } from './DidCommConnectionService'
 import { addSharedDid, createPeerDidForV2OOB, toAbsoluteDidUrl } from './helpers'
 
+const FROM_PRIOR_CLAIMS = ['iss', 'sub', 'iat']
+
 export interface FromPriorPayload {
   iss: string
   sub?: string
@@ -445,7 +447,20 @@ export class DidCommDidRotateV2Service {
   }
 
   private decodeFromPrior(jws: string): FromPriorPayload {
-    const { payload } = Jwt.fromSerializedJwt(jws)
+    const { header, payload } = Jwt.fromSerializedJwt(jws)
+
+    // A DID may sign other JWTs with its authentication key, such as SD-JWT VCs. Those have another typ
+    // or claims of their own, and must not rotate or end a relationship. typ may be absent for interop.
+    const typ = (header as { typ?: unknown }).typ
+    if (typ !== undefined && typ !== 'JWT') {
+      throw new CredoError(`from_prior JWT has typ '${typ}', expected 'JWT'`)
+    }
+    // The spec defines only these claims, so any other one is another kind of JWT or an extension we cannot interpret
+    const unknownClaims = Object.keys(payload.toJson()).filter((claim) => !FROM_PRIOR_CLAIMS.includes(claim))
+    if (unknownClaims.length > 0) {
+      throw new CredoError(`from_prior JWT has claims other than iss, sub and iat: ${unknownClaims.join(', ')}`)
+    }
+
     if (typeof payload.iss !== 'string') throw new CredoError("from_prior JWT missing 'iss'")
     if (typeof payload.iat !== 'number') throw new CredoError("from_prior JWT missing 'iat'")
     if (payload.sub !== undefined && typeof payload.sub !== 'string') {
