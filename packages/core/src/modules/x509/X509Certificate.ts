@@ -52,19 +52,22 @@ export type X509CertificateOptions = {
   publicJwk: PublicJwk
   x509Certificate: x509.X509Certificate
   parseOptions?: X509ParseOptions
+  extensions?: X509CertificateExtensions
 }
+
+type X509CertificateExtensions = { asn?: Extension[]; decoded: Map<string, x509.Extension[]> }
 
 export class X509Certificate {
   public publicJwk: PublicJwk
   private x509Certificate: x509.X509Certificate
   private parseOptions?: X509ParseOptions
-  private asnExtensions?: Extension[]
-  private decodedExtensions = new Map<string, x509.Extension[]>()
+  private extensionCache: X509CertificateExtensions
 
   private constructor(options: X509CertificateOptions) {
     this.publicJwk = options.publicJwk
     this.x509Certificate = options.x509Certificate
     this.parseOptions = options.parseOptions
+    this.extensionCache = options.extensions ?? { decoded: new Map() }
   }
 
   public set keyId(keyId: string) {
@@ -103,6 +106,8 @@ export class X509Certificate {
       publicJwk: this.publicJwk.clone(),
       x509Certificate: this.x509Certificate,
       parseOptions: this.parseOptions,
+      // Shared, so certificates from the parsed certificate cache decode each extension once
+      extensions: this.extensionCache,
     })
   }
 
@@ -120,19 +125,19 @@ export class X509Certificate {
 
   // Undecoded, as peculiar's `extensions` getter fails for all of them when one doesn't decode
   private getAsnExtensions() {
-    this.asnExtensions ??=
+    this.extensionCache.asn ??=
       AsnParser.parse(this.x509Certificate.rawData, Certificate, { berOptions: this.parseOptions }).tbsCertificate
         .extensions ?? []
-    return this.asnExtensions
+    return this.extensionCache.asn
   }
 
   private getMatchingExtensions<T = { critical: boolean }>(objectIdentifier: string): Array<T> | undefined {
-    let decoded = this.decodedExtensions.get(objectIdentifier)
+    let decoded = this.extensionCache.decoded.get(objectIdentifier)
     if (!decoded) {
       decoded = this.getAsnExtensions()
         .filter((e) => e.extnID === objectIdentifier)
         .map((e) => x509.ExtensionFactory.create(AsnConvert.serialize(e), { berOptions: this.parseOptions }))
-      this.decodedExtensions.set(objectIdentifier, decoded)
+      this.extensionCache.decoded.set(objectIdentifier, decoded)
     }
 
     return decoded as Array<T>
