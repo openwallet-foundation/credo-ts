@@ -1073,6 +1073,9 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
 
     const aliceRotateService = () => aliceAgent.dependencyManager.resolve(DidCommDidRotateV2Service)
 
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const bobDid = () => aliceBobConnection!.theirDid!
+
     const rotateAlice = async (toDid?: string) => {
       // Bob emits the rotation event before it dispatches the message, so wait until the message is processed
       const rotated = waitForAgentMessageProcessedEventSubject(
@@ -1129,7 +1132,11 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     test('an anoncrypt message that carries a termination is processed without the connection', async () => {
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const aliceDid = aliceBobConnection!.did!
-      const termination = await aliceRotateService().createFromPriorForTermination(aliceAgent.context, aliceDid)
+      const termination = await aliceRotateService().createFromPriorForTermination(
+        aliceAgent.context,
+        aliceDid,
+        bobDid()
+      )
       const message = await anoncryptToBob({
         type: DidCommBasicMessageV2.type.messageTypeUri,
         from_prior: termination,
@@ -1155,7 +1162,11 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const aliceDid = aliceBobConnection!.did!
       const otherDid = await createAliceDid()
-      const termination = await aliceRotateService().createFromPriorForTermination(aliceAgent.context, aliceDid)
+      const termination = await aliceRotateService().createFromPriorForTermination(
+        aliceAgent.context,
+        aliceDid,
+        bobDid()
+      )
 
       const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
       try {
@@ -1185,7 +1196,7 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       await waitForBasicMessageSubject(aliceReplay, { content: 'ack' })
 
       const fromPrior = signAgain
-        ? await aliceRotateService().createFromPriorForRotation(aliceAgent.context, oldAliceDid, newDid)
+        ? await aliceRotateService().createFromPriorForRotation(aliceAgent.context, oldAliceDid, newDid, bobDid())
         : rotationJwt
       const message = await anoncryptToBob({
         type: DidCommBasicMessageV2.type.messageTypeUri,
@@ -1240,7 +1251,11 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     test('a termination sent over authcrypt from the current peer DID is applied and the message is processed', async () => {
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const aliceDid = aliceBobConnection!.did!
-      const termination = await aliceRotateService().createFromPriorForTermination(aliceAgent.context, aliceDid)
+      const termination = await aliceRotateService().createFromPriorForTermination(
+        aliceAgent.context,
+        aliceDid,
+        bobDid()
+      )
 
       await receiveOnBob(await sendBasicMessageAs(aliceDid, termination, 'goodbye'))
 
@@ -1248,6 +1263,112 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       expect(bobAfter.theirDid).toBeUndefined()
       expect(bobAfter.previousTheirDids).toContain(aliceDid)
       expect(await bobContents()).toContain('goodbye')
+    })
+
+    test('a termination whose aud is another peer is dropped and changes nothing', async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const otherPeer = await createAliceDid()
+      const termination = await aliceRotateService().createFromPriorForTermination(
+        aliceAgent.context,
+        aliceDid,
+        otherPeer
+      )
+      const message = await anoncryptToBob({
+        type: DidCommBasicMessageV2.type.messageTypeUri,
+        from_prior: termination,
+        created_time: Math.floor(Date.now() / 1000),
+        body: { content: 'replayed termination' },
+      })
+
+      const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
+      try {
+        await receiveOnBob(message)
+        expect(dispatch).not.toHaveBeenCalled()
+      } finally {
+        dispatch.mockRestore()
+      }
+
+      expect((await getBobConnection()).theirDid).toEqual(aliceDid)
+      expect(await bobContents()).not.toContain('replayed termination')
+    })
+
+    test('a termination whose aud is a DID we rotated away from is applied', async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const bobDidBeforeRotation = bobDid()
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await bobAgent.didcomm.connections.rotate({ connectionId: bobAliceConnection!.id })
+      const termination = await aliceRotateService().createFromPriorForTermination(
+        aliceAgent.context,
+        aliceDid,
+        bobDidBeforeRotation
+      )
+      const message = await anoncryptToBob({
+        type: DidCommEmptyMessage.type.messageTypeUri,
+        from_prior: termination,
+        created_time: Math.floor(Date.now() / 1000),
+        body: {},
+      })
+
+      await receiveOnBob(message)
+
+      expect((await getBobConnection()).theirDid).toBeUndefined()
+    })
+
+    test('a rotation whose aud is another peer is dropped and changes nothing', async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const newDid = await createAliceDid()
+      const jwt = await aliceRotateService().createFromPriorForRotation(
+        aliceAgent.context,
+        aliceDid,
+        newDid,
+        await createAliceDid()
+      )
+
+      await receiveOnBob(await sendBasicMessageAs(newDid, jwt, 'misdirected rotation'))
+
+      expect((await getBobConnection()).theirDid).toEqual(aliceDid)
+      expect(await bobContents()).not.toContain('misdirected rotation')
+    })
+
+    test.each([
+      ['before the connection existed', -60 * 60],
+      ['in the future', 60 * 60],
+    ])('a termination issued %s is dropped and changes nothing', async (_, offsetSeconds) => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const { didDocument, keys } = await aliceAgent.dids.resolveCreatedDidDocumentWithKeys(aliceDid)
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const authRef = didDocument.authentication![0]
+      const vm = typeof authRef === 'string' ? didDocument.dereferenceKey(authRef, ['authentication']) : authRef
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const kmsKeyId = keys!.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))!.kmsKeyId
+      const termination = await aliceAgent.dependencyManager.resolve(JwsService).createJwsCompact(aliceAgent.context, {
+        keyId: kmsKeyId,
+        payload: JwtPayload.fromJson({
+          iss: aliceDid,
+          iat: Math.floor(Date.now() / 1000) + offsetSeconds,
+          aud: bobDid(),
+        }),
+        protectedHeaderOptions: {
+          alg: getPublicJwkFromVerificationMethod(vm).signatureAlgorithm,
+          kid: toAbsoluteDidUrl(aliceDid, vm.id),
+          typ: 'JWT',
+        },
+      })
+      const message = await anoncryptToBob({
+        type: DidCommBasicMessageV2.type.messageTypeUri,
+        from_prior: termination,
+        created_time: Math.floor(Date.now() / 1000),
+        body: { content: 'stale termination' },
+      })
+
+      await receiveOnBob(message)
+
+      expect((await getBobConnection()).theirDid).toEqual(aliceDid)
+      expect(await bobContents()).not.toContain('stale termination')
     })
 
     describe('from_prior JWT shape', () => {
@@ -1286,14 +1407,20 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
 
       test('rejects a JWT with a claim the spec does not define', async () => {
         await expect(verifyOnBob(await signAsAlice({ vct: 'https://example.com/vct' }, 'JWT'))).rejects.toThrow(
-          /claims other than iss, sub and iat: vct/
+          /claims other than iss, sub, iat and aud: vct/
         )
       })
 
-      test('rejects a JWT with a registered claim the spec does not define', async () => {
-        await expect(verifyOnBob(await signAsAlice({ aud: 'https://example.com' }))).rejects.toThrow(
-          /claims other than iss, sub and iat: aud/
+      test('rejects a JWT with a registered claim other than aud', async () => {
+        await expect(verifyOnBob(await signAsAlice({ jti: 'a1b2' }))).rejects.toThrow(
+          /claims other than iss, sub, iat and aud: jti/
         )
+      })
+
+      test('accepts a JWT with an aud and returns it', async () => {
+        await expect(verifyOnBob(await signAsAlice({ aud: 'did:example:bob' }))).resolves.toMatchObject({
+          aud: 'did:example:bob',
+        })
       })
     })
 
@@ -1303,7 +1430,8 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       const jwt = await aliceRotateService().createFromPriorForRotation(
         aliceAgent.context,
         aliceDid,
-        null as unknown as string
+        null as unknown as string,
+        bobDid()
       )
       expect(JsonEncoder.fromBase64Url(jwt.split('.')[1]).sub).toBeNull()
 
@@ -1316,11 +1444,16 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     test('a from_prior with a bad signature drops the message and changes nothing', async () => {
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const aliceDid = aliceBobConnection!.did!
-      const termination = await aliceRotateService().createFromPriorForTermination(aliceAgent.context, aliceDid)
+      const termination = await aliceRotateService().createFromPriorForTermination(
+        aliceAgent.context,
+        aliceDid,
+        bobDid()
+      )
       const rotation = await aliceRotateService().createFromPriorForRotation(
         aliceAgent.context,
         aliceDid,
-        await createAliceDid()
+        await createAliceDid(),
+        bobDid()
       )
       const [header, payload] = termination.split('.')
       const badSignature = `${header}.${payload}.${rotation.split('.')[2]}`
@@ -1338,7 +1471,7 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const aliceDid = aliceBobConnection!.did!
       const foreignDid = await createAliceDid()
-      const jwt = await aliceRotateService().createFromPriorForTermination(aliceAgent.context, foreignDid)
+      const jwt = await aliceRotateService().createFromPriorForTermination(aliceAgent.context, foreignDid, bobDid())
       const verified = await bobAgent.dependencyManager
         .resolve(DidCommDidRotateV2Service)
         .verifyFromPrior(bobAgent.context, jwt)
@@ -1356,7 +1489,12 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       const newDid = await rotateAlice()
 
       const otherDid = await createAliceDid()
-      const jwt = await aliceRotateService().createFromPriorForRotation(aliceAgent.context, oldAliceDid, otherDid)
+      const jwt = await aliceRotateService().createFromPriorForRotation(
+        aliceAgent.context,
+        oldAliceDid,
+        otherDid,
+        bobDid()
+      )
       await receiveOnBob(await sendBasicMessageAs(otherDid, jwt, 'rollback'))
 
       expect((await getBobConnection()).theirDid).toEqual(newDid)
@@ -1375,7 +1513,12 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       await terminated
 
       const otherDid = await createAliceDid()
-      const jwt = await aliceRotateService().createFromPriorForRotation(aliceAgent.context, aliceDid, otherDid)
+      const jwt = await aliceRotateService().createFromPriorForRotation(
+        aliceAgent.context,
+        aliceDid,
+        otherDid,
+        bobDid()
+      )
       await receiveOnBob(await sendBasicMessageAs(otherDid, jwt, 'revive'))
 
       expect((await getBobConnection()).theirDid).toBeUndefined()

@@ -38,12 +38,18 @@ import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMe
 import { DidCommConnectionService } from './DidCommConnectionService'
 import { addSharedDid, createPeerDidForV2OOB, toAbsoluteDidUrl } from './helpers'
 
-const FROM_PRIOR_CLAIMS = ['iss', 'sub', 'iat']
+// The spec defines iss, sub and iat. aud is a registered JWT claim that binds the JWT to one peer, so a
+// termination, which travels anoncrypt and cannot be authenticated, cannot be replayed to another peer of the DID.
+const FROM_PRIOR_CLAIMS = ['iss', 'sub', 'iat', 'aud']
+
+// A clock difference between the two agents that the iat check of a termination tolerates
+const FROM_PRIOR_IAT_LEEWAY_MS = 5 * 60 * 1000
 
 export interface FromPriorPayload {
   iss: string
   sub?: string
   iat: number
+  aud?: string | string[]
 }
 
 /**
@@ -115,7 +121,10 @@ export class DidCommDidRotateV2Service {
       mediatorId = routing.mediatorId
     }
 
-    const fromPriorJwt = await this.createFromPriorForRotation(agentContext, priorDid, newDid)
+    if (!connection.theirDid) {
+      throw new CredoError(`Cannot rotate connection '${connection.id}': the peer has ended the relationship`)
+    }
+    const fromPriorJwt = await this.createFromPriorForRotation(agentContext, priorDid, newDid, connection.theirDid)
 
     connection.previousDids = [...connection.previousDids, priorDid]
     connection.did = newDid
@@ -195,6 +204,14 @@ export class DidCommDidRotateV2Service {
       return 'ignored'
     }
 
+    if (payload.aud !== undefined && !this.isAudience(connection, payload.aud)) {
+      this.logger.warn("Ignoring from_prior whose 'aud' is not our DID on the connection", {
+        connectionId: connection.id,
+        aud: payload.aud,
+      })
+      return 'ignored'
+    }
+
     if (payload.sub === undefined) {
       // A termination travels anoncrypt or authcrypt from the DID it ends; carried by another DID it is a replay
       if (senderDid && !areEquivalentDidPeer4Forms(payload.iss, senderDid)) {
@@ -202,6 +219,20 @@ export class DidCommDidRotateV2Service {
           connectionId: connection.id,
           iss: payload.iss,
           senderDid,
+        })
+        return 'ignored'
+      }
+      // A termination has no authenticated sender, so one issued before this relationship began, or in the
+      // future, cannot be meant for it and is a replay from another relationship of the DID
+      const iatMs = payload.iat * 1000
+      if (
+        iatMs > Date.now() + FROM_PRIOR_IAT_LEEWAY_MS ||
+        iatMs < connection.createdAt.getTime() - FROM_PRIOR_IAT_LEEWAY_MS
+      ) {
+        this.logger.warn("Ignoring termination from_prior whose 'iat' is outside the lifetime of the connection", {
+          connectionId: connection.id,
+          iat: payload.iat,
+          connectionCreatedAt: connection.createdAt,
         })
         return 'ignored'
       }
@@ -220,6 +251,13 @@ export class DidCommDidRotateV2Service {
 
     await this.processRotateFromPeer(agentContext, connection, payload.iss, payload.sub)
     return 'applied'
+  }
+
+  private isAudience(connection: DidCommConnectionRecord, aud: string | string[]): boolean {
+    // Our DID may have rotated after the peer issued the JWT, so every DID we have used on the connection counts
+    const ourDids = [connection.did, ...connection.previousDids].filter((did): did is string => did !== undefined)
+    const audiences = Array.isArray(aud) ? aud : [aud]
+    return audiences.some((audience) => ourDids.some((did) => areEquivalentDidPeer4Forms(did, audience)))
   }
 
   private isAppliedFromPrior(connection: DidCommConnectionRecord, { iss, sub }: FromPriorPayload): boolean {
@@ -326,7 +364,7 @@ export class DidCommDidRotateV2Service {
       throw new CredoError(`Cannot send v2 termination signal: connection '${connection.id}' missing did or theirDid`)
     }
 
-    const fromPriorJwt = await this.createFromPriorForTermination(agentContext, connection.did)
+    const fromPriorJwt = await this.createFromPriorForTermination(agentContext, connection.did, connection.theirDid)
 
     const documentService = agentContext.dependencyManager.resolve(DidCommDocumentService)
     const services = await documentService.resolveServicesFromDid(agentContext, connection.theirDid)
@@ -405,20 +443,25 @@ export class DidCommDidRotateV2Service {
   public async createFromPriorForRotation(
     agentContext: AgentContext,
     priorDid: string,
-    newDid: string
+    newDid: string,
+    audienceDid: string
   ): Promise<string> {
-    return this.createFromPrior(agentContext, priorDid, newDid)
+    return this.createFromPrior(agentContext, priorDid, newDid, audienceDid)
   }
 
   /**
    * Build a `from_prior` JWT that signals termination of the relationship.
    *
    * @see https://identity.foundation/didcomm-messaging/spec/v2.1/#ending-a-relationship
-   * Payload contains `iss` (prior DID) and `iat`; `sub` is omitted to indicate
+   * Payload contains `iss` (prior DID), `iat` and `aud` (the peer); `sub` is omitted to indicate
    * rotation to nothing. Signed by an authentication key authorized by `priorDid`.
    */
-  public async createFromPriorForTermination(agentContext: AgentContext, priorDid: string): Promise<string> {
-    return this.createFromPrior(agentContext, priorDid, undefined)
+  public async createFromPriorForTermination(
+    agentContext: AgentContext,
+    priorDid: string,
+    audienceDid: string
+  ): Promise<string> {
+    return this.createFromPrior(agentContext, priorDid, undefined, audienceDid)
   }
 
   /**
@@ -464,10 +507,10 @@ export class DidCommDidRotateV2Service {
     if (typ !== undefined && typ !== 'JWT') {
       throw new CredoError(`from_prior JWT has typ '${typ}', expected 'JWT'`)
     }
-    // The spec defines only these claims, so any other one is another kind of JWT or an extension we cannot interpret
+    // Any other claim makes it another kind of JWT or an extension we cannot interpret
     const unknownClaims = Object.keys(payload.toJson()).filter((claim) => !FROM_PRIOR_CLAIMS.includes(claim))
     if (unknownClaims.length > 0) {
-      throw new CredoError(`from_prior JWT has claims other than iss, sub and iat: ${unknownClaims.join(', ')}`)
+      throw new CredoError(`from_prior JWT has claims other than iss, sub, iat and aud: ${unknownClaims.join(', ')}`)
     }
 
     if (typeof payload.iss !== 'string') throw new CredoError("from_prior JWT missing 'iss'")
@@ -475,14 +518,15 @@ export class DidCommDidRotateV2Service {
     if (payload.sub !== undefined && typeof payload.sub !== 'string') {
       throw new CredoError("from_prior JWT 'sub' must be a string if present")
     }
-
-    return { iss: payload.iss, sub: payload.sub, iat: payload.iat }
+    // JwtPayload already requires aud to be a string or an array of strings
+    return { iss: payload.iss, sub: payload.sub, iat: payload.iat, aud: payload.aud }
   }
 
   private async createFromPrior(
     agentContext: AgentContext,
     priorDid: string,
-    newDid: string | undefined
+    newDid: string | undefined,
+    audienceDid: string
   ): Promise<string> {
     const dids = agentContext.dependencyManager.resolve(DidsApi)
     const { didDocument, keys } = await dids.resolveCreatedDidDocumentWithKeys(priorDid)
@@ -497,6 +541,7 @@ export class DidCommDidRotateV2Service {
       iss: priorDid,
       sub: newDid,
       iat: Math.floor(Date.now() / 1000),
+      aud: audienceDid,
     })
 
     return this.jwsService.createJwsCompact(agentContext, {
