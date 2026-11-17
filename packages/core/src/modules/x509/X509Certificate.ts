@@ -1,5 +1,5 @@
-import { AsnParser } from '@peculiar/asn1-schema'
-import { SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
+import { AsnConvert, AsnParser } from '@peculiar/asn1-schema'
+import { Certificate, type Extension, SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
@@ -51,15 +51,20 @@ export enum X509ExtendedKeyUsage {
 export type X509CertificateOptions = {
   publicJwk: PublicJwk
   x509Certificate: x509.X509Certificate
+  parseOptions?: X509ParseOptions
 }
 
 export class X509Certificate {
   public publicJwk: PublicJwk
   private x509Certificate: x509.X509Certificate
+  private parseOptions?: X509ParseOptions
+  private asnExtensions?: Extension[]
+  private decodedExtensions = new Map<string, x509.Extension[]>()
 
   private constructor(options: X509CertificateOptions) {
     this.publicJwk = options.publicJwk
     this.x509Certificate = options.x509Certificate
+    this.parseOptions = options.parseOptions
   }
 
   public set keyId(keyId: string) {
@@ -97,6 +102,7 @@ export class X509Certificate {
     return new X509Certificate({
       publicJwk: this.publicJwk.clone(),
       x509Certificate: this.x509Certificate,
+      parseOptions: this.parseOptions,
     })
   }
 
@@ -108,11 +114,28 @@ export class X509Certificate {
     return new X509Certificate({
       publicJwk,
       x509Certificate: certificate,
+      parseOptions,
     })
   }
 
+  // Undecoded, as peculiar's `extensions` getter fails for all of them when one doesn't decode
+  private getAsnExtensions() {
+    this.asnExtensions ??=
+      AsnParser.parse(this.x509Certificate.rawData, Certificate, { berOptions: this.parseOptions }).tbsCertificate
+        .extensions ?? []
+    return this.asnExtensions
+  }
+
   private getMatchingExtensions<T = { critical: boolean }>(objectIdentifier: string): Array<T> | undefined {
-    return this.x509Certificate.extensions.filter((e) => e.type === objectIdentifier) as Array<T> | undefined
+    let decoded = this.decodedExtensions.get(objectIdentifier)
+    if (!decoded) {
+      decoded = this.getAsnExtensions()
+        .filter((e) => e.extnID === objectIdentifier)
+        .map((e) => x509.ExtensionFactory.create(AsnConvert.serialize(e), { berOptions: this.parseOptions }))
+      this.decodedExtensions.set(objectIdentifier, decoded)
+    }
+
+    return decoded as Array<T>
   }
 
   public get rawCertificate() {
@@ -318,12 +341,12 @@ export class X509Certificate {
   }
 
   public hasExtension(id: X509ExtensionIdentifier | string): boolean {
-    return this.x509Certificate.extensions.some((extension) => extension.type === id)
+    return this.getAsnExtensions().some((extension) => extension.extnID === id)
   }
 
   public isExtensionCritical(id: X509ExtensionIdentifier | string): boolean {
     const extension = this.getMatchingExtensions(id)
-    if (!extension) {
+    if (!extension?.length) {
       throw new X509Error(`extension with id '${id}' is not found`)
     }
 
