@@ -78,7 +78,7 @@ const DCQL_PRESENTATION = 'didcomm/dcql-presentation@v1.0'
 
 const AUDIENCE_PREFIX = 'didcomm:'
 const NONCE_PATTERN = /^[A-Za-z0-9\-._~]+$/
-const MAX_PRESENTATION_AGE_SECONDS = 300
+const DEFAULT_MAX_PRESENTATION_AGE_SECONDS = 300
 
 const SUPPORTED_CREDENTIAL_FORMATS = ['dc+sd-jwt', 'vc+sd-jwt']
 const DCQL_LIBRARY_FORMATS = ['mso_mdoc', 'dc+sd-jwt', 'vc+sd-jwt', 'jwt_vc_json', 'ldp_vc']
@@ -176,9 +176,19 @@ async function getCreatedSignerDids(agentContext: AgentContext, credentials: unk
   return createdDids.flat()
 }
 
+export interface DidCommDcqlProofFormatServiceOptions {
+  /** How old, in seconds, a KB-JWT or `vp+sd-jwt` `iat` may be. `validitySkewSeconds` is added on top. Defaults to 300. */
+  maxPresentationAgeSeconds?: number
+}
+
 export class DidCommDcqlProofFormatService implements DidCommProofFormatService<DidCommDcqlProofFormat> {
   public readonly formatKey = 'dcql' as const
   private hasLoggedExperimentalWarning = false
+  private readonly maxPresentationAgeSeconds: number
+
+  public constructor(options: DidCommDcqlProofFormatServiceOptions = {}) {
+    this.maxPresentationAgeSeconds = options.maxPresentationAgeSeconds ?? DEFAULT_MAX_PRESENTATION_AGE_SECONDS
+  }
 
   public supportsFormat(formatIdentifier: string): boolean {
     return formatIdentifier === DCQL_REQUEST || formatIdentifier === DCQL_PRESENTATION
@@ -812,6 +822,11 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
     }
   }
 
+  // Not W3cV2CredentialService.verifyPresentation: RFC 0882 binds through `cnf` only, and core resolves the signer
+  // through a DID (fails a `cnf.jwk` signer) and requires it to be a `credentialSubject.id`. Core also accepts what the
+  // RFC rejects: a missing `typ`, several entries, a KB-JWT on the enveloped credential, an array `aud`, a selectively
+  // disclosable `nonce`, a stale `iat`, a missing `cnf`, a header `kid` other than `cnf.kid` and an unchecked
+  // `credentialStatus`. Its flat result also can't reject the whole response on a wrong `nonce` or `aud` (step 6).
   private async verifyW3cV2SdJwt(
     agentContext: AgentContext,
     credentialQuery: DcqlCredentialQuery,
@@ -975,7 +990,11 @@ export class DidCommDcqlProofFormatService implements DidCommProofFormatService<
   private assertFreshIssuedAt(agentContext: AgentContext, issuedAt: unknown): void {
     const now = Math.floor(Date.now() / 1000)
     const skew = agentContext.config.validitySkewSeconds
-    if (typeof issuedAt !== 'number' || issuedAt > now + skew || issuedAt < now - MAX_PRESENTATION_AGE_SECONDS - skew) {
+    if (
+      typeof issuedAt !== 'number' ||
+      issuedAt > now + skew ||
+      issuedAt < now - this.maxPresentationAgeSeconds - skew
+    ) {
       throw new CredoError(`Presentation 'iat' ${issuedAt} is outside the accepted window`)
     }
   }

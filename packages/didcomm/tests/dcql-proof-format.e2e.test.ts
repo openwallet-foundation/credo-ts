@@ -877,7 +877,7 @@ describe('DCQL proof format over a DIDComm connection', () => {
   const sendHandSignedPresentation = async (
     credential: W3cV2SdJwtVerifiableCredential,
     type: string,
-    { holder, kid, publicJwk }: { holder?: string; kid?: string; publicJwk: Kms.PublicJwk }
+    { holder, kid, publicJwk, iat }: { holder?: string; kid?: string; publicJwk: Kms.PublicJwk; iat?: number }
   ): Promise<{ kid?: string; holderRecord: DidCommProofExchangeRecord }> => {
     // The prover only selects a credential it can sign for, the hand-signed presentation replaces it
     await storeW3cV2SdJwt(type, { id: holderKdv.did })
@@ -894,7 +894,7 @@ describe('DCQL proof format over a DIDComm connection', () => {
     const jws = await holderAgent.dependencyManager.resolve(JwsService).createJwsCompact(holderAgent.context, {
       payload: new JwtPayload({
         aud: request.audience,
-        iat: Math.floor(Date.now() / 1000),
+        iat: iat ?? Math.floor(Date.now() / 1000),
         additionalClaims: {
           ...JsonTransformer.toJSON(
             new W3cV2Presentation({
@@ -975,6 +975,23 @@ describe('DCQL proof format over a DIDComm connection', () => {
     )
     expect(kid).toBe(`${didJwk}#0`)
     expect(errorMessage).toContain("vp+sd-jwt header 'kid' must be the credential 'cnf.kid'")
+  })
+
+  test("verifier rejects a vp+sd-jwt whose 'iat' is older than the accepted window", async () => {
+    const credential = await storeW3cV2SdJwt('ExampleStaleCredential', { id: holderKdv.did })
+    const { publicJwk } = await holderAgent.dids.resolveVerificationMethodFromCreatedDidRecord(holderKdv.kid)
+    const { holderRecord } = await sendHandSignedPresentation(credential, 'ExampleStaleCredential', {
+      holder: holderKdv.did,
+      kid: holderKdv.kid,
+      publicJwk,
+      iat: Math.floor(Date.now() / 1000) - 600,
+    })
+
+    const abandonedRecord = await waitForProofExchangeRecordSubject(verifierReplay, {
+      threadId: holderRecord.threadId,
+      state: DidCommProofState.Abandoned,
+    })
+    expect(abandonedRecord.errorMessage).toContain('is outside the accepted window')
   })
 
   test("verifier rejects a vc+sd-jwt whose 'credentialStatus' it cannot check", async () => {
