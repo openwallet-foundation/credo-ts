@@ -1,5 +1,6 @@
-import type { AnonCredsTestsAgent } from '../../anoncreds/tests/indyAnonCredsSetup'
-import { issueIndyAnonCredsCredential, setupAnonCredsTests } from '../../anoncreds/tests/indyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../../anoncreds/tests/anoncredsSetup'
+import { issueAnonCredsCredential, setupAnonCredsTests } from '../../anoncreds/tests/anoncredsSetup'
+import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { DidCommProofState } from '../../didcomm/src/modules/proofs'
 import { uuid } from '../src/utils/uuid'
 import type { EventReplaySubject } from './events'
@@ -27,17 +28,20 @@ describe('Present Proof Subprotocol', () => {
       issuerHolderConnectionId: faberConnectionId,
       holderIssuerConnectionId: aliceConnectionId,
     } = await setupAnonCredsTests({
+      issuerId: 'did:cheqd:mainnet:7BPMqYgYLQni258J8JPS8L',
+      registries: [new InMemoryAnonCredsRegistry()],
       issuerName: 'Faber agent',
       holderName: 'Alice agent',
       attributeNames: ['name', 'age'],
     }))
 
-    await issueIndyAnonCredsCredential({
+    await issueAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
       holderAgent: aliceAgent,
       holderReplay: aliceReplay,
       issuerHolderConnectionId: faberConnectionId,
+      revocationRegistryDefinitionId: null,
       offer: {
         attributes: [
           {

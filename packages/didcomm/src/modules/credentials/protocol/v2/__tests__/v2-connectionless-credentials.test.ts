@@ -2,8 +2,8 @@ import { ReplaySubject, Subject } from 'rxjs'
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
-import { getAnonCredsIndyModules } from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/anoncredsSetup'
+import { getAnonCredsModules } from '../../../../../../../anoncreds/tests/anoncredsSetup'
 import {
   anoncredsDefinitionFourAttributesNoRevocation,
   storePreCreatedAnonCredsDefinition,
@@ -26,7 +26,7 @@ const faberAgentOptions = getAgentOptions(
   'Faber connection-less Credentials V2',
   {},
   {},
-  getAnonCredsIndyModules({
+  getAnonCredsModules({
     extraDidCommConfig: {
       endpoints: ['rxjs:faber'],
     },
@@ -38,7 +38,7 @@ const aliceAgentOptions = getAgentOptions(
   'Alice connection-less Credentials V2',
   {},
   {},
-  getAnonCredsIndyModules({
+  getAnonCredsModules({
     extraDidCommConfig: {
       endpoints: ['rxjs:alice'],
     },

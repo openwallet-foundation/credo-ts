@@ -6,7 +6,6 @@ packages:
 
 allowBuilds:
   '@hyperledger/anoncreds-nodejs': true
-  '@hyperledger/indy-vdr-nodejs': true
   '@openwallet-foundation/askar-nodejs': true
   cbor-extract: true
   cpu-features: false
@@ -30,8 +29,6 @@ catalog:
   # End @cheqd/sdk-esm-supported dependency versions.
   '@hyperledger/anoncreds-nodejs': 0.5.0
   '@hyperledger/anoncreds-shared': ^0.4.1 || ^0.5.0
-  '@hyperledger/indy-vdr-nodejs': ^0.3.0
-  '@hyperledger/indy-vdr-shared': ^0.3.0
   '@openwallet-foundation/askar-nodejs': 0.7.0
   '@openwallet-foundation/askar-shared': ^0.4.3 || ^0.5.0 || ^0.6.0 || ^0.7.0
   '@panva/hpke-noble': ^1.1.8

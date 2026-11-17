@@ -1,17 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
 import { Hasher, utils } from '@credo-ts/core'
-import { isIndyDid, parseIndyDid } from '@credo-ts/indy-vdr'
-import {
-  getDidIndyCredentialDefinitionId,
-  getDidIndyRevocationRegistryDefinitionId,
-  getDidIndySchemaId,
-  isDidIndyCredentialDefinitionId,
-  isDidIndyRevocationRegistryId,
-  isDidIndySchemaId,
-  parseIndyCredentialDefinitionId,
-  parseIndyRevocationRegistryId,
-  parseIndySchemaId,
-} from '@credo-ts/indy-vdr/anoncreds'
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsRegistry,
@@ -31,6 +19,7 @@ import type {
   RegisterSchemaOptions,
   RegisterSchemaReturn,
 } from '../src'
+import { getIndyNamespaceFromIndyDid } from '../src/updates/0.4-0.5/unqualifiedIndyIdentifiers'
 import { bytesToBigint } from '../src/utils/bytesToBigint'
 import { dateToTimestamp } from '../src/utils/timestamp'
 
@@ -47,11 +36,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
   // shortcut: only percent-encodes spaces in did:indy ids, which is all the tests use
   public getIdentifierVariants(identifier: string) {
-    if (
-      !isDidIndySchemaId(identifier) &&
-      !isDidIndyCredentialDefinitionId(identifier) &&
-      !isDidIndyRevocationRegistryId(identifier)
-    ) {
+    if (!identifier.startsWith('did:indy:') || !identifier.includes('/anoncreds/v0/')) {
       return [identifier]
     }
 
@@ -95,7 +80,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
-    const didIndyNamespace = isDidIndySchemaId(schemaId) ? parseIndySchemaId(schemaId).namespace : undefined
+    const didIndyNamespace = schemaId.startsWith('did:indy:') ? getIndyNamespaceFromIndyDid(schemaId) : undefined
 
     return {
       resolutionMetadata: {},
@@ -112,9 +97,8 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     const issuerId = options.schema.issuerId
 
     let schemaId: string
-    if (isIndyDid(issuerId)) {
-      const { namespace, namespaceIdentifier } = parseIndyDid(issuerId)
-      schemaId = getDidIndySchemaId(namespace, namespaceIdentifier, options.schema.name, options.schema.version)
+    if (issuerId.startsWith('did:indy:')) {
+      schemaId = `${issuerId}/anoncreds/v0/SCHEMA/${options.schema.name}/${options.schema.version}`
     } else if (issuerId.startsWith('did:cheqd:')) {
       schemaId = `${issuerId}/resources/${utils.uuid()}`
     } else {
@@ -151,8 +135,8 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
-    const didIndyNamespace = isDidIndyCredentialDefinitionId(credentialDefinitionId)
-      ? parseIndyCredentialDefinitionId(credentialDefinitionId).namespace
+    const didIndyNamespace = credentialDefinitionId.startsWith('did:indy:')
+      ? getIndyNamespaceFromIndyDid(credentialDefinitionId)
       : undefined
 
     return {
@@ -170,16 +154,10 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     const schemaId = options.credentialDefinition.schemaId
 
     let credentialDefinitionId: string
-    if (isIndyDid(options.credentialDefinition.issuerId)) {
+    if (options.credentialDefinition.issuerId.startsWith('did:indy:')) {
       const indyLedgerSeqNo = getSeqNoFromSchemaId(schemaId)
 
-      const { namespace, namespaceIdentifier } = parseIndyDid(options.credentialDefinition.issuerId)
-      credentialDefinitionId = getDidIndyCredentialDefinitionId(
-        namespace,
-        namespaceIdentifier,
-        indyLedgerSeqNo,
-        options.credentialDefinition.tag
-      )
+      credentialDefinitionId = `${options.credentialDefinition.issuerId}/anoncreds/v0/CLAIM_DEF/${indyLedgerSeqNo}/${options.credentialDefinition.tag}`
     } else if (schemaId.startsWith('did:cheqd:')) {
       credentialDefinitionId = `${options.credentialDefinition.issuerId}/resources/${utils.uuid()}`
     } else {
@@ -215,8 +193,8 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
-    const didIndyNamespace = isDidIndyRevocationRegistryId(revocationRegistryDefinitionId)
-      ? parseIndyRevocationRegistryId(revocationRegistryDefinitionId).namespace
+    const didIndyNamespace = revocationRegistryDefinitionId.startsWith('did:indy:')
+      ? getIndyNamespaceFromIndyDid(revocationRegistryDefinitionId)
       : undefined
 
     return {
@@ -231,18 +209,12 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     _agentContext: AgentContext,
     options: RegisterRevocationRegistryDefinitionOptions
   ): Promise<RegisterRevocationRegistryDefinitionReturn> {
-    const { schemaSeqNo, tag: credentialDefinitionTag } = parseIndyCredentialDefinitionId(
-      options.revocationRegistryDefinition.credDefId
-    )
-    const { namespace, namespaceIdentifier } = parseIndyDid(options.revocationRegistryDefinition.issuerId)
-
-    const didIndyRevocationRegistryDefinitionId = getDidIndyRevocationRegistryDefinitionId(
-      namespace,
-      namespaceIdentifier,
-      schemaSeqNo,
-      credentialDefinitionTag,
-      options.revocationRegistryDefinition.tag
-    )
+    const credentialDefinitionPath = options.revocationRegistryDefinition.credDefId.split('/anoncreds/v0/CLAIM_DEF/')[1]
+    if (!credentialDefinitionPath) {
+      throw new Error(`Invalid credential definition id '${options.revocationRegistryDefinition.credDefId}'`)
+    }
+    const [schemaSeqNo, credentialDefinitionTag] = credentialDefinitionPath.split('/')
+    const didIndyRevocationRegistryDefinitionId = `${options.revocationRegistryDefinition.issuerId}/anoncreds/v0/REV_REG_DEF/${schemaSeqNo}/${credentialDefinitionTag}/${options.revocationRegistryDefinition.tag}`
 
     this.revocationRegistryDefinitions[didIndyRevocationRegistryDefinitionId] = options.revocationRegistryDefinition
 
