@@ -1076,6 +1076,28 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     const bobDid = () => aliceBobConnection!.theirDid!
 
+    // Signs any claims with the authentication key of Alice, as the service does for a from_prior
+    const signAsAlice = async (claims: Record<string, unknown>, typ?: string) => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const { didDocument, keys } = await aliceAgent.dids.resolveCreatedDidDocumentWithKeys(aliceDid)
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const authRef = didDocument.authentication![0]
+      const vm = typeof authRef === 'string' ? didDocument.dereferenceKey(authRef, ['authentication']) : authRef
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const kmsKeyId = keys!.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))!.kmsKeyId
+
+      return aliceAgent.dependencyManager.resolve(JwsService).createJwsCompact(aliceAgent.context, {
+        keyId: kmsKeyId,
+        payload: JwtPayload.fromJson({ iss: aliceDid, iat: Math.floor(Date.now() / 1000), ...claims }),
+        protectedHeaderOptions: {
+          alg: getPublicJwkFromVerificationMethod(vm).signatureAlgorithm,
+          kid: toAbsoluteDidUrl(aliceDid, vm.id),
+          ...(typ ? { typ } : {}),
+        },
+      })
+    }
+
     const rotateAlice = async (toDid?: string) => {
       // Bob emits the rotation event before it dispatches the message, so wait until the message is processed
       const rotated = waitForAgentMessageProcessedEventSubject(
@@ -1333,31 +1355,32 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       expect(await bobContents()).not.toContain('misdirected rotation')
     })
 
+    test('a termination without aud is dropped and changes nothing', async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const message = await anoncryptToBob({
+        type: DidCommBasicMessageV2.type.messageTypeUri,
+        from_prior: await signAsAlice({}, 'JWT'),
+        created_time: Math.floor(Date.now() / 1000),
+        body: { content: 'unbound termination' },
+      })
+
+      await receiveOnBob(message)
+
+      expect((await getBobConnection()).theirDid).toEqual(aliceDid)
+      expect(await bobContents()).not.toContain('unbound termination')
+    })
+
     test.each([
       ['before the connection existed', -60 * 60],
       ['in the future', 60 * 60],
     ])('a termination issued %s is dropped and changes nothing', async (_, offsetSeconds) => {
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const aliceDid = aliceBobConnection!.did!
-      const { didDocument, keys } = await aliceAgent.dids.resolveCreatedDidDocumentWithKeys(aliceDid)
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      const authRef = didDocument.authentication![0]
-      const vm = typeof authRef === 'string' ? didDocument.dereferenceKey(authRef, ['authentication']) : authRef
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      const kmsKeyId = keys!.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))!.kmsKeyId
-      const termination = await aliceAgent.dependencyManager.resolve(JwsService).createJwsCompact(aliceAgent.context, {
-        keyId: kmsKeyId,
-        payload: JwtPayload.fromJson({
-          iss: aliceDid,
-          iat: Math.floor(Date.now() / 1000) + offsetSeconds,
-          aud: bobDid(),
-        }),
-        protectedHeaderOptions: {
-          alg: getPublicJwkFromVerificationMethod(vm).signatureAlgorithm,
-          kid: toAbsoluteDidUrl(aliceDid, vm.id),
-          typ: 'JWT',
-        },
-      })
+      const termination = await signAsAlice(
+        { iat: Math.floor(Date.now() / 1000) + offsetSeconds, aud: bobDid() },
+        'JWT'
+      )
       const message = await anoncryptToBob({
         type: DidCommBasicMessageV2.type.messageTypeUri,
         from_prior: termination,
@@ -1372,27 +1395,6 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     })
 
     describe('from_prior JWT shape', () => {
-      // Signs any claims with the authentication key of Alice, as the service does for a from_prior
-      const signAsAlice = async (claims: Record<string, unknown>, typ?: string) => {
-        // biome-ignore lint/style/noNonNullAssertion: no explanation
-        const aliceDid = aliceBobConnection!.did!
-        const { didDocument, keys } = await aliceAgent.dids.resolveCreatedDidDocumentWithKeys(aliceDid)
-        // biome-ignore lint/style/noNonNullAssertion: no explanation
-        const authRef = didDocument.authentication![0]
-        const vm = typeof authRef === 'string' ? didDocument.dereferenceKey(authRef, ['authentication']) : authRef
-        // biome-ignore lint/style/noNonNullAssertion: no explanation
-        const kmsKeyId = keys!.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))!.kmsKeyId
-
-        return aliceAgent.dependencyManager.resolve(JwsService).createJwsCompact(aliceAgent.context, {
-          keyId: kmsKeyId,
-          payload: JwtPayload.fromJson({ iss: aliceDid, iat: Math.floor(Date.now() / 1000), ...claims }),
-          protectedHeaderOptions: {
-            alg: getPublicJwkFromVerificationMethod(vm).signatureAlgorithm,
-            kid: toAbsoluteDidUrl(aliceDid, vm.id),
-            ...(typ ? { typ } : {}),
-          },
-        })
-      }
       const verifyOnBob = (jwt: string) =>
         bobAgent.dependencyManager.resolve(DidCommDidRotateV2Service).verifyFromPrior(bobAgent.context, jwt)
 

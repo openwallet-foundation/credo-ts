@@ -222,6 +222,11 @@ export class DidCommDidRotateV2Service {
         })
         return 'ignored'
       }
+      // A termination cannot be authenticated, so without an audience nothing ties it to this relationship
+      if (payload.aud === undefined) {
+        this.logger.warn("Ignoring termination from_prior without 'aud'", { connectionId: connection.id })
+        return 'ignored'
+      }
       // A termination has no authenticated sender, so one issued before this relationship began, or in the
       // future, cannot be meant for it and is a replay from another relationship of the DID
       const iatMs = payload.iat * 1000
