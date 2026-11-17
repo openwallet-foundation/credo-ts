@@ -191,12 +191,6 @@ catalogs:
     '@hyperledger/anoncreds-nodejs':
       specifier: 0.5.0
       version: 0.5.0
-    '@hyperledger/indy-vdr-nodejs':
-      specifier: ^0.3.0
-      version: 0.3.0
-    '@hyperledger/indy-vdr-shared':
-      specifier: ^0.3.0
-      version: 0.3.0
     '@openwallet-foundation/askar-nodejs':
       specifier: 0.7.0
       version: 0.7.0
@@ -305,9 +299,6 @@ importers:
       '@credo-ts/hedera':
         specifier: workspace:*
         version: link:packages/hedera
-      '@credo-ts/indy-vdr':
-        specifier: workspace:*
-        version: link:packages/indy-vdr
       '@credo-ts/node':
         specifier: workspace:*
         version: link:packages/node
@@ -407,9 +398,6 @@ importers:
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
         version: 0.5.0
-      '@hyperledger/indy-vdr-nodejs':
-        specifier: 'catalog:'
-        version: 0.3.0
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
         version: 0.7.0
@@ -435,9 +423,6 @@ importers:
       '@credo-ts/hedera':
         specifier: workspace:*
         version: link:../packages/hedera
-      '@credo-ts/indy-vdr':
-        specifier: workspace:*
-        version: link:../packages/indy-vdr
       '@credo-ts/node':
         specifier: workspace:*
         version: link:../packages/node
@@ -462,9 +447,6 @@ importers:
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
         version: 0.5.0
-      '@hyperledger/indy-vdr-nodejs':
-        specifier: 'catalog:'
-        version: 0.3.0
       '@koa/bodyparser':
         specifier: ^6.1.0
         version: 6.1.0(koa@3.2.1)
@@ -951,31 +933,6 @@ importers:
       zstd-napi:
         specifier: ^0.0.13
         version: 0.0.13
-
-  packages/indy-vdr:
-    dependencies:
-      '@credo-ts/core':
-        specifier: workspace:*
-        version: link:../core
-    devDependencies:
-      '@credo-ts/anoncreds':
-        specifier: workspace:*
-        version: link:../anoncreds
-      '@hyperledger/indy-vdr-nodejs':
-        specifier: 'catalog:'
-        version: 0.3.0
-      '@hyperledger/indy-vdr-shared':
-        specifier: 'catalog:'
-        version: 0.3.0
-      '@stablelib/ed25519':
-        specifier: ^2.0.2
-        version: 2.1.0
-      rxjs:
-        specifier: 'catalog:'
-        version: 7.8.2
-      typescript:
-        specifier: 'catalog:'
-        version: '@typescript/typescript6@6.0.2'
 
   packages/node:
     dependencies:
@@ -2592,13 +2549,6 @@ packages:
 
   '@hyperledger/anoncreds-shared@0.5.0':
     resolution: {integrity: sha512-dduy1EqIYyxGC3/oTlrC7kqdAy0CJXpGklB8i4U4BMHjn91EvNvBmLLOwNvPqNIwaTDvpfJM4uY1933HvRPH1A==}
-
-  '@hyperledger/indy-vdr-nodejs@0.3.0':
-    resolution: {integrity: sha512-yx6hPlTXwirouAkMwaLmowU1mfBwRjTFQUQCH7Mgd4/C6Zp0taw/KUclhB83LpbjHBZiGsV/bILeLYD+HNpHfA==}
-    engines: {node: '>= 20'}
-
-  '@hyperledger/indy-vdr-shared@0.3.0':
-    resolution: {integrity: sha512-MMH/PwmjfKSH9X7nplYPgu8oMNHsbMZSaP6F+6xFzJDJKsJ15v/y9zwi4eiTDcMVmmRcDHfSep2uBR4FWkXxzQ==}
 
   '@inquirer/ansi@2.0.10':
     resolution: {integrity: sha512-dwrc+1aqVZpHNkNDswXGtn1typ+Pxpo5FHZRyBw1le7onEJUkPUkYOY1FIFC1LvFMYUqqLuWBwElhAmencL7MQ==}
@@ -5676,9 +5626,6 @@ packages:
   koa@3.2.1:
     resolution: {integrity: sha512-e7IpWJrnanNUroVK2taAgMxoEZvHLXdQiNjeExSu/DEIWm83jaKGBgb7tLmu2rMYpA027qFB3iLR/k3AVpFRnA==}
     engines: {node: '>= 18'}
-
-  koffi@2.16.3:
-    resolution: {integrity: sha512-E9y1AsgYGlaxMhcZzHr8y96QF2U5XzA12GGVAfbWqIubTwPNMXQarfBzePNXHe0xtIEtNd6ifAv3GAKYGUeBAQ==}
 
   koffi@3.3.7:
     resolution: {integrity: sha512-Vrq4UwAE19HPLMou8m7HGCELiTE3l9D+r1nA7XwVHUTNaRdymPM+kzkkD2VGxlyjI2qZTb9tMDaFn7kfZ72v3Q==}
@@ -9387,15 +9334,6 @@ snapshots:
     dependencies:
       tar: 7.5.23
 
-  '@hyperledger/indy-vdr-nodejs@0.3.0':
-    dependencies:
-      '@hyperledger/indy-vdr-shared': 0.3.0
-      koffi: 2.16.3
-
-  '@hyperledger/indy-vdr-shared@0.3.0':
-    dependencies:
-      tar: 7.5.23
-
   '@inquirer/ansi@2.0.10': {}
 
   '@inquirer/checkbox@5.2.8(@types/node@22.20.4)':
@@ -12459,8 +12397,6 @@ snapshots:
       statuses: 2.0.2
       type-is: 2.1.0
       vary: 1.1.2
-
-  koffi@2.16.3: {}
 
   koffi@3.3.7:
     optionalDependencies:

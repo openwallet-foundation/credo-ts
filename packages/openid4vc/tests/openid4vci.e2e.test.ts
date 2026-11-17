@@ -612,7 +612,9 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         ).json()) as AuthorizationServerMetadata
       ).dpop_signing_alg_values_supported
 
-    expect(await getDpopSigningAlgValuesSupported()).toEqual(issuerTenant.kms.supportedJwaSignatureAlgorithms())
+    expect(await getDpopSigningAlgValuesSupported()).toEqual(
+      issuerTenant.kms.supportedJwaSignatureAlgorithms({ operation: 'verify' })
+    )
 
     const issuerConfig = issuer.agent.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
     vi.spyOn(issuerConfig, 'dpopSigningAlgValuesSupported', 'get').mockReturnValue([

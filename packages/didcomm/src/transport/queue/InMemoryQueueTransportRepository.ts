@@ -57,13 +57,14 @@ export class InMemoryQueueTransportRepository implements DidCommQueueTransportRe
   }
 
   public takeFromQueue(agentContext: AgentContext, options: TakeFromQueueOptions): QueuedDidCommMessage[] {
-    const { connectionId, recipientDid, limit, deleteMessages } = options
+    const { connectionId, recipientDid, messageIds, limit, deleteMessages } = options
 
     let messages = this.messages.filter(
       (msg) =>
         msg.connectionId === connectionId &&
         msg.state === 'pending' &&
-        (recipientDid === undefined || msg.recipientDids.includes(recipientDid))
+        (recipientDid === undefined || msg.recipientDids.includes(recipientDid)) &&
+        (messageIds === undefined || messageIds.includes(msg.id))
     )
 
     const messagesToTake = limit ?? messages.length

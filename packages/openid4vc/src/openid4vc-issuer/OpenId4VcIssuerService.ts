@@ -993,7 +993,7 @@ export class OpenId4VcIssuerService {
       jwt: {
         proof_signing_alg_values_supported: agentContext
           .resolve(Kms.KeyManagementApi)
-          .supportedJwaSignatureAlgorithms(),
+          .supportedJwaSignatureAlgorithms({ operation: 'verify' }),
       },
     }
 
@@ -1642,7 +1642,7 @@ export class OpenId4VcIssuerService {
       dpop_signing_alg_values_supported:
         issuerRecord.dpopSigningAlgValuesSupported ??
         config.dpopSigningAlgValuesSupported ??
-        agentContext.resolve(Kms.KeyManagementApi).supportedJwaSignatureAlgorithms(),
+        agentContext.resolve(Kms.KeyManagementApi).supportedJwaSignatureAlgorithms({ operation: 'verify' }),
       authorization_response_iss_parameter_supported: true,
     } satisfies AuthorizationServerMetadata
 

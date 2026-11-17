@@ -3,7 +3,6 @@
 '@credo-ts/didcomm': minor
 '@credo-ts/openid4vc': minor
 '@credo-ts/cheqd': patch
-'@credo-ts/indy-vdr': patch
 '@credo-ts/hedera': patch
 '@credo-ts/webvh': patch
 ---

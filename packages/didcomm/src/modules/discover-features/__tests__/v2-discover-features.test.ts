@@ -53,7 +53,7 @@ describe('v2 discover features', () => {
     await aliceAgent.shutdown()
   })
 
-  test('Faber asks Alice for issue credential protocol support', async () => {
+  test('Faber asks Alice for revocation notification protocol support', async () => {
     const faberReplay = new ReplaySubject<DidCommDiscoverFeaturesDisclosureReceivedEvent>()
     const aliceReplay = new ReplaySubject<DidCommDiscoverFeaturesQueryReceivedEvent>()
 
@@ -82,10 +82,7 @@ describe('v2 discover features', () => {
 
     expect(disclosure).toMatchObject({
       protocolVersion: 'v2',
-      disclosures: [
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/1.0', roles: ['holder'] },
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/2.0', roles: ['holder'] },
-      ],
+      disclosures: [],
     })
   })
 
@@ -217,7 +214,7 @@ describe('v2 discover features', () => {
     })
   })
 
-  test('Faber asks Alice for issue credential protocol support synchronously', async () => {
+  test('Faber asks Alice for revocation notification protocol support synchronously', async () => {
     const matchingFeatures = await faberAgent.didcomm.discovery.queryFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v2',
@@ -226,10 +223,7 @@ describe('v2 discover features', () => {
     })
 
     expect(matchingFeatures).toMatchObject({
-      features: [
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/1.0', roles: ['holder'] },
-        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/2.0', roles: ['holder'] },
-      ],
+      features: [],
     })
   })
 })

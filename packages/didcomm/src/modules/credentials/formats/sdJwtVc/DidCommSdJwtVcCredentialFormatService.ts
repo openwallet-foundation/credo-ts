@@ -1,31 +1,26 @@
-import type { AgentContext, JwsDetachedFormat, SdJwtVcHolderBinding } from '@credo-ts/core'
+import type { AgentContext, SdJwtVcHolderBinding } from '@credo-ts/core'
 import {
   CredoError,
-  DidsApi,
   deepEquality,
   isJsonObject,
-  JsonEncoder,
   JsonTransformer,
-  Kms,
   SdJwtVcApi,
   SdJwtVcRecord,
-  TypedArrayEncoder,
   tryParseDid,
 } from '@credo-ts/core'
 import type { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
 import { DidCommCredentialFormatSpec } from '../../models/DidCommCredentialFormatSpec'
 import { DidCommCredentialProblemReportReason } from '../../models/DidCommCredentialProblemReportReason'
 import { V2CredentialProblemReportError } from '../../protocol/v2/errors'
-import { DidCommOfferCredentialV2Message } from '../../protocol/v2/messages/DidCommOfferCredentialV2Message'
 import type { DidCommCredentialExchangeRecord } from '../../repository/DidCommCredentialExchangeRecord'
-import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../../util/didCommSignedAttachment'
 import {
-  DidCommSignedAttachmentBindingMethods,
-  type DidCommSignedAttachmentCredentialRequestBindingProof,
-  DidCommSignedAttachmentOfferBindingMethod,
-} from '../../util/didCommSignedAttachmentBinding'
-import { getFormatDataAttachment } from '../../util/formatData'
+  createDidCommSignedAttachment,
+  createDidCommSignedAttachmentBindingMethods,
+  verifyCnfMatchesDidCommSignedAttachmentBindingProof,
+  verifyDidCommSignedAttachmentBindingProof,
+} from '../../util/didCommSignedAttachment'
+import type { DidCommSignedAttachmentCredentialRequestBindingProof } from '../../util/didCommSignedAttachmentBinding'
+import { findSentOfferAttachment, getFormatDataAttachment } from '../../util/formatData'
 import { getIssuerVerificationMethod } from '../../util/verificationMethod'
 import type { DidCommCredentialFormatService } from '../DidCommCredentialFormatService'
 import type {
@@ -249,27 +244,9 @@ export class DidCommSdJwtVcCredentialFormatService
 
     const { credential, bindingRequired, selectivelyDisclosableClaims, didCommSignedAttachmentBinding } = sdJwtVcFormat
 
-    let bindingMethod: DidCommSignedAttachmentBindingMethods | undefined
-    if (didCommSignedAttachmentBinding) {
-      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-      const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-
-      const algsSupported = didCommSignedAttachmentBinding.algsSupported ?? kms.supportedJwaSignatureAlgorithms()
-      const didMethodsSupported = didCommSignedAttachmentBinding.didMethodsSupported ?? didsApi.supportedResolverMethods
-      const { jwkSupported } = didCommSignedAttachmentBinding
-
-      if (algsSupported.length === 0) throw new CredoError('No supported JWA signature algorithms found.')
-      if (didMethodsSupported.length === 0 && !jwkSupported) throw new CredoError('No supported DID methods found.')
-
-      bindingMethod = new DidCommSignedAttachmentBindingMethods({
-        didcommSignedAttachment: new DidCommSignedAttachmentOfferBindingMethod({
-          algsSupported,
-          didMethodsSupported,
-          jwkSupported,
-          nonce: TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 })),
-        }),
-      })
-    }
+    const bindingMethod =
+      didCommSignedAttachmentBinding &&
+      createDidCommSignedAttachmentBindingMethods(agentContext, didCommSignedAttachmentBinding)
 
     const credentialOffer = new SdJwtVcCredentialOffer({
       bindingRequired,
@@ -377,15 +354,7 @@ export class DidCommSdJwtVcCredentialFormatService
     agentContext: AgentContext,
     { credentialExchangeRecord, attachment, requestAppendAttachments }: DidCommCredentialFormatProcessRequestOptions
   ): Promise<void> {
-    const offerMessage = await agentContext.dependencyManager
-      .resolve(DidCommMessageRepository)
-      .findAgentMessage(agentContext, {
-        associatedRecordId: credentialExchangeRecord.id,
-        messageClass: DidCommOfferCredentialV2Message,
-        role: DidCommMessageRole.Sender,
-      })
-    const offerFormat = offerMessage?.formats.find(({ format }) => format === DC_SD_JWT_OFFER)
-    const offerAttachment = offerFormat && offerMessage?.getOfferAttachmentById(offerFormat.attachmentId)
+    const offerAttachment = await findSentOfferAttachment(agentContext, credentialExchangeRecord.id, DC_SD_JWT_OFFER)
     if (!offerAttachment) {
       throw new V2CredentialProblemReportError(
         'A dc+sd-jwt credential request must answer a dc+sd-jwt credential offer in the same thread',
@@ -394,12 +363,13 @@ export class DidCommSdJwtVcCredentialFormatService
     }
 
     try {
-      await this.verifyBindingProof(
-        agentContext,
-        this.parseOffer(agentContext, offerAttachment),
-        attachment.getDataAsJson<SdJwtVcCredentialRequest>(),
-        requestAppendAttachments
-      )
+      const credentialOffer = this.parseOffer(agentContext, offerAttachment)
+      await verifyDidCommSignedAttachmentBindingProof(agentContext, {
+        bindingRequired: credentialOffer.bindingRequired,
+        bindingMethod: credentialOffer.bindingMethod,
+        bindingProof: attachment.getDataAsJson<SdJwtVcCredentialRequest>().binding_proof,
+        appendAttachments: requestAppendAttachments,
+      })
     } catch (error) {
       throw new V2CredentialProblemReportError(error.message, {
         problemCode: DidCommCredentialProblemReportReason.IssuanceAbandoned,
@@ -425,7 +395,12 @@ export class DidCommSdJwtVcCredentialFormatService
 
     let holder: SdJwtVcHolderBinding | undefined
     try {
-      holder = await this.verifyBindingProof(agentContext, credentialOffer, credentialRequest, requestAppendAttachments)
+      holder = await verifyDidCommSignedAttachmentBindingProof(agentContext, {
+        bindingRequired: credentialOffer.bindingRequired,
+        bindingMethod: credentialOffer.bindingMethod,
+        bindingProof: credentialRequest.binding_proof,
+        appendAttachments: requestAppendAttachments,
+      })
     } catch (error) {
       throw new V2CredentialProblemReportError(error.message, {
         problemCode: DidCommCredentialProblemReportReason.IssuanceAbandoned,
@@ -603,73 +578,21 @@ export class DidCommSdJwtVcCredentialFormatService
     )
   }
 
-  private async verifyBindingProof(
-    agentContext: AgentContext,
-    credentialOffer: SdJwtVcCredentialOffer,
-    credentialRequest: SdJwtVcCredentialRequest,
-    requestAppendAttachments?: DidCommAttachment[]
-  ): Promise<SdJwtVcHolderBinding | undefined> {
-    const bindingProof = credentialRequest.binding_proof?.didcomm_signed_attachment
-    if (!bindingProof) {
-      if (credentialOffer.bindingRequired) throw new CredoError('Binding is required but no binding proof was provided')
-      return undefined
-    }
-
-    const bindingMethod = credentialOffer.bindingMethod?.didcommSignedAttachment
-    if (!bindingMethod) throw new CredoError('Cannot issue credential with a binding method that was not offered')
-
-    const signedAttachment = requestAppendAttachments?.find(({ id }) => id === bindingProof.attachment_id)
-    if (!signedAttachment) throw new CredoError('Missing binding proof attachment')
-
-    const { nonce, kid, publicJwk } = await verifyDidCommSignedAttachment(agentContext, signedAttachment, {
-      algsSupported: bindingMethod.algsSupported,
-      allowedPurposes: ['authentication'],
-      didMethodsSupported: bindingMethod.didMethodsSupported,
-      // Applies the RFC 0884 `jwk` header rules even when the offer has no `jwk_supported`
-      jwkSupported: true,
-    })
-    if (nonce !== bindingMethod.nonce) throw new CredoError('Invalid nonce in signed attachment')
-    if (!kid && !bindingMethod.jwkSupported) throw new CredoError("The offer does not accept a 'jwk' binding proof")
-
-    return kid ? { method: 'did', didUrl: kid } : { method: 'jwk', jwk: publicJwk }
-  }
-
   private verifyCredentialBinding(
     credentialExchangeRecord: DidCommCredentialExchangeRecord,
     cnf: unknown,
     requestAttachment: DidCommAttachment,
     requestAppendAttachments?: DidCommAttachment[]
   ): HolderKmsKey | undefined {
-    const bindingProof =
-      requestAttachment.getDataAsJson<SdJwtVcCredentialRequest>().binding_proof?.didcomm_signed_attachment
-    if (!bindingProof) {
-      if (cnf !== undefined) {
-        throw new CredoError("The credential has a 'cnf' claim, but the request has no binding proof")
-      }
-      return undefined
+    const bindingProof = requestAttachment.getDataAsJson<SdJwtVcCredentialRequest>().binding_proof
+    const proofMethod = verifyCnfMatchesDidCommSignedAttachmentBindingProof(cnf, {
+      bindingProof,
+      appendAttachments: requestAppendAttachments,
+    })
+    if (!proofMethod && cnf !== undefined) {
+      throw new CredoError("The credential has a 'cnf' claim, but the request has no binding proof")
     }
-
-    const jws = requestAppendAttachments?.find(({ id }) => id === bindingProof.attachment_id)?.data.jws as
-      | JwsDetachedFormat
-      | undefined
-    if (!jws) throw new CredoError('Missing binding proof attachment')
-    const { kid, jwk: proofJwk } = JsonEncoder.fromBase64Url(jws.protected)
-
-    if (!isJsonObject(cnf) || Object.keys(cnf).length !== 1) {
-      throw new CredoError("The credential must have a 'cnf' claim with exactly one member")
-    }
-    if (kid !== undefined) {
-      if (cnf.kid !== kid) throw new CredoError("The credential 'cnf.kid' is not the key of the binding proof")
-      return undefined
-    }
-
-    const { jwk } = cnf
-    if (!isJsonObject(jwk) || ['d', 'p', 'q', 'dp', 'dq', 'qi', 'oth', 'k', 'x5u'].some((member) => member in jwk)) {
-      throw new CredoError("The credential 'cnf.jwk' must be a public JWK without 'x5u'")
-    }
-    if (!Kms.PublicJwk.fromUnknown(jwk).equals(Kms.PublicJwk.fromUnknown(proofJwk))) {
-      throw new CredoError("The credential 'cnf.jwk' is not the key of the binding proof")
-    }
+    if (proofMethod !== 'jwk') return undefined
 
     return credentialExchangeRecord.metadata.get<HolderKmsKey>(DC_SD_JWT_REQUEST_METADATA_KEY) ?? undefined
   }

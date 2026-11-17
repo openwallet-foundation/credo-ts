@@ -19,12 +19,6 @@ import {
   DidCommCredentialRole,
   DidCommCredentialState,
 } from '@credo-ts/didcomm'
-import {
-  isDidIndyCredentialDefinitionId,
-  isDidIndyRevocationRegistryId,
-  parseIndyCredentialDefinitionId,
-  parseIndyRevocationRegistryId,
-} from '@credo-ts/indy-vdr/anoncreds'
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import type { MockedClassConstructor } from '../../../../../../tests/types'
@@ -452,14 +446,19 @@ async function testMigration(
  * unqualified form that storage version 0.4 used.
  */
 function getUnqualifiedIdentifier(identifier: string) {
-  if (isDidIndyCredentialDefinitionId(identifier)) {
-    const { namespaceIdentifier, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(identifier)
+  const credentialDefinitionMatch = identifier.match(
+    /^did:indy:.+:([^/]+)\/anoncreds\/v0\/CLAIM_DEF\/([1-9][0-9]*)\/(.+)$/
+  )
+  if (credentialDefinitionMatch) {
+    const [, namespaceIdentifier, schemaSeqNo, tag] = credentialDefinitionMatch
     return `${namespaceIdentifier}:3:CL:${schemaSeqNo}:${tag}`
   }
 
-  if (isDidIndyRevocationRegistryId(identifier)) {
-    const { namespaceIdentifier, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag } =
-      parseIndyRevocationRegistryId(identifier)
+  const revocationRegistryMatch = identifier.match(
+    /^did:indy:.+:([^/]+)\/anoncreds\/v0\/REV_REG_DEF\/([1-9][0-9]*)\/(.+)\/(.+)$/
+  )
+  if (revocationRegistryMatch) {
+    const [, namespaceIdentifier, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag] = revocationRegistryMatch
     return `${namespaceIdentifier}:4:${namespaceIdentifier}:3:CL:${schemaSeqNo}:${credentialDefinitionTag}:CL_ACCUM:${revocationRegistryTag}`
   }
 
