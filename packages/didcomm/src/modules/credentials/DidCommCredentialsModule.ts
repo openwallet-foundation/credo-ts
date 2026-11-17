@@ -58,18 +58,20 @@ export class DidCommCredentialsModule<
     const messageHandlerRegistry = agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry)
     const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
 
-    const revocationNotificationService = agentContext.resolve(DidCommRevocationNotificationService)
+    if (this.config.revocationNotificationFormats.length > 0) {
+      const revocationNotificationService = agentContext.resolve(DidCommRevocationNotificationService)
 
-    messageHandlerRegistry.registerMessageHandler(
-      new DidCommRevocationNotificationV2Handler(revocationNotificationService)
-    )
+      messageHandlerRegistry.registerMessageHandler(
+        new DidCommRevocationNotificationV2Handler(revocationNotificationService)
+      )
 
-    featureRegistry.register(
-      new DidCommProtocol({
-        id: 'https://didcomm.org/revocation_notification/2.0',
-        roles: ['holder'],
-      })
-    )
+      featureRegistry.register(
+        new DidCommProtocol({
+          id: 'https://didcomm.org/revocation_notification/2.0',
+          roles: ['holder'],
+        })
+      )
+    }
 
     // Protocol needs to register feature registry items and handlers
     for (const credentialProtocol of this.config.credentialProtocols) {

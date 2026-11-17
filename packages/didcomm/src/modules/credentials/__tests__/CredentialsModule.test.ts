@@ -8,6 +8,7 @@ import { DidCommCredentialsModuleConfig } from '../DidCommCredentialsModuleConfi
 import { DidCommCredentialV2Protocol } from '../protocol'
 import type { DidCommCredentialProtocol } from '../protocol/DidCommCredentialProtocol'
 import type { DidCommRevocationNotificationFormatService } from '../protocol/revocation-notification/DidCommRevocationNotificationFormatService'
+import { DidCommRevocationNotificationV2Handler } from '../protocol/revocation-notification/handlers'
 import { DidCommRevocationNotificationService } from '../protocol/revocation-notification/services'
 import { DidCommCredentialExchangeRepository } from '../repository'
 
@@ -72,25 +73,61 @@ describe('CredentialsModule', () => {
     expect(registerMock).toHaveBeenCalledTimes(1)
     expect(registerMock).toHaveBeenCalledWith(messageHandlerRegistry, featureRegistry)
 
-    expect(featureRegistry.register).toHaveBeenCalledTimes(1)
-    expect(featureRegistry.register).toHaveBeenCalledWith(
-      new DidCommProtocol({
-        id: 'https://didcomm.org/revocation_notification/2.0',
-        roles: ['holder'],
-      })
-    )
+    expect(featureRegistry.register).not.toHaveBeenCalled()
   })
 
-  test('configures revocation notification formats', () => {
+  test.each([undefined, []])(
+    'does not register revocation notifications with formats %j',
+    async (revocationNotificationFormats) => {
+      const credentialsModule = new DidCommCredentialsModule({
+        credentialProtocols: [],
+        revocationNotificationFormats,
+      })
+      const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
+      const agentContext = getAgentContext({
+        registerInstances: [
+          [DidCommMessageHandlerRegistry, messageHandlerRegistry],
+          [DidCommFeatureRegistry, featureRegistry],
+        ],
+      })
+
+      await credentialsModule.initialize(agentContext)
+
+      expect(messageHandlerRegistry.supportedMessageTypes).toEqual([])
+      expect(featureRegistry.register).not.toHaveBeenCalled()
+    }
+  )
+
+  test('registers revocation notifications when a format is configured', async () => {
     const formatService: DidCommRevocationNotificationFormatService = {
       supportedRevocationFormats: ['example'],
       findCredentialExchangeRecord: vi.fn(),
       getCredentialId: vi.fn(),
     }
     const credentialsModule = new DidCommCredentialsModule({
+      credentialProtocols: [],
       revocationNotificationFormats: [formatService],
     })
+    const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
+    const agentContext = getAgentContext({
+      registerInstances: [
+        [DidCommMessageHandlerRegistry, messageHandlerRegistry],
+        [DidCommFeatureRegistry, featureRegistry],
+        [DidCommRevocationNotificationService, {} as DidCommRevocationNotificationService],
+      ],
+    })
+
+    await credentialsModule.initialize(agentContext)
 
     expect(credentialsModule.config.revocationNotificationFormats).toEqual([formatService])
+    expect(
+      messageHandlerRegistry.getHandlerForMessageType('https://didcomm.org/revocation_notification/2.0/revoke')
+    ).toBeInstanceOf(DidCommRevocationNotificationV2Handler)
+    expect(featureRegistry.register).toHaveBeenCalledExactlyOnceWith(
+      new DidCommProtocol({
+        id: 'https://didcomm.org/revocation_notification/2.0',
+        roles: ['holder'],
+      })
+    )
   })
 })

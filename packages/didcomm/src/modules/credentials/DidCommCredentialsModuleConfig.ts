@@ -29,6 +29,9 @@ export interface DidCommCredentialsModuleConfigOptions<CredentialProtocols exten
 
   /**
    * Revocation notification format services to make available to the credentials module.
+   * Without any formats, the revocation notification handler and feature are not registered.
+   *
+   * @default []
    */
   revocationNotificationFormats?: DidCommRevocationNotificationFormatService[]
 }
