@@ -1,10 +1,12 @@
-import { JsonEncoder } from '@credo-ts/core'
+import { JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../../../core/tests/helpers'
+import { DummyTransportSession } from '../../../../../__tests__/stubs'
 import { DidCommMessageSender } from '../../../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../../../DidCommModuleConfig'
+import { DidCommTransportService } from '../../../../../DidCommTransportService'
 import { DidCommAttachment } from '../../../../../decorators/attachment/DidCommAttachment'
 import { DidCommInboundMessageContext } from '../../../../../models'
 import { InMemoryQueueTransportRepository } from '../../../../../transport/queue/InMemoryQueueTransportRepository'
@@ -25,6 +27,13 @@ import {
   DidCommStatusRequestV4Message,
   DidCommStatusV4Message,
 } from '../messages'
+
+// The key the envelope proved as the sender, which assertReadyConnection requires
+const testSenderKey = Kms.PublicJwk.fromPublicKey({
+  kty: 'OKP',
+  crv: 'Ed25519',
+  publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+}) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
 const mockConnection = getMockConnection({
   state: DidCommDidExchangeState.Completed,
@@ -72,6 +81,14 @@ const agentContext = getAgentContext({
     [DidCommMessagePickupSessionService, messagePickupSessionService],
   ],
 })
+const transportService = new DidCommTransportService(agentContext, eventEmitter)
+agentContext.dependencyManager.registerInstance(DidCommTransportService, transportService)
+
+function saveTransportSession(id: string, { isSingleResponse = false } = {}) {
+  const session = new DummyTransportSession(id)
+  session.isSingleResponse = isSingleResponse
+  transportService.saveSession(session)
+}
 
 const encryptedMessage: DidCommEncryptedMessage = {
   protected: 'base64url',
@@ -99,6 +116,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
       const statusRequest = new DidCommStatusRequestV4Message({})
 
       const messageContext = new DidCommInboundMessageContext(statusRequest, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -127,6 +145,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
       const statusRequest = new DidCommStatusRequestV4Message({})
 
       const messageContext = new DidCommInboundMessageContext(statusRequest, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -158,6 +177,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
       })
 
       const messageContext = new DidCommInboundMessageContext(statusRequest, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -180,6 +200,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
 
       const liveDeliveryFor = async (sessionId?: string): Promise<boolean | undefined> => {
         const messageContext = new DidCommInboundMessageContext(new DidCommStatusRequestV4Message({}), {
+          senderKey: testSenderKey,
           connection: mockConnection,
           agentContext,
           sessionId,
@@ -204,6 +225,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
       const deliveryRequest = new DidCommDeliveryRequestV4Message({ messageCountLimit: 10 })
 
       const messageContext = new DidCommInboundMessageContext(deliveryRequest, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -227,6 +249,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
       const deliveryRequest = new DidCommDeliveryRequestV4Message({ messageCountLimit: 10 })
 
       const messageContext = new DidCommInboundMessageContext(deliveryRequest, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -277,6 +300,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
       })
 
       const messageContext = new DidCommInboundMessageContext(deliveryRequest, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -298,6 +322,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
       })
 
       const messageContext = new DidCommInboundMessageContext(messagesReceived, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -338,7 +363,11 @@ describe('DidCommMessagePickupV4Protocol', () => {
         connectionRecord: mockConnection,
       })
 
-      const messageContext = new DidCommInboundMessageContext(status, { connection: mockConnection, agentContext })
+      const messageContext = new DidCommInboundMessageContext(status, {
+        senderKey: testSenderKey,
+        connection: mockConnection,
+        agentContext,
+      })
       const deliveryRequestMessage = await pickupProtocol.processStatus(messageContext)
       expect(deliveryRequestMessage).toBeNull()
     })
@@ -348,7 +377,11 @@ describe('DidCommMessagePickupV4Protocol', () => {
         threadId: uuid(),
         messageCount: 1,
       })
-      const messageContext = new DidCommInboundMessageContext(status, { connection: mockConnection, agentContext })
+      const messageContext = new DidCommInboundMessageContext(status, {
+        senderKey: testSenderKey,
+        connection: mockConnection,
+        agentContext,
+      })
 
       const deliveryRequestMessage = await pickupProtocol.processStatus(messageContext)
       if (!deliveryRequestMessage) throw new Error('Expected a delivery-request message')
@@ -367,7 +400,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
     it('Pickup 4.0: an empty delivery returns no acknowledgement', async () => {
       const messageContext = new DidCommInboundMessageContext(
         new DidCommMessageDeliveryV4Message({ threadId: uuid(), attachments: [] }),
-        { connection: mockConnection, agentContext }
+        { senderKey: testSenderKey, connection: mockConnection, agentContext }
       )
 
       const result = await pickupProtocol.processDelivery(messageContext)
@@ -387,6 +420,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
         ],
       })
       const messageContext = new DidCommInboundMessageContext(messageDeliveryMessage, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -416,6 +450,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
         ],
       })
       const messageContext = new DidCommInboundMessageContext(messageDeliveryMessage, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -432,6 +467,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
       const liveDeliveryChange = new DidCommLiveDeliveryChangeV4Message({ liveDelivery: true })
 
       const messageContext = new DidCommInboundMessageContext(liveDeliveryChange, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
         sessionId: undefined,
@@ -450,12 +486,27 @@ describe('DidCommMessagePickupV4Protocol', () => {
       })
     })
 
+    test('throws problem report when the transport session carries a single response', async () => {
+      saveTransportSession('http-request', { isSingleResponse: true })
+
+      const messageContext = new DidCommInboundMessageContext(
+        new DidCommLiveDeliveryChangeV4Message({ liveDelivery: true }),
+        { senderKey: testSenderKey, connection: mockConnection, agentContext, sessionId: 'http-request' }
+      )
+
+      const error = await pickupProtocol.processLiveDeliveryChange(messageContext).catch((e) => e)
+      expect(error).toBeInstanceOf(DidCommMessagePickupV4ProblemReportError)
+      expect(error.problemReport.toV2Plaintext().body.code).toBe('e.m.live-mode-not-supported')
+    })
+
     test('saves live session when live_delivery is true and sessionId is present', async () => {
       mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(3)
+      saveTransportSession('test-session-id')
 
       const liveDeliveryChange = new DidCommLiveDeliveryChangeV4Message({ liveDelivery: true })
 
       const messageContext = new DidCommInboundMessageContext(liveDeliveryChange, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
         sessionId: 'test-session-id',
@@ -474,6 +525,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
       const liveDeliveryChange = new DidCommLiveDeliveryChangeV4Message({ liveDelivery: false })
 
       const messageContext = new DidCommInboundMessageContext(liveDeliveryChange, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })

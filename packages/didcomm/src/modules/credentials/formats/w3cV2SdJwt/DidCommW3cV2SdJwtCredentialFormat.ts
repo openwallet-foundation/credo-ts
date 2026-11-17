@@ -6,31 +6,22 @@ import type {
   W3cV2Credential,
   W3cV2Issuer,
 } from '@credo-ts/core'
+import type {
+  DidCommSignedAttachmentWithJwkCreateOfferOptions,
+  DidCommSignedAttachmentWithJwkCredentialRequestOptions,
+} from '../../util/didCommSignedAttachmentBinding'
 import type { DidCommCredentialFormat } from '../DidCommCredentialFormat'
 import type { W3cV2SdJwtCredential, W3cV2SdJwtCredentialOffer, W3cV2SdJwtCredentialRequest } from './w3cV2SdJwtExchange'
-
-export interface DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions {
-  didMethodsSupported?: string[]
-  algsSupported?: string[]
-}
-
-/**
- * Options for the holder to create a `didcomm_signed_attachment` binding proof, sent in the request.
- */
-export interface DidCommW3cV2SdJwtSignedAttachmentCredentialRequestOptions {
-  kid: string
-  alg?: string
-}
 
 export interface DidCommW3cV2SdJwtOfferCredentialFormat {
   credential: W3cV2Credential | JsonObject
   bindingRequired?: boolean
   disclosureFrame?: IDisclosureFrame
-  didCommSignedAttachmentBinding?: DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions
+  didCommSignedAttachmentBinding?: DidCommSignedAttachmentWithJwkCreateOfferOptions
 }
 
 export interface DidCommW3cV2SdJwtAcceptOfferFormat {
-  didCommSignedAttachment?: DidCommW3cV2SdJwtSignedAttachmentCredentialRequestOptions
+  didCommSignedAttachment?: DidCommSignedAttachmentWithJwkCredentialRequestOptions
 }
 
 export interface DidCommW3cV2SdJwtAcceptRequestFormat {
@@ -61,8 +52,9 @@ export interface DidCommW3cV2SdJwtAcceptRequestFormat {
   disclosureFrame?: IDisclosureFrame
 
   /**
-   * The holder to bind the credential to, adding a `cnf` claim to the issued credential. When omitted,
-   * it is derived from the binding proof in the request.
+   * The holder to bind the credential to, adding a `cnf` claim to the issued credential. Only used when
+   * the request has no binding proof. When it has one, RFC 0881 requires the `cnf` to be the key of the
+   * binding proof, so the credential is always bound to that key and a different `holder` is rejected.
    */
   holder?: SdJwtVcHolderBinding
 

@@ -56,7 +56,7 @@ export class SdJwtVcApi {
   }
 
   /**
-   * Fetches the type metadata for the `vct`. The default resolver only supports HTTPs,
+   * Fetches the type metadata for the `vct` of an SD-JWT VC, or for a `vct` and optional `vct#integrity`. The default resolver only supports HTTPs,
    * but you can register a custom resolver on the SdJwtVcModule config.
    *
    * If the default resolver is used and fetching the VCT directly fails, it will fallback to the legacy vct path.
@@ -66,10 +66,10 @@ export class SdJwtVcApi {
    * not resolved yet.
    */
   public async fetchTypeMetadata(
-    sdJwtVc: SdJwtVc,
+    sdJwtVcOrVct: SdJwtVc | { vct: string; 'vct#integrity'?: string },
     options?: { throwErrorOnFetchError?: boolean; throwErrorOnUnsupportedVctValue?: boolean }
   ): Promise<ResolvedTypeMetadata | undefined> {
-    return this.sdJwtVcService.fetchTypeMetadata(this.agentContext, sdJwtVc, options)
+    return this.sdJwtVcService.fetchTypeMetadata(this.agentContext, sdJwtVcOrVct, options)
   }
 
   /**

@@ -443,6 +443,12 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     '_anoncreds/credential': expectedCredentialMetadata,
   })
 
+  // Revocation notifications find the holder's record by these tags
+  expect(holderCredentialRecord.getTag('anonCredsRevocationRegistryId')).toEqual(
+    revocable ? revocationRegistryDefinitionId : undefined
+  )
+  expect(holderCredentialRecord.getTag('anonCredsCredentialRevocationId')).toEqual(revocable ? '1' : undefined)
+
   const holderProofRecord = new DidCommProofExchangeRecord({
     protocolVersion: 'v1',
     state: DidCommProofState.ProposalSent,

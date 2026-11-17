@@ -191,6 +191,7 @@ describe('mdoc device-response openid4vp test', () => {
           },
         },
       })
+      mdoc.deviceKeyId = importedDeviceKey.keyId
 
       //  This is the Device side
       {
@@ -383,6 +384,7 @@ describe('mdoc device-response openid4vp test', () => {
           },
         },
       })
+      mdoc.deviceKeyId = holderKey.keyId
 
       //  This is the Device side
 

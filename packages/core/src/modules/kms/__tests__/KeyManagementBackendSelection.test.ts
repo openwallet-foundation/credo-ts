@@ -85,7 +85,7 @@ describe('KeyManagementApi backend selection', () => {
     other.isOperationSupported.mockImplementation((_, operation) => operation.keyId !== 'my-key')
     const kms = new KeyManagementApi(new KeyManagementModuleConfig({ backends: [other, mine] }), agentContext)
 
-    await kms.sign({ keyId: 'my-key', algorithm: 'ES256', data: new Uint8Array([1]) })
+    await kms.sign({ keyId: 'my-key', algorithm: 'ES256', data: new Uint8Array([1]), expectedPublicJwk: null })
     await kms.decrypt({
       key: { keyId: 'my-key' },
       decryption: { algorithm: 'A256GCM', iv: new Uint8Array(12), tag: new Uint8Array(16) },
@@ -98,7 +98,13 @@ describe('KeyManagementApi backend selection', () => {
     expect(other.getPublicKey).not.toHaveBeenCalled()
 
     await expect(
-      kms.sign({ keyId: 'my-key', backend: 'other', algorithm: 'ES256', data: new Uint8Array([1]) })
+      kms.sign({
+        keyId: 'my-key',
+        backend: 'other',
+        algorithm: 'ES256',
+        data: new Uint8Array([1]),
+        expectedPublicJwk: null,
+      })
     ).rejects.toThrow(
       "Key management service backend 'other' does not support 'sign' operation with algorithm 'ES256' and key 'my-key'"
     )

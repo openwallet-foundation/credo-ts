@@ -4,24 +4,20 @@ import { Signer } from '@hiero-did-sdk/core'
 import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../utils'
 
 export class KmsSigner extends Signer {
-  private keyId: string
   private _publicKey: PublicKey
 
   constructor(
     private readonly kms: Kms.KeyManagementApi,
-    publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+    private publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   ) {
     super()
 
-    this.keyId = publicJwk.keyId
     this._publicKey = hederaPublicKeyFromPublicJwk(publicJwk)
   }
 
   async setKeyId(keyId: string): Promise<void> {
-    const publicJwk = await createOrGetKey(this.kms, keyId)
-
-    this.keyId = keyId
-    this._publicKey = hederaPublicKeyFromPublicJwk(publicJwk)
+    this.publicJwk = await createOrGetKey(this.kms, keyId)
+    this._publicKey = hederaPublicKeyFromPublicJwk(this.publicJwk)
   }
 
   publicKey(): Promise<string> {
@@ -30,7 +26,8 @@ export class KmsSigner extends Signer {
 
   async sign(data: Uint8Array): Promise<Uint8Array> {
     const { signature } = await this.kms.sign({
-      keyId: this.keyId,
+      keyId: this.publicJwk.keyId,
+      expectedPublicJwk: this.publicJwk.toJson(),
       data,
       algorithm: 'EdDSA',
     })
@@ -41,7 +38,7 @@ export class KmsSigner extends Signer {
     const { verified } = await this.kms.verify({
       data: message,
       signature,
-      key: { keyId: this.keyId },
+      key: { keyId: this.publicJwk.keyId },
       algorithm: 'EdDSA',
     })
     return verified

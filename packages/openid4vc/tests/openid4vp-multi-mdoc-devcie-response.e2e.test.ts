@@ -99,6 +99,8 @@ describe('OpenId4Vc', () => {
         },
       },
     })
+    mdocOne.deviceKeyId = holderKey.keyId
+    mdocTwo.deviceKeyId = holderKey2.keyId
 
     const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
       verifierId: openid4vcVerifier.verifierId,
@@ -204,12 +206,13 @@ describe('OpenId4Vc', () => {
     })
     verifier.agent.x509.config.addTrustedCertificate(certificate)
 
+    const holderKey = Kms.PublicJwk.fromPublicJwk(
+      (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
+    )
     const mdocOne = await verifier.agent.mdoc.sign({
       docType: 'one',
       validityInfo: { validUntil: getNextMonth() },
-      holderKey: Kms.PublicJwk.fromPublicJwk(
-        (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
-      ),
+      holderKey,
       issuerCertificate: certificate,
       namespaces: {
         one: {
@@ -217,13 +220,15 @@ describe('OpenId4Vc', () => {
         },
       },
     })
+    mdocOne.deviceKeyId = holderKey.keyId
 
+    const holderKey2 = Kms.PublicJwk.fromPublicJwk(
+      (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
+    )
     const mdocTwo = await verifier.agent.mdoc.sign({
       docType: 'two',
       validityInfo: { validUntil: getNextMonth() },
-      holderKey: Kms.PublicJwk.fromPublicJwk(
-        (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
-      ),
+      holderKey: holderKey2,
       issuerCertificate: certificate,
       namespaces: {
         two: {
@@ -231,6 +236,7 @@ describe('OpenId4Vc', () => {
         },
       },
     })
+    mdocTwo.deviceKeyId = holderKey2.keyId
 
     const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
       verifierId: openid4vcVerifier.verifierId,
@@ -343,12 +349,13 @@ describe('OpenId4Vc', () => {
           : [certificateTwo.toString('pem')]
       })
 
+      const holderKey = Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
+      )
       const mdocOne = await verifier.agent.mdoc.sign({
         docType: 'one',
         validityInfo: { validUntil: getNextMonth() },
-        holderKey: Kms.PublicJwk.fromPublicJwk(
-          (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
-        ),
+        holderKey,
         issuerCertificate: certificateOne,
         namespaces: {
           one: {
@@ -356,13 +363,15 @@ describe('OpenId4Vc', () => {
           },
         },
       })
+      mdocOne.deviceKeyId = holderKey.keyId
 
+      const holderKey2 = Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
+      )
       const mdocTwo = await verifier.agent.mdoc.sign({
         docType: 'two',
         validityInfo: { validUntil: getNextMonth() },
-        holderKey: Kms.PublicJwk.fromPublicJwk(
-          (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
-        ),
+        holderKey: holderKey2,
         issuerCertificate: mdocTwoIssuer === 'one' ? certificateOne : certificateTwo,
         namespaces: {
           two: {
@@ -370,6 +379,7 @@ describe('OpenId4Vc', () => {
           },
         },
       })
+      mdocTwo.deviceKeyId = holderKey2.keyId
 
       const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openid4vcVerifier.verifierId,

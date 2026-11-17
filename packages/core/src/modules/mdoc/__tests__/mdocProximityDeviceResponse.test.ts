@@ -138,6 +138,7 @@ describe('mdoc device-response proximity test', () => {
         },
       },
     })
+    mdoc.deviceKeyId = importedDeviceKey.keyId
     parsedDeviceResponse = await MdocDeviceResponse.createDeviceResponse(agent.context, {
       mdocs: [mdoc],
 
