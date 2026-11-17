@@ -18,7 +18,6 @@
   },
   "dependencies": {
     "@hyperledger/anoncreds-nodejs": "catalog:",
-    "@hyperledger/indy-vdr-nodejs": "catalog:",
     "@koa/bodyparser": "^6.1.0",
     "@openwallet-foundation/askar-nodejs": "catalog:",
     "express": "catalog:",
