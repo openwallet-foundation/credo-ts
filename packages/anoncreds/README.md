@@ -48,6 +48,22 @@ Import the AnonCreds DIDComm formats from the DIDComm integration entry point:
 import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService } from '@credo-ts/anoncreds/didcomm'
 ```
 
+Register AnonCreds revocation notification formats in the DIDComm credentials configuration to enable V2
+notifications. The format service supports both `anoncreds` and `indy-anoncreds` identifiers:
+
+```ts
+import { AnonCredsDidCommRevocationNotificationFormatService } from '@credo-ts/anoncreds/didcomm'
+import { DidCommModule } from '@credo-ts/didcomm'
+
+const didcomm = new DidCommModule({
+  credentials: {
+    revocationNotificationFormats: [new AnonCredsDidCommRevocationNotificationFormatService()],
+  },
+})
+```
+
+Revocation Notification V1 is no longer registered; use V2 with an explicitly configured format service.
+
 The AnonCreds package root has no static or dynamic import or public type dependency on DIDComm.
 `@credo-ts/didcomm` is an optional peer dependency; install it only when using the DIDComm integration.
 

@@ -122,7 +122,7 @@ describe('DIDComm v2 modules', () => {
       await aliceAgent.shutdown()
     })
 
-    it('queries features over DIDComm v2', async () => {
+    it('does not disclose unconfigured revocation notifications over DIDComm v2', async () => {
       const faberReplay = new ReplaySubject<DidCommDiscoverFeaturesDisclosureReceivedEvent>()
       const aliceReplay = new ReplaySubject<DidCommDiscoverFeaturesQueryReceivedEvent>()
 
@@ -150,16 +150,7 @@ describe('DIDComm v2 modules', () => {
       const disclosure = await waitForDisclosureSubject(faberReplay, { timeoutMs: 10000 })
       expect(disclosure).toMatchObject({
         protocolVersion: 'v2',
-        disclosures: expect.arrayContaining([
-          expect.objectContaining({
-            type: 'protocol',
-            id: 'https://didcomm.org/revocation_notification/1.0',
-          }),
-          expect.objectContaining({
-            type: 'protocol',
-            id: 'https://didcomm.org/revocation_notification/2.0',
-          }),
-        ]),
+        disclosures: [],
       })
     })
 
