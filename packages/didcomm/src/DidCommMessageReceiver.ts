@@ -217,6 +217,8 @@ export class DidCommMessageReceiver {
       agentContext,
       decryptedMessage
     )
+    // The peer that ends the relationship may authenticate as the DID it ends, so it is still the peer for this message
+    const theirDidBeforeFromPrior = connection?.theirDid
 
     if (connection) {
       // DIDComm v2.1 DID Rotation: messages sent before a rotation that arrive after it MUST be ignored
@@ -257,9 +259,26 @@ export class DidCommMessageReceiver {
       }
     }
 
-    const message = await this.transformAndValidate(agentContext, plaintextMessage, connection)
-    if (authenticatedSenderDid && recipientDid && connection?.isReady) {
-      await this.outOfBandService.processHandshakeReuseV2(agentContext, connection, message, recipientDid)
+    // A v1 connection is selected by the sender key. A v2 connection can also be selected by a from_prior,
+    // which is a bearer JWT and proves nothing about who sent this envelope, so the connection only goes
+    // with the message when the authcrypt sender is its peer once the from_prior is applied.
+    const senderIsPeer =
+      envelope.version === 'v1' ||
+      (authenticatedSenderDid !== undefined &&
+        [connection?.theirDid, theirDidBeforeFromPrior].some(
+          (did) => did !== undefined && areEquivalentDidPeer4Forms(did, authenticatedSenderDid)
+        ))
+    const peerConnection = senderIsPeer ? connection : null
+    if (connection && !senderIsPeer) {
+      this.logger.debug('Processing v2 message without its connection, the sender is not the peer', {
+        connectionId: connection.id,
+        senderDid: authenticatedSenderDid,
+      })
+    }
+
+    const message = await this.transformAndValidate(agentContext, plaintextMessage, peerConnection)
+    if (authenticatedSenderDid && recipientDid && peerConnection?.isReady) {
+      await this.outOfBandService.processHandshakeReuseV2(agentContext, peerConnection, message, recipientDid)
     }
 
     // A v1 envelope carries Ed25519 keys, a v2 envelope carries key agreement keys; the context names each kind
@@ -269,7 +288,7 @@ export class DidCommMessageReceiver {
       // Only make the connection available in message context if the connection is ready
       // To prevent unwanted usage of unready connections. Connections can still be retrieved from
       // Storage if the specific protocol allows an unready connection to be used.
-      connection: connection?.isReady ? connection : undefined,
+      connection: peerConnection?.isReady ? peerConnection : undefined,
       senderKey: sender.ed25519Key,
       recipientKey: recipient.ed25519Key,
       senderKeyAgreementKey: sender.keyAgreementKey,
@@ -291,14 +310,14 @@ export class DidCommMessageReceiver {
         senderKey,
         recipientKey,
         plaintextMessage,
-        connection: connection ?? undefined,
+        connection: peerConnection ?? undefined,
       })
       session.didcommVersion = envelope.version
       session.inboundMessage = message
       // We allow unready connections to be attached to the session as we want to be able to
       // use return routing to make connections. This is especially useful for creating connections
       // with mediators when you don't have a public endpoint yet.
-      session.connectionId = connection?.id
+      session.connectionId = peerConnection?.id
       messageContext.sessionId = session.id
       this.transportService.saveSession(session)
     }
