@@ -1,6 +1,7 @@
 import type { AgentContext } from '../../../agent'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
+import { RecordDuplicateError } from '../../../error'
 import { inject, injectable } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
 import type { StorageService } from '../../../storage/StorageService'
@@ -25,10 +26,7 @@ export class DidRepository extends Repository<DidRecord> {
    * To find a {@link DidRecord} that was created by this agent, use {@link DidRepository.findCreatedDidByRecipientKey}.
    */
   public findReceivedDidByRecipientKey(agentContext: AgentContext, recipientKey: PublicJwk) {
-    return this.findSingleByQuery(agentContext, {
-      recipientKeyFingerprints: [recipientKey.fingerprint],
-      role: DidDocumentRole.Received,
-    })
+    return this.findSingleByRecipientKeyAndRole(agentContext, recipientKey, DidDocumentRole.Received)
   }
 
   /**
@@ -36,40 +34,69 @@ export class DidRepository extends Repository<DidRecord> {
    * To find a {@link DidRecord} that was received by this agent, use {@link DidRepository.findReceivedDidByRecipientKey}.
    */
   public findCreatedDidByRecipientKey(agentContext: AgentContext, recipientKey: PublicJwk) {
-    return this.findSingleByQuery(agentContext, {
-      recipientKeyFingerprints: [recipientKey.fingerprint],
-      role: DidDocumentRole.Created,
-    })
+    return this.findSingleByRecipientKeyAndRole(agentContext, recipientKey, DidDocumentRole.Created)
+  }
+
+  private async findSingleByRecipientKeyAndRole(
+    agentContext: AgentContext,
+    recipientKey: PublicJwk,
+    role: DidDocumentRole
+  ) {
+    // Query the selective key tag and filter the low-selectivity role in memory.
+    const records = await this.findAllByRecipientKey(agentContext, recipientKey)
+    return this.getSingleRecord(
+      records.filter((record) => record.role === role),
+      { recipientKeyFingerprints: [recipientKey.fingerprint], role }
+    )
+  }
+
+  private getSingleRecord(records: DidRecord[], query: object): DidRecord | null {
+    if (records.length > 1) {
+      throw new RecordDuplicateError(`Multiple records found for given query '${JSON.stringify(query)}'`, {
+        recordType: DidRecord.type,
+      })
+    }
+
+    return records[0] ?? null
   }
 
   public findAllByRecipientKey(agentContext: AgentContext, recipientKey: PublicJwk) {
     return this.findByQuery(agentContext, { recipientKeyFingerprints: [recipientKey.fingerprint] })
   }
 
-  public findAllByDid(agentContext: AgentContext, did: string) {
-    return this.findByQuery(agentContext, { $or: [{ alternativeDids: [did] }, { did }] })
+  public async findAllByDid(agentContext: AgentContext, did: string) {
+    // Keep scalar and array-containment lookups separate, and run sequentially for wallet stores.
+    const byDid = await this.findByQuery(agentContext, { did })
+    const byAlternativeDid = await this.findByQuery(agentContext, { alternativeDids: [did] })
+    return [...new Map([...byDid, ...byAlternativeDid].map((record) => [record.id, record])).values()]
   }
 
   public findReceivedDid(agentContext: AgentContext, receivedDid: string) {
-    return this.findSingleByQuery(agentContext, {
-      $or: [{ alternativeDids: [receivedDid] }, { did: receivedDid }],
-      role: DidDocumentRole.Received,
-    })
+    return this.findSingleByDidAndRole(agentContext, receivedDid, DidDocumentRole.Received)
   }
 
   public findCreatedDid(agentContext: AgentContext, createdDid: string) {
-    return this.findSingleByQuery(agentContext, {
-      $or: [{ alternativeDids: [createdDid] }, { did: createdDid }],
-      role: DidDocumentRole.Created,
-    })
+    return this.findSingleByDidAndRole(agentContext, createdDid, DidDocumentRole.Created)
   }
 
-  public getCreatedDids(agentContext: AgentContext, { method, did }: { method?: string; did?: string }) {
-    return this.findByQuery(agentContext, {
-      role: DidDocumentRole.Created,
-      method,
-      $or: did ? [{ alternativeDids: [did] }, { did }] : undefined,
+  private async findSingleByDidAndRole(agentContext: AgentContext, did: string, role: DidDocumentRole) {
+    const records = await this.findAllByDid(agentContext, did)
+    return this.getSingleRecord(
+      records.filter((record) => record.role === role),
+      { $or: [{ alternativeDids: [did] }, { did }], role }
+    )
+  }
+
+  public async getCreatedDids(agentContext: AgentContext, { method, did }: { method?: string; did?: string }) {
+    const query = { role: DidDocumentRole.Created, method }
+    if (!did) return this.findByQuery(agentContext, query)
+
+    const byDid = await this.findByQuery(agentContext, { ...query, did })
+    const byAlternativeDid = await this.findByQuery(agentContext, {
+      ...query,
+      alternativeDids: [did],
     })
+    return [...new Map([...byDid, ...byAlternativeDid].map((record) => [record.id, record])).values()]
   }
 
   public async storeCreatedDid(
