@@ -6,7 +6,6 @@
 "@credo-ts/core": minor
 "@credo-ts/didcomm": minor
 "@credo-ts/drizzle-storage": minor
-"@credo-ts/hedera": minor
 "@credo-ts/node": minor
 "@credo-ts/openid4vc": minor
 "@credo-ts/react-native": minor
