@@ -1,5 +1,5 @@
 import { BaseRecord, type Query, type TagValue } from '@credo-ts/core'
-import { and, eq, not, or, SQL, type SQLWrapper, sql } from 'drizzle-orm'
+import { and, arrayContains, eq, not, or, SQL, type SQLWrapper, sql } from 'drizzle-orm'
 import { PgColumn, pgTable } from 'drizzle-orm/pg-core'
 import { CredoDrizzleStorageError } from '../error'
 import { getPostgresBaseRecordTable } from '../postgres'
@@ -7,53 +7,18 @@ import { getPostgresBaseRecordTable } from '../postgres'
 // We only support one layer of nesting at the moment for mapped keys
 export type DrizzleCustomTagKeyMapping = Record<string, readonly [string, string]>
 
-/**
- * Checks if a PostgreSQL array column contains all values from the given array
- *
- * @param column The array column to check
- * @param values Array of values that should be contained in the column
- * @returns SQL condition that checks if all values are in the array column
- */
-function arrayContainsAll<T extends PgColumn>(column: T, values: unknown[]): SQL<unknown> {
-  if (values.length === 0) {
-    return sql`true` // Empty array always matches
-  }
-
-  // Instead of manually formatting, let Drizzle handle the parameter binding
-  // We create an array literal in PostgreSQL syntax and bind the values safely
-  return sql`to_jsonb(${column}) @> to_jsonb(array[${sql.join(
-    values.map((v) => sql`${v}`),
-    sql`, `
-  )}])`
+function arrayContainsAll(column: PgColumn, values: unknown[]): SQL {
+  // An empty array always matches, also when the column is null
+  return values.length === 0 ? sql`true` : arrayContains(column, values)
 }
 
-/**
- * Checks if a JSONB array contains all values from a given array
- *
- * @param column The JSON/JSONB column to access
- * @param paths Path segments to the JSON array property
- * @param values Array of values to check for containment
- * @returns SQL condition that checks if all values are contained in the array
- */
-function jsonArrayContainsAll<T extends PgColumn>(column: T, field: string, values: unknown[]): SQL<unknown> {
-  if (values.length === 0) {
-    return sql`true` // Empty array always matches
-  }
-
-  const path = sql`to_jsonb(${column})->'${sql.raw(field)}'`
-
-  // Create conditions for each value in the array
-  const conditions = values.map((value) => {
-    return sql`${path} @> ${sql`'[${sql.raw(JSON.stringify(value))}]'::jsonb`}`
-  })
-
-  // Combine all conditions with AND
-  return sql.join(conditions, sql` AND `)
+function jsonArrayContainsAll(column: PgColumn, field: string, values: unknown[]): SQL {
+  // An empty array always matches, also when the field is missing
+  return values.length === 0 ? sql`true` : sql`${column}->${field}::text @> ${JSON.stringify(values)}::jsonb`
 }
 
-function jsonEqual<T extends PgColumn>(column: T, field: string, value: TagValue) {
-  const valueType = typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'numeric' : 'text'
-  return sql`(${column} ->> '${sql.raw(field)}')::${sql.raw(valueType)} = ${value}`
+function jsonEqual(column: PgColumn, field: string, value: TagValue): SQL {
+  return sql`${column}->${field}::text = ${JSON.stringify(value)}::jsonb`
 }
 
 /**
