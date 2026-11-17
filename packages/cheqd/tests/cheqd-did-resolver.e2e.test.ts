@@ -1,7 +1,7 @@
 import { Agent, JsonTransformer, utils } from '@credo-ts/core'
 import { getAgentOptions } from '../../core/tests/helpers'
 import type { CheqdDidCreateOptions } from '../src'
-import { CheqdDidRegistrar } from '../src'
+import { CheqdDidRegistrar, CheqdDidResolver } from '../src'
 import { getClosestResourceVersion } from '../src/dids/didCheqdUtil'
 
 import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
@@ -119,5 +119,86 @@ describe('Cheqd DID resolver', () => {
       new Date('2022-11-16T10:56:34Z')
     )
     expect(resource).toBeUndefined()
+  })
+
+  describe('resolving a resource by name and type', () => {
+    const resolve = (query: string) =>
+      new CheqdDidResolver().resolveResource(resolverAgent.context, `${did}?${query}`) as Promise<{
+        resource?: { n: number }
+        resourceMetadata?: { version: string; created: Date }
+        error?: string
+      }>
+
+    const create = async (name: string, version: string, n: number) => {
+      const registrar = resolverAgent.dependencyManager.resolve(CheqdDidRegistrar)
+      const result = await registrar.createResource(resolverAgent.context, did, {
+        id: utils.uuid(),
+        name,
+        resourceType: 'versioned',
+        data: { n },
+        version,
+      })
+      if (result.resourceState.state !== 'finished') {
+        throw new Error(`Resource creation failed: ${result.resourceState.reason}`)
+      }
+    }
+
+    beforeAll(async () => {
+      await create('Versioned Name', 'v1', 1)
+      await create('Versioned Name', 'v2', 2)
+      // a name that contains a literal percent sequence, as names written before query parameters were decoded could
+      await create('Literal%20Percent', 'v1', 3)
+    })
+
+    it('resolves the latest version', async () => {
+      const result = await resolve('resourceName=Versioned%20Name&resourceType=versioned')
+      expect(result.resource).toEqual({ n: 2 })
+      expect(result.resourceMetadata?.version).toBe('v2')
+    })
+
+    it('resolves a specific version', async () => {
+      const result = await resolve('resourceName=Versioned%20Name&resourceType=versioned&version=v1')
+      expect(result.resource).toEqual({ n: 1 })
+    })
+
+    it('resolves the version that was current at a given time', async () => {
+      const first = await resolve('resourceName=Versioned%20Name&resourceType=versioned&version=v1')
+      if (!first.resourceMetadata) throw new Error('Expected resource metadata')
+      const createdAt = Math.floor(first.resourceMetadata.created.getTime() / 1000)
+
+      // at the time the first version was created, the first version is the latest
+      const result = await resolve(
+        `resourceName=Versioned%20Name&resourceType=versioned&resourceVersionTime=${createdAt}`
+      )
+      expect(result.resource).toEqual({ n: 1 })
+    })
+
+    it('returns notFound for a time before the first version', async () => {
+      const first = await resolve('resourceName=Versioned%20Name&resourceType=versioned&version=v1')
+      if (!first.resourceMetadata) throw new Error('Expected resource metadata')
+      const beforeFirst = Math.floor(first.resourceMetadata.created.getTime() / 1000) - 3600
+
+      // nothing was current yet: the resolver must not fall back to the nearest later version
+      const result = await resolve(
+        `resourceName=Versioned%20Name&resourceType=versioned&resourceVersionTime=${beforeFirst}`
+      )
+      expect(result.error).toBe('notFound')
+      expect(result.resource).toBeUndefined()
+    })
+
+    it('resolves a name that was written with a literal percent sequence', async () => {
+      // decoded it is 'Literal Percent', which does not exist, so the literal name is used
+      const literal = await resolve('resourceName=Literal%20Percent&resourceType=versioned')
+      expect(literal.resource).toEqual({ n: 3 })
+
+      // percent-encoding the percent sign addresses the same name
+      const encoded = await resolve('resourceName=Literal%2520Percent&resourceType=versioned')
+      expect(encoded.resource).toEqual({ n: 3 })
+    })
+
+    it('returns notFound for a name and type that do not exist', async () => {
+      const result = await resolve('resourceName=Missing&resourceType=versioned')
+      expect(result.error).toBe('notFound')
+    })
   })
 })

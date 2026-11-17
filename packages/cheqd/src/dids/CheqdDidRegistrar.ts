@@ -1,6 +1,5 @@
 import {
   CheqdNetwork,
-  createDidVerificationMethod,
   type DIDDocument,
   type DidFeeOptions,
   type DidStdFee,
@@ -16,6 +15,7 @@ import {
   type DidCreateResult,
   type DidDeactivateResult,
   DidDocument,
+  DidDocumentBuilder,
   type DidDocumentKey,
   DidDocumentRole,
   DidRecord,
@@ -23,6 +23,7 @@ import {
   DidRepository,
   type DidUpdateOptions,
   type DidUpdateResult,
+  getJsonWebKey2020,
   getKmsKeyIdForVerifiacationMethod,
   getPublicJwkFromVerificationMethod,
   JsonTransformer,
@@ -42,6 +43,7 @@ import { CheqdLedgerService } from '../ledger'
 import {
   createMsgCreateDidDocPayloadToSign,
   createMsgDeactivateDidDocPayloadToSign,
+  decodeBase64OrBase64Url,
   generateDidDoc,
   validateSpecCompliantPayload,
 } from './didCheqdUtil'
@@ -149,9 +151,19 @@ export class CheqdDidRegistrar implements DidRegistrar {
         const methodSpecificIdAlgo = options.options.methodSpecificIdAlgo
         const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
-        let publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' }
+        let publicJwk: SupportedPublicJwk
         if (options.options.createKey) {
-          const createKeyResult = await kms.createKey(options.options.createKey)
+          const createKeyResult = await kms.createKey<Kms.KmsCreateKeyType>(options.options.createKey)
+          if (!isSupportedPublicJwk(createKeyResult.publicJwk)) {
+            return {
+              didDocumentMetadata: {},
+              didRegistrationMetadata: {},
+              didState: {
+                state: 'failed',
+                reason: `created key uses unsupported ${Kms.getJwkHumanDescription(createKeyResult.publicJwk)} for did:cheqd`,
+              },
+            }
+          }
           publicJwk = createKeyResult.publicJwk
           keys.push({
             kmsKeyId: createKeyResult.keyId,
@@ -176,7 +188,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
             }
           }
 
-          if (_publicJwk.kty !== 'OKP' || _publicJwk.crv !== 'Ed25519') {
+          if (!isSupportedPublicJwk(_publicJwk)) {
             return {
               didDocumentMetadata: {},
               didRegistrationMetadata: {},
@@ -189,23 +201,42 @@ export class CheqdDidRegistrar implements DidRegistrar {
             }
           }
 
-          publicJwk = {
-            ..._publicJwk,
-            crv: _publicJwk.crv,
-          }
+          publicJwk = _publicJwk
         }
 
-        // TODO: make this configureable
-        const verificationMethod = VerificationMethods.JWK
         const jwk = Kms.PublicJwk.fromPublicJwk(publicJwk)
 
-        didDocument = generateDidDoc({
-          verificationMethod,
-          verificationMethodId: 'key-1',
-          methodSpecificIdAlgo: (methodSpecificIdAlgo as MethodSpecificIdAlgo) || MethodSpecificIdAlgo.Uuid,
-          network: options.options.network as CheqdNetwork,
-          publicKey: TypedArrayEncoder.toHex(jwk.publicKey.publicKey),
-        })
+        if (publicJwk.kty === 'EC') {
+          // Indy-style (base58btc) identifiers are derived from an Ed25519 key
+          if (methodSpecificIdAlgo === MethodSpecificIdAlgo.Base58) {
+            return {
+              didDocumentMetadata: {},
+              didRegistrationMetadata: {},
+              didState: {
+                state: 'failed',
+                reason: `methodSpecificIdAlgo 'base58btc' requires an Ed25519 key, but got ${Kms.getJwkHumanDescription(publicJwk)}`,
+              },
+            }
+          }
+
+          const did = `did:cheqd:${options.options.network}:${utils.uuid()}`
+          const keyId = `${did}#key-1`
+          didDocument = new DidDocumentBuilder(did)
+            .addContext(SECURITY_JWS_CONTEXT_URL)
+            .addVerificationMethod(getJsonWebKey2020({ did, publicJwk: jwk, verificationMethodId: keyId }))
+            .addAuthentication(keyId)
+            .addAssertionMethod(keyId)
+            .build()
+        } else {
+          // TODO: make this configureable
+          didDocument = generateDidDoc({
+            verificationMethod: VerificationMethods.JWK,
+            verificationMethodId: 'key-1',
+            methodSpecificIdAlgo: (methodSpecificIdAlgo as MethodSpecificIdAlgo) || MethodSpecificIdAlgo.Uuid,
+            network: options.options.network as CheqdNetwork,
+            publicKey: TypedArrayEncoder.toHex(jwk.publicKey.publicKey),
+          })
+        }
       } else {
         return {
           didDocumentMetadata: {},
@@ -283,6 +314,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
     const versionId = options.options?.versionId || utils.uuid()
     let didDocument: DidDocument
     let didRecord: DidRecord | null
+    let previousDocument: DIDDocument | undefined
 
     try {
       if (options.didDocument) {
@@ -312,14 +344,34 @@ export class CheqdDidRegistrar implements DidRegistrar {
           }
         }
 
-        const keys = didRecord.keys ?? []
+        previousDocument = resolvedDocument.didDocument as DIDDocument
+
+        // Older did records have no keys. Set them on the record, so keys added below are saved with it
+        didRecord.keys = didRecord.keys ?? []
+        const keys = didRecord.keys
+        // Link did document keys to kms keys, replacing an existing entry for the same did document key
+        for (const key of options.options?.keys ?? []) {
+          const index = keys.findIndex((k) => k.didDocumentRelativeKeyId === key.didDocumentRelativeKeyId)
+          if (index === -1) keys.push(key)
+          else keys[index] = key
+        }
         if (options.options?.createKey || options.options?.keyId) {
           const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
           let createdKey: DidDocumentKey
 
-          let publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' }
+          let publicJwk: SupportedPublicJwk
           if (options.options.createKey) {
-            const createKeyResult = await kms.createKey(options.options.createKey)
+            const createKeyResult = await kms.createKey<Kms.KmsCreateKeyType>(options.options.createKey)
+            if (!isSupportedPublicJwk(createKeyResult.publicJwk)) {
+              return {
+                didDocumentMetadata: {},
+                didRegistrationMetadata: {},
+                didState: {
+                  state: 'failed',
+                  reason: `created key uses unsupported ${Kms.getJwkHumanDescription(createKeyResult.publicJwk)} for did:cheqd`,
+                },
+              }
+            }
             publicJwk = createKeyResult.publicJwk
 
             createdKey = {
@@ -345,7 +397,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
               }
             }
 
-            if (_publicJwk.kty !== 'OKP' || _publicJwk.crv !== 'Ed25519') {
+            if (!isSupportedPublicJwk(_publicJwk)) {
               return {
                 didDocumentMetadata: {},
                 didRegistrationMetadata: {},
@@ -358,10 +410,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
               }
             }
 
-            publicJwk = {
-              ..._publicJwk,
-              crv: _publicJwk.crv,
-            }
+            publicJwk = _publicJwk
           } else {
             // This will never happen, but to make TS happy
             return {
@@ -374,27 +423,17 @@ export class CheqdDidRegistrar implements DidRegistrar {
             }
           }
 
-          // TODO: make this configureable
-          const verificationMethod = VerificationMethods.JWK
+          // Add the key as a verification method (the previous concat discarded its result)
           const jwk = Kms.PublicJwk.fromPublicJwk(publicJwk)
-
           keys.push(createdKey)
-          didDocument.verificationMethod?.concat(
-            JsonTransformer.fromJSON(
-              createDidVerificationMethod(
-                [verificationMethod],
-                [
-                  {
-                    methodSpecificId: didDocument.id.split(':')[3],
-                    didUrl: didDocument.id,
-                    keyId: `${didDocument.id}${createdKey.didDocumentRelativeKeyId}` as `${string}#${string}-${number}`,
-                    publicKey: TypedArrayEncoder.toHex(jwk.publicKey.publicKey),
-                  },
-                ]
-              ),
-              VerificationMethod
-            )
-          )
+          didDocument.verificationMethod = [
+            ...(didDocument.verificationMethod ?? []),
+            getJsonWebKey2020({
+              did: didDocument.id,
+              publicJwk: jwk,
+              verificationMethodId: `${didDocument.id}${createdKey.didDocumentRelativeKeyId}`,
+            }),
+          ]
         }
       } else {
         return {
@@ -406,6 +445,9 @@ export class CheqdDidRegistrar implements DidRegistrar {
           },
         }
       }
+
+      // Keys of the previous version are still needed to sign for authentication entries that are removed
+      const previousKeys = [...(didRecord.keys ?? [])]
 
       // Filter out all keys that are not present in the did document anymore
       didRecord.keys = didRecord.keys?.filter(({ didDocumentRelativeKeyId }) => {
@@ -447,12 +489,20 @@ export class CheqdDidRegistrar implements DidRegistrar {
           },
         }
       }
+      // The ledger requires signatures from authentication entries of the previous version that are removed
+      const newAuthenticationIds = authentication.map((method) => method.id)
+      const removedAuthentication = (previousDocument?.authentication ?? [])
+        .map((entry) => (typeof entry === 'string' ? entry : entry.id))
+        .filter((id) => !newAuthenticationIds.includes(id))
+        .map((id) => previousDocument?.verificationMethod?.find((method) => method.id === id))
+        .filter((method) => method !== undefined)
+        .map((method) => JsonTransformer.fromJSON(method, VerificationMethod))
+
       const signInputs = await this.signPayload(
         agentContext,
         payloadToSign,
-        // TOOD: we should also sign with the authentication entries that are removed (so we should diff)
-        authentication,
-        didRecord.keys
+        [...authentication, ...removedAuthentication],
+        previousKeys
       )
 
       const response = await cheqdLedgerService.update(didDocument.toJSON() as DIDDocument, signInputs, versionId)
@@ -578,11 +628,12 @@ export class CheqdDidRegistrar implements DidRegistrar {
     try {
       let data: Uint8Array
       if (typeof resource.data === 'string') {
-        data = TypedArrayEncoder.fromBase64(resource.data)
-      } else if (typeof resource.data === 'object') {
-        data = TypedArrayEncoder.fromUtf8String(JSON.stringify(resource.data))
-      } else {
+        data = decodeBase64OrBase64Url(resource.data)
+      } else if (resource.data instanceof Uint8Array) {
+        // Must be checked before the object case, a Uint8Array is also an object
         data = resource.data
+      } else {
+        data = TypedArrayEncoder.fromUtf8String(JSON.stringify(resource.data))
       }
 
       const resourcePayload = MsgCreateResourcePayload.fromPartial({
@@ -672,6 +723,16 @@ export class CheqdDidRegistrar implements DidRegistrar {
 }
 
 type KmsCreateKeyOptionsOkpEd25519 = Kms.KmsCreateKeyOptions<Kms.KmsCreateKeyTypeOkp & { crv: 'Ed25519' }>
+type KmsCreateKeyOptionsEcP256 = Kms.KmsCreateKeyOptions<Kms.KmsCreateKeyTypeEc & { crv: 'P-256' }>
+
+/** Key types accepted for did:cheqd verification methods (JsonWebKey2020) */
+type SupportedPublicJwk = (Kms.KmsJwkPublicOkp & { crv: 'Ed25519' }) | (Kms.KmsJwkPublicEc & { crv: 'P-256' })
+
+function isSupportedPublicJwk(jwk: Kms.KmsJwkPublic): jwk is SupportedPublicJwk {
+  return (jwk.kty === 'OKP' && jwk.crv === 'Ed25519') || (jwk.kty === 'EC' && jwk.crv === 'P-256')
+}
+
+type KmsCreateKeyOptionsDidCheqd = KmsCreateKeyOptionsOkpEd25519 | KmsCreateKeyOptionsEcP256
 
 export interface CheqdDidCreateWithoutDidDocumentOptions extends DidCreateOptions {
   method: 'cheqd'
@@ -685,7 +746,7 @@ export interface CheqdDidCreateWithoutDidDocumentOptions extends DidCreateOption
     feeOptions?: DidFeeOptions
     versionId?: string
     methodSpecificIdAlgo?: `${MethodSpecificIdAlgo}`
-  } & XOR<{ createKey: KmsCreateKeyOptionsOkpEd25519 }, { keyId: string }>
+  } & XOR<{ createKey: KmsCreateKeyOptionsDidCheqd }, { keyId: string }>
 }
 
 export interface CheqdDidCreateFromDidDocumentOptions extends DidCreateOptions {
@@ -721,7 +782,7 @@ export interface CheqdDidUpdateOptions extends DidUpdateOptions {
     fee?: DidStdFee
     feeOptions?: DidFeeOptions
     versionId?: string
-  } & XOR<{ createKey?: KmsCreateKeyOptionsOkpEd25519 }, { keyId?: string }>
+  } & XOR<{ createKey?: KmsCreateKeyOptionsDidCheqd }, { keyId?: string }>
 }
 
 export interface CheqdDidDeactivateOptions extends DidCreateOptions {

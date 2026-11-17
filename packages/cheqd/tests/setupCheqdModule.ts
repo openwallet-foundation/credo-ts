@@ -20,6 +20,9 @@ export const cheqdPayerSeeds = [
 
   // cheqd18kgq9rycwmdluyjtnkv3jn57ttspu639fug2s2
   'hire violin basic rare nerve demand sea drastic pet bench glass salad steak between action field diamond recipe bind success erase sleep next mirror',
+
+  // cheqd1hecghckkswj5pue3t6lt26cxgnmp56h28lndg6
+  'maze cause decorate pave mimic visual plate across reason hole glide math brick iron park normal brother inquiry nut fork wall vague company tent',
 ] as const
 
 export const getCheqdModuleConfig = (seed?: string, rpcUrl?: string) =>

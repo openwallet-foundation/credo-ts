@@ -156,6 +156,21 @@ export function filterResourcesByNameAndType(resources: Metadata[], name: string
   return resources.filter((resource) => resource.name === name && resource.resourceType === type)
 }
 
+/**
+ * Decodes a string resource payload that may be standard base64 or base64url (padded or not).
+ *
+ * `renderResourceData` returns base64url for binary resources, so a resolved payload can be fed straight
+ * back into `createResource`. `TypedArrayEncoder.fromBase64` only accepts standard base64, so try that first
+ * (identical result for strings valid in both alphabets) and fall back to base64url.
+ */
+export function decodeBase64OrBase64Url(data: string): Uint8Array {
+  try {
+    return TypedArrayEncoder.fromBase64(data)
+  } catch {
+    return TypedArrayEncoder.fromBase64Url(data)
+  }
+}
+
 export async function renderResourceData(data: Uint8Array, mimeType: string) {
   if (mimeType === 'application/json') {
     return await JsonEncoder.fromUint8Array(data)

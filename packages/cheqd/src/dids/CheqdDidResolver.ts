@@ -1,4 +1,4 @@
-import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
+import type { ResourceWithMetadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 import type { AgentContext, DidResolutionResult, DidResolver, ParsedDid } from '@credo-ts/core'
 import { CredoError, DidDocument, JsonTransformer, utils } from '@credo-ts/core'
 import type { ParsedCheqdDid } from '../anoncreds/utils/identifiers'
@@ -14,7 +14,7 @@ import {
 } from '../anoncreds/utils/identifiers'
 import { CheqdLedgerService } from '../ledger'
 
-import { filterResourcesByNameAndType, getClosestResourceVersion, renderResourceData } from './didCheqdUtil'
+import { getClosestResourceVersion, renderResourceData } from './didCheqdUtil'
 
 export class CheqdDidResolver implements DidResolver {
   public readonly supportedMethods = ['cheqd']
@@ -74,41 +74,43 @@ export class CheqdDidResolver implements DidResolver {
       }
 
       const { params, id } = parsedDid
-      let resourceId: string
+      let found: ResourceWithMetadata | undefined
       if (did.match(cheqdResourceRegex)?.input) {
-        resourceId = did.split('/')[2]
+        found = await this.queryResource(cheqdLedgerService, parsedDid.did, id, did.split('/')[2])
       } else if (params?.resourceName && params.resourceType) {
-        let resources = (await cheqdLedgerService.resolveCollectionResources(parsedDid.did, id)).resources
-        resources = filterResourcesByNameAndType(resources, params.resourceName, params.resourceType)
-        if (!resources.length) {
-          throw new Error('No resources found')
-        }
+        // Query parameters of a did url are percent-encoded. A name written before they were decoded may contain a literal
+        // '%', so the decoded value is tried first and the literal one second.
+        const names = uniqueValues([safeDecodeURIComponent(params.resourceName), params.resourceName])
+        const types = uniqueValues([safeDecodeURIComponent(params.resourceType), params.resourceType])
 
-        let resource: Metadata | undefined
-        if (params.version) {
-          resource = resources.find((resource) => resource.version === params.version)
+        if (!params.version && !params.resourceVersionTime) {
+          // The latest version, in one request. Listing the whole collection first gets slower the more versions it holds
+          found = await this.queryLatestResource(cheqdLedgerService, parsedDid.did, id, names, types)
         } else {
-          const date = params.resourceVersionTime ? new Date(Number(params.resourceVersionTime) * 1000) : new Date()
-          // find the resourceId closest to the created time
-          resource = getClosestResourceVersion(resources, date)
-        }
+          const { resources } = await cheqdLedgerService.resolveCollectionResources(parsedDid.did, id)
+          const matching = resources.filter(
+            (resource) => names.includes(resource.name) && types.includes(resource.resourceType)
+          )
+          if (!matching.length) {
+            throw new Error('No resources found')
+          }
 
-        if (!resource) {
-          throw new Error('No resources found')
+          const resource = params.version
+            ? matching.find((resource) => resource.version === params.version)
+            : getClosestResourceVersion(matching, new Date(Number(params.resourceVersionTime) * 1000))
+          if (!resource) {
+            throw new Error('No resources found')
+          }
+          found = await this.queryResource(cheqdLedgerService, parsedDid.did, id, resource.id)
         }
-
-        resourceId = resource.id
       } else {
         return {
           error: 'notFound',
           message: `resolver_error: Invalid did url '${did}'`,
         }
       }
-      if (!utils.isValidUuid(resourceId)) {
-        throw new Error('Invalid resource Id')
-      }
 
-      const { resource, metadata } = await cheqdLedgerService.resolveResource(parsedDid.did, id, resourceId)
+      const { resource, metadata } = found
       if (!resource || !metadata) {
         throw new Error('resolver_error: Unable to resolve resource, Please try again')
       }
@@ -125,6 +127,38 @@ export class CheqdDidResolver implements DidResolver {
         message: `resolver_error: Unable to resolve resource '${did}': ${error}`,
       }
     }
+  }
+
+  private async queryResource(
+    cheqdLedgerService: CheqdLedgerService,
+    did: string,
+    collectionId: string,
+    resourceId: string
+  ) {
+    if (!utils.isValidUuid(resourceId)) {
+      throw new Error('Invalid resource Id')
+    }
+    return await cheqdLedgerService.resolveResource(did, collectionId, resourceId)
+  }
+
+  private async queryLatestResource(
+    cheqdLedgerService: CheqdLedgerService,
+    did: string,
+    collectionId: string,
+    names: string[],
+    types: string[]
+  ) {
+    let lastError: unknown
+    for (const name of names) {
+      for (const type of types) {
+        try {
+          return await cheqdLedgerService.resolveLatestResource(did, collectionId, name, type)
+        } catch (error) {
+          lastError = error
+        }
+      }
+    }
+    throw lastError ?? new Error('No resources found')
   }
 
   private async resolveAllDidDocVersions(agentContext: AgentContext, parsedDid: ParsedCheqdDid) {
@@ -189,5 +223,17 @@ export class CheqdDidResolver implements DidResolver {
       didDocumentMetadata,
       didResolutionMetadata: {},
     }
+  }
+}
+
+function uniqueValues(values: string[]) {
+  return [...new Set(values)]
+}
+
+function safeDecodeURIComponent(value: string) {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
   }
 }
