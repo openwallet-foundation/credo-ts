@@ -203,13 +203,14 @@ export class DidCommConnectionService {
       }
 
       // Their incoming ~service may rotate their keys, but must be sent with a key from their previous ~service.
+      // With our own invitation their previous message always has one, as we could only reply through it.
       const previousService = lastReceivedMessage?.service?.resolvedDidCommService
-      if (
-        senderKey &&
-        previousService &&
-        !previousService.recipientKeys.some((key) => keyAgreementsEqual(senderKey, key))
-      ) {
-        throw new CredoError(`Sender key ${senderKey.fingerprint} not found in their previously received service.`)
+      if (lastReceivedMessage && (previousService || outOfBandRecord.role === DidCommOutOfBandRole.Sender)) {
+        const senderKeyFound =
+          senderKey && previousService?.recipientKeys.some((key) => keyAgreementsEqual(senderKey, key))
+        if (!senderKeyFound) {
+          throw new CredoError(`Sender key ${senderKey?.fingerprint} not found in their previously received service.`)
+        }
       }
     }
   }

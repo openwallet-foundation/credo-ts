@@ -422,11 +422,13 @@ describe('DidCommConnectionService', () => {
       const previousKey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
       const rotatedKey = '6fioC1zcDPyPEL19pXRS2E4iJ46zH7xP6uSgAaPdwDrx'
 
-      const assertExchange = (senderKey: string) => {
+      const assertExchange = (senderKey: string, { previousService = true } = {}) => {
         const lastSentMessage = new DidCommMessage()
         lastSentMessage.setService({ recipientKeys: [ourKey], serviceEndpoint: '', routingKeys: [] })
         const lastReceivedMessage = new DidCommMessage()
-        lastReceivedMessage.setService({ recipientKeys: [previousKey], serviceEndpoint: '', routingKeys: [] })
+        if (previousService) {
+          lastReceivedMessage.setService({ recipientKeys: [previousKey], serviceEndpoint: '', routingKeys: [] })
+        }
 
         const message = new DidCommMessage()
         message.setService({ recipientKeys: [senderKey, rotatedKey], serviceEndpoint: '', routingKeys: [] })
@@ -460,6 +462,12 @@ describe('DidCommConnectionService', () => {
 
       it('refuses a new ~service sent with a key not in their previous ~service', async () => {
         await expect(assertExchange(rotatedKey)).rejects.toThrow('not found in their previously received service')
+      })
+
+      it('refuses a message when their previous message has no ~service', async () => {
+        await expect(assertExchange(previousKey, { previousService: false })).rejects.toThrow(
+          'not found in their previously received service'
+        )
       })
     })
   })
