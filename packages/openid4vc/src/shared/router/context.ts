@@ -142,9 +142,17 @@ const requestSessions = new WeakMap<Request, () => Promise<void>>()
  * or when the response finishes, so a handler that sends a response without calling `next()` can't leak it.
  */
 export function registerRequestSession(request: Request, response: Response, agentContext: AgentContext) {
+  // The router ends the session after the response has been sent. That's too late to call waitUntil, as it may hold
+  // the response or only accept calls during the request. So it gets a promise now that resolves once the session ended.
+  let resolveSessionEnded = () => {}
+  const sessionEnded = new Promise<void>((resolve) => {
+    resolveSessionEnded = resolve
+  })
+  agentContext.config.waitUntil(sessionEnded)
+
   let endSessionPromise: Promise<void> | undefined
   const endSession = () => {
-    endSessionPromise ??= agentContext.endSession()
+    endSessionPromise ??= agentContext.endSession().finally(resolveSessionEnded)
     return endSessionPromise
   }
 

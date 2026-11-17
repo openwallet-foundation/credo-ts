@@ -871,19 +871,21 @@ export class DidCommOutOfBandApi {
           await this.emitWithConnection(outOfBandRecord, connectionRecord, messages)
         } else {
           // Wait until the connection is ready and then pass the messages to the agent for further processing
-          this.connectionsApi
-            .returnWhenIsConnected(connectionRecord.id, { timeoutMs })
-            .then((connectionRecord) => this.emitWithConnection(outOfBandRecord, connectionRecord, messages))
-            .catch((error) => {
-              if (error instanceof EmptyError) {
-                this.logger.warn(
-                  `Agent unsubscribed before connection got into ${DidCommDidExchangeState.Completed} state`,
-                  error
-                )
-              } else {
-                this.logger.error('Promise waiting for the connection to be complete failed.', error)
-              }
-            })
+          this.agentContext.config.waitUntil(
+            this.connectionsApi
+              .returnWhenIsConnected(connectionRecord.id, { timeoutMs })
+              .then((connectionRecord) => this.emitWithConnection(outOfBandRecord, connectionRecord, messages))
+              .catch((error) => {
+                if (error instanceof EmptyError) {
+                  this.logger.warn(
+                    `Agent unsubscribed before connection got into ${DidCommDidExchangeState.Completed} state`,
+                    error
+                  )
+                } else {
+                  this.logger.error('Promise waiting for the connection to be complete failed.', error)
+                }
+              })
+          )
         }
       }
       return { outOfBandRecord, connectionRecord }

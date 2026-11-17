@@ -1,7 +1,7 @@
 import type { AgentContext, Constructor, DependencyManager, Module, Update } from '@credo-ts/core'
 import { AgentConfig, CredoError, EventEmitter, InjectionSymbols } from '@credo-ts/core'
 import type { Subject } from 'rxjs'
-import { mergeMap, takeUntil } from 'rxjs'
+import { take } from 'rxjs'
 import { DidCommApi } from './DidCommApi'
 import { DidCommDispatcher } from './DidCommDispatcher'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
@@ -187,50 +187,54 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
     const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
     const messageReceiver = agentContext.dependencyManager.resolve(DidCommMessageReceiver)
 
-    // Listen for new messages (either from transports or somewhere else in the framework / extensions)
-    // We create this before doing any other initialization, so the initialization could already receive messages
-    eventEmitter
-      .observable<DidCommMessageReceivedEvent>(DidCommEventTypes.DidCommMessageReceived)
-      .pipe(
-        takeUntil(stop$),
-        mergeMap(
-          (e) =>
-            messageReceiver
-              .receiveMessage(e.payload.message, {
+    const processMessage = (e: DidCommMessageReceivedEvent) =>
+      messageReceiver
+        .receiveMessage(e.payload.message, {
+          connection: e.payload.connection,
+          contextCorrelationId: e.payload.contextCorrelationId,
+          session: e.payload.session,
+          receivedAt: e.payload.receivedAt,
+        })
+        .catch((error) => {
+          agentContext.config.logger.error('Failed to process message', { error })
+          const processingError =
+            error instanceof Error
+              ? error
+              : new CredoError('Failed to process message', { cause: new Error(String(error)) })
+
+          try {
+            eventEmitter.emit<DidCommMessageProcessingFailedEvent>(agentContext, {
+              type: DidCommEventTypes.DidCommMessageProcessingFailed,
+              payload: {
+                error: processingError,
+                message: e.payload.message,
                 connection: e.payload.connection,
                 contextCorrelationId: e.payload.contextCorrelationId,
-                session: e.payload.session,
                 receivedAt: e.payload.receivedAt,
-              })
-              .catch((error) => {
-                agentContext.config.logger.error('Failed to process message', { error })
-                const processingError =
-                  error instanceof Error
-                    ? error
-                    : new CredoError('Failed to process message', { cause: new Error(String(error)) })
+              },
+            })
+          } catch (eventError) {
+            agentContext.config.logger.error('Failed to emit message processing failure event', {
+              error: eventError,
+              processingError,
+            })
+          }
+        })
 
-                try {
-                  eventEmitter.emit<DidCommMessageProcessingFailedEvent>(agentContext, {
-                    type: DidCommEventTypes.DidCommMessageProcessingFailed,
-                    payload: {
-                      error: processingError,
-                      message: e.payload.message,
-                      connection: e.payload.connection,
-                      contextCorrelationId: e.payload.contextCorrelationId,
-                      receivedAt: e.payload.receivedAt,
-                    },
-                  })
-                } catch (eventError) {
-                  agentContext.config.logger.error('Failed to emit message processing failure event', {
-                    error: eventError,
-                    processingError,
-                  })
-                }
-              }),
-          this.config.processDidCommMessagesConcurrently ? undefined : 1
-        )
-      )
-      .subscribe()
+    // Returning the promise lets the emitter of the message await its processing, and hands it to `waitUntil`.
+    // Messages are queued with a promise chain, so each one is processed in the async context it was received in.
+    let queue: Promise<void> = Promise.resolve()
+    const onMessageReceived = (e: DidCommMessageReceivedEvent) => {
+      if (this.config.processDidCommMessagesConcurrently) return processMessage(e)
+
+      queue = queue.then(() => processMessage(e))
+      return queue
+    }
+
+    // Listen for new messages (either from transports or somewhere else in the framework / extensions)
+    // We create this before doing any other initialization, so the initialization could already receive messages
+    eventEmitter.on<DidCommMessageReceivedEvent>(DidCommEventTypes.DidCommMessageReceived, onMessageReceived)
+    stop$.pipe(take(1)).subscribe(() => eventEmitter.off(DidCommEventTypes.DidCommMessageReceived, onMessageReceived))
 
     // The v2 headers the agent understands, for discover-features `header` queries
     if (this.config.isSupported('v2')) {

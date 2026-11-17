@@ -54,6 +54,14 @@ export class AgentConfig {
     })
   }
 
+  /**
+   * Hands work that is started but not awaited to {@link InitConfig.waitUntil}, and logs it if it fails.
+   */
+  public waitUntil(promise: Promise<unknown>) {
+    const handled = promise.catch((error) => this.logger.error('Work that was not awaited failed', { error }))
+    this.initConfig.waitUntil?.(handled)
+  }
+
   public get getTrustedIssuersForVerification() {
     return this.#getTrustedIssuersForVerification
   }

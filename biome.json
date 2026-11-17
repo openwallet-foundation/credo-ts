@@ -98,7 +98,7 @@
       }
     },
     {
-      "includes": ["**/demo/**", "**/demo-openid/**"],
+      "includes": ["**/demo/**", "**/demo-openid/**", "**/samples/**"],
       "linter": {
         "rules": {
           "suspicious": {

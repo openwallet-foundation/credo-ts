@@ -3,7 +3,7 @@ import { CredoError, EventEmitter, utils } from '@credo-ts/core'
 import type {
   DidCommEncryptedMessage,
   DidCommInboundTransport,
-  DidCommMessageProcessedEvent,
+  DidCommMessageProcessingFailedEvent,
   DidCommMessageReceivedEvent,
   DidCommTransportSession,
 } from '@credo-ts/didcomm'
@@ -20,9 +20,25 @@ import {
 import type { Express, Request, Response } from 'express'
 import express, { text } from 'express'
 import type { Server } from 'http'
-import { filter, firstValueFrom, ReplaySubject, take, timeout } from 'rxjs'
+import { firstValueFrom, from, timeout } from 'rxjs'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
+
+export type DidCommHttpInboundTransportOptions = (
+  | { app: Express; port?: undefined }
+  | { app?: Express; port: number }
+) & {
+  path?: string
+  processedMessageListenerTimeoutMs?: number
+
+  /**
+   * Respond once the message has been processed. By default a message that doesn't get a response over the request
+   * is answered as soon as it has been decrypted. Serverless platforms can stop the CPU once the response is sent.
+   *
+   * @default false
+   */
+  respondAfterProcessing?: boolean
+}
 
 export class DidCommHttpInboundTransport implements DidCommInboundTransport {
   public readonly app: Express
@@ -30,6 +46,7 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
   private path: string
   private _server?: Server
   private processedMessageListenerTimeoutMs: number
+  private respondAfterProcessing: boolean
 
   public get server() {
     return this._server
@@ -40,11 +57,11 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
     path,
     port,
     processedMessageListenerTimeoutMs,
-  }:
-    | { app: Express; port?: undefined; path?: string; processedMessageListenerTimeoutMs?: number }
-    | { app?: Express; port: number; path?: string; processedMessageListenerTimeoutMs?: number }) {
+    respondAfterProcessing,
+  }: DidCommHttpInboundTransportOptions) {
     this.port = port
     this.processedMessageListenerTimeoutMs = processedMessageListenerTimeoutMs ?? 10000 // timeout after 10 seconds
+    this.respondAfterProcessing = respondAfterProcessing ?? false
 
     // Use the caller-provided Express app, or create one
     this.app = app ?? express()
@@ -105,35 +122,27 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
           .send(`Unsupported content-type. Supported content-types are: ${acceptedContentTypes.join(', ')}`)
       }
 
-      const session = new HttpTransportSession(utils.uuid(), req, res)
+      const session = new HttpTransportSession(utils.uuid(), req, res, {
+        respondAfterProcessing: this.respondAfterProcessing,
+      })
       // We want to make sure the session is removed if the connection is closed, as it
       // can't be used anymore then. This could happen if the client abruptly closes the connection.
       // The request closes as soon as its body is read, so this listens on the response.
       res.once('close', () => transportService.removeSession(session))
 
+      const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
+      let encryptedMessage: DidCommEncryptedMessage | undefined
+      let processingError: Error | undefined
+      const onProcessingFailed = (e: DidCommMessageProcessingFailedEvent) => {
+        if (e.payload.message === encryptedMessage) processingError = e.payload.error
+      }
+      eventEmitter.on(DidCommEventTypes.DidCommMessageProcessingFailed, onProcessingFailed)
+
       try {
         const message = req.body as string
-        const encryptedMessage = JSON.parse(message) as DidCommEncryptedMessage
+        encryptedMessage = JSON.parse(message) as DidCommEncryptedMessage
 
-        const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
-        const observable = eventEmitter.observable<DidCommMessageProcessedEvent>(
-          DidCommEventTypes.DidCommMessageProcessed
-        )
-        const subject = new ReplaySubject(1)
-
-        observable
-          .pipe(
-            filter((e) => e.type === DidCommEventTypes.DidCommMessageProcessed),
-            filter((e) => e.payload.encryptedMessage === encryptedMessage),
-            timeout({
-              first: this.processedMessageListenerTimeoutMs,
-              meta: 'DidCommHttpInboundTransport.start',
-            }),
-            take(1) // automatically unsubscribe after the first matching event
-          )
-          .subscribe(subject)
-
-        eventEmitter.emit<DidCommMessageReceivedEvent>(agentContext, {
+        const processing = eventEmitter.emit<DidCommMessageReceivedEvent>(agentContext, {
           type: DidCommEventTypes.DidCommMessageReceived,
           payload: {
             message: encryptedMessage,
@@ -142,7 +151,12 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
         })
 
         // Wait for message to be processed
-        await firstValueFrom(subject)
+        await firstValueFrom(
+          from(processing).pipe(
+            timeout({ first: this.processedMessageListenerTimeoutMs, meta: 'DidCommHttpInboundTransport.start' })
+          )
+        )
+        if (processingError) throw processingError
 
         // If agent did not use session when processing message we need to send response here.
         // 202 Accepted, as no response travels back on this connection: https://identity.foundation/didcomm-messaging/spec/v2.1/#https
@@ -156,6 +170,7 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
           res.status(500).send('Error processing message')
         }
       } finally {
+        eventEmitter.off(DidCommEventTypes.DidCommMessageProcessingFailed, onProcessingFailed)
         transportService.removeSession(session)
       }
     })
@@ -167,11 +182,13 @@ export class HttpTransportSession implements DidCommTransportSession {
   public readonly type = 'http'
   public req: Request
   public res: Response
+  private respondAfterProcessing: boolean
 
-  public constructor(id: string, req: Request, res: Response) {
+  public constructor(id: string, req: Request, res: Response, options: { respondAfterProcessing?: boolean } = {}) {
     this.id = id
     this.req = req
     this.res = res
+    this.respondAfterProcessing = options.respondAfterProcessing ?? false
   }
 
   public readonly isSingleResponse = true
@@ -181,6 +198,9 @@ export class HttpTransportSession implements DidCommTransportSession {
   }
 
   public async close(): Promise<void> {
+    // The route responds once processing is done
+    if (this.respondAfterProcessing) return
+
     if (!this.res.headersSent) {
       this.res.status(202).end()
     }

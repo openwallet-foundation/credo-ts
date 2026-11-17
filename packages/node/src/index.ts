@@ -11,6 +11,7 @@ import { DidCommWsInboundTransport } from './transport/DidCommWsInboundTransport
 export { NodeInMemoryKeyManagementStorage } from './kms/NodeInMemoryKeyManagementStorage'
 export { NodeKeyManagementService } from './kms/NodeKeyManagementService'
 export type { NodeKeyManagementStorage } from './kms/NodeKeyManagementStorage'
+export type { DidCommHttpInboundTransportOptions } from './transport/DidCommHttpInboundTransport'
 export type { DidCommWsInboundTransportOptions } from './transport/DidCommWsInboundTransport'
 
 Hasher.setImplementation(nodeHash)
