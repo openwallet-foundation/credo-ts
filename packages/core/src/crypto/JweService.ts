@@ -123,7 +123,6 @@ export class JweService {
 
     const recipient = this.selectRecipient(jwe, options.recipientKid)
     const ephemeralPublicJwk = this.ecdhPublicJwk(PublicJwk.fromUnknown(protectedHeader.epk))
-    // The sender chooses the epk, and the KMS only rejects a mismatch after loading the private key
     if (options.recipientKey instanceof PublicJwk) {
       assertAsymmetricJwkKeyTypeMatches(this.ecdhPublicJwk(options.recipientKey), ephemeralPublicJwk)
     }
