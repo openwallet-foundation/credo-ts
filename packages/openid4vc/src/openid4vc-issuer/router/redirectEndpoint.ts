@@ -237,26 +237,30 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
           redirectUri.searchParams.set('state', issuanceSession.chainedIdentity.state)
         }
 
-        // Update authorization information
-        issuanceSession.authorization = {
-          ...issuanceSession.authorization,
-          code: authorizationCode,
-          codeExpiresAt: authorizationCodeExpiresAt,
-        }
-
         // Store access token response
-        issuanceSession.chainedIdentity = {
+        const chainedIdentity = {
           ...issuanceSession.chainedIdentity,
           externalAccessTokenResponse: accessTokenResponse,
           externalDpop: chainedDpop.session,
         }
 
-        // TODO: we need to start using locks so we can't get corrupted state
-        await openId4VcIssuerService.updateState(
-          agentContext,
-          issuanceSession,
-          OpenId4VcIssuanceSessionState.AuthorizationGranted
-        )
+        // Under a lock, so only one redirect grants authorization for the session
+        await openId4VcIssuerService.updateStateWithLock(agentContext, issuanceSession, {
+          newState: OpenId4VcIssuanceSessionState.AuthorizationGranted,
+          allowedStates: [OpenId4VcIssuanceSessionState.AuthorizationInitiated],
+          update: (record) => {
+            record.authorization = {
+              ...record.authorization,
+              code: authorizationCode,
+              codeExpiresAt: authorizationCodeExpiresAt,
+            }
+            record.chainedIdentity = chainedIdentity
+          },
+          error: new Oauth2ServerErrorResponseError({
+            error: Oauth2ErrorCodes.InvalidRequest,
+            error_description: `Invalid 'state' parameter`,
+          }),
+        })
 
         response.redirect(redirectUri.toString())
         return next()

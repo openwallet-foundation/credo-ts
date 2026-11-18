@@ -326,13 +326,20 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       }
 
       // Do not update the session state if the grant type is refresh token. This
-      // avoids the session state going "backwards".
+      // avoids the session state going "backwards". Under a lock, so only one request can use the code.
       if (grant.grantType !== refreshTokenGrantIdentifier) {
-        await openId4VcIssuerService.updateState(
-          agentContext,
-          issuanceSession,
-          OpenId4VcIssuanceSessionState.AccessTokenRequested
-        )
+        await openId4VcIssuerService.updateStateWithLock(agentContext, issuanceSession, {
+          newState: OpenId4VcIssuanceSessionState.AccessTokenRequested,
+          allowedStates: allowedStates,
+          update: (record) => {
+            record.walletAttestation = issuanceSession.walletAttestation
+            record.clientId = issuanceSession.clientId
+          },
+          error: new Oauth2ServerErrorResponseError({
+            error: Oauth2ErrorCodes.InvalidGrant,
+            error_description: 'Invalid authorization code',
+          }),
+        })
       }
 
       const { cNonce, cNonceExpiresInSeconds } = await openId4VcIssuerService.createNonce(agentContext, issuer)
@@ -392,20 +399,27 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         cNonceExpiresIn: cNonceExpiresInSeconds,
       })
 
-      issuanceSession.authorization = {
-        ...issuanceSession.authorization,
-        subject,
-      }
-
+      // Under a lock, so a refresh doesn't overwrite the progress of a concurrent credential request, and a new
+      // token is only stored while the session waits for it
+      const isRefresh = grant.grantType === refreshTokenGrantIdentifier
+      const { walletAttestation, clientId } = issuanceSession
+      const result = await openId4VcIssuerService.updateIssuanceSessionWithLock(agentContext, issuanceSession, {
+        allowedStates: isRefresh ? allowedStates : [OpenId4VcIssuanceSessionState.AccessTokenRequested],
+        update: (record) => {
+          record.authorization = { ...record.authorization, subject }
+          record.walletAttestation = walletAttestation
+          record.clientId = clientId
+          if (!isRefresh) record.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+          return true
+        },
+        error: new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidGrant,
+          error_description: 'Invalid authorization code',
+        }),
+      })
       // A refresh keeps the session state, so it doesn't emit a state changed event
-      if (grant.grantType === refreshTokenGrantIdentifier) {
-        await issuanceSessionRepository.update(agentContext, issuanceSession)
-      } else {
-        await openId4VcIssuerService.updateState(
-          agentContext,
-          issuanceSession,
-          OpenId4VcIssuanceSessionState.AccessTokenCreated
-        )
+      if (!isRefresh) {
+        openId4VcIssuerService.emitStateChangedEvent(agentContext, result.issuanceSession, result.previousState)
       }
 
       return sendJsonResponse(response, next, accessTokenResponse)
@@ -430,39 +444,29 @@ async function verifyTxCode(
   txCode: string,
   allowedStates: OpenId4VcIssuanceSessionState[]
 ) {
-  const issuanceSessionRepository = agentContext.resolve(OpenId4VcIssuanceSessionRepository)
+  // A valid tx_code doesn't change the session, so it needs no lock. The state is checked when the token is stored.
+  if (issuanceSession.userPin === txCode) return issuanceSession
 
-  let previousState = issuanceSession.state
-  const lockedIssuanceSession = await issuanceSessionRepository.updateByIdWithLock(
-    agentContext,
-    issuanceSession.id,
-    async (record) => {
-      previousState = record.state
-      if (!allowedStates.includes(record.state) || record.userPin === txCode) return record
-
+  const openId4VcIssuerService = agentContext.resolve(OpenId4VcIssuerService)
+  const result = await openId4VcIssuerService.updateIssuanceSessionWithLock(agentContext, issuanceSession, {
+    allowedStates,
+    update: (record) => {
       record.failedTxCodeAttempts = (record.failedTxCodeAttempts ?? 0) + 1
       if (record.failedTxCodeAttempts >= config.txCodeMaxAttempts) {
         record.state = OpenId4VcIssuanceSessionState.Error
         record.errorMessage = 'Maximum number of tx_code attempts reached'
       }
-      return record
-    }
-  )
-
-  if (!allowedStates.includes(previousState)) {
-    throw new Oauth2ServerErrorResponseError({
+      return true
+    },
+    error: new Oauth2ServerErrorResponseError({
       error: Oauth2ErrorCodes.InvalidGrant,
       error_description: 'Invalid authorization code',
-    })
-  }
+    }),
+  })
 
-  if (lockedIssuanceSession.userPin === txCode) return lockedIssuanceSession
-
-  const maxAttemptsReached = lockedIssuanceSession.state === OpenId4VcIssuanceSessionState.Error
+  const maxAttemptsReached = result.issuanceSession.state === OpenId4VcIssuanceSessionState.Error
   if (maxAttemptsReached) {
-    agentContext
-      .resolve(OpenId4VcIssuerService)
-      .emitStateChangedEvent(agentContext, lockedIssuanceSession, previousState)
+    openId4VcIssuerService.emitStateChangedEvent(agentContext, result.issuanceSession, result.previousState)
   }
 
   throw new Oauth2ServerErrorResponseError({

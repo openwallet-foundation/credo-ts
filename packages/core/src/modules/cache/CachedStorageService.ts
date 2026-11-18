@@ -36,6 +36,30 @@ export class CachedStorageService<T extends BaseRecord<any, any, any>> implement
     if (record.allowCache) await this.cache(agentContext).remove(agentContext, this.getCacheKey(record))
   }
 
+  public supportsLocking(agentContext: AgentContext): boolean {
+    return this.storageService.supportsLocking?.(agentContext) ?? false
+  }
+
+  // Implemented even when the wrapped storage service can't lock, otherwise Repository can't tell whether it can
+  public async updateByIdWithLock(
+    agentContext: AgentContext,
+    recordClass: BaseRecordConstructor<T>,
+    id: string,
+    updateCallback: (record: T) => Promise<T>
+  ): Promise<T> {
+    if (!this.storageService.updateByIdWithLock) {
+      const updatedRecord = await updateCallback(await this.storageService.getById(agentContext, recordClass, id))
+      await this.update(agentContext, updatedRecord)
+      return updatedRecord
+    }
+
+    const updatedRecord = await this.storageService.updateByIdWithLock(agentContext, recordClass, id, updateCallback)
+    if (recordClass.allowCache) {
+      await this.cache(agentContext).remove(agentContext, this.getCacheKey({ type: recordClass.type, id }))
+    }
+    return updatedRecord
+  }
+
   public async delete(agentContext: AgentContext, record: T): Promise<void> {
     await this.storageService.delete(agentContext, record)
     if (record.allowCache) await this.cache(agentContext).remove(agentContext, this.getCacheKey(record))

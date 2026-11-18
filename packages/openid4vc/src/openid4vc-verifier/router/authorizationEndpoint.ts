@@ -11,6 +11,7 @@ import {
   sendOauth2ErrorResponse,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
+import { OpenId4VcVerificationSessionFinishedError } from '../OpenId4VcVerificationSessionFinishedError'
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
@@ -55,6 +56,9 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
         redirect_uri: verificationSession.authorizationResponseRedirectUri,
       })
     } catch (error) {
+      // A concurrent response ended the session first, so this one doesn't get the redirect_uri either
+      if (error instanceof OpenId4VcVerificationSessionFinishedError) authorizationResponseRedirectUri = undefined
+
       if (error instanceof Openid4vpAuthorizationResponseError) {
         return sendJsonResponse(response, next, { redirect_uri: authorizationResponseRedirectUri })
       }

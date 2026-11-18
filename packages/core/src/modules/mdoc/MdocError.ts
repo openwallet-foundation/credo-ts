@@ -18,6 +18,15 @@ export class MdocDeviceRequestNotSatisfiedError extends MdocError {
 }
 
 /**
+ * Thrown when an mdoc verification session no longer waits for a response, because a response already ended it.
+ */
+export class MdocVerificationSessionFinishedError extends MdocError {
+  public constructor(message = 'Verification session already received a response') {
+    super(message)
+  }
+}
+
+/**
  * Thrown when a response is received for an mdoc verification session that has expired.
  *
  * Separate from {@link MdocError} so callers can distinguish an expired session (the wallet took

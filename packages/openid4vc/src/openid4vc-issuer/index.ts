@@ -1,4 +1,5 @@
 export * from './OpenId4VcIssuanceSessionState'
+export * from './OpenId4VcIssuanceSessionStateError'
 export * from './OpenId4VcIssuerApi'
 export * from './OpenId4VcIssuerEvents'
 export * from './OpenId4VcIssuerModule'

@@ -1,3 +1,4 @@
+export * from './OpenId4VcVerificationSessionFinishedError'
 export * from './OpenId4VcVerificationSessionState'
 export * from './OpenId4VcVerifierApi'
 export * from './OpenId4VcVerifierEvents'

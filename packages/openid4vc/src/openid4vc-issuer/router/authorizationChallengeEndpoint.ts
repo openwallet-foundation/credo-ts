@@ -113,6 +113,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     })
   }
 
+  const allowedStates = [OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved]
   let issuanceSession: OpenId4VcIssuanceSessionRecord | null
   if (authorizationChallengeRequest.issuer_state) {
     // Issuer-initiated: the request was initiated by a credential offer.
@@ -121,7 +122,6 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
       issuerState: authorizationChallengeRequest.issuer_state,
     })
 
-    const allowedStates = [OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved]
     if (!issuanceSession || !allowedStates.includes(issuanceSession.state)) {
       throw new Oauth2ServerErrorResponseError(
         {
@@ -357,11 +357,23 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
   // of the wallet attestation
   issuanceSession.clientId = clientAttestation?.clientAttestation.payload.sub ?? authorizationChallengeRequest.client_id
 
-  await openId4VcIssuerService.updateState(
-    agentContext,
-    issuanceSession,
-    OpenId4VcIssuanceSessionState.AuthorizationInitiated
-  )
+  // Under a lock, so only one authorization challenge can start the presentation for the session
+  await openId4VcIssuerService.updateStateWithLock(agentContext, issuanceSession, {
+    newState: OpenId4VcIssuanceSessionState.AuthorizationInitiated,
+    allowedStates: allowedStates,
+    update: (record) => {
+      record.dpop = issuanceSession.dpop
+      record.walletAttestation = issuanceSession.walletAttestation
+      record.pkce = issuanceSession.pkce
+      record.authorization = issuanceSession.authorization
+      record.presentation = issuanceSession.presentation
+      record.clientId = issuanceSession.clientId
+    },
+    error: new Oauth2ServerErrorResponseError({
+      error: Oauth2ErrorCodes.InvalidRequest,
+      error_description: `Invalid 'issuer_state' parameter`,
+    }),
+  })
 
   const authorizationChallengeErrorResponse = authorizationServer.createAuthorizationChallengePresentationErrorResponse(
     {
@@ -484,8 +496,11 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
     .getVerificationSessionById(openId4VcVerificationSessionId)
     .catch(async () => {
       // Issuance session is corrupted
-      issuanceSession.errorMessage = `Associated openId4VcVerificationSessionRecord with id '${openId4VcVerificationSessionId}' does not exist`
-      await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
+      await openId4VcIssuerService.updateStateToError(
+        agentContext,
+        issuanceSession,
+        `Associated openId4VcVerificationSessionRecord with id '${openId4VcVerificationSessionId}' does not exist`
+      )
 
       throw new Oauth2ServerErrorResponseError(
         {
@@ -500,8 +515,11 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
     .then(async (verificationSession) => {
       // Issuance session cannot be used anymore
       if (verificationSession.state === OpenId4VcVerificationSessionState.Error) {
-        issuanceSession.errorMessage = `Associated openId4VcVerificationSessionRecord with id '${openId4VcVerificationSessionId}' has error state`
-        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
+        await openId4VcIssuerService.updateStateToError(
+          agentContext,
+          issuanceSession,
+          `Associated openId4VcVerificationSessionRecord with id '${openId4VcVerificationSessionId}' has error state`
+        )
       }
 
       if (
@@ -529,18 +547,22 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
   const authorizationCode = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
   const authorizationCodeExpiresAt = utils.addSecondsToDate(new Date(), config.authorizationCodeExpiresInSeconds)
 
-  issuanceSession.authorization = {
-    ...issuanceSession.authorization,
-    code: authorizationCode,
-    codeExpiresAt: authorizationCodeExpiresAt,
-  }
-
-  // TODO: we need to start using locks so we can't get corrupted state
-  await openId4VcIssuerService.updateState(
-    agentContext,
-    issuanceSession,
-    OpenId4VcIssuanceSessionState.AuthorizationGranted
-  )
+  // Under a lock, so only one request gets an authorization code for the presentation
+  await openId4VcIssuerService.updateStateWithLock(agentContext, issuanceSession, {
+    newState: OpenId4VcIssuanceSessionState.AuthorizationGranted,
+    allowedStates: allowedStates,
+    update: (record) => {
+      record.authorization = {
+        ...record.authorization,
+        code: authorizationCode,
+        codeExpiresAt: authorizationCodeExpiresAt,
+      }
+    },
+    error: new Oauth2ServerErrorResponseError({
+      error: Oauth2ErrorCodes.InvalidSession,
+      error_description: `Invalid 'auth_session'`,
+    }),
+  })
 
   const { authorizationChallengeResponse } = authorizationServer.createAuthorizationChallengeResponse({
     authorizationCode,

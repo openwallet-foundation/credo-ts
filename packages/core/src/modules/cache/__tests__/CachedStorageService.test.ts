@@ -48,6 +48,38 @@ describe('CachedStorageService', () => {
     expect(await cache.get(agentContext, `${record.type}:${record.id}`)).toBeNull()
   })
 
+  test('updates a record with the lock of the wrapped storage service and removes it from the cache', async () => {
+    const cache = new InMemoryLruCache({ limit: 10 })
+    const agentContext = getAgentContext({
+      registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache, useCachedStorageService: true })]],
+    })
+    const record = new CachedTestRecord({ id: 'test-id', foo: 'bar' })
+    const storageService = {
+      save: vi.fn(),
+      update: vi.fn(),
+      supportsLocking: () => true,
+      updateByIdWithLock: vi.fn(async (_agentContext, _recordClass, _id, updateCallback) => updateCallback(record)),
+    } as unknown as StorageService<CachedTestRecord>
+    const cachedStorageService = new CachedStorageService(storageService)
+
+    await cachedStorageService.save(agentContext, record)
+    const updatedRecord = await cachedStorageService.updateByIdWithLock(
+      agentContext,
+      CachedTestRecord,
+      record.id,
+      async (record) => {
+        record.foo = 'baz'
+        return record
+      }
+    )
+
+    expect(cachedStorageService.supportsLocking(agentContext)).toBe(true)
+    expect(storageService.updateByIdWithLock).toHaveBeenCalledTimes(1)
+    expect(storageService.update).not.toHaveBeenCalled()
+    expect(updatedRecord.foo).toBe('baz')
+    expect(await cache.get(agentContext, `${record.type}:${record.id}`)).toBeNull()
+  })
+
   test('removes a deleted record from the cache', async () => {
     const cache = new InMemoryLruCache({ limit: 10 })
     const agentContext = getAgentContext({

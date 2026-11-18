@@ -75,13 +75,13 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
           return sendNotFoundResponse(response, next, agentContext.config.logger, 'Session expired')
         }
 
-        // It's okay to retrieve the offer multiple times. So we only update the state if it's not already retrieved
+        // It's okay to retrieve the offer multiple times. So we only update the state if it's not already retrieved,
+        // under a lock so a concurrent request can't move the session back
         if (openId4VcIssuanceSession.state !== OpenId4VcIssuanceSessionState.OfferUriRetrieved) {
-          await issuerService.updateState(
-            agentContext,
-            openId4VcIssuanceSession,
-            OpenId4VcIssuanceSessionState.OfferUriRetrieved
-          )
+          await issuerService.updateStateWithLock(agentContext, openId4VcIssuanceSession, {
+            newState: OpenId4VcIssuanceSessionState.OfferUriRetrieved,
+            allowedStates: [OpenId4VcIssuanceSessionState.OfferCreated],
+          })
         }
 
         return sendJsonResponse(response, next, openId4VcIssuanceSession.credentialOfferPayload)
