@@ -1,13 +1,17 @@
 import type { AgentContext } from '../../agent'
 import { CredoError } from '../../error'
 import { isDid } from '../../utils'
-import { type DidPurpose, DidsApi, type VerificationMethod } from '../dids'
+import { type DidPurpose, DidsApi, toAbsoluteDidUrl, type VerificationMethod } from '../dids'
 import { getSupportedVerificationMethodTypesForPublicJwk } from '../dids/domain/key-type/keyDidMapping'
+import { tryParseDid } from '../dids/domain/parse'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import type { SingleValidationResult } from './models/W3cVerifyResult'
 
 export interface ResolvedSigner {
   verificationMethod: VerificationMethod
+
+  /** The absolute id of `verificationMethod`, which a DID document may list with a relative id */
+  verificationMethodId: string
 
   /** The DID of the DID document that lists and controls `verificationMethod` */
   signer: string
@@ -30,7 +34,11 @@ export async function resolveSigner(
   const verificationMethod = didDocument.dereferenceKey(verificationMethodId, purpose)
   assertControlledByDid(verificationMethod, didDocument.id)
 
-  return { verificationMethod, signer: didDocument.id }
+  return {
+    verificationMethod,
+    verificationMethodId: toAbsoluteDidUrl(didDocument.id, verificationMethod.id),
+    signer: didDocument.id,
+  }
 }
 
 /**
@@ -48,7 +56,7 @@ export async function resolveJwtSigner(
       throw new CredoError(`JWT 'iss' MUST be a did when 'kid' is a relative did url`)
     }
 
-    resolved = await resolveSigner(agentContext, `${iss}${kid}`, purpose)
+    resolved = await resolveSigner(agentContext, toAbsoluteDidUrl(iss, kid), purpose)
   } else if (kid && isDid(kid)) {
     resolved = await resolveSigner(agentContext, kid, purpose)
   } else {
@@ -70,7 +78,11 @@ export async function resolveJwtSigner(
     }
 
     assertControlledByDid(verificationMethods[0], didDocument.id)
-    resolved = { verificationMethod: verificationMethods[0], signer: didDocument.id }
+    resolved = {
+      verificationMethod: verificationMethods[0],
+      verificationMethodId: toAbsoluteDidUrl(didDocument.id, verificationMethods[0].id),
+      signer: didDocument.id,
+    }
   }
 
   if (iss && resolved.signer !== iss) {
@@ -78,6 +90,36 @@ export async function resolveJwtSigner(
   }
 
   return resolved
+}
+
+/**
+ * Resolves the `authentication` verification method a holder presents a credential with, for one of its
+ * `credentialSubject.id`s. A DID URL names the method, else it is the first method of the DID. This is the
+ * key `validateCredentialSubjectAuthentication` accepts.
+ */
+export async function resolveCredentialSubjectVerificationMethod(
+  agentContext: AgentContext,
+  credentialSubjectId: string
+): Promise<ResolvedSigner> {
+  const parsedDid = tryParseDid(credentialSubjectId)
+  if (!parsedDid) {
+    throw new CredoError(`Only dids are supported as credentialSubject id. ${credentialSubjectId} is not a valid did`)
+  }
+
+  if (parsedDid.fragment) return resolveSigner(agentContext, credentialSubjectId, ['authentication'])
+
+  const didDocument = await agentContext.dependencyManager.resolve(DidsApi).resolveDidDocument(credentialSubjectId)
+  const [verificationMethod] = didDocument.findVerificationMethodsByPurpose(['authentication'])
+  if (!verificationMethod) {
+    throw new CredoError(`No authentication verificationMethods found for did ${parsedDid.did} in did document`)
+  }
+
+  assertControlledByDid(verificationMethod, didDocument.id)
+  return {
+    verificationMethod,
+    verificationMethodId: toAbsoluteDidUrl(didDocument.id, verificationMethod.id),
+    signer: didDocument.id,
+  }
 }
 
 /**

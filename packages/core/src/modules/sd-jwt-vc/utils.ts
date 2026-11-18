@@ -3,7 +3,14 @@ import { AgentContext } from '../../agent'
 import type { HashName } from '../../crypto'
 import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'
-import { type DidPurpose, DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
+import {
+  type DidPurpose,
+  DidResolverService,
+  DidsApi,
+  getPublicJwkFromVerificationMethod,
+  parseDid,
+  toAbsoluteDidUrl,
+} from '../dids'
 import { isKnownJwaSignatureAlgorithm, type Jwk, KeyManagementApi, PublicJwk } from '../kms'
 import type { EncodedX509Certificate } from '../x509/X509ServiceOptions'
 import { SdJwtVcError } from './SdJwtVcError'
@@ -260,7 +267,7 @@ export function getIssuerDidUrl(iss: string, kid: unknown): string {
 
   const issuerKid = kid as string
   if (issuerKid.startsWith('#')) {
-    return `${iss}${issuerKid}`
+    return toAbsoluteDidUrl(iss, issuerKid)
   }
 
   if (issuerKid.startsWith('did:')) {

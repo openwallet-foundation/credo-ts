@@ -1116,6 +1116,14 @@ describe('W3cV2JwtCredentialService', () => {
               credentials: [{ subjectIds: [holderDidKey.did], cnf: { method: 'jwk', jwk: holderDidKey.publicJwk } }],
             }),
           ],
+          [
+            'the holder whose key is the credentialSubject.id',
+            () => ({ holder: holderDidKey.did, credentials: [{ subjectIds: [didBinding(holderDidKey).didUrl] }] }),
+          ],
+          [
+            'the DID of the key that is the credentialSubject.id',
+            () => ({ credentials: [{ subjectIds: [didBinding(holderDidKey).didUrl] }] }),
+          ],
         ])('signs as %s, and the verifier accepts it', async (_, getSignerCase) => {
           const presentation = await signPresentationFor(getSignerCase())
 
@@ -1153,6 +1161,14 @@ describe('W3cV2JwtCredentialService', () => {
             () => ({
               credentials: [{ subjectIds: [secondHolderDidKey.did], cnf: didBinding(holderDidKey) }],
               error: `Presentation signer '${secondHolderDidKey.did}' is not the did '${holderDidKey.did}' of credential cnf.kid`,
+            }),
+          ],
+          [
+            'the credentialSubject.id is a key the holder does not have',
+            () => ({
+              holder: holderDidKey.did,
+              credentials: [{ subjectIds: [`${holderDidKey.did}#key-2`] }],
+              error: `Unable to determine signer key for presentation holder '${holderDidKey.did}'. The presentation credentials are bound to a key that is not a locally controlled authentication verification method of the holder.`,
             }),
           ],
           [
@@ -1240,6 +1256,50 @@ describe('W3cV2JwtCredentialService', () => {
           })
 
           expect(presentation.jwt.header.kid).toBe(`${legacyDidKey.did}#${legacyDidKey.publicJwk.fingerprint}`)
+
+          const result = await new W3cV2CredentialService(
+            {} as never,
+            {} as never,
+            w3cV2JwtCredentialService,
+            {} as never
+          ).verifyPresentation(agentContext, { presentation, challenge: 'challenge', domain: 'example.com' })
+
+          expect(result.isValid).toBe(true)
+        })
+
+        test('signs with the key that is the credentialSubject.id when the holder has several', async () => {
+          const did = 'did:web:multi-key-holder.example'
+          const keys = await Promise.all([
+            kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } }),
+            kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } }),
+          ])
+          const verificationMethods = keys.map(
+            (key, index) =>
+              new VerificationMethod(
+                getJsonWebKey2020({
+                  did,
+                  verificationMethodId: `${did}#key-${index + 1}`,
+                  publicJwk: PublicJwk.fromPublicJwk(key.publicJwk),
+                })
+              )
+          )
+          await dids.import({
+            did,
+            didDocument: new DidDocument({
+              id: did,
+              verificationMethod: verificationMethods,
+              authentication: verificationMethods.map((method) => method.id),
+            }),
+            keys: keys.map((key, index) => ({ didDocumentRelativeKeyId: `#key-${index + 1}`, kmsKeyId: key.keyId })),
+            overwrite: true,
+          })
+
+          const presentation = await signPresentationFor({
+            holder: did,
+            credentials: [{ subjectIds: [`${did}#key-2`] }],
+          })
+
+          expect(presentation.jwt.header.kid).toBe(`${did}#key-2`)
 
           const result = await new W3cV2CredentialService(
             {} as never,

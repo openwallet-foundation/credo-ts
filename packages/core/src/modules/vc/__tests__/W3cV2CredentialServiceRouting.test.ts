@@ -1149,4 +1149,39 @@ describe('W3cV2CredentialService routing', () => {
     expect(result.credentialEntries[0]?.validations.credentialSubjectAuthentication?.isValid).toBe(true)
     expect(result.isValid).toBe(true)
   })
+
+  test.each([
+    ['accepts', 'the verification method that signed the presentation', () => jwtProofVerificationMethod, true],
+    ['rejects', 'another verification method of the signer', () => `${jwtProofSigner}#key-2`, false],
+  ])('verifyPresentation %s a credentialSubject.id that is a DID URL of %s', async (_, __, getSubjectId, isValid) => {
+    const credential = W3cV2DataIntegrityVerifiableCredential.fromObject({
+      ...CredoDidKeyDiVc,
+      credentialSubject: {
+        ...CredoDidKeyDiVc.credentialSubject,
+        id: getSubjectId(),
+      },
+    })
+    const presentation = composePresentationWithEntries(validVcOnlyOuterPresentationsByName.outerJwt_withoutHolder, [
+      credential,
+    ])
+    const { agentContext: mockAgentContext } = createSignerResolvingAgentContext(jwtProofSigner)
+
+    jwtService.verifyPresentation.mockResolvedValue({
+      isValid: true,
+      presentation: { isValid: true, validations: {} },
+      credentialEntries: [],
+    })
+    diService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
+
+    const result = await service.verifyPresentation(
+      mockAgentContext as never,
+      {
+        presentation,
+        challenge: 'challenge-123',
+      } as never
+    )
+
+    expect(result.credentialEntries[0]?.validations.credentialSubjectAuthentication?.isValid).toBe(isValid)
+    expect(result.isValid).toBe(isValid)
+  })
 })

@@ -38,6 +38,7 @@ import {
   W3cV2SdJwtVerifiableCredential,
   W3cV2SdJwtVerifiablePresentation,
 } from './sd-jwt-vc'
+import { validateCredentialSubjectAuthentication } from './util'
 import { getSignerForJwt } from './v2-jwt-utils'
 import type {
   W3cV2DiSignCredentialOptions,
@@ -484,21 +485,7 @@ export class W3cV2CredentialService {
     credentialSubjectIds: string[],
     holderBinding: SingleValidationResult
   ) {
-    const presentationAuthenticatesCredentialSubject = credentialSubjectIds.some(
-      (subjectId) => signer.signer === subjectId
-    )
-
-    const credentialSubjectAuthentication =
-      credentialSubjectIds.length > 0 && !presentationAuthenticatesCredentialSubject
-        ? {
-            isValid: false,
-            error: new CredoError(
-              'Credential has one or more credentialSubject ids, but presentation does not authenticate credential subject'
-            ),
-          }
-        : {
-            isValid: true,
-          }
+    const credentialSubjectAuthentication = validateCredentialSubjectAuthentication(credentialSubjectIds, signer)
 
     return {
       ...credentialResult,

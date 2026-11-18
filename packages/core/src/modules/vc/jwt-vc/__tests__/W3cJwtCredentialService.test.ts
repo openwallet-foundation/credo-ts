@@ -457,6 +457,51 @@ describe('W3cJwtCredentialService', () => {
       ])
     })
 
+    test.each([
+      ['accepts', 'the key that signed the presentation', () => holderDidKey.publicJwk.fingerprint, true],
+      ['rejects', 'another key of the holder', () => 'key-2', false],
+    ])('%s a credentialSubject.id that is a DID URL of %s', async (_, __, getFragment, isValid) => {
+      const holderVerificationMethod = `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`
+      const credential = await w3cJwtCredentialService.signCredential(agentContext, {
+        alg: KnownJwaSignatureAlgorithms.ES256,
+        format: ClaimFormat.JwtVc,
+        verificationMethod: issuerDidJwk.verificationMethodId,
+        credential: JsonTransformer.fromJSON(
+          {
+            ...Ed256DidJwkJwtVcUnsigned,
+            credentialSubject: {
+              ...Ed256DidJwkJwtVcUnsigned.credentialSubject,
+              id: `${holderDidKey.did}#${getFragment()}`,
+            },
+          },
+          W3cCredential
+        ),
+      })
+
+      const signedJwtVp = await w3cJwtCredentialService.signPresentation(agentContext, {
+        presentation: new W3cPresentation({
+          context: [CREDENTIALS_CONTEXT_V1_URL],
+          type: ['VerifiablePresentation'],
+          verifiableCredential: [credential],
+          holder: holderDidKey.did,
+        }),
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
+        challenge: 'challenge',
+        domain: 'example.com',
+        format: ClaimFormat.JwtVp,
+        verificationMethod: holderVerificationMethod,
+      })
+
+      const result = await w3cJwtCredentialService.verifyPresentation(agentContext, {
+        presentation: signedJwtVp,
+        challenge: 'challenge',
+        domain: 'example.com',
+      })
+
+      expect(result.validations.credentials?.[0].validations.credentialSubjectAuthentication?.isValid).toBe(isValid)
+      expect(result.isValid).toBe(isValid)
+    })
+
     test('rejects a presentation signed with a key that names the holder as its controller', async () => {
       const signerDid = 'did:web:signer.example'
       const signerKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })

@@ -7,6 +7,7 @@ import {
   DidsApi,
   getPublicJwkFromVerificationMethod,
   parseDid,
+  toAbsoluteDidUrl,
   type VerificationMethod,
 } from '../dids'
 import { type KnownJwaSignatureAlgorithm, type PublicJwk } from '../kms'
@@ -20,6 +21,7 @@ import type { W3cV2Presentation, W3cV2PresentationCredentialEntry } from './mode
 import { resolveJwtSigner } from './resolveSigner'
 import { W3cV2SdJwtVerifiableCredential } from './sd-jwt-vc/W3cV2SdJwtVerifiableCredential'
 import { W3cV2SdJwtVerifiablePresentation } from './sd-jwt-vc/W3cV2SdJwtVerifiablePresentation'
+import { normalizeDidIdentifier } from './util'
 
 export async function validateAndResolveVerificationMethod(
   agentContext: AgentContext,
@@ -56,9 +58,11 @@ export async function validateAndResolveVerificationMethod(
  *   the DID of the credentials' `cnf.kid`.
  * - The signer DID is the `id` of its resolved DID document. It must equal the `holder` (if set), be
  *   one of the `credentialSubject.id`s of every credential that has any, and be the resolved DID of
- *   every `cnf.kid`. A `cnf.jwk` has no DID, so it is only checked by key.
+ *   every `cnf.kid`. A `cnf.jwk` has no DID, so it is only checked by key. A `credentialSubject.id`
+ *   that is a DID URL counts as its DID.
  * - The signing key is the key all `cnf`s resolve to (a `cnf.kid` is resolved under `authentication`),
- *   else the single local `authentication` method of the signer DID.
+ *   else the single local `authentication` method of the signer DID. A `credentialSubject.id` that is
+ *   a DID URL must be the signing key, like a `cnf.kid`.
  * - The key must be a local `authentication` method of the signer DID, controlled by that DID. The
  *   `kid` is its absolute id, so the verifier needs no `iss`.
  * - The signer DID must be a DID created by this agent, and signing throws instead of guessing when
@@ -70,12 +74,13 @@ export async function resolvePresentationSigner(
 ): Promise<{ alg: KnownJwaSignatureAlgorithm; publicJwk: PublicJwk; cnf: { kid: string } }> {
   const credentials = asArray(presentation.verifiableCredential)
   const credentialSubjectIds = credentials.map(getCredentialSubjectIds).filter((subjectIds) => subjectIds.length > 0)
+  const credentialSubjectDids = credentialSubjectIds.map((subjectIds) => subjectIds.map(normalizeDidIdentifier))
   const holderBindings = credentials.flatMap((credential) => getHolderBinding(credential) ?? [])
   const boundDids = Array.from(
     new Set(holderBindings.flatMap((binding) => (binding.method === 'did' ? [parseDid(binding.didUrl).did] : [])))
   )
 
-  const holderDid = presentation.holderId ?? selectSignerDid(credentialSubjectIds, boundDids)
+  const holderDid = presentation.holderId ?? selectSignerDid(credentialSubjectDids, boundDids)
   const party = presentation.holderId ? 'holder' : 'signer'
   if (!isDid(holderDid)) {
     throw new CredoError(`Presentation ${party} '${holderDid}' is not a valid did`)
@@ -95,11 +100,17 @@ export async function resolvePresentationSigner(
     throw new CredoError(`Presentation holder '${holderDid}' is not the id of its did document '${signerDid}'`)
   }
 
-  if (credentialSubjectIds.some((subjectIds) => !subjectIds.includes(signerDid))) {
+  if (credentialSubjectDids.some((subjectDids) => !subjectDids.includes(signerDid))) {
     throw new CredoError(
       `Presentation ${party} '${signerDid}' is not a credentialSubject.id of every presentation credential that has one`
     )
   }
+
+  // A credentialSubject.id that is a DID URL binds the credential to that verification method
+  const subjectMethodIds = credentialSubjectIds.flatMap((subjectIds) => {
+    const signerSubjectIds = subjectIds.filter((subjectId) => normalizeDidIdentifier(subjectId) === signerDid)
+    return signerSubjectIds.includes(signerDid) ? [] : [signerSubjectIds]
+  })
 
   const getKmsKeyId = (method: VerificationMethod) =>
     keys?.find(({ didDocumentRelativeKeyId }) => method.id.endsWith(didDocumentRelativeKeyId))?.kmsKeyId
@@ -110,7 +121,7 @@ export async function resolvePresentationSigner(
     .filter(
       (method) =>
         method.controller === signerDid &&
-        (method.id.startsWith('#') || method.id.startsWith(`${signerDid}#`)) &&
+        toAbsoluteDidUrl(signerDid, method.id).startsWith(`${signerDid}#`) &&
         (!keys || getKmsKeyId(method))
     )
 
@@ -154,11 +165,14 @@ export async function resolvePresentationSigner(
   }
 
   const [boundKey] = boundKeys.values()
-  const candidateMethods = boundKey
-    ? localMethods.filter((method) => getPublicJwkFromVerificationMethod(method).equals(boundKey))
-    : localMethods
+  const candidateMethods = localMethods.filter(
+    (method) =>
+      (!boundKey || getPublicJwkFromVerificationMethod(method).equals(boundKey)) &&
+      subjectMethodIds.every((methodIds) => methodIds.includes(toAbsoluteDidUrl(signerDid, method.id)))
+  )
 
-  if (candidateMethods.length === 0 || (!boundKey && candidateMethods.length > 1)) throw notBoundError()
+  const isBound = boundKey !== undefined || subjectMethodIds.length > 0
+  if (candidateMethods.length === 0 || (!isBound && candidateMethods.length > 1)) throw notBoundError()
 
   if (candidateMethods.length > 1) {
     throw new CredoError(
@@ -180,10 +194,8 @@ export async function resolvePresentationSigner(
   return {
     alg,
     publicJwk,
-    cnf: {
-      // Some DID documents (e.g. did:peer:4) use relative ids, while a cnf kid is always absolute
-      kid: selectedMethod.id.startsWith('#') ? `${signerDid}${selectedMethod.id}` : selectedMethod.id,
-    },
+    // A cnf kid is always absolute
+    cnf: { kid: toAbsoluteDidUrl(signerDid, selectedMethod.id) },
   }
 }
 

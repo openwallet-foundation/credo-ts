@@ -16,7 +16,7 @@ import {
   canUseInstanceFromCredentialRecord,
   useInstanceFromCredentialRecord,
 } from '../../utils/credentialUse'
-import { DidsApi, getPublicJwkFromVerificationMethod, VerificationMethod } from '../dids'
+import { getPublicJwkFromVerificationMethod, VerificationMethod } from '../dids'
 import type { VerifiableCredential, VerifiablePresentation } from '../dif-presentation-exchange/index'
 import {
   Mdoc,
@@ -59,7 +59,9 @@ import {
   type W3cV2VerifiableCredential,
 } from '../vc'
 import { purposes } from '../vc/linked-data-proofs/adapters/jsonld-signatures-adapter'
+import { resolveCredentialSubjectVerificationMethod } from '../vc/resolveSigner'
 import { W3cV2SdJwtCredentialService, W3cV2SdJwtVerifiableCredential } from '../vc/sd-jwt-vc'
+import { normalizeDidIdentifier } from '../vc/util'
 import { X509Service } from '../x509'
 import { DcqlError } from './DcqlError'
 import type {
@@ -893,7 +895,7 @@ export class DcqlService {
           }
 
           // Determine a suitable verification method for the presentation
-          const verificationMethod = await this.getVerificationMethodForSubjectId(
+          const { verificationMethod, verificationMethodId, signer } = await resolveCredentialSubjectVerificationMethod(
             agentContext,
             credentialInstance.credentialSubjectIds[0]
           )
@@ -901,7 +903,7 @@ export class DcqlService {
           const w3cCredentialService = agentContext.resolve(W3cCredentialService)
           const w3cPresentation = new W3cPresentation({
             verifiableCredential: [credentialInstance],
-            holder: verificationMethod.controller,
+            holder: signer,
           })
 
           const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
@@ -909,7 +911,7 @@ export class DcqlService {
           const signedPresentation = await w3cCredentialService.signPresentation<ClaimFormat.JwtVp>(agentContext, {
             format: ClaimFormat.JwtVp,
             alg: publicJwk.signatureAlgorithm,
-            verificationMethod: verificationMethod.id,
+            verificationMethod: verificationMethodId,
             presentation: w3cPresentation,
             challenge,
             domain,
@@ -929,7 +931,7 @@ export class DcqlService {
           }
 
           // Determine a suitable verification method for the presentation
-          const verificationMethod = await this.getVerificationMethodForSubjectId(
+          const { verificationMethod, verificationMethodId, signer } = await resolveCredentialSubjectVerificationMethod(
             agentContext,
             credentialInstance.credentialSubjectIds[0]
           )
@@ -937,7 +939,7 @@ export class DcqlService {
           const w3cCredentialService = agentContext.resolve(W3cCredentialService)
           const w3cPresentation = new W3cPresentation({
             verifiableCredential: [credentialInstance],
-            holder: verificationMethod.controller,
+            holder: signer,
           })
 
           const signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
@@ -947,7 +949,7 @@ export class DcqlService {
             // by the verifier, and we can then just add this to the vpToCreate interface
             proofType: this.getProofTypeForLdpVc(agentContext, verificationMethod),
             proofPurpose: new purposes.AuthenticationProofPurpose({ challenge, domain }),
-            verificationMethod: verificationMethod.id,
+            verificationMethod: verificationMethodId,
             presentation: w3cPresentation,
             challenge,
             domain,
@@ -964,7 +966,7 @@ export class DcqlService {
           }
 
           const w3cV2Presentation = new W3cV2Presentation({
-            holder: firstCredential.resolvedCredential.credentialSubjectIds[0],
+            holder: getHolderDid(firstCredential.resolvedCredential.credentialSubjectIds),
             verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(firstCredential)],
           })
 
@@ -994,7 +996,9 @@ export class DcqlService {
 
           const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
           const w3cV2Presentation = new W3cV2Presentation({
-            holder: presentationToCreate.credentialRecord.firstCredential.resolvedCredential.credentialSubjectIds[0],
+            holder: getHolderDid(
+              presentationToCreate.credentialRecord.firstCredential.resolvedCredential.credentialSubjectIds
+            ),
             verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(sdJwtVc)],
           })
 
@@ -1055,25 +1059,6 @@ export class DcqlService {
     return agentContext.dependencyManager.resolve(MdocApi)
   }
 
-  private async getVerificationMethodForSubjectId(agentContext: AgentContext, subjectId: string) {
-    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-
-    if (!subjectId.startsWith('did:')) {
-      throw new DcqlError(`Only dids are supported as credentialSubject id. ${subjectId} is not a valid did`)
-    }
-
-    const didDocument = await didsApi.resolveDidDocument(subjectId)
-
-    if (!didDocument.authentication || didDocument.authentication.length === 0) {
-      throw new DcqlError(`No authentication verificationMethods found for did ${subjectId} in did document`)
-    }
-
-    // the signature suite to use for the presentation is dependant on the credentials we share.
-    // 1. Get the verification method for this given proof purpose in this DID document
-    const [verificationMethod] = didDocument.findVerificationMethodsByPurpose(['authentication'])
-    return verificationMethod
-  }
-
   // FIXME: We need to take into account OpenID4VP metadata (probably providing supported/allowed algs to the DCQL create presentation method)
   private getProofTypeForLdpVc(agentContext: AgentContext, verificationMethod: VerificationMethod) {
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
@@ -1085,6 +1070,11 @@ export class DcqlService {
 
     return supportedSignatureSuites[0].proofType
   }
+}
+
+// A credentialSubject.id can be a DID URL, but the holder is the DID
+function getHolderDid(credentialSubjectIds: string[]) {
+  return credentialSubjectIds[0] ? normalizeDidIdentifier(credentialSubjectIds[0]) : undefined
 }
 
 /**

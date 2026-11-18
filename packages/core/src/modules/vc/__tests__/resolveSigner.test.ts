@@ -1,7 +1,12 @@
 import { DidDocument, getJsonWebKey2020, VerificationMethod } from '../../dids'
 import { didDocumentToNumAlgo4Did, didToNumAlgo4DidDocument } from '../../dids/methods/peer/peerDidNumAlgo4'
 import { KnownJwaSignatureAlgorithms, PublicJwk } from '../../kms'
-import { resolveJwtSigner, resolveSigner, validateSignerIsExpectedParty } from '../resolveSigner'
+import {
+  resolveCredentialSubjectVerificationMethod,
+  resolveJwtSigner,
+  resolveSigner,
+  validateSignerIsExpectedParty,
+} from '../resolveSigner'
 
 const publicJwk = PublicJwk.fromPublicJwk({
   kty: 'OKP',
@@ -54,8 +59,29 @@ describe('resolveSigner', () => {
   test('returns the DID of the document that lists and controls the verification method', async () => {
     await expect(resolveSigner(agentContext, issuerVerificationMethod.id, ['assertionMethod'])).resolves.toEqual({
       verificationMethod: issuerVerificationMethod,
+      verificationMethodId: issuerVerificationMethod.id,
       signer: issuerDid,
     })
+  })
+
+  test('returns the absolute id of a verification method the DID document lists with a relative id', async () => {
+    const { longFormDid } = didDocumentToNumAlgo4Did(
+      new DidDocument({
+        id: 'did:peer:4',
+        verificationMethod: [
+          new VerificationMethod(getJsonWebKey2020({ did: 'did:peer:4', verificationMethodId: '#key-1', publicJwk })),
+        ],
+        authentication: ['#key-1'],
+      })
+    )
+    const peerDidDocument = didToNumAlgo4DidDocument(longFormDid)
+
+    const resolved = await resolveSigner(createAgentContext(peerDidDocument), `${longFormDid}#key-1`, [
+      'authentication',
+    ])
+
+    expect(resolved.verificationMethod.id).toBe('#key-1')
+    expect(resolved.verificationMethodId).toBe(`${longFormDid}#key-1`)
   })
 
   test('rejects a verification method controlled by another DID', async () => {
@@ -147,7 +173,11 @@ describe('resolveJwtSigner', () => {
 })
 
 describe('validateSignerIsExpectedParty', () => {
-  const signer = { verificationMethod: issuerVerificationMethod, signer: issuerDid }
+  const signer = {
+    verificationMethod: issuerVerificationMethod,
+    verificationMethodId: issuerVerificationMethod.id,
+    signer: issuerDid,
+  }
 
   test('passes when the expected party is the signer, or there is none', () => {
     expect(validateSignerIsExpectedParty(signer, issuerDid, 'issuer')).toEqual({ isValid: true })
@@ -161,5 +191,70 @@ describe('validateSignerIsExpectedParty', () => {
         message: `Presentation is signed using verification method ${issuerVerificationMethod.id}, while the holder of the presentation is '${signerDid}'`,
       },
     })
+  })
+})
+
+describe('resolveCredentialSubjectVerificationMethod', () => {
+  const holderDid = 'did:web:holder.example'
+  const [firstMethod, secondMethod] = ['key-1', 'key-2'].map(
+    (keyId) =>
+      new VerificationMethod(
+        getJsonWebKey2020({ did: holderDid, verificationMethodId: `${holderDid}#${keyId}`, publicJwk })
+      )
+  )
+  const holderContext = createAgentContext(
+    new DidDocument({
+      id: holderDid,
+      verificationMethod: [firstMethod, secondMethod],
+      authentication: [firstMethod.id, secondMethod.id],
+      assertionMethod: [`${holderDid}#key-3`],
+    })
+  )
+
+  test('returns the first authentication method for a DID', async () => {
+    await expect(resolveCredentialSubjectVerificationMethod(holderContext, holderDid)).resolves.toEqual({
+      verificationMethod: firstMethod,
+      verificationMethodId: firstMethod.id,
+      signer: holderDid,
+    })
+  })
+
+  test('returns the authentication method a DID URL names', async () => {
+    await expect(resolveCredentialSubjectVerificationMethod(holderContext, secondMethod.id)).resolves.toEqual({
+      verificationMethod: secondMethod,
+      verificationMethodId: secondMethod.id,
+      signer: holderDid,
+    })
+  })
+
+  test('returns the absolute id of a method the DID document lists with a relative id', async () => {
+    const { longFormDid } = didDocumentToNumAlgo4Did(
+      new DidDocument({
+        id: 'did:peer:4',
+        verificationMethod: [
+          new VerificationMethod(getJsonWebKey2020({ did: 'did:peer:4', verificationMethodId: '#key-1', publicJwk })),
+        ],
+        authentication: ['#key-1'],
+      })
+    )
+
+    const resolved = await resolveCredentialSubjectVerificationMethod(
+      createAgentContext(didToNumAlgo4DidDocument(longFormDid)),
+      longFormDid
+    )
+
+    expect(resolved.verificationMethodId).toBe(`${longFormDid}#key-1`)
+  })
+
+  test('rejects a DID URL that is not an authentication method', async () => {
+    await expect(resolveCredentialSubjectVerificationMethod(holderContext, `${holderDid}#key-3`)).rejects.toThrow(
+      `Unable to locate verification method with id '${holderDid}#key-3'`
+    )
+  })
+
+  test('rejects a credentialSubject.id that is not a DID', async () => {
+    await expect(resolveCredentialSubjectVerificationMethod(holderContext, 'urn:uuid:1234')).rejects.toThrow(
+      'Only dids are supported as credentialSubject id'
+    )
   })
 })
