@@ -1,6 +1,7 @@
 import type { AgentContext } from '../agent'
 import { CredoError } from '../error'
 import {
+  assertAsymmetricJwkKeyTypeMatches,
   KeyManagementApi,
   type KmsDecryptOptions,
   type KmsEncryptReturn,
@@ -122,6 +123,10 @@ export class JweService {
 
     const recipient = this.selectRecipient(jwe, options.recipientKid)
     const ephemeralPublicJwk = this.ecdhPublicJwk(PublicJwk.fromUnknown(protectedHeader.epk))
+    // The sender chooses the epk, and the KMS only rejects a mismatch after loading the private key
+    if (options.recipientKey instanceof PublicJwk) {
+      assertAsymmetricJwkKeyTypeMatches(this.ecdhPublicJwk(options.recipientKey), ephemeralPublicJwk)
+    }
     const apu =
       typeof protectedHeader.apu === 'string' ? TypedArrayEncoder.fromBase64Url(protectedHeader.apu) : undefined
     const apv =
