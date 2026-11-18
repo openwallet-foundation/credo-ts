@@ -509,9 +509,13 @@ export class DidCommMediatorService {
       let result = KeylistUpdateResultV2.NoChange
       const canonicalRecipientDid = getDidPeer4ShortFormForEquivalence(update.recipientDid) ?? update.recipientDid
       if (update.action === KeylistUpdateActionV2.add) {
+        // A Coordinate Mediation 1.0 mediatee registers only Ed25519 keys, so `recipientKeys` cannot hold another key type
+        const didKeyPublicJwk = isDidKey(canonicalRecipientDid)
+          ? DidKey.fromDid(canonicalRecipientDid).publicJwk
+          : undefined
         const taken = await this.isRegisteredToAnotherMediatee(messageContext.agentContext, mediationRecord, {
           did: canonicalRecipientDid,
-          key: isDidKey(canonicalRecipientDid) ? didKeyToVerkey(canonicalRecipientDid) : undefined,
+          key: didKeyPublicJwk?.is(Kms.Ed25519PublicJwk) ? didKeyToVerkey(canonicalRecipientDid) : undefined,
         })
         if (taken) {
           result = KeylistUpdateResultV2.ClientError
