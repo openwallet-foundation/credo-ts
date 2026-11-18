@@ -11,6 +11,7 @@ import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from '
 import { calculateJwkThumbprint } from './jwkThumbprint'
 import { assertJwkAsymmetric, type KmsJwkPublicAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
 import {
+  AkpPublicJwk,
   Ed25519PublicJwk,
   P256PublicJwk,
   P384PublicJwk,
@@ -21,6 +22,7 @@ import {
 } from './kty'
 
 export const SupportedPublicJwks = [
+  AkpPublicJwk,
   Ed25519PublicJwk,
   P256PublicJwk,
   P384PublicJwk,
@@ -31,6 +33,7 @@ export const SupportedPublicJwks = [
 ]
 export type SupportedPublicJwkClass = (typeof SupportedPublicJwks)[number]
 export type SupportedPublicJwk =
+  | AkpPublicJwk
   | Ed25519PublicJwk
   | P256PublicJwk
   | P384PublicJwk
@@ -51,12 +54,10 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     const publicJwk = publicJwkFromPrivateJwk(zParseWithErrorHandling(zKmsJwkPublic, jwkJson, 'jwk is not a valid jwk'))
     assertJwkAsymmetric(publicJwk)
 
-    if (publicJwk.kty === 'AKP') {
-      throw new KeyManagementError('ML-DSA-44 JWKs are not supported by PublicJwk')
-    }
-
     let jwkInstance: SupportedPublicJwk
-    if (publicJwk.kty === 'RSA') {
+    if (publicJwk.kty === 'AKP') {
+      jwkInstance = new AkpPublicJwk(publicJwk)
+    } else if (publicJwk.kty === 'RSA') {
       jwkInstance = new RsaPublicJwk(publicJwk)
     } else if (publicJwk.kty === 'EC') {
       if (publicJwk.crv === 'P-256') {
@@ -238,7 +239,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
    */
   public set alg(alg: KnownJwaSignatureAlgorithm | KnownJwaKeyAgreementAlgorithm) {
     const supportedAlgorithms: Array<KnownJwaSignatureAlgorithm | KnownJwaKeyAgreementAlgorithm> = [
-      ...(this.jwk.supportedSignatureAlgorithms ?? []),
+      ...this.supportedSignatureAlgorithms,
       ...(this.jwk.supportedEncryptionKeyAgreementAlgorithms ?? []),
     ]
 
@@ -295,6 +296,10 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
    * Returns the jwk encoded a Base58 multibase encoded multicodec key
    */
   public get fingerprint() {
+    if (this.jwk.multicodecPrefix === undefined) {
+      throw new KeyManagementError(`Multicodec fingerprint is not supported for ${this.jwkTypeHumanDescription}`)
+    }
+
     const prefixBytes = VarintEncoder.encode(this.jwk.multicodecPrefix)
     const prefixedPublicKey = new Uint8Array([...prefixBytes, ...this.jwk.multicodec])
 
@@ -309,7 +314,9 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     const [code, byteLength] = VarintEncoder.decode(data)
     const publicKey = data.slice(byteLength)
 
-    const PublicJwkClass = SupportedPublicJwks.find((JwkClass) => JwkClass.multicodecPrefix === code)
+    const PublicJwkClass = SupportedPublicJwks.find(
+      (JwkClass) => JwkClass.multicodecPrefix !== undefined && JwkClass.multicodecPrefix === code
+    )
     if (!PublicJwkClass) {
       throw new KeyManagementError(`Unsupported multicodec public key with prefix '${code}'`)
     }

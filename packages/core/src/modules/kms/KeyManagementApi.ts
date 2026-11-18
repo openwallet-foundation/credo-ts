@@ -189,7 +189,7 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
     // the backend checks the `alg` of the stored key.
     if (expectedPublicJwk) {
       assertAllowedSigningAlgForKey(
-        { ...expectedPublicJwk, alg: undefined } as KmsJwkPublicAsymmetric,
+        expectedPublicJwk.kty === 'AKP' ? expectedPublicJwk : { ...expectedPublicJwk, alg: undefined },
         kmsOptions.algorithm
       )
     }

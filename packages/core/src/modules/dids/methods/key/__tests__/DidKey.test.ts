@@ -39,10 +39,9 @@ describe('DidKey', () => {
       if (publicKey.kty !== 'EC') throw new Error('Expected an EC fixture')
       expect(PublicJwk.fromPublicKey(publicKey).fingerprint).toBe(key.fingerprint)
 
-      const uncompressed = TypedArrayEncoder.concat([
-        VarintEncoder.encode(key.JwkClass.multicodecPrefix),
-        publicKey.publicKey,
-      ])
+      const multicodecPrefix = key.JwkClass.multicodecPrefix
+      if (multicodecPrefix === undefined) throw new Error('Expected a multicodec prefix')
+      const uncompressed = TypedArrayEncoder.concat([VarintEncoder.encode(multicodecPrefix), publicKey.publicKey])
       expect(() => PublicJwk.fromFingerprint(MultiBaseEncoder.encode(uncompressed, 'base58btc'))).toThrow(
         'Invalid public key length'
       )

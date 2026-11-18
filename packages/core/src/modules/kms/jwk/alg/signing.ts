@@ -50,7 +50,14 @@ export function supportedSigningAlgsForKey(
   jwk: KmsJwkPrivate | Exclude<KmsJwkPublic, KmsJwkPublicOct>
 ): KnownJwaSignatureAlgorithm[] {
   if (jwk.kty === 'AKP') {
-    return jwk.alg ? [jwk.alg] : ['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87']
+    switch (jwk.alg) {
+      case 'ML-DSA-44':
+      case 'ML-DSA-65':
+      case 'ML-DSA-87':
+        return [jwk.alg]
+      default:
+        return []
+    }
   }
 
   if (jwk.kty === 'EC' || jwk.kty === 'OKP') {

@@ -40,10 +40,13 @@ describe('signing algorithm support', () => {
       expect(supportedSigningAlgsForKey(ed25519PublicJwk)).toEqual(['EdDSA', 'Ed25519'])
     })
 
-    test('uses the AKP key algorithm for ML-DSA signing', () => {
-      expect(supportedSigningAlgsForKey({ kty: 'AKP', alg: 'ML-DSA-44', pub: 'public-key' })).toEqual(['ML-DSA-44'])
-      expect(supportedSigningAlgsForKey({ kty: 'AKP', alg: 'ML-DSA-65', pub: 'public-key' })).toEqual(['ML-DSA-65'])
-      expect(supportedSigningAlgsForKey({ kty: 'AKP', alg: 'ML-DSA-87', pub: 'public-key' })).toEqual(['ML-DSA-87'])
+    test.each(['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'] as const)('uses AKP alg %s for signing', (alg) => {
+      expect(supportedSigningAlgsForKey({ kty: 'AKP', alg, pub: 'public-key' })).toEqual([alg])
+    })
+
+    test('returns no algorithms for AKP JWKs without a valid alg', () => {
+      expect(supportedSigningAlgsForKey({ kty: 'AKP', pub: 'public-key' } as never)).toEqual([])
+      expect(supportedSigningAlgsForKey({ kty: 'AKP', alg: 'unknown', pub: 'public-key' } as never)).toEqual([])
     })
 
     test('returns no algorithms for an X25519 key agreement key', () => {
@@ -91,6 +94,14 @@ describe('signing algorithm support', () => {
     test('narrows to the requested alg when it is supported by the key', () => {
       expect(allowedSigningAlgsForSigningKey({ ...ed25519PublicJwk, alg: 'Ed25519' })).toEqual(['Ed25519'])
       expect(allowedSigningAlgsForSigningKey({ ...p256PublicJwk, alg: 'ES256' })).toEqual(['ES256'])
+      for (const alg of ['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'] as const) {
+        expect(allowedSigningAlgsForSigningKey({ kty: 'AKP', alg, pub: 'public-key' })).toEqual([alg])
+      }
+    })
+
+    test('returns no algorithms for AKP keys with no or unrecognized alg', () => {
+      expect(allowedSigningAlgsForSigningKey({ kty: 'AKP', pub: 'public-key' } as never)).toEqual([])
+      expect(allowedSigningAlgsForSigningKey({ kty: 'AKP', alg: 'unknown', pub: 'public-key' } as never)).toEqual([])
     })
 
     test('returns no algorithms when the requested alg is not supported by the key', () => {
@@ -101,10 +112,23 @@ describe('signing algorithm support', () => {
   describe('assertAllowedSigningAlgForKey', () => {
     test('passes for an algorithm that the key supports', () => {
       expect(() => assertAllowedSigningAlgForKey(p256PublicJwk, 'ES256')).not.toThrow()
+      for (const alg of ['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'] as const) {
+        expect(() => assertAllowedSigningAlgForKey({ kty: 'AKP', alg, pub: 'public-key' }, alg)).not.toThrow()
+      }
     })
 
     test('throws for an algorithm that the key does not support', () => {
       expect(() => assertAllowedSigningAlgForKey(p256PublicJwk, 'ES384')).toThrow(KeyManagementError)
+    })
+
+    test.each([
+      ['ML-DSA-44', 'ML-DSA-65'],
+      ['ML-DSA-65', 'ML-DSA-87'],
+      ['ML-DSA-87', 'ML-DSA-44'],
+    ] as const)('rejects %s keys for %s signing', (keyAlg, signingAlg) => {
+      expect(() => assertAllowedSigningAlgForKey({ kty: 'AKP', alg: keyAlg, pub: 'public-key' }, signingAlg)).toThrow(
+        KeyManagementError
+      )
     })
   })
 
