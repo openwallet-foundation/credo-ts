@@ -6,8 +6,6 @@
 "@credo-ts/core": patch
 "@credo-ts/didcomm": patch
 "@credo-ts/drizzle-storage": patch
-"@credo-ts/hedera": patch
-"@credo-ts/indy-vdr": patch
 "@credo-ts/node": patch
 "@credo-ts/openid4vc": patch
 "@credo-ts/react-native": patch
