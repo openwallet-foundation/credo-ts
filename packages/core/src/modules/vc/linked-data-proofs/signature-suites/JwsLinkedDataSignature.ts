@@ -19,9 +19,17 @@ export interface JwsLinkedDataSignatureOptions {
   date?: string
   contextUrl: string
   useNativeCanonize?: boolean
+  /**
+   * Verify a document that has terms no `@context` defines, instead of refusing it. Such terms are dropped from the
+   * signed data, so their values are NOT covered by the signature. They are listed in `undefinedTerms` after verifying.
+   */
+  allowUndefinedTerms?: boolean
 }
 
 export class JwsLinkedDataSignature extends LinkedDataSignature {
+  /** The terms found without a definition while verifying, when `allowUndefinedTerms` is set */
+  public undefinedTerms: Set<string>
+
   /**
    * @param options - Options hashmap.
    * @param options.type - Provided by subclass.
@@ -50,6 +58,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
    *   canonize algorithm.
    */
   public constructor(options: JwsLinkedDataSignatureOptions) {
+    const undefinedTerms = new Set<string>()
     super({
       type: options.type,
       LDKeyClass: options.LDKeyClass,
@@ -60,7 +69,26 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
       proof: options.proof,
       date: options.date,
       useNativeCanonize: options.useNativeCanonize,
+      canonizeOptions: options.allowUndefinedTerms
+        ? {
+            // The library sets safe mode and then spreads these options, so they win
+            safe: false,
+            eventHandler: ({
+              event,
+              next,
+            }: {
+              event: { code: string; details?: { property?: string } }
+              next: () => void
+            }) => {
+              if (event.code === 'invalid property' && event.details?.property) {
+                undefinedTerms.add(event.details.property)
+              }
+              next()
+            },
+          }
+        : undefined,
     })
+    this.undefinedTerms = undefinedTerms
     this.alg = options.algorithm
   }
 

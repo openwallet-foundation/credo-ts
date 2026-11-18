@@ -12,7 +12,7 @@ const jsonldWithHasValue = jsonld as typeof jsonld & {
 
 type Ed25519Signature2018Options = Pick<
   JwsLinkedDataSignatureOptions,
-  'key' | 'proof' | 'date' | 'useNativeCanonize' | 'LDKeyClass'
+  'key' | 'proof' | 'date' | 'useNativeCanonize' | 'LDKeyClass' | 'allowUndefinedTerms'
 >
 
 export class Ed25519Signature2018 extends JwsLinkedDataSignature {
@@ -57,6 +57,7 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
       proof: options.proof,
       date: options.date,
       useNativeCanonize: options.useNativeCanonize,
+      allowUndefinedTerms: options.allowUndefinedTerms,
     })
     this.requiredKeyType = 'Ed25519VerificationKey2018'
   }
