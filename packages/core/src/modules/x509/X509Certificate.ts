@@ -255,7 +255,7 @@ export class X509Certificate {
   }
 
   public get extensions(): ReadonlyArray<{ type: string; critical: boolean }> {
-    return this.x509Certificate.extensions
+    return this.getAsnExtensions().map((e) => ({ type: e.extnID, critical: e.critical }))
   }
 
   /**
@@ -350,12 +350,12 @@ export class X509Certificate {
   }
 
   public isExtensionCritical(id: X509ExtensionIdentifier | string): boolean {
-    const extension = this.getMatchingExtensions(id)
-    if (!extension?.length) {
+    const extension = this.extensions.find((e) => e.type === id)
+    if (!extension) {
       throw new X509Error(`extension with id '${id}' is not found`)
     }
 
-    return !!extension[0].critical
+    return extension.critical
   }
 
   public static async create(options: X509CreateCertificateOptions, webCrypto: CredoWebCrypto) {
@@ -505,11 +505,10 @@ export class X509Certificate {
    * point to `candidate`. Chain validation uses this to skip candidates before it verifies the signature.
    */
   public isPossiblyIssuedBy(candidate: X509Certificate): boolean {
-    const issuer = candidate.x509Certificate
-    if (issuer.subject !== this.x509Certificate.issuer) return false
+    if (candidate.subject !== this.issuer) return false
 
-    const authorityKeyId = this.x509Certificate.getExtension(x509.AuthorityKeyIdentifierExtension)?.keyId
-    const subjectKeyId = issuer.getExtension(x509.SubjectKeyIdentifierExtension)?.keyId
+    const authorityKeyId = this.authorityKeyIdentifier
+    const subjectKeyId = candidate.subjectKeyIdentifier
 
     return !authorityKeyId || !subjectKeyId || authorityKeyId === subjectKeyId
   }
