@@ -240,4 +240,45 @@ describe('OpenId4VcVerifier', () => {
       )
     })
   })
+
+  describe('Verifiers', () => {
+    it('deletes a verifier after its verification sessions are deleted', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        requestSigner: { method: 'did', didUrl: verifier.kid },
+        verifierId: openIdVerifier.verifierId,
+        dcql: { query: openBadgeDcqlQuery },
+      })
+
+      await expect(verifier.agent.openid4vc.verifier.deleteVerifier(openIdVerifier.verifierId)).rejects.toThrow(
+        `Verifier with verifier id '${openIdVerifier.verifierId}' still has verification sessions`
+      )
+      await expect(
+        verifier.agent.openid4vc.verifier.getVerifierByVerifierId(openIdVerifier.verifierId)
+      ).resolves.toBeDefined()
+
+      await verifier.agent.openid4vc.verifier.deleteVerificationSessionById(verificationSession.id)
+      await verifier.agent.openid4vc.verifier.deleteVerifier(openIdVerifier.verifierId)
+      await expect(
+        verifier.agent.openid4vc.verifier.getVerifierByVerifierId(openIdVerifier.verifierId)
+      ).rejects.toThrow(RecordNotFoundError)
+      await expect(verifier.agent.openid4vc.verifier.deleteVerifier(openIdVerifier.verifierId)).rejects.toThrow(
+        RecordNotFoundError
+      )
+    })
+
+    it('rejects creating a verifier with a verifier id that already exists, and allows it after deleting', async () => {
+      const verifierId = utils.uuid()
+      await verifier.agent.openid4vc.verifier.createVerifier({ verifierId })
+
+      await expect(verifier.agent.openid4vc.verifier.createVerifier({ verifierId })).rejects.toThrow(
+        `A verifier with verifier id '${verifierId}' already exists`
+      )
+
+      await verifier.agent.openid4vc.verifier.deleteVerifier(verifierId)
+      await expect(verifier.agent.openid4vc.verifier.createVerifier({ verifierId })).resolves.toMatchObject({
+        verifierId,
+      })
+    })
+  })
 })

@@ -64,6 +64,7 @@ import type {
 } from '../shared'
 import { keyAttestationLevelSatisfies, OpenId4VciCredentialFormatProfile } from '../shared'
 import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
+import { deleteKmsKeys } from '../shared/deleteKmsKeys'
 import { getDpopOptions } from '../shared/dpop'
 import {
   getCredentialConfigurationsSupportedForScopes,
@@ -72,7 +73,11 @@ import {
 } from '../shared/issuerMetadataUtils'
 import { getLocalAccessTokenJwks, getOid4vcLocalJwksCallback } from '../shared/localJwks'
 import type { OpenId4VciChainedAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
-import { storeActorIdForContextCorrelationId } from '../shared/router'
+import {
+  assertActorIdNotMappedToOtherTenant,
+  removeActorIdForContextCorrelationId,
+  storeActorIdForContextCorrelationId,
+} from '../shared/router'
 import {
   credoJwtIssuerToOpenId4VcJwtIssuer,
   decodeJwtIssuer,
@@ -1407,6 +1412,15 @@ export class OpenId4VcIssuerService {
   public async createIssuer(agentContext: AgentContext, options: OpenId4VciCreateIssuerOptions) {
     assertCredentialEncryptionConfiguration(options)
 
+    // A generated uuid can't clash, so only a provided issuer id is checked
+    if (options.issuerId) {
+      if (await this.openId4VcIssuerRepository.findByIssuerId(agentContext, options.issuerId)) {
+        throw new CredoError(`An issuer with issuer id '${options.issuerId}' already exists`)
+      }
+      await assertActorIdNotMappedToOtherTenant(agentContext, options.issuerId)
+    }
+    const issuerId = options.issuerId ?? utils.uuid()
+
     const kms = agentContext.resolve(Kms.KeyManagementApi)
 
     // TODO: ideally we can store additional data with a key, such as:
@@ -1418,7 +1432,7 @@ export class OpenId4VcIssuerService {
     })
 
     const openId4VcIssuer = new OpenId4VcIssuerRecord({
-      issuerId: options.issuerId ?? utils.uuid(),
+      issuerId,
       display: options.display,
       issuerInfo: options.issuerInfo,
       dpopSigningAlgValuesSupported: options.dpopSigningAlgValuesSupported,
@@ -1445,6 +1459,33 @@ export class OpenId4VcIssuerService {
     await this.openId4VcIssuerRepository.save(agentContext, openId4VcIssuer)
     await storeActorIdForContextCorrelationId(agentContext, openId4VcIssuer.issuerId)
     return openId4VcIssuer
+  }
+
+  public async deleteIssuer(
+    agentContext: AgentContext,
+    issuerId: string,
+    options?: { deleteAssociatedKeys?: boolean }
+  ) {
+    const issuer = await this.openId4VcIssuerRepository.getByIssuerId(agentContext, issuerId)
+    const issuanceSessions = await this.openId4VcIssuanceSessionRepository.findByQuery(
+      agentContext,
+      { issuerId },
+      { limit: 1 }
+    )
+    if (issuanceSessions.length) {
+      throw new CredoError(`Issuer with issuer id '${issuerId}' still has issuance sessions. Delete them first.`)
+    }
+
+    await this.openId4VcIssuerRepository.delete(agentContext, issuer)
+    await removeActorIdForContextCorrelationId(agentContext, issuerId, 'issuer')
+
+    if (options?.deleteAssociatedKeys ?? true) {
+      const { jwks = [], previousJwks = [] } = issuer.credentialRequestEncryption ?? {}
+      await deleteKmsKeys(agentContext, [
+        { keyId: issuer.resolvedAccessTokenPublicJwk.keyId, kmsBackend: issuer.accessTokenSignerKmsBackend },
+        ...[...jwks, ...previousJwks].map(({ kid }) => ({ keyId: kid })),
+      ])
+    }
   }
 
   private async createSignedMetadata(
