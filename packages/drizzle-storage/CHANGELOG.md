@@ -1,5 +1,25 @@
 # @credo-ts/drizzle-storage
 
+## 0.7.5
+
+### Patch Changes
+
+- d82142d: Custom tag names and array tag values in Postgres queries are now passed as query parameters. Tag values containing a single quote no longer cause a query error.
+- d82142d: Postgres queries on custom tags now compare values with their type, like the SQLite backend already did. A query for the string `'true'` no longer matches a tag stored as the boolean `true`, and the other way around.
+- Updated dependencies [493480f]
+- Updated dependencies [ce032ee]
+- Updated dependencies [9c79054]
+- Updated dependencies [3bdb088]
+- Updated dependencies [64dd1db]
+  - @credo-ts/core@0.7.5
+  - @credo-ts/didcomm@0.7.5
+  - @credo-ts/openid4vc@0.7.5
+  - @credo-ts/action-menu@0.7.5
+  - @credo-ts/anoncreds@0.7.5
+  - @credo-ts/drpc@0.7.5
+  - @credo-ts/question-answer@0.7.5
+  - @credo-ts/tenants@0.7.5
+
 ## 0.7.4
 
 ### Patch Changes

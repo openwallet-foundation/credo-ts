@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.5
+
+### Patch Changes
+
+- 9c79054: The OpenID4VP verifier now rejects creating an authorization request whose `transactionData` references credential ids that are not in the DCQL query or presentation definition, as each id has to match a credential query or input descriptor id.
+- Updated dependencies [493480f]
+- Updated dependencies [3bdb088]
+- Updated dependencies [64dd1db]
+  - @credo-ts/core@0.7.5
+
 ## 0.7.4
 
 ### Patch Changes
