@@ -18,6 +18,11 @@ import type {
 } from '../shared'
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
 
+/**
+ * A kms key id, or the key id with the kms backend that holds it.
+ */
+export type OpenId4VciKmsKeyIdMappingValue = string | { kmsKeyId: string; kmsBackend?: string }
+
 export { OpenId4VciAuthorizationFlow }
 
 export type OpenId4VciSupportedCredentialFormats =
@@ -96,9 +101,15 @@ export interface OpenId4VciDeferredCredentialResponse {
   /**
    * Mapping from JWK thumbprint values to KMS key ids that were submitted in the credential request.
    * These should be used when retrieving the deferred credentials, to store the associated kms key id
-   * for each received credential.
+   * for each received credential. The value includes the kms backend when the key had one.
    */
-  jwkThumbprintKmsKeyIdMapping?: Record<string, string>
+  jwkThumbprintKmsKeyIdMapping?: Record<string, OpenId4VciKmsKeyIdMappingValue>
+
+  /**
+   * The `credentialResponseEncryption` value of the credential request. Pass it on when retrieving the
+   * deferred credentials.
+   */
+  credentialResponseEncryption?: 'required' | 'preferred'
 }
 
 export interface OpenId4VciResolvedCredentialOffer {
@@ -192,6 +203,12 @@ export interface OpenId4VcAuthorizationCodeTokenRequestOptions {
    * so the key bound to the wallet attestation must be in the wallet.
    */
   walletAttestationJwt?: string
+
+  /**
+   * The key of the wallet attestation `cnf.jwk`, from `PublicJwk.fromKmsKey`, to sign its proof of possession with.
+   * Without it, the `kid` of the `cnf.jwk` must be the KMS key id.
+   */
+  walletAttestationKey?: Kms.PublicJwk
 }
 
 // TODO: support wallet attestation for pre-auth flow
@@ -214,6 +231,12 @@ export interface OpenId4VciPreAuthorizedTokenRequestOptions {
    * so the key bound to the wallet attestation must be in the wallet.
    */
   walletAttestationJwt?: string
+
+  /**
+   * The key of the wallet attestation `cnf.jwk`, from `PublicJwk.fromKmsKey`, to sign its proof of possession with.
+   * Without it, the `kid` of the `cnf.jwk` must be the KMS key id.
+   */
+  walletAttestationKey?: Kms.PublicJwk
 }
 
 export type OpenId4VciTokenRequestOptions =
@@ -252,6 +275,12 @@ export type OpenId4VciTokenRefreshOptions = {
    * so the key bound to the wallet attestation must be in the wallet.
    */
   walletAttestationJwt?: string
+
+  /**
+   * The key of the wallet attestation `cnf.jwk`, from `PublicJwk.fromKmsKey`, to sign its proof of possession with.
+   * Without it, the `kid` of the `cnf.jwk` must be the KMS key id.
+   */
+  walletAttestationKey?: Kms.PublicJwk
 }
 
 export interface OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions {
@@ -267,6 +296,12 @@ export interface OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions {
    * so the key bound to the wallet attestation must be in the wallet.
    */
   walletAttestationJwt?: string
+
+  /**
+   * The key of the wallet attestation `cnf.jwk`, from `PublicJwk.fromKmsKey`, to sign its proof of possession with.
+   * Without it, the `kid` of the `cnf.jwk` must be the KMS key id.
+   */
+  walletAttestationKey?: Kms.PublicJwk
 
   /**
    * auth session returned at an earlier call to the authorization challenge endpoint
@@ -333,6 +368,13 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
    * for the proof of possession signature.
    */
   credentialBindingResolver: OpenId4VciCredentialBindingResolver
+
+  /**
+   * Whether to request an encrypted credential response. With `required` the request fails when the
+   * issuer can't encrypt the response, with `preferred` the response is then not encrypted. When the
+   * issuer requires response encryption it is requested regardless of this value.
+   */
+  credentialResponseEncryption?: 'required' | 'preferred'
 }
 
 /**
@@ -352,7 +394,14 @@ export interface OpenId4VciDeferredCredentialRequestOptions {
    * These were returned in the deferred credential return value in case JWKs were used in the proof
    * of possession of the credential request
    */
-  jwkThumbprintKmsKeyIdMapping?: Record<string, string>
+  jwkThumbprintKmsKeyIdMapping?: Record<string, OpenId4VciKmsKeyIdMappingValue>
+
+  /**
+   * Whether to request an encrypted deferred credential response, see the `credentialResponseEncryption`
+   * option of the credential request. Before OpenID4VCI 1.0 the deferred credential response is never
+   * encrypted, so `required` fails and `preferred` is ignored.
+   */
+  credentialResponseEncryption?: 'required' | 'preferred'
 }
 
 /**
@@ -369,6 +418,12 @@ export interface OpenId4VciAuthCodeFlowOptions {
    * so the key bound to the wallet attestation must be in the wallet.
    */
   walletAttestationJwt?: string
+
+  /**
+   * The key of the wallet attestation `cnf.jwk`, from `PublicJwk.fromKmsKey`, to sign its proof of possession with.
+   * Without it, the `kid` of the `cnf.jwk` must be the KMS key id.
+   */
+  walletAttestationKey?: Kms.PublicJwk
 
   redirectUri: string
   scope?: string[]

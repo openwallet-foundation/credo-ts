@@ -12,7 +12,7 @@ import {
 } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
-import { getResolvedDidcommServiceWithSigningKeyId } from './modules/connections/services/helpers'
+import { getResolvedDidcommServiceWithSigningKeyId, toX25519 } from './modules/connections/services/helpers'
 import { DidCommOutOfBandRole } from './modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandRepository } from './modules/oob/repository/DidCommOutOfBandRepository'
 import { DidCommOutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
@@ -25,6 +25,8 @@ export interface EnvelopeKeys {
   recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   senderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> | null
+  /** DID URL of the sender key; used as skid in DIDComm v2 so recipient can resolve it */
+  senderKeySkid?: string
 }
 
 @injectable()
@@ -64,13 +66,15 @@ export class DidCommEnvelopeService {
       let encryptedSender: string | undefined
 
       if (senderKey) {
+        // DIDComm v1 uses Ed25519 keys but encryption happens with X25519 keys.
+        const recipientX25519Jwk = toX25519(recipientKey).toJson()
+
         // Encrypt the sender
         const { encrypted } = await kms.encrypt({
           key: {
             keyAgreement: {
               algorithm: 'ECDH-HSALSA20',
-              // DIDComm v1 uses Ed25519 keys but encryption happens with X25519 keys
-              externalPublicJwk: recipientKey.convertTo(Kms.X25519PublicJwk).toJson(),
+              externalPublicJwk: recipientX25519Jwk,
             },
           },
           encryption: {
@@ -83,11 +87,14 @@ export class DidCommEnvelopeService {
       }
 
       // Encrypt the key
+      const recipientX25519JwkForKey = toX25519(recipientKey).toJson()
+
       const { encrypted, iv } = await kms.encrypt({
+        backend: senderKey?.kmsBackend,
         key: {
           keyAgreement: {
             algorithm: 'ECDH-HSALSA20',
-            externalPublicJwk: recipientKey.convertTo(Kms.X25519PublicJwk).toJson(),
+            externalPublicJwk: recipientX25519JwkForKey,
 
             // Sender key only needed for Authcrypt
             keyId: senderKey?.keyId,
@@ -166,11 +173,22 @@ export class DidCommEnvelopeService {
       encrypted_key: string
     } | null = null
 
+    // The sender is not authenticated yet and each recipient costs storage lookups, so the sender must not choose how many we do
+    const recipientCount = Array.isArray(protectedJson.recipients) ? protectedJson.recipients.length : 0
+    if (recipientCount === 0) {
+      throw new CredoError('DIDComm v1 message has no recipients')
+    }
+    const maxRecipients = agentContext.dependencyManager.resolve(DidCommModuleConfig).maxV1EnvelopeRecipients
+    if (recipientCount > maxRecipients) {
+      throw new CredoError(`DIDComm v1 message has ${recipientCount} recipients, the maximum is ${maxRecipients}`)
+    }
+
     for (const _recipient of protectedJson.recipients) {
       recipientKey = await this.extractOurRecipientKeyWithKeyId(agentContext, _recipient)
 
       if (recipientKey) {
         recipient = _recipient
+        break
       }
     }
 
@@ -185,6 +203,7 @@ export class DidCommEnvelopeService {
     let senderPublicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk> | undefined
     if (recipient.header.sender) {
       const { data } = await kms.decrypt({
+        backend: recipientKey.kmsBackend,
         key: {
           keyAgreement: {
             algorithm: 'ECDH-HSALSA20',
@@ -206,6 +225,7 @@ export class DidCommEnvelopeService {
 
     // Perofrm the actual decryption
     const { data: contentEncryptionKey } = await kms.decrypt({
+      backend: recipientKey.kmsBackend,
       decryption: {
         algorithm: 'XSALSA20-POLY1305',
         iv: recipient.header.iv ? TypedArrayEncoder.fromBase64Url(recipient.header.iv) : undefined,
@@ -250,13 +270,10 @@ export class DidCommEnvelopeService {
     payload: DidCommMessage,
     keys: EnvelopeKeys
   ): Promise<DidCommEncryptedMessage> {
-    const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
-
     const { routingKeys, senderKey } = keys
     let recipientKeys = keys.recipientKeys
 
-    // pass whether we want to use legacy did sov prefix
-    const message = payload.toJSON({ useDidSovPrefixWhereAllowed: didcommConfig.useDidSovPrefixWhereAllowed })
+    const message = payload.toJSON()
 
     this.logger.debug(`Pack outbound message ${message['@type']}`)
 
@@ -272,9 +289,7 @@ export class DidCommEnvelopeService {
       recipientKeys = [routingKey]
       this.logger.debug('Forward message created', forwardMessage)
 
-      const forwardJson = forwardMessage.toJSON({
-        useDidSovPrefixWhereAllowed: didcommConfig.useDidSovPrefixWhereAllowed,
-      })
+      const forwardJson = forwardMessage.toJSON()
 
       // Forward messages are anon packed
       encryptedMessage = await this.encryptDidcommV1Message(agentContext, forwardJson, [routingKey])
@@ -320,15 +335,14 @@ export class DidCommEnvelopeService {
       )
 
       const verificationMethod = didDocument.findVerificationMethodByPublicKey(publicKey)
-      const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
-        verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-      )?.kmsKeyId
+      const key = keys?.find(({ didDocumentRelativeKeyId }) => verificationMethod.id.endsWith(didDocumentRelativeKeyId))
 
       agentContext.config.logger.debug(
         `Found did '${didDocument.id}' for recipient key '${publicKey.fingerprint}' for incoming didcomm message`
       )
 
-      publicKey.keyId = kmsKeyId ?? publicKey.legacyKeyId
+      publicKey.keyId = key?.kmsKeyId ?? publicKey.legacyKeyId
+      publicKey.kmsBackend = key?.kmsBackend
       return publicKey
     } catch (error) {
       // If there is no did record yet, we first look at the mediator routing record
@@ -343,8 +357,10 @@ export class DidCommEnvelopeService {
             `Found mediator routing record with id '${mediatorRoutingRecord.id}' for recipient key '${publicKey.fingerprint}' for incoming didcomm message`
           )
 
-          const routingKey = mediatorRoutingRecord.routingKeysWithKeyId.find((routingKey) =>
-            publicKey.equals(routingKey)
+          // DIDComm v1 uses the Ed25519 routing key, the X25519 routing key only serves DIDComm v2
+          const routingKey = mediatorRoutingRecord.routingKeysWithKeyId.find(
+            (routingKey): routingKey is Kms.PublicJwk<Kms.Ed25519PublicJwk> =>
+              routingKey.is(Kms.Ed25519PublicJwk) && publicKey.equals(routingKey)
           )
 
           // This should not happen as we only get here if the tag matches
@@ -403,6 +419,7 @@ export class DidCommEnvelopeService {
           const recipieintRouting = outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.RecipientRouting)
           if (recipieintRouting?.recipientKeyFingerprint === publicKey.fingerprint) {
             publicKey.keyId = recipieintRouting.recipientKeyId ?? publicKey.legacyKeyId
+            publicKey.kmsBackend = recipieintRouting.recipientKmsBackend
             return publicKey
           }
         }
@@ -428,6 +445,7 @@ export class DidCommEnvelopeService {
           )
 
           publicKey.keyId = publicKey.legacyKeyId
+          publicKey.kmsBackend = kmsJwkPublic.backend
           return publicKey
         }
       }
@@ -437,6 +455,17 @@ export class DidCommEnvelopeService {
     return null
   }
 }
+
+/**
+ * A key that can appear on a DIDComm envelope.
+ *
+ * V1 uses Ed25519 keys throughout. V2 uses the key-agreement curves that the DIDComm Messaging
+ * v2.1 specification requires. Both versions produce a decrypted context, so the context carries
+ * the union rather than the v1 type with a cast over it.
+ */
+export type DidCommEnvelopeKey = Kms.PublicJwk<
+  Kms.Ed25519PublicJwk | Kms.X25519PublicJwk | Kms.P256PublicJwk | Kms.P384PublicJwk
+>
 
 export interface DecryptedDidCommMessageContext {
   plaintextMessage: DidCommPlaintextMessage

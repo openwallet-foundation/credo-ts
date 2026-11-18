@@ -170,9 +170,9 @@ export class EnglishMnemonic extends _EnglishMnemonic {
   public static readonly _mnemonicMatcher = /^[a-z]+( [a-z]+)*$/
 }
 
-export function getCosmosPayerWallet(cosmosPayerSeed?: string) {
-  if (!cosmosPayerSeed || cosmosPayerSeed === '') {
-    return DirectSecp256k1HdWallet.generate()
+export async function getCosmosPayerWallet(cosmosPayerSeed?: string) {
+  if (!cosmosPayerSeed) {
+    throw new CredoError('A cosmosPayerSeed is required to write to the cheqd ledger')
   }
   return EnglishMnemonic._mnemonicMatcher.test(cosmosPayerSeed)
     ? DirectSecp256k1HdWallet.fromMnemonic(cosmosPayerSeed, { prefix: 'cheqd' })

@@ -39,7 +39,7 @@ import {
   type W3cDataIntegrityUnsecuredDocument,
 } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
-import { WebVhDidResolver } from '../../dids'
+import { getWebVhDidResolver } from '../../dids/getWebVhDidResolver'
 import { isWebVhAttestedResource, parseResourceId, WebVhAttestedResource } from '../../resources'
 import { WebVhAnonCredsResource } from '../utils/transform'
 
@@ -210,7 +210,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     resourceTypeString: string
   ): Promise<{ resourceObject: WebVhAttestedResource; resolutionResult: DidResourceResolutionResult }> {
     try {
-      const webvhDidResolver = agentContext.dependencyManager.resolve(WebVhDidResolver)
+      const webvhDidResolver = getWebVhDidResolver(agentContext)
       if (!this.supportedIdentifier.test(resourceId))
         throw new CredoError(`Invalid ${resourceTypeString} ID: ${resourceId}`)
 

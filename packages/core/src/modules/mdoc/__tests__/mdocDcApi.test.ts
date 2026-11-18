@@ -1,10 +1,12 @@
-import { type DocRequestMatchSuccess, UnsatisfiedDeviceRequestError } from '@owf/mdoc'
+import { RegisteredCwtHeaderClaimKey } from '@owf/cose'
+import { DeviceRequest, type DocRequestMatchSuccess, EncryptionInfo, UnsatisfiedDeviceRequestError } from '@owf/mdoc'
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import type {
   TrustedIssuersForVerificationContext,
   VerificationSigner,
 } from '../../../agent/TrustedIssuersForVerification'
+import { TypedArrayEncoder } from '../../../utils'
 import { CredentialMultiInstanceUseMode } from '../../../utils/credentialUseTypes'
 import { PublicJwk } from '../../kms'
 import { type X509Certificate, X509Service, type X509VerificationContext } from '../../x509'
@@ -120,6 +122,9 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
     const { verificationSession, request } = await createSession()
 
     expect(verificationSession.state).toBe(MdocVerificationSessionState.RequestCreated)
+    expect(verificationSession.sessionKey.kmsBackend).toBe('node')
+    // The session's kms key id isn't sent, the recipient key has no kid (COSE_Key label 2)
+    expect(EncryptionInfo.fromBase64Url(request.encryptionInfo).recipientPublicKey.keyId).toBeUndefined()
     expect(request.deviceRequest).toEqual(expect.any(String))
     expect(request.encryptionInfo).toEqual(expect.any(String))
     expect(verificationSession.sessionTranscript).toEqual({
@@ -154,19 +159,35 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
     })
     expect(resolved.docRequests[0].validCredentials[0].record.id).toBe(mdocRecord.id)
 
+    const sign = vi.spyOn(agent.kms, 'sign')
     const response = await agent.mdoc.createDcApiResponse({
       resolvedRequest: resolved,
       credentials: [{ docRequestIndex: 0, record: mdocRecord.id }],
     })
 
     expect(response.response).toEqual(expect.any(String))
+    expect(sign).toHaveBeenCalledWith(expect.objectContaining({ keyId: mdocRecord.firstCredential.deviceKeyId }))
 
+    const decrypt = vi.spyOn(agent.kms, 'decrypt')
     const result = await agent.mdoc.verifyDcApiResponse({
       verificationSessionId: verificationSession.id,
       response,
       origin,
       trustedCertificates: [issuerCertificatePem],
     })
+
+    // The HPKE recipient key and the device key are found by their public key, so neither carries a kid
+    expect(decrypt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        backend: verificationSession.sessionKey.kmsBackend,
+        key: { keyAgreement: expect.objectContaining({ keyId: verificationSession.sessionKey.keyId }) },
+      })
+    )
+    const deviceSignature = result.deviceResponse.deviceResponse.documents?.[0].deviceSigned.deviceAuth.deviceSignature
+    if (!deviceSignature) throw new Error('Expected a device signature')
+    expect(deviceSignature.unprotectedHeaders.headers.get(RegisteredCwtHeaderClaimKey.KeyId)).toBeUndefined()
+    sign.mockRestore()
+    decrypt.mockRestore()
 
     expect(result.origin).toBe(origin)
     expect(result.verificationSession.state).toBe(MdocVerificationSessionState.ResponseVerified)
@@ -1121,7 +1142,7 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
       trustedCertificates: [issuerCertificatePem],
     })
 
-    await expect(agent.kms.getPublicKey({ keyId: verificationSession.sessionKeyId })).resolves.toBeDefined()
+    await expect(agent.kms.getPublicKey({ keyId: verificationSession.sessionKey.keyId })).resolves.toBeDefined()
   })
 
   test('a response created for another origin does not verify', async () => {
@@ -1277,10 +1298,19 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
       validity: { notBefore: new Date(Date.now() - 60_000), notAfter: getNextMonth() },
     })
 
+    readerCertificate.kmsBackend = readerKey.backend
+    const sign = vi.spyOn(agent.kms, 'sign')
     const { verificationSession, request } = await agent.mdoc.createDcApiVerificationSession({
       docRequests: [{ docType, nameSpaces: { [nameSpace]: { family_name: true } } }],
       readerAuth: { certificate: readerCertificate, origin },
     })
+
+    // The reader auth is signed with the reader key, found by its public key, so it has no kid header
+    expect(sign).toHaveBeenCalledWith(expect.objectContaining({ keyId: readerKey.keyId, backend: readerKey.backend }))
+    sign.mockRestore()
+    const [docRequest] = DeviceRequest.decode(TypedArrayEncoder.fromBase64Url(request.deviceRequest)).docRequests
+    expect(docRequest.readerAuth?.unprotectedHeaders.headers.get(RegisteredCwtHeaderClaimKey.X5Chain)).toBeDefined()
+    expect(docRequest.readerAuth?.unprotectedHeaders.headers.get(RegisteredCwtHeaderClaimKey.KeyId)).toBeUndefined()
 
     const resolved = await agent.mdoc.resolveDcApiRequest({
       request,
@@ -1457,7 +1487,7 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
     await agent.mdoc.deleteVerificationSessionById(verificationSession.id)
 
     await expect(agent.mdoc.getVerificationSessionById(verificationSession.id)).rejects.toThrow()
-    await expect(agent.kms.getPublicKey({ keyId: verificationSession.sessionKeyId })).rejects.toThrow('not found')
+    await expect(agent.kms.getPublicKey({ keyId: verificationSession.sessionKey.keyId })).rejects.toThrow('not found')
   })
 
   test('the session key is kept when deleteAssociatedKey is false', async () => {
@@ -1466,7 +1496,7 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
     await agent.mdoc.deleteVerificationSessionById(verificationSession.id, { deleteAssociatedKey: false })
 
     await expect(agent.mdoc.getVerificationSessionById(verificationSession.id)).rejects.toThrow()
-    await expect(agent.kms.getPublicKey({ keyId: verificationSession.sessionKeyId })).resolves.toBeDefined()
+    await expect(agent.kms.getPublicKey({ keyId: verificationSession.sessionKey.keyId })).resolves.toBeDefined()
   })
 
   describe('trusted certificate resolution', () => {

@@ -36,7 +36,7 @@ export interface SdJwtVcHolderJwkBinding {
   jwk: PublicJwk
 }
 
-export interface SdJwtVcIssuerDid {
+export interface SdJwtVcIssuerDid<Certificate extends X509Certificate | EncodedX509Certificate = X509Certificate> {
   method: 'did'
 
   // didUrl referencing a specific key in a did document.
@@ -51,10 +51,10 @@ export interface SdJwtVcIssuerDid {
    * used to resolve the DID (passed to the did resolver as the `x509chain` resolution option) and it
    * must chain up to a trusted certificate (see the x509 trusted certificates configuration).
    */
-  x5c?: X509Certificate[]
+  x5c?: Certificate[]
 }
 
-export interface SdJwtVcIssuerX5c {
+export interface SdJwtVcIssuerX5c<Certificate extends X509Certificate | EncodedX509Certificate = X509Certificate> {
   method: 'x5c'
 
   /**
@@ -63,7 +63,7 @@ export interface SdJwtVcIssuerX5c {
    *
    * The certificate containing the public key corresponding to the key used to digitally sign the JWS MUST be the first certificate.
    */
-  x5c: X509Certificate[]
+  x5c: Certificate[]
 
   /**
    * The issuer of the SD-JWT VC. Optional when signing with X509 certificates.
@@ -76,7 +76,9 @@ export type SdJwtVcHolderBinding = SdJwtVcHolderDidBinding | SdJwtVcHolderJwkBin
 
 // We only support did and x509 based issuance currently, but we might want to add support
 // for issuer metadata (as defined in SD-JWT VC) in the future
-export type SdJwtVcIssuer = SdJwtVcIssuerDid | SdJwtVcIssuerX5c
+export type SdJwtVcIssuer<Certificate extends X509Certificate | EncodedX509Certificate = X509Certificate> =
+  | SdJwtVcIssuerDid<Certificate>
+  | SdJwtVcIssuerX5c<Certificate>
 
 export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayload> {
   /**
@@ -115,7 +117,10 @@ export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayl
 
 // TODO: use the payload type once types are fixed
 export type SdJwtVcPresentOptions<_Payload extends SdJwtVcPayload = SdJwtVcPayload> = {
-  sdJwtVc: string | SdJwtVc
+  /**
+   * The credential to present. A KB-JWT for a credential bound to a jwk needs its `kmsKeyId`.
+   */
+  sdJwtVc: SdJwtVc
 
   /**
    * Use true to disclose everything
@@ -141,7 +146,12 @@ export type SdJwtVcPresentOptions<_Payload extends SdJwtVcPayload = SdJwtVcPaylo
 }
 
 export type SdJwtVcVerifyOptions = {
-  compactSdJwtVc: string
+  /**
+   * The compact SD-JWT VC, or an SD-JWT VC that was already decoded with `fromCompact`, which is
+   * then not decoded again. The issuer and holder of a decoded SD-JWT VC are used as they are, so
+   * only pass what `fromCompact` returned.
+   */
+  sdJwtVc: string | SdJwtVc
 
   /**
    * If the key binding object is present, the sd-jwt is required to have a key binding jwt attached
@@ -195,7 +205,7 @@ export type SdJwtVcVerifyOptions = {
    *
    * @deprecated use `trustedIssuers` instead.
    */
-  trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
+  trustedCertificates?: Array<EncodedX509Certificate | X509Certificate> | X509VerificationTrustedCertificates[]
 
   /**
    * Trusted issuers for the verification. Only entries whose `method` matches the credential signer

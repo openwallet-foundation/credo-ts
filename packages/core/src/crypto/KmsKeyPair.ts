@@ -59,6 +59,8 @@ export function createKmsKeyPairClass(agentContext: AgentContext) {
         const result = await kms.sign({
           data: data.data,
           keyId: this.publicJwk.keyId,
+          backend: this.publicJwk.kmsBackend,
+          expectedPublicJwk: this.publicJwk.toJson(),
           algorithm: this.publicJwk.signatureAlgorithm,
         })
 

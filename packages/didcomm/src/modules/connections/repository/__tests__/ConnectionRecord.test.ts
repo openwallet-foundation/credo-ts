@@ -14,6 +14,7 @@ describe('DidCommConnectionRecord', () => {
         theirDid: 'a-their-did',
         outOfBandId: 'a-out-of-band-id',
         invitationDid: 'a-invitation-did',
+        didcommVersion: 'v2',
       })
 
       expect(connectionRecord.getTags()).toEqual({
@@ -25,6 +26,7 @@ describe('DidCommConnectionRecord', () => {
         theirDid: 'a-their-did',
         outOfBandId: 'a-out-of-band-id',
         invitationDid: 'a-invitation-did',
+        didcommVersion: 'v2',
         connectionTypes: [],
         previousDids: [],
         previousTheirDids: [],
@@ -41,6 +43,12 @@ describe('DidCommConnectionRecord', () => {
     )
 
     expect(connectionRecord.protocol).toEqual(DidCommHandshakeProtocol.DidExchange)
+  })
+
+  it('should not transform the None handshake protocol', () => {
+    const connectionRecord = JsonTransformer.fromJSON({ protocol: 'None' }, DidCommConnectionRecord)
+
+    expect(connectionRecord.protocol).toEqual(DidCommHandshakeProtocol.None)
   })
 
   it('should not transform handshake protocol when minor version is .x', () => {

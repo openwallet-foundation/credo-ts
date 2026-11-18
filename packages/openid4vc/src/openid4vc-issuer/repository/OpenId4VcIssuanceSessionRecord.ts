@@ -179,6 +179,14 @@ export interface OpenId4VcIssuanceSessionChainedIdentity {
 
 export interface OpenId4VcIssuanceSessionChainedIdentityDpop {
   keyId: string
+  /**
+   * The public key of `keyId`, so it isn't read for every DPoP proof. Not set on sessions created before it was added.
+   */
+  publicJwk?: Kms.KmsJwkPublicAsymmetric
+  /**
+   * The kms backend that holds `keyId`.
+   */
+  kmsBackend?: string
   alg: Kms.KnownJwaSignatureAlgorithm
   nonce?: string
   /**

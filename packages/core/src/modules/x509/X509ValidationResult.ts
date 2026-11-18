@@ -38,6 +38,11 @@ export interface X509CertificateValidations {
   keyUsage: X509CertificateSingleValidationResult
 
   /**
+   * The leaf certificate has the required extended key usages
+   */
+  extendedKeyUsage: X509CertificateSingleValidationResult
+
+  /**
    * Basic constraints are valid for CA certificates
    */
   basicConstraints: X509CertificateSingleValidationResult

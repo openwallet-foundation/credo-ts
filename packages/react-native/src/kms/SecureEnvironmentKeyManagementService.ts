@@ -199,6 +199,13 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
 
     const secureEnvironment = await this.secureEnvironment
 
+    // Read before signing, so a wrong key doesn't ask the user to authenticate
+    let publicJwk: Kms.KmsJwkPublic | undefined
+    if (options.expectedPublicJwk) {
+      publicJwk = await this.getKeyAsserted(options.keyId)
+      Kms.assertExpectedSigningKey(options.keyId, publicJwk, options.expectedPublicJwk)
+    }
+
     try {
       // TODO: can we store something like 'use' for the key in secure environment?
       // Kms.assertKeyAllowsSign(publicJwk)
@@ -212,6 +219,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
 
       return {
         signature,
+        publicJwk,
       }
     } catch (error) {
       if (error instanceof secureEnvironment.KeyNotFoundError) {

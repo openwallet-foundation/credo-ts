@@ -1,7 +1,14 @@
 import type { AgentContext } from '../../../../agent'
 import type { XOR } from '../../../../types'
 import { JsonTransformer } from '../../../../utils'
-import { KeyManagementApi, type KmsCreateKeyOptions, type KmsCreateKeyTypeAsymmetric, PublicJwk } from '../../../kms'
+import {
+  checkKmsKeyReferences,
+  KeyManagementApi,
+  type KmsCreateKeyOptions,
+  type KmsCreateKeyTypeAsymmetric,
+  PublicJwk,
+  type WithCreateKeyBackend,
+} from '../../../kms'
 import type { DidDocumentKey } from '../../DidsApiOptions'
 import { DidDocument } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
@@ -44,10 +51,11 @@ export class PeerDidRegistrar implements DidRegistrar {
             {
               didDocumentRelativeKeyId: `#${publicJwk.fingerprint}`,
               kmsKeyId: createKeyResult.keyId,
+              kmsBackend: createKeyResult.backend,
             },
           ]
         } else {
-          const _publicJwk = await kms.getPublicKey({
+          const { publicKey: _publicJwk, backend } = await kms.getPublicKey({
             keyId: options.options.keyId,
           })
 
@@ -78,6 +86,7 @@ export class PeerDidRegistrar implements DidRegistrar {
             {
               didDocumentRelativeKeyId: `#${publicJwk.fingerprint}`,
               kmsKeyId: options.options.keyId,
+              kmsBackend: backend,
             },
           ]
         }
@@ -129,6 +138,11 @@ export class PeerDidRegistrar implements DidRegistrar {
         }
       }
 
+      checkKmsKeyReferences(
+        agentContext,
+        keys.map((key) => ({ keyId: key.kmsKeyId, backend: key.kmsBackend }))
+      )
+
       // Save the did so we know we created it and can use it for didcomm
       const didRecord = new DidRecord({
         did,
@@ -138,7 +152,7 @@ export class PeerDidRegistrar implements DidRegistrar {
         tags: {
           // We need to save the recipientKeys, so we can find the associated did
           // of a key when we receive a message from another connection.
-          recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+          recipientKeyFingerprints: didDocument.allDidCommRecipientKeys.map((key) => key.fingerprint),
           alternativeDids: getAlternativeDidsForPeerDid(did),
         },
       })
@@ -216,7 +230,7 @@ export interface PeerDidNumAlgo0CreateOptions extends DidCreateOptions {
   didDocument?: never
   options: {
     numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc
-  } & XOR<{ createKey: KmsCreateKeyOptions<KmsCreateKeyTypeAsymmetric> }, { keyId: string }>
+  } & XOR<{ createKey: WithCreateKeyBackend<KmsCreateKeyOptions<KmsCreateKeyTypeAsymmetric>> }, { keyId: string }>
   secret?: never
 }
 

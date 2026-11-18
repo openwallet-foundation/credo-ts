@@ -151,7 +151,7 @@ describe('DCQL selective disclosure', () => {
     const { payload, disclosures } = packSdJwtPayload(template, randomUUID())
 
     const jwt = await agent.dependencyManager.resolve(JwsService).createJwsCompact(agent.context, {
-      keyId: issuerKeyId,
+      key: { keyId: issuerKeyId },
       payload: new JwtPayload({
         iss: issuerDid,
         additionalClaims: { ...payload, cnf: { jwk: holderKey.toJson() }, _sd_alg: 'sha-256' },
@@ -239,7 +239,7 @@ describe('DCQL selective disclosure', () => {
 
     // The SD-JWT is valid, so it has no disclosure without the disclosure of the claim above it
     const verification = await sdJwtVcService.verify(agent.context, {
-      compactSdJwtVc: encodedDcqlPresentation.credential[0] as string,
+      sdJwtVc: encodedDcqlPresentation.credential[0] as string,
       keyBinding: { audience: domain, nonce: challenge },
     })
     expect(verification.isValid).toBe(true)
@@ -750,7 +750,9 @@ describe('DCQL selective disclosure', () => {
       const vct = `urn:vct:${randomUUID()}`
       await agent.sdJwtVc.store({
         record: new SdJwtVcRecord({
-          credentialInstances: [{ compactSdJwtVc: await signSdJwt({ vct, ...template }, 'dc+sd-jwt') }],
+          credentialInstances: [
+            { compactSdJwtVc: await signSdJwt({ vct, ...template }, 'dc+sd-jwt'), kmsKeyId: holderKey.keyId },
+          ],
         }),
       })
 

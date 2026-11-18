@@ -15,7 +15,6 @@ import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import { dateToSeconds } from '../../utils'
 import { DidsApi, parseDid } from '../dids'
-import { KeyManagementApi } from '../kms'
 import { TokenStatusListModuleConfig } from './TokenStatusListModuleConfig'
 import type {
   CreateTokenStatusListOptions,
@@ -49,16 +48,13 @@ export class TokenStatusListService {
       )
     }
 
-    let keyId: string | undefined
-    if (options.signer.method === 'x5c') {
-      keyId = options.signer.x5c[0].keyId
-    } else if (options.signer.method === 'did') {
-      const dids = agentContext.dependencyManager.resolve(DidsApi)
-      const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(options.signer.didUrl)
-      keyId = publicJwk.keyId
-    }
+    const signerKey =
+      options.signer.method === 'x5c'
+        ? options.signer.x5c[0].publicJwk
+        : (await agentContext.resolve(DidsApi).resolveVerificationMethodFromCreatedDidRecord(options.signer.didUrl))
+            .publicJwk
 
-    if (!keyId) {
+    if (!signerKey.hasKeyId) {
       throw new CredoError(
         `Unable to establish key id for signer method '${options.signer.method}' when creating a token status list`
       )
@@ -69,9 +65,6 @@ export class TokenStatusListService {
 
     const now = options.now ?? new Date()
     const issuedAt = options.issuedAt ?? now
-
-    const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
-    const jwk = await kms.getPublicKey({ keyId })
 
     try {
       if (options.format === 'cwt') {
@@ -93,16 +86,18 @@ export class TokenStatusListService {
             [RegisteredCwtHeaderClaimKey.Algorithm, jwkToCoseKey.alg(options.alg)],
           ]),
         })
-        const shouldAuthenticate = jwk.alg?.toUpperCase().startsWith('HS')
+        // Without a key id, so the CWT has no `kid`. The context finds the KMS key by its public key.
+        const coseKey = CoseKey.fromJwk(signerKey.toJson({ includeKid: false }))
+        const shouldAuthenticate = options.alg.startsWith('HS')
 
         return {
           format: options.format,
           // Mac0 vs Sign1
           statusList: shouldAuthenticate
-            ? await cwtFull.authenticateAndEncode({ key: CoseKey.fromJwk(jwk) }, getMac0Context(agentContext))
+            ? await cwtFull.authenticateAndEncode({ key: coseKey }, getMac0Context(agentContext, [signerKey]))
             : await cwtFull.signAndEncode(
-                { signingKey: CoseKey.fromJwk(jwk), algorithm: jwkToCoseKey.alg(options.alg) as SignatureAlgorithm },
-                getSign1Context(agentContext)
+                { signingKey: coseKey, algorithm: jwkToCoseKey.alg(options.alg) as SignatureAlgorithm },
+                getSign1Context(agentContext, [signerKey])
               ),
           parsed: cwtFull,
         } as Extract<TokenStatusListResult, { format: Format }>
@@ -137,7 +132,7 @@ export class TokenStatusListService {
         const jwsService = agentContext.dependencyManager.resolve(JwsService)
         const jws = await jwsService.createJwsCompact(agentContext, {
           payload: new JwtPayload({ additionalClaims: payload }),
-          keyId,
+          key: signerKey,
           protectedHeaderOptions: headerWithKeyReference as JwsProtectedHeaderOptions,
         })
         return {
@@ -165,23 +160,17 @@ export class TokenStatusListService {
       )
     }
 
-    let keyId: string | undefined
-    if (options.signer.method === 'x5c') {
-      keyId = options.signer.x5c[0].keyId
-    } else if (options.signer.method === 'did') {
-      const dids = agentContext.dependencyManager.resolve(DidsApi)
-      const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(options.signer.didUrl)
-      keyId = publicJwk.keyId
-    }
+    const signerKey =
+      options.signer.method === 'x5c'
+        ? options.signer.x5c[0].publicJwk
+        : (await agentContext.resolve(DidsApi).resolveVerificationMethodFromCreatedDidRecord(options.signer.didUrl))
+            .publicJwk
 
-    if (!keyId) {
+    if (!signerKey.hasKeyId) {
       throw new CredoError(
         `Unable to establish key id for signer method '${options.signer.method}' when updating a token status list`
       )
     }
-
-    const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
-    const jwk = await kms.getPublicKey({ keyId })
 
     const now = options.now ?? new Date()
     const issuedAt = options.issuedAt ?? now
@@ -216,20 +205,22 @@ export class TokenStatusListService {
           ]),
         })
 
-        const shouldAuthenticate = jwk.alg?.toUpperCase().startsWith('HS')
+        // Without a key id, so the CWT has no `kid`. The context finds the KMS key by its public key.
+        const coseKey = CoseKey.fromJwk(signerKey.toJson({ includeKid: false }))
+        const shouldAuthenticate = options.alg.startsWith('HS')
         if (shouldAuthenticate) {
-          const mac0Context = getMac0Context(agentContext)
+          const mac0Context = getMac0Context(agentContext, [signerKey])
           return {
             format: 'cwt',
-            statusList: await updatedCwt.authenticateAndEncode({ key: CoseKey.fromJwk(jwk) }, mac0Context),
+            statusList: await updatedCwt.authenticateAndEncode({ key: coseKey }, mac0Context),
             parsed: updatedCwt,
           } as Extract<TokenStatusListResult, { format: Format }>
         } else {
-          const sign1Context = getSign1Context(agentContext)
+          const sign1Context = getSign1Context(agentContext, [signerKey])
           return {
             format: 'cwt',
             statusList: await updatedCwt.signAndEncode(
-              { signingKey: CoseKey.fromJwk(jwk), algorithm: jwkToCoseKey.alg(options.alg) as SignatureAlgorithm },
+              { signingKey: coseKey, algorithm: jwkToCoseKey.alg(options.alg) as SignatureAlgorithm },
               sign1Context
             ),
             parsed: updatedCwt,
@@ -272,7 +263,7 @@ export class TokenStatusListService {
         const jwsService = agentContext.dependencyManager.resolve(JwsService)
         const jws = await jwsService.createJwsCompact(agentContext, {
           payload: new JwtPayload({ additionalClaims: payload }),
-          keyId,
+          key: signerKey,
           protectedHeaderOptions: header as JwsProtectedHeaderOptions,
         })
         return {

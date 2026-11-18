@@ -33,6 +33,7 @@ import type { EventReplaySubject } from '../../core/tests'
 import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
 import {
   getAgentOptions,
+  getDefaultDidCommVersionForTests,
   makeConnection,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
@@ -53,7 +54,12 @@ import type {
 } from '../src'
 import { AnonCredsModule } from '../src'
 import type { AnonCredsDidCommOfferCredentialFormat } from '../src/didcomm'
-import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService } from '../src/didcomm'
+import {
+  AnonCredsDidCommCredentialFormatService,
+  AnonCredsDidCommProofFormatService,
+  AnonCredsDidCommRevocationNotificationFormatService,
+  AnonCredsLinkSecretBindingProvider,
+} from '../src/didcomm'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
 import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
@@ -79,7 +85,9 @@ export const getAnonCredsModules = ({
   }
   extraDidCommConfig?: Omit<DidCommModuleConfigOptions, 'proofs' | 'credentials'>
 } = {}) => {
-  const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService()
+  const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService({
+    linkSecretBinding: new AnonCredsLinkSecretBindingProvider(),
+  })
   // Add support for resolving pre-created credential definitions and schemas
   const inMemoryAnonCredsRegistry = new InMemoryAnonCredsRegistry({
     existingCredentialDefinitions: {
@@ -92,6 +100,7 @@ export const getAnonCredsModules = ({
   })
 
   const anonCredsCredentialFormatService = new AnonCredsDidCommCredentialFormatService()
+  const anonCredsRevocationNotificationFormatService = new AnonCredsDidCommRevocationNotificationFormatService()
   const anonCredsProofFormatService = new AnonCredsDidCommProofFormatService()
   const presentationExchangeProofFormatService = new DidCommDifPresentationExchangeProofFormatService()
 
@@ -105,6 +114,7 @@ export const getAnonCredsModules = ({
       ...extraDidCommConfig,
       credentials: {
         autoAcceptCredentials,
+        revocationNotificationFormats: [anonCredsRevocationNotificationFormatService],
         credentialProtocols: [
           new DidCommCredentialV2Protocol({
             credentialFormats: [dataIntegrityCredentialFormatService, anonCredsCredentialFormatService],
@@ -324,6 +334,7 @@ export async function setupAnonCredsTests<
   supportRevocation,
   registries,
   cheqd,
+  didCommVersion,
 }: {
   issuerId?: string
   cheqd?: {
@@ -339,7 +350,13 @@ export async function setupAnonCredsTests<
   createConnections?: CreateConnections
   supportRevocation?: boolean
   registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
+  /** DIDComm envelope version for connections. When 'v2', uses v2 OOB so credential exchange runs over v2. Defaults to DIDCOMM_VERSION env var, else 'v1'. */
+  didCommVersion?: 'v1' | 'v2'
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
+  const resolvedDidCommVersion = didCommVersion ?? getDefaultDidCommVersionForTests()
+  const extraDidCommConfigForVersion: { didcommVersions?: ('v1' | 'v2')[] } =
+    resolvedDidCommVersion === 'v2' ? { didcommVersions: ['v1', 'v2'] } : {}
+
   const issuerAgent = new Agent(
     getAgentOptions(
       issuerName,
@@ -352,6 +369,7 @@ export async function setupAnonCredsTests<
         cheqd,
         extraDidCommConfig: {
           endpoints: ['rxjs:issuer'],
+          ...extraDidCommConfigForVersion,
         },
       }),
       { requireDidcomm: true }
@@ -370,6 +388,7 @@ export async function setupAnonCredsTests<
         cheqd,
         extraDidCommConfig: {
           endpoints: ['rxjs:holder'],
+          ...extraDidCommConfigForVersion,
         },
       }),
       { requireDidcomm: true }
@@ -389,6 +408,7 @@ export async function setupAnonCredsTests<
             cheqd,
             extraDidCommConfig: {
               endpoints: ['rxjs:verifier'],
+              ...extraDidCommConfigForVersion,
             },
           }),
           { requireDidcomm: true }
@@ -458,10 +478,14 @@ export async function setupAnonCredsTests<
   let holderVerifierConnection: DidCommConnectionRecord | undefined
 
   if (createConnections ?? true) {
-    ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)
+    ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent, {
+      didCommVersion: resolvedDidCommVersion,
+    })
 
     if (verifierAgent) {
-      ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent)
+      ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent, {
+        didCommVersion: resolvedDidCommVersion,
+      })
     }
   }
 

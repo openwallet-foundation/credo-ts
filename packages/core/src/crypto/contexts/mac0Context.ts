@@ -6,9 +6,14 @@ import {
   type KmsJwkPublicAsymmetric,
   type KnownCoseSignatureAlgorithm,
   knownJwaFromCoseSignatureAlgorithm,
+  type PublicJwk,
 } from '../../modules/kms'
+import { getKmsKeyForCoseKey } from './sign1Context'
 
-export const getMac0Context = (agentContext: AgentContext): Mac0Context => {
+/**
+ * @param keys the keys that authenticate, from `PublicJwk.fromKmsKey`, found by their public key.
+ */
+export const getMac0Context = (agentContext: AgentContext, keys: PublicJwk[] = []): Mac0Context => {
   const kms = agentContext.resolve(KeyManagementApi)
 
   return {
@@ -16,9 +21,7 @@ export const getMac0Context = (agentContext: AgentContext): Mac0Context => {
       if (input.key instanceof Uint8Array) {
         throw new CredoError('For mdoc authentication with mac0 a CoseKey is required, not a Uint8Array')
       }
-      if (!input.key.keyId) {
-        throw new CredoError('Missing required keyId on CoseKey for signing mdoc')
-      }
+      const { keyId, kmsBackend } = getKmsKeyForCoseKey(keys, input.key)
 
       const algorithm = input.algorithm ?? input.key.algorithm
       if (algorithm === undefined) {
@@ -30,7 +33,10 @@ export const getMac0Context = (agentContext: AgentContext): Mac0Context => {
       const { signature } = await kms.sign({
         data: input.toBeAuthenticated,
         algorithm: knownJwaFromCoseSignatureAlgorithm(algorithm as unknown as KnownCoseSignatureAlgorithm),
-        keyId: input.key.keyId,
+        keyId,
+        backend: kmsBackend,
+        // Mac0 uses a symmetric key, which has no public key to check
+        expectedPublicJwk: null,
       })
 
       return signature

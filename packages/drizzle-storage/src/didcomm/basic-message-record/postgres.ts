@@ -21,6 +21,7 @@ export const didcommBasicMessage = pgTable(
     connectionId: text('connection_id'),
     threadId: text('thread_id'),
     parentThreadId: text('parent_thread_id'),
+    protocolVersion: text('protocol_version'),
   },
   (table) => [
     ...postgresBaseRecordIndexes(table, 'didcommBasicMessage'),

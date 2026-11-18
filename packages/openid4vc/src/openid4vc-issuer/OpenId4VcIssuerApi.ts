@@ -1,6 +1,6 @@
 import { AgentContext, injectable } from '@credo-ts/core'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
-import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
+import { OpenId4VcIssuerService, toCredentialRequestEncryptionRecord } from './OpenId4VcIssuerService'
 import type {
   OpenId4VciCreateCredentialOfferOptions,
   OpenId4VciCreateCredentialResponseOptions,
@@ -43,14 +43,28 @@ export class OpenId4VcIssuerApi {
   }
 
   /**
-   * Rotate the key used for signing access tokens for the issuer with the given issuerId.
+   * Rotate the key used for signing access tokens for the issuer with the given issuerId. Without `accessTokenSigner`,
+   * a new Ed25519 key is created in the backend of the current key.
+   *
+   * The issuer record isn't locked, so don't run this while the issuer is updated elsewhere, or one update is lost.
    */
   public async rotateAccessTokenSigningKey(
     issuerId: string,
-    options?: Pick<OpenId4VciCreateIssuerOptions, 'accessTokenSignerKeyType' | 'accessTokenSignerKmsBackend'>
+    options?: Pick<OpenId4VciCreateIssuerOptions, 'accessTokenSigner'>
   ) {
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
     return this.openId4VcIssuerService.rotateAccessTokenSigningKey(this.agentContext, issuer, options)
+  }
+
+  /**
+   * Deletes the access token signing keys that were rotated out. Tokens they signed no longer verify, so call this once
+   * those tokens have expired. Pass `keyIds` to only delete those previous keys.
+   *
+   * The issuer record isn't locked, so don't run this while the issuer is updated elsewhere, or one update is lost.
+   */
+  public async deletePreviousAccessTokenSigningKeys(issuerId: string, options?: { keyIds?: string[] }) {
+    const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
+    return this.openId4VcIssuerService.deletePreviousAccessTokenSigningKeys(this.agentContext, issuer, options)
   }
 
   public async updateIssuerMetadata(options: OpenId4VcUpdateIssuerRecordOptions) {
@@ -79,7 +93,7 @@ export class OpenId4VcIssuerApi {
     issuer.clientAttestationPopSigningAlgValuesSupported = clientAttestationPopSigningAlgValuesSupported
     issuer.batchCredentialIssuance = batchCredentialIssuance
     issuer.credentialResponseEncryption = credentialResponseEncryption
-    issuer.credentialRequestEncryption = credentialRequestEncryption
+    issuer.credentialRequestEncryption = toCredentialRequestEncryptionRecord(credentialRequestEncryption)
     issuer.authorizationServerConfigs = authorizationServerConfigs
 
     return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer, { metadataSigner })

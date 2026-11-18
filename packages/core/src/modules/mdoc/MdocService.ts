@@ -3,7 +3,7 @@ import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import { canUseInstanceFromCredentialRecord } from '../../utils/credentialUse'
 import { CredentialMultiInstanceUseMode } from '../../utils/credentialUseTypes'
-import { KeyManagementApi } from '../kms'
+import { checkKmsKeyReferences, KeyManagementApi } from '../kms'
 import { Mdoc } from './Mdoc'
 import { MdocDeviceResponse } from './MdocDeviceResponse'
 import { MdocError } from './MdocError'
@@ -276,6 +276,11 @@ export class MdocService {
   }
 
   public async store(agentContext: AgentContext, options: MdocStoreOptions) {
+    checkKmsKeyReferences(
+      agentContext,
+      options.record.credentialInstances.map(({ kmsKeyId, kmsBackend }) => ({ keyId: kmsKeyId, backend: kmsBackend })),
+      { missingKeyId: 'throw' }
+    )
     await this.mdocRepository.save(agentContext, options.record)
 
     return options.record
@@ -339,7 +344,10 @@ export class MdocService {
       const kms = agentContext.resolve(KeyManagementApi)
 
       // Returns false if the key was already gone, which is the state we want it in
-      await kms.deleteKey({ keyId: verificationSession.sessionKeyId })
+      await kms.deleteKey({
+        keyId: verificationSession.sessionKey.keyId,
+        backend: verificationSession.sessionKey.kmsBackend,
+      })
     }
 
     await this.mdocVerificationSessionRepository.delete(agentContext, verificationSession)

@@ -6,6 +6,7 @@ import {
   type KmsCreateKeyTypeAsymmetric,
   type KmsJwkPublicAsymmetric,
   PublicJwk,
+  type WithCreateKeyBackend,
 } from '../../../kms'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
@@ -22,17 +23,20 @@ export class KeyDidRegistrar implements DidRegistrar {
     try {
       let publicJwk: KmsJwkPublicAsymmetric
       let keyId: string
+      let kmsBackend: string
       const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
       if (options.options.createKey) {
         const createKeyResult = await kms.createKey(options.options.createKey)
         publicJwk = createKeyResult.publicJwk
         keyId = createKeyResult.keyId
+        kmsBackend = createKeyResult.backend
       } else {
-        const _publicJwk = await kms.getPublicKey({
+        const { publicKey: _publicJwk, backend } = await kms.getPublicKey({
           keyId: options.options.keyId,
         })
         keyId = options.options.keyId
+        kmsBackend = backend
         if (!_publicJwk) {
           return {
             didDocumentMetadata: {},
@@ -70,6 +74,7 @@ export class KeyDidRegistrar implements DidRegistrar {
           {
             didDocumentRelativeKeyId: `#${didKey.publicJwk.fingerprint}`,
             kmsKeyId: keyId,
+            kmsBackend,
           },
         ],
       })
@@ -131,7 +136,7 @@ export interface KeyDidCreateOptions extends DidCreateOptions {
    * You can create a did:key based on an existing `keyId`, or provide `createKey` options
    * to create a new key.
    */
-  options: XOR<{ createKey: KmsCreateKeyOptions<KmsCreateKeyTypeAsymmetric> }, { keyId: string }>
+  options: XOR<{ createKey: WithCreateKeyBackend<KmsCreateKeyOptions<KmsCreateKeyTypeAsymmetric>> }, { keyId: string }>
 }
 
 // Update and Deactivate not supported for did:key

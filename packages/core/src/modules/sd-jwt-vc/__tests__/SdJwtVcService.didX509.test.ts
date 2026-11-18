@@ -159,6 +159,7 @@ async function craftSdJwtVc({
     keyId: key.keyId,
     data: TypedArrayEncoder.fromUtf8String(`${encodedHeader}.${encodedPayload}`),
     algorithm: 'ES256',
+    expectedPublicJwk: key.toJson(),
   })
   return `${encodedHeader}.${encodedPayload}.${TypedArrayEncoder.toBase64Url(signature)}~`
 }
@@ -194,7 +195,7 @@ async function importDidKey() {
 }
 
 async function verify(compactSdJwtVc: string, trustedIssuers?: TrustedIssuer[]) {
-  return await service().verify(agent.context, { compactSdJwtVc, trustedIssuers })
+  return await service().verify(agent.context, { sdJwtVc: compactSdJwtVc, trustedIssuers })
 }
 
 function expectInvalid(result: Awaited<ReturnType<typeof verify>>, message?: string | RegExp) {

@@ -2,6 +2,7 @@ import type { AnonCredsCredentialDefinition, AnonCredsRevocationRegistryDefiniti
 import type { AgentContext } from '@credo-ts/core'
 import {
   DidRepository,
+  DidsModuleConfig,
   MultiBaseEncoder,
   MultiHashEncoder,
   TypedArrayEncoder,
@@ -24,15 +25,7 @@ import {
   verificationMethodId,
 } from './mock-resources'
 
-// Mock the WebVhDidResolver
 const mockResolveResource = vi.fn()
-vi.mock('../../../dids/WebVhDidResolver', () => {
-  return {
-    WebVhDidResolver: vi.fn().mockImplementation(() => {
-      return { resolveResource: mockResolveResource }
-    }),
-  }
-})
 
 const mockFindCreatedDid = vi.fn()
 const mockDidsRepository = {
@@ -68,13 +61,16 @@ describe('WebVhAnonCredsRegistry', () => {
       proof: mockSchemaResource.proof,
     })
 
+    const webvhResolver = new WebVhDidResolver()
+    webvhResolver.resolveResource = mockResolveResource
+
     const agentConfig = getAgentConfig('WebVhAnonCredsRegistryTest')
     agentContext = getAgentContext({
       agentConfig,
       registerInstances: [
         [W3cDataIntegrityApi, mockDataIntegrityApi],
         [DidRepository, mockDidsRepository],
-        [WebVhDidResolver, { resolveResource: mockResolveResource }],
+        [DidsModuleConfig, new DidsModuleConfig({ resolvers: [webvhResolver] })],
       ],
     })
 

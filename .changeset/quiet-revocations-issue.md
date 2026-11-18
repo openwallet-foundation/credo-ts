@@ -1,5 +1,4 @@
 ---
-'@credo-ts/indy-vdr': minor
 '@credo-ts/anoncreds': minor
 ---
 

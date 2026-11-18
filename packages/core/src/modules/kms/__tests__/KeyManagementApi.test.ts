@@ -51,12 +51,13 @@ describe('KeyManagementApi', () => {
         x: expect.any(String),
         y: expect.any(String),
       },
+      backend: 'node',
     })
 
-    const publicJwk = await agent.kms.getPublicKey({
+    const publicKey = await agent.kms.getPublicKey({
       keyId: 'hello',
     })
-    expect(publicJwk).toEqual(result.publicJwk)
+    expect(publicKey).toEqual({ publicKey: result.publicJwk, backend: 'node' })
 
     const deleted = await agent.kms.deleteKey({
       keyId: 'hello',
@@ -113,6 +114,7 @@ describe('KeyManagementApi', () => {
       keyId,
       algorithm: 'ES256',
       data: new Uint8Array([1, 2, 3]),
+      expectedPublicJwk: publicJwk,
     })
 
     const verifyResult = await agent.kms.verify({
@@ -126,6 +128,161 @@ describe('KeyManagementApi', () => {
     expect(verifyResult).toEqual({
       verified: true,
       publicJwk,
+      backend: 'node',
+    })
+  })
+
+  describe('sign with expectedPublicJwk', () => {
+    const data = new Uint8Array([1, 2, 3])
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    test('returns the signature and public key when the key matches', async () => {
+      const { keyId, publicJwk } = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+      const result = await agent.kms.sign({ keyId, algorithm: 'ES256', data, expectedPublicJwk: publicJwk })
+
+      expect(result.publicJwk).toEqual(publicJwk)
+      await expect(
+        agent.kms.verify({ key: { keyId }, algorithm: 'ES256', data, signature: result.signature })
+      ).resolves.toMatchObject({ verified: true })
+    })
+
+    test('throws when the key does not match', async () => {
+      const { keyId } = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const other = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+      await expect(
+        agent.kms.sign({ keyId, algorithm: 'ES256', data, expectedPublicJwk: other.publicJwk })
+      ).rejects.toThrow(
+        new KeyManagementError(`Key with key id '${keyId}' does not match the expected EC key with crv 'P-256'`)
+      )
+    })
+
+    test('throws before signing when the algorithm does not fit the key', async () => {
+      const backend = new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())
+      const kms = new KeyManagementApi(new KeyManagementModuleConfig({ backends: [backend] }), agent.context)
+      const { keyId, publicJwk } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const sign = vi.spyOn(backend, 'sign')
+
+      await expect(kms.sign({ keyId, algorithm: 'ES384', data, expectedPublicJwk: publicJwk })).rejects.toThrow(
+        `EC key with crv 'P-256' cannot be used with algorithm 'ES384'`
+      )
+      expect(sign).not.toHaveBeenCalled()
+    })
+
+    test('lets the backend check the key when it was not read to find the backend', async () => {
+      const backend = new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())
+      const kms = new KeyManagementApi(new KeyManagementModuleConfig({ backends: [backend] }), agent.context)
+      const { keyId, publicJwk } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const other = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const sign = vi.spyOn(backend, 'sign')
+      const getPublicKey = vi.spyOn(backend, 'getPublicKey')
+
+      const result = await kms.sign({ keyId, algorithm: 'ES256', data, expectedPublicJwk: publicJwk })
+      await expect(kms.sign({ keyId, algorithm: 'ES256', data, expectedPublicJwk: other.publicJwk })).rejects.toThrow(
+        `Key with key id '${keyId}' does not match the expected EC key with crv 'P-256'`
+      )
+
+      expect(result.publicJwk).toEqual(publicJwk)
+      expect(sign).toHaveBeenCalledWith(agent.context, expect.objectContaining({ expectedPublicJwk: publicJwk }))
+      expect(getPublicKey).not.toHaveBeenCalled()
+    })
+
+    test('throws when the backend does not return the publicJwk it checked', async () => {
+      const backend = new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())
+      const kms = new KeyManagementApi(new KeyManagementModuleConfig({ backends: [backend] }), agent.context)
+      const { keyId, publicJwk } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+      const sign = backend.sign.bind(backend)
+      vi.spyOn(backend, 'sign').mockImplementation(async (...args) => ({ signature: (await sign(...args)).signature }))
+
+      await expect(kms.sign({ keyId, algorithm: 'ES256', data, expectedPublicJwk: publicJwk })).rejects.toThrow(
+        `Backend 'node' did not return the publicJwk for key id '${keyId}' with expectedPublicJwk`
+      )
+    })
+
+    test('throws when the backend returns a publicJwk that does not match', async () => {
+      const backend = new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())
+      const kms = new KeyManagementApi(new KeyManagementModuleConfig({ backends: [backend] }), agent.context)
+      const { keyId, publicJwk } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const other = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+      const sign = backend.sign.bind(backend)
+      vi.spyOn(backend, 'sign').mockImplementation(async (...args) => ({
+        signature: (await sign(...args)).signature,
+        publicJwk: other.publicJwk,
+      }))
+
+      await expect(kms.sign({ keyId, algorithm: 'ES256', data, expectedPublicJwk: publicJwk })).rejects.toThrow(
+        `Key with key id '${keyId}' does not match the expected EC key with crv 'P-256'`
+      )
+    })
+
+    test('does not read the public key when expectedPublicJwk is null', async () => {
+      const backend = new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())
+      const kms = new KeyManagementApi(new KeyManagementModuleConfig({ backends: [backend] }), agent.context)
+      const { keyId } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const getPublicKey = vi.spyOn(backend, 'getPublicKey')
+
+      await kms.sign({ keyId, algorithm: 'ES256', data, backend: 'node', expectedPublicJwk: null })
+
+      expect(getPublicKey).not.toHaveBeenCalled()
+    })
+
+    describe('with the public key read to find the backend', () => {
+      const backend = new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())
+      const otherBackend = Object.assign(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), {
+        backend: 'other',
+      })
+      const kms = new KeyManagementApi(
+        new KeyManagementModuleConfig({ backends: [backend, otherBackend] }),
+        agent.context
+      )
+
+      test('checks the key itself and does not pass expectedPublicJwk to the backend', async () => {
+        const { keyId, publicJwk } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+        const sign = vi.spyOn(backend, 'sign')
+        const getPublicKey = vi.spyOn(backend, 'getPublicKey')
+
+        const result = await kms.sign({ keyId, algorithm: 'ES256', data, expectedPublicJwk: publicJwk })
+
+        expect(getPublicKey).toHaveBeenCalledTimes(1)
+        expect(sign).toHaveBeenCalledWith(agent.context, expect.objectContaining({ expectedPublicJwk: null }))
+        expect(result.publicJwk).toEqual(publicJwk)
+      })
+
+      test('throws before signing when the key does not match', async () => {
+        const { keyId } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+        const other = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+        const sign = vi.spyOn(backend, 'sign')
+
+        await expect(kms.sign({ keyId, algorithm: 'ES256', data, expectedPublicJwk: other.publicJwk })).rejects.toThrow(
+          `Key with key id '${keyId}' does not match the expected EC key with crv 'P-256'`
+        )
+        expect(sign).not.toHaveBeenCalled()
+      })
+    })
+
+    test('does not sign when the key read to find the backend does not match', async () => {
+      const backend = new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())
+      const otherBackend = Object.assign(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), {
+        backend: 'other',
+      })
+      const kms = new KeyManagementApi(
+        new KeyManagementModuleConfig({ backends: [backend, otherBackend] }),
+        agent.context
+      )
+      const { keyId } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const other = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const sign = vi.spyOn(backend, 'sign')
+
+      await expect(kms.sign({ keyId, algorithm: 'ES256', data, expectedPublicJwk: other.publicJwk })).rejects.toThrow(
+        `Key with key id '${keyId}' does not match the expected EC key with crv 'P-256'`
+      )
+      expect(sign).not.toHaveBeenCalled()
     })
   })
 
@@ -182,6 +339,18 @@ describe('KeyManagementApi', () => {
         'ES256',
       ])
     })
+
+    test('returns algorithms a backend can verify with when operation is verify', () => {
+      const verifyOnlyBackend = {
+        backend: 'verify-only',
+        isOperationSupported: (_agentContext: unknown, operation: KmsOperation) =>
+          operation.operation === 'verify' && operation.algorithm === 'PS256',
+      } as unknown as KeyManagementService
+      const kms = new KeyManagementApi(new KeyManagementModuleConfig({ backends: [verifyOnlyBackend] }), agent.context)
+
+      expect(kms.supportedJwaSignatureAlgorithms()).toEqual([])
+      expect(kms.supportedJwaSignatureAlgorithms({ operation: 'verify' })).toEqual(['PS256'])
+    })
   })
 
   test('getPublicKey returns the key from the provided backend', async () => {
@@ -198,7 +367,10 @@ describe('KeyManagementApi', () => {
     await kms.createKey({ keyId: 'same-id', type: { kty: 'EC', crv: 'P-256' } })
     const otherKey = await kms.createKey({ keyId: 'same-id', backend: 'other', type: { kty: 'EC', crv: 'P-256' } })
 
-    expect(await kms.getPublicKey({ keyId: 'same-id', backend: 'other' })).toEqual(otherKey.publicJwk)
+    expect(await kms.getPublicKey({ keyId: 'same-id', backend: 'other' })).toEqual({
+      publicKey: otherKey.publicJwk,
+      backend: 'other',
+    })
   })
 
   test('encrypts, decrypts and verifies with keys that only exist in a backend that is not the default', async () => {
@@ -242,7 +414,12 @@ describe('KeyManagementApi', () => {
     expect(Uint8Array.from(directDecrypted.data)).toEqual(data)
 
     const signingKey = await kms.createKey({ backend: 'other', type: { kty: 'EC', crv: 'P-256' } })
-    const { signature } = await kms.sign({ keyId: signingKey.keyId, algorithm: 'ES256', data })
+    const { signature } = await kms.sign({
+      keyId: signingKey.keyId,
+      algorithm: 'ES256',
+      data,
+      expectedPublicJwk: signingKey.publicJwk,
+    })
     await expect(
       kms.verify({ key: { keyId: signingKey.keyId }, algorithm: 'ES256', data, signature })
     ).resolves.toMatchObject({ verified: true })

@@ -27,26 +27,27 @@ export async function publicJwkFromVerificationMethodId(
 }
 
 /**
- * Map a verification method identifier to its KMS key ID.
+ * Resolve the public key of a verification method with its KMS key ID and backend set.
  *
- * Attempts to find the key ID in the DID record's key metadata.
+ * Attempts to find the key in the DID record's key metadata.
  * Falls back to the public JWK's legacy key ID if not found.
  *
  * @param agentContext - The agent context for DID resolution and key lookup
  * @param verificationMethodId - The verification method identifier (typically a DID fragment)
- * @returns Promise<string> - The KMS key ID for the verification method
  */
-export async function publicKeyIdFromVerificationMethodId(
+export async function kmsPublicJwkFromVerificationMethodId(
   agentContext: AgentContext,
   verificationMethodId: string
-): Promise<string> {
+): Promise<PublicJwk> {
   const didApi = agentContext.dependencyManager.resolve(DidsApi)
   const parsedDid = parseDid(verificationMethodId)
   const [didRecord] = await didApi.getCreatedDids({ did: parsedDid.did })
 
   const publicJwk = await publicJwkFromVerificationMethodId(agentContext, verificationMethodId)
-  return (
-    didRecord?.keys?.find(({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${parsedDid.fragment}`)
-      ?.kmsKeyId ?? publicJwk.legacyKeyId
+  const key = didRecord?.keys?.find(
+    ({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${parsedDid.fragment}`
   )
+  publicJwk.keyId = key?.kmsKeyId ?? publicJwk.legacyKeyId
+  publicJwk.kmsBackend = key?.kmsBackend
+  return publicJwk
 }

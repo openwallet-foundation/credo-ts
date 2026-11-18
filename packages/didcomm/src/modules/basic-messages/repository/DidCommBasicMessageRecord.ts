@@ -23,6 +23,7 @@ export interface DidCommBasicMessageStorageProps {
   parentThreadId?: string
   content: string
   sentTime: string
+  protocolVersion?: string
 }
 
 const didCommBasicMessageRecordEncodingSchema = createRecordEncodingSchema({
@@ -32,6 +33,7 @@ const didCommBasicMessageRecordEncodingSchema = createRecordEncodingSchema({
   role: z.string().nullish(),
   threadId: z.string().nullish(),
   parentThreadId: z.string().nullish(),
+  protocolVersion: z.string().nullish(),
 })
 
 export class DidCommBasicMessageRecord extends BaseRecord<
@@ -48,6 +50,7 @@ export class DidCommBasicMessageRecord extends BaseRecord<
   public role!: DidCommBasicMessageRole
   public threadId?: string
   public parentThreadId?: string
+  public protocolVersion?: string
 
   public static readonly type = 'BasicMessageRecord'
   public readonly type = DidCommBasicMessageRecord.type
@@ -65,6 +68,7 @@ export class DidCommBasicMessageRecord extends BaseRecord<
       this.role = props.role
       this.threadId = props.threadId
       this.parentThreadId = props.parentThreadId
+      this.protocolVersion = props.protocolVersion
     }
   }
 

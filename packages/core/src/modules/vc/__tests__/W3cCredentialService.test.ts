@@ -4,6 +4,7 @@ import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests
 import type { AgentContext } from '../../../agent'
 import { JwsService } from '../../../crypto'
 import { asArray, JsonTransformer } from '../../../utils'
+import { JsonLdModuleConfig } from '../jsonld'
 import jsonld from '../jsonld/jsonld'
 import { W3cJwtCredentialService } from '../jwt-vc'
 import {
@@ -16,7 +17,6 @@ import { Ed25519Signature2018Fixtures } from '../linked-data-proofs/__tests__/fi
 import { W3cPresentation } from '../models'
 import { W3cCredentialRecord, W3cCredentialRepository } from '../repository'
 import { W3cCredentialService } from '../W3cCredentialService'
-import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
 
 vi.mock('../repository/W3cCredentialRepository')
 const W3cCredentialsRepositoryMock = W3cCredentialRepository as MockedClassConstructor<typeof W3cCredentialRepository>
@@ -36,7 +36,7 @@ const credentialRecordFactory = async (credential: W3cJsonLdVerifiableCredential
   })
 }
 
-const credentialsModuleConfig = new W3cCredentialsModuleConfig({
+const credentialsModuleConfig = new JsonLdModuleConfig({
   documentLoader: customDocumentLoader,
 })
 

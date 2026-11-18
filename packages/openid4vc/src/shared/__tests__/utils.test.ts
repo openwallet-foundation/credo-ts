@@ -1,7 +1,16 @@
 import { generateKeyPairSync } from 'node:crypto'
-import { Kms } from '@credo-ts/core'
+import { Kms, X509ModuleConfig, X509Service } from '@credo-ts/core'
+import type { IssuerMetadataResult } from '@openid4vc/openid4vci'
 import { getAgentContext } from '../../../../core/tests'
-import { getSupportedResponseEncryptionJwks } from '../utils'
+import {
+  type CredoJwtSigner,
+  credoJwtIssuerToOpenId4VcJwtIssuer,
+  decodeJwtIssuer,
+  encodeJwtIssuer,
+  getCredentialRequestEncryption,
+  getSupportedEncryptionJwks,
+  selectCredentialRequestEncryption,
+} from '../utils'
 
 const ecJwk = (namedCurve: string) =>
   generateKeyPairSync('ec', { namedCurve }).publicKey.export({ format: 'jwk' }) as Record<string, unknown>
@@ -21,7 +30,7 @@ const p256OnlyBackend = {
   },
 } as unknown as Kms.KeyManagementService
 
-describe('getSupportedResponseEncryptionJwks', () => {
+describe('getSupportedEncryptionJwks', () => {
   test('only returns the jwks that can be used for key agreement by the kms backends', () => {
     const agentContext = getAgentContext({ kmsBackends: [p256OnlyBackend] })
 
@@ -29,7 +38,7 @@ describe('getSupportedResponseEncryptionJwks', () => {
     const p384 = ecJwk('P-384')
     const p521 = ecJwk('P-521')
 
-    expect(getSupportedResponseEncryptionJwks(agentContext, { keys: [p521, p384, p256] as never })).toEqual({
+    expect(getSupportedEncryptionJwks(agentContext, { keys: [p521, p384, p256] as never })).toEqual({
       keys: [p256],
     })
   })
@@ -44,11 +53,136 @@ describe('getSupportedResponseEncryptionJwks', () => {
 
     // The node kms does support P-521, so it should not be filtered out here
     expect(
-      getSupportedResponseEncryptionJwks(agentContext, {
+      getSupportedEncryptionJwks(agentContext, {
         keys: [ed25519, x25519, p256, p521, { kty: 'oct', k: 'aGVsbG8' }] as never,
       })
     ).toEqual({
       keys: [x25519, p256, p521],
+    })
+  })
+})
+
+describe('getCredentialRequestEncryption', () => {
+  const metadata = (credentialRequestEncryption: Record<string, unknown>) =>
+    ({
+      credentialIssuer: {
+        credential_issuer: 'https://issuer.example',
+        credential_request_encryption: credentialRequestEncryption,
+      },
+    }) as unknown as IssuerMetadataResult
+
+  test('picks the first issuer key and enc value supported by the agent', () => {
+    const agentContext = getAgentContext({ kmsBackends: [p256OnlyBackend] })
+    const keys = [
+      { ...ecJwk('P-256'), kid: 'signing', use: 'sig', alg: 'ECDH-ES' },
+      { ...ecJwk('P-256'), kid: 'rsa', alg: 'RSA-OAEP-256' },
+      { ...ecJwk('P-384'), kid: 'p384', alg: 'ECDH-ES' },
+      { ...ecJwk('P-256'), kid: 'p256', use: 'enc', alg: 'ECDH-ES' },
+    ]
+
+    expect(
+      getCredentialRequestEncryption(
+        agentContext,
+        metadata({
+          jwks: { keys },
+          enc_values_supported: ['A192GCM', 'A256GCM', 'A128GCM'],
+          encryption_required: true,
+        }),
+        false
+      )
+    ).toEqual({ kid: 'p256', enc: 'A128GCM' })
+  })
+
+  test('does not choose a key when the request is not encrypted', () => {
+    const agentContext = getAgentContext()
+    const keys = [{ ...ecJwk('P-256'), kid: 'p256', alg: 'ECDH-ES' }]
+
+    expect(
+      getCredentialRequestEncryption(
+        agentContext,
+        metadata({ jwks: { keys }, enc_values_supported: ['A128GCM'], encryption_required: false }),
+        false
+      )
+    ).toBeUndefined()
+  })
+
+  test('throws when the issuer advertises no usable key', () => {
+    const agentContext = getAgentContext({ kmsBackends: [p256OnlyBackend] })
+    const keys = [{ ...ecJwk('P-384'), kid: 'p384', alg: 'ECDH-ES' }]
+
+    expect(() =>
+      getCredentialRequestEncryption(
+        agentContext,
+        metadata({ jwks: { keys }, enc_values_supported: ['A128GCM'], encryption_required: false }),
+        true
+      )
+    ).toThrow("Credential issuer 'https://issuer.example' does not advertise a credential request encryption key")
+  })
+})
+
+describe('selectCredentialRequestEncryption', () => {
+  test('returns undefined instead of throwing when the issuer advertises no usable key', () => {
+    const agentContext = getAgentContext({ kmsBackends: [p256OnlyBackend] })
+
+    expect(
+      selectCredentialRequestEncryption(agentContext, {
+        credentialIssuer: {
+          credential_issuer: 'https://issuer.example',
+          credential_request_encryption: {
+            jwks: { keys: [{ ...ecJwk('P-384'), kid: 'p384', alg: 'ECDH-ES' }] },
+            enc_values_supported: ['A128GCM'],
+            encryption_required: false,
+          },
+        },
+      } as unknown as IssuerMetadataResult)
+    ).toBeUndefined()
+  })
+})
+
+describe('encodeJwtIssuer', () => {
+  test('keeps the kms backend of an x5c signer, also in the signer it creates', async () => {
+    const agentContext = getAgentContext({ registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]] })
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const authorityKey = Kms.PublicJwk.fromKmsKey(await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } }))
+    const certificate = await X509Service.createCertificate(agentContext, { authorityKey, issuer: 'C=NL' })
+
+    const encoded = encodeJwtIssuer({ method: 'x5c', x5c: [certificate] })
+    expect(encoded).toMatchObject({ leafCertificateKeyId: authorityKey.keyId, leafCertificateKmsBackend: 'node' })
+
+    const signer = await credoJwtIssuerToOpenId4VcJwtIssuer(agentContext, decodeJwtIssuer(agentContext, encoded))
+    expect((signer as CredoJwtSigner).kmsBackend).toBe('node')
+  })
+
+  test('stores the key id and backend of a jwk signer next to the jwk, and decodes signers that have it as kid', async () => {
+    const agentContext = getAgentContext()
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const jwk = Kms.PublicJwk.fromKmsKey(await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } }))
+
+    const encoded = encodeJwtIssuer({ method: 'jwk', jwk })
+    expect(encoded).toEqual({
+      method: 'jwk',
+      jwk: jwk.toJson({ includeKid: false }),
+      keyId: jwk.keyId,
+      kmsBackend: 'node',
+    })
+
+    const decoded = decodeJwtIssuer(agentContext, encoded)
+    const decodedWithKid = decodeJwtIssuer(agentContext, { method: 'jwk', jwk: jwk.toJson() })
+    expect(decoded.method === 'jwk' && decoded.jwk.keyId).toBe(jwk.keyId)
+    expect(decodedWithKid.method === 'jwk' && decodedWithKid.jwk.keyId).toBe(jwk.keyId)
+  })
+
+  test('creates a jwk signer whose public jwk has no kid, and that signs with the KMS key id and backend', async () => {
+    const agentContext = getAgentContext()
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const jwk = Kms.PublicJwk.fromKmsKey(await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } }))
+
+    expect(await credoJwtIssuerToOpenId4VcJwtIssuer(agentContext, { method: 'jwk', jwk })).toEqual({
+      method: 'jwk',
+      alg: 'ES256',
+      publicJwk: jwk.toJson({ includeKid: false }),
+      kid: jwk.keyId,
+      kmsBackend: 'node',
     })
   })
 })

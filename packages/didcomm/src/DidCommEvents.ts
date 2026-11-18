@@ -10,6 +10,7 @@ export enum DidCommEventTypes {
   DidCommMessageProcessed = 'DidCommMessageProcessed',
   DidCommMessageProcessingFailed = 'DidCommMessageProcessingFailed',
   DidCommMessageSent = 'DidCommMessageSent',
+  DidCommAckReceived = 'DidCommAckReceived',
 }
 
 export interface DidCommMessageReceivedEvent extends BaseEvent {
@@ -52,5 +53,18 @@ export interface DidCommMessageSentEvent extends BaseEvent {
   payload: {
     message: DidCommOutboundMessageContext
     status: OutboundMessageSendStatus
+  }
+}
+
+/**
+ * Emitted for an inbound message that carries the DIDComm v2 `ack` header, before its handler runs.
+ * A protocol that waits for an acknowledgement matches `acknowledgedMessageIds` against its own records.
+ */
+export interface DidCommAckReceivedEvent extends BaseEvent {
+  type: typeof DidCommEventTypes.DidCommAckReceived
+  payload: {
+    message: DidCommMessage
+    acknowledgedMessageIds: string[]
+    connection?: DidCommConnectionRecord
   }
 }

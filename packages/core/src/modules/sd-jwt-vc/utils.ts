@@ -13,7 +13,8 @@ import {
   parseDid,
 } from '../dids'
 import { isKnownJwaSignatureAlgorithm, type Jwk, KeyManagementApi, PublicJwk } from '../kms'
-import { X509Certificate } from '../x509/X509Certificate'
+import type { X509Certificate } from '../x509/X509Certificate'
+import type { EncodedX509Certificate } from '../x509/X509ServiceOptions'
 import { SdJwtVcError } from './SdJwtVcError'
 import type { SdJwtVcHolderBinding, SdJwtVcIssuer } from './SdJwtVcOptions'
 
@@ -81,14 +82,22 @@ export async function resolveDidUrl(
   }
 }
 
+/**
+ * The KMS key id of the holder key of a stored credential. Records stored before the key id was stored use the legacy key id.
+ */
+export function getStoredHolderKmsKeyId(holder: SdJwtVcHolderBinding | undefined, kmsKeyId: string | undefined) {
+  return kmsKeyId ?? (holder?.method === 'jwk' ? holder.jwk.legacyKeyId : undefined)
+}
+
 export async function extractKeyFromHolderBinding(
   agentContext: AgentContext,
   holder: SdJwtVcHolderBinding,
   {
     forSigning = false,
     jwkKeyId,
+    jwkKmsBackend,
     didPurposes,
-  }: { forSigning?: boolean; jwkKeyId?: string; didPurposes?: DidPurpose[] } = {}
+  }: { forSigning?: boolean; jwkKeyId?: string; jwkKmsBackend?: string; didPurposes?: DidPurpose[] } = {}
 ) {
   if (holder.method === 'did') {
     const parsedDid = parseDid(holder.didUrl)
@@ -128,7 +137,14 @@ export async function extractKeyFromHolderBinding(
     const alg = publicJwk.supportedSignatureAlgorithms[0]
 
     if (forSigning) {
-      publicJwk.keyId = jwkKeyId ?? publicJwk.legacyKeyId
+      // The issuer chooses the cnf key, so only a key id the holder stored may select the key to sign with.
+      if (!jwkKeyId) {
+        throw new CredoError(
+          "Unable to create a key binding JWT. Set 'kmsKeyId' on the SD-JWT VC to the KMS key id of its holder key."
+        )
+      }
+      publicJwk.keyId = jwkKeyId
+      publicJwk.kmsBackend = jwkKmsBackend
     }
 
     return {
@@ -193,6 +209,8 @@ export function getSdJwtSigner(agentContext: AgentContext, key: PublicJwk): Sign
   return async (input: string) => {
     const result = await kms.sign({
       keyId: key.keyId,
+      backend: key.kmsBackend,
+      expectedPublicJwk: key.toJson(),
       data: TypedArrayEncoder.fromUtf8String(input),
       algorithm: key.signatureAlgorithm,
     })
@@ -263,34 +281,13 @@ function parseX5cHeader(header: Record<string, unknown>) {
     throw new SdJwtVcError('Invalid x5c header in credential. Not an array of strings.')
   }
 
-  return (header.x5c as string[]).map((cert) => X509Certificate.fromEncodedCertificate(cert))
-}
-
-function parseDidUrlFromKid(iss: string, kid: string) {
-  if (kid.startsWith('#')) {
-    return `${iss}${kid}`
-  }
-
-  if (kid.startsWith('did:')) {
-    const didFromKid = parseDid(kid)
-    if (didFromKid.did !== iss) {
-      throw new SdJwtVcError(
-        `kid in header is an absolute DID URL, but the did (${didFromKid.did}) does not match with the 'iss' did (${iss})`
-      )
-    }
-
-    return kid
-  }
-
-  throw new SdJwtVcError(
-    'Invalid issuer kid for did. Only absolute or relative (starting with #) did urls are supported.'
-  )
+  return header.x5c as EncodedX509Certificate[]
 }
 
 export function parseIssuerFromCredential(
   header?: Record<string, unknown>,
   payload?: Record<string, unknown>
-): SdJwtVcIssuer {
+): SdJwtVcIssuer<EncodedX509Certificate> {
   if (!payload || !header) throw new SdJwtVcError('SD-JWT is missing payload')
   const iss = payload.iss as string | undefined
 
@@ -310,7 +307,7 @@ export function parseIssuerFromCredential(
 
     return {
       method: 'did',
-      didUrl: parseDidUrlFromKid(iss, header.kid),
+      didUrl: getIssuerDidUrl(iss, header.kid),
       x5c: parseX5cHeader(header),
     }
   }
@@ -324,17 +321,40 @@ export function parseIssuerFromCredential(
   }
 
   if (iss?.startsWith('did:')) {
-    // If `did` is used, we require a relative KID to be present to identify
-    // the key used by issuer to sign the sd-jwt-vc
-    if (!header.kid) {
-      throw new SdJwtVcError('Credential does not contain a kid in the header')
-    }
-
     return {
       method: 'did',
-      didUrl: parseDidUrlFromKid(iss, header.kid as string),
+      didUrl: getIssuerDidUrl(iss, header.kid),
     }
   }
 
   throw new SdJwtVcError('Unsupported signing method for SD-JWT VC. Only did and x5c are supported at the moment.')
+}
+
+/**
+ * Returns the did url of the issuer key from the `iss` did and the `kid` header. An absolute `kid` must belong to the `iss` did.
+ */
+export function getIssuerDidUrl(iss: string, kid: unknown): string {
+  if (!kid) {
+    throw new SdJwtVcError('JWT does not contain a kid in the header')
+  }
+
+  const issuerKid = kid as string
+  if (issuerKid.startsWith('#')) {
+    return `${iss}${issuerKid}`
+  }
+
+  if (issuerKid.startsWith('did:')) {
+    const didFromKid = parseDid(issuerKid)
+    if (didFromKid.did !== iss) {
+      throw new SdJwtVcError(
+        `kid in header is an absolute DID URL, but the did (${didFromKid.did}) does not match with the 'iss' did (${iss})`
+      )
+    }
+
+    return issuerKid
+  }
+
+  throw new SdJwtVcError(
+    'Invalid issuer kid for did. Only absolute or relative (starting with #) did urls are supported.'
+  )
 }

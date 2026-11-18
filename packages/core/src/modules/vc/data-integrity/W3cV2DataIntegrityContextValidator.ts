@@ -31,8 +31,8 @@ export interface W3cV2DataIntegrityContextValidationResult {
  *
  * Recompaction delegates context resolution to the shared
  * {@link JsonLdModuleConfig}, so a custom `documentLoader` configured on
- * `JsonLdModule`/`W3cCredentialsModule` is honoured consistently with VC 1.1
- * JSON-LD processing. Context hash verification (§2.4) only trusts Credo's
+ * `JsonLdModule` is honoured consistently with VC 1.1 JSON-LD processing.
+ * Context hash verification (§2.4) only trusts Credo's
  * bundled context copies; it does not fetch remote content over the network.
  */
 @injectable()

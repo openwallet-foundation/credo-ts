@@ -1,11 +1,4 @@
 import {
-  ActionMenu,
-  ActionMenuRecord,
-  ActionMenuRole,
-  ActionMenuSelection,
-  ActionMenuState,
-} from '@credo-ts/action-menu'
-import {
   AnonCredsCredentialDefinitionPrivateRecord,
   AnonCredsCredentialDefinitionRecord,
   AnonCredsCredentialRecord,
@@ -62,7 +55,6 @@ import {
   DidCommProofState,
   DidCommRevocationNotification,
 } from '@credo-ts/didcomm'
-import { DrpcRecord, DrpcRole, DrpcState } from '@credo-ts/drpc'
 import {
   OpenId4VcIssuanceSessionRecord,
   OpenId4VcIssuanceSessionState,
@@ -71,7 +63,6 @@ import {
   OpenId4VcVerificationSessionState,
   OpenId4VcVerifierRecord,
 } from '@credo-ts/openid4vc'
-import { QuestionAnswerRecord, QuestionAnswerRole, QuestionAnswerState } from '@credo-ts/question-answer'
 import { TenantRecord, TenantRoutingRecord } from '@credo-ts/tenants'
 import { getTableColumns } from 'drizzle-orm'
 import { sprindFunkeTestVectorBase64Url } from '../../../../core/src/modules/mdoc/__tests__/mdoc.fixtures'
@@ -79,7 +70,6 @@ import { Mdoc } from '../../../../core/src/modules/mdoc/Mdoc'
 import { simpleJwtVc } from '../../../../core/src/modules/sd-jwt-vc/__tests__/sdjwtvc.fixtures'
 import { CredoEs256DidJwkJwtVc } from '../../../../core/src/modules/vc/jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
 import { Ed25519Signature2018Fixtures } from '../../../../core/src/modules/vc/linked-data-proofs/__tests__/fixtures'
-import { didcommActionMenuDrizzleRecord } from '../../action-menu/action-menu-record'
 import { anonCredsCredentialDefinitionPrivateDrizzleRecord } from '../../anoncreds/credential-definition-private-record'
 import { anonCredsCredentialDefinitionDrizzleRecord } from '../../anoncreds/credential-definition-record'
 import { anonCredsCredentialDrizzleRecord } from '../../anoncreds/credential-record'
@@ -106,12 +96,10 @@ import { didcommMediationDrizzleRecord } from '../../didcomm/mediation-record'
 import { didcommMediatorRoutingDrizzleRecord } from '../../didcomm/mediator-routing-record'
 import { didcommOutOfBandDrizzleRecord } from '../../didcomm/out-of-band-record'
 import { didcommProofExchangeDrizzleRecord } from '../../didcomm/proof-exchange-record'
-import { didcommDrpcDrizzleRecord } from '../../drpc/drpc-record'
 import { openId4VcIssuanceSessionDrizzleRecord } from '../../openid4vc/openid4vc-issuance-session-record'
 import { openid4vcIssuerDrizzleRecord } from '../../openid4vc/openid4vc-issuer-record'
 import { openId4VcVerificationSessionDrizzleRecord } from '../../openid4vc/openid4vc-verification-session-record'
 import { openid4vcVerifierDrizzleRecord } from '../../openid4vc/openid4vc-verifier-record'
-import { didcommQuestionAnswerDrizzleRecord } from '../../question-answer/question-answer-record'
 import { tenantDrizzleRecord } from '../../tenants/tenant-record'
 import { tenantRoutingDrizzleRecord } from '../../tenants/tenant-routing-record'
 import type { AnyDrizzleAdapter } from '../BaseDrizzleRecordAdapter'
@@ -212,9 +200,11 @@ const testCases: AdapterTestCase[] = [
           docRequests: [],
         } as unknown as MdocVerificationSessionRecord['deviceRequestDefinition'],
         sessionTranscript: { type: 'isoMdocDcApi', encryptionInfoBase64Url: 'ZW5jcnlwdGlvbi1pbmZv', nonce: 'nonce' },
-        sessionKeyId: 'session-key-id',
+        sessionKey: { keyId: 'session-key-id', kmsBackend: 'node' },
         expiresAt: new Date('2026-01-03T00:00:00.000Z'),
       }),
+
+    unsetColumns: ['sessionKeyId'],
   },
   {
     name: 'W3cCredentialRecord',
@@ -377,55 +367,6 @@ const testCases: AdapterTestCase[] = [
     },
   },
   {
-    name: 'ActionMenuRecord',
-    drizzleRecord: didcommActionMenuDrizzleRecord,
-    createRecord: () =>
-      new ActionMenuRecord({
-        state: ActionMenuState.Done,
-        role: ActionMenuRole.Requester,
-        connectionId: 'connection-id',
-        threadId: 'thread-id',
-        menu: new ActionMenu({
-          title: 'title',
-          description: 'description',
-          options: [{ name: 'option', title: 'Option', description: 'An option' }],
-        }),
-        performedAction: new ActionMenuSelection({ name: 'option', params: { key: 'value' } }),
-      }),
-  },
-  {
-    name: 'QuestionAnswerRecord',
-    drizzleRecord: didcommQuestionAnswerDrizzleRecord,
-    createRecord: () =>
-      new QuestionAnswerRecord({
-        connectionId: 'connection-id',
-        role: QuestionAnswerRole.Questioner,
-        state: QuestionAnswerState.AnswerReceived,
-        threadId: 'thread-id',
-        signatureRequired: false,
-        questionText: 'Question?',
-        questionDetail: 'Detail',
-        validResponses: [{ text: 'Yes' }, { text: 'No' }],
-        response: 'Yes',
-      }),
-  },
-  {
-    name: 'DrpcRecord',
-    drizzleRecord: didcommDrpcDrizzleRecord,
-    createRecord: () => {
-      const record = new DrpcRecord({
-        connectionId: 'connection-id',
-        role: DrpcRole.Client,
-        state: DrpcState.Completed,
-        threadId: 'thread-id',
-        request: { jsonrpc: '2.0', method: 'hello', id: 1 },
-        response: { jsonrpc: '2.0', result: 'world', id: 1 },
-      })
-
-      return record
-    },
-  },
-  {
     name: 'TenantRecord',
     drizzleRecord: tenantDrizzleRecord,
     createRecord: () => new TenantRecord({ config: { label: 'Tenant' }, storageVersion: '0.5' }),
@@ -556,13 +497,18 @@ const testCases: AdapterTestCase[] = [
     createRecord: () =>
       new OpenId4VcIssuerRecord({
         issuerId: 'issuer-id',
-        accessTokenPublicJwk: {
-          kty: 'OKP',
-          crv: 'Ed25519',
-          x: '11qYAYdk9Jtz7bQHmbT5D_Iy_fqpI6bD7Z2p1l9tUoQ',
-          kid: 'key-id',
+        accessTokenKey: {
+          publicJwk: { kty: 'OKP', crv: 'Ed25519', x: '11qYAYdk9Jtz7bQHmbT5D_Iy_fqpI6bD7Z2p1l9tUoQ' },
+          keyId: 'key-id',
+          kmsBackend: 'backend',
         },
-        accessTokenSignerKmsBackend: 'backend',
+        previousAccessTokenKeys: [
+          {
+            publicJwk: { kty: 'OKP', crv: 'Ed25519', x: 'a2MV1EhywNkwJAStsNWmpa7IRKjaCpu7niIKJQ3xTRI' },
+            keyId: 'previous-key-id',
+            kmsBackend: 'backend',
+          },
+        ],
         credentialConfigurationsSupported: {
           credential: { format: 'vc+sd-jwt', vct: 'IdentityCredential' },
         } as OpenId4VcIssuerRecord['credentialConfigurationsSupported'],
@@ -768,6 +714,37 @@ describe.each(testCases)('drizzle adapter for $name', ({ drizzleRecord, createRe
 
     expect(columnsWithoutValue).toEqual([])
   })
+
+  test('stores objects in json columns', () => {
+    const values = adapter.getValuesWithBase(agentContext, createTestRecord())
+    const sqliteColumns = getTableColumns(adapter.table.sqlite)
+    const postgresColumns = getTableColumns(adapter.table.postgres)
+
+    const objectColumns = Object.keys(values).filter(
+      (columnName) =>
+        values[columnName] !== null && typeof values[columnName] === 'object' && !(values[columnName] instanceof Date)
+    )
+
+    expect(objectColumns.filter((columnName) => sqliteColumns[columnName]?.dataType !== 'json')).toEqual([])
+    expect(
+      objectColumns.filter(
+        (columnName) =>
+          postgresColumns[columnName]?.dataType !== 'json' &&
+          !(postgresColumns[columnName]?.dataType === 'array' && Array.isArray(values[columnName]))
+      )
+    ).toEqual([])
+  })
+})
+
+test('reads the session key of an mdoc verification session row from before session_key was added', () => {
+  const adapter: AnyDrizzleAdapter = new mdocVerificationSessionDrizzleRecord.adapter({} as never)
+  const record = testCases.find(({ name }) => name === 'MdocVerificationSessionRecord')?.createRecord()
+  if (!record) throw new Error('No MdocVerificationSessionRecord test case')
+
+  const { sessionKey, ...storedValues } = storeValues(adapter.getValuesWithBase(agentContext, record))
+  const loadedRecord = adapter.toRecord({ ...storedValues, sessionKeyId: 'session-key-id' })
+
+  expect((loadedRecord as MdocVerificationSessionRecord).sessionKey).toEqual({ keyId: 'session-key-id' })
 })
 
 describe('validateRecordMapping', () => {

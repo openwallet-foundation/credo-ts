@@ -4,24 +4,35 @@ import { zParseWithErrorHandling } from '../../utils/zod'
 import { KeyManagementError } from './error/KeyManagementError'
 import { KeyManagementKeyNotFoundError } from './error/KeyManagementKeyNotFoundError'
 import {
+  assertExpectedSigningKey,
   getJwkHumanDescription,
   type KmsJwkPrivate,
+  type KmsJwkPublic,
+  type KmsJwkPublicAsymmetric,
   type KnownJwaSignatureAlgorithm,
   KnownJwaSignatureAlgorithms,
 } from './jwk'
-import { createKeyTypeForSigningAlgorithm } from './jwk/alg/signing'
+import { assertAllowedSigningAlgForKey, createKeyTypeForSigningAlgorithm } from './jwk/alg/signing'
 import { KeyManagementModuleConfig } from './KeyManagementModuleConfig'
 import type { KeyManagementService } from './KeyManagementService'
 import {
   getKmsOperationHumanDescription,
   type KmsDecryptOptions,
+  type KmsDecryptReturn,
   type KmsDeleteKeyOptions,
+  type KmsEncryptReturn,
   type KmsGetPublicKeyOptions,
   type KmsImportKeyOptions,
   type KmsOperation,
   type KmsRandomBytesOptions,
 } from './options'
-import { type WithBackend, type WithCreateKeyBackend, zWithBackend, zWithCreateKeyBackend } from './options/backend'
+import {
+  type WithBackend,
+  type WithCreateKeyBackend,
+  type WithReturnedBackend,
+  zWithBackend,
+  zWithCreateKeyBackend,
+} from './options/backend'
 import {
   type KmsCreateKeyForSignatureAlgorithmOptions,
   type KmsCreateKeyOptions,
@@ -41,8 +52,8 @@ import {
 import { zKmsGetPublicKeyOptions } from './options/KmsGetPublicKeyOptions'
 import { type KmsImportKeyReturn, zKmsImportKeyOptions } from './options/KmsImportKeyOptions'
 import { zKmsRandomBytesOptions } from './options/KmsRandomBytesOptions'
-import { type KmsSignOptions, zKmsSignOptions } from './options/KmsSignOptions'
-import { type KmsVerifyOptions, zKmsVerifyOptions } from './options/KmsVerifyOptions'
+import { type KmsSignOptions, type KmsSignReturn, zKmsSignOptions } from './options/KmsSignOptions'
+import { type KmsVerifyOptions, type KmsVerifyReturn, zKmsVerifyOptions } from './options/KmsVerifyOptions'
 
 @injectable()
 export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManagementService[]> {
@@ -78,20 +89,23 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
   }
 
   /**
-   * The JWA signature algorithms that at least one backend can sign with.
+   * The JWA signature algorithms that at least one backend can sign with, or verify with when
+   * `operation` is `verify`.
    *
    * Symmetric (HMAC) algorithms are excluded by default, since in most cases signatures are
    * verified by another party using a public key.
    */
   public supportedJwaSignatureAlgorithms(options?: {
     includeSymmetricAlgorithms?: boolean
+    operation?: 'sign' | 'verify'
   }): KnownJwaSignatureAlgorithm[] {
     const includeSymmetricAlgorithms = options?.includeSymmetricAlgorithms ?? false
+    const operation = options?.operation ?? 'sign'
 
     return Object.values(KnownJwaSignatureAlgorithms).filter(
       (algorithm) =>
         (includeSymmetricAlgorithms || createKeyTypeForSigningAlgorithm(algorithm).kty !== 'oct') &&
-        this.supportedBackendsForOperation({ operation: 'sign', algorithm }).length > 0
+        this.supportedBackendsForOperation({ operation, algorithm }).length > 0
     )
   }
 
@@ -100,7 +114,7 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
    */
   public async createKey<Type extends KmsCreateKeyType>(
     options: WithCreateKeyBackend<KmsCreateKeyOptions<Type>, Backends>
-  ): Promise<KmsCreateKeyReturn<Type>> {
+  ): Promise<WithReturnedBackend<KmsCreateKeyReturn<Type>, Backends>> {
     const { backend, ...kmsOptions } = zParseWithErrorHandling(
       zWithCreateKeyBackend(zKmsCreateKeyOptions),
       options,
@@ -112,14 +126,14 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
       type: options.type,
     })
 
-    const key = await kms.createKey(this.agentContext, kmsOptions)
+    const key: KmsCreateKeyReturn<Type> = await kms.createKey(this.agentContext, kmsOptions)
     key.publicJwk.kid = key.keyId
 
     this.agentContext.config.logger.debug(
       `Created key ${getJwkHumanDescription(key.publicJwk)} with key id '${key.keyId}'`
     )
 
-    return key
+    return { ...key, backend: kms.backend }
   }
 
   /**
@@ -127,7 +141,7 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
    */
   public async createKeyForSignatureAlgorithm(
     options: WithCreateKeyBackend<KmsCreateKeyForSignatureAlgorithmOptions, Backends>
-  ): Promise<KmsCreateKeyReturn<KmsCreateKeyTypeAsymmetric>> {
+  ): Promise<WithReturnedBackend<KmsCreateKeyReturn<KmsCreateKeyTypeAsymmetric>, Backends>> {
     const { backend, algorithm, ...kmsOptions } = zParseWithErrorHandling(
       zWithCreateKeyBackend(zKmsCreateKeyForSignatureAlgorithmOptions),
       options,
@@ -141,20 +155,28 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
     })
 
     // Ensure the kid is set to the keyId
-    const key = await kms.createKey(this.agentContext, {
+    const key: KmsCreateKeyReturn<KmsCreateKeyTypeAsymmetric> = await kms.createKey(this.agentContext, {
       ...kmsOptions,
       type,
     })
     key.publicJwk.kid = key.keyId
 
-    return key
+    return { ...key, backend: kms.backend }
   }
 
   /**
-   * Sign using a key.
+   * Sign using a key. With `expectedPublicJwk`, the result always has the `publicJwk`.
    */
-  public async sign(options: WithBackend<KmsSignOptions, Backends>) {
-    const { backend, ...kmsOptions } = zParseWithErrorHandling(
+  public async sign(
+    options: WithBackend<KmsSignOptions & { expectedPublicJwk: KmsJwkPublicAsymmetric }, Backends>
+  ): Promise<WithReturnedBackend<KmsSignReturn & { publicJwk: KmsJwkPublic }, Backends>>
+  public async sign(
+    options: WithBackend<KmsSignOptions, Backends>
+  ): Promise<WithReturnedBackend<KmsSignReturn, Backends>>
+  public async sign(
+    options: WithBackend<KmsSignOptions, Backends>
+  ): Promise<WithReturnedBackend<KmsSignReturn, Backends>> {
+    const { backend, expectedPublicJwk, ...kmsOptions } = zParseWithErrorHandling(
       zWithBackend(zKmsSignOptions),
       options,
       'Invalid options provided to sign method'
@@ -163,80 +185,111 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
     const operation = {
       operation: 'sign',
       algorithm: options.algorithm,
+      keyId: options.keyId,
     } as const
 
-    const kms = backend
-      ? this.getKms(this.agentContext, backend, operation)
-      : (await this.getKmsForOperationAndKeyId(this.agentContext, options.keyId, operation)).kms
-    return await kms.sign(this.agentContext, kmsOptions)
+    // The key must match expectedPublicJwk, so its key type can be checked before signing. Its `alg` is the caller's,
+    // the backend checks the `alg` of the stored key.
+    if (expectedPublicJwk) {
+      assertAllowedSigningAlgForKey({ ...expectedPublicJwk, alg: undefined }, kmsOptions.algorithm)
+    }
+
+    const { kms, publicKey } = backend
+      ? { kms: this.getKms(this.agentContext, backend, operation), publicKey: undefined }
+      : await this.getKmsForKeyOperation(options.keyId, operation)
+
+    // A key read to find the backend is checked here, otherwise the backend checks it before signing
+    if (expectedPublicJwk && publicKey) assertExpectedSigningKey(options.keyId, publicKey, expectedPublicJwk)
+    const backendExpectedPublicJwk = publicKey ? null : expectedPublicJwk
+    const result = await kms.sign(this.agentContext, { ...kmsOptions, expectedPublicJwk: backendExpectedPublicJwk })
+
+    if (backendExpectedPublicJwk) {
+      if (!result.publicJwk) {
+        throw new KeyManagementError(
+          `Backend '${kms.backend}' did not return the publicJwk for key id '${options.keyId}' with expectedPublicJwk`
+        )
+      }
+      // Don't rely only on the backend's check before signing
+      assertExpectedSigningKey(options.keyId, result.publicJwk, backendExpectedPublicJwk)
+    }
+
+    return { ...result, publicJwk: result.publicJwk ?? publicKey, backend: kms.backend }
   }
 
   /**
    * Verify using a key.
    */
-  public async verify(options: WithBackend<KmsVerifyOptions, Backends>) {
+  public async verify(
+    options: WithBackend<KmsVerifyOptions, Backends>
+  ): Promise<WithReturnedBackend<KmsVerifyReturn, Backends>> {
     const { backend, ...kmsOptions } = zParseWithErrorHandling(
       zWithBackend(zKmsVerifyOptions),
       options,
       'Invalid options provided to verify method'
     )
 
-    const operation = { operation: 'verify', algorithm: options.algorithm } as const
     const keyId = options.key.keyId
+    const operation = { operation: 'verify', algorithm: options.algorithm, keyId } as const
     const kms =
       backend || !keyId
         ? this.getKms(this.agentContext, backend, operation)
-        : (await this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)).kms
+        : (await this.getKmsForKeyOperation(keyId, operation)).kms
 
-    return await kms.verify(this.agentContext, kmsOptions)
+    return { ...(await kms.verify(this.agentContext, kmsOptions)), backend: kms.backend }
   }
 
   /**
    * Encrypt.
    */
-  public async encrypt(options: WithBackend<KmsEncryptOptions, Backends>) {
+  public async encrypt(
+    options: WithBackend<KmsEncryptOptions, Backends>
+  ): Promise<WithReturnedBackend<KmsEncryptReturn, Backends>> {
     const { backend, ...kmsOptions } = zParseWithErrorHandling(
       zWithBackend(zKmsEncryptOptions),
       options,
       'Invalid options provided to encrypt method'
     )
 
+    const keyId = routingKeyId(kmsOptions.key)
     const operation = {
       operation: 'encrypt',
       encryption: options.encryption,
       keyAgreement: options.key.keyAgreement,
+      keyId,
     } as const
-    const keyId = routingKeyId(kmsOptions.key)
     const kms =
       backend || !keyId
         ? this.getKms(this.agentContext, backend, operation)
-        : (await this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)).kms
+        : (await this.getKmsForKeyOperation(keyId, operation)).kms
 
-    return await kms.encrypt(this.agentContext, kmsOptions)
+    return { ...(await kms.encrypt(this.agentContext, kmsOptions)), backend: kms.backend }
   }
 
   /**
    * Decrypt.
    */
-  public async decrypt(options: WithBackend<KmsDecryptOptions, Backends>) {
+  public async decrypt(
+    options: WithBackend<KmsDecryptOptions, Backends>
+  ): Promise<WithReturnedBackend<KmsDecryptReturn, Backends>> {
     const { backend, ...kmsOptions } = zParseWithErrorHandling(
       zWithBackend(zKmsDecryptOptions),
       options,
       'Invalid options provided to decrypt method'
     )
 
+    const keyId = routingKeyId(options.key)
     const operation = {
       operation: 'decrypt',
       decryption: options.decryption,
       keyAgreement: options.key.keyAgreement,
+      keyId,
     } as const
-    const keyId = routingKeyId(options.key)
     const kms =
       backend || !keyId
         ? this.getKms(this.agentContext, backend, operation)
-        : (await this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)).kms
+        : (await this.getKmsForKeyOperation(keyId, operation)).kms
 
-    return await kms.decrypt(this.agentContext, kmsOptions)
+    return { ...(await kms.decrypt(this.agentContext, kmsOptions)), backend: kms.backend }
   }
 
   /**
@@ -244,7 +297,7 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
    */
   public async importKey<Jwk extends KmsJwkPrivate>(
     options: WithBackend<KmsImportKeyOptions<Jwk>, Backends>
-  ): Promise<KmsImportKeyReturn<Jwk>> {
+  ): Promise<WithReturnedBackend<KmsImportKeyReturn<Jwk>, Backends>> {
     const { backend, ...kmsOptions } = zParseWithErrorHandling(
       zWithBackend(zKmsImportKeyOptions),
       options,
@@ -257,19 +310,22 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
     } as const
     const kms = this.getKms(this.agentContext, backend, operation)
 
-    const key = await kms.importKey(this.agentContext, kmsOptions)
+    const key: KmsImportKeyReturn<Jwk> = await kms.importKey(this.agentContext, kmsOptions)
 
     this.agentContext.config.logger.trace(
       `Imported key ${getJwkHumanDescription(key.publicJwk)} with key id '${key.keyId}'`
     )
 
-    return key
+    return { ...key, backend: kms.backend }
   }
 
   /**
-   * Get a public key.
+   * Get a public key, with the backend that holds it. Pass that backend to the operations that
+   * follow on the same key, so the key is not looked up again to find its backend.
    */
-  public async getPublicKey(options: WithBackend<KmsGetPublicKeyOptions, Backends>) {
+  public async getPublicKey(
+    options: WithBackend<KmsGetPublicKeyOptions, Backends>
+  ): Promise<WithReturnedBackend<{ publicKey: KmsJwkPublic }, Backends>> {
     const { backend, keyId } = zParseWithErrorHandling(
       zWithBackend(zKmsGetPublicKeyOptions),
       options,
@@ -284,11 +340,11 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
         throw new KeyManagementKeyNotFoundError(keyId, [backend])
       }
 
-      return publicKey
+      return { publicKey, backend: kms.backend }
     }
 
-    const { publicKey } = await this.getKmsForOperationAndKeyId(this.agentContext, keyId)
-    return publicKey
+    const { publicKey, kms } = await this.getKmsForOperationAndKeyId(this.agentContext, keyId)
+    return { publicKey, backend: kms.backend }
   }
 
   /**
@@ -355,6 +411,22 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
         ? `The key may exist in one of the key management services in which case the key management service does not support the ${getKmsOperationHumanDescription(operation)}`
         : undefined
     )
+  }
+
+  /**
+   * Get the kms to run an operation with a key. With one backend that supports the operation
+   * it can avoid expensive lookups of the key. Otherwise it also returns the public key it read.
+   */
+  private async getKmsForKeyOperation(
+    keyId: string,
+    operation: KmsOperation
+  ): Promise<{ kms: KeyManagementService; publicKey?: KmsJwkPublic }> {
+    const supported = this.keyManagementConfig.backends.filter((kms) =>
+      kms.isOperationSupported(this.agentContext, operation)
+    )
+    if (supported.length === 1) return { kms: supported[0] }
+
+    return this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)
   }
 
   /**

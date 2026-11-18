@@ -20,11 +20,13 @@ import {
   CacheModuleConfig,
   DidResolverService,
   DidsModuleConfig,
+  defaultDocumentLoader,
   InjectionSymbols,
   InMemoryLruCache,
   JsonLdModuleConfig,
   SignatureSuiteRegistry,
-  W3cCredentialsModuleConfig,
+  W3cCredentialRepository,
+  type W3cJsonLdVerifiableCredential,
 } from '@credo-ts/core'
 import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
@@ -69,8 +71,7 @@ const agentContext = getAgentContext({
 
     [InjectionSymbols.Logger, testLogger],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
   ],
   agentConfig,
@@ -257,5 +258,194 @@ describe('AnonCredsRsServices', () => {
     })
 
     expect(verifiedProof).toBeTruthy()
+  })
+
+  test('issuance and proofs with did:indy ids in both percent-encoded and unencoded form', async () => {
+    const issuerId = 'did:indy:pool:localtest:A4CYPASJYRZRt98YWrac3H'
+    const unencoded = {
+      schemaId: `${issuerId}/anoncreds/v0/SCHEMA/Mixed Credential/1.0.0`,
+      credentialDefinitionId: `${issuerId}/anoncreds/v0/CLAIM_DEF/1/Mixed Credential`,
+    }
+    const encoded = {
+      schemaId: `${issuerId}/anoncreds/v0/SCHEMA/Mixed%20Credential/1.0.0`,
+      credentialDefinitionId: `${issuerId}/anoncreds/v0/CLAIM_DEF/1/Mixed%20Credential`,
+    }
+
+    const schema = await anonCredsIssuerService.createSchema(agentContext, {
+      attrNames: ['name', 'age'],
+      issuerId,
+      name: 'Mixed Credential',
+      version: '1.0.0',
+    })
+    const { credentialDefinition, credentialDefinitionPrivate, keyCorrectnessProof } =
+      await anonCredsIssuerService.createCredentialDefinition(agentContext, {
+        issuerId,
+        schemaId: unencoded.schemaId,
+        schema,
+        tag: 'Mixed Credential',
+        supportRevocation: false,
+      })
+    if (!credentialDefinitionPrivate || !keyCorrectnessProof) {
+      throw new Error('Failed to get private part of credential definition')
+    }
+
+    // Issuer records created before ids were percent-encoded
+    await agentContext.dependencyManager.resolve(AnonCredsCredentialDefinitionRepository).save(
+      agentContext,
+      new AnonCredsCredentialDefinitionRecord({
+        credentialDefinition,
+        credentialDefinitionId: unencoded.credentialDefinitionId,
+        methodName: 'inMemory',
+      })
+    )
+    await agentContext.dependencyManager.resolve(AnonCredsCredentialDefinitionPrivateRepository).save(
+      agentContext,
+      new AnonCredsCredentialDefinitionPrivateRecord({
+        value: credentialDefinitionPrivate,
+        credentialDefinitionId: unencoded.credentialDefinitionId,
+      })
+    )
+    await agentContext.dependencyManager.resolve(AnonCredsKeyCorrectnessProofRepository).save(
+      agentContext,
+      new AnonCredsKeyCorrectnessProofRecord({
+        value: keyCorrectnessProof,
+        credentialDefinitionId: unencoded.credentialDefinitionId,
+      })
+    )
+
+    // The issuer finds the records with the percent-encoded id
+    const credentialOffer = await anonCredsIssuerService.createCredentialOffer(agentContext, {
+      credentialDefinitionId: encoded.credentialDefinitionId,
+    })
+    expect(credentialOffer.cred_def_id).toEqual(encoded.credentialDefinitionId)
+    expect(credentialOffer.schema_id).toEqual(unencoded.schemaId)
+
+    const linkSecret = await anonCredsHolderService.createLinkSecret(agentContext, {
+      linkSecretId: 'mixedLinkSecretId',
+    })
+    await agentContext.dependencyManager
+      .resolve(AnonCredsLinkSecretRepository)
+      .save(
+        agentContext,
+        new AnonCredsLinkSecretRecord({ value: linkSecret.linkSecretValue, linkSecretId: linkSecret.linkSecretId })
+      )
+
+    const credentialRequestState = await anonCredsHolderService.createCredentialRequest(agentContext, {
+      credentialDefinition,
+      credentialOffer,
+      linkSecretId: linkSecret.linkSecretId,
+    })
+    const { credential } = await anonCredsIssuerService.createCredential(agentContext, {
+      credentialOffer,
+      credentialRequest: credentialRequestState.credentialRequest,
+      credentialValues: {
+        name: { raw: 'John', encoded: encodeCredentialValue('John') },
+        age: { raw: '25', encoded: encodeCredentialValue('25') },
+      },
+    })
+
+    // The resolver returns the schema id in the other form than the credential
+    const credentialId = await anonCredsHolderService.storeCredential(agentContext, {
+      credential,
+      credentialDefinition: { ...credentialDefinition, schemaId: encoded.schemaId },
+      schema,
+      credentialDefinitionId: credential.cred_def_id,
+      credentialRequestMetadata: credentialRequestState.credentialRequestMetadata,
+    })
+    const credentialInfo = await anonCredsHolderService.getCredential(agentContext, { id: credentialId })
+    expect(credentialInfo).toMatchObject({
+      schemaId: encoded.schemaId,
+      credentialDefinitionId: encoded.credentialDefinitionId,
+    })
+
+    expect(
+      await anonCredsHolderService.getCredentials(agentContext, {
+        credentialDefinitionId: unencoded.credentialDefinitionId,
+        schemaId: unencoded.schemaId,
+      })
+    ).toEqual([expect.objectContaining({ credentialId })])
+
+    const proofRequest: AnonCredsProofRequest = {
+      nonce: NativeAnoncreds.instance.generateNonce(),
+      name: 'pres_req_1',
+      version: '0.1',
+      requested_attributes: {
+        attr1_referent: { name: 'name', restrictions: [{ cred_def_id: unencoded.credentialDefinitionId }] },
+      },
+      requested_predicates: {
+        predicate1_referent: {
+          name: 'age',
+          p_type: '>=' as const,
+          p_value: 18,
+          restrictions: [{ schema_id: unencoded.schemaId }],
+        },
+      },
+    }
+    for (const referent of ['attr1_referent', 'predicate1_referent']) {
+      expect(
+        await anonCredsHolderService.getCredentialsForProofRequest(agentContext, {
+          proofRequest,
+          attributeReferent: referent,
+        })
+      ).toEqual([expect.objectContaining({ credentialInfo: expect.objectContaining({ credentialId }) })])
+    }
+
+    // Objects keyed by the other form of the ids than in the stored credential
+    const proof = await anonCredsHolderService.createProof(agentContext, {
+      credentialDefinitions: { [unencoded.credentialDefinitionId]: credentialDefinition },
+      proofRequest,
+      selectedCredentials: {
+        attributes: { attr1_referent: { credentialId, credentialInfo, revealed: true } },
+        predicates: { predicate1_referent: { credentialId, credentialInfo } },
+        selfAttestedAttributes: {},
+      },
+      schemas: { [unencoded.schemaId]: schema },
+      revocationRegistries: {},
+    })
+    expect(proof.identifiers).toEqual([
+      expect.objectContaining({ schema_id: encoded.schemaId, cred_def_id: encoded.credentialDefinitionId }),
+    ])
+
+    expect(
+      await anonCredsVerifierService.verifyProof(agentContext, {
+        credentialDefinitions: { [unencoded.credentialDefinitionId]: credentialDefinition },
+        proof,
+        proofRequest,
+        schemas: { [unencoded.schemaId]: schema },
+        revocationRegistries: {},
+      })
+    ).toBe(true)
+
+    // W3C presentations: the schema is keyed by the resolver's form, the credential contains the issuer's form
+    const w3cCredential = (
+      await agentContext.dependencyManager.resolve(W3cCredentialRepository).getById(agentContext, credentialId)
+    ).firstCredential as W3cJsonLdVerifiableCredential
+    const w3cProofRequest: AnonCredsProofRequest = {
+      nonce: NativeAnoncreds.instance.generateNonce(),
+      name: 'pres_req_w3c',
+      version: '0.1',
+      requested_attributes: {
+        attr1_referent: { names: ['name'], restrictions: [{ cred_def_id: unencoded.credentialDefinitionId }] },
+      },
+      requested_predicates: {},
+    }
+    const w3cObjects = {
+      schemas: { [encoded.schemaId]: schema },
+      credentialDefinitions: { [unencoded.credentialDefinitionId]: credentialDefinition },
+      credentialsWithRevocationMetadata: [{ credential: w3cCredential }],
+    }
+    const w3cPresentation = await anonCredsHolderService.createW3cPresentation(agentContext, {
+      ...w3cObjects,
+      proofRequest: w3cProofRequest,
+      linkSecretId: linkSecret.linkSecretId,
+      credentialsProve: [{ entryIndex: 0, referent: 'attr1_referent', isPredicate: false, reveal: true }],
+    })
+    expect(
+      await anonCredsVerifierService.verifyW3cPresentation(agentContext, {
+        ...w3cObjects,
+        presentation: w3cPresentation,
+        proofRequest: w3cProofRequest,
+      })
+    ).toBe(true)
   })
 })

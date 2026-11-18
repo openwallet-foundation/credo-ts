@@ -38,9 +38,10 @@ export class CredoWalletWebCrypto {
   public async sign(key: CredoWebCryptoKey, message: Uint8Array, algorithm: KeySignParams): Promise<Uint8Array> {
     const jwaAlgorithm = keyParamsToJwaAlgorithm(algorithm, key)
 
-    const keyId = key.publicJwk.keyId
     const { signature } = await this.kms.sign({
-      keyId,
+      keyId: key.publicJwk.keyId,
+      backend: key.publicJwk.kmsBackend,
+      expectedPublicJwk: key.publicJwk.toJson(),
       data: message,
       algorithm: jwaAlgorithm,
     })

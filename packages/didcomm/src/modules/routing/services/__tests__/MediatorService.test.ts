@@ -1,14 +1,25 @@
-import { Kms, RecordDuplicateError, TypedArrayEncoder } from '@credo-ts/core'
+import {
+  CachedStorageService,
+  CacheModuleConfig,
+  didKeyToVerkey,
+  didToNumAlgo2DidDocument,
+  InMemoryLruCache,
+  Kms,
+  RecordDuplicateError,
+  RecordNotFoundError,
+  TypedArrayEncoder,
+  verkeyToDidKey,
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
+import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
 import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
 import { isDidKey } from '../../../../../../core/src/modules/dids/helpers'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
-import { DummyTransportSession } from '../../../../__tests__/stubs'
 import { DidCommMessageSender } from '../../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
-import { DidCommTransportService } from '../../../../DidCommTransportService'
-import { MessageSendingError } from '../../../../errors'
+import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
+import { MessageSendingError, MessageSendingErrorCategory } from '../../../../errors'
 import type { DidCommOutboundMessageContext } from '../../../../models'
 import { DidCommInboundMessageContext } from '../../../../models/DidCommInboundMessageContext'
 import { DidCommConnectionService, DidCommDidExchangeState } from '../../../connections'
@@ -26,10 +37,29 @@ import {
   DidCommKeylistUpdateMessage,
   DidCommKeylistUpdateResult,
 } from '../../protocol/v1/messages'
-import { DidCommMediationRecord, DidCommMediatorRoutingRecord } from '../../repository'
+import {
+  DidCommForwardV2Message,
+  DidCommKeylistQueryV2Message,
+  DidCommKeylistUpdateV2Message,
+  DidCommMediateRequestV2Message,
+  KeylistUpdateActionV2,
+  KeylistUpdateResultV2,
+} from '../../protocol/v2/messages'
+import {
+  DidCommMediationRecord,
+  DidCommMediatorRoutingRecord,
+  type DidCommMediatorRoutingRecordRoutingKey,
+} from '../../repository'
 import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
 import { DidCommMediatorRoutingRepository } from '../../repository/DidCommMediatorRoutingRepository'
 import { DidCommMediatorService } from '../DidCommMediatorService'
+
+// The key the envelope proved as the sender, which assertReadyConnection requires
+const testSenderKey = Kms.PublicJwk.fromPublicKey({
+  kty: 'OKP',
+  crv: 'Ed25519',
+  publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+}) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
 vi.mock('../../repository/DidCommMediationRepository')
 const MediationRepositoryMock = DidCommMediationRepository as MockedClassConstructor<typeof DidCommMediationRepository>
@@ -117,6 +147,7 @@ describe('MediatorService - default config', () => {
       await expect(mediatorService.createMediatorRoutingRecord(agentContext)).resolves.toBe(storedRecord)
 
       const [, unsavedRecord] = mockFunction(mediatorRoutingRepository.save).mock.calls[0]
+      expect(unsavedRecord.routingKeys[0]).toMatchObject({ kmsBackend: 'node' })
       await expect(
         agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId: unsavedRecord.routingKeysWithKeyId[0].keyId })
       ).rejects.toThrow(Kms.KeyManagementKeyNotFoundError)
@@ -134,6 +165,7 @@ describe('MediatorService - default config', () => {
       })
 
       mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockResolvedValue([])
 
       const keyListUpdate = new DidCommKeylistUpdateMessage({
         updates: [
@@ -149,6 +181,7 @@ describe('MediatorService - default config', () => {
       })
 
       const messageContext = new DidCommInboundMessageContext(keyListUpdate, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -168,6 +201,122 @@ describe('MediatorService - default config', () => {
         },
       ])
     })
+
+    test('does not add a recipient key that another mediatee registered', async () => {
+      const recipientKey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const mediationRecord = new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'threadId',
+      })
+      const otherMediationRecord = new DidCommMediationRecord({
+        id: 'other-mediation',
+        connectionId: 'otherConnectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'otherThreadId',
+        recipientKeys: [recipientKey],
+      })
+
+      mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockResolvedValue([otherMediationRecord])
+
+      const keyListUpdate = new DidCommKeylistUpdateMessage({
+        updates: [{ action: DidCommKeylistUpdateAction.add, recipientKey }],
+      })
+      const response = await mediatorService.processKeylistUpdateRequest(
+        new DidCommInboundMessageContext(keyListUpdate, {
+          senderKey: testSenderKey,
+          connection: mockConnection,
+          agentContext,
+        })
+      )
+
+      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        { recipientKeys: [recipientKey] },
+        { limit: 1 }
+      )
+      expect(mediationRecord.recipientKeys).toEqual([])
+      expect(response.updated).toEqual([
+        { action: DidCommKeylistUpdateAction.add, recipientKey, result: DidCommKeylistUpdateResult.ClientError },
+      ])
+    })
+
+    test('adds a recipient key that only the own mediation record has', async () => {
+      const recipientKey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const mediationRecord = new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'threadId',
+        recipientKeys: [recipientKey],
+      })
+
+      mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockResolvedValue([mediationRecord])
+
+      const keyListUpdate = new DidCommKeylistUpdateMessage({
+        updates: [{ action: DidCommKeylistUpdateAction.add, recipientKey }],
+      })
+      const response = await mediatorService.processKeylistUpdateRequest(
+        new DidCommInboundMessageContext(keyListUpdate, {
+          senderKey: testSenderKey,
+          connection: mockConnection,
+          agentContext,
+        })
+      )
+
+      expect(response.updated).toEqual([
+        { action: DidCommKeylistUpdateAction.add, recipientKey, result: DidCommKeylistUpdateResult.Success },
+      ])
+    })
+
+    test('does not add a recipient key whose did:key another mediatee registered with Coordinate Mediation 2.0', async () => {
+      const recipientKey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const mediationRecord = new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'threadId',
+      })
+      const v2MediationRecord = new DidCommMediationRecord({
+        id: 'v2-mediation',
+        connectionId: 'v2ConnectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'v2ThreadId',
+        protocolVersion: 'v2',
+        recipientDids: [verkeyToDidKey(recipientKey)],
+      })
+
+      mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockImplementation(async (_agentContext, query) =>
+        'recipientDids' in query ? [v2MediationRecord] : []
+      )
+
+      const keyListUpdate = new DidCommKeylistUpdateMessage({
+        updates: [{ action: DidCommKeylistUpdateAction.add, recipientKey }],
+      })
+      const response = await mediatorService.processKeylistUpdateRequest(
+        new DidCommInboundMessageContext(keyListUpdate, {
+          senderKey: testSenderKey,
+          connection: mockConnection,
+          agentContext,
+        })
+      )
+
+      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        { recipientDids: [verkeyToDidKey(recipientKey)] },
+        { limit: 1 }
+      )
+      expect(mediationRecord.recipientKeys).toEqual([])
+      expect(response.updated).toEqual([
+        { action: DidCommKeylistUpdateAction.add, recipientKey, result: DidCommKeylistUpdateResult.ClientError },
+      ])
+    })
   })
 
   test('processes did:key encoded recipient keys', async () => {
@@ -180,6 +329,7 @@ describe('MediatorService - default config', () => {
     })
 
     mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+    mockFunction(mediationRepository.findByQuery).mockResolvedValue([])
 
     const keyListUpdate = new DidCommKeylistUpdateMessage({
       updates: [
@@ -194,7 +344,11 @@ describe('MediatorService - default config', () => {
       ],
     })
 
-    const messageContext = new DidCommInboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
+    const messageContext = new DidCommInboundMessageContext(keyListUpdate, {
+      senderKey: testSenderKey,
+      connection: mockConnection,
+      agentContext,
+    })
     const response = await mediatorService.processKeylistUpdateRequest(messageContext)
 
     expect(mediationRecord.recipientKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])
@@ -266,11 +420,638 @@ describe('MediatorService - useDidKeyInProtocols set to false', () => {
   })
 })
 
+describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
+  const agentConfig = getAgentConfig('MediatorService')
+  const mediatorModuleConfig = new DidCommMediatorModuleConfig({
+    mediatorRoutingDid:
+      'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc.SeyJ0IjoiZG0iLCJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9lbmRwb2ludCIsInIiOltdLCJhIjoibm9uZSMxIn0',
+  })
+
+  const agentContext = getAgentContext({
+    agentConfig,
+    registerInstances: [
+      [DidCommModuleConfig, new DidCommModuleConfig()],
+      [DidCommMessagePickupApi, mediationPickupApi],
+      [DidCommMediatorModuleConfig, mediatorModuleConfig],
+    ],
+  })
+
+  const mediatorService = new DidCommMediatorService(
+    mediationRepository,
+    mediatorRoutingRepository,
+    new EventEmitter(agentConfig.agentDependencies, new Subject()),
+    agentConfig.logger,
+    connectionService
+  )
+
+  const ed25519RoutingKey = {
+    routingKeyFingerprint: Kms.PublicJwk.fromPublicKey({
+      kty: 'OKP',
+      crv: 'Ed25519',
+      publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+    }).fingerprint,
+    kmsKeyId: 'some-key-id',
+  }
+  const x25519RoutingKey = {
+    routingKeyFingerprint: Kms.PublicJwk.fromPublicJwk({
+      kty: 'OKP',
+      crv: 'X25519',
+      x: 'hSDwCYkwp1R0i33ctD73Wg2_Og0mOBr066SpjqqbTmo',
+    }).fingerprint,
+    kmsKeyId: 'some-x25519-key-id',
+  }
+
+  const createServiceWithStorage = async (
+    storageService: InMemoryStorageService<DidCommMediatorRoutingRecord>
+  ): Promise<{ repository: DidCommMediatorRoutingRepository; service: DidCommMediatorService }> => {
+    const { DidCommMediatorRoutingRepository: ActualMediatorRoutingRepository } = await vi.importActual<
+      typeof import('../../repository/DidCommMediatorRoutingRepository')
+    >('../../repository/DidCommMediatorRoutingRepository')
+    const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
+    const repository = new ActualMediatorRoutingRepository(storageService, eventEmitter)
+    return {
+      repository,
+      service: new DidCommMediatorService(
+        mediationRepository,
+        repository,
+        eventEmitter,
+        agentConfig.logger,
+        connectionService
+      ),
+    }
+  }
+
+  describe('processMediationRequestV2', () => {
+    test('creates mediation record with protocol version 2.0', async () => {
+      const mediateRequest = new DidCommMediateRequestV2Message({})
+      const messageContext = new DidCommInboundMessageContext(mediateRequest, {
+        senderKey: testSenderKey,
+        connection: mockConnection,
+        agentContext,
+      })
+
+      mockFunction(mediationRepository.save).mockResolvedValue(undefined)
+
+      const { mediationRecord: record } = await mediatorService.processMediationRequestV2(messageContext)
+
+      expect(record.protocolVersion).toBe('v2')
+      expect(record.threadId).toBe(mediateRequest.id)
+      expect(record.role).toBe(DidCommMediationRole.Mediator)
+      expect(record.state).toBe(DidCommMediationState.Requested)
+    })
+
+    test('looks up the connection by the authenticated sender DID, never by message.from', async () => {
+      const mediateRequest = new DidCommMediateRequestV2Message({})
+      mediateRequest.from = 'did:example:victim'
+      mockFunction(connectionService.findByTheirDidOrSender).mockResolvedValue(mockConnection)
+
+      await expect(
+        mediatorService.processMediationRequestV2(new DidCommInboundMessageContext(mediateRequest, { agentContext }))
+      ).rejects.toThrow('No connection associated')
+      expect(connectionService.findByTheirDidOrSender).not.toHaveBeenCalled()
+
+      await mediatorService.processMediationRequestV2(
+        new DidCommInboundMessageContext(mediateRequest, { agentContext, senderDid: 'did:example:sender' })
+      )
+      expect(connectionService.findByTheirDidOrSender).toHaveBeenCalledWith(agentContext, {
+        theirDid: 'did:example:sender',
+        senderKey: undefined,
+      })
+    })
+  })
+
+  describe('createGrantMediationMessageV2', () => {
+    test('returns DidCommMediateGrantV2Message with routing_did', async () => {
+      const mediationRecord = new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Requested,
+        threadId: 'threadId',
+        protocolVersion: 'v2',
+      })
+
+      mockFunction(mediationRepository.update).mockResolvedValue(undefined)
+
+      const { message } = await mediatorService.createGrantMediationMessageV2(agentContext, mediationRecord)
+
+      expect(message.routingDid).toBe(mediatorModuleConfig.mediatorRoutingDid)
+      expect(message.threadId).toBe('threadId')
+    })
+
+    const generatedRoutingDidContext = getAgentContext({
+      agentConfig,
+      registerInstances: [
+        [DidCommModuleConfig, new DidCommModuleConfig({ endpoints: ['wss://mediator.example'] })],
+        [DidCommMediatorModuleConfig, new DidCommMediatorModuleConfig()],
+      ],
+    })
+    const requestedMediationRecord = () =>
+      new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Requested,
+        threadId: 'threadId',
+        protocolVersion: 'v2',
+      })
+
+    test('publishes the DIDCommMessaging endpoint of a generated routing DID as an object', async () => {
+      mockFunction(mediatorRoutingRepository.findById).mockResolvedValue(
+        new DidCommMediatorRoutingRecord({ routingKeys: [ed25519RoutingKey, x25519RoutingKey] })
+      )
+
+      const { message } = await mediatorService.createGrantMediationMessageV2(
+        generatedRoutingDidContext,
+        requestedMediationRecord()
+      )
+
+      const [service] = didToNumAlgo2DidDocument(message.routingDid).service ?? []
+      expect(service.type).toBe('DIDCommMessaging')
+      expect(service.serviceEndpoint).toMatchObject({ uri: 'wss://mediator.example' })
+    })
+
+    test('publishes the X25519 routing key of the record as the keyAgreement key of the routing DID', async () => {
+      mockFunction(mediatorRoutingRepository.findById).mockResolvedValue(
+        new DidCommMediatorRoutingRecord({ routingKeys: [ed25519RoutingKey, x25519RoutingKey] })
+      )
+
+      const { message } = await mediatorService.createGrantMediationMessageV2(
+        generatedRoutingDidContext,
+        requestedMediationRecord()
+      )
+
+      // did:peer:2 encodes a keyAgreement key as .E<multibase key> and an authentication key as .V<multibase key>
+      expect(message.routingDid).toContain(`.E${x25519RoutingKey.routingKeyFingerprint}`)
+      expect(message.routingDid).toContain(`.V${ed25519RoutingKey.routingKeyFingerprint}`)
+    })
+
+    test('fails to grant mediation v2 when the routing record has no X25519 routing key', async () => {
+      mockFunction(mediatorRoutingRepository.findById).mockResolvedValue(
+        new DidCommMediatorRoutingRecord({ routingKeys: [ed25519RoutingKey] })
+      )
+
+      await expect(
+        mediatorService.createGrantMediationMessageV2(generatedRoutingDidContext, requestedMediationRecord())
+      ).rejects.toThrow('no X25519 routing key')
+    })
+  })
+
+  describe('addV2RoutingKeyIfMissing', () => {
+    const v2AgentContext = getAgentContext({
+      agentConfig,
+      registerInstances: [[DidCommModuleConfig, new DidCommModuleConfig({ didcommVersions: ['v1', 'v2'] })]],
+    })
+    const kms = v2AgentContext.resolve(Kms.KeyManagementApi)
+    const routingRecord = (...routingKeys: DidCommMediatorRoutingRecordRoutingKey[]): DidCommMediatorRoutingRecord =>
+      new DidCommMediatorRoutingRecord({ id: 'MEDIATOR_ROUTING_RECORD', routingKeys })
+    const x25519KeyIds = (record: DidCommMediatorRoutingRecord): string[] =>
+      record.routingKeysWithKeyId.filter((routingKey) => routingKey.is(Kms.X25519PublicJwk)).map(({ keyId }) => keyId)
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    test('two instances that upgrade at once without a lock end with one X25519 routing key that both use', async () => {
+      const storageService = new InMemoryStorageService<DidCommMediatorRoutingRecord>()
+      storageService.createRecordsForContext(v2AgentContext)
+      const { repository, service } = await createServiceWithStorage(storageService)
+      await repository.save(v2AgentContext, routingRecord(ed25519RoutingKey))
+      const startupRecords = await Promise.all(
+        [1, 2].map(() => repository.getById(v2AgentContext, 'MEDIATOR_ROUTING_RECORD'))
+      )
+
+      const upgradedRecords = await Promise.all(
+        startupRecords.map((startupRecord) => service.addV2RoutingKeyIfMissing(v2AgentContext, startupRecord))
+      )
+
+      const storedKeyIds = x25519KeyIds(await repository.getById(v2AgentContext, 'MEDIATOR_ROUTING_RECORD'))
+      expect(storedKeyIds).toHaveLength(1)
+      expect(upgradedRecords.map(x25519KeyIds)).toEqual([storedKeyIds, storedKeyIds])
+    })
+
+    test('does not write the record if another instance already stored an X25519 routing key', async () => {
+      const storageService = new InMemoryStorageService<DidCommMediatorRoutingRecord>()
+      storageService.createRecordsForContext(v2AgentContext)
+      const { repository, service } = await createServiceWithStorage(storageService)
+      await repository.save(v2AgentContext, routingRecord(ed25519RoutingKey, x25519RoutingKey))
+      const update = vi.spyOn(storageService, 'update')
+
+      const upgradedRecord = await service.addV2RoutingKeyIfMissing(v2AgentContext, routingRecord(ed25519RoutingKey))
+
+      expect(update).not.toHaveBeenCalled()
+      expect(x25519KeyIds(upgradedRecord)).toEqual([x25519RoutingKey.kmsKeyId])
+    })
+
+    test('deletes its own X25519 key and uses the stored record if another instance wrote after it', async () => {
+      const recordInCallback = routingRecord(ed25519RoutingKey)
+      const storedRecord = routingRecord(ed25519RoutingKey, x25519RoutingKey)
+      mockFunction(mediatorRoutingRepository.updateByIdWithLock).mockImplementationOnce(
+        async (_agentContext, _id, callback) => callback(recordInCallback)
+      )
+      mockFunction(mediatorRoutingRepository.getById).mockResolvedValueOnce(storedRecord)
+
+      await expect(
+        mediatorService.addV2RoutingKeyIfMissing(v2AgentContext, routingRecord(ed25519RoutingKey))
+      ).resolves.toBe(storedRecord)
+
+      const [ownKeyId] = x25519KeyIds(recordInCallback)
+      await expect(kms.getPublicKey({ keyId: ownKeyId })).rejects.toThrow(Kms.KeyManagementKeyNotFoundError)
+    })
+
+    test('keeps the first X25519 key and warns if the stored record holds more than one', async () => {
+      const warn = vi.spyOn(agentConfig.logger, 'warn')
+      const recordInCallback = routingRecord(ed25519RoutingKey)
+      mockFunction(mediatorRoutingRepository.updateByIdWithLock).mockImplementationOnce(
+        async (_agentContext, _id, callback) => callback(recordInCallback)
+      )
+      mockFunction(mediatorRoutingRepository.getById).mockImplementationOnce(async () => {
+        const storedRecord = recordInCallback.clone()
+        storedRecord.routingKeys.splice(1, 0, x25519RoutingKey)
+        return storedRecord
+      })
+
+      const upgradedRecord = await mediatorService.addV2RoutingKeyIfMissing(
+        v2AgentContext,
+        routingRecord(ed25519RoutingKey)
+      )
+
+      const [ownKeyId] = x25519KeyIds(recordInCallback)
+      expect(x25519KeyIds(upgradedRecord)).toEqual([x25519RoutingKey.kmsKeyId, ownKeyId])
+      await expect(kms.getPublicKey({ keyId: ownKeyId })).resolves.toBeDefined()
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('more than one X25519 routing key'))
+    })
+  })
+
+  describe('findMediatorRoutingRecord', () => {
+    test('reads the routing record from storage when the cache is enabled', async () => {
+      const storageService = new InMemoryStorageService<DidCommMediatorRoutingRecord>()
+      const cachedAgentContext = getAgentContext({
+        agentConfig,
+        registerInstances: [
+          [CacheModuleConfig, new CacheModuleConfig({ cache: new InMemoryLruCache({ limit: 10 }) })],
+          [CachedStorageService, new CachedStorageService(storageService)],
+        ],
+      })
+      storageService.createRecordsForContext(cachedAgentContext)
+      const { repository, service } = await createServiceWithStorage(storageService)
+      const id = 'MEDIATOR_ROUTING_RECORD'
+      await repository.save(
+        cachedAgentContext,
+        new DidCommMediatorRoutingRecord({ id, routingKeys: [ed25519RoutingKey] })
+      )
+      await storageService.update(
+        cachedAgentContext,
+        new DidCommMediatorRoutingRecord({ id, routingKeys: [ed25519RoutingKey, x25519RoutingKey] })
+      )
+
+      const routingRecord = await service.findMediatorRoutingRecord(cachedAgentContext)
+
+      expect(routingRecord?.routingKeys).toEqual([ed25519RoutingKey, x25519RoutingKey])
+    })
+  })
+
+  describe('processKeylistUpdateV2', () => {
+    test('adds and removes recipient DIDs', async () => {
+      const mediationRecord = new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'threadId',
+        protocolVersion: 'v2',
+      })
+
+      mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockResolvedValue([])
+      mockFunction(mediationRepository.update).mockResolvedValue(undefined)
+
+      const keylistUpdate = new DidCommKeylistUpdateV2Message({
+        updates: [
+          { recipientDid: 'did:peer:2.abc', action: KeylistUpdateActionV2.add },
+          { recipientDid: 'did:peer:2.xyz', action: KeylistUpdateActionV2.remove },
+        ],
+      })
+      keylistUpdate.setThread({ threadId: 'threadId' })
+
+      const messageContext = new DidCommInboundMessageContext(keylistUpdate, {
+        senderKey: testSenderKey,
+        connection: mockConnection,
+        agentContext,
+      })
+      const response = await mediatorService.processKeylistUpdateV2(messageContext)
+
+      expect(mediationRecord.recipientDids).toContain('did:peer:2.abc')
+      expect(response.updated).toHaveLength(2)
+      expect(response.updated[0].recipientDid).toBe('did:peer:2.abc')
+      expect(response.updated[0].action).toBe(KeylistUpdateActionV2.add)
+      expect(response.updated[1].recipientDid).toBe('did:peer:2.xyz')
+    })
+
+    test('does not add a recipient DID that another mediatee registered', async () => {
+      const mediationRecord = new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'threadId',
+        protocolVersion: 'v2',
+      })
+      const otherMediationRecord = new DidCommMediationRecord({
+        id: 'other-mediation',
+        connectionId: 'otherConnectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'otherThreadId',
+        protocolVersion: 'v2',
+        recipientDids: ['did:peer:2.abc'],
+      })
+
+      mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockResolvedValue([otherMediationRecord])
+      mockFunction(mediationRepository.update).mockResolvedValue(undefined)
+
+      const keylistUpdate = new DidCommKeylistUpdateV2Message({
+        updates: [{ recipientDid: 'did:peer:2.abc', action: KeylistUpdateActionV2.add }],
+      })
+      keylistUpdate.setThread({ threadId: 'threadId' })
+
+      const response = await mediatorService.processKeylistUpdateV2(
+        new DidCommInboundMessageContext(keylistUpdate, {
+          senderKey: testSenderKey,
+          connection: mockConnection,
+          agentContext,
+        })
+      )
+
+      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        { recipientDids: ['did:peer:2.abc'] },
+        { limit: 1 }
+      )
+      expect(mediationRecord.recipientDids ?? []).not.toContain('did:peer:2.abc')
+      expect(response.updated).toEqual([
+        {
+          recipientDid: 'did:peer:2.abc',
+          action: KeylistUpdateActionV2.add,
+          result: KeylistUpdateResultV2.ClientError,
+        },
+      ])
+    })
+
+    test('does not add a did:key whose key another mediatee registered with Coordinate Mediation 1.0', async () => {
+      const recipientDid = 'did:key:z6MkkbTaLstV4fwr1rNf5CSxdS2rGbwxi3V5y6NnVFTZ2V1w'
+      const mediationRecord = new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'threadId',
+        protocolVersion: 'v2',
+      })
+      const v1MediationRecord = new DidCommMediationRecord({
+        id: 'v1-mediation',
+        connectionId: 'v1ConnectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'v1ThreadId',
+        recipientKeys: [didKeyToVerkey(recipientDid)],
+      })
+
+      mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockImplementation(async (_agentContext, query) =>
+        'recipientKeys' in query ? [v1MediationRecord] : []
+      )
+      mockFunction(mediationRepository.update).mockResolvedValue(undefined)
+
+      const keylistUpdate = new DidCommKeylistUpdateV2Message({
+        updates: [{ recipientDid, action: KeylistUpdateActionV2.add }],
+      })
+      keylistUpdate.setThread({ threadId: 'threadId' })
+
+      const response = await mediatorService.processKeylistUpdateV2(
+        new DidCommInboundMessageContext(keylistUpdate, {
+          senderKey: testSenderKey,
+          connection: mockConnection,
+          agentContext,
+        })
+      )
+
+      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        { recipientKeys: [didKeyToVerkey(recipientDid)] },
+        { limit: 1 }
+      )
+      expect(mediationRecord.recipientDids ?? []).not.toContain(recipientDid)
+      expect(response.updated).toEqual([
+        { recipientDid, action: KeylistUpdateActionV2.add, result: KeylistUpdateResultV2.ClientError },
+      ])
+    })
+  })
+
+  describe('processForwardMessage (v1)', () => {
+    test('refuses a forward whose recipient two mediation records hold', async () => {
+      const recipientKey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const byKey = new DidCommMediationRecord({
+        id: 'by-key',
+        connectionId: 'v1ConnectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'v1ThreadId',
+        recipientKeys: [recipientKey],
+      })
+      const byDid = new DidCommMediationRecord({
+        id: 'by-did',
+        connectionId: 'v2ConnectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'v2ThreadId',
+        protocolVersion: 'v2',
+        recipientDids: [verkeyToDidKey(recipientKey)],
+      })
+      mockFunction(mediationRepository.findSingleByRecipientKey).mockResolvedValue(byKey)
+      mockFunction(mediationRepository.findSingleByRecipientDid).mockResolvedValue(byDid)
+
+      const forward = new DidCommForwardMessage({
+        to: recipientKey,
+        message: { protected: 'eyJ0eXAiOiJKV1QifQ', iv: 'iv', ciphertext: 'ciphertext', tag: 'tag' },
+      })
+
+      await expect(
+        mediatorService.processForwardMessage(new DidCommInboundMessageContext(forward, { agentContext }))
+      ).rejects.toThrow(/registered by two mediation records/)
+    })
+  })
+
+  describe('processKeylistQueryV2', () => {
+    test('returns DidCommKeylistV2Message with recipient DIDs', async () => {
+      const mediationRecord = new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'threadId',
+        protocolVersion: 'v2',
+        recipientDids: ['did:peer:2.abc', 'did:peer:2.xyz'],
+      })
+
+      mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+
+      const keylistQuery = new DidCommKeylistQueryV2Message({})
+      keylistQuery.setThread({ threadId: 'threadId' })
+
+      const messageContext = new DidCommInboundMessageContext(keylistQuery, {
+        senderKey: testSenderKey,
+        connection: mockConnection,
+        agentContext,
+      })
+      const response = await mediatorService.processKeylistQueryV2(messageContext)
+
+      expect(response.keys).toHaveLength(2)
+      expect(response.keys.map((k) => k.recipientDid)).toEqual(['did:peer:2.abc', 'did:peer:2.xyz'])
+    })
+  })
+
+  describe('processForwardMessage (v2)', () => {
+    test('looks up mediation record by DID only, never by verkey', async () => {
+      mockFunction(mediationRepository.findSingleByRecipientKey).mockClear()
+      mockFunction(mediationRepository.findSingleByRecipientDid).mockResolvedValue(null)
+
+      const recipientDid = 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc'
+      const forward = new DidCommForwardV2Message({
+        to: [mediatorModuleConfig.mediatorRoutingDid as string],
+        next: recipientDid,
+      })
+      forward.appendedAttachments = [
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: 'c', iv: 'i', protected: 'p', tag: 't' } } }),
+      ]
+
+      const messageContext = new DidCommInboundMessageContext(forward, {
+        senderKey: testSenderKey,
+        connection: mockConnection,
+        agentContext,
+      })
+
+      await expect(mediatorService.processForwardMessage(messageContext)).rejects.toThrow(RecordNotFoundError)
+
+      expect(mediationRepository.findSingleByRecipientKey).not.toHaveBeenCalled()
+      expect(mediationRepository.findSingleByRecipientDid).toHaveBeenCalledWith(agentContext, recipientDid)
+    })
+
+    test('refuses a forward whose attachment is not an encrypted message, naming the attachment', async () => {
+      mockFunction(mediationRepository.findSingleByRecipientDid).mockClear()
+      const forward = new DidCommForwardV2Message({ to: [], next: 'did:peer:2.abc' })
+      forward.appendedAttachments = [
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: 'c', iv: 'i', protected: 'p', tag: 't' } } }),
+        new DidCommAttachment({ id: 'msg-2', data: { links: ['https://example.com/message'] } }),
+        new DidCommAttachment({ id: 'msg-3', data: { json: { not: 'a jwe' } } }),
+      ]
+
+      await expect(
+        mediatorService.processForwardMessage(new DidCommInboundMessageContext(forward, { agentContext }))
+      ).rejects.toThrow('Invalid v2 Forward: attachment 2 of 3 is not an encrypted message')
+      expect(mediationRepository.findSingleByRecipientDid).not.toHaveBeenCalled()
+    })
+
+    test('looks up the DID of a next that is a key of the recipient', async () => {
+      mockFunction(mediationRepository.findSingleByRecipientKey).mockClear()
+      mockFunction(mediationRepository.findSingleByRecipientDid).mockClear().mockResolvedValue(null)
+
+      const forward = new DidCommForwardV2Message({ to: [], next: 'did:peer:2.abc#key-1' })
+      forward.appendedAttachments = [
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: 'c', iv: 'i', protected: 'p', tag: 't' } } }),
+      ]
+
+      await expect(
+        mediatorService.processForwardMessage(new DidCommInboundMessageContext(forward, { agentContext }))
+      ).rejects.toThrow(RecordNotFoundError)
+
+      expect(mediationRepository.findSingleByRecipientDid).toHaveBeenCalledWith(agentContext, 'did:peer:2.abc')
+      expect(mediationRepository.findSingleByRecipientKey).not.toHaveBeenCalled()
+    })
+
+    test('falls back to the recipient key lookup for a did:key next', async () => {
+      const didKey = 'did:key:z6MkijBsFPbW4fQyvnpM9Yt2AhHYTh7N1zH6xp1mPrJJfZe1'
+      mockFunction(mediationRepository.findSingleByRecipientDid).mockResolvedValue(null)
+      mockFunction(mediationRepository.findSingleByRecipientKey).mockClear().mockResolvedValue(null)
+
+      const forward = new DidCommForwardV2Message({ to: [], next: didKey })
+      forward.appendedAttachments = [
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: 'c', iv: 'i', protected: 'p', tag: 't' } } }),
+      ]
+
+      await expect(
+        mediatorService.processForwardMessage(new DidCommInboundMessageContext(forward, { agentContext }))
+      ).rejects.toThrow(RecordNotFoundError)
+
+      expect(mediationRepository.findSingleByRecipientDid).toHaveBeenCalledWith(agentContext, didKey)
+      expect(mediationRepository.findSingleByRecipientKey).toHaveBeenCalledWith(agentContext, didKeyToVerkey(didKey))
+    })
+  })
+})
+
+describe('MediatorService - DirectDelivery', () => {
+  const agentConfig = getAgentConfig('MediatorService')
+  const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
+  const messageSender = { sendPackage: vi.fn() }
+
+  const agentContext = getAgentContext({
+    agentConfig,
+    registerInstances: [
+      [EventEmitter, eventEmitter],
+      [DidCommModuleConfig, new DidCommModuleConfig()],
+      [DidCommMessagePickupApi, mediationPickupApi],
+      [DidCommMessageSender, messageSender],
+      [DidCommMediatorModuleConfig, new DidCommMediatorModuleConfig()],
+    ],
+  })
+
+  const mediatorService = new DidCommMediatorService(
+    mediationRepository,
+    mediatorRoutingRepository,
+    eventEmitter,
+    agentConfig.logger,
+    connectionService
+  )
+
+  const recipientDid = 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc'
+  const payload = { protected: 'base64url', iv: 'base64url', ciphertext: 'base64url', tag: 'base64url' }
+
+  beforeEach(() => {
+    messageSender.sendPackage.mockReset()
+    const mediationRecord = new DidCommMediationRecord({
+      connectionId: mockConnection.id,
+      role: DidCommMediationRole.Mediator,
+      state: DidCommMediationState.Granted,
+      threadId: 'threadId',
+      recipientDids: [recipientDid],
+    })
+    mockFunction(mediationRepository.findSingleByRecipientDid).mockResolvedValue(mediationRecord)
+    mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
+  })
+
+  test('delivers every attachment of a v2 forward and reports the ones that failed', async () => {
+    messageSender.sendPackage
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('second is undeliverable'))
+      .mockResolvedValueOnce(undefined)
+    const message = new DidCommForwardV2Message({ to: [], next: recipientDid })
+    message.appendedAttachments = ['first', 'second', 'third'].map(
+      (iv, index) => new DidCommAttachment({ id: `msg-${index + 1}`, data: { json: { ...payload, iv } } })
+    )
+
+    await expect(
+      mediatorService.processForwardMessage(new DidCommInboundMessageContext(message, { agentContext }))
+    ).rejects.toThrow(
+      `Unable to deliver 1 of 3 forwarded messages to connection '${mockConnection.id}': second is undeliverable`
+    )
+
+    expect(messageSender.sendPackage.mock.calls.map(([, options]) => options.encryptedMessage.iv)).toEqual([
+      'first',
+      'second',
+      'third',
+    ])
+  })
+})
+
 describe('MediatorService - QueueAndLiveModeDelivery', () => {
   const agentConfig = getAgentConfig('MediatorService')
   const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
   const sessionService = new DidCommMessagePickupSessionService()
-  const transportService = new DidCommTransportService(getAgentContext(), eventEmitter)
 
   const agentContext = getAgentContext({
     agentConfig,
@@ -280,7 +1061,6 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
       [DidCommMessagePickupApi, mediationPickupApi],
       [DidCommMessagePickupSessionService, sessionService],
       [DidCommMessageSender, {}],
-      [DidCommTransportService, transportService],
       [
         DidCommMediatorModuleConfig,
         new DidCommMediatorModuleConfig({
@@ -299,8 +1079,11 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
   )
 
   const recipientKey = '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'
+  const recipientDid = 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc'
+  const payload = { protected: 'base64url', iv: 'base64url', ciphertext: 'base64url', tag: 'base64url' }
   const sendError = new MessageSendingError('Message is undeliverable', {
     outboundMessageContext: {} as DidCommOutboundMessageContext,
+    reason: { category: MessageSendingErrorCategory.RemoteError, attempts: [] },
   })
 
   function saveLiveSession(transportSessionId: string): void {
@@ -312,82 +1095,92 @@ describe('MediatorService - QueueAndLiveModeDelivery', () => {
     })
   }
 
-  function liveTransportSessionId(): string | undefined {
-    return sessionService.getLiveSessionByConnectionId(agentContext, { connectionId: mockConnection.id })
-      ?.transportSessionId
-  }
-
-  async function forward(): Promise<void> {
-    const message = new DidCommForwardMessage({
-      to: recipientKey,
-      message: { protected: 'base64url', iv: 'base64url', ciphertext: 'base64url', tag: 'base64url' },
-    })
+  async function forward(version: 'v1' | 'v2' = 'v1', to = recipientKey): Promise<void> {
+    let message: DidCommForwardMessage | DidCommForwardV2Message
+    if (version === 'v1') {
+      message = new DidCommForwardMessage({ to, message: payload })
+    } else {
+      message = new DidCommForwardV2Message({ to: [], next: recipientDid })
+      message.appendedAttachments = [new DidCommAttachment({ id: 'msg-1', data: { json: payload } })]
+    }
     await mediatorService.processForwardMessage(new DidCommInboundMessageContext(message, { agentContext }))
   }
 
-  let transportSession: DummyTransportSession
-
   beforeEach(() => {
-    transportSession = new DummyTransportSession('transportSessionId')
-    vi.spyOn(transportSession, 'close').mockResolvedValue()
-    transportService.saveSession(transportSession)
-    mockFunction(mediationRepository.getSingleByRecipientKey).mockResolvedValue(
-      new DidCommMediationRecord({
-        connectionId: mockConnection.id,
-        role: DidCommMediationRole.Mediator,
-        state: DidCommMediationState.Granted,
-        threadId: 'threadId',
-        recipientKeys: [recipientKey],
-      })
-    )
+    const mediationRecord = new DidCommMediationRecord({
+      connectionId: mockConnection.id,
+      role: DidCommMediationRole.Mediator,
+      state: DidCommMediationState.Granted,
+      threadId: 'threadId',
+      recipientKeys: [recipientKey],
+    })
+    mockFunction(mediationRepository.findSingleByRecipientKey).mockResolvedValue(mediationRecord)
+    mockFunction(mediationRepository.findSingleByRecipientDid).mockResolvedValue(mediationRecord)
     mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
     saveLiveSession('transportSessionId')
-    vi.spyOn(mediationPickupApi, 'queueMessage').mockResolvedValue(undefined)
+    vi.spyOn(mediationPickupApi, 'queueMessage').mockResolvedValue({ messageId: 'messageId' })
     vi.spyOn(mediationPickupApi, 'getLiveModeSession').mockImplementation(async (options) =>
       sessionService.getLiveSessionByConnectionId(agentContext, options)
     )
   })
 
-  test('ends the live mode session, closes its transport and completes the forward when the live delivery send fails', async () => {
-    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(sendError)
-    const warnSpy = vi.spyOn(agentConfig.logger, 'warn')
+  test('queues the message and delivers only that message to the live mode session', async () => {
+    const deliverSpy = vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockResolvedValue(undefined)
 
     await forward()
 
-    expect(transportSession.close).toHaveBeenCalledTimes(1)
-    expect(liveTransportSessionId()).toBeUndefined()
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(`'${mockConnection.id}'`), {
-      error: 'Message is undeliverable',
+    expect(mediationPickupApi.queueMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ connectionId: mockConnection.id })
+    )
+    expect(deliverSpy).toHaveBeenCalledWith({
+      pickupSessionId: sessionService.getLiveSessionByConnectionId(agentContext, { connectionId: mockConnection.id })
+        ?.id,
+      recipientDid: expect.stringContaining('did:key:'),
+      messageIds: ['messageId'],
     })
   })
 
-  test('completes the forward when closing the transport throws', async () => {
-    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(sendError)
-    vi.spyOn(transportSession, 'close').mockRejectedValue(new Error('close failed'))
+  test.each(['v1', 'v2'] as const)(
+    'completes the %s forward and logs the failure when the live delivery send fails',
+    async (version) => {
+      vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(sendError)
+      const warnSpy = vi.spyOn(agentConfig.logger, 'warn')
 
-    await expect(forward()).resolves.toBeUndefined()
+      await expect(forward(version)).resolves.toBeUndefined()
 
-    expect(liveTransportSessionId()).toBeUndefined()
+      expect(mediationPickupApi.queueMessage).toHaveBeenCalled()
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(`'${mockConnection.id}'`), {
+        error: 'Message is undeliverable',
+      })
+    }
+  )
+
+  test('looks up the mediation record by base58 key when forwarded to a did:key', async () => {
+    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockResolvedValue(undefined)
+
+    await forward('v1', verkeyToDidKey(recipientKey))
+
+    expect(mediationRepository.findSingleByRecipientKey).toHaveBeenLastCalledWith(agentContext, recipientKey)
+    expect(mediationPickupApi.queueMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ recipientDids: [verkeyToDidKey(recipientKey)] })
+    )
   })
 
-  test('keeps a live mode session that replaced the failed one', async () => {
-    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockImplementation(async () => {
-      saveLiveSession('newTransportSessionId')
-      throw sendError
-    })
+  test('queues every attachment of a v2 forward and delivers once', async () => {
+    const deliver = vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockResolvedValue(undefined)
+    const message = new DidCommForwardV2Message({ to: [], next: recipientDid })
+    message.appendedAttachments = [
+      new DidCommAttachment({ id: 'msg-1', data: { json: { ...payload, iv: 'first' } } }),
+      new DidCommAttachment({ id: 'msg-2', data: { json: { ...payload, iv: 'second' } } }),
+    ]
 
-    await forward()
+    await mediatorService.processForwardMessage(new DidCommInboundMessageContext(message, { agentContext }))
 
-    expect(transportSession.close).not.toHaveBeenCalled()
-    expect(liveTransportSessionId()).toBe('newTransportSessionId')
-  })
-
-  test('keeps the live mode session when live delivery fails before sending', async () => {
-    vi.spyOn(mediationPickupApi, 'deliverMessagesFromQueue').mockRejectedValue(new Error('storage unavailable'))
-
-    await forward()
-
-    expect(transportSession.close).not.toHaveBeenCalled()
-    expect(liveTransportSessionId()).toBe('transportSessionId')
+    expect(vi.mocked(mediationPickupApi.queueMessage).mock.calls.map(([options]) => options.message)).toEqual([
+      { ...payload, iv: 'first' },
+      { ...payload, iv: 'second' },
+    ])
+    expect(deliver).toHaveBeenCalledTimes(1)
+    expect(deliver).toHaveBeenCalledWith(expect.objectContaining({ messageIds: ['messageId', 'messageId'] }))
   })
 })

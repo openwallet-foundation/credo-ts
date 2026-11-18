@@ -2,6 +2,7 @@ import { Expose } from 'class-transformer'
 import { IsArray, IsNotEmpty, IsString } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface DidCommMediationGrantMessageOptions {
@@ -18,6 +19,8 @@ export interface DidCommMediationGrantMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#mediation-grant
  */
 export class DidCommMediationGrantMessage extends DidCommMessage {
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
+
   public constructor(options: DidCommMediationGrantMessageOptions) {
     super()
 

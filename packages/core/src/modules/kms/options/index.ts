@@ -1,4 +1,10 @@
-export type { KmsBackendName, KmsCreateKeyBackendOptionsOf } from './backend'
+export type {
+  KmsBackendName,
+  KmsCreateKeyBackendOptionsOf,
+  KmsKeyReference,
+  WithCreateKeyBackend,
+  WithReturnedBackend,
+} from './backend'
 export type {
   KmsCreateKeyForSignatureAlgorithmOptions,
   KmsCreateKeyOptions,
