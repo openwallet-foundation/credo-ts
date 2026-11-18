@@ -3,6 +3,7 @@ import { AgentContext } from '../../agent'
 import { CredoWebCrypto } from '../../crypto'
 import { CredoError } from '../../error'
 import { KeyManagementApi, type KmsJwkPublicEcdh, type KnownJwaHpkeAlgorithm, PublicJwk } from '../../modules/kms'
+import { type FetchedMdocStatusLists, fetchMdocStatusList } from '../../modules/mdoc/mdocStatusListCache'
 import { mdocRawToTrustedCertificate } from '../../modules/mdoc/mdocUtil'
 import { TokenStatusListModuleConfig } from '../../modules/token-status-list/TokenStatusListModuleConfig'
 import { X509Service } from '../../modules/x509/X509Service'
@@ -26,17 +27,27 @@ function jwaAlgorithmForHpkeSuite(suite: HpkeSuiteId) {
   return algorithm
 }
 
-export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date } = {}): MdocContext => {
+export const getMdocContext = (
+  agentContext: AgentContext,
+  { now, fetchedStatusLists }: { now?: Date; fetchedStatusLists?: FetchedMdocStatusLists } = {}
+): MdocContext => {
   const crypto = new CredoWebCrypto(agentContext)
   const kms = agentContext.resolve(KeyManagementApi)
 
   return {
     // Only used for the status and identifier lists that an mdoc references
-    fetch: (url, init) =>
-      agentContext.config.fetch(url, {
-        ...init,
-        maxResponseBytes: agentContext.resolve(TokenStatusListModuleConfig).maxStatusListBytes,
-      }),
+    fetch: (url, init, context) => {
+      const fetch = () =>
+        agentContext.config.fetch(url, {
+          ...init,
+          maxResponseBytes: agentContext.resolve(TokenStatusListModuleConfig).maxStatusListBytes,
+        })
+
+      // The library fetches lists by their uri string
+      return typeof url === 'string'
+        ? fetchMdocStatusList(agentContext, url, context, fetch, fetchedStatusLists)
+        : fetch()
+    },
     crypto: {
       digest: async (input) => {
         const { bytes, digestAlgorithm } = input

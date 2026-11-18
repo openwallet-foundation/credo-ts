@@ -17,6 +17,7 @@ import { X509Service } from '../x509'
 import { X509ModuleConfig } from '../x509/X509ModuleConfig'
 import { MdocError } from './MdocError'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
+import { cacheVerifiedMdocStatusLists, type FetchedMdocStatusLists } from './mdocStatusListCache'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
 import {
   assertMdocStatusListChainsMatchIssuanceChain,
@@ -218,14 +219,16 @@ export class Mdoc {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
     }
 
+    const fetchedStatusLists: FetchedMdocStatusLists = new Map()
     const mdocContext = getMdocContext(agentContext, {
       now: options?.now,
+      fetchedStatusLists,
     })
 
     try {
       const convertedTrustedCertificates = convertMdocTrustedCertificates(agentContext, trustedCertificates)
 
-      const { trustedIssuanceChain, trustedStatusListChain, trustedIdentifierListChain } =
+      const { trustedIssuanceChain, trustedStatusListChain, trustedIdentifierListChain, statusList, identifierList } =
         await Holder.verifyIssuerSigned(
           {
             trustedCertificates: mdocTrustedCertificatesToRaw(convertedTrustedCertificates),
@@ -264,6 +267,12 @@ export class Mdoc {
         trustedIssuanceChain,
         trustedStatusListChain,
         trustedIdentifierListChain,
+      })
+
+      await cacheVerifiedMdocStatusLists(agentContext, fetchedStatusLists, this.issuerSigned.issuerAuth, {
+        statusList,
+        trustedStatusListChain,
+        identifierList,
       })
 
       return { isValid: true }

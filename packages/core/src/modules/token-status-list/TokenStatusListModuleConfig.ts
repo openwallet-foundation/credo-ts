@@ -15,6 +15,15 @@ export interface TokenStatusListModuleConfigOptions {
    * @default false, as the extended key usage is only recommended by the Token Status List draft and optional in ISO/IEC 18013-5
    */
   requireStatusSigningKeyPurpose?: boolean
+
+  /**
+   * Maximum seconds to cache a fetched status list of an SD-JWT VC, or status or identifier list of an mdoc.
+   * It is cached for its `ttl` and `exp` claims, up to this value, and not at all without either. Set to 0 to
+   * disable the cache.
+   *
+   * @default 300 (5 minutes)
+   */
+  statusListCacheExpirySeconds?: number
 }
 
 /**
@@ -33,5 +42,10 @@ export class TokenStatusListModuleConfig {
 
   public get requireStatusSigningKeyPurpose() {
     return this.options.requireStatusSigningKeyPurpose ?? false
+  }
+
+  /** See {@link TokenStatusListModuleConfigOptions.statusListCacheExpirySeconds} */
+  public get statusListCacheExpirySeconds() {
+    return this.options.statusListCacheExpirySeconds ?? 300
   }
 }

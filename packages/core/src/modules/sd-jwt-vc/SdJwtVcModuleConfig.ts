@@ -104,6 +104,14 @@ export interface SdJwtVcModuleConfigOptions {
    * @default the `maxResponseBytes` of the agent's `fetchLimits`
    */
   maxTypeMetadataBytes?: number
+
+  /**
+   * Maximum seconds to cache a fetched type metadata document. It is cached for its `Cache-Control`
+   * `max-age`, up to this value, or 24 hours with `vct#integrity`. Set to 0 to disable the cache.
+   *
+   * @default 3600 (1 hour)
+   */
+  typeMetadataCacheExpirySeconds?: number
 }
 
 /**
@@ -126,5 +134,10 @@ export class SdJwtVcModuleConfig {
 
   public get maxTypeMetadataBytes() {
     return this.options.maxTypeMetadataBytes
+  }
+
+  /** See {@link SdJwtVcModuleConfigOptions.typeMetadataCacheExpirySeconds} */
+  public get typeMetadataCacheExpirySeconds() {
+    return this.options.typeMetadataCacheExpirySeconds ?? 3600
   }
 }

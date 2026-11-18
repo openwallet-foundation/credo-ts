@@ -2,6 +2,7 @@ import { Buffer } from 'node:buffer'
 import { MediaTypes, StatusType } from '@owf/token-status-list'
 import nock from 'nock'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
+import { CacheModuleConfig, InMemoryLruCache } from '../../cache'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, P256PublicJwk, PublicJwk } from '../../kms'
 import { TokenStatusListApi, TokenStatusListModuleConfig } from '../../token-status-list'
 import { X509ExtendedKeyUsage, X509KeyUsage } from '../../x509/X509Certificate'
@@ -19,6 +20,7 @@ const agentContext = getAgentContext({
   registerInstances: [
     [X509ModuleConfig, new X509ModuleConfig()],
     [TokenStatusListModuleConfig, new TokenStatusListModuleConfig()],
+    [CacheModuleConfig, new CacheModuleConfig({ cache: new InMemoryLruCache({ limit: 50 }) })],
   ],
   agentConfig,
 })
