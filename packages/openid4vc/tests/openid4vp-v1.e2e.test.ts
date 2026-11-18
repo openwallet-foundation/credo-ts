@@ -732,7 +732,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         transactionData: [
           {
             type: 'OpenBadgeTx',
-            credential_ids: ['OpenBadgeCredentialDescriptor'],
+            credential_ids: ['SomeDifferentId'],
             transaction_data_hasheks_alg: ['sha-256'],
             some_extra_prop: 'is_allowed',
           },
