@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.5
+
+### Patch Changes
+
+- 493480f: Fix DCQL LDP credential retrieval to filter expanded types using `ldp_vc` queries instead of `jwt_vc_json` queries.
+- 3bdb088: `extractPresentationsWithDescriptorsFromSubmission` now only accepts a submission descriptor whose `path` resolves to one of the presentations. For JWT and JSON-LD presentations, `path_nested.path` must be `$.verifiableCredential[n]` (JSON-LD) or `$.vp.verifiableCredential[n]` (JWT), and the credential is taken from the credentials of the presentation. Other paths now throw an error. `DifPresentationExchangeService.validatePresentation` evaluates a presentation submission that is passed separately as external, so it checks the credential that `path_nested` points at.
+- 64dd1db: Pin `@owf/mdoc` to `<0.8.3`. `@owf/mdoc@0.8.3` depends on `@owf/cose@0.5.0` while core uses `@owf/cose@0.4.x`; the two copies register different COSE tag decoders on the shared `cbor-x`, which made `updateTokenStatusList({ format: 'cwt' })` fail to decode its own token.
+
 ## 0.7.4
 
 ### Patch Changes
