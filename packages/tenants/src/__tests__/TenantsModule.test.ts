@@ -47,7 +47,7 @@ describe('TenantsModule', () => {
 
     await expect(
       tenantsModule.initialize(agentContextWithCache(new SingleContextStorageLruCache({ limit: 10 })))
-    ).rejects.toThrow("The 'SingleContextStorageLruCache' can't be used with the 'TenantsModule'")
+    ).rejects.toThrow("can't be used with the 'TenantsModule'")
     await expect(
       tenantsModule.initialize(agentContextWithCache(new InMemoryLruCache({ limit: 10 })))
     ).resolves.toBeUndefined()

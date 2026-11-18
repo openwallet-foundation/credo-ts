@@ -52,7 +52,7 @@ export class TenantsModule<AgentModules extends AgentModulesInput = EmptyModuleM
     // This cache only supports one agent context, and throws once a tenant uses it
     if (agentContext.resolve(CacheModuleConfig).cache instanceof SingleContextStorageLruCache) {
       throw new CredoError(
-        "The 'SingleContextStorageLruCache' can't be used with the 'TenantsModule'. Register the 'CacheModule' with another cache, such as the 'InMemoryLruCache' or the 'RedisCache' from '@credo-ts/redis-cache'."
+        "The 'SingleContextStorageLruCache' (the default when no 'CacheModule' is registered) can't be used with the 'TenantsModule'. Register the 'CacheModule' with another cache, such as the 'InMemoryLruCache' or the 'RedisCache' from '@credo-ts/redis-cache'."
       )
     }
   }
