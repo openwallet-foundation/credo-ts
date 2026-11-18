@@ -75,6 +75,49 @@ describe('DidKey', () => {
     expect(() => DidKey.fromDid(`did:key:${fingerprint}`)).toThrow("No decoder found for multibase prefix 'u'")
   })
 
+  it.each([
+    ['ML-DSA-44', 1312],
+    ['ML-DSA-65', 1952],
+    ['ML-DSA-87', 2592],
+  ] as const)('creates and resolves a did:key for %s', (alg, publicKeyLength) => {
+    const publicJwk = PublicJwk.fromUnknown({
+      kty: 'AKP',
+      alg,
+      pub: TypedArrayEncoder.toBase64Url(new Uint8Array(publicKeyLength).fill(0x42)),
+    })
+    const didKey = new DidKey(publicJwk)
+    const resolvedDidKey = DidKey.fromDid(didKey.did)
+    const didDocument = resolvedDidKey.didDocument.toJSON()
+    const verificationMethod = didDocument.verificationMethod?.[0]
+
+    expect(resolvedDidKey.publicJwk.toJson()).toEqual(publicJwk.toJson())
+    expect(verificationMethod).toMatchObject({
+      id: `${didKey.did}#${publicJwk.fingerprint}`,
+      type: 'Multikey',
+      controller: didKey.did,
+      publicKeyMultibase: publicJwk.fingerprint,
+    })
+    expect(didDocument['@context']).toContain('https://w3id.org/security/multikey/v1')
+    expect(didDocument.authentication).toContain(verificationMethod?.id)
+    expect(didDocument.assertionMethod).toContain(verificationMethod?.id)
+  })
+
+  it.each([
+    ['ML-DSA-44', 1312],
+    ['ML-DSA-65', 1952],
+    ['ML-DSA-87', 2592],
+  ] as const)('rejects malformed %s did:key public key lengths', (alg, publicKeyLength) => {
+    const publicJwk = PublicJwk.fromUnknown({
+      kty: 'AKP',
+      alg,
+      pub: TypedArrayEncoder.toBase64Url(new Uint8Array(publicKeyLength).fill(0x42)),
+    })
+    const { data } = MultiBaseEncoder.decode(new DidKey(publicJwk).did.slice('did:key:'.length))
+    const malformedFingerprint = MultiBaseEncoder.encode(data.slice(0, -1), 'base58btc')
+
+    expect(() => DidKey.fromDid(`did:key:${malformedFingerprint}`)).toThrow('Invalid public key length')
+  })
+
   it('creates a DidKey instance from a key instance', async () => {
     const key = PublicJwk.fromPublicKey({
       kty: 'OKP',
