@@ -91,8 +91,7 @@ export class OpenId4VcIssuerModule implements Module {
       try {
         // FIXME: should we create combined openId actor record?
         agentContext = await getAgentContextForActorId(rootAgentContext, issuerId)
-        const issuerApi = agentContext.dependencyManager.resolve(OpenId4VcIssuerApi)
-        const issuer = await issuerApi.getIssuerByIssuerId(issuerId)
+        const issuer = await agentContext.resolve(OpenId4VcIssuerRepository).getCachedByIssuerId(agentContext, issuerId)
 
         req.requestContext = {
           agentContext,

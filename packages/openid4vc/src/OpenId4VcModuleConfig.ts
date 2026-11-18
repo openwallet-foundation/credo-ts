@@ -12,7 +12,19 @@ import {
   type InternalOpenId4VcVerifierModuleConfigOptions,
   OpenId4VcVerifierModuleConfig,
 } from './openid4vc-verifier/OpenId4VcVerifierModuleConfig'
-import { importExpress } from './shared/router'
+import { importExpress } from './shared/router/express'
+
+export interface OpenId4VcRequestContextCacheOptions {
+  /**
+   * How long an entry is served from the cache. A record updated by another process, or a tenant
+   * deleted by it, is only noticed after this time when the cache is not shared between processes.
+   */
+  expiryInSeconds: number
+}
+
+export const defaultOpenId4VcRequestContextCacheOptions = {
+  expiryInSeconds: 30,
+} satisfies OpenId4VcRequestContextCacheOptions
 
 export type OpenId4VcIssuerModuleConfigOptions = Omit<InternalOpenId4VcIssuerModuleConfigOptions, 'app'>
 export type OpenId4VcVerifierModuleConfigOptions = Omit<InternalOpenId4VcVerifierModuleConfigOptions, 'app'>
@@ -34,6 +46,15 @@ export type OpenId4VcModuleConfigOptions<
    * module ensures only the routes are listened to that are needed.
    */
   app?: Express
+
+  /**
+   * Caches the issuer and verifier records and the tenant of an issuer or verifier id in the agent
+   * cache, so the endpoints don't read them from storage on every request. With multiple instances,
+   * use a shared cache such as `RedisCache`. Set to `false` to disable.
+   *
+   * @default { expiryInSeconds: 30 }
+   */
+  requestContextCache?: OpenId4VcRequestContextCacheOptions | false
 
   holder?: OpenId4VcHolderModuleConfigOptions
 } & (IssuerConfig extends null
@@ -90,5 +111,10 @@ export class OpenId4VcModuleConfig<
         : undefined
     ) as this['verifier']
     this.holder = new OpenId4VcHolderModuleConfig(this.options.holder)
+  }
+  /** See {@link OpenId4VcModuleConfigOptions.requestContextCache} */
+  public get requestContextCache() {
+    if (this.options.requestContextCache === false) return false
+    return { ...defaultOpenId4VcRequestContextCacheOptions, ...this.options.requestContextCache }
   }
 }

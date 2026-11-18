@@ -32,6 +32,7 @@ import type {
 } from '../shared'
 import type {
   OpenId4VciAuthorizationServerConfig,
+  OpenId4VciAuthorizationServerConfigWithOptionalClientSecret,
   OpenId4VciChainedAuthorizationServerConfig,
 } from '../shared/models/OpenId4VciAuthorizationServerConfig'
 import type {
@@ -41,8 +42,8 @@ import type {
 import {
   OpenId4VcIssuanceSessionRecord,
   type OpenId4VcIssuanceSessionRecordTransaction,
-  type OpenId4VcIssuerRecord,
   type OpenId4VcIssuerRecordProps,
+  type OpenId4VcIssuerRecordWithOptionalClientSecrets,
 } from './repository'
 
 export interface OpenId4VciCredentialRequestAuthorization {
@@ -438,7 +439,7 @@ interface OpenId4VciGetDynamicIssuanceSessionOptionsBase {
   /**
    * The issuer record for which the dynamic issuance is requested.
    */
-  issuer: OpenId4VcIssuerRecord
+  issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets
 
   /**
    * The client id of the wallet making the request, if available.
@@ -572,7 +573,7 @@ export type OpenId4VciGetChainedAuthorizationRequestParameters = (options: {
   /**
    * The configuration of the chained authorization server that is being used with this request.
    */
-  chainedAuthorizationServerConfig: OpenId4VciChainedAuthorizationServerConfig
+  chainedAuthorizationServerConfig: OpenId4VciAuthorizationServerConfigWithOptionalClientSecret<OpenId4VciChainedAuthorizationServerConfig>
 }) => Promise<{
   /**
    * The scopes to request to the chained authorization server. If no scopes are required,

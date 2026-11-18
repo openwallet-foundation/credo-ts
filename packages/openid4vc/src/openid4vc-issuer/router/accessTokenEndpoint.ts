@@ -35,10 +35,11 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
     response.set({ 'Cache-Control': 'no-store', Pragma: 'no-cache' })
     const requestContext = getRequestContext(request)
     const { agentContext, issuer } = requestContext
+    const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    let unsavedIssuanceSession: OpenId4VcIssuanceSessionRecord | undefined
 
     try {
       const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
-      const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
       const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
       // The first authorization server in the issuer metadata is the internal (Credo) authorization server
       const internalAuthorizationServerMetadata = issuerMetadata.authorizationServers[0]
@@ -328,11 +329,11 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       // Do not update the session state if the grant type is refresh token. This
       // avoids the session state going "backwards".
       if (grant.grantType !== refreshTokenGrantIdentifier) {
-        await openId4VcIssuerService.updateState(
-          agentContext,
-          issuanceSession,
-          OpenId4VcIssuanceSessionState.AccessTokenRequested
-        )
+        // Not saved here: nothing is stored until the access token is created, which saves the session once
+        const previousState = issuanceSession.state
+        issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenRequested
+        openId4VcIssuerService.emitStateChangedEvent(agentContext, issuanceSession, previousState)
+        unsavedIssuanceSession = issuanceSession
       }
 
       const { cNonce, cNonceExpiresInSeconds } = await openId4VcIssuerService.createNonce(agentContext, issuer)
@@ -408,8 +409,17 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         )
       }
 
+      unsavedIssuanceSession = undefined
+
       return sendJsonResponse(response, next, accessTokenResponse)
     } catch (error) {
+      // The state changed event was emitted, so the session is stored in that state
+      if (unsavedIssuanceSession) {
+        await issuanceSessionRepository
+          .update(agentContext, unsavedIssuanceSession)
+          .catch((error) => agentContext.config.logger.error('Failed to store issuance session', { error }))
+      }
+
       if (error instanceof Oauth2ServerErrorResponseError) {
         return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
       }

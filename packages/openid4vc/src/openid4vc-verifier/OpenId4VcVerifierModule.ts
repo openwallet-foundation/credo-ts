@@ -132,8 +132,9 @@ export class OpenId4VcVerifierModule implements Module {
 
       try {
         agentContext = await getAgentContextForActorId(rootAgentContext, verifierId)
-        const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
-        const verifier = await verifierApi.getVerifierByVerifierId(verifierId)
+        const verifier = await agentContext
+          .resolve(OpenId4VcVerifierRepository)
+          .getCachedByVerifierId(agentContext, verifierId)
 
         req.requestContext = {
           agentContext,

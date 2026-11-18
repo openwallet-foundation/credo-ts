@@ -14,8 +14,11 @@ import { credentialsSupportedToCredentialConfigurationsSupported } from '@openid
 import { z } from 'zod'
 import type {
   OpenId4VciAuthorizationServerConfig,
+  OpenId4VciAuthorizationServerConfigWithOptionalClientSecret,
+  OpenId4VciChainedAuthorizationServerConfig,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
+  OpenId4VciDirectAuthorizationServerConfig,
   OpenId4VciIssuerInfo,
   OpenId4VcJwtIssuerEncoded,
 } from '../../shared'
@@ -263,4 +266,17 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       issuerId: this.issuerId,
     }
   }
+}
+
+/**
+ * An issuer record that can come from the request context cache. It then has no client secrets and can be
+ * older than the stored record, so it can't be written back to storage.
+ */
+export type OpenId4VcIssuerRecordWithOptionalClientSecrets = Omit<
+  OpenId4VcIssuerRecord,
+  'authorizationServerConfigs' | 'directAuthorizationServerConfigs' | 'chainedAuthorizationServerConfigs'
+> & {
+  authorizationServerConfigs?: OpenId4VciAuthorizationServerConfigWithOptionalClientSecret[]
+  directAuthorizationServerConfigs?: OpenId4VciAuthorizationServerConfigWithOptionalClientSecret<OpenId4VciDirectAuthorizationServerConfig>[]
+  chainedAuthorizationServerConfigs?: OpenId4VciAuthorizationServerConfigWithOptionalClientSecret<OpenId4VciChainedAuthorizationServerConfig>[]
 }

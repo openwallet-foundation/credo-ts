@@ -10,6 +10,7 @@ import type {
   OpenId4VpVerifyAuthorizationResponseOptions,
 } from './OpenId4VpVerifierServiceOptions'
 import type { OpenId4VcVerificationSessionRecord } from './repository'
+import { OpenId4VcVerifierRepository } from './repository'
 
 /**
  * @public
@@ -82,7 +83,10 @@ export class OpenId4VcVerifierApi {
   }: OpenId4VpCreateAuthorizationRequestOptions & {
     verifierId: string
   }): Promise<OpenId4VpCreateAuthorizationRequestReturn> {
-    const verifier = await this.getVerifierByVerifierId(verifierId)
+    // Only read, so it can come from the request context cache
+    const verifier = await this.agentContext
+      .resolve(OpenId4VcVerifierRepository)
+      .getCachedByVerifierId(this.agentContext, verifierId)
     return await this.openId4VpVerifierService.createAuthorizationRequest(this.agentContext, {
       ...otherOptions,
       verifier,

@@ -30,6 +30,14 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   app: Express
 
   /**
+   * How long the metadata and JWK Set of an external authorization server are cached, in seconds.
+   * A key the authorization server removed stays accepted until the entry expires. Set to 0 to disable.
+   *
+   * @default 300 (5 minutes)
+   */
+  externalAuthorizationServerCacheExpiryInSeconds?: number
+
+  /**
    * The time after which a cNonce will expire.
    *
    * @default 60 (1 minute)
@@ -344,6 +352,11 @@ export class OpenId4VcIssuerModuleConfig {
 
   public get app() {
     return this.options.app
+  }
+
+  /** See {@link InternalOpenId4VcIssuerModuleConfigOptions.externalAuthorizationServerCacheExpiryInSeconds} */
+  public get externalAuthorizationServerCacheExpiryInSeconds() {
+    return this.options.externalAuthorizationServerCacheExpiryInSeconds ?? 300
   }
 
   public get baseUrl() {

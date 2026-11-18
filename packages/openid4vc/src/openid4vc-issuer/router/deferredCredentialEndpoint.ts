@@ -10,6 +10,7 @@ import {
   sendUnauthorizedError,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
+import { decodeUnverifiedAccessToken } from '../externalAuthorizationServerCache'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { getCredentialRequestDecryptionMetadata, OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
@@ -22,9 +23,18 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
     async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
       const { agentContext, issuer } = getRequestContext(request)
       const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
-      const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer, true)
+      // Read before verification, to only fetch the authorization server and key the token needs. An opaque
+      // token has no issuer, so every authorization server is fetched to introspect it
+      const unverifiedAccessToken = decodeUnverifiedAccessToken(request.headers.authorization)
+      const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(
+        agentContext,
+        issuer,
+        unverifiedAccessToken.issuer ? [unverifiedAccessToken.issuer] : true
+      )
       const vcIssuer = openId4VcIssuerService.getIssuer(agentContext)
-      const resourceServer = openId4VcIssuerService.getResourceServer(agentContext, issuer, issuerMetadata)
+      const resourceServer = openId4VcIssuerService.getResourceServer(agentContext, issuer, issuerMetadata, {
+        jwksKid: unverifiedAccessToken.kid,
+      })
 
       const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [
         config.deferredCredentialEndpointPath,
@@ -182,6 +192,23 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
             error: Oauth2ErrorCodes.CredentialRequestDenied,
             error_description: 'Session expired',
           })
+        )
+      }
+
+      // A request for a finished session is denied without changing the session
+      if (issuanceSession.isFinishedState) {
+        return sendOauth2ErrorResponse(
+          response,
+          next,
+          agentContext.config.logger,
+          new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.CredentialRequestDenied,
+            },
+            {
+              internalMessage: `Received deferred credential request for issuance session '${issuanceSession.id}' in state '${issuanceSession.state}'. Returning error response`,
+            }
+          )
         )
       }
 

@@ -28,8 +28,10 @@ import { TenantsModule } from '../../tenants/src'
 import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessionCoordinator'
 import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciIssuerInfo, OpenId4VciSignMdocCredentials } from '../src'
 import {
+  OpenId4VcIssuanceSessionRepository,
   OpenId4VcIssuanceSessionState,
   OpenId4VcIssuerModuleConfig,
+  OpenId4VcIssuerService,
   OpenId4VciCredentialFormatProfile,
   OpenId4VcModule,
 } from '../src'
@@ -479,6 +481,14 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 
+    // The subject of the external access token is stored with the credential response
+    const issuerTenantAfterIssuance = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const issuanceSessionAfterIssuance = await issuerTenantAfterIssuance.openid4vc.issuer.getIssuanceSessionById(
+      issuanceSession.id
+    )
+    expect(issuanceSessionAfterIssuance.authorization?.subject).toEqual('something')
+    await issuerTenantAfterIssuance.endSession()
+
     await holderTenant.endSession()
     clearNock()
   })
@@ -501,6 +511,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       version: 'v1.draft15',
     })
 
+    const updateIssuanceSession = vi.spyOn(
+      issuer.agent.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository),
+      'update'
+    )
     const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
 
     // Bind to JWK
@@ -518,6 +532,9 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       issuanceSessionId: issuanceSession.id,
       contextCorrelationId: issuerTenant.context.contextCorrelationId,
     })
+
+    // One save per request: offer retrieved, access token created and credential issued
+    expect(updateIssuanceSession).toHaveBeenCalledTimes(3)
 
     expect(credentialResponse.credentials).toHaveLength(1)
     const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
@@ -1102,6 +1119,13 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
     const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
 
+    // Without a stored subject, as with an external authorization server, the credential request binds the session
+    const issuanceSessionRepository = issuerTenant.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    const sessionWithSubject = await issuanceSessionRepository.getById(issuerTenant.context, issuanceSession.id)
+    const subject = sessionWithSubject.authorization?.subject
+    sessionWithSubject.authorization = { ...sessionWithSubject.authorization, subject: undefined }
+    await issuanceSessionRepository.update(issuerTenant.context, sessionWithSubject)
+
     const credentialEndpoint = `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/credential`
     const missingProofResponse = await fetch(credentialEndpoint, {
       method: 'POST',
@@ -1113,6 +1137,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
     expect(missingProofResponse.status).toBe(400)
     expect(await missingProofResponse.json()).toMatchObject({ error: 'invalid_proof' })
+    const issuanceSessionAfterMissingProof = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
+      issuanceSession.id
+    )
+    expect(subject).toEqual(expect.any(String))
+    expect(issuanceSessionAfterMissingProof.authorization?.subject).toBe(subject)
 
     await expect(
       holderTenant.modules.openid4vc.holder.requestCredentials({
@@ -1126,7 +1155,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const issuanceSessionAfterErrors = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
       issuanceSession.id
     )
-    expect(issuanceSessionAfterErrors.state).not.toBe(OpenId4VcIssuanceSessionState.Error)
+    expect(issuanceSessionAfterErrors.state).toBe(OpenId4VcIssuanceSessionState.CredentialRequestReceived)
 
     const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
@@ -1141,6 +1170,96 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       issuanceSessionId: issuanceSession.id,
       contextCorrelationId: issuerTenant.context.contextCorrelationId,
     })
+
+    // A replayed request is denied and leaves the completed session as it is
+    await expect(
+      holderTenant.modules.openid4vc.holder.requestCredentials({
+        resolvedCredentialOffer,
+        ...tokenResponse,
+        cNonce: undefined,
+        credentialBindingResolver,
+      })
+    ).rejects.toThrow('credential_request_denied')
+    const issuanceSessionAfterReplay = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
+      issuanceSession.id
+    )
+    expect(issuanceSessionAfterReplay.state).toBe(OpenId4VcIssuanceSessionState.Completed)
+
+    await holderTenant.endSession()
+  })
+
+  it('stores the issuance session as access token requested when creating the access token fails', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+    // Fails after the access token requested event is emitted, before the access token is created
+    const createNonce = vi
+      .spyOn(issuer.agent.dependencyManager.resolve(OpenId4VcIssuerService), 'createNonce')
+      .mockRejectedValueOnce(new Error('Creating the nonce failed'))
+    await expect(holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })).rejects.toThrow()
+    createNonce.mockRestore()
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.AccessTokenRequested,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
+    })
+    const issuanceSessionAfterError = await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(
+      issuanceSession.id
+    )
+    expect(issuanceSessionAfterError.state).toBe(OpenId4VcIssuanceSessionState.AccessTokenRequested)
+
+    await holderTenant.endSession()
+  })
+
+  it('denies a credential request for an issuance session in the error state without changing it', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    const issuanceSessionRepository = issuerTenant.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    const sessionRecord = await issuanceSessionRepository.getById(issuerTenant.context, issuanceSession.id)
+    sessionRecord.state = OpenId4VcIssuanceSessionState.Error
+    sessionRecord.errorMessage = 'Failed before'
+    await issuanceSessionRepository.update(issuerTenant.context, sessionRecord)
+
+    await expect(
+      holderTenant.modules.openid4vc.holder.requestCredentials({
+        resolvedCredentialOffer,
+        ...tokenResponse,
+        credentialBindingResolver,
+      })
+    ).rejects.toThrow('credential_request_denied')
+
+    const sessionAfterRequest = await issuanceSessionRepository.getById(issuerTenant.context, issuanceSession.id)
+    expect(sessionAfterRequest.state).toBe(OpenId4VcIssuanceSessionState.Error)
+    expect(sessionAfterRequest.errorMessage).toEqual('Failed before')
 
     await holderTenant.endSession()
   })

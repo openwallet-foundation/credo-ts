@@ -1,24 +1,33 @@
 import type { AgentContext, AgentContextProvider } from '@credo-ts/core'
 import { getApiForModuleByName, InjectionSymbols } from '@credo-ts/core'
 import type { TenantsModule } from '@credo-ts/tenants'
+import { getCachedValue } from './requestContextCache'
 
 const OPENID4VC_ACTOR_IDS_METADATA_KEY = '_openid4vc/openId4VcActorIds'
 
+/**
+ * The agent context of the tenant an issuer or verifier id belongs to, or the root agent context when
+ * no tenant has it. End the session of a returned tenant agent context when done.
+ */
 export async function getAgentContextForActorId(rootAgentContext: AgentContext, actorId: string) {
   // Check if multi-tenancy is enabled, and if so find the associated multi-tenant record
   // This is a bit hacky as it uses the tenants module to store the openid4vc actor id
   // but this way we don't have to expose the contextCorrelationId in the openid metadata
   const tenantsApi = getApiForModuleByName<TenantsModule>(rootAgentContext, 'TenantsModule')
   if (tenantsApi) {
-    const [tenant] = await tenantsApi.findTenantsByQuery({
-      [OPENID4VC_ACTOR_IDS_METADATA_KEY]: [actorId],
+    // An actor id is stored on one tenant and never moves, so the tenant id can be cached
+    const tenantId = await getCachedValue(rootAgentContext, `openid4vc:actor-tenant:${actorId}`, async () => {
+      const [tenant] = await tenantsApi.findTenantsByQuery({
+        [OPENID4VC_ACTOR_IDS_METADATA_KEY]: [actorId],
+      })
+      return tenant?.id ?? null
     })
 
-    if (tenant) {
+    if (tenantId) {
       const agentContextProvider = rootAgentContext.dependencyManager.resolve<AgentContextProvider>(
         InjectionSymbols.AgentContextProvider
       )
-      return agentContextProvider.getAgentContextForContextCorrelationId(`tenant-${tenant.id}`)
+      return agentContextProvider.getAgentContextForContextCorrelationId(`tenant-${tenantId}`)
     }
   }
 

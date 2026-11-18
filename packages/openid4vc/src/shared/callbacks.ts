@@ -28,7 +28,11 @@ import type {
   VerifyJwtCallback,
 } from '@openid4vc/oauth2'
 import { clientAuthenticationDynamic, decodeJwtHeader } from '@openid4vc/oauth2'
-import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
+import type {
+  OpenId4VcIssuanceSessionRecord,
+  OpenId4VcIssuerRecordWithOptionalClientSecrets,
+} from '../openid4vc-issuer/repository'
+import { OpenId4VcIssuerRepository } from '../openid4vc-issuer/repository/OpenId4VcIssuerRepository'
 import type { OpenId4VcVerificationTypes } from './OpenId4VcTrustedIssuersVerificationTypes'
 
 import {
@@ -442,7 +446,7 @@ export function getOid4vcCallbacks(
       isAuthorizationRequestJwt: options?.isVerifyOpenId4VpAuthorizationRequest,
       issuanceSession: options?.issuanceSession,
     }),
-    fetch: agentContext.config.agentDependencies.fetch,
+    fetch: (url, init) => agentContext.config.fetch(url, init),
     encryptJwe: getOid4vcEncryptJweCallback(agentContext),
     decryptJwe: getOid4vcDecryptJweCallback(agentContext),
     getX509CertificateMetadata: (certificate: string) => {
@@ -461,12 +465,12 @@ export function getOid4vcCallbacks(
  */
 export function dynamicOid4vciClientAuthentication(
   agentContext: AgentContext,
-  issuerRecord: OpenId4VcIssuerRecord
+  issuerRecord: OpenId4VcIssuerRecordWithOptionalClientSecrets
 ): ClientAuthenticationCallback {
-  return (callbackOptions) => {
-    const authorizationServer = issuerRecord.authorizationServerConfigs?.find(
-      (a) => a.issuer === callbackOptions.authorizationServerMetadata.issuer
-    )
+  return async (callbackOptions) => {
+    const isAuthorizationServer = (config: { issuer: string }) =>
+      config.issuer === callbackOptions.authorizationServerMetadata.issuer
+    const authorizationServer = issuerRecord.authorizationServerConfigs?.find(isAuthorizationServer)
 
     if (!authorizationServer) {
       // No client authentication if authorization server is not configured
@@ -482,9 +486,20 @@ export function dynamicOid4vciClientAuthentication(
       )
     }
 
-    return clientAuthenticationDynamic({
-      clientId: authorizationServer.clientAuthentication.clientId,
-      clientSecret: authorizationServer.clientAuthentication.clientSecret,
-    })(callbackOptions)
+    const { clientAuthentication } = authorizationServer
+    // An issuer record from the request context cache has no client secret, so it is read from storage
+    const clientSecret =
+      clientAuthentication.clientSecret ??
+      (
+        await agentContext.resolve(OpenId4VcIssuerRepository).getByIssuerId(agentContext, issuerRecord.issuerId)
+      ).authorizationServerConfigs?.find(isAuthorizationServer)?.clientAuthentication?.clientSecret
+
+    if (!clientSecret) {
+      throw new CredoError(
+        `Unable to authenticate to authorization server '${authorizationServer.issuer}' for issuer '${issuerRecord.issuerId}' for request to '${callbackOptions.url}'. No 'clientSecret' is stored for the authorization server on the issuer record.`
+      )
+    }
+
+    return clientAuthenticationDynamic({ clientId: clientAuthentication.clientId, clientSecret })(callbackOptions)
   }
 }

@@ -20,6 +20,20 @@ export type OpenId4VciAuthorizationServerConfig =
   | OpenId4VciChainedAuthorizationServerConfig
 
 /**
+ * An authorization server config of an issuer record that can come from the request context cache, which
+ * holds no client secrets.
+ */
+export type OpenId4VciAuthorizationServerConfigWithOptionalClientSecret<
+  Config extends OpenId4VciAuthorizationServerConfig = OpenId4VciAuthorizationServerConfig,
+> = Config extends unknown
+  ? {
+      [Key in keyof Config]: Key extends 'clientAuthentication'
+        ? (Omit<NonNullable<Config[Key]>, 'clientSecret'> & { clientSecret?: string }) | Extract<Config[Key], undefined>
+        : Config[Key]
+    }
+  : never
+
+/**
  * Perform authentication based on a client secret. It will dynamically use
  * `client_secret_post` or `client_secret_basic` based on the method supported
  * by the authorization server.

@@ -25,7 +25,7 @@ import {
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
-import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../repository'
+import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecordWithOptionalClientSecrets } from '../repository'
 import { getPkceFromAuthorizationRequest } from '../util/pkce'
 import { getClientAttestationToVerify } from '../util/walletAttestation'
 import { handlePushedAuthorizationRequest } from './pushedAuthorizationRequestEndpoint'
@@ -93,7 +93,7 @@ export function configureAuthorizationChallengeEndpoint(router: Router, config: 
  */
 async function handleAuthorizationChallengeNoAuthSession(options: {
   agentContext: AgentContext
-  issuer: OpenId4VcIssuerRecord
+  issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets
   parseResult: ParseAuthorizationChallengeRequestResult
   request: RequestLike
 }) {
@@ -376,7 +376,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
 async function handleAuthorizationChallengeWithAuthSession(options: {
   response: Response
   agentContext: AgentContext
-  issuer: OpenId4VcIssuerRecord
+  issuer: OpenId4VcIssuerRecordWithOptionalClientSecrets
   next: NextFunction
   parseResult: ParseAuthorizationChallengeRequestResult
   request: RequestLike
