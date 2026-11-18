@@ -88,6 +88,12 @@ export abstract class BaseDrizzleRecordAdapter<
    */
   public customTagColumns: string[] = []
 
+  /**
+   * Columns that are no longer a record property. They are passed to the record's `encodingSchema`
+   * when a record is loaded, so its `upgrade` can convert rows written in an older format.
+   */
+  public legacyColumns: string[] = []
+
   public constructor(
     public database: DrizzleDatabase<PostgresSchema, SQLiteSchema>,
     table: {
@@ -186,8 +192,9 @@ export abstract class BaseDrizzleRecordAdapter<
     const encodedRecord: Record<string, unknown> = {}
     const tags: Record<string, unknown> = {}
     for (const [columnName, value] of Object.entries(columnValues)) {
-      if (recordPropertyNames.includes(columnName)) encodedRecord[columnName] = value
-      else if (this.customTagColumns.includes(columnName)) tags[columnName] = value
+      if (recordPropertyNames.includes(columnName) || this.legacyColumns.includes(columnName)) {
+        encodedRecord[columnName] = value
+      } else if (this.customTagColumns.includes(columnName)) tags[columnName] = value
     }
 
     const record = JsonTransformer.fromJSON(encodedRecord, this.recordClass)

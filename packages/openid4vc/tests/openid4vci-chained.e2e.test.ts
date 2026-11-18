@@ -176,7 +176,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     const idpSignJwt: SignJwtCallback = async (_signer, { header, payload }) => {
       const jwsService = issuer.agent.dependencyManager.resolve(JwsService)
       const compact = await jwsService.createJwsCompact(issuer.agent.context, {
-        keyId: idpServerKey.keyId,
+        key: { keyId: idpServerKey.keyId },
         payload: JwtPayload.fromJson(payload),
         protectedHeaderOptions: {
           ...header,
@@ -317,7 +317,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       const accessToken = await issuer.agent.dependencyManager
         .resolve(JwsService)
         .createJwsCompact(issuer.agent.context, {
-          keyId: idpServerKey.keyId,
+          key: { keyId: idpServerKey.keyId },
           payload: JwtPayload.fromJson({
             iss: 'http://localhost:4747',
             aud: idpClientId,
@@ -517,7 +517,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     const idpSignJwt: SignJwtCallback = async (_signer, { header, payload }) => {
       const jwsService = issuer.agent.dependencyManager.resolve(JwsService)
       const compact = await jwsService.createJwsCompact(issuer.agent.context, {
-        keyId: idpServerKey.keyId,
+        key: { keyId: idpServerKey.keyId },
         payload: JwtPayload.fromJson(payload),
         protectedHeaderOptions: {
           ...header,
@@ -1808,6 +1808,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         expect(persistedDpop).toMatchObject({
           keyId: expect.any(String),
           publicJwk: expect.objectContaining({ kty: 'EC' }),
+          kmsBackend: expect.any(String),
           keyGeneratedForSession: true,
         })
         const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
@@ -1910,7 +1911,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         expect(persisted.chainedIdentity?.externalDpop).toBeUndefined()
         expect(createKey).toHaveBeenCalledTimes(1)
         const key = await createKey.mock.results[0].value
-        expect(deleteKey).toHaveBeenCalledExactlyOnceWith({ keyId: key.keyId })
+        expect(deleteKey).toHaveBeenCalledExactlyOnceWith({ keyId: key.keyId, backend: key.backend })
         await expect(dpopAgent.agent.kms.getPublicKey({ keyId: key.keyId })).rejects.toThrow()
       })
 

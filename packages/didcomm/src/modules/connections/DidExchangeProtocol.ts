@@ -135,11 +135,12 @@ export class DidExchangeProtocol {
       .filter(({ publicJwk }) => publicJwk.is(Kms.Ed25519PublicJwk))
       .map(({ publicJwk, verificationMethod }) => {
         // Bind the kmsKeyIds
-        const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
+        const key = keys?.find(({ didDocumentRelativeKeyId }) =>
           verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-        )?.kmsKeyId
+        )
 
-        publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
+        publicJwk.keyId = key?.kmsKeyId ?? publicJwk.legacyKeyId
+        publicJwk.kmsBackend = key?.kmsBackend
 
         return publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>
       })
@@ -332,11 +333,12 @@ export class DidExchangeProtocol {
           if (!signingKey?.publicJwk.is(Kms.Ed25519PublicJwk)) continue
           if (invitationRecipientKeys.some((key) => key.fingerprint === signingKey.publicJwk.fingerprint)) continue
 
-          const kmsKeyId = resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
+          const key = resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
             signingKey.verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-          )?.kmsKeyId
+          )
 
-          signingKey.publicJwk.keyId = kmsKeyId ?? signingKey.publicJwk.legacyKeyId
+          signingKey.publicJwk.keyId = key?.kmsKeyId ?? signingKey.publicJwk.legacyKeyId
+          signingKey.publicJwk.kmsBackend = key?.kmsBackend
           invitationRecipientKeys.push(signingKey.publicJwk)
         }
       }
@@ -529,7 +531,7 @@ export class DidExchangeProtocol {
 
         const jws = await this.jwsService.createJws(agentContext, {
           payload,
-          keyId: signingKey.keyId,
+          key: signingKey,
           header: {
             kid,
           },

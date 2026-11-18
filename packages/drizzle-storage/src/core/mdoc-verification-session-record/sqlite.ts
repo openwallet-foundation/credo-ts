@@ -1,4 +1,5 @@
 import type {
+  Kms,
   MdocDeviceRequestDefinition,
   MdocVerificationSessionState,
   MdocVerificationSessionTranscript,
@@ -24,7 +25,9 @@ export const mdocVerificationSession = sqliteTable(
     sessionTranscriptType: text('session_transcript_type').$type<MdocVerificationSessionTranscript['type']>().notNull(),
     nonce: text(),
 
-    sessionKeyId: text('session_key_id').notNull(),
+    sessionKey: text('session_key', { mode: 'json' }).$type<Kms.KmsKeyReference>(),
+    // No longer written. Rows from before `session_key`, also from servers not yet upgraded, only have this.
+    sessionKeyId: text('session_key_id'),
     expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
   },
   (table) => sqliteBaseRecordIndexes(table, 'mdocVerificationSession')

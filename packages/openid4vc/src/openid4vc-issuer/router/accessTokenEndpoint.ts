@@ -1,5 +1,5 @@
 import { type AgentContext, CredoError, joinUriParts, type Query, utils } from '@credo-ts/core'
-import type { HttpMethod, Jwk, VerifyAccessTokenRequestReturn } from '@openid4vc/oauth2'
+import type { HttpMethod, VerifyAccessTokenRequestReturn } from '@openid4vc/oauth2'
 import {
   authorizationCodeGrantIdentifier,
   decodeJwt,
@@ -15,6 +15,7 @@ import {
   sendOauth2ErrorResponse,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
+import { getAccessTokenSigner } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
@@ -366,16 +367,11 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         })
       }
 
-      const signerJwk = accessTokenSigningKey
       const accessTokenResponse = await oauth2AuthorizationServer.createAccessTokenResponse({
         audience: issuerMetadata.credentialIssuer.credential_issuer,
         authorizationServer: issuerMetadata.credentialIssuer.credential_issuer,
         expiresInSeconds: config.accessTokenExpiresInSeconds,
-        signer: {
-          method: 'jwk',
-          alg: signerJwk.supportedSignatureAlgorithms[0],
-          publicJwk: signerJwk.toJson() as Jwk,
-        },
+        signer: getAccessTokenSigner(accessTokenSigningKey),
         dpop: tokenDpop,
         scope: scopes?.join(' '),
         clientId: issuanceSession.clientId,

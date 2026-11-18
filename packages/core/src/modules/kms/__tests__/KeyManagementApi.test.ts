@@ -265,6 +265,25 @@ describe('KeyManagementApi', () => {
         expect(sign).not.toHaveBeenCalled()
       })
     })
+
+    test('does not sign when the key read to find the backend does not match', async () => {
+      const backend = new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())
+      const otherBackend = Object.assign(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), {
+        backend: 'other',
+      })
+      const kms = new KeyManagementApi(
+        new KeyManagementModuleConfig({ backends: [backend, otherBackend] }),
+        agent.context
+      )
+      const { keyId } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const other = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const sign = vi.spyOn(backend, 'sign')
+
+      await expect(kms.sign({ keyId, algorithm: 'ES256', data, expectedPublicJwk: other.publicJwk })).rejects.toThrow(
+        `Key with key id '${keyId}' does not match the expected EC key with crv 'P-256'`
+      )
+      expect(sign).not.toHaveBeenCalled()
+    })
   })
 
   test('throws error on invalid input to sign', async () => {

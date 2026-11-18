@@ -287,6 +287,8 @@ describe.each(['postgres', 'sqlite'] as const)('DrizzleStorageService with %s', 
       const originalRecord = new GenericRecord({
         content: { data: 'test' },
         id: 'update-with-lock-5',
+        // In the past, so the update always gets a later updatedAt
+        createdAt: new Date('2020-01-01T00:00:00Z'),
       })
       await genericRecordsRepository.save(agent.context, originalRecord)
 
@@ -296,8 +298,6 @@ describe.each(['postgres', 'sqlite'] as const)('DrizzleStorageService with %s', 
         agent.context,
         'update-with-lock-5',
         async (record) => {
-          // timeout to ensure time is updated
-          await new Promise((res) => setTimeout(res, 1))
           record.content = { data: 'modified' }
           return record
         }

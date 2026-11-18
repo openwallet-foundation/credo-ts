@@ -46,6 +46,8 @@ describe('SdJwtVcRecord', () => {
       credentialInstances: [
         {
           compactSdJwtVc,
+          kmsKeyId: 'key-id',
+          kmsBackend: 'other',
         },
       ],
     })
@@ -61,11 +63,14 @@ describe('SdJwtVcRecord', () => {
       credentialInstances: [
         {
           compactSdJwtVc,
+          kmsKeyId: 'key-id',
+          kmsBackend: 'other',
         },
       ],
     })
 
     const instance = JsonTransformer.deserialize(JSON.stringify(json), SdJwtVcRecord)
+    expect(instance.credentialInstances[0]).toMatchObject({ kmsKeyId: 'key-id', kmsBackend: 'other' })
 
     expect(instance.type).toBe('SdJwtVcRecord')
     expect(instance.id).toBe('sdjwt-id')

@@ -74,6 +74,17 @@ export class X509Certificate {
     return this.publicJwk.hasKeyId
   }
 
+  /**
+   * The KMS backend that holds the key of `keyId`. Parsed certificates don't have it, as the certificate doesn't contain it.
+   */
+  public set kmsBackend(kmsBackend: string | undefined) {
+    this.publicJwk.kmsBackend = kmsBackend
+  }
+
+  public get kmsBackend(): string | undefined {
+    return this.publicJwk.kmsBackend
+  }
+
   public static fromRawCertificate(
     rawCertificate: Uint8Array,
     parseOptions: X509ParseOptions = defaultX509ParseOptions
@@ -386,6 +397,7 @@ export class X509Certificate {
 
       const certificateInstance = X509Certificate.parseCertificate(certificate)
       if (subjectPublicKey.hasKeyId) certificateInstance.publicJwk.keyId = subjectPublicKey.keyId
+      certificateInstance.kmsBackend = subjectPublicKey.kmsBackend
       return certificateInstance
     }
 
@@ -411,6 +423,7 @@ export class X509Certificate {
 
     const certificateInstance = X509Certificate.parseCertificate(certificate)
     if (subjectPublicKey.hasKeyId) certificateInstance.publicJwk.keyId = subjectPublicKey.keyId
+    certificateInstance.kmsBackend = subjectPublicKey.kmsBackend
     return certificateInstance
   }
 

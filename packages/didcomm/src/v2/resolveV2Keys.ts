@@ -26,9 +26,14 @@ type ResolvedRecipientKey = {
   matchedKid: string
 }
 
-function toKeyAgreementWithKeyId(jwk: Kms.PublicJwk, keyId: string): DidCommV2KeyAgreementJwk & { keyId: string } {
+function toKeyAgreementWithKeyId(
+  jwk: Kms.PublicJwk,
+  keyId: string,
+  kmsBackend?: string
+): DidCommV2KeyAgreementJwk & { keyId: string } {
   const ka = toKeyAgreement(jwk)
   ka.keyId = keyId
+  ka.kmsBackend = kmsBackend
   return ka as DidCommV2KeyAgreementJwk & { keyId: string }
 }
 
@@ -120,12 +125,10 @@ export class DidCommV2KeyResolver {
       const verificationMethod = didDocument.dereferenceKey(keyRef, ['keyAgreement'])
       const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
 
-      const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
-        verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-      )?.kmsKeyId
+      const key = keys?.find(({ didDocumentRelativeKeyId }) => verificationMethod.id.endsWith(didDocumentRelativeKeyId))
 
-      const keyId = kmsKeyId ?? (publicJwk.hasKeyId ? publicJwk.keyId : publicJwk.legacyKeyId)
-      return { recipientKey: toKeyAgreementWithKeyId(publicJwk, keyId), matchedKid: kid }
+      const keyId = key?.kmsKeyId ?? publicJwk.legacyKeyId
+      return { recipientKey: toKeyAgreementWithKeyId(publicJwk, keyId, key?.kmsBackend), matchedKid: kid }
     } catch {
       return null
     }
@@ -156,7 +159,10 @@ export class DidCommV2KeyResolver {
       const routingKey = record?.routingKeysWithKeyId.find((rk) => kidPublicJwk.equals(rk))
       // The KMS agrees on keys with an ECDH curve only, so the Ed25519 routing key of DIDComm v1 cannot open a v2 forward
       if (routingKey?.keyId && routingKey.is(Kms.X25519PublicJwk)) {
-        return { recipientKey: toKeyAgreementWithKeyId(routingKey, routingKey.keyId), matchedKid: kid }
+        return {
+          recipientKey: toKeyAgreementWithKeyId(routingKey, routingKey.keyId, routingKey.kmsBackend),
+          matchedKid: kid,
+        }
       }
     } catch {}
 
@@ -196,11 +202,9 @@ export class DidCommV2KeyResolver {
 
         if (vmJwk.fingerprint !== kidPublicJwk.fingerprint) continue
 
-        const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
-          vm.id.endsWith(didDocumentRelativeKeyId)
-        )?.kmsKeyId
-        const keyId = kmsKeyId ?? (vmJwk.hasKeyId ? vmJwk.keyId : vmJwk.legacyKeyId)
-        return { recipientKey: toKeyAgreementWithKeyId(vmJwk, keyId), matchedKid: kid }
+        const key = keys?.find(({ didDocumentRelativeKeyId }) => vm.id.endsWith(didDocumentRelativeKeyId))
+        const keyId = key?.kmsKeyId ?? vmJwk.legacyKeyId
+        return { recipientKey: toKeyAgreementWithKeyId(vmJwk, keyId, key?.kmsBackend), matchedKid: kid }
       }
     } catch (error) {
       if (!(error instanceof RecordNotFoundError)) throw error
@@ -235,7 +239,7 @@ export class DidCommV2KeyResolver {
         const recipientKey = resolvedService.recipientKeys.find((rk) => rk.fingerprint === fingerprint)
         if (!recipientKey) continue
         const keyId = recipientKey.hasKeyId ? recipientKey.keyId : recipientKey.legacyKeyId
-        return { recipientKey: toKeyAgreementWithKeyId(recipientKey, keyId), matchedKid: kid }
+        return { recipientKey: toKeyAgreementWithKeyId(recipientKey, keyId, recipientKey.kmsBackend), matchedKid: kid }
       }
     }
 
@@ -245,7 +249,10 @@ export class DidCommV2KeyResolver {
 
       if (recipientRouting.keyAgreementKeyFingerprint === fingerprint) {
         const keyId = recipientRouting.keyAgreementKeyId ?? kidPublicJwk.legacyKeyId
-        return { recipientKey: toKeyAgreementWithKeyId(kidPublicJwk, keyId), matchedKid: kid }
+        return {
+          recipientKey: toKeyAgreementWithKeyId(kidPublicJwk, keyId, recipientRouting.keyAgreementKmsBackend),
+          matchedKid: kid,
+        }
       }
     }
 

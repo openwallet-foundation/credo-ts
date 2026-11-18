@@ -64,7 +64,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
   describe('signPlaintext', () => {
     it('produces a single-signer JWS with kid in the unprotected header (SICPA interop)', async () => {
       const signed = await envelopeService.signPlaintext(agentContext, plaintext, {
-        keyId: signerJwk.keyId,
+        key: { keyId: signerJwk.keyId },
         kid: signerKid,
         alg: 'EdDSA',
       })
@@ -81,7 +81,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
     it('rejects an algorithm outside the DIDComm v2.1 set', async () => {
       await expect(
         envelopeService.signPlaintext(agentContext, plaintext, {
-          keyId: signerJwk.keyId,
+          key: { keyId: signerJwk.keyId },
           kid: signerKid,
           // biome-ignore lint/suspicious/noExplicitAny: deliberately passing an out-of-set alg
           alg: 'RS256' as any,
@@ -94,7 +94,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
         envelopeService.signPlaintext(
           agentContext,
           { ...plaintext, from: undefined },
-          { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' }
+          { key: { keyId: signerJwk.keyId }, kid: signerKid, alg: 'EdDSA' }
         )
       ).rejects.toThrow(/must have a 'from' header/)
     })
@@ -104,7 +104,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
         envelopeService.signPlaintext(
           agentContext,
           { ...plaintext, from: 'did:example:eve' },
-          { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' }
+          { key: { keyId: signerJwk.keyId }, kid: signerKid, alg: 'EdDSA' }
         )
       ).rejects.toThrow(/does not match signer DID/)
     })
@@ -115,7 +115,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
 
     beforeAll(async () => {
       signedMessage = await envelopeService.signPlaintext(agentContext, plaintext, {
-        keyId: signerJwk.keyId,
+        key: { keyId: signerJwk.keyId },
         kid: signerKid,
         alg: 'EdDSA',
       })
@@ -194,7 +194,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
     ): Promise<DidCommV2SignedMessage> {
       const jws = await agentContext.dependencyManager.resolve(JwsService).createJws(agentContext, {
         payload: JsonEncoder.toUint8Array(payload),
-        keyId: signerJwk.keyId,
+        key: { keyId: signerJwk.keyId },
         header: { kid: signerKid },
         protectedHeaderOptions: { alg: 'EdDSA', ...(typ ? { typ } : {}) },
       })
@@ -293,7 +293,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
 
     it('unpacks an authcrypted JWS back to the JWS which verifies to the original plaintext', async () => {
       const signed = await envelopeService.signPlaintext(agentContext, plaintext, {
-        keyId: signerJwk.keyId,
+        key: { keyId: signerJwk.keyId },
         kid: signerKid,
         alg: 'EdDSA',
       })
@@ -325,7 +325,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
       { label: 'missing', to: undefined },
       { label: 'empty', to: [] },
     ])('refuses to sign and encrypt a message whose to is $label', async ({ to }) => {
-      const signer = { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' as const }
+      const signer = { key: { keyId: signerJwk.keyId }, kid: signerKid, alg: 'EdDSA' as const }
       const unaddressed = { ...plaintext, to }
 
       await expect(
@@ -339,7 +339,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
       const envelope = await envelopeService.packSignedAndAnoncrypted(
         agentContext,
         plaintext,
-        { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' },
+        { key: { keyId: signerJwk.keyId }, kid: signerKid, alg: 'EdDSA' },
         { recipients: [{ key: recipientKey, kid: 'did:example:bob#key-x25519-1' }] }
       )
 
@@ -380,7 +380,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
       }
 
       const signed = await envelopeService.signPlaintext(agentContext, localPlaintext, {
-        keyId: jwk.keyId,
+        key: { keyId: jwk.keyId },
         kid,
         alg,
       })

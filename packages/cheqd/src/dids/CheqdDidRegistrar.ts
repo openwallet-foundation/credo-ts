@@ -23,7 +23,7 @@ import {
   DidRepository,
   type DidUpdateOptions,
   type DidUpdateResult,
-  getKmsKeyIdForVerifiacationMethod,
+  getDidDocumentKeyForVerificationMethod,
   getPublicJwkFromVerificationMethod,
   JsonTransformer,
   Kms,
@@ -121,6 +121,10 @@ export class CheqdDidRegistrar implements DidRegistrar {
         for (const didDocumentKeyId of didDocumentRelativeKeyIds) {
           didDocument.dereferenceKey(didDocumentKeyId)
         }
+        Kms.checkKmsKeyReferences(
+          agentContext,
+          keys.map((key) => ({ keyId: key.kmsKeyId, backend: key.kmsBackend }))
+        )
 
         if (!authenticationIds.every((id) => didDocumentRelativeKeyIds.includes(id.replace(didDocument.id, '')))) {
           return {
@@ -155,14 +159,16 @@ export class CheqdDidRegistrar implements DidRegistrar {
           publicJwk = createKeyResult.publicJwk
           keys.push({
             kmsKeyId: createKeyResult.keyId,
+            kmsBackend: createKeyResult.backend,
             didDocumentRelativeKeyId: '#key-1',
           })
         } else {
-          const { publicKey: _publicJwk } = await kms.getPublicKey({
+          const { publicKey: _publicJwk, backend } = await kms.getPublicKey({
             keyId: options.options.keyId,
           })
           keys.push({
             kmsKeyId: options.options.keyId,
+            kmsBackend: backend,
             didDocumentRelativeKeyId: '#key-1',
           })
           if (!_publicJwk) {
@@ -325,14 +331,16 @@ export class CheqdDidRegistrar implements DidRegistrar {
             createdKey = {
               didDocumentRelativeKeyId: `#${utils.uuid()}-1`,
               kmsKeyId: createKeyResult.keyId,
+              kmsBackend: createKeyResult.backend,
             }
           } else if (options.options.keyId) {
-            const { publicKey: _publicJwk } = await kms.getPublicKey({
+            const { publicKey: _publicJwk, backend } = await kms.getPublicKey({
               keyId: options.options.keyId,
             })
             createdKey = {
               didDocumentRelativeKeyId: `#${utils.uuid()}-1`,
               kmsKeyId: options.options.keyId,
+              kmsBackend: backend,
             }
             if (!_publicJwk) {
               return {
@@ -645,12 +653,13 @@ export class CheqdDidRegistrar implements DidRegistrar {
     return await Promise.all(
       verificationMethod.map(async (method) => {
         const publicJwk = getPublicJwkFromVerificationMethod(method)
-        const kmsKeyId = getKmsKeyIdForVerifiacationMethod(method, keys) ?? publicJwk.legacyKeyId
+        const key = getDidDocumentKeyForVerificationMethod(method, keys)
 
         const { signature } = await kms.sign({
           data: payload,
           algorithm: publicJwk.signatureAlgorithm,
-          keyId: kmsKeyId,
+          keyId: key?.kmsKeyId ?? publicJwk.legacyKeyId,
+          backend: key?.kmsBackend,
           expectedPublicJwk: publicJwk.toJson(),
         })
 
@@ -672,7 +681,9 @@ export class CheqdDidRegistrar implements DidRegistrar {
   }
 }
 
-type KmsCreateKeyOptionsOkpEd25519 = Kms.KmsCreateKeyOptions<Kms.KmsCreateKeyTypeOkp & { crv: 'Ed25519' }>
+type KmsCreateKeyOptionsOkpEd25519 = Kms.WithCreateKeyBackend<
+  Kms.KmsCreateKeyOptions<Kms.KmsCreateKeyTypeOkp & { crv: 'Ed25519' }>
+>
 
 export interface CheqdDidCreateWithoutDidDocumentOptions extends DidCreateOptions {
   method: 'cheqd'

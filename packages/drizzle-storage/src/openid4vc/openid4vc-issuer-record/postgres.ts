@@ -1,11 +1,12 @@
 import type { Kms } from '@credo-ts/core'
 import type {
+  OpenId4VcIssuerRecordCredentialRequestEncryption,
+  OpenId4VcIssuerRecordKey,
   OpenId4VcIssuerRecordSignedMetadata,
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciBatchCredentialIssuanceOptions,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
-  OpenId4VciCredentialRequestEncryptionOptions,
   OpenId4VciCredentialResponseEncryptionOptions,
   OpenId4VciIssuerInfo,
 } from '@credo-ts/openid4vc'
@@ -20,7 +21,9 @@ export const openid4vcIssuer = pgTable(
     issuerId: text('issuer_id').unique().notNull(),
     accessTokenPublicKeyFingerprint: jsonb('access_token_public_key_fingerprint'),
     accessTokenPublicJwk: jsonb('access_token_public_jwk').$type<Kms.KmsJwkPublicAsymmetric>(),
+    accessTokenKey: jsonb('access_token_key').$type<OpenId4VcIssuerRecordKey>(),
     accessTokenSignerKmsBackend: text('access_token_signer_kms_backend'),
+    previousAccessTokenKeys: jsonb('previous_access_token_keys').$type<OpenId4VcIssuerRecordKey[]>(),
     signedMetadata: jsonb('signed_metadata').$type<OpenId4VcIssuerRecordSignedMetadata>(),
 
     credentialConfigurationsSupported: jsonb('credential_configurations_supported')
@@ -44,7 +47,7 @@ export const openid4vcIssuer = pgTable(
     ).$type<OpenId4VciCredentialResponseEncryptionOptions>(),
     credentialRequestEncryption: jsonb(
       'credential_request_encryption'
-    ).$type<OpenId4VciCredentialRequestEncryptionOptions>(),
+    ).$type<OpenId4VcIssuerRecordCredentialRequestEncryption>(),
   },
   (table) => postgresBaseRecordIndexes(table, 'openid4vcIssuer')
 )

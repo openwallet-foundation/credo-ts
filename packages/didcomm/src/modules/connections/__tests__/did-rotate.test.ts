@@ -1259,10 +1259,10 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
         const authRef = didDocument.authentication![0]
         const vm = typeof authRef === 'string' ? didDocument.dereferenceKey(authRef, ['authentication']) : authRef
         // biome-ignore lint/style/noNonNullAssertion: no explanation
-        const kmsKeyId = keys!.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))!.kmsKeyId
+        const { kmsKeyId, kmsBackend } = keys!.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))!
 
         return aliceAgent.dependencyManager.resolve(JwsService).createJwsCompact(aliceAgent.context, {
-          keyId: kmsKeyId,
+          key: { keyId: kmsKeyId, kmsBackend },
           payload: JwtPayload.fromJson({ iss: aliceDid, iat: Math.floor(Date.now() / 1000), ...claims }),
           protectedHeaderOptions: {
             alg: getPublicJwkFromVerificationMethod(vm).signatureAlgorithm,
