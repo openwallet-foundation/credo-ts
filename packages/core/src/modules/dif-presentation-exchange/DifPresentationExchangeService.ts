@@ -130,6 +130,10 @@ export class DifPresentationExchangeService {
       {
         limitDisclosureSignatureSuites: ['DataIntegrityProof.anoncreds-2023'],
         presentationSubmission,
+        // A separate submission is external, so pex evaluates the credential that path_nested points at
+        presentationSubmissionLocation: presentationSubmission
+          ? DifPresentationExchangeSubmissionLocation.EXTERNAL
+          : undefined,
       }
     )
 
