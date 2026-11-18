@@ -101,7 +101,6 @@ import type {
   OpenId4VciPreAuthorizedCodeFlowConfig,
   OpenId4VciSignCredentials,
   OpenId4VciSignW3cCredentials,
-  OpenId4VciVersion,
   OpenId4VcUpdateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import {
@@ -112,6 +111,7 @@ import {
   OpenId4VcIssuerRepository,
 } from './repository'
 import { offerUsesInternalAuthorizationServer } from './util/authorizationServer'
+import { getOpenId4VciVersion } from './util/openId4VciVersion'
 import { generateTxCode } from './util/txCode'
 
 /**
@@ -979,9 +979,11 @@ export class OpenId4VcIssuerService {
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
-    // Before draft 15 there is no nonce endpoint, so a wallet gets the next c_nonce from the error response
+    // Before draft 15 there is no nonce endpoint or invalid_nonce error, so a wallet gets the next c_nonce from an
+    // invalid_proof error response
+    const isLegacyVersion = getOpenId4VciVersion(issuanceSession, parsedCredentialRequest) === 'v1.draft11-14'
     const legacyErrorNonce = async () => {
-      if (getOpenId4VciVersion(issuanceSession, parsedCredentialRequest) !== 'v1.draft11-14') return {}
+      if (!isLegacyVersion) return {}
 
       const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
       return { c_nonce: cNonce, c_nonce_expires_in: cNonceExpiresInSeconds }
@@ -1100,7 +1102,7 @@ export class OpenId4VcIssuerService {
       await this.verifyNonce(agentContext, issuer, keyAttestation.payload.nonce).catch(async (error) => {
         throw new Oauth2ServerErrorResponseError(
           {
-            error: Oauth2ErrorCodes.InvalidNonce,
+            error: isLegacyVersion ? Oauth2ErrorCodes.InvalidProof : Oauth2ErrorCodes.InvalidNonce,
             error_description: 'Invalid nonce in credential request',
             ...(await legacyErrorNonce()),
           },
@@ -1242,7 +1244,7 @@ export class OpenId4VcIssuerService {
           await this.verifyNonce(agentContext, issuer, payload.nonce).catch(async (error) => {
             throw new Oauth2ServerErrorResponseError(
               {
-                error: Oauth2ErrorCodes.InvalidNonce,
+                error: isLegacyVersion ? Oauth2ErrorCodes.InvalidProof : Oauth2ErrorCodes.InvalidNonce,
                 error_description: 'Invalid nonce in credential request',
                 ...(await legacyErrorNonce()),
               },
@@ -2502,16 +2504,6 @@ function getCredentialRequestEncryptionMetadata(issuerRecord: OpenId4VcIssuerRec
     enc_values_supported: [...supportedResponseEncryptionContentAlgorithms],
     encryption_required: issuerRecord.credentialRequestEncryption.required ?? false,
   }
-}
-
-/**
- * Older sessions have no version. Requests use `credential_configuration_id` from draft 15 on.
- */
-export function getOpenId4VciVersion(
-  issuanceSession: Pick<OpenId4VcIssuanceSessionRecord, 'openId4VciVersion'>,
-  credentialRequest: { credentialConfigurationId?: string }
-): OpenId4VciVersion {
-  return issuanceSession.openId4VciVersion ?? (credentialRequest.credentialConfigurationId ? 'v1' : 'v1.draft11-14')
 }
 
 /**
