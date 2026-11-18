@@ -6,7 +6,7 @@ import { agentDependencies, getAgentContext } from '../../../../tests'
 import type { AgentContext } from '../../../agent'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
-import { JsonTransformer } from '../../../utils'
+import { JsonEncoder, JsonTransformer } from '../../../utils'
 import {
   DidDocumentBuilder,
   DidKey,
@@ -32,6 +32,7 @@ import {
   W3cIssuer,
   W3cJsonLdVerifiableCredential,
   W3cJsonLdVerifiablePresentation,
+  W3cJwtVerifiablePresentation,
   w3cDate,
 } from '../../vc'
 import { Ed25519Signature2018, Ed25519Signature2020 } from '../../vc/linked-data-proofs/signature-suites'
@@ -1169,14 +1170,20 @@ describe('DifPresentationExchangeService', () => {
     expect(getProofTypeForLdpVc).toThrow("No signature suite supports the verification method type 'Multikey'")
   })
 
-  describe('ldp_vp with an external submission', () => {
+  describe('ldp_vp and jwt_vp with an external submission', () => {
     const definition: DifPresentationExchangeDefinitionV2 = {
       id: 'degree-definition',
       input_descriptors: [
         {
           id: 'phd',
           constraints: {
-            fields: [{ path: ['$.credentialSubject.degree.type'], filter: { type: 'string', const: 'PhDDegree' } }],
+            fields: [
+              {
+                // pex evaluates a jwt_vc on its JWT payload
+                path: ['$.credentialSubject.degree.type', '$.vc.credentialSubject.degree.type'],
+                filter: { type: 'string', const: 'PhDDegree' },
+              },
+            ],
           },
         },
       ],
@@ -1252,6 +1259,55 @@ describe('DifPresentationExchangeService', () => {
 
       const vp = presentation([bsc, phd])
       const presentationSubmission = nestedAt('$.verifiableCredential[1]')
+      pexService.validatePresentation(definition, vp, presentationSubmission)
+      const [descriptor] = extractPresentationsWithDescriptorsFromSubmission(vp, presentationSubmission, definition)
+      expect(descriptor.credential).toBe((vp.verifiableCredential as unknown[])[1])
+    })
+
+    // Not signed, because pex and the extraction don't verify signatures
+    const jwt = (payload: Record<string, unknown>) =>
+      `${JsonEncoder.toBase64Url({ alg: 'EdDSA', typ: 'JWT' })}.${JsonEncoder.toBase64Url(payload)}.c2lnbmF0dXJl`
+    const jwtCredential = ({ proof: _proof, ...vc }: typeof phd) =>
+      jwt({ iss: vc.issuer, sub: vc.credentialSubject.id, nbf: Date.parse(vc.issuanceDate) / 1000, vc })
+
+    const jwtPresentation = (verifiableCredential: Array<typeof phd>, extra: Record<string, unknown> = {}) =>
+      W3cJwtVerifiablePresentation.fromSerializedJwt(
+        jwt({
+          iss: 'did:example:holder',
+          nonce: 'challenge',
+          vp: {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiablePresentation'],
+            verifiableCredential: verifiableCredential.map(jwtCredential),
+          },
+          ...extra,
+        })
+      )
+
+    const jwtNestedAt = (path: string) =>
+      submission({ format: 'jwt_vp', path: '$', path_nested: { id: 'phd', format: 'jwt_vc', path } })
+
+    test.each([
+      ['in path_nested', jwtNestedAt('$.vp.jwt.payload.additionalClaims.fakeCred')],
+      ['in path', submission({ format: 'dc+sd-jwt', path: '$.jwt.payload.additionalClaims.fakeCred' })],
+    ])('rejects a jwt_vp credential outside verifiableCredential %s', (_, presentationSubmission) => {
+      const vp = jwtPresentation([phd], { fakeCred: degreeCredential('PhDDegree', 'Mallory', 'fake-proof') })
+      expect(() => extractPresentationsWithDescriptorsFromSubmission(vp, presentationSubmission, definition)).toThrow(
+        'Unable to extract'
+      )
+    })
+
+    test('evaluates the jwt_vp credential that path_nested points at', () => {
+      expect(() =>
+        pexService.validatePresentation(
+          definition,
+          jwtPresentation([phd, bsc]),
+          jwtNestedAt('$.vp.verifiableCredential[1]')
+        )
+      ).toThrow(DifPresentationExchangeError)
+
+      const vp = jwtPresentation([bsc, phd])
+      const presentationSubmission = jwtNestedAt('$.vp.verifiableCredential[1]')
       pexService.validatePresentation(definition, vp, presentationSubmission)
       const [descriptor] = extractPresentationsWithDescriptorsFromSubmission(vp, presentationSubmission, definition)
       expect(descriptor.credential).toBe((vp.verifiableCredential as unknown[])[1])
