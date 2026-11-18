@@ -1,3 +1,4 @@
+import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../../../../utils'
 import { KeyManagementError } from '../../error/KeyManagementError'
 import { AkpPublicJwk } from '../kty'
 import { PublicJwk } from '../PublicJwk'
@@ -33,12 +34,45 @@ describe('PublicJwk AKP support', () => {
     expect(() => publicJwk.assertSignatureAlgorithmSupported('ML-DSA-65')).toThrow(KeyManagementError)
   })
 
+  test.each([
+    { alg: 'ML-DSA-44', prefix: 0x1210, length: 1312 },
+    { alg: 'ML-DSA-65', prefix: 0x1211, length: 1952 },
+    { alg: 'ML-DSA-87', prefix: 0x1212, length: 2592 },
+  ] as const)('encodes and decodes $alg Multikey fingerprints', ({ alg, prefix, length }) => {
+    const rawPublicKey = new Uint8Array(length).fill(0x42)
+    const publicJwk = PublicJwk.fromUnknown({ kty: 'AKP', alg, pub: TypedArrayEncoder.toBase64Url(rawPublicKey) })
+    const expectedFingerprint = MultiBaseEncoder.encode(
+      TypedArrayEncoder.concat([VarintEncoder.encode(prefix), rawPublicKey]),
+      'base58btc'
+    )
+
+    expect(publicJwk.fingerprint).toBe(expectedFingerprint)
+    expect(PublicJwk.fromFingerprint(expectedFingerprint).toJson()).toEqual(publicJwk.toJson())
+  })
+
+  test.each([
+    { alg: 'ML-DSA-44', length: 1311 },
+    { alg: 'ML-DSA-65', length: 1953 },
+    { alg: 'ML-DSA-87', length: 2591 },
+  ] as const)('rejects invalid Multikey public key length for $alg', ({ alg, length }) => {
+    const publicJwk = PublicJwk.fromUnknown({
+      kty: 'AKP',
+      alg,
+      pub: TypedArrayEncoder.toBase64Url(new Uint8Array(length)),
+    })
+
+    expect(() => publicJwk.fingerprint).toThrow('Invalid public key length')
+  })
+
   test('rejects AKP byte-key and identity operations clearly', () => {
-    const publicJwk = PublicJwk.fromUnknown({ kty: 'AKP', alg: 'ML-DSA-44', pub: 'cHVibGlj' })
+    const publicJwk = PublicJwk.fromUnknown({
+      kty: 'AKP',
+      alg: 'ML-DSA-44',
+      pub: TypedArrayEncoder.toBase64Url(new Uint8Array(1312)),
+    })
 
     expect(() => publicJwk.publicKey).toThrow(KeyManagementError)
     expect(() => publicJwk.compressedPublicKey).toThrow(KeyManagementError)
-    expect(() => publicJwk.fingerprint).toThrow(KeyManagementError)
     expect(() => publicJwk.legacyKeyId).toThrow(KeyManagementError)
   })
 

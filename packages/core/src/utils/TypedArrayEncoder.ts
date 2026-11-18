@@ -1,6 +1,8 @@
 import { base58, base64, base64url, hex, utf8 } from '@scure/base'
 import { CredoError } from '../error'
 
+const MAX_BASE58_MANUAL_ENCODING_BYTES = 2594
+
 // biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class TypedArrayEncoder {
   /**
@@ -58,7 +60,26 @@ export class TypedArrayEncoder {
    */
   public static toBase58(data: Uint8Array) {
     try {
-      return base58.encode(data)
+      if (data.length <= 2048) return base58.encode(data)
+      if (data.length > MAX_BASE58_MANUAL_ENCODING_BYTES) {
+        throw new Error(`Input exceeds maximum Base58 encoding length of ${MAX_BASE58_MANUAL_ENCODING_BYTES} bytes`)
+      }
+
+      const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+      let value = 0n
+      for (const byte of data) value = (value << 8n) | BigInt(byte)
+
+      let encoded = ''
+      while (value > 0n) {
+        const remainder = Number(value % 58n)
+        encoded = alphabet[remainder] + encoded
+        value /= 58n
+      }
+
+      let leadingZeroBytes = 0
+      while (leadingZeroBytes < data.length && data[leadingZeroBytes] === 0) leadingZeroBytes++
+
+      return `${'1'.repeat(leadingZeroBytes)}${encoded}`
     } catch (error) {
       throw new CredoError(`Could not encode data to base58 string`, { cause: error })
     }

@@ -317,6 +317,9 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     const PublicJwkClass = SupportedPublicJwks.find(
       (JwkClass) => JwkClass.multicodecPrefix !== undefined && JwkClass.multicodecPrefix === code
     )
+    if (AkpPublicJwk.supportsMulticodecPrefix(code)) {
+      return PublicJwk.fromPublicJwk(AkpPublicJwk.fromMulticodecPrefix(code, publicKey).jwk)
+    }
     if (!PublicJwkClass) {
       throw new KeyManagementError(`Unsupported multicodec public key with prefix '${code}'`)
     }
