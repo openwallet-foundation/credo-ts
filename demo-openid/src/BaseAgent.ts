@@ -1,11 +1,35 @@
 import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
-import type { InitConfig, KeyDidCreateOptions, ModulesMap, VerificationMethod } from '@credo-ts/core'
+import type {
+  GetTrustedIssuersForVerification,
+  InitConfig,
+  KeyDidCreateOptions,
+  ModulesMap,
+  VerificationMethod,
+  VerificationSigner,
+} from '@credo-ts/core'
 import { Agent, ConsoleLogger, DidKey, LogLevel, TypedArrayEncoder } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 import type { Express } from 'express'
 import express from 'express'
 import type { Server } from 'http'
 import { greenText } from './OutputClass'
+
+/**
+ * Trusts every signer on the did, key or leaf certificate it presents. Only suitable for a demo,
+ * as it accepts any issuer or verifier.
+ */
+export const trustAllSigners: GetTrustedIssuersForVerification<VerificationSigner, { type: string }> = async (
+  _agentContext,
+  { signer, verification }
+) => {
+  console.log(greenText(`dynamically trusting ${signer.method} signer for verification of ${verification.type}`, true))
+
+  if (signer.method === 'x509') {
+    return { trustedIssuers: [{ method: 'x509', issuance: [signer.certificateChain[0].toString('pem')] }] }
+  }
+  if (signer.method === 'did') return { trustedIssuers: [{ method: 'did', issuance: signer.didUrl }] }
+  return { trustedIssuers: [{ method: 'jwk', issuance: signer.publicJwk.toJson() }] }
+}
 
 export class BaseAgent<AgentModules extends ModulesMap> {
   public app: Express
@@ -23,10 +47,12 @@ export class BaseAgent<AgentModules extends ModulesMap> {
     port,
     name,
     modules,
+    getTrustedIssuersForVerification,
   }: {
     port: number
     name: string
     modules: (app: Express) => AgentModules
+    getTrustedIssuersForVerification?: InitConfig['getTrustedIssuersForVerification']
   }) {
     this.name = name
     this.port = port
@@ -35,6 +61,7 @@ export class BaseAgent<AgentModules extends ModulesMap> {
     const config = {
       allowInsecureHttpUrls: true,
       logger: new ConsoleLogger(LogLevel.Off),
+      getTrustedIssuersForVerification,
     } satisfies InitConfig
 
     this.config = config

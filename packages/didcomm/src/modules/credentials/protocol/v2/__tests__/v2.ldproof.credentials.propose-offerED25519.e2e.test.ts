@@ -19,6 +19,7 @@ import {
   setupEventReplaySubjects,
   setupSubjectTransports,
   testLogger,
+  trustDids,
   waitForCredentialRecordSubject,
 } from '../../../../../../../core/tests'
 import {
@@ -136,7 +137,7 @@ describe('V2 Credentials - mixed AnonCreds and JSON-LD formats', () => {
       getAgentOptions(
         'Alice Agent AnonCreds/JSON-LD',
         {},
-        {},
+        { getTrustedIssuersForVerification: trustDids(signCredentialOptions.credential.issuer) },
         getAnonCredsJsonLdModules({
           endpoints: ['rxjs:alice'],
         }),

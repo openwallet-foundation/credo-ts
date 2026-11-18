@@ -41,6 +41,7 @@ import {
   makeConnection,
   setupEventReplaySubjects,
   setupSubjectTransports,
+  trustDids,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
 } from '../../core/tests'
@@ -169,6 +170,8 @@ describe('DCQL proof format over a DIDComm connection', () => {
     recipientKeyDid = new DidKey(recipientKey).did
 
     issuerKdv = await createDidKidVerificationMethod(verifierAgent.context)
+    verifierAgent.config.setTrustedIssuersForVerification(trustDids(issuerKdv.did))
+    holderAgent.config.setTrustedIssuersForVerification(trustDids(issuerKdv.did))
     holderKdv = await createDidKidVerificationMethod(holderAgent.context)
 
     statusListUri = 'https://status.example.com/1'
@@ -572,7 +575,7 @@ describe('DCQL proof format over a DIDComm connection', () => {
         expect(vpToken.pid).toHaveLength(2)
       } finally {
         createPresentationSpy.mockRestore()
-        verifierAgent.context.config.setTrustedIssuersForVerification(undefined)
+        verifierAgent.context.config.setTrustedIssuersForVerification(trustDids(issuerKdv.did))
       }
     }
   )
@@ -1280,6 +1283,8 @@ describe('DCQL proof format out of band', () => {
     )
 
     const issuerKdv = await createDidKidVerificationMethod(verifierAgent.context)
+    verifierAgent.config.setTrustedIssuersForVerification(trustDids(issuerKdv.did))
+    holderAgent.config.setTrustedIssuersForVerification(trustDids(issuerKdv.did))
     const holderKdv = await createDidKidVerificationMethod(holderAgent.context)
     const sdJwtVc = await verifierAgent.sdJwtVc.sign({
       issuer: { method: 'did', didUrl: issuerKdv.kid },
@@ -1562,6 +1567,8 @@ describe('DCQL proof format over a DIDComm v2 connection', () => {
     holderDid = holderConnection.did as string
 
     const issuerKdv = await createDidKidVerificationMethod(verifierAgent.context)
+    verifierAgent.config.setTrustedIssuersForVerification(trustDids(issuerKdv.did))
+    holderAgent.config.setTrustedIssuersForVerification(trustDids(issuerKdv.did))
     issuerDid = issuerKdv.did
     const holderKdv = await createDidKidVerificationMethod(holderAgent.context)
     const sdJwtVc = await verifierAgent.sdJwtVc.sign({

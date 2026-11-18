@@ -2,8 +2,10 @@ import type {
   AgentContext,
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeSubmission,
+  GetTrustedIssuersForCredential,
   IAnonCredsW3cCredentialService,
   JsonValue,
+  VerificationSignerDid,
   W3cJsonPresentation,
   W3cVerifiablePresentation,
   W3cVerifyPresentationResult,
@@ -18,11 +20,13 @@ import {
   deepEquality,
   JsonTransformer,
   Kms,
+  TrustedIssuerContext,
   TypedArrayEncoder,
   W3cCredentialService,
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
 } from '@credo-ts/core'
+import type { DidCommVerificationTypes } from '../../../../DidCommTrustedIssuersVerificationTypes'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../../decorators/attachment/DidCommAttachment'
 import { DidCommProofFormatSpec } from '../../models'
 import type { DidCommProofFormatService } from '../DidCommProofFormatService'
@@ -299,6 +303,21 @@ export class DidCommDifPresentationExchangeProofFormatService
 
       let verificationResult: W3cVerifyPresentationResult
 
+      const trustedIssuers: GetTrustedIssuersForCredential = async ({ signer, verification }) =>
+        (
+          await TrustedIssuerContext.getTrustedIssuersForVerification<VerificationSignerDid, DidCommVerificationTypes>(
+            agentContext,
+            {
+              signer,
+              verification: {
+                type: 'didCommProofCredential',
+                didCommProofExchangeRecord: proofRecord,
+                credential: verification.credential,
+              },
+            }
+          )
+        )?.trustedIssuers
+
       // FIXME: for some reason it won't accept the input if it doesn't know
       // whether it's a JWT or JSON-LD VP even though the input is the same.
       // Not sure how to fix
@@ -307,6 +326,7 @@ export class DidCommDifPresentationExchangeProofFormatService
           presentation: parsedPresentation,
           challenge: request.options.challenge,
           domain: request.options.domain,
+          trustedIssuers,
         })
       } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
         if (this.shouldVerifyWithAnonCredsW3cService(parsedPresentation, jsonPresentation.presentation_submission)) {
@@ -333,6 +353,7 @@ export class DidCommDifPresentationExchangeProofFormatService
             presentation: parsedPresentation,
             challenge: request.options.challenge,
             domain: request.options.domain,
+            trustedIssuers,
           })
         }
       } else {

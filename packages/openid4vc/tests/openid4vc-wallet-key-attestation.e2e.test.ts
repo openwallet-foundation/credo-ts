@@ -325,9 +325,9 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       })
 
     // Trust wallet provider
-    issuer.agent.x509.config.setTrustedCertificatesForVerification((_agentContext, { verification }) => {
+    issuer.agent.config.setTrustedIssuersForVerification(async (_agentContext, { verification }) => {
       if (verification.type === 'oauth2ClientAttestation' || verification.type === 'openId4VciKeyAttestation') {
-        return [walletProviderCertificate.toString('pem')]
+        return { trustedIssuers: [{ method: 'x509', issuance: [walletProviderCertificate.toString('pem')] }] }
       }
 
       // Use global trusted certificates
@@ -537,14 +537,14 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
 
   it('throws error when the key attestation is signed by an untrusted did', async () => {
     issuer.agent.context.config.setTrustedIssuersForVerification(async (_agentContext, { signer }) =>
-      // Keep using the x509 config for the x5c signed wallet attestation
+      // Keep trusting the wallet provider for the x5c signed wallet attestation
       signer.method === 'did'
         ? {
             trustedIssuers: [
               { method: 'did', issuance: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y' },
             ],
           }
-        : undefined
+        : { trustedIssuers: [{ method: 'x509', issuance: [walletProviderCertificate.toString('pem')] }] }
     )
 
     const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
@@ -975,8 +975,10 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       global.fetch,
       { validitySkewSeconds: 28 }
     )
-    skewIssuer.agent.x509.config.setTrustedCertificatesForVerification((_agentContext, { verification }) =>
-      verification.type === 'oauth2ClientAttestation' ? [walletProviderCertificate.toString('pem')] : undefined
+    skewIssuer.agent.config.setTrustedIssuersForVerification(async (_agentContext, { verification }) =>
+      verification.type === 'oauth2ClientAttestation'
+        ? { trustedIssuers: [{ method: 'x509', issuance: [walletProviderCertificate.toString('pem')] }] }
+        : undefined
     )
     const clearSkewNock = setupNockToExpress(skewBaseUrl, skewApp)
 

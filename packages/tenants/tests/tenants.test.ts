@@ -198,6 +198,23 @@ describe('Tenants E2E', () => {
     expect(result).toEqual({ hello: 'world' })
   })
 
+  test('tenants use the trusted issuers callback set on the root agent', async () => {
+    const tenantRecord = await agent1.modules.tenants.createTenant({
+      config: {
+        label: 'Tenant Trusted Issuers',
+      },
+    })
+
+    const getTrustedIssuersForVerification = async () => ({ trustedIssuers: [] })
+    agent1.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
+
+    await agent1.modules.tenants.withTenantAgent({ tenantId: tenantRecord.id }, async (tenantAgent) => {
+      expect(tenantAgent.config.getTrustedIssuersForVerification).toBe(getTrustedIssuersForVerification)
+    })
+
+    agent1.config.setTrustedIssuersForVerification(undefined)
+  })
+
   test('create a connection between two tenants within the same agent', async () => {
     // Create tenants
     const tenantRecord1 = await agent1.modules.tenants.createTenant({

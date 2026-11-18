@@ -14,6 +14,7 @@ import type { IssuerMetadataResult } from '@openid4vc/openid4vci'
 import nock from 'nock'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
+import { trustDids } from '../../../../core/tests'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcModule } from '../../OpenId4VcModule'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
@@ -22,7 +23,10 @@ import { OpenId4VciAuthorizationFlow } from '../OpenId4VciHolderServiceOptions'
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
 
 const holder = new Agent({
-  config: {},
+  config: {
+    // Issuer of the animo openid4vc playground credential
+    getTrustedIssuersForVerification: trustDids('did:key:z6Mkh5HNPCCJWZn6WRLjRPttyvYZBskZUdSJfTiZwcUSieqx'),
+  },
   dependencies: agentDependencies,
   modules: {
     openid4vc: new OpenId4VcModule(),

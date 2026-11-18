@@ -37,6 +37,7 @@ import {
   getAgentConfig,
   getAgentContext,
   testLogger,
+  trustDids,
 } from '../../core/tests'
 import {
   DidCommAttachment,
@@ -114,6 +115,7 @@ let holderKdv: CreateDidKidVerificationMethodReturn
 describe('dc+sd-jwt credential format service', () => {
   beforeAll(async () => {
     issuerKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598g')
+    agentContext.config.setTrustedIssuersForVerification(trustDids(issuerKdv.did))
     holderKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598f')
   })
 

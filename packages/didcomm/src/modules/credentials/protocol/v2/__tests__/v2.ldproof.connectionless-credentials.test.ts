@@ -4,6 +4,7 @@ import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
 import type { EventReplaySubject, JsonLdTestsAgent } from '../../../../../../../core/tests'
 import {
   setupJsonLdTests,
+  trustDids,
   waitForAgentMessageProcessedEventSubject,
   waitForCredentialRecordSubject,
 } from '../../../../../../../core/tests'
@@ -67,6 +68,7 @@ describe('credentials', () => {
       createConnections: false,
       revocationNotificationFormats: [testRevocationNotificationFormatService],
     }))
+    aliceAgent.config.setTrustedIssuersForVerification(trustDids(signCredentialOptions.credential.issuer))
 
     const key = await faberAgent.kms.importKey({
       privateJwk: transformPrivateKeyToPrivateJwk({

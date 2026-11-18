@@ -2,7 +2,7 @@ import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { W3cJsonLdCredentialSigningNotSupportedError } from '../../../../../../../core/src/modules/vc'
 import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
 import type { JsonLdTestsAgent } from '../../../../../../../core/tests'
-import { setupJsonLdTests } from '../../../../../../../core/tests'
+import { setupJsonLdTests, trustDids } from '../../../../../../../core/tests'
 import { waitForCredentialRecordSubject } from '../../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommCredentialState } from '../../../models'
@@ -43,6 +43,7 @@ describe('V2 JSON-LD credential proposal signing preflight', () => {
     issuerReplay = setup.issuerReplay
     holderReplay = setup.holderReplay
     holderIssuerConnectionId = setup.holderIssuerConnectionId
+    holderAgent.config.setTrustedIssuersForVerification(trustDids(credentialOptions.credential.issuer))
 
     const key = await issuerAgent.kms.importKey({
       privateJwk: transformPrivateKeyToPrivateJwk({

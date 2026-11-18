@@ -7,6 +7,7 @@ import {
   makeConnection,
   setupEventReplaySubjects,
   setupSubjectTransports,
+  trustDids,
   waitForCredentialRecordSubject,
 } from '../../core/tests'
 import {
@@ -79,6 +80,7 @@ describe.each(['v1', 'v2'] as const)('vc+sd-jwt issuance over a DIDComm %s conne
     issuerConnectionId = issuerConnection.id
 
     issuerKdv = await createDidKidVerificationMethod(issuerAgent.context)
+    holderAgent.config.setTrustedIssuersForVerification(trustDids(issuerKdv.did))
     holderKdv = await createDidKidVerificationMethod(holderAgent.context)
   })
 

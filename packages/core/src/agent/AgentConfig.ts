@@ -62,10 +62,6 @@ export class AgentConfig {
     this.#getTrustedIssuersForVerification = fn
   }
 
-  public extend(config: Partial<InitConfig>): AgentConfig {
-    return new AgentConfig({ ...this.initConfig, logger: this.logger, ...config }, this.#agentDependencies)
-  }
-
   public toJSON() {
     return {
       ...this.initConfig,

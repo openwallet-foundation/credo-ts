@@ -3,7 +3,7 @@ import { CredoError } from '../../../../../../../core/src/error/CredoError'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../../../../core/src/modules/vc/constants'
 import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
 import type { JsonLdTestsAgent } from '../../../../../../../core/tests'
-import { setupJsonLdTests } from '../../../../../../../core/tests'
+import { setupJsonLdTests, trustDids } from '../../../../../../../core/tests'
 import type { EventReplaySubject } from '../../../../../../../core/tests/events'
 import { waitForCredentialRecordSubject } from '../../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../../core/tests/logger'
@@ -51,6 +51,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
         holderName: 'alice agent: always v2 jsonld',
         autoAcceptCredentials: DidCommAutoAcceptCredential.Always,
       }))
+      aliceAgent.config.setTrustedIssuersForVerification(trustDids(signCredentialOptions.credential.issuer))
 
       const key = await faberAgent.kms.importKey({
         privateJwk: transformPrivateKeyToPrivateJwk({
@@ -168,6 +169,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
         holderName: 'alice agent: ContentApproved v2 jsonld',
         autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
       }))
+      aliceAgent.config.setTrustedIssuersForVerification(trustDids(signCredentialOptions.credential.issuer))
 
       const key = await faberAgent.kms.importKey({
         privateJwk: transformPrivateKeyToPrivateJwk({
