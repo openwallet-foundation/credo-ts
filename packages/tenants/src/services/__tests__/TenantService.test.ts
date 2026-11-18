@@ -1,4 +1,4 @@
-import { CacheModuleConfig, InMemoryLruCache, Kms, SingleContextStorageLruCache } from '@credo-ts/core'
+import { CacheModuleConfig, InMemoryLruCache, Kms } from '@credo-ts/core'
 import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { TenantRecord, TenantRoutingRecord, TenantStatus } from '../../repository'
@@ -110,23 +110,6 @@ describe('TenantRecordService', () => {
 
       expect(stored.storageVersion).toBe('0.5')
       expect(tenantRepository.getById).toHaveBeenCalledTimes(1)
-    })
-
-    test('does not use the SingleContextStorageLruCache and warns once', async () => {
-      const cachedContext = getAgentContext({
-        registerInstances: [
-          [TenantsModuleConfig, new TenantsModuleConfig()],
-          [CacheModuleConfig, new CacheModuleConfig({ cache: new SingleContextStorageLruCache({ limit: 10 }) })],
-        ],
-      })
-      const warnSpy = vi.spyOn(cachedContext.config.logger, 'warn')
-      mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
-
-      await tenantRecordService.getTenantByIdForSession(cachedContext, 'tenant-id')
-      await tenantRecordService.getTenantByIdForSession(cachedContext, 'tenant-id')
-
-      expect(tenantRepository.getById).toHaveBeenCalledTimes(2)
-      expect(warnSpy).toHaveBeenCalledTimes(1)
     })
   })
 

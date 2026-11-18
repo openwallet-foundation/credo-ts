@@ -1,4 +1,5 @@
-import { InjectionSymbols } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
+import { CacheModuleConfig, InjectionSymbols, InMemoryLruCache, SingleContextStorageLruCache } from '@credo-ts/core'
 
 import type { MockedClassConstructor } from '../../../../tests/types'
 import { DependencyManager } from '../../../core/src/plugins/DependencyManager'
@@ -36,5 +37,19 @@ describe('TenantsModule', () => {
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(TenantsModuleConfig, tenantsModule.config)
+  })
+
+  test('throws on initialize when the agent uses the SingleContextStorageLruCache', async () => {
+    // The dependency manager is mocked in this file, so the context only resolves the cache config
+    const agentContextWithCache = (cache: SingleContextStorageLruCache | InMemoryLruCache) =>
+      ({ resolve: () => new CacheModuleConfig({ cache }) }) as unknown as AgentContext
+    const tenantsModule = new TenantsModule()
+
+    await expect(
+      tenantsModule.initialize(agentContextWithCache(new SingleContextStorageLruCache({ limit: 10 })))
+    ).rejects.toThrow("can't be used with the 'TenantsModule'")
+    await expect(
+      tenantsModule.initialize(agentContextWithCache(new InMemoryLruCache({ limit: 10 })))
+    ).resolves.toBeUndefined()
   })
 })
