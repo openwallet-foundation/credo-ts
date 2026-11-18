@@ -37,7 +37,6 @@
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
     "@credo-ts/drizzle-storage": "workspace:*",
-    "@credo-ts/hedera": "workspace:*",
     "@credo-ts/node": "workspace:*",
     "@credo-ts/openid4vc": "workspace:*",
     "@credo-ts/react-native": "workspace:*",
