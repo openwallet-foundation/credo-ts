@@ -365,7 +365,7 @@ export function getOid4vcDecryptJweCallback(
 
       decryptedPayload = TypedArrayEncoder.toUtf8String(decrypted.data)
     } catch (error) {
-      agentContext.config.logger.error('Error decrypting JWE', {
+      agentContext.config.logger.warn('Error decrypting JWE', {
         error,
       })
       return {

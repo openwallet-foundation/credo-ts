@@ -149,6 +149,26 @@ describe('JweService', () => {
     ).rejects.toThrow()
   })
 
+  it('rejects an epk that does not match the recipient public key before calling the kms', async () => {
+    const recipient = await createKey('P-256')
+    const other = await createKey('X25519')
+    const jwe = await jweService.encryptJweCompact(agentContext, {
+      keyAgreement: { algorithm: 'ECDH-ES', recipient: { publicJwk: recipient.publicJwk } },
+      enc: 'A256GCM',
+      data,
+    })
+
+    const decrypt = vi.spyOn(KeyManagementApi.prototype, 'decrypt')
+    await expect(jweService.decryptJwe(agentContext, { jwe, recipientKey: other.publicJwk })).rejects.toThrow(
+      'Expected jwk types to match'
+    )
+    expect(decrypt).not.toHaveBeenCalled()
+    decrypt.mockRestore()
+
+    const decrypted = await jweService.decryptJwe(agentContext, { jwe, recipientKey: recipient.publicJwk })
+    expect(TypedArrayEncoder.toUtf8String(decrypted.data)).toBe('hello jwe')
+  })
+
   it('only decrypts for the recipient kid that was asked for', async () => {
     const recipient = await createKey('X25519')
     const jwe = await jweService.encryptJwe(agentContext, {
