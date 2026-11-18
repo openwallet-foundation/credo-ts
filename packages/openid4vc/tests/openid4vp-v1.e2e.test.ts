@@ -4,6 +4,7 @@ import {
   DateOnly,
   type DcqlQuery,
   type GetTrustedIssuersForVerification,
+  JsonEncoder,
   Kms,
   MdocDeviceResponse,
   MdocRecord,
@@ -28,7 +29,7 @@ import {
   X509Module,
   X509Service,
 } from '@credo-ts/core'
-import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { decodeJwt, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import express, { type Express } from 'express'
 import nock from 'nock'
 import { filter, firstValueFrom } from 'rxjs'
@@ -797,7 +798,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         transactionData: [
           {
             type: 'OpenBadgeTx',
-            credential_ids: ['OpenBadgeCredentialDescriptor'],
+            credential_ids: ['SomeDifferentId'],
             transaction_data_hasheks_alg: ['sha-256'],
             some_extra_prop: 'is_allowed',
           },
@@ -841,17 +842,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         transactionData: [
           {
             type: 'OpenBadgeTx',
-            credential_ids: ['UnknownCredentialId', 'OpenBadgeCredentialDescriptor', 'OtherUnknownCredentialId'],
-            transaction_data_hashes_alg: ['sha-256'],
-          },
-          {
-            type: 'OpenBadgeTx',
             credential_ids: ['OpenBadgeCredentialDescriptor'],
-            transaction_data_hashes_alg: ['sha-256'],
-          },
-          {
-            type: 'OpenBadgeTx',
-            credential_ids: ['ThirdUnknownCredentialId'],
             transaction_data_hashes_alg: ['sha-256'],
           },
         ],
@@ -868,6 +859,37 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         },
         version: 'v1',
       })
+
+    // The verifier refuses to create a request with unknown credential ids, so we re-sign it with them
+    const { header, payload } = decodeJwt({ jwt: verificationSession.authorizationRequestJwt as string })
+    const transactionData = [
+      {
+        type: 'OpenBadgeTx',
+        credential_ids: ['UnknownCredentialId', 'OpenBadgeCredentialDescriptor', 'OtherUnknownCredentialId'],
+        transaction_data_hashes_alg: ['sha-256'],
+      },
+      {
+        type: 'OpenBadgeTx',
+        credential_ids: ['OpenBadgeCredentialDescriptor'],
+        transaction_data_hashes_alg: ['sha-256'],
+      },
+      {
+        type: 'OpenBadgeTx',
+        credential_ids: ['ThirdUnknownCredentialId'],
+        transaction_data_hashes_alg: ['sha-256'],
+      },
+    ]
+    const { jwt } = await getOid4vcCallbacks(verifier.agent.context).signJwt(
+      { method: 'x5c', alg: 'EdDSA', x5c: [rawCertificate], kid: certificate.publicJwk.keyId },
+      {
+        header,
+        payload: { ...payload, transaction_data: transactionData.map((entry) => JsonEncoder.toBase64Url(entry)) },
+      }
+    )
+    verificationSession.authorizationRequestJwt = jwt
+    await verifier.agent.dependencyManager
+      .resolve(OpenId4VcVerificationSessionRepository)
+      .update(verifier.agent.context, verificationSession)
 
     const error = await holder.agent.openid4vc.holder
       .resolveOpenId4VpAuthorizationRequest(authorizationRequest)

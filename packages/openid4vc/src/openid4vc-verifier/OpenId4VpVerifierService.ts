@@ -203,12 +203,12 @@ export class OpenId4VpVerifierService {
       )
     }
 
-    if (options.verifierInfo) {
-      const queryIds =
-        options?.dcql?.query.credentials.map(({ id }) => id) ??
-        options?.presentationExchange?.definition.input_descriptors.map(({ id }) => id) ??
-        []
+    const queryIds =
+      options.dcql?.query.credentials.map(({ id }) => id) ??
+      options.presentationExchange?.definition.input_descriptors.map(({ id }) => id) ??
+      []
 
+    if (options.verifierInfo) {
       const hasValidCredentialIds = options.verifierInfo.every(
         (vi) => !vi.credential_ids || vi.credential_ids.every((credentialId) => queryIds.includes(credentialId))
       )
@@ -218,6 +218,18 @@ export class OpenId4VpVerifierService {
           'Verifier info (attestations) were provided, but the verifier info used credential ids that are not present in the query'
         )
       }
+    }
+
+    const unknownCredentialIdErrors = (options.transactionData ?? []).flatMap((entry, index) => {
+      const unknownCredentialIds = entry.credential_ids.filter((credentialId) => !queryIds.includes(credentialId))
+      return unknownCredentialIds.length > 0
+        ? [`entry with index ${index} references ${unknownCredentialIds.map((id) => `'${id}'`).join(', ')}`]
+        : []
+    })
+    if (unknownCredentialIdErrors.length > 0) {
+      throw new CredoError(
+        `Transaction data references credential ids that are not present in the query: ${unknownCredentialIdErrors.join('; ')}.`
+      )
     }
 
     const authorizationRequestId = utils.uuid()
