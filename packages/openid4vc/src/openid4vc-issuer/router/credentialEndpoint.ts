@@ -18,9 +18,8 @@ import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { getCredentialRequestDecryptionMetadata, OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
+import { getOpenId4VciVersion } from '../util/openId4VciVersion'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
-
-const recoverableCredentialErrorCodes: string[] = [Oauth2ErrorCodes.InvalidProof, Oauth2ErrorCodes.InvalidNonce]
 
 export function configureCredentialEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
   router.post(config.credentialEndpointPath, async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
@@ -156,6 +155,24 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
             scheme,
             error: Oauth2ErrorCodes.InvalidDpopProof,
           })
+        )
+      }
+
+      // A failed session keeps the error that failed it. The subject isn't verified yet, so the response is the same
+      // as for an unknown session
+      if (issuanceSession.state === OpenId4VcIssuanceSessionState.Error) {
+        return sendOauth2ErrorResponse(
+          response,
+          next,
+          agentContext.config.logger,
+          new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.CredentialRequestDenied,
+            },
+            {
+              internalMessage: `Issuance session '${issuanceSession.id}' failed and does not accept credential requests. Returning error response`,
+            }
+          )
         )
       }
 
@@ -315,10 +332,14 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         credentialResponse.transaction_id ? 202 : 200
       )
     } catch (error) {
+      // A wallet recovers from invalid_nonce with a fresh nonce from the nonce endpoint. Before draft 15 there is
+      // no nonce endpoint or invalid_nonce, and an invalid_proof carries the c_nonce to retry with.
+      const errorCode = error instanceof Oauth2ServerErrorResponseError ? error.errorResponse.error : undefined
       const canRetry =
         isExistingSession &&
-        error instanceof Oauth2ServerErrorResponseError &&
-        recoverableCredentialErrorCodes.includes(error.errorResponse.error)
+        (errorCode === Oauth2ErrorCodes.InvalidNonce ||
+          (errorCode === Oauth2ErrorCodes.InvalidProof &&
+            getOpenId4VciVersion(issuanceSession, parsedCredentialRequest) === 'v1.draft11-14'))
 
       if (issuanceSession && !canRetry) {
         issuanceSession.errorMessage =
