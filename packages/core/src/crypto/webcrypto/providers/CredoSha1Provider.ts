@@ -1,5 +1,5 @@
 import * as core from 'webcrypto-core'
-import { Sha1 } from '../../hashes'
+import { Hasher } from '../../hashes'
 import type { HashAlgorithm } from '../types'
 
 export class CredoSha1Provider extends core.ProviderCrypto {
@@ -9,7 +9,7 @@ export class CredoSha1Provider extends core.ProviderCrypto {
   public override async onDigest(algorithm: HashAlgorithm, data: ArrayBuffer): Promise<ArrayBuffer> {
     switch (algorithm.name.toUpperCase()) {
       case 'SHA-1': {
-        const hash = new Sha1().hash(new Uint8Array(data))
+        const hash = Hasher.hash(new Uint8Array(data), 'sha-1')
         return hash.buffer as ArrayBuffer
       }
       default:

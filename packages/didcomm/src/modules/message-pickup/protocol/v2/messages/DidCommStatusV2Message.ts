@@ -3,8 +3,9 @@ import { IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
-import { DateParser } from '../../../../../util/transformers'
+import { OptionalDateParser } from '../../../../../util/transformers'
 
 export interface DidCommStatusV2MessageOptions {
   id?: string
@@ -20,6 +21,7 @@ export interface DidCommStatusV2MessageOptions {
 
 export class DidCommStatusV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   public constructor(options: DidCommStatusV2MessageOptions) {
     super()
@@ -58,13 +60,13 @@ export class DidCommStatusV2Message extends DidCommMessage {
   public longestWaitedSeconds?: number
 
   @Expose({ name: 'newest_received_time' })
-  @Transform(({ value }) => DateParser(value))
+  @Transform(({ value }) => OptionalDateParser(value))
   @IsDate()
   @IsOptional()
   public newestReceivedTime?: Date
 
   @IsOptional()
-  @Transform(({ value }) => DateParser(value))
+  @Transform(({ value }) => OptionalDateParser(value))
   @IsDate()
   @Expose({ name: 'oldest_received_time' })
   public oldestReceivedTime?: Date

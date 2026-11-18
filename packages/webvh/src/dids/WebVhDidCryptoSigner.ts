@@ -15,6 +15,7 @@ import {
 export class WebVhDidCryptoSigner implements Signer {
   private publicKeyMultibase: string
   private keyId: string
+  private kmsBackend?: string
   private agentContext: AgentContext
   public readonly supportedMethods: string[] = ['webvh']
 
@@ -23,10 +24,11 @@ export class WebVhDidCryptoSigner implements Signer {
    * @param agentContext - The agent context containing wallet and configuration.
    * @param publicKeyMultibase - The public key encoded in multibase format.
    */
-  constructor(agentContext: AgentContext, publicKeyMultibase: string, keyId: string) {
+  constructor(agentContext: AgentContext, publicKeyMultibase: string, keyId: string, kmsBackend?: string) {
     this.agentContext = agentContext
     this.publicKeyMultibase = publicKeyMultibase
     this.keyId = keyId
+    this.kmsBackend = kmsBackend
   }
 
   /**
@@ -50,6 +52,9 @@ export class WebVhDidCryptoSigner implements Signer {
 
       const { signature } = await kms.sign({
         keyId: this.keyId,
+        backend: this.kmsBackend,
+        // The multibase public key is the did:key fingerprint of the key
+        expectedPublicJwk: Kms.PublicJwk.fromFingerprint(this.publicKeyMultibase).toJson(),
         algorithm: 'EdDSA',
         data,
       })

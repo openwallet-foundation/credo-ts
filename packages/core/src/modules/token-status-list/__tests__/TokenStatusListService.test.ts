@@ -76,8 +76,12 @@ describe('TokenStatusListService', () => {
         },
       } satisfies CreateTokenStatusListOptions
 
+      const sign = vi.spyOn(kms, 'sign')
       const result = await tokenStatusListService.createTokenStatusList(agentContext, options)
 
+      // The COSE key has no key id, the context finds the KMS key by its public key
+      expect(sign).toHaveBeenCalledWith(expect.objectContaining({ keyId: certificate.keyId }))
+      sign.mockRestore()
       expect(result).toBeDefined()
       expect(result.statusList).toBeInstanceOf(Uint8Array)
       expect(result.format).toStrictEqual('cwt')
@@ -87,6 +91,24 @@ describe('TokenStatusListService', () => {
       expect(cwt.payload).toBeDefined()
       expect(cwt.payload.statusList).toBeDefined()
       expect(cwt.payload.statusList.statusList.length).toBe(16)
+    })
+
+    test('throws when the x5c certificate does not match the signing key', async () => {
+      const otherKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const mismatchedCertificate = X509Certificate.fromRawCertificate(certificate.rawCertificate)
+      mismatchedCertificate.keyId = otherKey.keyId
+
+      await expect(
+        tokenStatusListService.createTokenStatusList(agentContext, {
+          format: 'cwt',
+          alg: KnownJwaSignatureAlgorithms.ES256,
+          statusList: { statusListLength: 16, bitsPerStatus: 1 },
+          statusListUri: 'https://example.com/status/1',
+          signer: { method: 'x5c', x5c: [mismatchedCertificate] },
+        })
+      ).rejects.toMatchObject({
+        cause: { message: expect.stringContaining(`Key with key id '${otherKey.keyId}' does not match the expected`) },
+      })
     })
 
     test('throws error for unsupported format', async () => {
@@ -108,11 +130,7 @@ describe('TokenStatusListService', () => {
       await expect(tokenStatusListService.createTokenStatusList(agentContext, options)).rejects.toThrow(CredoError)
     })
 
-    test('throws error when key has no algorithm', async () => {
-      // Create a mock key without alg
-      const keyWithoutAlg = { ...key.toJson(), alg: undefined }
-      vi.spyOn(kms, 'getPublicKey').mockResolvedValueOnce(keyWithoutAlg)
-
+    test('throws error when no algorithm is given', async () => {
       const options = {
         format: 'cwt',
         statusList: {

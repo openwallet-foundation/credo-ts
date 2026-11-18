@@ -1,7 +1,17 @@
 import { Subject } from 'rxjs'
 import type { MockedClassConstructor } from '../../../../tests/types'
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
-import { AgentConfig, Kms, TypedArrayEncoder } from '../../../core/src/index'
+import {
+  AgentConfig,
+  DidDocumentBuilder,
+  didDocumentToNumAlgo2Did,
+  getEd25519VerificationKey2018,
+  getX25519KeyAgreementKey2019,
+  Kms,
+  NewDidCommV2Service,
+  NewDidCommV2ServiceEndpoint,
+  TypedArrayEncoder,
+} from '../../../core/src/index'
 import type { DidDocumentService, IndyAgentService } from '../../../core/src/modules/dids'
 import { DidDocument, VerificationMethod } from '../../../core/src/modules/dids'
 import { DidsApi } from '../../../core/src/modules/dids/DidsApi'
@@ -16,6 +26,7 @@ import {
   mockFunction,
 } from '../../../core/tests/helpers'
 import { TestMessage } from '../../../core/tests/TestMessage'
+import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { DidCommEnvelopeService } from '../DidCommEnvelopeService'
 import type { DidCommMessageSentEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
@@ -23,9 +34,16 @@ import { DidCommMessageSender } from '../DidCommMessageSender'
 import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { DidCommTransportService } from '../DidCommTransportService'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
-import { MessageSendingError } from '../errors'
-import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../models'
-import type { DidCommConnectionRecord } from '../modules'
+import { DidCommEnvelopeRegistry, DidCommV1Envelope, type DidCommV2Envelope } from '../envelope'
+import {
+  MessageSendingError,
+  MessageSendingErrorCategory,
+  MessageSendingQueueResult,
+  MessageSendingServiceResult,
+  MessageSendingSessionResult,
+} from '../errors'
+import { type DidCommInboundMessageContext, DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../models'
+import { DidCommConnectionRecord, DidCommDidExchangeRole, DidCommDidExchangeState } from '../modules'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 import { type DidCommOutboundTransport, InMemoryQueueTransportRepository } from '../transport'
 import type { DidCommEncryptedMessage } from '../types'
@@ -83,6 +101,17 @@ describe('DidCommMessageSender', () => {
 
   const enveloperService = new DidCommEnvelopeServiceMock()
   const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
+
+  // The registry is real, but the config never enables v2 and the mock connections are v1, so
+  // every message here takes the v1 path. The stubbed v2 protocol only satisfies the constructor.
+  const v2Envelope = {
+    version: 'v2',
+    supportsPacking: () => false,
+    supportsUnpacking: () => false,
+  } as unknown as DidCommV2Envelope
+
+  const buildEnvelopeRegistry = (config: DidCommModuleConfig) =>
+    new DidCommEnvelopeRegistry(new DidCommV1Envelope(enveloperService), v2Envelope, config)
 
   const didsApi = new DidsApiMock()
   const didCommDocumentService = new DidCommDocumentServiceMock()
@@ -159,7 +188,7 @@ describe('DidCommMessageSender', () => {
       })
       outboundTransport = new DummyHttpOutboundTransport()
       messageSender = new DidCommMessageSender(
-        enveloperService,
+        buildEnvelopeRegistry(didCommModuleConfig),
         transportService,
         didCommModuleConfig,
         didCommDocumentService,
@@ -233,6 +262,27 @@ describe('DidCommMessageSender', () => {
           status: OutboundMessageSendStatus.Undeliverable,
         },
       })
+    })
+
+    test('queues the message when the connection only has a queue service', async () => {
+      const queueService = new DidCommV1Service({
+        id: '<did>;queue',
+        serviceEndpoint: DID_COMM_TRANSPORT_QUEUE,
+        recipientKeys: ['#authentication-1'],
+      })
+      resolveCreatedDidDocumentWithKeysMock.mockResolvedValue({
+        didDocument: getMockDidDocument({ service: [queueService] }),
+        keys: [],
+      })
+      didResolverServiceResolveDidServicesMock.mockResolvedValue([getMockResolvedDidService(queueService)])
+      const queueMessageSpy = vi.spyOn(messageSender, 'queueMessage')
+
+      await messageSender.sendMessage(outboundMessageContext)
+
+      expect(queueMessageSpy).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ connectionId: connection.id, recipientDids: [expect.any(String)] })
+      )
     })
 
     test('reports an undeliverable message when resolving services fails', async () => {
@@ -515,6 +565,324 @@ describe('DidCommMessageSender', () => {
       })
     })
 
+    describe('undeliverable message', () => {
+      const queueService: ResolvedDidCommService = {
+        id: 'queue',
+        serviceEndpoint: 'didcomm:transport/queue',
+        recipientKeys: [recipientKey],
+        routingKeys: [],
+      }
+
+      function spyOnLogger() {
+        return {
+          info: vi.spyOn(agentConfig.logger, 'info'),
+          warn: vi.spyOn(agentConfig.logger, 'warn'),
+          error: vi.spyOn(agentConfig.logger, 'error'),
+          debug: vi.spyOn(agentConfig.logger, 'debug'),
+        }
+      }
+
+      // A reply to an inbound message that came in over a session with return routing
+      function replyTo(sessionId: string) {
+        return new DidCommOutboundMessageContext(new TestMessage(), {
+          agentContext,
+          connection,
+          inboundMessageContext: { sessionId } as DidCommInboundMessageContext,
+        })
+      }
+
+      beforeEach(() => {
+        didCommModuleConfig.outboundTransports = [outboundTransport]
+      })
+
+      test('does not reply over the session of another request when the session of the inbound message is gone', async () => {
+        session.send = vi.fn()
+        // The connection only has the single response session of another request
+        transportServiceFindSessionMock.mockImplementation((_connectionId, options) =>
+          options?.includeSingleResponse === false ? undefined : session
+        )
+        didResolverServiceResolveDidServicesMock.mockResolvedValue([])
+        const logger = spyOnLogger()
+
+        await expect(messageSender.sendMessage(replyTo('request-a'))).rejects.toMatchObject({
+          reason: {
+            category: MessageSendingErrorCategory.RecipientUnreachable,
+            attempts: [
+              { type: 'session', sessionId: 'request-a', result: MessageSendingSessionResult.NotFound },
+              { type: 'queue', result: MessageSendingQueueResult.NotAvailable },
+            ],
+          },
+        } satisfies Partial<MessageSendingError>)
+
+        expect(transportServiceFindSessionByIdMock).toHaveBeenCalledWith('request-a')
+        expect(session.send).not.toHaveBeenCalled()
+        expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('undeliverable'), expect.anything())
+        expect(logger.warn).not.toHaveBeenCalled()
+        expect(logger.error).not.toHaveBeenCalled()
+      })
+
+      test('replies over a long-lived session of the connection when the session of the inbound message is gone', async () => {
+        session.send = vi.fn()
+        transportServiceFindSessionMock.mockReturnValue(session)
+        const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
+
+        await messageSender.sendMessage(replyTo('request-a'))
+
+        expect(transportServiceFindSessionMock).toHaveBeenCalledWith(connection.id, { includeSingleResponse: false })
+        expect(session.send).toHaveBeenCalledTimes(1)
+        expect(sendMessageSpy).not.toHaveBeenCalled()
+      })
+
+      test('sends the reply to a service when the session of the inbound message is gone', async () => {
+        const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
+
+        await messageSender.sendMessage(replyTo('request-a'))
+
+        expect(sendMessageSpy).toHaveBeenCalledTimes(1)
+      })
+
+      test('logs an error when the session of the inbound message was already answered', async () => {
+        const answeredSession = new DummyTransportSession('request-a')
+        answeredSession.inboundMessage = inboundMessage
+        answeredSession.isClosed = true
+        answeredSession.isSingleResponse = true
+        answeredSession.send = vi.fn()
+        transportServiceFindSessionByIdMock.mockReturnValue(answeredSession)
+        didResolverServiceResolveDidServicesMock.mockResolvedValue([queueService])
+        const logger = spyOnLogger()
+
+        const message = Object.assign(new TestMessage(), { allowQueueTransport: false })
+        const reply = new DidCommOutboundMessageContext(message, { agentContext, connection, sessionId: 'request-a' })
+
+        await expect(messageSender.sendMessage(reply)).rejects.toMatchObject({
+          reason: {
+            category: MessageSendingErrorCategory.InternalError,
+            attempts: [
+              { type: 'session', sessionId: 'request-a', result: MessageSendingSessionResult.Closed },
+              { type: 'queue', result: MessageSendingQueueResult.MessageNotQueueable },
+            ],
+          },
+        } satisfies Partial<MessageSendingError>)
+
+        expect(answeredSession.send).not.toHaveBeenCalled()
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('undeliverable'), expect.anything())
+      })
+
+      test('logs at info level when the long-lived session of the inbound message is closing', async () => {
+        const closingSession = new DummyTransportSession('socket-a')
+        closingSession.inboundMessage = inboundMessage
+        closingSession.isClosed = true
+        closingSession.send = vi.fn()
+        transportServiceFindSessionByIdMock.mockReturnValue(closingSession)
+        didResolverServiceResolveDidServicesMock.mockResolvedValue([])
+        const logger = spyOnLogger()
+
+        await expect(messageSender.sendMessage(replyTo('socket-a'))).rejects.toMatchObject({
+          reason: {
+            category: MessageSendingErrorCategory.RecipientUnreachable,
+            attempts: [
+              { type: 'session', sessionId: 'socket-a', result: MessageSendingSessionResult.NotFound },
+              { type: 'queue', result: MessageSendingQueueResult.NotAvailable },
+            ],
+          },
+        } satisfies Partial<MessageSendingError>)
+
+        expect(closingSession.send).not.toHaveBeenCalled()
+        expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('undeliverable'), expect.anything())
+        expect(logger.error).not.toHaveBeenCalled()
+      })
+
+      test('logs at info level when the recipient only has a queue and the message cannot be queued', async () => {
+        didResolverServiceResolveDidServicesMock.mockResolvedValue([queueService])
+        const logger = spyOnLogger()
+
+        const message = Object.assign(new TestMessage(), { allowQueueTransport: false })
+        const context = new DidCommOutboundMessageContext(message, { agentContext, connection })
+
+        await expect(messageSender.sendMessage(context)).rejects.toMatchObject({
+          reason: {
+            category: MessageSendingErrorCategory.RecipientUnreachable,
+            attempts: [{ type: 'queue', result: MessageSendingQueueResult.MessageNotQueueable }],
+          },
+        } satisfies Partial<MessageSendingError>)
+
+        expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('undeliverable'), expect.anything())
+        expect(logger.warn).not.toHaveBeenCalled()
+        expect(logger.error).not.toHaveBeenCalled()
+      })
+
+      test('logs a warning and reports each endpoint when the remote endpoints fail', async () => {
+        const endpointError = new Error('502 Bad Gateway')
+        vi.spyOn(outboundTransport, 'sendMessage').mockRejectedValue(endpointError)
+        const logger = spyOnLogger()
+
+        const error = await messageSender.sendMessage(outboundMessageContext).catch((e) => e)
+
+        expect(error).toBeInstanceOf(MessageSendingError)
+        expect(error.reason).toMatchObject({
+          category: MessageSendingErrorCategory.RemoteError,
+          attempts: [
+            {
+              type: 'service',
+              endpoint: firstDidCommService.serviceEndpoint,
+              result: MessageSendingServiceResult.TransportError,
+            },
+            {
+              type: 'service',
+              endpoint: secondDidCommService.serviceEndpoint,
+              result: MessageSendingServiceResult.TransportError,
+            },
+            { type: 'queue', result: MessageSendingQueueResult.NotAvailable },
+          ],
+        })
+        expect(error.reason.attempts[0].error).toBe(endpointError)
+        expect(error.message).toBe(
+          'Message is undeliverable to connection test-123 (Test 123). \n\nReasons:' +
+            '\n\t- Service https://www.first-endpoint.com: 502 Bad Gateway' +
+            '\n\t- Service https://www.second-endpoint.com: 502 Bad Gateway' +
+            '\n\t- Recipient has no queue for message pickup'
+        )
+        expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('undeliverable'), expect.anything())
+        expect(logger.error).not.toHaveBeenCalled()
+      })
+
+      test('logs an error when there is no outbound transport', async () => {
+        didCommModuleConfig.outboundTransports = []
+        const logger = spyOnLogger()
+
+        await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toMatchObject({
+          reason: {
+            category: MessageSendingErrorCategory.InternalError,
+            attempts: [
+              { type: 'service', result: MessageSendingServiceResult.InternalError },
+              { type: 'service', result: MessageSendingServiceResult.InternalError },
+              { type: 'queue', result: MessageSendingQueueResult.NotAvailable },
+            ],
+          },
+        })
+
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('undeliverable'), {
+          connectionId: connection.id,
+          messageId: outboundMessageContext.message.id,
+          messageType: outboundMessageContext.message.type,
+          reason: expect.objectContaining({ category: MessageSendingErrorCategory.InternalError }),
+          error: undefined,
+        })
+        expect(logger.debug).toHaveBeenCalledWith(
+          expect.stringContaining('Undeliverable'),
+          expect.objectContaining({ message: outboundMessageContext.message, connection })
+        )
+      })
+
+      test('logs an error when packing the message fails', async () => {
+        envelopeServicePackMessageMock.mockRejectedValue(new Error('no key'))
+        const logger = spyOnLogger()
+
+        await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toMatchObject({
+          reason: { category: MessageSendingErrorCategory.InternalError },
+        })
+
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('undeliverable'), expect.anything())
+      })
+
+      test('logs a warning when the services of the recipient cannot be resolved', async () => {
+        didResolverServiceResolveDidServicesMock.mockRejectedValueOnce(new Error('notFound'))
+        const logger = spyOnLogger()
+
+        await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toMatchObject({
+          reason: { category: MessageSendingErrorCategory.RemoteError, attempts: [] },
+        })
+
+        expect(logger.warn).toHaveBeenCalledWith(
+          expect.stringContaining('Unable to retrieve services'),
+          expect.anything()
+        )
+        expect(logger.error).not.toHaveBeenCalled()
+      })
+
+      test('logs an error when our own did cannot be resolved', async () => {
+        resolveCreatedDidDocumentWithKeysMock.mockRejectedValueOnce(new Error('notFound'))
+        const logger = spyOnLogger()
+
+        await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toMatchObject({
+          reason: { category: MessageSendingErrorCategory.InternalError, attempts: [] },
+        })
+
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Unble to resolve did'), expect.anything())
+      })
+    })
+
+    describe('sendPackage', () => {
+      const queueService: ResolvedDidCommService = {
+        id: 'queue',
+        serviceEndpoint: 'didcomm:transport/queue',
+        recipientKeys: [recipientKey],
+        routingKeys: [],
+      }
+      const sendPackage = () =>
+        messageSender.sendPackage(agentContext, {
+          connection,
+          encryptedMessage,
+          recipientKey: recipientKey.fingerprint,
+        })
+
+      test('queues the message when no outbound transport supports the scheme of the service', async () => {
+        didCommModuleConfig.outboundTransports = [new DummyWsOutboundTransport()]
+        didResolverServiceResolveDidServicesMock.mockResolvedValue([
+          getMockResolvedDidService(firstDidCommService),
+          queueService,
+        ])
+        const addMessageSpy = vi.spyOn(didCommModuleConfig.queueTransportRepository, 'addMessage')
+
+        await sendPackage()
+
+        expect(addMessageSpy).toHaveBeenCalledWith(
+          agentContext,
+          expect.objectContaining({ connectionId: connection.id, payload: encryptedMessage })
+        )
+      })
+
+      test('logs a warning when the remote endpoints fail', async () => {
+        didCommModuleConfig.outboundTransports = [outboundTransport]
+        vi.spyOn(outboundTransport, 'sendMessage').mockRejectedValue(new Error('502 Bad Gateway'))
+        const warnSpy = vi.spyOn(agentConfig.logger, 'warn')
+        const errorSpy = vi.spyOn(agentConfig.logger, 'error')
+
+        await expect(sendPackage()).rejects.toThrow('Message is undeliverable to connection test-123 (Test 123)')
+
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('undeliverable'),
+          expect.objectContaining({
+            reason: expect.objectContaining({ category: MessageSendingErrorCategory.RemoteError }),
+          })
+        )
+        expect(errorSpy).not.toHaveBeenCalled()
+      })
+
+      test('logs at info level when the recipient has no endpoint and no queue', async () => {
+        didCommModuleConfig.outboundTransports = [outboundTransport]
+        didResolverServiceResolveDidServicesMock.mockResolvedValue([])
+        const infoSpy = vi.spyOn(agentConfig.logger, 'info')
+        const errorSpy = vi.spyOn(agentConfig.logger, 'error')
+
+        await expect(sendPackage()).rejects.toThrow('Message is undeliverable to connection test-123 (Test 123)')
+
+        expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining('undeliverable'), {
+          connectionId: connection.id,
+          reason: expect.objectContaining({ category: MessageSendingErrorCategory.RecipientUnreachable }),
+        })
+        expect(errorSpy).not.toHaveBeenCalled()
+      })
+
+      test('does not send over a session that answers a single request', async () => {
+        didResolverServiceResolveDidServicesMock.mockResolvedValue([queueService])
+
+        await sendPackage()
+
+        expect(transportServiceFindSessionMock).toHaveBeenCalledWith(connection.id, { includeSingleResponse: false })
+      })
+    })
+
     test('prioritizes services whose scheme is listed in transportPriority over ones that are not', async () => {
       // Simulate a DID Document exposing both https and wss service endpoints,
       // where the https one is returned first by the resolver.
@@ -579,7 +947,7 @@ describe('DidCommMessageSender', () => {
       outboundTransport = new DummyHttpOutboundTransport()
       didCommModuleConfig.outboundTransports = [outboundTransport]
       messageSender = new DidCommMessageSender(
-        enveloperService,
+        buildEnvelopeRegistry(didCommModuleConfig),
         transportService,
         didCommModuleConfig,
         didCommDocumentService,
@@ -722,7 +1090,7 @@ describe('DidCommMessageSender', () => {
       outboundTransport = new DummyHttpOutboundTransport()
       didCommModuleConfig.outboundTransports = [outboundTransport]
       messageSender = new DidCommMessageSender(
-        enveloperService,
+        buildEnvelopeRegistry(didCommModuleConfig),
         transportService,
         didCommModuleConfig,
         didCommDocumentService,
@@ -753,6 +1121,128 @@ describe('DidCommMessageSender', () => {
         responseRequested: message.hasAnyReturnRoute(),
         endpoint,
       })
+    })
+  })
+
+  describe('peer DID fallback', () => {
+    const retrieveServicesViaMediatorDid = (mediatorDid: string) =>
+      retrieveServicesViaEndpoints(new NewDidCommV2ServiceEndpoint({ uri: mediatorDid }))
+
+    async function retrieveServicesViaEndpoints(
+      serviceEndpoint: NewDidCommV2ServiceEndpoint | NewDidCommV2ServiceEndpoint[]
+    ): Promise<ResolvedDidCommService[]> {
+      const theirDid = didDocumentToNumAlgo2Did(
+        new DidDocumentBuilder('')
+          .addKeyAgreement(
+            getX25519KeyAgreementKey2019({
+              id: '#key-1',
+              publicJwk: recipientKey.convertTo(Kms.X25519PublicJwk),
+              controller: '#id',
+            })
+          )
+          .addService(new NewDidCommV2Service({ id: '#dm', serviceEndpoint }))
+          .build()
+      )
+      didResolverServiceResolveDidServicesMock.mockResolvedValue([])
+      const actual = await vi.importActual<typeof import('../services/DidCommDocumentService')>(
+        '../services/DidCommDocumentService'
+      )
+      mockFunction(didCommDocumentService.expandV2EndpointIfRoutingDid).mockImplementation(
+        actual.DidCommDocumentService.prototype.expandV2EndpointIfRoutingDid
+      )
+      const didCommModuleConfig = new DidCommModuleConfig({
+        queueTransportRepository: new InMemoryQueueTransportRepository(),
+      })
+      const messageSender = new DidCommMessageSender(
+        buildEnvelopeRegistry(didCommModuleConfig),
+        transportService,
+        didCommModuleConfig,
+        didCommDocumentService,
+        eventEmitter
+      )
+
+      // @ts-expect-error retrieveServicesByConnection is private
+      const { services } = await messageSender.retrieveServicesByConnection(
+        agentContext,
+        new DidCommConnectionRecord({
+          role: DidCommDidExchangeRole.Requester,
+          state: DidCommDidExchangeState.Completed,
+          theirDid,
+          outOfBandId: 'oob-1',
+          didcommVersion: 'v2',
+        })
+      )
+      return services
+    }
+
+    test('resolves one service per serviceEndpoint entry of a did:peer:2 service, in order', async () => {
+      const services = await retrieveServicesViaEndpoints([
+        new NewDidCommV2ServiceEndpoint({ uri: 'https://primary.example/didcomm' }),
+        new NewDidCommV2ServiceEndpoint({ uri: 'wss://fallback.example/didcomm' }),
+      ])
+
+      expect(services.map((service) => service.serviceEndpoint)).toEqual([
+        'https://primary.example/didcomm',
+        'wss://fallback.example/didcomm',
+      ])
+      expect(services.every((service) => service.recipientKeys.length === 1)).toBe(true)
+    })
+
+    test('uses one keyAgreement hop for a v2 mediator DID endpoint', async () => {
+      const mediatorKeyAgreementKey = Kms.PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'X25519',
+        publicKey: new Uint8Array(32).fill(7),
+      })
+      const mediatorDid = didDocumentToNumAlgo2Did(
+        new DidDocumentBuilder('')
+          .addAuthentication(getEd25519VerificationKey2018({ id: '#key-1', publicJwk: senderKey, controller: '#id' }))
+          .addKeyAgreement(
+            getX25519KeyAgreementKey2019({ id: '#key-2', publicJwk: mediatorKeyAgreementKey, controller: '#id' })
+          )
+          .addKeyAgreement(
+            getX25519KeyAgreementKey2019({
+              id: '#key-3',
+              publicJwk: Kms.PublicJwk.fromPublicKey({
+                kty: 'OKP',
+                crv: 'X25519',
+                publicKey: new Uint8Array(32).fill(9),
+              }),
+              controller: '#id',
+            })
+          )
+          .addService(
+            new NewDidCommV2Service({
+              id: '#dm',
+              serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: 'https://mediator.example/didcomm' }),
+            })
+          )
+          .build()
+      )
+      const services = await retrieveServicesViaMediatorDid(mediatorDid)
+
+      expect(services[0].serviceEndpoint).toBe('https://mediator.example/didcomm')
+      expect(services[0].routingKeys).toHaveLength(1)
+      expect(services[0].routingKeys[0].equals(mediatorKeyAgreementKey)).toBe(true)
+    })
+
+    test('keeps a forward hop for a v2 mediator DID endpoint without keyAgreement', async () => {
+      const mediatorDid = didDocumentToNumAlgo2Did(
+        new DidDocumentBuilder('')
+          .addAuthentication(getEd25519VerificationKey2018({ id: '#key-1', publicJwk: senderKey, controller: '#id' }))
+          .addService(
+            new NewDidCommV2Service({
+              id: '#dm',
+              serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: 'https://mediator.example/didcomm' }),
+            })
+          )
+          .build()
+      )
+      const services = await retrieveServicesViaMediatorDid(mediatorDid)
+
+      expect(services[0].serviceEndpoint).toBe('https://mediator.example/didcomm')
+      expect(services[0].routingKeys).toHaveLength(1)
+      expect(services[0].routingKeys[0].equals(senderKey)).toBe(true)
     })
   })
 })

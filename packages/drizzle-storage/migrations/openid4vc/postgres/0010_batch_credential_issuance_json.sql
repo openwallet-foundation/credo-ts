@@ -1,0 +1,1 @@
+ALTER TABLE "Openid4vcIssuer" ALTER COLUMN "batch_credential_issuance" SET DATA TYPE jsonb USING "batch_credential_issuance"::jsonb;

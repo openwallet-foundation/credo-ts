@@ -1,11 +1,12 @@
 import type { Kms } from '@credo-ts/core'
 import type {
+  OpenId4VcIssuerRecordCredentialRequestEncryption,
+  OpenId4VcIssuerRecordKey,
   OpenId4VcIssuerRecordSignedMetadata,
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciBatchCredentialIssuanceOptions,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
-  OpenId4VciCredentialRequestEncryptionOptions,
   OpenId4VciCredentialResponseEncryptionOptions,
   OpenId4VciIssuerInfo,
 } from '@credo-ts/openid4vc'
@@ -27,7 +28,9 @@ export const openid4vcIssuer = sqliteTable(
       mode: 'json',
     }),
     accessTokenPublicJwk: text('access_token_public_jwk', { mode: 'json' }).$type<Kms.KmsJwkPublicAsymmetric>(),
+    accessTokenKey: text('access_token_key', { mode: 'json' }).$type<OpenId4VcIssuerRecordKey>(),
     accessTokenSignerKmsBackend: text('access_token_signer_kms_backend'),
+    previousAccessTokenKeys: text('previous_access_token_keys', { mode: 'json' }).$type<OpenId4VcIssuerRecordKey[]>(),
 
     signedMetadata: text('signed_metadata', { mode: 'json' }).$type<OpenId4VcIssuerRecordSignedMetadata>(),
 
@@ -48,13 +51,15 @@ export const openid4vcIssuer = sqliteTable(
     clientAttestationPopSigningAlgValuesSupported: text('client_attestation_pop_signing_alg_values_supported', {
       mode: 'json',
     }).$type<[Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]>(),
-    batchCredentialIssuance: text('batch_credential_issuance').$type<OpenId4VciBatchCredentialIssuanceOptions>(),
+    batchCredentialIssuance: text('batch_credential_issuance', {
+      mode: 'json',
+    }).$type<OpenId4VciBatchCredentialIssuanceOptions>(),
     credentialResponseEncryption: text('credential_response_encryption', {
       mode: 'json',
     }).$type<OpenId4VciCredentialResponseEncryptionOptions>(),
     credentialRequestEncryption: text('credential_request_encryption', {
       mode: 'json',
-    }).$type<OpenId4VciCredentialRequestEncryptionOptions>(),
+    }).$type<OpenId4VcIssuerRecordCredentialRequestEncryption>(),
   },
   (table) => sqliteBaseRecordIndexes(table, 'openid4vcIssuer')
 )

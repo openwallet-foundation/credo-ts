@@ -1,25 +1,258 @@
 import type { AgentContextProvider } from '@credo-ts/core'
+import { JsonEncoder, utils } from '@credo-ts/core'
 import { Subject } from 'rxjs'
+import { Agent } from '../../../core/src/agent/Agent'
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
-import { getAgentConfig, getAgentContext } from '../../../core/tests/helpers'
-import type { DidCommDispatcher } from '../DidCommDispatcher'
-import type { DidCommEnvelopeService } from '../DidCommEnvelopeService'
+import { getAgentConfig, getAgentContext, getAgentOptions, getMockConnection } from '../../../core/tests/helpers'
+import { setupSubjectTransports } from '../../../core/tests/transport'
+import { DidCommDispatcher } from '../DidCommDispatcher'
 import { DidCommEventTypes } from '../DidCommEvents'
 import { DidCommMessageHandlerRegistry } from '../DidCommMessageHandlerRegistry'
 import { DidCommMessageReceiver } from '../DidCommMessageReceiver'
-import type { DidCommMessageSender } from '../DidCommMessageSender'
+import { DidCommMessageSender } from '../DidCommMessageSender'
 import type { DidCommTransportService } from '../DidCommTransportService'
+import type { DidCommEnvelopeRegistry } from '../envelope'
+import { DidCommProblemReportV2Message } from '../messages'
+import type { DidCommConnectionsModuleConfig } from '../modules/connections'
 import { DidCommTrustPingMessage } from '../modules/connections/messages'
 import type { DidCommConnectionService } from '../modules/connections/services'
+import { toAbsoluteDidUrl } from '../modules/connections/services/helpers'
+import type { DidCommOutOfBandService } from '../modules/oob/DidCommOutOfBandService'
+import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from '../util/didcommVersion'
+import { DidCommV2EnvelopeService } from '../v2'
 
 describe('DidCommMessageReceiver', () => {
+  describe('v2 message handling', () => {
+    it('throws when receiving v2 encrypted message and v2 is not in didcommVersions', async () => {
+      const agent = new Agent(
+        getAgentOptions('ReceiverTest', { didcommVersions: ['v1'] }, {}, undefined, { requireDidcomm: true })
+      )
+      setupSubjectTransports([agent])
+      await agent.initialize()
+
+      const v2Protected = JsonEncoder.toBase64Url({
+        typ: 'application/didcomm-encrypted+json',
+        alg: 'ECDH-1PU+A256KW',
+        enc: 'A256GCM',
+        skid: 'key-id',
+      })
+
+      const v2Message = {
+        protected: v2Protected,
+        recipients: [{ header: { kid: 'recipient-kid' }, encrypted_key: 'enc' }],
+        iv: 'dGVzdC1pdi0xMg',
+        ciphertext: 'dGVzdC1jaXBoZXJ0ZXh0',
+        tag: 'dGVzdC10YWc',
+      }
+
+      expect(isDidCommV2EncryptedMessage(v2Message)).toBe(true)
+
+      const receiver = agent.dependencyManager.resolve(DidCommMessageReceiver)
+      await expect(receiver.receiveMessage(v2Message, { contextCorrelationId: 'default' })).rejects.toThrow(
+        /v2 is not enabled/
+      )
+
+      await agent.shutdown()
+    })
+
+    it('throws when receiving v2 signed message and v2 is not in didcommVersions', async () => {
+      const agent = new Agent(
+        getAgentOptions('ReceiverSignedTest', { didcommVersions: ['v1'] }, {}, undefined, { requireDidcomm: true })
+      )
+      setupSubjectTransports([agent])
+      await agent.initialize()
+
+      const protectedHeader = JsonEncoder.toBase64Url({
+        typ: 'application/didcomm-signed+json',
+        alg: 'EdDSA',
+        kid: 'did:example:alice#key-1',
+      })
+
+      const signedMessage = {
+        payload: JsonEncoder.toBase64Url({ id: 'm', type: 'test', from: 'did:example:alice' }),
+        signatures: [{ protected: protectedHeader, signature: 'AA' }],
+      }
+
+      expect(isDidCommV2SignedMessage(signedMessage)).toBe(true)
+
+      const receiver = agent.dependencyManager.resolve(DidCommMessageReceiver)
+      await expect(receiver.receiveMessage(signedMessage, { contextCorrelationId: 'default' })).rejects.toThrow(
+        /v2 is not enabled/
+      )
+
+      await agent.shutdown()
+    })
+
+    describe('signed messages', () => {
+      let agent: Agent
+
+      beforeAll(async () => {
+        agent = new Agent(
+          getAgentOptions('ReceiverSignedMessages', { didcommVersions: ['v1', 'v2'] }, {}, undefined, {
+            requireDidcomm: true,
+          })
+        )
+        await agent.initialize()
+      })
+
+      afterAll(async () => {
+        await agent.shutdown()
+      })
+
+      afterEach(() => {
+        vi.restoreAllMocks()
+      })
+
+      const createSignedPing = async () => {
+        const { outOfBandInvitation } = await agent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+        const signerDid = outOfBandInvitation.v2Invitation?.from as string
+        const { didDocument, keys } = await agent.dids.resolveCreatedDidDocumentWithKeys(signerDid)
+        const [authentication] = didDocument.findVerificationMethodsByPurpose(['authentication'])
+        const signingKeyId = keys?.find((key) => authentication.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
+        if (!signingKeyId) throw new Error(`No authentication key in ${signerDid}`)
+
+        const signed = await agent.dependencyManager.resolve(DidCommV2EnvelopeService).signPlaintext(
+          agent.context,
+          {
+            id: utils.uuid(),
+            type: DidCommTrustPingMessage.type.messageTypeUri,
+            from: signerDid,
+            body: { response_requested: false },
+          },
+          { key: { keyId: signingKeyId }, kid: toAbsoluteDidUrl(didDocument.id, authentication.id), alg: 'EdDSA' }
+        )
+        return { signed, signerDid }
+      }
+
+      it('passes the signer DID to the message context as the authenticated sender', async () => {
+        const { signed, signerDid } = await createSignedPing()
+        const dispatch = vi.spyOn(agent.dependencyManager.resolve(DidCommDispatcher), 'dispatch').mockResolvedValue()
+
+        await agent.dependencyManager.resolve(DidCommMessageReceiver).receiveMessage(signed)
+
+        expect(dispatch).toHaveBeenCalledTimes(1)
+        const [messageContext] = dispatch.mock.calls[0]
+        expect(messageContext.senderDid).toBe(signerDid)
+        expect(messageContext.connection).toBeUndefined()
+      })
+
+      it('rejects a signed message under a connection with another peer', async () => {
+        const { signed } = await createSignedPing()
+        const dispatch = vi.spyOn(agent.dependencyManager.resolve(DidCommDispatcher), 'dispatch').mockResolvedValue()
+
+        await expect(
+          agent.dependencyManager
+            .resolve(DidCommMessageReceiver)
+            .receiveMessage(signed, { connection: getMockConnection({ theirDid: 'did:example:someone-else' }) })
+        ).rejects.toThrow(/is not the peer of connection/)
+
+        expect(dispatch).not.toHaveBeenCalled()
+      })
+
+      it('accepts a signed message under the connection with the signer', async () => {
+        const { signed, signerDid } = await createSignedPing()
+        const dispatch = vi.spyOn(agent.dependencyManager.resolve(DidCommDispatcher), 'dispatch').mockResolvedValue()
+        const connection = getMockConnection({ theirDid: signerDid })
+
+        await agent.dependencyManager.resolve(DidCommMessageReceiver).receiveMessage(signed, { connection })
+
+        const [messageContext] = dispatch.mock.calls[0]
+        expect(messageContext.connection).toBe(connection)
+        expect(messageContext.senderDid).toBe(signerDid)
+      })
+    })
+
+    it('does not answer an invalid DIDComm v2 problem report with a problem report', async () => {
+      const agent = new Agent(getAgentOptions('ReceiverProblemReportTest', {}, {}, undefined, { requireDidcomm: true }))
+      await agent.initialize()
+
+      const sendMessage = vi
+        .spyOn(agent.dependencyManager.resolve(DidCommMessageSender), 'sendMessage')
+        .mockResolvedValue()
+      const receiver = agent.dependencyManager.resolve(DidCommMessageReceiver)
+      const connection = getMockConnection()
+
+      // @ts-expect-error
+      const transformed = receiver.transformAndValidate(
+        agent.context,
+        { '@type': 'https://didcomm.org/report-problem/2.0/problem-report', '@id': 'short' },
+        connection
+      )
+      await expect(transformed).rejects.toThrow('Not sending problem report in response to problem report')
+      expect(sendMessage).not.toHaveBeenCalled()
+
+      await agent.shutdown()
+    })
+
+    describe('invalid message on a DIDComm v2 connection', () => {
+      const pingId = '4c1d6c5e-2f44-4a8e-9d3c-1f0b6a7e8d90'
+      let agent: Agent
+
+      beforeAll(async () => {
+        agent = new Agent(getAgentOptions('ReceiverProblemReportV2Test', {}, {}, undefined, { requireDidcomm: true }))
+        await agent.initialize()
+      })
+
+      afterAll(async () => {
+        await agent.shutdown()
+      })
+
+      afterEach(() => {
+        vi.restoreAllMocks()
+      })
+
+      const transformInvalidPing = async (ping: { '@id': string; '~thread': { thid: string } }) => {
+        const sendMessage = vi
+          .spyOn(agent.dependencyManager.resolve(DidCommMessageSender), 'sendMessage')
+          .mockResolvedValue()
+        const receiver = agent.dependencyManager.resolve(DidCommMessageReceiver)
+
+        // @ts-expect-error
+        const transformed = receiver.transformAndValidate(
+          agent.context,
+          { '@type': 'https://didcomm.org/trust-ping/2.0/ping', response_requested: 'yes', ...ping },
+          getMockConnection({ didcommVersion: 'v2' })
+        )
+        await expect(transformed).rejects.toThrow('Error validating message https://didcomm.org/trust-ping/2.0/ping')
+
+        return sendMessage.mock.calls.map(([{ message }]) => message)
+      }
+
+      it('answers with a report-problem 2.0 problem report', async () => {
+        const [problemReport] = await transformInvalidPing({ '@id': pingId, '~thread': { thid: 'thread-1' } })
+
+        expect(problemReport).toBeInstanceOf(DidCommProblemReportV2Message)
+        expect(problemReport).toMatchObject({
+          ack: [pingId],
+          code: 'e.p.msg.message-parse-failure',
+          comment: 'Bad message: {1}',
+          args: ['Error validating message https://didcomm.org/trust-ping/2.0/ping'],
+        })
+        expect(problemReport.thread?.parentThreadId).toBe('thread-1')
+      })
+
+      it('uses the message id as pthid when the thid is not valid', async () => {
+        const [problemReport] = await transformInvalidPing({ '@id': pingId, '~thread': { thid: `urn:uuid:${pingId}` } })
+
+        expect(problemReport).toMatchObject({ ack: [pingId] })
+        expect(problemReport.thread?.parentThreadId).toBe(pingId)
+      })
+
+      it('does not answer a message without a valid id', async () => {
+        expect(await transformInvalidPing({ '@id': 'bad id!', '~thread': { thid: 'thread-1' } })).toEqual([])
+      })
+    })
+  })
+})
+
+describe('DidCommMessageReceiver failure reporting', () => {
   const agentConfig = getAgentConfig('DidCommMessageReceiver')
   const encryptedMessage = { protected: 'base64url', iv: 'base64url', ciphertext: 'base64url', tag: 'base64url' }
   const trustPing = { '@type': DidCommTrustPingMessage.type.messageTypeUri, '@id': 'trust-ping-id' }
 
   let agentContext: ReturnType<typeof getAgentContext>
   let eventEmitter: EventEmitter
-  let envelopeService: { unpackMessage: ReturnType<typeof vi.fn> }
+  let envelope: { version: 'v1'; unpack: ReturnType<typeof vi.fn> }
   let dispatcher: { dispatch: ReturnType<typeof vi.fn> }
   let agentContextProvider: { getContextForInboundMessage: ReturnType<typeof vi.fn> }
   let receiver: DidCommMessageReceiver
@@ -27,7 +260,7 @@ describe('DidCommMessageReceiver', () => {
   beforeEach(() => {
     agentContext = getAgentContext({ agentConfig })
     eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
-    envelopeService = { unpackMessage: vi.fn() }
+    envelope = { version: 'v1', unpack: vi.fn() }
     dispatcher = { dispatch: vi.fn() }
     agentContextProvider = { getContextForInboundMessage: vi.fn().mockResolvedValue(agentContext) }
 
@@ -35,10 +268,12 @@ describe('DidCommMessageReceiver', () => {
     messageHandlerRegistry.registerMessageHandler({ supportedMessages: [DidCommTrustPingMessage], handle: vi.fn() })
 
     receiver = new DidCommMessageReceiver(
-      envelopeService as unknown as DidCommEnvelopeService,
+      { getEnvelopeForInbound: vi.fn().mockReturnValue(envelope) } as unknown as DidCommEnvelopeRegistry,
       {} as DidCommTransportService,
       {} as DidCommMessageSender,
       { findByKeys: vi.fn().mockResolvedValue(null) } as unknown as DidCommConnectionService,
+      {} as DidCommOutOfBandService,
+      {} as DidCommConnectionsModuleConfig,
       dispatcher as unknown as DidCommDispatcher,
       messageHandlerRegistry,
       eventEmitter,
@@ -48,7 +283,7 @@ describe('DidCommMessageReceiver', () => {
   })
 
   test('reports a message it cannot decrypt as unreadable', async () => {
-    envelopeService.unpackMessage.mockRejectedValue(new Error('decryption failed'))
+    envelope.unpack.mockRejectedValue(new Error('decryption failed'))
     const listener = vi.fn()
     eventEmitter.on(DidCommEventTypes.DidCommMessageProcessingFailed, listener)
 

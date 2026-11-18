@@ -1,10 +1,12 @@
 import type { AgentContext, DidDocumentKey, ResolvedDidCommService } from '@credo-ts/core'
 import {
   CredoError,
+  DidCommV1Service,
   DidDocument,
   DidKey,
   DidRepository,
   DidsApi,
+  findMatchingEd25519Key,
   getAlternativeDidsForPeerDid,
   getNumAlgoFromPeerDid,
   getPublicJwkFromVerificationMethod,
@@ -43,6 +45,7 @@ import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtoc
 import type { DidCommConnectionRecord } from './repository'
 import { DidCommConnectionService } from './services'
 import {
+  addSharedDid,
   createPeerDidFromServices,
   getResolvedDidcommServiceWithSigningKeyId,
   routingToServices,
@@ -128,16 +131,18 @@ export class DidExchangeProtocol {
     const message = new DidCommDidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
 
     const signingKeys = didDocument
-      .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+      .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
+      .filter(({ publicJwk }) => publicJwk.is(Kms.Ed25519PublicJwk))
       .map(({ publicJwk, verificationMethod }) => {
         // Bind the kmsKeyIds
-        const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
+        const key = keys?.find(({ didDocumentRelativeKeyId }) =>
           verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-        )?.kmsKeyId
+        )
 
-        publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
+        publicJwk.keyId = key?.kmsKeyId ?? publicJwk.legacyKeyId
+        publicJwk.kmsBackend = key?.kmsBackend
 
-        return publicJwk
+        return publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>
       })
 
     // Create sign attachment containing didDoc
@@ -163,6 +168,7 @@ export class DidExchangeProtocol {
 
     connectionRecord.did = didDocument.id
     connectionRecord.threadId = message.id
+    if (did) addSharedDid(connectionRecord, didDocument.id)
 
     if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
       connectionRecord.autoAcceptConnection = autoAcceptConnection
@@ -220,7 +226,7 @@ export class DidExchangeProtocol {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+        recipientKeyFingerprints: didDocument.allDidCommRecipientKeys.map((key) => key.fingerprint),
 
         // For did:peer, store any alternative dids (like short form did:peer:4),
         // it may have in order to relate any message referencing it
@@ -308,18 +314,34 @@ export class DidExchangeProtocol {
     for (const did of outOfBandRecord.outOfBandInvitation.getDidServices()) {
       const dids = agentContext.resolve(DidsApi)
       const resolved = await dids.resolveCreatedDidDocumentWithKeys(parseDid(did).did)
-      invitationRecipientKeys.push(
-        ...resolved.didDocument
-          .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
-          .map(({ publicJwk, verificationMethod }) => {
-            const kmsKeyId = resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
-              verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-            )?.kmsKeyId
 
-            publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
-            return publicJwk
-          })
-      )
+      // Only the keys the receiver takes as invitation keys (see DidCommDocumentService.resolveServicesFromDid) may sign,
+      // any other key makes it reject the response: the DIDComm v1 recipient keys, X25519 mapped to its Ed25519 key.
+      for (const service of resolved.didDocument.didCommServices) {
+        if (!(service instanceof DidCommV1Service)) continue
+
+        for (const recipientKey of service.recipientKeys) {
+          const verificationMethod = resolved.didDocument.dereferenceKey(recipientKey, [
+            'authentication',
+            'keyAgreement',
+          ])
+          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+          const signingKey = publicJwk.is(Kms.X25519PublicJwk)
+            ? findMatchingEd25519Key(publicJwk, resolved.didDocument)
+            : { publicJwk, verificationMethod }
+
+          if (!signingKey?.publicJwk.is(Kms.Ed25519PublicJwk)) continue
+          if (invitationRecipientKeys.some((key) => key.fingerprint === signingKey.publicJwk.fingerprint)) continue
+
+          const key = resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
+            signingKey.verificationMethod.id.endsWith(didDocumentRelativeKeyId)
+          )
+
+          signingKey.publicJwk.keyId = key?.kmsKeyId ?? signingKey.publicJwk.legacyKeyId
+          signingKey.publicJwk.kmsBackend = key?.kmsBackend
+          invitationRecipientKeys.push(signingKey.publicJwk)
+        }
+      }
     }
 
     if (numAlgo === PeerDidNumAlgo.GenesisDoc) {
@@ -361,18 +383,24 @@ export class DidExchangeProtocol {
       })
     }
 
-    // Get DID Document either from message (if it is a did:peer) or resolve it externally
-    const didDocument = await this.resolveDidDocument(
-      agentContext,
-      message,
-      outOfBandRecord.getTags().recipientKeyFingerprints.map((fingerprint) => {
-        const publicJwk = Kms.PublicJwk.fromFingerprint(fingerprint)
-        if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
-          throw new CredoError('Expected fingerprint to be of type Ed25519')
-        }
-        return publicJwk
-      })
-    )
+    // Get DID Document either from message (if it is a did:peer) or resolve it externally.
+    // The OOB record's recipientKeyFingerprints may include X25519 entries harvested from
+    // DIDComm v2 services in the inviter's DID document (see
+    // DidCommDocumentService.resolveServicesFromDid). DID Exchange v1.x signatures are only
+    // ever produced with Ed25519 invitation keys, so non-Ed25519 fingerprints are irrelevant
+    // at this layer and must be filtered out rather than rejected.
+    const ed25519InvitationKeys = outOfBandRecord
+      .getTags()
+      .recipientKeyFingerprints.map((fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint))
+      .filter((publicJwk): publicJwk is Kms.PublicJwk<Kms.Ed25519PublicJwk> => publicJwk.is(Kms.Ed25519PublicJwk))
+
+    if (ed25519InvitationKeys.length === 0) {
+      throw new CredoError(
+        'Expected at least one Ed25519 invitation key in the out of band record to verify the DID Exchange response'
+      )
+    }
+
+    const didDocument = await this.resolveDidDocument(agentContext, message, ed25519InvitationKeys)
 
     if (isValidPeerDid(didDocument.id)) {
       const didRecord = await this.didRepository.storeReceivedDid(messageContext.agentContext, {
@@ -381,7 +409,7 @@ export class DidExchangeProtocol {
         tags: {
           // We need to save the recipientKeys, so we can find the associated did
           // of a key when we receive a message from another connection.
-          recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+          recipientKeyFingerprints: didDocument.allDidCommRecipientKeys.map((key) => key.fingerprint),
 
           // For did:peer, store any alternative dids (like short form did:peer:4),
           // it may have in order to relate any message referencing it
@@ -503,7 +531,7 @@ export class DidExchangeProtocol {
 
         const jws = await this.jwsService.createJws(agentContext, {
           payload,
-          keyId: signingKey.keyId,
+          key: signingKey,
           header: {
             kid,
           },

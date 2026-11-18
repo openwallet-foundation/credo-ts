@@ -20,6 +20,11 @@ export interface DidCommMediatorRoutingRecordRoutingKey {
    * The key id in the KMS
    */
   kmsKeyId: string
+
+  /**
+   * The KMS backend that holds the key. Not set on keys stored before it was added.
+   */
+  kmsBackend?: string
 }
 
 export type DefaultDidCommMediatorRoutingRecordTags = {
@@ -34,6 +39,7 @@ const didCommMediatorRoutingRecordEncodingSchema = createRecordEncodingSchema({
         z.object({
           routingKeyFingerprint: z.string(),
           kmsKeyId: z.string(),
+          kmsBackend: z.string().optional(),
         }),
       ])
     )
@@ -54,9 +60,6 @@ export class DidCommMediatorRoutingRecord extends BaseRecord<DefaultDidCommMedia
 
   public static readonly type = 'MediatorRoutingRecord'
   public readonly type = DidCommMediatorRoutingRecord.type
-
-  public static readonly allowCache = true
-  public readonly allowCache = true
 
   public constructor(props: DidCommMediatorRoutingRecordProps) {
     super()
@@ -85,9 +88,11 @@ export class DidCommMediatorRoutingRecord extends BaseRecord<DefaultDidCommMedia
       // routing keys using new structure, have a key id defined
       const publicJwk = Kms.PublicJwk.fromFingerprint(routingKey.routingKeyFingerprint)
       publicJwk.keyId = routingKey.kmsKeyId
+      publicJwk.kmsBackend = routingKey.kmsBackend
 
-      if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
-        throw new CredoError('Expected mediator routing record key to be of type Ed25519.')
+      // The Ed25519 key serves DIDComm v1 forwards, the X25519 key serves DIDComm v2 forwards
+      if (!publicJwk.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk)) {
+        throw new CredoError('Expected mediator routing record key to be of type Ed25519 or X25519.')
       }
       return publicJwk
     })

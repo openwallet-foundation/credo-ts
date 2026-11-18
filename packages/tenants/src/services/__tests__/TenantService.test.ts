@@ -1,9 +1,10 @@
-import { Kms } from '@credo-ts/core'
+import { CacheModuleConfig, InMemoryLruCache, Kms } from '@credo-ts/core'
 import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
-import { TenantRecord, TenantRoutingRecord } from '../../repository'
+import { TenantRecord, TenantRoutingRecord, TenantStatus } from '../../repository'
 import { TenantRepository } from '../../repository/TenantRepository'
 import { TenantRoutingRepository } from '../../repository/TenantRoutingRepository'
+import { TenantsModuleConfig } from '../../TenantsModuleConfig'
 import { TenantRecordService } from '../TenantRecordService'
 
 vi.mock('../../repository/TenantRepository')
@@ -13,13 +14,103 @@ const TenantRoutingRepositoryMock = TenantRoutingRepository as MockedClassConstr
 
 const tenantRepository = new TenantRepositoryMock()
 const tenantRoutingRepository = new TenantRoutingRepositoryMock()
-const agentContext = getAgentContext({})
+const agentContext = getAgentContext({
+  registerInstances: [[TenantsModuleConfig, new TenantsModuleConfig({ tenantRecordCache: false })]],
+})
 
 const tenantRecordService = new TenantRecordService(tenantRepository, tenantRoutingRepository)
 
 describe('TenantRecordService', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  describe('getTenantByIdForSession', () => {
+    const tenantRecord = new TenantRecord({ id: 'tenant-id', config: { label: 'Test Tenant' }, storageVersion: '0.5' })
+
+    test('reads the tenant record from storage every time when the cache is disabled', async () => {
+      mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
+
+      await tenantRecordService.getTenantByIdForSession(agentContext, 'tenant-id')
+      await tenantRecordService.getTenantByIdForSession(agentContext, 'tenant-id')
+
+      expect(tenantRepository.getById).toHaveBeenCalledTimes(2)
+    })
+
+    const getCachedContext = (cache = new InMemoryLruCache({ limit: 10 })) => ({
+      cache,
+      cachedContext: getAgentContext({
+        registerInstances: [
+          [TenantsModuleConfig, new TenantsModuleConfig()],
+          [CacheModuleConfig, new CacheModuleConfig({ cache })],
+        ],
+      }),
+    })
+
+    test('serves the session properties from the agent cache by default until the tenant is updated or deleted', async () => {
+      const { cachedContext } = getCachedContext()
+      mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
+
+      await tenantRecordService.getTenantByIdForSession(cachedContext, 'tenant-id')
+      const cached = await tenantRecordService.getTenantByIdForSession(cachedContext, 'tenant-id')
+      expect(tenantRepository.getById).toHaveBeenCalledTimes(1)
+      expect(cached).toEqual({ id: 'tenant-id', status: TenantStatus.Active, storageVersion: '0.5' })
+
+      await tenantRecordService.updateTenant(cachedContext, tenantRecord)
+      await tenantRecordService.getTenantByIdForSession(cachedContext, 'tenant-id')
+      expect(tenantRepository.getById).toHaveBeenCalledTimes(2)
+
+      mockFunction(tenantRoutingRepository.findByQuery).mockResolvedValue([])
+      await tenantRecordService.deleteTenantById(cachedContext, 'tenant-id')
+      await tenantRecordService.getTenantByIdForSession(cachedContext, 'tenant-id')
+      // One read by the delete itself, one by the lookup after it
+      expect(tenantRepository.getById).toHaveBeenCalledTimes(4)
+    })
+
+    test('caches only the id, status and storage version of the tenant record', async () => {
+      const { cache, cachedContext } = getCachedContext()
+      const recordWithStoreKey = new TenantRecord({
+        id: 'tenant-id',
+        config: tenantRecord.config,
+        storageVersion: '0.5',
+      })
+      recordWithStoreKey.metadata.set('_askar/storeConfig', { key: 'store-key' })
+      mockFunction(tenantRepository.getById).mockResolvedValue(recordWithStoreKey)
+
+      await tenantRecordService.getTenantByIdForSession(cachedContext, 'tenant-id')
+
+      const setSpy = vi.spyOn(cache, 'set')
+      await tenantRecordService.updateTenant(cachedContext, recordWithStoreKey)
+      await tenantRecordService.getTenantByIdForSession(cachedContext, 'tenant-id')
+      expect(setSpy).toHaveBeenCalledTimes(1)
+      expect(setSpy.mock.calls[0][2]).toEqual({ id: 'tenant-id', status: TenantStatus.Active, storageVersion: '0.5' })
+    })
+
+    test('does not cache a tenant record with outdated storage', async () => {
+      const { cachedContext } = getCachedContext()
+      const outdatedRecord = new TenantRecord({ id: 'tenant-id', config: tenantRecord.config, storageVersion: '0.4' })
+      mockFunction(tenantRepository.getById).mockResolvedValue(outdatedRecord)
+
+      await tenantRecordService.getTenantByIdForSession(cachedContext, 'tenant-id')
+      await tenantRecordService.getTenantByIdForSession(cachedContext, 'tenant-id')
+
+      expect(tenantRepository.getById).toHaveBeenCalledTimes(2)
+    })
+
+    test('reads cached session properties with outdated storage from storage again', async () => {
+      const { cache, cachedContext } = getCachedContext()
+      await cache.set(cachedContext, 'tenants:tenant-record:tenant-id', {
+        id: 'tenant-id',
+        status: TenantStatus.Active,
+        storageVersion: '0.4',
+      })
+      mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
+
+      const stored = await tenantRecordService.getTenantByIdForSession(cachedContext, 'tenant-id')
+
+      expect(stored.storageVersion).toBe('0.5')
+      expect(tenantRepository.getById).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('createTenant', () => {
@@ -59,14 +150,13 @@ describe('TenantRecordService', () => {
         storageVersion: '0.5',
       })
       mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
-      mockFunction(tenantRoutingRepository.findByQuery).mockResolvedValue([])
 
       await tenantRecordService.deleteTenantById(agentContext, 'tenant-id')
 
       expect(tenantRepository.delete).toHaveBeenCalledWith(agentContext, tenantRecord)
     })
 
-    test('deletes associated tenant routing records', async () => {
+    test('deletes associated tenant routing records by query', async () => {
       const tenantRecord = new TenantRecord({
         id: 'tenant-id',
         config: {
@@ -74,29 +164,13 @@ describe('TenantRecordService', () => {
         },
         storageVersion: '0.5',
       })
-      const tenantRoutingRecords = [
-        new TenantRoutingRecord({
-          recipientKeyFingerprint: '1',
-          tenantId: 'tenant-id',
-        }),
-        new TenantRoutingRecord({
-          recipientKeyFingerprint: '2',
-          tenantId: 'tenant-id',
-        }),
-      ]
-
       mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
-      mockFunction(tenantRoutingRepository.findByQuery).mockResolvedValue(tenantRoutingRecords)
 
       await tenantRecordService.deleteTenantById(agentContext, 'tenant-id')
 
-      expect(tenantRoutingRepository.findByQuery).toHaveBeenCalledWith(agentContext, {
-        tenantId: 'tenant-id',
-      })
-
-      expect(tenantRoutingRepository.delete).toHaveBeenCalledTimes(2)
-      expect(tenantRoutingRepository.delete).toHaveBeenNthCalledWith(1, agentContext, tenantRoutingRecords[0])
-      expect(tenantRoutingRepository.delete).toHaveBeenNthCalledWith(2, agentContext, tenantRoutingRecords[1])
+      expect(tenantRoutingRepository.deleteByQuery).toHaveBeenCalledWith(agentContext, { tenantId: 'tenant-id' })
+      expect(tenantRoutingRepository.findByQuery).not.toHaveBeenCalled()
+      expect(tenantRoutingRepository.delete).not.toHaveBeenCalled()
     })
   })
 

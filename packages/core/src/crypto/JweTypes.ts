@@ -1,4 +1,4 @@
-import type { PublicJwk } from '../modules/kms'
+import type { KmsKeyReference, PublicJwk } from '../modules/kms'
 
 export type JweEcdhContentEncryptionAlgorithm =
   | 'A128CBC-HS256'
@@ -51,7 +51,10 @@ export interface JweGeneralJson {
 
 export interface JweDecryptOptions {
   jwe: string | JweGeneralJson
-  recipientKeyId: string
+  /**
+   * The key to decrypt with.
+   */
+  recipientKey: PublicJwk | KmsKeyReference
   recipientKid?: string
   senderPublicJwk?: PublicJwk
   allowedKeyAgreementAlgorithms?: JweKeyAgreementEncryptOptions['algorithm'][]

@@ -1,11 +1,16 @@
+import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { verkeyToDidKey } from '../../../../../../../core/src/modules/dids/helpers'
+import { JsonTransformer } from '../../../../../../../core/src/utils/JsonTransformer'
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../../../core/tests/helpers'
+import { DummyTransportSession } from '../../../../../__tests__/stubs'
+import { DidCommEventTypes } from '../../../../../DidCommEvents'
 import { DidCommMessageReceiver } from '../../../../../DidCommMessageReceiver'
 import { DidCommMessageSender } from '../../../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../../../DidCommModuleConfig'
+import { DidCommTransportService } from '../../../../../DidCommTransportService'
 import { DidCommAttachment } from '../../../../../decorators/attachment/DidCommAttachment'
 import { DidCommProblemReportError } from '../../../../../errors/problem-reports/DidCommProblemReportError'
 import { DidCommInboundMessageContext } from '../../../../../models'
@@ -25,6 +30,13 @@ import {
   DidCommStatusRequestV2Message,
   DidCommStatusV2Message,
 } from '../messages'
+
+// The key the envelope proved as the sender, which assertReadyConnection requires
+const testSenderKey = Kms.PublicJwk.fromPublicKey({
+  kty: 'OKP',
+  crv: 'Ed25519',
+  publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+}) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
 const mockConnection = getMockConnection({
   state: DidCommDidExchangeState.Completed,
@@ -68,6 +80,14 @@ const agentContext = getAgentContext({
     [DidCommMessageReceiver, messageReceiver],
   ],
 })
+const transportService = new DidCommTransportService(agentContext, eventEmitter)
+agentContext.dependencyManager.registerInstance(DidCommTransportService, transportService)
+
+function saveTransportSession(id: string, { isSingleResponse = false } = {}) {
+  const session = new DummyTransportSession(id)
+  session.isSingleResponse = isSingleResponse
+  transportService.saveSession(session)
+}
 
 const encryptedMessage: DidCommEncryptedMessage = {
   protected: 'base64url',
@@ -95,6 +115,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
       const statusRequest = new DidCommStatusRequestV2Message({})
 
       const messageContext = new DidCommInboundMessageContext(statusRequest, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -120,6 +141,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
       const statusRequest = new DidCommStatusRequestV2Message({})
 
       const messageContext = new DidCommInboundMessageContext(statusRequest, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -148,6 +170,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
       })
 
       const messageContext = new DidCommInboundMessageContext(statusRequest, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -170,6 +193,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
 
       const liveDeliveryFor = async (sessionId?: string): Promise<boolean | undefined> => {
         const messageContext = new DidCommInboundMessageContext(new DidCommStatusRequestV2Message({}), {
+          senderKey: testSenderKey,
           connection: mockConnection,
           agentContext,
           sessionId,
@@ -192,11 +216,41 @@ describe('DidCommMessagePickupV2Protocol', () => {
 
       const messageContext = new DidCommInboundMessageContext(
         new DidCommLiveDeliveryChangeV2Message({ liveDelivery: true }),
-        { connection: mockConnection, agentContext }
+        { senderKey: testSenderKey, connection: mockConnection, agentContext }
       )
       const { message } = await pickupProtocol.processLiveDeliveryChange(messageContext)
 
       expect(message.liveDelivery).toBe(false)
+    })
+
+    test('replies that live delivery is off when the transport session carries a single response', async () => {
+      mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(0)
+      saveTransportSession('http-request', { isSingleResponse: true })
+
+      const messageContext = new DidCommInboundMessageContext(
+        new DidCommLiveDeliveryChangeV2Message({ liveDelivery: true }),
+        { senderKey: testSenderKey, connection: mockConnection, agentContext, sessionId: 'http-request' }
+      )
+      const { message } = await pickupProtocol.processLiveDeliveryChange(messageContext)
+
+      expect(message.liveDelivery).toBe(false)
+      expect(
+        sessionService.getLiveSessionByConnectionId(agentContext, { connectionId: mockConnection.id })
+      ).toBeUndefined()
+    })
+
+    test('turns live delivery on over a long-lived transport session', async () => {
+      mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(0)
+      saveTransportSession('socket')
+
+      const messageContext = new DidCommInboundMessageContext(
+        new DidCommLiveDeliveryChangeV2Message({ liveDelivery: true }),
+        { senderKey: testSenderKey, connection: mockConnection, agentContext, sessionId: 'socket' }
+      )
+      const { message } = await pickupProtocol.processLiveDeliveryChange(messageContext)
+
+      expect(message.liveDelivery).toBe(true)
+      sessionService.removeLiveSession(agentContext, { connectionId: mockConnection.id })
     })
   })
 
@@ -207,6 +261,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
       const deliveryRequest = new DidCommDeliveryRequestV2Message({ limit: 10 })
 
       const messageContext = new DidCommInboundMessageContext(deliveryRequest, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -233,6 +288,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
       const deliveryRequest = new DidCommDeliveryRequestV2Message({ limit: 10 })
 
       const messageContext = new DidCommInboundMessageContext(deliveryRequest, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -267,6 +323,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
       const deliveryRequest = new DidCommDeliveryRequestV2Message({ limit: 2 })
 
       const messageContext = new DidCommInboundMessageContext(deliveryRequest, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -304,6 +361,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
       })
 
       const messageContext = new DidCommInboundMessageContext(deliveryRequest, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -328,6 +386,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
       })
 
       const messageContext = new DidCommInboundMessageContext(messagesReceived, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -360,6 +419,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
       })
 
       const messageContext = new DidCommInboundMessageContext(messagesReceived, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -399,6 +459,44 @@ describe('DidCommMessagePickupV2Protocol', () => {
     })
   })
 
+  describe('DidCommStatusV2Message', () => {
+    it('leaves the received times unset when they are unknown', () => {
+      const status = new DidCommStatusV2Message({ threadId: uuid(), messageCount: 0 })
+
+      const json = status.toJSON()
+      expect(json.newest_received_time).toBeUndefined()
+      expect(json.oldest_received_time).toBeUndefined()
+
+      const parsed = JsonTransformer.fromJSON(json, DidCommStatusV2Message)
+      expect(parsed.newestReceivedTime).toBeUndefined()
+      expect(parsed.oldestReceivedTime).toBeUndefined()
+    })
+
+    it('leaves the received times unset when they are null', () => {
+      const json = { ...new DidCommStatusV2Message({ threadId: uuid(), messageCount: 0 }).toJSON() }
+      json.newest_received_time = null
+      json.oldest_received_time = null
+
+      const parsed = JsonTransformer.fromJSON(json, DidCommStatusV2Message)
+      expect(parsed.newestReceivedTime).toBeUndefined()
+      expect(parsed.oldestReceivedTime).toBeUndefined()
+    })
+
+    it('keeps the received times when they are set', () => {
+      const receivedTime = new Date('2026-01-01T10:00:00.000Z')
+      const status = new DidCommStatusV2Message({
+        threadId: uuid(),
+        messageCount: 1,
+        newestReceivedTime: receivedTime,
+        oldestReceivedTime: receivedTime,
+      })
+
+      const parsed = JsonTransformer.fromJSON(status.toJSON(), DidCommStatusV2Message)
+      expect(parsed.newestReceivedTime).toEqual(receivedTime)
+      expect(parsed.oldestReceivedTime).toEqual(receivedTime)
+    })
+  })
+
   describe('processStatus', () => {
     it('if status request has a message count of zero returns nothing', async () => {
       const status = new DidCommStatusV2Message({
@@ -411,7 +509,11 @@ describe('DidCommMessagePickupV2Protocol', () => {
         connectionRecord: mockConnection,
       })
 
-      const messageContext = new DidCommInboundMessageContext(status, { connection: mockConnection, agentContext })
+      const messageContext = new DidCommInboundMessageContext(status, {
+        senderKey: testSenderKey,
+        connection: mockConnection,
+        agentContext,
+      })
       const deliveryRequestMessage = await pickupProtocol.processStatus(messageContext)
       expect(deliveryRequestMessage).toBeNull()
     })
@@ -421,7 +523,11 @@ describe('DidCommMessagePickupV2Protocol', () => {
         threadId: uuid(),
         messageCount: 1,
       })
-      const messageContext = new DidCommInboundMessageContext(status, { connection: mockConnection, agentContext })
+      const messageContext = new DidCommInboundMessageContext(status, {
+        senderKey: testSenderKey,
+        connection: mockConnection,
+        agentContext,
+      })
 
       const deliveryRequestMessage = await pickupProtocol.processStatus(messageContext)
       const expectedDeliveryRequest = new DidCommDeliveryRequestV2Message({ id: deliveryRequestMessage?.id, limit: 1 })
@@ -433,6 +539,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
   describe('processDelivery', () => {
     it('if the delivery has no attachments expect an error', async () => {
       const messageContext = new DidCommInboundMessageContext({} as DidCommMessageDeliveryV2Message, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -455,6 +562,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
         ],
       })
       const messageContext = new DidCommInboundMessageContext(messageDeliveryMessage, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -480,6 +588,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
         ],
       })
       const messageContext = new DidCommInboundMessageContext(messageDeliveryMessage, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })

@@ -1,22 +1,36 @@
-import type { Sign1Context } from '@owf/cose'
+import type { CoseKey, Sign1Context } from '@owf/cose'
 import type { AgentContext } from '../../agent'
 import { CredoError } from '../../error'
 import {
   KeyManagementApi,
   type KmsJwkPublicAsymmetric,
+  type KmsKeyReference,
   type KnownCoseSignatureAlgorithm,
   knownJwaFromCoseSignatureAlgorithm,
   PublicJwk,
 } from '../../modules/kms'
 
-export const getSign1Context = (agentContext: AgentContext): Sign1Context => {
+/**
+ * The KMS key to use for a `CoseKey`: the key in `keys` with the same public key. The `keyId` of the `CoseKey` is
+ * never used, as the mdoc library writes it into the `kid` header.
+ */
+export function getKmsKeyForCoseKey(keys: PublicJwk[], coseKey: CoseKey): KmsKeyReference {
+  const publicJwk = keys.length > 0 ? PublicJwk.fromUnknown(coseKey.jwk) : undefined
+  const key = publicJwk ? keys.find((key) => key.hasKeyId && key.equals(publicJwk)) : undefined
+  if (key) return { keyId: key.keyId, kmsBackend: key.kmsBackend }
+
+  throw new CredoError('No KMS key found for COSE key. Pass the key with its key id to the context.')
+}
+
+/**
+ * @param keys the keys that sign, from `PublicJwk.fromKmsKey`, found by their public key.
+ */
+export const getSign1Context = (agentContext: AgentContext, keys: PublicJwk[] = []): Sign1Context => {
   const kms = agentContext.resolve(KeyManagementApi)
 
   return {
     sign: async (input) => {
-      if (!input.key.keyId) {
-        throw new CredoError('Missing required keyId on CoseKey for signing mdoc')
-      }
+      const { keyId, kmsBackend } = getKmsKeyForCoseKey(keys, input.key)
 
       const algorithm = input.algorithm ?? input.key.algorithm
       if (algorithm === undefined) {
@@ -26,28 +40,24 @@ export const getSign1Context = (agentContext: AgentContext): Sign1Context => {
       const { signature } = await kms.sign({
         data: input.toBeSigned,
         algorithm: knownJwaFromCoseSignatureAlgorithm(algorithm as KnownCoseSignatureAlgorithm),
-        keyId: input.key.keyId,
+        keyId,
+        backend: kmsBackend,
+        expectedPublicJwk: input.key.jwk as KmsJwkPublicAsymmetric,
       })
 
       return signature
     },
     verify: async (input) => {
-      // NOTE: @owf/mdoc does not forward the alg from the Sign1 protected header when verifying
-      // the device signature, so we have to fall back to the signature algorithm of the key.
-      // Device keys are single-algorithm EC/OKP keys, so this is unambiguous in practice. The
-      // fallback can be removed once @owf/mdoc passes the alg of the deviceAuth Sign1 structure.
-      const algorithm = input.algorithm ?? input.key.algorithm
-      const jwaAlgorithm = algorithm
-        ? knownJwaFromCoseSignatureAlgorithm(algorithm as KnownCoseSignatureAlgorithm)
-        : PublicJwk.fromUnknown(input.key.jwk).signatureAlgorithm
+      if (input.algorithm === undefined) {
+        throw new CredoError('Unable to verify COSE Sign1 structure. No algorithm defined in the protected header.')
+      }
 
       const { verified } = await kms.verify({
         key: {
           publicJwk: input.key.jwk as KmsJwkPublicAsymmetric,
         },
         data: input.toBeVerified,
-        algorithm: jwaAlgorithm,
-
+        algorithm: knownJwaFromCoseSignatureAlgorithm(input.algorithm as KnownCoseSignatureAlgorithm),
         signature: input.signature,
       })
 

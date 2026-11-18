@@ -1,5 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
 import type { CallbackContext, Jwk, JwkSet } from '@openid4vc/oauth2'
+import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
+import { getPublishedJwk } from './utils'
 
 /**
  * Returns a `getJwks` callback that resolves JWK Sets which are held by this agent itself, keyed by
@@ -29,9 +31,19 @@ export function getOid4vcLocalJwksCallback(
 }
 
 /**
- * Returns the JWK Set that this agent publishes on `jwksUri` for an issuer's access token signing
- * key, in exactly the shape the JWKs endpoint serves it.
+ * The JWK Set the JWKs endpoint serves for an issuer: the current and previous access token signing keys, each with the
+ * `kid` that access tokens carry, so tokens signed before a rotation still verify.
  */
-export function getLocalAccessTokenJwks(jwksUri: string, accessTokenPublicJwk: Jwk) {
-  return { [jwksUri]: { keys: [accessTokenPublicJwk] } } satisfies Record<string, JwkSet>
+export function getAccessTokenJwks(issuer: OpenId4VcIssuerRecord): JwkSet {
+  return {
+    keys: issuer.resolvedAccessTokenPublicJwks.map((key) => getPublishedJwk(key) as Jwk),
+  }
+}
+
+/**
+ * Returns the JWK Set that this agent publishes on `jwksUri` for an issuer's access token signing
+ * keys, in exactly the shape the JWKs endpoint serves it.
+ */
+export function getLocalAccessTokenJwks(jwksUri: string, issuer: OpenId4VcIssuerRecord) {
+  return { [jwksUri]: getAccessTokenJwks(issuer) } satisfies Record<string, JwkSet>
 }

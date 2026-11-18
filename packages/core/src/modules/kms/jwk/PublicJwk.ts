@@ -44,6 +44,11 @@ type ExtractByJwk<T, K> = T extends { jwk: infer J } ? (K extends J ? T : never)
 type ExtractByPublicKey<T, K> = T extends { publicKey: infer J } ? (K extends J ? T : never) : never
 
 export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
+  /**
+   * The KMS backend that holds the key of `keyId`, so key operations don't have to look the key up. It is not part of the jwk.
+   */
+  public kmsBackend?: string
+
   private constructor(private readonly jwk: Jwk) {}
 
   public static fromUnknown(jwkJson: unknown) {
@@ -53,7 +58,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
 
     let jwkInstance: SupportedPublicJwk
     if (publicJwk.kty === 'RSA') {
-      jwkInstance = new RsaPublicJwk(publicJwk)
+      jwkInstance = new RsaPublicJwk({ ...publicJwk })
     } else if (publicJwk.kty === 'EC') {
       if (publicJwk.crv === 'P-256') {
         jwkInstance = new P256PublicJwk({
@@ -97,6 +102,20 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     return new PublicJwk(jwkInstance)
   }
 
+  /**
+   * A `PublicJwk` for a key in the KMS, from the result of `createKey` or `importKey`. It keeps the key id and the backend, so key operations don't have to look the key up.
+   */
+  public static fromKmsKey<Jwk extends KmsJwkPublicAsymmetric>(key: {
+    keyId: string
+    backend?: string
+    publicJwk: Jwk
+  }) {
+    const publicJwk = PublicJwk.fromPublicJwk(key.publicJwk)
+    publicJwk.keyId = key.keyId
+    publicJwk.kmsBackend = key.backend
+    return publicJwk
+  }
+
   // FIXME: all Jwk combinations should be separate types.
   // so not kty: EC, and crv: P-256 | P-384
   // but: kty: EC, and crv: P-256 | kty: EC, and crv: P-384
@@ -105,6 +124,17 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     return PublicJwk.fromUnknown(jwk) as PublicJwk<
       ExtractByJwk<SupportedPublicJwk, Jwk> extends never ? SupportedPublicJwk : ExtractByJwk<SupportedPublicJwk, Jwk>
     >
+  }
+
+  /**
+   * A copy with its own jwk object, so setting the `keyId` or `alg` of the copy leaves this instance as is.
+   * Nested values of the jwk are shared.
+   */
+  public clone(): PublicJwk<Jwk> {
+    const JwkClass = this.jwk.constructor as new (jwk: Jwk['jwk']) => Jwk
+    const cloned = new PublicJwk(new JwkClass({ ...this.jwk.jwk }))
+    cloned.kmsBackend = this.kmsBackend
+    return cloned
   }
 
   public toJson({ includeKid = true }: { includeKid?: boolean } = {}): Jwk['jwk'] {
@@ -312,12 +342,14 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     Jwk1 extends SupportedPublicJwk,
     Jwk2 extends SupportedPublicJwk = Jwk1,
     Jwk3 extends SupportedPublicJwk = Jwk1,
+    Jwk4 extends SupportedPublicJwk = Jwk1,
   >(
     jwkType1: Constructor<Jwk1>,
     jwkType2?: Constructor<Jwk2>,
-    jwkType3?: Constructor<Jwk3>
-  ): this is PublicJwk<Jwk1> | PublicJwk<Jwk2> | PublicJwk<Jwk3> {
-    const types = [jwkType1, jwkType2, jwkType3].filter(Boolean) as Constructor<SupportedPublicJwk>[]
+    jwkType3?: Constructor<Jwk3>,
+    jwkType4?: Constructor<Jwk4>
+  ): this is PublicJwk<Jwk1> | PublicJwk<Jwk2> | PublicJwk<Jwk3> | PublicJwk<Jwk4> {
+    const types = [jwkType1, jwkType2, jwkType3, jwkType4].filter(Boolean) as Constructor<SupportedPublicJwk>[]
     return types.some((type) => this.jwk.constructor === type)
   }
 
@@ -333,9 +365,12 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
       throw new KeyManagementError('Unsupported key conversion. Only Ed25519 to X25519 is supported.')
     }
 
-    return PublicJwk.fromPublicJwk(this.jwk.toX25519PublicJwk()) as Jwk extends Ed25519PublicJwk
-      ? PublicJwk<X25519PublicJwk>
-      : never
+    // The converted key is the same key in the KMS
+    const converted = PublicJwk.fromPublicJwk(this.jwk.toX25519PublicJwk())
+    if (this.hasKeyId) converted.keyId = this.keyId
+    converted.kmsBackend = this.kmsBackend
+
+    return converted as Jwk extends Ed25519PublicJwk ? PublicJwk<X25519PublicJwk> : never
   }
 
   /**

@@ -137,7 +137,7 @@ describe('OpenId4Vc (Wallet Initiated Issuance)', () => {
     const idpSignJwt: SignJwtCallback = async (_signer, { header, payload }) => {
       const jwsService = issuer.agent.dependencyManager.resolve(JwsService)
       const compact = await jwsService.createJwsCompact(issuer.agent.context, {
-        keyId: idpServerKey.keyId,
+        key: { keyId: idpServerKey.keyId },
         payload: JwtPayload.fromJson(payload),
         protectedHeaderOptions: { ...header, jwk: undefined, alg: 'ES256', kid: 'first' },
       })

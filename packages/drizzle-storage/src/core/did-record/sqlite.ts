@@ -16,8 +16,6 @@ export const did = sqliteTable(
     recipientKeyFingerprints: text('recipient_key_fingerprints', { mode: 'json' }).$type<string[]>(),
     method: text().notNull(),
     methodSpecificIdentifier: text('method_specific_identifier').notNull(),
-    // Not adding this here, since it's legacy
-    // legacyUnqualifiedDid
 
     // Custom Tags
     alternativeDids: text('alternative_dids', { mode: 'json' }).$type<string[]>(),

@@ -62,9 +62,7 @@ describe('WebVhAnonCredsRegistry assertionMethod signing', () => {
         [InjectionSymbols.StorageService, new InMemoryStorageService()],
         [InjectionSymbols.Logger, agentConfig.logger],
         [CacheModuleConfig, new CacheModuleConfig({ cache: new InMemoryLruCache({ limit: 500 }) })],
-        // The same resolver instance backs both did resolution and resource dereferencing
         [DidsModuleConfig, new DidsModuleConfig({ resolvers: [webvhResolver] })],
-        [WebVhDidResolver, webvhResolver],
       ],
     })
     // Registers the cryptosuite token that W3cDataIntegrityCryptosuiteRegistry injects

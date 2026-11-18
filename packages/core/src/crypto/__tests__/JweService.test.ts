@@ -51,7 +51,7 @@ describe('JweService', () => {
       epk: expect.objectContaining({ kty: 'EC', crv: 'P-256' }),
     })
 
-    const decrypted = await jweService.decryptJwe(agentContext, { jwe, recipientKeyId: recipient.keyId })
+    const decrypted = await jweService.decryptJwe(agentContext, { jwe, recipientKey: { keyId: recipient.keyId } })
     expect(TypedArrayEncoder.toUtf8String(decrypted.data)).toBe('hello jwe')
     expect(decrypted.protectedHeader.typ).toBe('test+jwe')
   })
@@ -81,12 +81,16 @@ describe('JweService', () => {
       ['first', first],
       ['second', second],
     ] as const) {
-      const decrypted = await jweService.decryptJwe(agentContext, { jwe, recipientKeyId: key.keyId, recipientKid: kid })
+      const decrypted = await jweService.decryptJwe(agentContext, {
+        jwe,
+        recipientKey: { keyId: key.keyId },
+        recipientKid: kid,
+      })
       expect(TypedArrayEncoder.toUtf8String(decrypted.data)).toBe('hello jwe')
       expect(decrypted.recipientHeader).toEqual({ kid })
     }
 
-    await expect(jweService.decryptJwe(agentContext, { jwe, recipientKeyId: first.keyId })).rejects.toThrow(
+    await expect(jweService.decryptJwe(agentContext, { jwe, recipientKey: { keyId: first.keyId } })).rejects.toThrow(
       'a recipient kid is required'
     )
   })
@@ -109,14 +113,14 @@ describe('JweService', () => {
 
     const decrypted = await jweService.decryptJwe(agentContext, {
       jwe,
-      recipientKeyId: recipient.keyId,
+      recipientKey: { keyId: recipient.keyId },
       senderPublicJwk: sender.publicJwk,
     })
     expect(TypedArrayEncoder.toUtf8String(decrypted.data)).toBe('hello jwe')
 
-    await expect(jweService.decryptJwe(agentContext, { jwe, recipientKeyId: recipient.keyId })).rejects.toThrow(
-      'requires the sender public key'
-    )
+    await expect(
+      jweService.decryptJwe(agentContext, { jwe, recipientKey: { keyId: recipient.keyId } })
+    ).rejects.toThrow('requires the sender public key')
   })
 
   it('rejects disallowed algorithms and a modified protected header', async () => {
@@ -130,7 +134,7 @@ describe('JweService', () => {
     await expect(
       jweService.decryptJwe(agentContext, {
         jwe,
-        recipientKeyId: recipient.keyId,
+        recipientKey: { keyId: recipient.keyId },
         allowedContentEncryptionAlgorithms: ['A256GCM'],
       })
     ).rejects.toThrow("JWE 'enc' 'A128GCM' is not allowed")
@@ -141,7 +145,7 @@ describe('JweService', () => {
       ...rest,
     ].join('.')
     await expect(
-      jweService.decryptJwe(agentContext, { jwe: tampered, recipientKeyId: recipient.keyId })
+      jweService.decryptJwe(agentContext, { jwe: tampered, recipientKey: { keyId: recipient.keyId } })
     ).rejects.toThrow()
   })
 
@@ -157,7 +161,7 @@ describe('JweService', () => {
     })
 
     await expect(
-      jweService.decryptJwe(agentContext, { jwe, recipientKeyId: recipient.keyId, recipientKid: 'other' })
+      jweService.decryptJwe(agentContext, { jwe, recipientKey: { keyId: recipient.keyId }, recipientKid: 'other' })
     ).rejects.toThrow("No JWE recipient with kid 'other'")
 
     const compact = await jweService.encryptJweCompact(agentContext, {
@@ -167,7 +171,7 @@ describe('JweService', () => {
     })
     const decrypted = await jweService.decryptJwe(agentContext, {
       jwe: compact,
-      recipientKeyId: recipient.keyId,
+      recipientKey: { keyId: recipient.keyId },
       recipientKid: 'any',
     })
     expect(TypedArrayEncoder.toUtf8String(decrypted.data)).toBe('hello jwe')
@@ -187,13 +191,13 @@ describe('JweService', () => {
     await expect(
       jweService.decryptJwe(agentContext, {
         jwe: { ...jwe, unprotected: { apu: 'YWxpY2U' } },
-        recipientKeyId: recipient.keyId,
+        recipientKey: { keyId: recipient.keyId },
       })
     ).rejects.toThrow("JWE header parameters 'apu' must be in the protected header")
     await expect(
       jweService.decryptJwe(agentContext, {
         jwe: { ...jwe, recipients: [{ ...jwe.recipients?.[0], header: { kid: 'recipient', epk: {} } }] },
-        recipientKeyId: recipient.keyId,
+        recipientKey: { keyId: recipient.keyId },
       })
     ).rejects.toThrow("JWE header parameters 'epk' must be in the protected header")
   })

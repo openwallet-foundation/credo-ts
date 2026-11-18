@@ -1,0 +1,37 @@
+{
+  "_tags": {},
+  "accessTokenKey": {
+    "keyId": "access-token-key-id",
+    "kmsBackend": "remote-kms",
+    "publicJwk": {
+      "crv": "P-256",
+      "kty": "EC",
+      "x": "969Qi28BrTJYhiiuY62UwNwd-FlBDUv6aw-WjqrISmY",
+      "y": "X1loO6-u-U3PAjA4FCN9ut8SyPU5mT8nbGyuiFL-SOg"
+    }
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "credentialConfigurationsSupported": {
+    "diploma-jwt-vc": {
+      "credential_definition": {
+        "type": ["VerifiableCredential", "UniversityDegreeCredential"]
+      },
+      "format": "jwt_vc_json"
+    }
+  },
+  "id": "issuer-record-id",
+  "issuerId": "issuer-id",
+  "metadata": {},
+  "previousAccessTokenKeys": [
+    {
+      "keyId": "previous-access-token-key-id",
+      "kmsBackend": "previous-remote-kms",
+      "publicJwk": {
+        "crv": "Ed25519",
+        "kty": "OKP",
+        "x": "a2MV1EhywNkwJAStsNWmpa7IRKjaCpu7niIKJQ3xTRI"
+      }
+    }
+  ],
+  "updatedAt": "2026-01-02T00:00:00.000Z"
+}

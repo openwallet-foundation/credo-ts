@@ -1,16 +1,16 @@
 import type { AgentContext } from '../agent'
 import { CredoError } from '../error'
 import {
-  assertJwkAsymmetric,
-  asymmetricPublicJwkMatches,
   getJwkHumanDescription,
   KeyManagementApi,
   KeyManagementError,
+  type KmsKeyReference,
   type KnownJwaSignatureAlgorithm,
   PublicJwk,
 } from '../modules/kms'
 import { isKnownJwaSignatureAlgorithm } from '../modules/kms/jwk/jwa'
 import { convertLegacyTrustedCertificates } from '../modules/x509/utils/convertLegacyTrustedCertificates'
+import type { X509Certificate } from '../modules/x509/X509Certificate'
 import { X509ModuleConfig, type X509VerificationTrustedCertificates } from '../modules/x509/X509ModuleConfig'
 import { X509Service } from './../modules/x509/X509Service'
 import { type EncodedX509Certificate } from '../modules/x509/X509ServiceOptions'
@@ -36,64 +36,45 @@ export class JwsService {
 
     const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
-    const key = await kms.getPublicKey({ keyId: options.keyId })
-    assertJwkAsymmetric(key)
-
-    const publicJwk = PublicJwk.fromPublicJwk(key)
-
-    // Make sure the options.x5c and x5c from protectedHeader are the same.
-    if (x5c) {
-      const certificate = X509Service.getLeafCertificate(agentContext, {
-        certificateChain: x5c,
-      })
-
-      if (!asymmetricPublicJwkMatches(certificate.publicJwk.toJson(), key)) {
-        throw new CredoError('Protected header x5c does not match key for signing.')
-      }
-    }
-
-    const jwkInstance = jwk instanceof PublicJwk ? jwk : jwk ? PublicJwk.fromUnknown(jwk) : undefined
-    // Make sure the options.key and jwk from protectedHeader are the same.
-    if (jwkInstance && !asymmetricPublicJwkMatches(jwkInstance.toJson(), key)) {
-      throw new CredoError('Protected header JWK does not match key for signing.')
-    }
-
-    // Validate the options.key used for signing against the jws options
-    if (!publicJwk.supportedSignatureAlgorithms.includes(alg)) {
-      throw new CredoError(
-        `alg '${alg}' is not a valid JWA signature algorithm for this jwk with ${publicJwk.jwkTypeHumanDescription}. Supported algorithms are ${publicJwk.supportedSignatureAlgorithms.join(
-          ', '
-        )}`
-      )
-    }
-
     const payload =
       options.payload instanceof JwtPayload ? JsonEncoder.toUint8Array(options.payload.toJson()) : options.payload
 
     const base64Payload = TypedArrayEncoder.toBase64Url(payload)
     const base64UrlProtectedHeader = JsonEncoder.toBase64Url(this.buildProtected(options.protectedHeaderOptions))
 
-    const signResult = await kms.sign({
+    const x5cPublicJwk = x5c
+      ? X509Service.getLeafCertificate(agentContext, { certificateChain: x5c }).publicJwk
+      : undefined
+    const jwkInstance = jwk instanceof PublicJwk ? jwk : jwk ? PublicJwk.fromUnknown(jwk) : undefined
+    const signerKey = options.key instanceof PublicJwk ? options.key : undefined
+    const [expectedPublicJwk, ...otherKeys] = [signerKey, x5cPublicJwk, jwkInstance].filter((key) => key !== undefined)
+    if (otherKeys.some((key) => !key.equals(expectedPublicJwk))) {
+      throw new CredoError('Protected header x5c or jwk does not match the signing key.')
+    }
+
+    // The KMS checks the algorithm and the key against the signer key, or the x5c or jwk header.
+    const { signature } = await kms.sign({
       algorithm: alg,
       data: TypedArrayEncoder.fromUtf8String(`${base64UrlProtectedHeader}.${base64Payload}`),
-      keyId: options.keyId,
+      keyId: options.key.keyId,
+      backend: options.key.kmsBackend,
+      expectedPublicJwk: expectedPublicJwk?.toJson() ?? null,
     })
-    const signature = TypedArrayEncoder.toBase64Url(signResult.signature)
 
     return {
       base64Payload,
       base64UrlProtectedHeader,
-      signature,
+      signature: TypedArrayEncoder.toBase64Url(signature),
     }
   }
 
   public async createJws(
     agentContext: AgentContext,
-    { payload, keyId, header, protectedHeaderOptions }: CreateJwsOptions
+    { payload, key, header, protectedHeaderOptions }: CreateJwsOptions
   ): Promise<JwsGeneralFormat> {
     const { base64UrlProtectedHeader, signature, base64Payload } = await this.createJwsBase(agentContext, {
       payload,
-      keyId,
+      key,
       protectedHeaderOptions,
     })
 
@@ -110,11 +91,11 @@ export class JwsService {
    * */
   public async createJwsCompact(
     agentContext: AgentContext,
-    { payload, keyId, protectedHeaderOptions }: CreateCompactJwsOptions
+    { payload, key, protectedHeaderOptions }: CreateCompactJwsOptions
   ): Promise<string> {
     const { base64Payload, base64UrlProtectedHeader, signature } = await this.createJwsBase(agentContext, {
       payload,
-      keyId,
+      key,
       protectedHeaderOptions,
     })
     return `${base64UrlProtectedHeader}.${base64Payload}.${signature}`
@@ -276,13 +257,13 @@ export class JwsService {
     agentContext: AgentContext,
     options: {
       jwsSigner: JwsSignerWithJwk
-      trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
+      trustedCertificates?: Array<EncodedX509Certificate | X509Certificate> | X509VerificationTrustedCertificates[]
     }
   ) {
     const { jwsSigner } = options
-    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
     if (jwsSigner.method === 'x5c') {
+      const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
       const trustedCertificatesFromConfig = x509ModuleConfig.trustedCertificates ?? []
       const trustedCertificates = options.trustedCertificates ?? trustedCertificatesFromConfig
       if (trustedCertificates.length === 0) {
@@ -380,7 +361,10 @@ export class JwsService {
 
 export interface CreateJwsOptions {
   payload: Uint8Array | JwtPayload
-  keyId: string
+  /**
+   * The key to sign with. With a `PublicJwk`, the KMS checks that the key that signs has that public key.
+   */
+  key: PublicJwk | KmsKeyReference
   header: Record<string, unknown>
   protectedHeaderOptions: JwsProtectedHeaderOptions
 }
@@ -417,7 +401,7 @@ export interface VerifyJwsOptions {
    */
   resolveJwsSigner?: JwsSignerResolver
 
-  trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
+  trustedCertificates?: Array<EncodedX509Certificate | X509Certificate> | X509VerificationTrustedCertificates[]
 }
 
 export type JwsSignerResolver = (options: {

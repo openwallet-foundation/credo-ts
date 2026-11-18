@@ -1,7 +1,12 @@
 import { Agent } from '@credo-ts/core'
+import {
+  DidCommProofExchangeRecord,
+  DidCommProofExchangeRepository,
+  DidCommProofRole,
+  DidCommProofState,
+} from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { DrizzleStorageModule } from '../src'
-import { actionMenuBundle } from '../src/action-menu/bundle'
 import { anoncredsBundle } from '../src/anoncreds/bundle'
 import { coreBundle } from '../src/core/bundle'
 import { didcommBundle } from '../src/didcomm/bundle'
@@ -23,7 +28,7 @@ describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type)
 
     const drizzleModule = new DrizzleStorageModule({
       database: postgresDatabase?.drizzle ?? (await inMemoryDrizzleSqliteDatabase()),
-      bundles: [coreBundle, didcommBundle, actionMenuBundle, anoncredsBundle],
+      bundles: [coreBundle, didcommBundle, anoncredsBundle],
     })
 
     agent = new Agent({
@@ -80,5 +85,23 @@ describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type)
         myCustomTag: 'hello',
       })
     ).toHaveLength(0)
+  })
+
+  test('store and retrieve a didcomm proof exchange record in every state', async () => {
+    const repository = agent.dependencyManager.resolve(DidCommProofExchangeRepository)
+
+    for (const state of Object.values(DidCommProofState)) {
+      const record = new DidCommProofExchangeRecord({
+        threadId: `thread-${state}`,
+        protocolVersion: 'v2',
+        role: DidCommProofRole.Verifier,
+        state,
+      })
+      await repository.save(agent.context, record)
+
+      const retrieved = await repository.getById(agent.context, record.id)
+      expect(retrieved.state).toEqual(state)
+      expect(retrieved.role).toEqual(DidCommProofRole.Verifier)
+    }
   })
 })

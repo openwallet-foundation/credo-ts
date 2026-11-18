@@ -3,11 +3,11 @@ import { AgentContext } from '../../agent'
 import { CredoWebCrypto } from '../../crypto'
 import { CredoError } from '../../error'
 import { KeyManagementApi, type KmsJwkPublicEcdh, type KnownJwaHpkeAlgorithm, PublicJwk } from '../../modules/kms'
+import { mdocRawToTrustedCertificate } from '../../modules/mdoc/mdocUtil'
 import { TokenStatusListModuleConfig } from '../../modules/token-status-list/TokenStatusListModuleConfig'
-import { X509Certificate } from '../../modules/x509/X509Certificate'
 import { X509Service } from '../../modules/x509/X509Service'
 import { getMac0Context } from './mac0Context'
-import { getSign1Context } from './sign1Context'
+import { getKmsKeyForCoseKey, getSign1Context } from './sign1Context'
 
 /**
  * HPKE suites the mdoc library can request, mapped to the JOSE-HPKE style algorithm identifiers the
@@ -26,7 +26,13 @@ function jwaAlgorithmForHpkeSuite(suite: HpkeSuiteId) {
   return algorithm
 }
 
-export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date } = {}): MdocContext => {
+/**
+ * @param keys the keys the context signs or decrypts with, from `PublicJwk.fromKmsKey`, found by their public key.
+ */
+export const getMdocContext = (
+  agentContext: AgentContext,
+  { now, keys = [] }: { now?: Date; keys?: PublicJwk[] } = {}
+): MdocContext => {
   const crypto = new CredoWebCrypto(agentContext)
   const kms = agentContext.resolve(KeyManagementApi)
 
@@ -88,12 +94,10 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
           return { enc: encapsulatedKey, ciphertext: encrypted }
         },
         open: async (input) => {
-          const { keyId } = input.recipientKey
-          if (!keyId) {
-            throw new CredoError('Missing required keyId on the recipient key for HPKE open')
-          }
+          const { keyId, kmsBackend } = getKmsKeyForCoseKey(keys, input.recipientKey)
 
           const { data } = await kms.decrypt({
+            backend: kmsBackend,
             key: {
               keyAgreement: {
                 algorithm: jwaAlgorithmForHpkeSuite(input.suite),
@@ -112,28 +116,23 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
     },
 
     cose: {
-      mac0: getMac0Context(agentContext),
-      sign1: getSign1Context(agentContext),
+      mac0: getMac0Context(agentContext, keys),
+      sign1: getSign1Context(agentContext, keys),
     },
 
     x509: {
       getSubjectNameField: (input) => {
-        const x509Certificate = X509Certificate.fromRawCertificate(input.certificate)
+        const x509Certificate = X509Service.parseCertificate(agentContext, { encodedCertificate: input.certificate })
         return x509Certificate.getSubjectNameField(input.field)
       },
       getPublicKey: async (input) => {
-        const certificate = X509Certificate.fromRawCertificate(input.certificate)
+        const certificate = X509Service.parseCertificate(agentContext, { encodedCertificate: input.certificate })
         return CoseKey.fromJwk(certificate.publicJwk.toJson())
       },
       verifyCertificateChain: async (input) => {
-        const certificateChain = input.x5chain.map((cert) => X509Certificate.fromRawCertificate(cert).toString('pem'))
-        const trustedCertificates = input.trustedCertificates.map((cert) =>
-          X509Certificate.fromRawCertificate(cert).toString('pem')
-        ) as [string, ...string[]]
-
         const validatedChain = await X509Service.validateCertificateChain(agentContext, {
-          certificateChain,
-          trustedCertificates,
+          certificateChain: input.x5chain,
+          trustedCertificates: input.trustedCertificates.map(mdocRawToTrustedCertificate),
           verificationDate: input.now ?? now,
         })
 
@@ -144,8 +143,7 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
         }
       },
       getCertificateData: async (input) => {
-        const { certificate } = input
-        const x509Certificate = X509Certificate.fromRawCertificate(certificate)
+        const x509Certificate = X509Service.parseCertificate(agentContext, { encodedCertificate: input.certificate })
         return {
           ...x509Certificate.data,
           thumbprint: await x509Certificate.getThumbprintInHex(agentContext),

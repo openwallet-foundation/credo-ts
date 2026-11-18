@@ -1,3 +1,4 @@
+import type { IssuerSigned } from '@owf/mdoc'
 import { z } from 'zod'
 import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
@@ -8,6 +9,7 @@ import { uuid } from '../../../utils/uuid'
 import { zNonEmptyArray } from '../../../utils/zod'
 import type { KnownJwaSignatureAlgorithm } from '../../kms'
 import { Mdoc } from '../Mdoc'
+import { MdocError } from '../MdocError'
 
 export type DefaultMdocRecordTags = {
   docType: string
@@ -46,6 +48,11 @@ export type MdocRecordInstances = NonEmptyArray<{
    * credential is bound to a legacy key id (which can be calculated based on the key)
    */
   kmsKeyId?: string
+
+  /**
+   * The kms backend that holds `kmsKeyId`.
+   */
+  kmsBackend?: string
 }>
 
 const mdocRecordEncodingSchema = createRecordEncodingSchema(
@@ -54,6 +61,7 @@ const mdocRecordEncodingSchema = createRecordEncodingSchema(
       z.object({
         issuerSignedBase64Url: z.string(),
         kmsKeyId: z.string().nullish(),
+        kmsBackend: z.string().optional(),
       })
     ).nullish(),
     multiInstanceState: z.string().nullish(),
@@ -102,20 +110,35 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
     }
   }
 
-  public get firstCredential(): Mdoc {
-    const mdoc = Mdoc.fromBase64Url(this.credentialInstances[0].issuerSignedBase64Url)
+  // Decoding an mdoc is expensive and getTags runs on every save, so the decoded first instance is kept.
+  #decodedFirstCredential?: { issuerSignedBase64Url: string; issuerSigned: IssuerSigned }
 
+  public get firstCredential(): Mdoc {
+    const { issuerSignedBase64Url } = this.credentialInstances[0]
+    if (this.#decodedFirstCredential?.issuerSignedBase64Url !== issuerSignedBase64Url) {
+      const { issuerSigned } = Mdoc.fromBase64Url(issuerSignedBase64Url)
+      this.#decodedFirstCredential = { issuerSignedBase64Url, issuerSigned }
+    }
+
+    const mdoc = new Mdoc(this.#decodedFirstCredential.issuerSigned)
     mdoc.deviceKeyId = this.credentialInstances[0].kmsKeyId ?? mdoc.deviceKey?.legacyKeyId
+    mdoc.deviceKmsBackend = this.credentialInstances[0].kmsBackend
 
     return mdoc
   }
 
   public static fromMdoc(mdoc: Mdoc) {
+    // Only the caller knows which key it created for this mdoc, the issuer could bind it to any of our keys.
+    if (!mdoc.deviceKeyId) {
+      throw new MdocError("Set 'deviceKeyId' on the mdoc to the KMS key id of its device key before storing it.")
+    }
+
     return new MdocRecord({
       credentialInstances: [
         {
           issuerSignedBase64Url: mdoc.base64Url,
           kmsKeyId: mdoc.deviceKeyId,
+          kmsBackend: mdoc.deviceKmsBackend,
         },
       ],
     })

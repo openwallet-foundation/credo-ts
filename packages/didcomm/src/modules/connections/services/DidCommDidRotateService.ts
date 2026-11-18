@@ -31,7 +31,7 @@ import type { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 
 import { DidCommConnectionService } from './DidCommConnectionService'
-import { createPeerDidFromServices, routingToServices } from './helpers'
+import { addSharedDid, createPeerDidFromServices, routingToServices } from './helpers'
 
 @injectable()
 export class DidCommDidRotateService {
@@ -95,6 +95,7 @@ export class DidCommDidRotateService {
       did: resolvedDid.didDocument.id,
       mediatorId,
     })
+    if (toDid) addSharedDid(connection, resolvedDid.didDocument.id)
 
     await agentContext.resolve(DidCommConnectionService).update(agentContext, connection)
 

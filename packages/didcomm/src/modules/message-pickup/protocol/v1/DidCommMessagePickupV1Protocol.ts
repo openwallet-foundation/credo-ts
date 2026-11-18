@@ -65,7 +65,7 @@ export class DidCommMessagePickupV1Protocol extends DidCommBaseMessagePickupProt
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
   ): Promise<DeliverMessagesProtocolReturnType<DidCommMessage> | undefined> {
-    const { connectionRecord, batchSize, messages } = options
+    const { connectionRecord, batchSize, messages, messageIds } = options
     connectionRecord.assertReady()
 
     const queueTransportRepository =
@@ -75,6 +75,7 @@ export class DidCommMessagePickupV1Protocol extends DidCommBaseMessagePickupProt
       messages ??
       (await queueTransportRepository.takeFromQueue(agentContext, {
         connectionId: connectionRecord.id,
+        messageIds,
         limit: batchSize, // TODO: Define as config parameter for message holder side
         deleteMessages: true,
       }))

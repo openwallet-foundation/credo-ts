@@ -29,6 +29,12 @@ export type OpenId4VcCredentialHolderAttestationBinding = {
   // another solution would be to require the signed jwt proof to be returned, so the wallet
   // can gracefully handle all the cases and render the needed UI.
   keyAttestationJwt: string
+
+  /**
+   * The attested keys, from `PublicJwk.fromKmsKey`, matched to the `attested_keys` by JWK thumbprint. Each issued
+   * credential stores the KMS key id and backend of the attested key it's bound to.
+   */
+  keys: Kms.PublicJwk[]
 }
 
 export interface OpenId4VcCredentialHolderDidBinding {

@@ -279,7 +279,9 @@ export async function handlePushedAuthorizationRequest(
     } catch (error) {
       if (externalDpop.keyGeneratedForSession) {
         try {
-          await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: externalDpop.keyId })
+          await agentContext
+            .resolve(Kms.KeyManagementApi)
+            .deleteKey({ keyId: externalDpop.keyId, backend: externalDpop.kmsBackend })
         } catch (cleanupError) {
           agentContext.config.logger.error(
             'Failed to delete DPoP key after storing it on the issuance session failed',

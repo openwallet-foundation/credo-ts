@@ -26,7 +26,8 @@ import type {
   OpenId4VciIssuerInfo,
   OpenId4VciParsedCredentialRequest,
   OpenId4VciTxCode,
-  OpenId4VcJwtIssuer,
+  OpenId4VcJwtIssuerDid,
+  OpenId4VcJwtIssuerX5c,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
 import type {
@@ -767,9 +768,28 @@ export interface OpenId4VciCredentialResponseEncryptionOptions {
 export interface OpenId4VciCredentialRequestEncryptionOptions {
   required?: boolean
 
-  // each `kid` must be the KMS key id, it's used to find the private key when decrypting
-  jwks: [Kms.KmsJwkPublic & { kid: string }, ...Array<Kms.KmsJwkPublic & { kid: string }>]
+  /**
+   * The keys to advertise, each from `PublicJwk.fromKmsKey`. The metadata publishes the JWK thumbprint as `kid`.
+   */
+  keys: [Kms.PublicJwk, ...Kms.PublicJwk[]]
+
+  /**
+   * Keys that are no longer advertised but still decrypt credential requests, so issuance sessions that
+   * started before a key was rotated out can still finish.
+   */
+  previousKeys?: Kms.PublicJwk[]
 }
+
+export type OpenId4VciAccessTokenSigner =
+  | Kms.PublicJwk
+  | Kms.KmsKeyReference
+  | {
+      createKey: Kms.WithCreateKeyBackend<
+        Kms.KmsCreateKeyOptions<
+          Kms.KmsCreateKeyTypeEc | (Kms.KmsCreateKeyTypeOkp & { crv: 'Ed25519' }) | Kms.KmsCreateKeyTypeRsa
+        >
+      >
+    }
 
 export type OpenId4VciCreateIssuerOptions = {
   /**
@@ -778,22 +798,11 @@ export type OpenId4VciCreateIssuerOptions = {
   issuerId?: string
 
   /**
-   * Key type to use for signing access tokens
+   * The key that signs access tokens: a key in the KMS, or `createKey` options to create one.
    *
-   * @default
-   * ```json
-   * {
-   *  kty: "OKP",
-   *  crv: "Ed25519"
-   * }
-   * ```
+   * @default `{ createKey: { type: { kty: 'OKP', crv: 'Ed25519' } } }`
    */
-  accessTokenSignerKeyType?: Kms.KmsCreateKeyTypeAsymmetric
-
-  /**
-   * KMS backend to use for the access token signing key. If not provided, the default KMS backend is used.
-   */
-  accessTokenSignerKmsBackend?: string
+  accessTokenSigner?: OpenId4VciAccessTokenSigner
 
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
 
@@ -829,8 +838,10 @@ export type OpenId4VciCreateIssuerOptions = {
    * Currently the metadata is signed when the issuer metadata is created or updated, but
    * it won't be updated for each wallet that resolves the metadata. This also mean that no exp
    * is added to the signed metadata.
+   *
+   * A `jwk` signer is not supported, as wallets can't establish trust in it.
    */
-  metadataSigner?: OpenId4VcJwtIssuer
+  metadataSigner?: OpenId4VcJwtIssuerDid | OpenId4VcJwtIssuerX5c
 }
 
 export interface OpenId4VcUpdateIssuerOptions {
@@ -845,7 +856,7 @@ export interface OpenId4VcUpdateIssuerOptions {
    *
    * See {@link OpenId4VciCreateIssuerOptions.metadataSigner} for the signing behaviour.
    */
-  metadataSigner?: OpenId4VcJwtIssuer | null
+  metadataSigner?: OpenId4VcJwtIssuerDid | OpenId4VcJwtIssuerX5c | null
 }
 
 export type OpenId4VcUpdateIssuerRecordOptions = Pick<
@@ -859,7 +870,7 @@ export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   | 'credentialConfigurationsSupported'
   | 'batchCredentialIssuance'
   | 'credentialResponseEncryption'
-  | 'credentialRequestEncryption'
   | 'authorizationServerConfigs'
 > &
+  Pick<OpenId4VciCreateIssuerOptions, 'credentialRequestEncryption'> &
   OpenId4VcUpdateIssuerOptions

@@ -1,24 +1,49 @@
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
+import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
 import { agentDependencies, getAgentContext } from '../../../../tests'
+import type { AgentContext } from '../../../agent'
+import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
-import { JsonTransformer } from '../../../utils'
-import { KeyManagementApi } from '../../kms'
+import { JsonEncoder, JsonTransformer } from '../../../utils'
+import {
+  DidDocumentBuilder,
+  DidKey,
+  getEd25519VerificationKey2020,
+  getMultikey,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+  VerificationMethod,
+} from '../../dids'
+import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../kms'
 import { MdocDeviceResponse, MdocRecord, MdocRepository } from '../../mdoc'
 import { sprindFunkeTestVectorBase64Url } from '../../mdoc/__tests__/mdoc.fixtures'
 import { SdJwtVcRecord, SdJwtVcRepository } from '../../sd-jwt-vc'
 import {
   ClaimFormat,
+  defaultDocumentLoader,
   JsonLdModuleConfig,
   SignatureSuiteRegistry,
+  W3cCredential,
+  W3cCredentialRecord,
   W3cCredentialService,
-  W3cCredentialsModuleConfig,
+  W3cCredentialSubject,
+  W3cIssuer,
   W3cJsonLdVerifiableCredential,
   W3cJsonLdVerifiablePresentation,
+  W3cJwtVerifiablePresentation,
+  w3cDate,
 } from '../../vc'
+import { Ed25519Signature2018, Ed25519Signature2020 } from '../../vc/linked-data-proofs/signature-suites'
+import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
 import { DifPresentationExchangeService } from '../DifPresentationExchangeService'
-import { type DifPresentationExchangeDefinitionV2, DifPresentationExchangeSubmissionLocation } from '../models'
+import {
+  type DifPresentationExchangeDefinitionV2,
+  type DifPresentationExchangeSubmission,
+  DifPresentationExchangeSubmissionLocation,
+} from '../models'
+import { extractPresentationsWithDescriptorsFromSubmission } from '../utils'
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -26,8 +51,7 @@ const agentContext = getAgentContext({
     [InjectionSymbols.AgentDependencies, agentDependencies],
     [InjectionSymbols.Stop$, new Subject<boolean>()],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
   ],
 })
 
@@ -498,7 +522,7 @@ describe('DifPresentationExchangeService', () => {
 
     const selectedCredentials = pexService.selectCredentialsForRequest(credentialsForRequest)
 
-    vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]) })
+    vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]), backend: 'node' })
     const presentation = await pexService.createPresentation(agentContext, {
       credentialsForInputDescriptor: selectedCredentials,
       challenge: 'something',
@@ -687,7 +711,7 @@ describe('DifPresentationExchangeService', () => {
 
     const selectedCredentials = pexService.selectCredentialsForRequest(credentialsForRequest)
 
-    vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]) })
+    vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]), backend: 'node' })
 
     const presentation = await pexService.createPresentation(agentContext, {
       credentialsForInputDescriptor: selectedCredentials,
@@ -829,7 +853,7 @@ describe('DifPresentationExchangeService', () => {
 
     const selectedCredentials = pexService.selectCredentialsForRequest(credentialsForRequest)
 
-    vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]) })
+    vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]), backend: 'node' })
 
     const presentation = await pexService.createPresentation(agentContext, {
       credentialsForInputDescriptor: selectedCredentials,
@@ -1102,5 +1126,290 @@ describe('DifPresentationExchangeService', () => {
         W3cJsonLdVerifiablePresentation
       )
     )
+  })
+
+  // The createPresentation tests below cover the supported types; this case needs a method type no suite lists
+  test('throws when no suite supports the verification method type of an ldp_vc presentation', () => {
+    const did = 'did:example:holder'
+    const multikey = new VerificationMethod(
+      getMultikey({
+        did,
+        verificationMethodId: `${did}#key-1`,
+        publicJwk: PublicJwk.fromFingerprint('z6MkvBpZTRb7tjuUF5AkmhG1JDV928hZbg5KAQJcogvhz9ax'),
+      })
+    )
+    const registryAgentContext = {
+      dependencyManager: {
+        resolve: () =>
+          new SignatureSuiteRegistry([
+            {
+              suiteClass: Ed25519Signature2018,
+              proofType: 'Ed25519Signature2018',
+              verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018],
+              supportedPublicJwkTypes: [Ed25519PublicJwk],
+            },
+            {
+              suiteClass: Ed25519Signature2020,
+              proofType: 'Ed25519Signature2020',
+              verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020],
+              supportedPublicJwkTypes: [Ed25519PublicJwk],
+            },
+          ]),
+      },
+    } as unknown as AgentContext
+    const definition: DifPresentationExchangeDefinitionV2 = {
+      id: 'ldp-definition',
+      input_descriptors: [{ id: 'ldp', constraints: { fields: [{ path: ['$.type'] }] } }],
+    }
+
+    const getProofTypeForLdpVc = () =>
+      // biome-ignore lint/complexity/useLiteralKeys: bracket access calls the private method with its real types
+      pexService['getProofTypeForLdpVc'](registryAgentContext, definition, multikey)
+
+    expect(getProofTypeForLdpVc).toThrow(DifPresentationExchangeError)
+    expect(getProofTypeForLdpVc).toThrow("No signature suite supports the verification method type 'Multikey'")
+  })
+
+  describe('ldp_vp and jwt_vp with an external submission', () => {
+    const definition: DifPresentationExchangeDefinitionV2 = {
+      id: 'degree-definition',
+      input_descriptors: [
+        {
+          id: 'phd',
+          constraints: {
+            fields: [
+              {
+                // pex evaluates a jwt_vc on its JWT payload
+                path: ['$.credentialSubject.degree.type', '$.vc.credentialSubject.degree.type'],
+                filter: { type: 'string', const: 'PhDDegree' },
+              },
+            ],
+          },
+        },
+      ],
+    }
+
+    // Proofs differ per credential, because pex matches an extracted credential to the presentation by its proof
+    const degreeCredential = (degreeType: string, name: string, proofValue: string) => ({
+      '@context': ['https://www.w3.org/2018/credentials/v1'],
+      type: ['VerifiableCredential'],
+      issuer: 'did:example:issuer',
+      issuanceDate: '2025-01-01T00:00:00Z',
+      credentialSubject: { id: 'did:example:holder', name, degree: { type: degreeType } },
+      proof: {
+        type: 'Ed25519Signature2018',
+        created: '2025-01-01T00:00:00Z',
+        proofPurpose: 'assertionMethod',
+        verificationMethod: 'did:example:issuer#key-1',
+        jws: proofValue,
+      },
+    })
+    const phd = degreeCredential('PhDDegree', 'Alice', 'phd-proof')
+    const bsc = degreeCredential('BachelorDegree', 'Alice', 'bsc-proof')
+
+    const presentation = (verifiableCredential: unknown[], extra: Record<string, unknown> = {}) =>
+      JsonTransformer.fromJSON(
+        {
+          '@context': ['https://www.w3.org/2018/credentials/v1'],
+          type: ['VerifiablePresentation'],
+          holder: 'did:example:holder',
+          verifiableCredential,
+          proof: {
+            type: 'Ed25519Signature2018',
+            created: '2025-01-01T00:00:00Z',
+            proofPurpose: 'authentication',
+            verificationMethod: 'did:example:holder#key-1',
+            challenge: 'challenge',
+            jws: 'vp-proof',
+          },
+          ...extra,
+        },
+        W3cJsonLdVerifiablePresentation
+      )
+
+    const submission = (
+      descriptor: Pick<DifPresentationExchangeSubmission['descriptor_map'][number], 'path' | 'path_nested' | 'format'>
+    ): DifPresentationExchangeSubmission => ({
+      id: 'submission',
+      definition_id: definition.id,
+      descriptor_map: [{ id: 'phd', ...descriptor }],
+    })
+    const nestedAt = (path: string) =>
+      submission({ format: 'ldp_vp', path: '$', path_nested: { id: 'phd', format: 'ldp_vc', path } })
+
+    test.each([
+      ['in path_nested', nestedAt('$.fakeCred')],
+      ['in path', submission({ format: 'dc+sd-jwt', path: '$.fakeCred' })],
+    ])('rejects a credential outside verifiableCredential %s', (_, presentationSubmission) => {
+      const fakeCred = degreeCredential('PhDDegree', 'Mallory', 'fake-proof')
+      const { proof: _proof, ...fakeCredWithoutProof } = fakeCred
+
+      for (const fake of [fakeCred, fakeCredWithoutProof, { ...fakeCred, proof: phd.proof }]) {
+        const vp = presentation([phd], { fakeCred: fake })
+        expect(() => extractPresentationsWithDescriptorsFromSubmission(vp, presentationSubmission, definition)).toThrow(
+          'Unable to extract'
+        )
+      }
+    })
+
+    test('evaluates the credential that path_nested points at', () => {
+      expect(() =>
+        pexService.validatePresentation(definition, presentation([phd, bsc]), nestedAt('$.verifiableCredential[1]'))
+      ).toThrow(DifPresentationExchangeError)
+
+      const vp = presentation([bsc, phd])
+      const presentationSubmission = nestedAt('$.verifiableCredential[1]')
+      pexService.validatePresentation(definition, vp, presentationSubmission)
+      const [descriptor] = extractPresentationsWithDescriptorsFromSubmission(vp, presentationSubmission, definition)
+      expect(descriptor.credential).toBe((vp.verifiableCredential as unknown[])[1])
+    })
+
+    // Not signed, because pex and the extraction don't verify signatures
+    const jwt = (payload: Record<string, unknown>) =>
+      `${JsonEncoder.toBase64Url({ alg: 'EdDSA', typ: 'JWT' })}.${JsonEncoder.toBase64Url(payload)}.c2lnbmF0dXJl`
+    const jwtCredential = ({ proof: _proof, ...vc }: typeof phd) =>
+      jwt({ iss: vc.issuer, sub: vc.credentialSubject.id, nbf: Date.parse(vc.issuanceDate) / 1000, vc })
+
+    const jwtPresentation = (verifiableCredential: Array<typeof phd>, extra: Record<string, unknown> = {}) =>
+      W3cJwtVerifiablePresentation.fromSerializedJwt(
+        jwt({
+          iss: 'did:example:holder',
+          nonce: 'challenge',
+          vp: {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiablePresentation'],
+            verifiableCredential: verifiableCredential.map(jwtCredential),
+          },
+          ...extra,
+        })
+      )
+
+    const jwtNestedAt = (path: string) =>
+      submission({ format: 'jwt_vp', path: '$', path_nested: { id: 'phd', format: 'jwt_vc', path } })
+
+    test.each([
+      ['in path_nested', jwtNestedAt('$.vp.jwt.payload.additionalClaims.fakeCred')],
+      ['in path', submission({ format: 'dc+sd-jwt', path: '$.jwt.payload.additionalClaims.fakeCred' })],
+    ])('rejects a jwt_vp credential outside verifiableCredential %s', (_, presentationSubmission) => {
+      const vp = jwtPresentation([phd], { fakeCred: degreeCredential('PhDDegree', 'Mallory', 'fake-proof') })
+      expect(() => extractPresentationsWithDescriptorsFromSubmission(vp, presentationSubmission, definition)).toThrow(
+        'Unable to extract'
+      )
+    })
+
+    test('evaluates the jwt_vp credential that path_nested points at', () => {
+      expect(() =>
+        pexService.validatePresentation(
+          definition,
+          jwtPresentation([phd, bsc]),
+          jwtNestedAt('$.vp.verifiableCredential[1]')
+        )
+      ).toThrow(DifPresentationExchangeError)
+
+      const vp = jwtPresentation([bsc, phd])
+      const presentationSubmission = jwtNestedAt('$.vp.verifiableCredential[1]')
+      pexService.validatePresentation(definition, vp, presentationSubmission)
+      const [descriptor] = extractPresentationsWithDescriptorsFromSubmission(vp, presentationSubmission, definition)
+      expect(descriptor.credential).toBe((vp.verifiableCredential as unknown[])[1])
+    })
+  })
+
+  describe('createPresentation for ldp_vc with an Ed25519VerificationKey2020 holder method', () => {
+    // A real agent, so the suites come from the W3cCredentialsModule registration and signing is not mocked
+    const agent = new Agent({
+      config: {},
+      dependencies: agentDependencies,
+      modules: { inMemory: new InMemoryWalletModule() },
+    })
+    // did:web resolves from the local did record, and its document can hold an Ed25519VerificationKey2020 method
+    const holderDid = 'did:web:holder-2020.example.com'
+    const holderKid = `${holderDid}#key-1`
+    const challenge = 'challenge-123'
+    const domain = 'verifier.example.com'
+    let credentialRecord: W3cCredentialRecord
+
+    beforeAll(async () => {
+      await agent.initialize()
+
+      const holderKey = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const verificationMethod = getEd25519VerificationKey2020({
+        id: holderKid,
+        controller: holderDid,
+        publicJwk: PublicJwk.fromPublicJwk(holderKey.publicJwk) as PublicJwk<Ed25519PublicJwk>,
+      })
+      await agent.dids.import({
+        did: holderDid,
+        didDocument: new DidDocumentBuilder(holderDid)
+          .addContext('https://w3id.org/security/suites/ed25519-2020/v1')
+          .addVerificationMethod(verificationMethod)
+          .addAuthentication(holderKid)
+          .build(),
+        keys: [{ didDocumentRelativeKeyId: '#key-1', kmsKeyId: holderKey.keyId }],
+      })
+
+      const issuerKey = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const issuerDid = (await agent.dids.create({ method: 'key', options: { keyId: issuerKey.keyId } })).didState
+        .did as string
+      const credential = await agent.w3cCredentials.signCredential({
+        format: ClaimFormat.LdpVc,
+        credential: new W3cCredential({
+          context: ['https://www.w3.org/2018/credentials/v1'],
+          type: ['VerifiableCredential'],
+          issuer: new W3cIssuer({ id: issuerDid }),
+          credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+          issuanceDate: w3cDate(Date.now()),
+        }),
+        proofType: 'Ed25519Signature2018',
+        verificationMethod: `${issuerDid}#${DidKey.fromDid(issuerDid).publicJwk.fingerprint}`,
+      })
+      credentialRecord = W3cCredentialRecord.fromCredential(credential)
+    })
+
+    afterAll(async () => {
+      await agent.shutdown()
+    })
+
+    const createPresentation = (proofTypes: { definition?: string[]; inputDescriptor?: string[] }) =>
+      agent.dependencyManager.resolve(DifPresentationExchangeService).createPresentation(agent.context, {
+        presentationDefinition: {
+          id: 'ldp-definition',
+          format: proofTypes.definition ? { ldp_vc: { proof_type: proofTypes.definition } } : undefined,
+          input_descriptors: [
+            {
+              id: 'ldp',
+              format: proofTypes.inputDescriptor ? { ldp_vc: { proof_type: proofTypes.inputDescriptor } } : undefined,
+              constraints: { fields: [{ path: ['$.type'] }] },
+            },
+          ],
+        },
+        credentialsForInputDescriptor: { ldp: [{ claimFormat: ClaimFormat.LdpVc, credentialRecord }] },
+        challenge,
+        domain,
+      })
+
+    test.each([
+      ['without a proof_type restriction', {}],
+      [
+        'with proof_type 2018 and 2020 in the definition',
+        { definition: ['Ed25519Signature2018', 'Ed25519Signature2020'] },
+      ],
+      ['with proof_type 2020 in the input descriptor', { inputDescriptor: ['Ed25519Signature2020'] }],
+    ])('signs with Ed25519Signature2020 %s', async (_, proofTypes) => {
+      const { verifiablePresentations } = await createPresentation(proofTypes)
+      const presentation = verifiablePresentations[0] as W3cJsonLdVerifiablePresentation
+
+      expect(presentation.proof).toMatchObject({ type: 'Ed25519Signature2020', verificationMethod: holderKid })
+      const verification = await agent.w3cCredentials.verifyPresentation({ presentation, challenge, domain })
+      expect(verification.isValid).toBe(true)
+    })
+
+    test.each([
+      ['in the definition', { definition: ['Ed25519Signature2018'] }],
+      ['in the input descriptor', { inputDescriptor: ['Ed25519Signature2018'] }],
+    ])('throws before signing when only Ed25519Signature2018 is allowed %s', async (_, proofTypes) => {
+      await expect(createPresentation(proofTypes)).rejects.toThrow(
+        /No possible signature suite found for the given verification method\.\nVerification method type: Ed25519VerificationKey2020/
+      )
+    })
   })
 })

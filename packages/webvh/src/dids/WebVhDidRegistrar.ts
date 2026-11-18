@@ -16,7 +16,7 @@ import {
   DidDocumentRole,
   DidRecord,
   DidRepository,
-  getKmsKeyIdForVerifiacationMethod,
+  getDidDocumentKeyForVerificationMethod,
   JsonTransformer,
   Kms,
 } from '@credo-ts/core'
@@ -77,8 +77,8 @@ export class WebVhDidRegistrar implements DidRegistrar {
       if (record) return this.handleError(`A record with domain "${domain}" already exists.`)
 
       // Create crypto instance
-      const { publicKeyMultibase, keyId } = await this.generatePublicKey(agentContext)
-      const signer = new WebVhDidCryptoSigner(agentContext, publicKeyMultibase, keyId)
+      const { publicKeyMultibase, keyId, kmsBackend } = await this.generatePublicKey(agentContext)
+      const signer = new WebVhDidCryptoSigner(agentContext, publicKeyMultibase, keyId, kmsBackend)
       const verifier = new WebVhDidCrypto(agentContext)
       const baseDid = `did:webvh:{SCID}:${encodeURIComponent(domain)}`
 
@@ -118,6 +118,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
       const vmIdFragment = matchedVm?.id.split('#')[1]
       keys.push({
         kmsKeyId: keyId,
+        kmsBackend,
         didDocumentRelativeKeyId: `#${vmIdFragment}`,
       })
       const didRecord = new DidRecord({
@@ -127,7 +128,9 @@ export class WebVhDidRegistrar implements DidRegistrar {
         keys,
       })
       didRecord.metadata.set(WebVhDidRecordMetadataKeys.DidLog, log)
-      didRecord.metadata.set(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds, { [publicKeyMultibase]: keyId })
+      didRecord.metadata.set(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds, {
+        [publicKeyMultibase]: { keyId, kmsBackend },
+      })
       didRecord.setTags({ domain: domainKey })
       await didRepository.save(agentContext, didRecord)
 
@@ -167,12 +170,19 @@ export class WebVhDidRegistrar implements DidRegistrar {
       const domain = didRecord.getTag('domain') as string
       const activeUpdateKey = log[log.length - 1]?.parameters?.updateKeys?.[0] ?? log[0]?.parameters?.updateKeys?.[0]
       const vm = didRecord.didDocument?.verificationMethod?.find((v) => v.publicKeyMultibase === activeUpdateKey)
-      let keyId = vm ? getKmsKeyIdForVerifiacationMethod(vm, didRecord.keys) : undefined
-      if (!keyId && activeUpdateKey)
-        keyId = didRecord.metadata.get(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds)?.[activeUpdateKey]
+      const didDocumentKey = vm ? getDidDocumentKeyForVerificationMethod(vm, didRecord.keys) : undefined
+      const storedUpdateKey = activeUpdateKey
+        ? didRecord.metadata.get(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds)?.[activeUpdateKey]
+        : undefined
+      const updateKey: Kms.KmsKeyReference | undefined = didDocumentKey
+        ? { keyId: didDocumentKey.kmsKeyId, kmsBackend: didDocumentKey.kmsBackend }
+        : typeof storedUpdateKey === 'string'
+          ? { keyId: storedUpdateKey }
+          : storedUpdateKey
 
       if (!log) return this.handleError('The log registry must be created before it can be edited.')
-      if (!keyId) return this.handleError('The key ID must be present before the log can be edited.')
+      if (!activeUpdateKey || !updateKey)
+        return this.handleError('The key ID must be present before the log can be edited.')
 
       const {
         controller,
@@ -194,12 +204,9 @@ export class WebVhDidRegistrar implements DidRegistrar {
           verificationMethods?.some((vm) => vm.id.endsWith(reference))
         )
       const { updateKeys } = log[log.length - 1].parameters
-      const verificationMethod = verificationMethods?.find((vm) => vm.publicKeyMultibase)
-      if (!verificationMethod?.publicKeyMultibase)
-        return this.handleError('At least one verification method with publicKeyMultibase must be provided.')
 
       // Get signer/verifier
-      const signer = new WebVhDidCryptoSigner(agentContext, verificationMethod.publicKeyMultibase, keyId)
+      const signer = new WebVhDidCryptoSigner(agentContext, activeUpdateKey, updateKey.keyId, updateKey.kmsBackend)
       const verifier = new WebVhDidCrypto(agentContext)
 
       const { log: logResult, doc } = await updateDID({
@@ -244,7 +251,9 @@ export class WebVhDidRegistrar implements DidRegistrar {
    * @param agentContext The agent context.
    * @returns The public key in multibase format.
    */
-  private async generatePublicKey(agentContext: AgentContext): Promise<{ publicKeyMultibase: string; keyId: string }> {
+  private async generatePublicKey(
+    agentContext: AgentContext
+  ): Promise<{ publicKeyMultibase: string; keyId: string; kmsBackend: string }> {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
     const key = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
     const publicKeyBytes = Kms.PublicJwk.fromPublicJwk(key.publicJwk).publicKey.publicKey
@@ -255,6 +264,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
         MultibaseEncoding.BASE58_BTC
       ),
       keyId: key.keyId,
+      kmsBackend: key.backend,
     }
   }
 

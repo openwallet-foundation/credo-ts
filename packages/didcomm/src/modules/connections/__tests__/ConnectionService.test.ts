@@ -12,7 +12,7 @@ import type { DidCommRouting } from '../../../models'
 import { DidCommInboundMessageContext } from '../../../models'
 import { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
 import { DidCommOutOfBandRepository } from '../../oob/repository/DidCommOutOfBandRepository'
-import { DidCommTrustPingMessage } from '../messages'
+import { DidCommTrustPingMessage, DidCommTrustPingV2Message } from '../messages'
 import { DidCommDidExchangeState } from '../models'
 import { DidCommConnectionRepository } from '../repository'
 import { DidCommConnectionService } from '../services'
@@ -106,6 +106,19 @@ describe('DidCommConnectionService', () => {
 
       expect(connectionRecord.state).toBe(DidCommDidExchangeState.Completed)
       expect(message).toEqual(expect.any(DidCommTrustPingMessage))
+    })
+
+    it('returns a trust ping 2.0 message for a DIDComm v2 connection', async () => {
+      expect.assertions(2)
+
+      const mockConnection = getMockConnection({ state: DidCommDidExchangeState.Completed, didcommVersion: 'v2' })
+
+      const { message } = await connectionService.createTrustPing(agentContext, mockConnection, {
+        responseRequested: false,
+      })
+
+      expect(message).toEqual(expect.any(DidCommTrustPingV2Message))
+      expect(message.responseRequested).toBe(false)
     })
 
     const invalidConnectionStates = [
@@ -332,18 +345,21 @@ describe('DidCommConnectionService', () => {
     it('should throw an error when lastReceivedMessage and senderKey are present, but sender key is not present in recipientKeys of previously received message ~service decorator', async () => {
       expect.assertions(1)
 
-      const senderKey = 'senderKey'
+      // Valid 32-byte base58 Ed25519 keys — required so toX25519() conversion works correctly
+      const ourRecipientKeyBase58 = '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'
+      const senderKeyBase58 = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const anotherKeyBase58 = '6fioC1zcDPyPEL19pXRS2E4iJ46zH7xP6uSgAaPdwDrx'
 
       const lastReceivedMessage = new DidCommMessage()
       lastReceivedMessage.setService({
-        recipientKeys: ['anotherKey'],
+        recipientKeys: [anotherKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
       const lastSentMessage = new DidCommMessage()
       lastSentMessage.setService({
-        recipientKeys: [senderKey],
+        recipientKeys: [ourRecipientKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
       })
@@ -354,12 +370,12 @@ describe('DidCommConnectionService', () => {
         senderKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
-          publicKey: TypedArrayEncoder.fromBase58('randomKey'),
+          publicKey: TypedArrayEncoder.fromBase58(senderKeyBase58),
         }),
         recipientKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
-          publicKey: TypedArrayEncoder.fromBase58(senderKey),
+          publicKey: TypedArrayEncoder.fromBase58(ourRecipientKeyBase58),
         }),
       })
 
@@ -368,7 +384,7 @@ describe('DidCommConnectionService', () => {
           lastReceivedMessage,
           lastSentMessage,
         })
-      ).rejects.toThrow('Sender key z41yMxWDBqGD2Z not found in their service.')
+      ).rejects.toThrow('Sender key z6MkkbTaLstV4fwr1rNf5CSxdS2rGbwxi3V5y6NnVFTZ2V1w not found in their service.')
     })
   })
 

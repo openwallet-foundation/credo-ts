@@ -1,7 +1,7 @@
 import { JsonTransformer } from '@credo-ts/core'
-import { Expose, Transform, Type } from 'class-transformer'
+import { Expose, Type } from 'class-transformer'
 import { IsInstance, ValidateNested } from 'class-validator'
-import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../../../util/messageType'
+import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 import type { CredentialPreviewOptions } from '../../../models/DidCommCredentialPreviewAttribute'
 import { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'
 
@@ -23,9 +23,6 @@ export class DidCommCredentialV2Preview {
 
   @Expose({ name: '@type' })
   @IsValidMessageType(DidCommCredentialV2Preview.type)
-  @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
-    toClassOnly: true,
-  })
   public readonly type = DidCommCredentialV2Preview.type.messageTypeUri
 
   @Type(() => DidCommCredentialPreviewAttribute)

@@ -3,14 +3,11 @@ import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
 import { TypedArrayEncoder, utils } from '@credo-ts/core'
 import type { DidCommConnectionRecord, DidCommConnectionStateChangedEvent } from '@credo-ts/didcomm'
 import { DidCommConnectionEventTypes } from '@credo-ts/didcomm'
-import type { IndyVdrRegisterCredentialDefinitionOptions, IndyVdrRegisterSchemaOptions } from '@credo-ts/indy-vdr'
-import { BaseAgent, indyNetworkConfig } from './BaseAgent'
+import { BaseAgent } from './BaseAgent'
 import { Color, greenText, Output, purpleText, redText, writeOutput } from './OutputClass'
 
 export enum RegistryOptions {
-  indy = 'did:indy',
   cheqd = 'did:cheqd',
-  hedera = 'did:hedera',
 }
 
 export class Faber extends BaseAgent {
@@ -31,19 +28,12 @@ export class Faber extends BaseAgent {
   public async importDid(registry: string) {
     // NOTE: we assume the did is already registered on the ledger, we just store the private key in the wallet
     // and store the existing did in the wallet
-    // indy did is based on private key (seed)
-    const unqualifiedIndyDid = '2jEvRuKmfBJTRa7QowDpNN'
-
     const rootKeyIds: Record<string, string> = {
-      [RegistryOptions.indy]: '#verkey',
       [RegistryOptions.cheqd]: '#key-1',
-      [RegistryOptions.hedera]: '#did-root-key',
     }
 
     const Dids: Record<string, string> = {
-      [RegistryOptions.indy]: `did:indy:${indyNetworkConfig.indyNamespace}:${unqualifiedIndyDid}`,
       [RegistryOptions.cheqd]: 'did:cheqd:testnet:d37eba59-513d-42d3-8f9f-d1df0548b675',
-      [RegistryOptions.hedera]: 'did:hedera:testnet:44eesExqdsUvLZ35FpnBPErqRGRnYbzzyG3wgCCYxkmq_0.0.6231121',
     }
 
     const didDocumentRelativeKeyId = rootKeyIds[registry]
@@ -111,26 +101,31 @@ export class Faber extends BaseAgent {
     const getConnectionRecord = (outOfBandId: string) =>
       new Promise<DidCommConnectionRecord>((resolve, reject) => {
         // Timeout of 20 seconds
-        const timeoutId = setTimeout(() => reject(new Error(redText(Output.MissingConnectionRecord))), 20000)
+        const timeoutId = setTimeout(() => {
+          clearInterval(pollId)
+          reject(new Error(redText(Output.MissingConnectionRecord)))
+        }, 20000)
 
-        // Start listener
+        const tryResolve = (connectionRecord: DidCommConnectionRecord) => {
+          clearTimeout(timeoutId)
+          clearInterval(pollId)
+          resolve(connectionRecord)
+        }
+
+        // Listen for connection state changed event (e.g. v1 handshake)
         this.agent.events.on<DidCommConnectionStateChangedEvent>(
           DidCommConnectionEventTypes.DidCommConnectionStateChanged,
           (e) => {
             if (e.payload.connectionRecord.outOfBandId !== outOfBandId) return
-
-            clearTimeout(timeoutId)
-            resolve(e.payload.connectionRecord)
+            tryResolve(e.payload.connectionRecord)
           }
         )
 
-        // Also retrieve the connection record by invitation if the event has already fired
-        void this.agent.didcomm.connections.findAllByOutOfBandId(outOfBandId).then(([connectionRecord]) => {
-          if (connectionRecord) {
-            clearTimeout(timeoutId)
-            resolve(connectionRecord)
-          }
-        })
+        // Poll for connection (v2 OOB: connection is created when first message arrives)
+        const pollId = setInterval(async () => {
+          const [connectionRecord] = await this.agent.didcomm.connections.findAllByOutOfBandId(outOfBandId)
+          if (connectionRecord?.id) tryResolve(connectionRecord)
+        }, 1000)
       })
 
     const connectionRecord = await getConnectionRecord(this.outOfBandId)
@@ -169,7 +164,7 @@ export class Faber extends BaseAgent {
     this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attrNames)
     writeOutput(greenText('\nRegistering schema...\n', false))
 
-    const { schemaState } = await this.agent.modules.anoncreds.registerSchema<IndyVdrRegisterSchemaOptions>({
+    const { schemaState } = await this.agent.modules.anoncreds.registerSchema({
       schema: schemaTemplate,
       options: {
         endorserMode: 'internal',
@@ -192,19 +187,18 @@ export class Faber extends BaseAgent {
     }
 
     writeOutput('\nRegistering credential definition...\n')
-    const { credentialDefinitionState } =
-      await this.agent.modules.anoncreds.registerCredentialDefinition<IndyVdrRegisterCredentialDefinitionOptions>({
-        credentialDefinition: {
-          schemaId,
-          issuerId: this.anonCredsIssuerId,
-          tag: 'latest',
-        },
-        options: {
-          supportRevocation: false,
-          endorserMode: 'internal',
-          endorserDid: this.anonCredsIssuerId,
-        },
-      })
+    const { credentialDefinitionState } = await this.agent.modules.anoncreds.registerCredentialDefinition({
+      credentialDefinition: {
+        schemaId,
+        issuerId: this.anonCredsIssuerId,
+        tag: 'latest',
+      },
+      options: {
+        supportRevocation: false,
+        endorserMode: 'internal',
+        endorserDid: this.anonCredsIssuerId,
+      },
+    })
 
     if (credentialDefinitionState.state !== 'finished') {
       throw new Error(

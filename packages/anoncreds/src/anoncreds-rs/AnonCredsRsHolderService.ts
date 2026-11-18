@@ -65,6 +65,11 @@ import type {
   W3cToLegacyCredentialOptions,
 } from '../services/AnonCredsHolderServiceOptions'
 import { storeLinkSecret } from '../utils'
+import {
+  withIdentifierQueryVariants,
+  withIdentifierVariantKeys,
+  withRestrictionVariants,
+} from '../utils/identifierVariants'
 import { assertLinkSecretsMatch, getLinkSecret } from '../utils/linkSecret'
 import type { AnonCredsCredentialRequestMetadata, W3cAnonCredsCredentialMetadata } from '../utils/metadata'
 import { W3cAnonCredsCredentialMetadataKey } from '../utils/metadata'
@@ -252,8 +257,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       const linkSecret = await getLinkSecret(agentContext, linkSecretId)
 
       presentation = Presentation.create({
-        credentialDefinitions: rsCredentialDefinitions,
-        schemas: rsSchemas,
+        credentialDefinitions: withIdentifierVariantKeys(agentContext, rsCredentialDefinitions),
+        schemas: withIdentifierVariantKeys(agentContext, rsSchemas),
         presentationRequest: proofRequest as unknown as JsonObject,
         credentials: credentials.map((entry) => entry.credentialEntry),
         credentialsProve,
@@ -518,17 +523,22 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     agentContext: AgentContext,
     options: GetCredentialsOptions
   ): Promise<AnonCredsCredentialInfo[]> {
-    const credentialRecords = await agentContext.dependencyManager
-      .resolve(AnonCredsCredentialRepository)
-      .findByQuery(agentContext, {
-        credentialDefinitionId: options.credentialDefinitionId,
-        schemaId: options.schemaId,
-        issuerId: options.issuerId,
-        schemaName: options.schemaName,
-        schemaVersion: options.schemaVersion,
-        schemaIssuerId: options.schemaIssuerId,
-        methodName: options.methodName,
-      })
+    const credentialRecords = await agentContext.dependencyManager.resolve(AnonCredsCredentialRepository).findByQuery(
+      agentContext,
+      withIdentifierQueryVariants<AnonCredsCredentialRecord>(
+        agentContext,
+        {
+          credentialDefinitionId: options.credentialDefinitionId,
+          schemaId: options.schemaId,
+          issuerId: options.issuerId,
+          schemaName: options.schemaName,
+          schemaVersion: options.schemaVersion,
+          schemaIssuerId: options.schemaIssuerId,
+          methodName: options.methodName,
+        },
+        ['credentialDefinitionId', 'schemaId']
+      )
+    )
 
     return credentialRecords.map((credentialRecord) => getAnoncredsCredentialInfoFromRecord(credentialRecord))
   }
@@ -537,17 +547,22 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     agentContext: AgentContext,
     options: GetCredentialsOptions
   ): Promise<AnonCredsCredentialInfo[]> {
-    const credentialRecords = await agentContext.dependencyManager
-      .resolve(W3cCredentialRepository)
-      .findByQuery(agentContext, {
-        issuerId: options.issuerId,
-        anonCredsCredentialDefinitionId: options.credentialDefinitionId,
-        anonCredsSchemaId: options.schemaId,
-        anonCredsSchemaName: options.schemaName,
-        anonCredsSchemaVersion: options.schemaVersion,
-        anonCredsSchemaIssuerId: options.schemaIssuerId,
-        anonCredsMethodName: options.methodName,
-      })
+    const credentialRecords = await agentContext.dependencyManager.resolve(W3cCredentialRepository).findByQuery(
+      agentContext,
+      withIdentifierQueryVariants<W3cCredentialRecord>(
+        agentContext,
+        {
+          issuerId: options.issuerId,
+          anonCredsCredentialDefinitionId: options.credentialDefinitionId,
+          anonCredsSchemaId: options.schemaId,
+          anonCredsSchemaName: options.schemaName,
+          anonCredsSchemaVersion: options.schemaVersion,
+          anonCredsSchemaIssuerId: options.schemaIssuerId,
+          anonCredsMethodName: options.methodName,
+        },
+        ['anonCredsCredentialDefinitionId', 'anonCredsSchemaId']
+      )
+    )
 
     const credentials = credentialRecords.map((credentialRecord) =>
       getAnoncredsCredentialInfoFromRecord(credentialRecord)
@@ -601,7 +616,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
     // Add query for proof request restrictions
     if (requestedAttribute.restrictions) {
-      const restrictionQuery = this.queryLegacyFromRestrictions(requestedAttribute.restrictions)
+      const restrictionQuery = this.queryLegacyFromRestrictions(agentContext, requestedAttribute.restrictions)
       $and.push(restrictionQuery)
     }
 
@@ -652,7 +667,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
     // Add query for proof request restrictions
     if (requestedAttribute.restrictions) {
-      const restrictionQuery = this.queryFromRestrictions(requestedAttribute.restrictions)
+      const restrictionQuery = this.queryFromRestrictions(agentContext, requestedAttribute.restrictions)
       $and.push(restrictionQuery)
     }
 
@@ -686,10 +701,13 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     return [...credentialWithMetadata, ...legacyCredentialWithMetadata]
   }
 
-  private queryFromRestrictions(restrictions: AnonCredsProofRequestRestriction[]) {
+  private queryFromRestrictions(agentContext: AgentContext, restrictions: AnonCredsProofRequestRestriction[]) {
     const query: Query<W3cCredentialRecord>[] = []
 
-    const { restrictions: parsedRestrictions } = JsonTransformer.fromJSON({ restrictions }, AnonCredsRestrictionWrapper)
+    const { restrictions: parsedRestrictions } = JsonTransformer.fromJSON(
+      { restrictions: withRestrictionVariants(agentContext, restrictions) },
+      AnonCredsRestrictionWrapper
+    )
 
     for (const restriction of parsedRestrictions) {
       const queryElements: SimpleQuery<W3cCredentialRecord> = {}
@@ -734,10 +752,13 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     return query.length === 1 ? query[0] : { $or: query }
   }
 
-  private queryLegacyFromRestrictions(restrictions: AnonCredsProofRequestRestriction[]) {
+  private queryLegacyFromRestrictions(agentContext: AgentContext, restrictions: AnonCredsProofRequestRestriction[]) {
     const query: Query<AnonCredsCredentialRecord>[] = []
 
-    const { restrictions: parsedRestrictions } = JsonTransformer.fromJSON({ restrictions }, AnonCredsRestrictionWrapper)
+    const { restrictions: parsedRestrictions } = JsonTransformer.fromJSON(
+      { restrictions: withRestrictionVariants(agentContext, restrictions) },
+      AnonCredsRestrictionWrapper
+    )
 
     for (const restriction of parsedRestrictions) {
       const queryElements: SimpleQuery<AnonCredsCredentialRecord> = {}
@@ -827,8 +848,11 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       w3cAnonCredsPresentation = W3cAnonCredsPresentation.create({
         credentials,
         credentialsProve,
-        schemas: options.schemas as unknown as Record<string, JsonObject>,
-        credentialDefinitions: options.credentialDefinitions as unknown as Record<string, JsonObject>,
+        schemas: withIdentifierVariantKeys(agentContext, options.schemas as unknown as Record<string, JsonObject>),
+        credentialDefinitions: withIdentifierVariantKeys(
+          agentContext,
+          options.credentialDefinitions as unknown as Record<string, JsonObject>
+        ),
         presentationRequest: options.proofRequest as unknown as JsonObject,
         linkSecret: await getLinkSecret(agentContext, options.linkSecretId),
       })

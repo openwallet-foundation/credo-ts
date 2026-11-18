@@ -21,6 +21,33 @@ describe('OpenId4VcIssuerRecord', () => {
     expect(instance.accessTokenSignerKmsBackend).toBe('remote-kms')
   })
 
+  test('resolves the access token key from accessTokenKey, or from the jwk kid and backend of older records', () => {
+    const publicJwk = { kty: 'OKP', crv: 'Ed25519', x: '11qYAYdk9Jtz7bQHmbT5D_Iy_fqpI6bD7Z2p1l9tUoQ' }
+    const instance = JsonTransformer.fromJSON(
+      {
+        issuerId: 'issuer-id',
+        accessTokenKey: { publicJwk, keyId: 'key-id', kmsBackend: 'remote-kms' },
+        credentialConfigurationsSupported: {},
+      },
+      OpenId4VcIssuerRecord
+    )
+    const olderInstance = JsonTransformer.fromJSON(
+      {
+        issuerId: 'issuer-id',
+        accessTokenPublicJwk: { ...publicJwk, kid: 'older-key-id' },
+        accessTokenSignerKmsBackend: 'older-remote-kms',
+        credentialConfigurationsSupported: {},
+      },
+      OpenId4VcIssuerRecord
+    )
+
+    expect(instance.resolvedAccessTokenPublicJwk.keyId).toBe('key-id')
+    expect(instance.resolvedAccessTokenPublicJwk.kmsBackend).toBe('remote-kms')
+    expect(instance.accessTokenKey?.publicJwk).toEqual(publicJwk)
+    expect(olderInstance.resolvedAccessTokenPublicJwk.keyId).toBe('older-key-id')
+    expect(olderInstance.resolvedAccessTokenPublicJwk.kmsBackend).toBe('older-remote-kms')
+  })
+
   test('should correctly transform credentials supported to credential configurations supported', () => {
     const instance = JsonTransformer.fromJSON(
       {

@@ -3,6 +3,7 @@ import type {
   DidCommAutoAcceptProof,
   DidCommConnectionRecord,
   DidCommModuleConfigOptions,
+  DidCommRevocationNotificationFormatService,
 } from '../../didcomm/src'
 import {
   DidCommCredentialEventTypes,
@@ -13,12 +14,17 @@ import {
   DidCommProofEventTypes,
   DidCommProofV2Protocol,
 } from '../../didcomm/src'
-import { Agent, CacheModule, InMemoryLruCache, W3cCredentialsModule } from '../src'
+import { Agent, CacheModule, InMemoryLruCache, JsonLdModule } from '../src'
 import { customDocumentLoader } from '../src/modules/vc/linked-data-proofs/__tests__/documentLoader'
 import type { EventReplaySubject } from './events'
 
 import { setupEventReplaySubjects } from './events'
-import { getAgentOptions, makeConnection } from './helpers'
+import {
+  getAgentOptions,
+  getDefaultDidCommConfigForTests,
+  getDefaultDidCommVersionForTests,
+  makeConnection,
+} from './helpers'
 import { setupSubjectTransports } from './transport'
 
 export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules>>
@@ -26,10 +32,12 @@ export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules>>
 export const getJsonLdModules = ({
   autoAcceptCredentials,
   autoAcceptProofs,
+  revocationNotificationFormats,
   extraDidCommConfig,
 }: {
   autoAcceptCredentials?: DidCommAutoAcceptCredential
   autoAcceptProofs?: DidCommAutoAcceptProof
+  revocationNotificationFormats?: DidCommRevocationNotificationFormatService[]
   extraDidCommConfig?: DidCommModuleConfigOptions
 } = {}) =>
   ({
@@ -43,6 +51,7 @@ export const getJsonLdModules = ({
           new DidCommCredentialV2Protocol({ credentialFormats: [new DidCommJsonLdCredentialFormatService()] }),
         ],
         autoAcceptCredentials,
+        revocationNotificationFormats,
       },
       proofs: {
         autoAcceptProofs,
@@ -52,7 +61,7 @@ export const getJsonLdModules = ({
       },
     }),
 
-    w3cCredentials: new W3cCredentialsModule({
+    jsonLd: new JsonLdModule({
       documentLoader: customDocumentLoader,
     }),
     cache: new CacheModule({
@@ -97,14 +106,23 @@ export async function setupJsonLdTests<
   autoAcceptCredentials,
   autoAcceptProofs,
   createConnections,
+  didCommVersion,
+  revocationNotificationFormats,
 }: {
   issuerName: string
   holderName: string
   verifierName?: VerifierName
   autoAcceptCredentials?: DidCommAutoAcceptCredential
   autoAcceptProofs?: DidCommAutoAcceptProof
+  revocationNotificationFormats?: DidCommRevocationNotificationFormatService[]
   createConnections?: CreateConnections
+  /** DIDComm envelope version for connections. Defaults to DIDCOMM_VERSION env var, else v1. */
+  didCommVersion?: 'v1' | 'v2'
 }): Promise<SetupJsonLdTestsReturn<VerifierName, CreateConnections>> {
+  const resolvedDidCommVersion = didCommVersion ?? getDefaultDidCommVersionForTests()
+  const extraDidCommConfigForVersion: DidCommModuleConfigOptions =
+    resolvedDidCommVersion === 'v2' ? { didcommVersions: ['v1', 'v2'] } : {}
+
   const issuerAgent = new Agent(
     getAgentOptions(
       issuerName,
@@ -113,8 +131,11 @@ export async function setupJsonLdTests<
       getJsonLdModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        revocationNotificationFormats,
         extraDidCommConfig: {
           endpoints: ['rxjs:issuer'],
+          ...getDefaultDidCommConfigForTests(),
+          ...extraDidCommConfigForVersion,
         },
       }),
       { requireDidcomm: true }
@@ -129,8 +150,11 @@ export async function setupJsonLdTests<
       getJsonLdModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        revocationNotificationFormats,
         extraDidCommConfig: {
           endpoints: ['rxjs:holder'],
+          ...getDefaultDidCommConfigForTests(),
+          ...extraDidCommConfigForVersion,
         },
       }),
       { requireDidcomm: true }
@@ -146,8 +170,11 @@ export async function setupJsonLdTests<
           getJsonLdModules({
             autoAcceptCredentials,
             autoAcceptProofs,
+            revocationNotificationFormats,
             extraDidCommConfig: {
               endpoints: ['rxjs:verifier'],
+              ...getDefaultDidCommConfigForTests(),
+              ...extraDidCommConfigForVersion,
             },
           }),
           { requireDidcomm: true }
@@ -171,10 +198,14 @@ export async function setupJsonLdTests<
   let holderVerifierConnection: DidCommConnectionRecord | undefined
 
   if (createConnections ?? true) {
-    ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)
+    ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent, {
+      didCommVersion: resolvedDidCommVersion,
+    })
 
     if (verifierAgent) {
-      ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent)
+      ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent, {
+        didCommVersion: resolvedDidCommVersion,
+      })
     }
   }
 

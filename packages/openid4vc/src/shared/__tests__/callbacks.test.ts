@@ -1,3 +1,4 @@
+import { generateKeyPairSync } from 'node:crypto'
 import type { AgentContext, KeyDidCreateOptions } from '@credo-ts/core'
 import { Agent, DidKey, JwtPayload, Kms, utils, X509ModuleConfig } from '@credo-ts/core'
 import type { Jwk, JwtSigner } from '@openid4vc/oauth2'
@@ -200,9 +201,9 @@ describe('getOid4vcJwtVerifyCallback', () => {
 
   describe('jwk signer', () => {
     // There is no `jwk` variant of `VerificationSigner`/`TrustedIssuer`, so a bare jwk signed
-    // credential issuer metadata is not checked against a trust list.
+    // authorization request is not checked against a trust list.
     test('is not checked against the trusted issuers', async () => {
-      const jwt = await createJwt(agent.context, { typ: 'openidvci-issuer-metadata+jwt', signer: jwkSigner })
+      const jwt = await createJwt(agent.context, { typ: 'oauth-authz-req+jwt', signer: jwkSigner })
       agent.context.config.setTrustedIssuersForVerification(async () => ({ trustedIssuers: [] }))
 
       await expect(verify(jwt)).resolves.toEqual(expect.objectContaining({ verified: true }))
@@ -216,11 +217,13 @@ describe('getOid4vcJwtVerifyCallback', () => {
       ['keyattestation+jwt', 'Key attestations', true],
       ['application/oauth-client-attestation+jwt', 'Wallet attestations', true],
       ['Application/Key-Attestation+JWT', 'Key attestations', false],
+      ['openidvci-issuer-metadata+jwt', 'Credential issuer metadata', false],
+      ['application/openidvci-issuer-metadata+jwt', 'Credential issuer metadata', false],
     ])('is rejected for typ %s (with issuance session: %s)', async (typ, name, withIssuanceSession) => {
       const jwt = await createJwt(agent.context, { typ, signer: jwkSigner })
 
       await expect(verify(jwt, { issuanceSession: withIssuanceSession })).rejects.toThrow(
-        `${name} signed with a 'jwk' header are not supported.`
+        `${name} signed with a 'jwk' header`
       )
     })
   })
@@ -332,6 +335,27 @@ describe('getOid4vcDecryptJweCallback', () => {
     await expect(getOid4vcDecryptJweCallback(agent.context)(jwe)).resolves.toMatchObject({
       decrypted: false,
       header: { kid: encryptionJwk.kid },
+    })
+  })
+
+  // Verification sessions created before `responseEncryptionKey` published the KMS key id, or for JARM the
+  // fingerprint, as `kid`
+  test.each([
+    ['KMS key id', (publicJwk: Kms.PublicJwk) => publicJwk.legacyKeyId],
+    ['fingerprint', (publicJwk: Kms.PublicJwk) => publicJwk.fingerprint],
+  ])('decrypts with a published %s as kid when no decryption key is mapped', async (_, getKid) => {
+    const { privateKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' })
+    const { d, ...jwk } = privateKey.export({ format: 'jwk' }) as Kms.KmsJwkPrivateEc
+    const publicJwk = Kms.PublicJwk.fromUnknown(jwk)
+    const privateJwk = { ...jwk, d } as Kms.KmsJwkPrivateEc
+    await agent.kms.importKey({ privateJwk: { ...privateJwk, kid: publicJwk.legacyKeyId } })
+
+    const encryptionJwk = { ...publicJwk.toJson({ includeKid: false }), kid: getKid(publicJwk) } as Jwk
+    const jwe = await encrypt(encryptionJwk)
+
+    await expect(getOid4vcDecryptJweCallback(agent.context)(jwe, { jwk: encryptionJwk })).resolves.toMatchObject({
+      decrypted: true,
+      payload: 'secret payload',
     })
   })
 

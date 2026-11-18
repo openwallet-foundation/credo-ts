@@ -115,7 +115,7 @@ describe('JwsService', () => {
 
     const jws = await jwsService.createJws(agentContext, {
       payload,
-      keyId: didJwsz6MkfKey.keyId,
+      key: { keyId: didJwsz6MkfKey.keyId },
       header: { kid },
       protectedHeaderOptions: {
         alg: KnownJwaSignatureAlgorithms.EdDSA,
@@ -132,7 +132,7 @@ describe('JwsService', () => {
 
     const jws = await jwsService.createJws(agentContext, {
       payload,
-      keyId: didJwszDnaeyKey.keyId,
+      key: { keyId: didJwszDnaeyKey.keyId },
       header: { kid },
       protectedHeaderOptions: {
         alg: KnownJwaSignatureAlgorithms.ES256,
@@ -148,7 +148,7 @@ describe('JwsService', () => {
 
     const jws = await jwsService.createJwsCompact(agentContext, {
       payload,
-      keyId: didJwsz6MkfKey.keyId,
+      key: { keyId: didJwsz6MkfKey.keyId },
       protectedHeaderOptions: {
         alg: KnownJwaSignatureAlgorithms.EdDSA,
         jwk: didJwsz6MkfKey.toJson({ includeKid: false }),
@@ -164,7 +164,7 @@ describe('JwsService', () => {
     await expect(
       jwsService.createJwsCompact(agentContext, {
         payload: JsonEncoder.toUint8Array(didJwsz6Mkf.DATA_JSON),
-        keyId: didJwsz6MkfKey.keyId,
+        key: { keyId: didJwsz6MkfKey.keyId },
         protectedHeaderOptions: { alg: KnownJwaSignatureAlgorithms.EdDSA, b64: false, crit: ['b64'] },
       })
     ).rejects.toThrow("JWS protected header parameters 'crit' and 'b64' are not supported.")
@@ -175,7 +175,7 @@ describe('JwsService', () => {
 
     const signed1 = await jwsService.createJwsCompact(agentContext, {
       payload,
-      keyId: didJwsz6MkfKey.keyId,
+      key: { keyId: didJwsz6MkfKey.keyId },
       protectedHeaderOptions: {
         alg: KnownJwaSignatureAlgorithms.EdDSA,
         jwk: didJwsz6MkfKey,
@@ -189,7 +189,7 @@ describe('JwsService', () => {
 
     const signed2 = await jwsService.createJwsCompact(agentContext, {
       payload,
-      keyId: didJwsz6MkfKey.keyId,
+      key: { keyId: didJwsz6MkfKey.keyId },
       protectedHeaderOptions: {
         alg: KnownJwaSignatureAlgorithms.EdDSA,
         x5c: [didJwsz6MkfCertificate.toString('base64url')],
@@ -202,6 +202,80 @@ describe('JwsService', () => {
       trustedCertificates: [didJwsz6MkfCertificate.toString('base64url')],
     })
     expect(isValid2).toEqual(true)
+  })
+
+  describe('key reads when signing', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it.each([
+      { header: 'jwk', protectedHeaderOptions: { alg: KnownJwaSignatureAlgorithms.EdDSA, jwk: didJwsz6MkfKey } },
+      { header: 'kid', protectedHeaderOptions: { alg: KnownJwaSignatureAlgorithms.EdDSA, kid: 'something' } },
+    ])('does not read the public key with a $header header', async ({ protectedHeaderOptions }) => {
+      const getPublicKey = vi.spyOn(AskarKeyManagementService.prototype, 'getPublicKey')
+
+      await jwsService.createJwsCompact(agentContext, {
+        payload: JsonEncoder.toUint8Array(didJwsz6Mkf.DATA_JSON),
+        key: { keyId: didJwsz6MkfKey.keyId },
+        protectedHeaderOptions,
+      })
+
+      expect(getPublicKey).not.toHaveBeenCalled()
+    })
+
+    it('throws before signing when the alg does not fit the header jwk', async () => {
+      const sign = vi.spyOn(AskarKeyManagementService.prototype, 'sign')
+
+      await expect(
+        jwsService.createJwsCompact(agentContext, {
+          payload: JsonEncoder.toUint8Array(didJwsz6Mkf.DATA_JSON),
+          key: { keyId: didJwsz6MkfKey.keyId },
+          protectedHeaderOptions: { alg: KnownJwaSignatureAlgorithms.ES256, jwk: didJwsz6MkfKey },
+        })
+      ).rejects.toThrow(`OKP key with crv 'Ed25519' cannot be used with algorithm 'ES256'`)
+      expect(sign).not.toHaveBeenCalled()
+    })
+
+    it('throws after signing when the header jwk does not match the key', async () => {
+      await expect(
+        jwsService.createJwsCompact(agentContext, {
+          payload: JsonEncoder.toUint8Array(didJwsz6Mkf.DATA_JSON),
+          key: { keyId: didJwsz6MkfKey.keyId },
+          protectedHeaderOptions: { alg: KnownJwaSignatureAlgorithms.EdDSA, jwk: didJwsz6MkvKey },
+        })
+      ).rejects.toThrow(`Key with key id '${didJwsz6MkfKey.keyId}' does not match the expected`)
+    })
+
+    it('throws after signing when the header x5c does not match the key', async () => {
+      await expect(
+        jwsService.createJwsCompact(agentContext, {
+          payload: JsonEncoder.toUint8Array(didJwsz6Mkf.DATA_JSON),
+          key: { keyId: didJwsz6MkfKey.keyId },
+          protectedHeaderOptions: {
+            alg: KnownJwaSignatureAlgorithms.EdDSA,
+            x5c: [didJwsz6MkvCertificate.toString('base64url')],
+          },
+        })
+      ).rejects.toThrow(`Key with key id '${didJwsz6MkfKey.keyId}' does not match the expected`)
+    })
+
+    it('throws before signing when the header jwk and x5c do not match', async () => {
+      const sign = vi.spyOn(KeyManagementApi.prototype, 'sign')
+
+      await expect(
+        jwsService.createJwsCompact(agentContext, {
+          payload: JsonEncoder.toUint8Array(didJwsz6Mkf.DATA_JSON),
+          key: { keyId: didJwsz6MkfKey.keyId },
+          protectedHeaderOptions: {
+            alg: KnownJwaSignatureAlgorithms.EdDSA,
+            jwk: didJwsz6MkfKey,
+            x5c: [didJwsz6MkvCertificate.toString('base64url')],
+          },
+        })
+      ).rejects.toThrow('Protected header x5c or jwk does not match the signing key.')
+      expect(sign).not.toHaveBeenCalled()
+    })
   })
 
   describe('verifyJws', () => {
@@ -351,7 +425,7 @@ describe('JwsService', () => {
 
       const signed = await jwsService.createJwsCompact(agentContext, {
         payload,
-        keyId: didJwsz6MkfKey.keyId,
+        key: { keyId: didJwsz6MkfKey.keyId },
         protectedHeaderOptions: {
           alg: KnownJwaSignatureAlgorithms.EdDSA,
           x5c: [didJwsz6MkfCertificate.toString('base64url')],

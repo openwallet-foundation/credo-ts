@@ -5,6 +5,7 @@ import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
 import { DidCommMessageReceiver } from '../../../../DidCommMessageReceiver'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
+import { DidCommTransportService } from '../../../../DidCommTransportService'
 import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
 import { DidCommProblemReportError } from '../../../../errors'
 import type { DidCommInboundMessageContext } from '../../../../models'
@@ -91,7 +92,7 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
   ): Promise<DeliverMessagesProtocolReturnType<DidCommMessage> | undefined> {
-    const { connectionRecord, recipientKey, messages } = options
+    const { connectionRecord, recipientKey, messages, messageIds } = options
     connectionRecord.assertReady()
 
     const queueTransportRepository =
@@ -103,6 +104,7 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
       (await queueTransportRepository.takeFromQueue(agentContext, {
         connectionId: connectionRecord.id,
         recipientDid: recipientKey,
+        messageIds,
         limit: 10, // TODO: Define as config parameter
       }))
 
@@ -298,12 +300,18 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
 
     const sessionService = messageContext.agentContext.dependencyManager.resolve(DidCommMessagePickupSessionService)
 
-    if (message.liveDelivery && sessionId) {
+    const transportSession = sessionId
+      ? agentContext.dependencyManager.resolve(DidCommTransportService).findSessionById(sessionId)
+      : undefined
+    // A session that carries a single response, such as HTTP, is gone after the status reply
+    const liveDelivery = message.liveDelivery && transportSession !== undefined && !transportSession.isSingleResponse
+
+    if (liveDelivery) {
       sessionService.saveLiveSession(agentContext, {
         connectionId: connection.id,
         protocolVersion: 'v2',
         role: DidCommMessagePickupSessionRole.MessageHolder,
-        transportSessionId: sessionId,
+        transportSessionId: transportSession.id,
       })
     } else {
       sessionService.removeLiveSession(agentContext, { connectionId: connection.id })
@@ -311,7 +319,7 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
 
     const statusMessage = new DidCommStatusV2Message({
       threadId: message.threadId,
-      liveDelivery: message.liveDelivery && Boolean(sessionId),
+      liveDelivery,
       messageCount: await queueTransportRepository.getAvailableMessageCount(agentContext, {
         connectionId: connection.id,
       }),

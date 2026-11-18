@@ -15,7 +15,7 @@ export class RsaPublicJwk implements PublicJwkType<KmsJwkPublicRsa> {
     'RS512',
     'PS512',
   ]
-  public static multicodecPrefix = 4613
+  public static multicodecPrefix = 0x1205
 
   public multicodecPrefix = RsaPublicJwk.multicodecPrefix
   public supportedEncryptionKeyAgreementAlgorithms = RsaPublicJwk.supportedEncryptionKeyAgreementAlgorithms

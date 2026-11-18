@@ -1,5 +1,5 @@
 import { type AgentContext, CredoError, joinUriParts, type Query, utils } from '@credo-ts/core'
-import type { HttpMethod, Jwk, VerifyAccessTokenRequestReturn } from '@openid4vc/oauth2'
+import type { HttpMethod, VerifyAccessTokenRequestReturn } from '@openid4vc/oauth2'
 import {
   authorizationCodeGrantIdentifier,
   decodeJwt,
@@ -15,10 +15,12 @@ import {
   sendOauth2ErrorResponse,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
+import { getAccessTokenSigner } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
+import { getOpenId4VciVersion } from '../util/openId4VciVersion'
 import { getClientAttestationToVerify } from '../util/walletAttestation'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
@@ -335,7 +337,11 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         )
       }
 
-      const { cNonce, cNonceExpiresInSeconds } = await openId4VcIssuerService.createNonce(agentContext, issuer)
+      // Before draft 15 the token response has a c_nonce, after that a wallet uses the nonce endpoint
+      const nonce =
+        getOpenId4VciVersion(issuanceSession) === 'v1.draft11-14'
+          ? await openId4VcIssuerService.createNonce(agentContext, issuer)
+          : undefined
 
       // for authorization code flow we take the authorization scopes. For pre-auth we don't use scopes (we just
       // use the offered credential configuration ids so a scope is not required)
@@ -361,16 +367,11 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         })
       }
 
-      const signerJwk = accessTokenSigningKey
       const accessTokenResponse = await oauth2AuthorizationServer.createAccessTokenResponse({
         audience: issuerMetadata.credentialIssuer.credential_issuer,
         authorizationServer: issuerMetadata.credentialIssuer.credential_issuer,
         expiresInSeconds: config.accessTokenExpiresInSeconds,
-        signer: {
-          method: 'jwk',
-          alg: signerJwk.supportedSignatureAlgorithms[0],
-          publicJwk: signerJwk.toJson() as Jwk,
-        },
+        signer: getAccessTokenSigner(accessTokenSigningKey),
         dpop: tokenDpop,
         scope: scopes?.join(' '),
         clientId: issuanceSession.clientId,
@@ -387,9 +388,8 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
 
         refreshToken,
 
-        // NOTE: these have been removed in newer drafts. Keeping them in for now
-        cNonce,
-        cNonceExpiresIn: cNonceExpiresInSeconds,
+        cNonce: nonce?.cNonce,
+        cNonceExpiresIn: nonce?.cNonceExpiresInSeconds,
       })
 
       issuanceSession.authorization = {

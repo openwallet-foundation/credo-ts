@@ -200,6 +200,7 @@ export class CertificateSigningRequest {
 
     const csrInstance = CertificateSigningRequest.parseCertificateRequest(csr)
     if (options.subjectPublicKey.hasKeyId) csrInstance.publicJwk.keyId = options.subjectPublicKey.keyId
+    csrInstance.publicJwk.kmsBackend = options.subjectPublicKey.kmsBackend
     return csrInstance
   }
 

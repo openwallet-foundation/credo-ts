@@ -4,7 +4,9 @@ import {
   AgentContext,
   type AgentDependencies,
   BaseRecord,
+  CacheModule,
   ConsoleLogger,
+  InMemoryLruCache,
   type Logger,
   LogLevel,
   StorageVersionRecord,
@@ -36,6 +38,7 @@ export class AskarToDrizzleStorageMigrator {
       ? {
           drizzle: this.drizzleModule,
           tenants: this.tenantsModule,
+          cache: new CacheModule({ cache: new InMemoryLruCache({ limit: 500 }) }),
         }
       : {
           drizzle: this.drizzleModule,
@@ -47,6 +50,7 @@ export class AskarToDrizzleStorageMigrator {
       ? {
           askar: this.askarModule,
           tenants: this.tenantsModule,
+          cache: new CacheModule({ cache: new InMemoryLruCache({ limit: 500 }) }),
         }
       : {
           askar: this.askarModule,
