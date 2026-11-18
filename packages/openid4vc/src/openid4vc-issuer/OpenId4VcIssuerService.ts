@@ -1954,11 +1954,14 @@ export class OpenId4VcIssuerService {
     const dpopConfig = options.chainedAuthorizationServerConfig.dpop
     const supportedSigningAlgorithms = options.authorizationServerMetadata.dpop_signing_alg_values_supported
 
+    // A session that started with DPoP keeps the key it started with.
+    if (dpopConfig?.policy === 'disallowed' && !persisted) return {}
+
     if (!supportedSigningAlgorithms) {
       if (persisted) {
         throw new CredoError('Authorization server no longer advertises DPoP support for this issuance session.')
       }
-      if (dpopConfig?.requireServerSupport) {
+      if (dpopConfig?.policy === 'required') {
         throw new CredoError(`Authorization server does not support DPoP.`)
       }
 
