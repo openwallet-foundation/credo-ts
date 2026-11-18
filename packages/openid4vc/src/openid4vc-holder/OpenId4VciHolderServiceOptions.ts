@@ -17,6 +17,7 @@ import type {
   OpenId4VciMetadata,
 } from '../shared'
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
+import type { OpenId4VciNotificationEvent } from '../shared/models/OpenId4VciNotificationEvent'
 
 export { OpenId4VciAuthorizationFlow }
 
@@ -51,13 +52,6 @@ export interface OpenId4VciDpopRequestOptions {
   alg: Kms.KnownJwaSignatureAlgorithm
   nonce?: string
 }
-
-/**
- * 'credential_accepted' The Credential was successfully stored in the Wallet.
- * 'credential_deleted' when the unsuccessful Credential issuance was caused by a user action.
- * 'credential_failure' otherwise.
- */
-export type OpenId4VciNotificationEvent = 'credential_accepted' | 'credential_failure' | 'credential_deleted'
 
 export type OpenId4VciRequestTokenResponse = {
   accessToken: string

@@ -54,6 +54,7 @@ import type {
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
 import { getOid4vcEncryptJweCallback } from '../../shared/callbacks'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
+import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { getCredentialRequestDecryptionMetadata, OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
 import type { OpenId4VcIssuerRecord } from '../repository'
@@ -480,10 +481,67 @@ describe('OpenId4VcIssuer', () => {
       credential: expect.any(String),
       format: 'vc+sd-jwt',
       credentials: undefined,
-      notification_id: undefined,
+      notification_id: expect.any(String),
     })
 
     await handleCredentialResponse(holder.context, credentialResponse.credential, universityDegreeCredentialSdJwt)
+  })
+
+  it('does not advertise the notification endpoint or return a notification id when it is disabled', async () => {
+    const issuerConfig = issuer.context.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+    vi.spyOn(issuerConfig, 'enableNotificationEndpoint', 'get').mockReturnValue(false)
+
+    const preAuthorizedCode = '1234567890'
+    const result = await issuer.openid4vc.issuer.createCredentialOffer({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationIds: [universityDegreeCredentialSdJwt.id],
+      preAuthorizedCodeFlowConfig: { preAuthorizedCode },
+    })
+
+    // We need to update the state, as it is checked and we're skipping the access token step
+    const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
+
+    const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    expect(issuerMetadata.credentialIssuer.notification_endpoint).toBeUndefined()
+
+    const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
+    const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
+    const credentialRequest = await createCredentialRequest(holder.context, {
+      credentialConfiguration: universityDegreeCredentialSdJwt,
+      issuerMetadata,
+      kid: holderKid,
+      nonce: cNonce,
+    })
+
+    const { credentialResponse, issuanceSession } = await issuer.openid4vc.issuer.createCredentialResponse({
+      issuanceSessionId: result.issuanceSession.id,
+      parsedCredentialRequest: await parseCredentialRequestAsWallet(credentialRequest),
+      authorization: {
+        authorizationServer: 'https://authorization.com',
+        accessToken: {
+          payload: { active: true, sub: 'something', 'pre-authorized_code': preAuthorizedCode },
+          value: 'the-access-token',
+        },
+      },
+      credentialRequestToCredentialMapper: () => ({
+        type: 'credentials',
+        format: 'dc+sd-jwt',
+        credentials: [
+          {
+            payload: { vct: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
+            issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
+            holder: { method: 'did', didUrl: holderVerificationMethod.id },
+            disclosureFrame: { _sd: ['university', 'degree'] },
+          },
+        ],
+        credentialConfigurationId: universityDegreeCredentialSdJwt.id,
+      }),
+    })
+
+    expect(credentialResponse.notification_id).toBeUndefined()
+    expect(issuanceSession.notifications).toEqual([])
   })
 
   it('rejects an issuer that is not the issuer of the issuance session', async () => {
@@ -700,7 +758,7 @@ describe('OpenId4VcIssuer', () => {
       credential: expect.any(String),
       format: 'vc+sd-jwt', // Should not be present in v13, only for v11 compat
       credentials: undefined,
-      notification_id: undefined,
+      notification_id: expect.any(String),
     })
 
     await handleCredentialResponse(holder.context, credentialResponse.credential, universityDegreeCredentialSdJwt)
@@ -890,7 +948,7 @@ describe('OpenId4VcIssuer', () => {
       credential: expect.any(String),
       format: 'jwt_vc_json',
       credentials: undefined,
-      notification_id: undefined,
+      notification_id: expect.any(String),
     })
 
     await handleCredentialResponse(holder.context, credentialResponse.credential, openBadgeCredential)
@@ -1144,7 +1202,7 @@ describe('OpenId4VcIssuer', () => {
       credential: expect.any(String),
       format: 'vc+sd-jwt',
       credentials: undefined,
-      notification_id: undefined,
+      notification_id: expect.any(String),
     })
 
     await handleCredentialResponse(holder.context, credentialResponse.credential, openBadgeCredentialSdJwtVc)
@@ -1278,7 +1336,7 @@ describe('OpenId4VcIssuer', () => {
       credential: expect.any(String),
       format: 'jwt_vc_json-ld',
       credentials: undefined,
-      notification_id: undefined,
+      notification_id: expect.any(String),
     })
 
     await handleCredentialResponse(holder.context, credentialResponse.credential, universityDegreeCredentialLd)
@@ -1432,7 +1490,7 @@ describe('OpenId4VcIssuer', () => {
       credential: expect.any(String),
       format: 'jwt_vc_json',
       credentials: undefined,
-      notification_id: undefined,
+      notification_id: expect.any(String),
     })
 
     await handleCredentialResponse(holder.context, credentialResponse.credential, openBadgeCredential)
@@ -1467,7 +1525,7 @@ describe('OpenId4VcIssuer', () => {
       credential: expect.any(String),
       format: 'jwt_vc_json',
       credentials: undefined,
-      notification_id: undefined,
+      notification_id: expect.any(String),
     })
 
     await handleCredentialResponse(holder.context, credentialResponse2.credential, universityDegreeCredential)
@@ -1553,7 +1611,7 @@ describe('OpenId4VcIssuer', () => {
       credential: expect.any(String),
       format: 'jwt_vc_json',
       credentials: undefined,
-      notification_id: undefined,
+      notification_id: expect.any(String),
     })
 
     await handleCredentialResponse(holder.context, credentialResponse.credential, openBadgeCredential)
@@ -1588,7 +1646,7 @@ describe('OpenId4VcIssuer', () => {
       credential: expect.any(String),
       format: 'jwt_vc_json',
       credentials: undefined,
-      notification_id: undefined,
+      notification_id: expect.any(String),
     })
 
     await handleCredentialResponse(holder.context, credentialResponse2.credential, universityDegreeCredential)

@@ -88,6 +88,15 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   generateRefreshTokens?: boolean
 
   /**
+   * Whether the issuer has a notification endpoint, where wallets report whether they accepted or deleted the
+   * issued credentials. Disable it if you e.g. delete issuance sessions once issuance is done, as notifications for a
+   * deleted session fail. When disabled, credential responses don't include a `notification_id`.
+   *
+   * @default true
+   */
+  enableNotificationEndpoint?: boolean
+
+  /**
    * The time after which a pushed authorization request URI will expire.
    *
    * @default 60 (1 minute)
@@ -277,6 +286,11 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
     deferredCredential?: string
 
     /**
+     * @default /notification
+     */
+    notification?: string
+
+    /**
      * @default /token
      */
     accessToken?: string
@@ -434,6 +448,17 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get generateRefreshTokens(): boolean {
     return this.options.generateRefreshTokens ?? false
+  }
+
+  /**
+   * Whether the issuer has a notification endpoint, where wallets report whether they accepted or deleted the
+   * issued credentials. Disable it if you delete issuance sessions once issuance is done, as notifications for a
+   * deleted session fail. When disabled, credential responses don't include a `notification_id`.
+   *
+   * @default true
+   */
+  public get enableNotificationEndpoint(): boolean {
+    return this.options.enableNotificationEndpoint ?? true
   }
 
   /**
@@ -598,6 +623,13 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get deferredCredentialEndpointPath(): string {
     return this.options.endpoints?.deferredCredential ?? '/deferred-credential'
+  }
+
+  /**
+   * @default /notification
+   */
+  public get notificationEndpointPath(): string {
+    return this.options.endpoints?.notification ?? '/notification'
   }
 
   /**

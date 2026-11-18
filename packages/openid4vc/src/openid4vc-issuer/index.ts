@@ -9,6 +9,7 @@ export {
   type OpenId4VcIssuanceSessionAuthorization,
   type OpenId4VcIssuanceSessionChainedIdentity,
   type OpenId4VcIssuanceSessionDpop,
+  type OpenId4VcIssuanceSessionNotification,
   type OpenId4VcIssuanceSessionPkce,
   type OpenId4VcIssuanceSessionPresentation,
   OpenId4VcIssuanceSessionRecord,

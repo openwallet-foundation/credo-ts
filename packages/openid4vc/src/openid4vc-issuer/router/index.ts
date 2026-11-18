@@ -9,6 +9,7 @@ export { configureDeferredCredentialEndpoint } from './deferredCredentialEndpoin
 export { configureIssuerMetadataEndpoint } from './issuerMetadataEndpoint'
 export { configureJwksEndpoint } from './jwksEndpoint'
 export { configureNonceEndpoint } from './nonceEndpoint'
+export { configureNotificationEndpoint } from './notificationEndpoint'
 export { configurePushedAuthorizationRequestEndpoint } from './pushedAuthorizationRequestEndpoint'
 export { configureRedirectEndpoint } from './redirectEndpoint'
 export type { OpenId4VcIssuanceRequest } from './requestContext'

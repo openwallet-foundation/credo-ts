@@ -24,6 +24,7 @@ import type {
   OpenId4VciCredentialRequestFormatSpecific,
   OpenId4VciDeferredCredentialRequest,
   OpenId4VciIssuerInfo,
+  OpenId4VciNotificationEvent,
   OpenId4VciParsedCredentialRequest,
   OpenId4VciTxCode,
   OpenId4VcJwtIssuerDid,
@@ -246,6 +247,12 @@ export interface OpenId4VciCreateDeferredCredentialResponseOptions {
    * will be used.
    */
   deferredCredentialRequestToCredentialMapper?: OpenId4VciDeferredCredentialRequestToCredentialMapper
+}
+
+export interface OpenId4VciReceiveNotificationOptions {
+  notificationId: string
+  event: OpenId4VciNotificationEvent
+  eventDescription?: string
 }
 
 /**

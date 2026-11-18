@@ -78,6 +78,13 @@
       "when": 1793898748531,
       "tag": "0010_batch_credential_issuance_json",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794354080459,
+      "tag": "0011_add_issuance_session_notifications",
+      "breakpoints": true
     }
   ]
 }

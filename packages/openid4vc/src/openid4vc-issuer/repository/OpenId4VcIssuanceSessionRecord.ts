@@ -12,7 +12,11 @@ import {
 } from '@credo-ts/core'
 import { type AccessTokenResponse, type AuthorizationServerMetadata, PkceCodeChallengeMethod } from '@openid4vc/oauth2'
 import { z } from 'zod'
-import type { OpenId4VciCredentialOfferPayload, VerifiedOpenId4VcCredentialHolderBinding } from '../../shared'
+import type {
+  OpenId4VciCredentialOfferPayload,
+  OpenId4VciNotificationEvent,
+  VerifiedOpenId4VcCredentialHolderBinding,
+} from '../../shared'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import type { OpenId4VciVersion } from '../OpenId4VcIssuerServiceOptions'
 
@@ -207,6 +211,8 @@ export type DefaultOpenId4VcIssuanceSessionRecordTags = {
 
   authorizationSubject?: string
 
+  notificationIds?: string[]
+
   // presentation during issuance
   presentationAuthSession?: string
 
@@ -239,6 +245,24 @@ export interface OpenId4VcIssuanceSessionRecordTransaction {
    * @since 0.6.3
    */
   deferredUntil?: Date
+}
+
+export interface OpenId4VcIssuanceSessionNotification {
+  /**
+   * The `notification_id` returned in the credential response
+   */
+  notificationId: string
+
+  /**
+   * The credential configuration of the credentials issued in the credential response
+   */
+  credentialConfigurationId: string
+
+  /**
+   * The first event the wallet sent to the notification endpoint for this notification id. Later events are ignored.
+   */
+  event?: OpenId4VciNotificationEvent
+  eventDescription?: string
 }
 
 export interface OpenId4VcIssuanceSessionRecordProps {
@@ -280,6 +304,8 @@ export interface OpenId4VcIssuanceSessionRecordProps {
 
   // Transaction data for deferred credential issuances
   transactions?: OpenId4VcIssuanceSessionRecordTransaction[]
+
+  notifications?: OpenId4VcIssuanceSessionNotification[]
 
   /**
    * Identity chaining enables doing another OAuth2 authentication flow as part
@@ -355,6 +381,7 @@ const openId4VcIssuanceSessionRecordEncodingSchema = createRecordEncodingSchema(
       })
     )
     .nullish(),
+  notifications: z.array(zTypedObject<OpenId4VcIssuanceSessionNotification>()).nullish(),
   preAuthorizedCode: z.string().nullish(),
   userPin: z.string().nullish(),
   failedTxCodeAttempts: z.number().nullish(),
@@ -409,6 +436,13 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
    * The credential transactions for deferred credentials.
    */
   public transactions: OpenId4VcIssuanceSessionRecordTransaction[] = []
+
+  /**
+   * The notification ids returned in credential responses, and the events the wallet sent for them.
+   *
+   * @since 0.8
+   */
+  public notifications: OpenId4VcIssuanceSessionNotification[] = []
 
   /**
    * Pre authorized code used for the issuance session. Only used when a pre-authorized credential
@@ -528,6 +562,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.generateRefreshTokens = props.generateRefreshTokens
       this.errorMessage = props.errorMessage
       this.transactions = props.transactions ?? []
+      this.notifications = props.notifications ?? []
       this.openId4VciVersion = props.openId4VciVersion
     }
   }
@@ -562,6 +597,8 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       authorizationCode: this.authorization?.code,
 
       authorizationSubject: this.authorization?.subject,
+
+      notificationIds: this.notifications.map((notification) => notification.notificationId),
 
       // Presentation during issuance
       presentationAuthSession: this.presentation?.authSession,
