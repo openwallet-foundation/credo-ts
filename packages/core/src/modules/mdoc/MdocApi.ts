@@ -4,11 +4,13 @@ import type { Query, QueryOptions } from '../../storage/StorageService'
 import { Mdoc } from './Mdoc'
 import { MdocDcApiService } from './MdocDcApiService'
 import type {
+  MdocCreateDeviceResponseOptions,
   MdocDcApiCreateResponseOptions,
   MdocDcApiCreateVerificationSessionOptions,
   MdocDcApiResolveRequestOptions,
   MdocDcApiVerifyResponseOptions,
   MdocDeleteVerificationSessionOptions,
+  MdocResolveDeviceRequestOptions,
   MdocResolvedRequest,
   MdocSelectCredentialsForRequestOptions,
   MdocSignOptions,
@@ -133,9 +135,20 @@ export class MdocApi {
   }
 
   /**
+   * Verify reader authentication of a device request received over a channel the application
+   * handles itself, such as ISO/IEC 18013-5 proximity, and match the requested documents against
+   * the stored mdocs. The application decrypts the request from its session and passes the session
+   * transcript of that session.
+   */
+  public async resolveDeviceRequest(options: MdocResolveDeviceRequestOptions) {
+    return await this.mdocDcApiService.resolveDeviceRequest(this.agentContext, options)
+  }
+
+  /**
    * Automatically select the credentials to answer a resolved request with, taking into account its
    * use cases and the alternatives of the requested elements. For a request resolved with
-   * {@link MdocApi.resolveDcApiRequest} the result can be passed to {@link MdocApi.createDcApiResponse}.
+   * {@link MdocApi.resolveDcApiRequest} the result can be passed to {@link MdocApi.createDcApiResponse},
+   * and for one resolved with {@link MdocApi.resolveDeviceRequest} to {@link MdocApi.createDeviceResponse}.
    */
   public selectCredentialsForRequest<ResolvedRequest extends MdocResolvedRequest>(
     resolvedRequest: ResolvedRequest,
@@ -149,5 +162,13 @@ export class MdocApi {
    */
   public async createDcApiResponse(options: MdocDcApiCreateResponseOptions) {
     return await this.mdocDcApiService.createResponse(this.agentContext, options)
+  }
+
+  /**
+   * Create the device response for a request resolved with {@link MdocApi.resolveDeviceRequest}. The
+   * response is not encrypted; the application encrypts it for its session.
+   */
+  public async createDeviceResponse(options: MdocCreateDeviceResponseOptions) {
+    return await this.mdocDcApiService.createDeviceResponse(this.agentContext, options)
   }
 }

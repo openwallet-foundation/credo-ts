@@ -91,9 +91,10 @@ export class MdocService {
   }
 
   /**
-   * Select the credentials to answer a resolved request with. For a resolved DC API request the
-   * result can be passed to `createDcApiResponse` as is. Use this when the wallet does not let the
-   * user choose.
+   * Select the credentials to answer a resolved request with. The result can be passed as is to
+   * `MdocApi.createDcApiResponse` for a resolved DC API request, and to `MdocApi.createDeviceResponse`
+   * for a request resolved with `MdocApi.resolveDeviceRequest`. Use this when the wallet does not let
+   * the user choose.
    *
    * Every mandatory use case is answered with the first of its matching document sets for which
    * every doc request has a credential that can be used, the same as optional credential sets are

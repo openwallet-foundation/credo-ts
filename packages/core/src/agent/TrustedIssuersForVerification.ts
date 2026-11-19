@@ -102,17 +102,21 @@ export type VerificationTypeMdocReaderAuth = {
    *
    * Only the session transcript differs between mdoc exchanges; the doc request itself is the
    * same. An ISO/IEC TS 18013-7 Annex C (`org-iso-mdoc`) DC API request always carries the origin
-   * it was received from, where other exchanges (e.g. ISO/IEC 18013-5 proximity) have no origin
-   * and are added here as an additional member once supported.
+   * it was received from. A device request resolved with `resolveDeviceRequest` came over a channel
+   * the application handles itself, such as ISO/IEC 18013-5 proximity, and has no origin.
    */
-  exchange: {
-    type: 'dcApi'
+  exchange:
+    | {
+        type: 'dcApi'
 
-    /**
-     * The origin the DC API request was received from.
-     */
-    origin: string
-  }
+        /**
+         * The origin the DC API request was received from.
+         */
+        origin: string
+      }
+    | {
+        type: 'deviceRequest'
+      }
 
   /**
    * The doctype of the doc request the reader authentication is for.
