@@ -254,6 +254,16 @@ export interface OpenId4VpCreateVerifierOptions {
   clientMetadata?: OpenId4VpVerifierClientMetadata
 }
 
+export interface OpenId4VpDeleteVerificationSessionOptions {
+  /**
+   * Also delete the key Credo created to decrypt the authorization response. The key is not deleted at any
+   * other point, so disabling this leaves it in the key store.
+   *
+   * @default true
+   */
+  deleteAssociatedKey?: boolean
+}
+
 export type OpenId4VcUpdateVerifierRecordOptions = Pick<OpenId4VcVerifierRecordProps, 'verifierId' | 'clientMetadata'>
 
 export interface OpenId4VpVerifiedAuthorizationResponseHandlerOptions {

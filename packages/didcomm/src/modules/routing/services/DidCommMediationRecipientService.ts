@@ -475,7 +475,7 @@ export class DidCommMediationRecipientService {
     }
 
     if (mediationRecord.protocolVersion === 'v2') {
-      // A v2 mediator holds the did:key of each recipient key (Ed25519 and X25519) and, when the did was
+      // A v2 mediator holds the did:key of each recipient key (Ed25519 and keyAgreement) and, when the did was
       // registered with registerRecipientDidForV2Routing, the did itself (did:peer:4 in short form).
       // A v2 forward names the did in `next`, so the did must go as well.
       const recipientDids = recipientKeys.map((key) => new DidKey(key).did)

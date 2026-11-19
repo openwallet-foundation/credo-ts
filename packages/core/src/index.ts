@@ -123,6 +123,11 @@ export {
   zTypedObject,
   zWithUpgrade,
 } from './utils'
+export {
+  addCredentialHolderBindingDids,
+  deleteHolderBinding,
+  getCredentialHolderBindingDids,
+} from './utils/credentialHolderBinding'
 export type {
   CredentialMultiInstanceUseUpdateMode,
   UseInstanceFromCredentialRecordOptions,

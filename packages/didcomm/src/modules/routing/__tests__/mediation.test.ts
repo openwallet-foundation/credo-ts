@@ -80,9 +80,10 @@ describe('mediator establishment', () => {
   let senderAgent: Agent<ReturnType<typeof senderAgentOptions>['modules']>
 
   afterEach(async () => {
-    await recipientAgent?.shutdown()
-    await mediatorAgent?.shutdown()
-    await senderAgent?.shutdown()
+    // A test that doesn't start the sender leaves the agent of an earlier test, which is already shut down
+    for (const agent of [recipientAgent, mediatorAgent, senderAgent]) {
+      if (agent?.isInitialized) await agent.shutdown()
+    }
   })
 
   const e2eMediationTest = async (
@@ -233,6 +234,52 @@ describe('mediator establishment', () => {
 
   test('Mediation end-to-end flow (not using did:key)', async () => {
     await e2eMediationTest(getMediatorAgentOptions(false), getRecipientAgentOptions(false))
+  })
+
+  test('deleting the mediator connection with deleteAssociatedKeys deletes the routing keys created for it', async () => {
+    const mediatorMessages = new Subject<SubjectMessage>()
+    const recipientMessages = new Subject<SubjectMessage>()
+    const subjectMap = { 'rxjs:mediator': mediatorMessages }
+
+    mediatorAgent = new Agent(getMediatorAgentOptions())
+    mediatorAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    mediatorAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
+    await mediatorAgent.initialize()
+
+    const mediatorOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation({
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+    })
+    recipientAgent = new Agent(
+      getRecipientAgentOptions(undefined, true, {
+        transports: {
+          inbound: [new SubjectInboundTransport(recipientMessages)],
+          outbound: [new SubjectOutboundTransport(subjectMap)],
+        },
+        mediationRecipient: {
+          mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
+            domain: 'https://example.com/ssi',
+          }),
+          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+        },
+      })
+    )
+    await recipientAgent.initialize()
+    await recipientAgent.didcomm.mediationRecipient.stopMessagePickup()
+
+    const recipientMediator = await recipientAgent.didcomm.mediationRecipient.findDefaultMediator()
+    const mediatorConnection = await recipientAgent.didcomm.connections.getById(
+      recipientMediator?.connectionId as string
+    )
+    const [didRecord] = await recipientAgent.dids.getCreatedDids({ did: mediatorConnection.did })
+    const keyIds = didRecord.keys?.map(({ kmsKeyId }) => kmsKeyId) ?? []
+    expect(keyIds).not.toHaveLength(0)
+
+    await recipientAgent.didcomm.connections.deleteById(mediatorConnection.id, { deleteAssociatedKeys: true })
+
+    expect(await recipientAgent.dids.getCreatedDids({ did: mediatorConnection.did })).toHaveLength(0)
+    for (const keyId of keyIds) {
+      await expect(recipientAgent.kms.getPublicKey({ keyId })).rejects.toThrow('not found')
+    }
   })
 
   test('restart recipient agent and create connection through mediator after recipient agent is restarted', async () => {

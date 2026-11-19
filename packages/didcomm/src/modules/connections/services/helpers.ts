@@ -32,11 +32,15 @@ import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommRouting } from '../../../models'
 import type { DidCommV2KeyAgreementJwk } from '../../../v2/types'
 import { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
-import type { DidCommOutOfBandInlineServiceKey } from '../../oob/repository/DidCommOutOfBandRecord'
+import type {
+  DidCommOutOfBandInlineServiceKey,
+  DidCommOutOfBandRecord,
+} from '../../oob/repository/DidCommOutOfBandRecord'
+import { DidCommOutOfBandRecordMetadataKeys } from '../../oob/repository/outOfBandRecordMetadataTypes'
 import type { DidDoc, PublicKey } from '../models'
 import { EmbeddedAuthentication } from '../models'
 import type { DidCommConnectionRecord } from '../repository'
-import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
+import { DidCommConnectionMetadataKeys, type DidCommCreatedKey } from '../repository/DidCommConnectionMetadataTypes'
 
 /**
  * Normalize a PublicJwk to X25519 for comparison. DIDComm v2 uses X25519 for decryption;
@@ -547,4 +551,35 @@ export function getResolvedDidcommServiceWithSigningKeyId(
 export function addSharedDid(connection: DidCommConnectionRecord, did: string): void {
   const dids = connection.metadata.get(DidCommConnectionMetadataKeys.SharedDid)?.dids ?? []
   if (!dids.includes(did)) connection.metadata.set(DidCommConnectionMetadataKeys.SharedDid, { dids: [...dids, did] })
+}
+
+export function routingKmsKeys(routing: DidCommRouting): DidCommCreatedKey[] {
+  return [routing.recipientKey, ...(routing.keyAgreementKey ? [routing.keyAgreementKey] : [])].map((key) => ({
+    publicJwk: key.toJson({ includeKid: false }) as Kms.KmsJwkPublicAsymmetric,
+    keyId: key.keyId,
+    kmsBackend: key.kmsBackend,
+  }))
+}
+
+/**
+ * The keys of `routing` that belong to a connection: all of them when it has `deleteWithRecord`, otherwise the ones
+ * the out-of-band record created and passes on.
+ */
+export function createdRoutingKmsKeys(routing: DidCommRouting, outOfBandRecord: DidCommOutOfBandRecord) {
+  const keys = routingKmsKeys(routing)
+  if (routing.deleteWithRecord) return keys
+
+  const outOfBandKeys = outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.CreatedKeys)?.keys ?? []
+  return keys.filter((key) => outOfBandKeys.some(({ keyId }) => keyId === key.keyId))
+}
+
+export function addCreatedKeys(
+  connection: DidCommConnectionRecord,
+  created: { did?: string; keys: DidCommCreatedKey[] }
+) {
+  const existing = connection.metadata.get(DidCommConnectionMetadataKeys.CreatedKeys)
+  connection.metadata.set(DidCommConnectionMetadataKeys.CreatedKeys, {
+    dids: [...(existing?.dids ?? []), ...(created.did ? [created.did] : [])],
+    keys: [...(existing?.keys ?? []), ...created.keys],
+  })
 }

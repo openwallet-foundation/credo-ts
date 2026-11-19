@@ -190,6 +190,32 @@ describe('TenantRecordService', () => {
     })
   })
 
+  describe('deleteTenantRoutingRecord', () => {
+    const recipientKey = Kms.PublicJwk.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
+
+    test('deletes the tenant routing record of the tenant', async () => {
+      const tenantRoutingRecord = new TenantRoutingRecord({
+        recipientKeyFingerprint: recipientKey.fingerprint,
+        tenantId: 'tenant-id',
+      })
+      mockFunction(tenantRoutingRepository.findByRecipientKey).mockResolvedValue(tenantRoutingRecord)
+
+      await tenantRecordService.deleteTenantRoutingRecord(agentContext, 'tenant-id', recipientKey)
+
+      expect(tenantRoutingRepository.delete).toHaveBeenCalledWith(agentContext, tenantRoutingRecord)
+    })
+
+    test('keeps a tenant routing record that belongs to another tenant', async () => {
+      mockFunction(tenantRoutingRepository.findByRecipientKey).mockResolvedValue(
+        new TenantRoutingRecord({ recipientKeyFingerprint: recipientKey.fingerprint, tenantId: 'other-tenant-id' })
+      )
+
+      await tenantRecordService.deleteTenantRoutingRecord(agentContext, 'tenant-id', recipientKey)
+
+      expect(tenantRoutingRepository.delete).not.toHaveBeenCalled()
+    })
+  })
+
   describe('addTenantRoutingRecord', () => {
     test('creates a tenant routing record and stores it in the tenant routing repository', async () => {
       const recipientKey = Kms.PublicJwk.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')

@@ -392,5 +392,30 @@ describe('connections', () => {
         ),
       })
     }
+
+    const routing = await faberAgent.didcomm.mediationRecipient.getRouting({})
+    const routingRemoveMessagePromise = firstValueWithStackTrace(
+      mediatorAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
+        filter((event) => event.payload.message.type === DidCommKeylistUpdateMessage.type.messageTypeUri),
+        map((event) => event.payload.message as DidCommKeylistUpdateMessage),
+        timeout(5000)
+      )
+    )
+
+    await faberAgent.didcomm.mediationRecipient.deleteRouting(routing)
+
+    const routingRemoveMessage = await routingRemoveMessagePromise
+    expect(
+      routingRemoveMessage.updates.map((update) => ({
+        action: update.action,
+        recipientKey: didKeyToVerkey(update.recipientKey),
+      }))
+    ).toEqual([
+      {
+        action: DidCommKeylistUpdateAction.remove,
+        recipientKey: TypedArrayEncoder.toBase58(routing.recipientKey.publicKey.publicKey),
+      },
+    ])
+    await expect(faberAgent.kms.getPublicKey({ keyId: routing.recipientKey.keyId })).rejects.toThrow('not found')
   })
 })

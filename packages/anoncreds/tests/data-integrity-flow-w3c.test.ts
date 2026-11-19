@@ -1,11 +1,15 @@
-import type { DidRepository, JsonObject, SuiteInfo } from '@credo-ts/core'
+import type { JsonObject, SuiteInfo } from '@credo-ts/core'
 import {
   AgentContext,
+  CacheModuleConfig,
+  DidRepository,
   DidResolverService,
   DidsModuleConfig,
   defaultDocumentLoader,
   Ed25519Signature2018,
+  getCredentialHolderBindingDids,
   InjectionSymbols,
+  InMemoryLruCache,
   JsonLdModuleConfig,
   KeyDidRegistrar,
   KeyDidResolver,
@@ -101,6 +105,7 @@ const agentContext = getAgentContext({
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
     [X509ModuleConfig, new X509ModuleConfig()],
+    [CacheModuleConfig, new CacheModuleConfig({ cache: new InMemoryLruCache({ limit: 500 }) })],
     [SignatureSuiteRegistry, signatureSuiteRegistry],
     [
       AskarModuleConfig,
@@ -132,94 +137,14 @@ describe('data integrity format service (w3c)', () => {
   })
 
   test('issuance and verification flow w3c starting from offer without negotiation and without revocation', async () => {
-    const holderCredentialRecord = new DidCommCredentialExchangeRecord({
-      protocolVersion: 'v1',
-      state: DidCommCredentialState.ProposalSent,
-      role: DidCommCredentialRole.Holder,
-      threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
-    })
-
-    const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
-      protocolVersion: 'v1',
-      state: DidCommCredentialState.ProposalReceived,
-      role: DidCommCredentialRole.Issuer,
-      threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
-    })
-
-    const credentialAttributes = [
-      new DidCommCredentialPreviewAttribute({ name: 'name', value: 'John' }),
-      new DidCommCredentialPreviewAttribute({ name: 'age', value: '25' }),
-    ]
-
-    // Set attributes on the credential record, this is normally done by the protocol service
-    holderCredentialRecord.credentialAttributes = credentialAttributes
-    issuerCredentialRecord.credentialAttributes = credentialAttributes
-
-    // --------------------------------------------------------------------------------------------------------
-
-    const credential = new W3cCredential({
-      context: [
-        'https://www.w3.org/2018/credentials/v1',
-        'https://w3id.org/security/data-integrity/v2',
-        {
-          '@vocab': 'https://www.w3.org/ns/credentials/issuer-dependent#',
-        },
-      ],
-      type: ['VerifiableCredential'],
-      issuer: issuerKdv.did,
-      issuanceDate: new Date().toISOString(),
-      credentialSubject: new W3cCredentialSubject({ claims: { name: 'John', age: 25 } }),
-    })
-
-    const { attachment: offerAttachment } = await dataIntegrityCredentialFormatService.createOffer(agentContext, {
-      credentialExchangeRecord: issuerCredentialRecord,
-      credentialFormats: {
-        dataIntegrity: {
-          bindingRequired: true,
-          credential,
-          didCommSignedAttachmentBinding: {},
-        },
-      },
-    })
-
-    // Holder processes and accepts offer
-    await dataIntegrityCredentialFormatService.processOffer(agentContext, {
-      credentialExchangeRecord: holderCredentialRecord,
-      attachment: offerAttachment,
-    })
-    const { attachment: requestAttachment, appendAttachments: requestAppendAttachments } =
-      await dataIntegrityCredentialFormatService.acceptOffer(agentContext, {
-        credentialExchangeRecord: holderCredentialRecord,
-        offerAttachment,
-        credentialFormats: {
-          dataIntegrity: {
-            didCommSignedAttachment: {
-              kid: holderKdv.kid,
-            },
-          },
-        },
-      })
-
-    // Issuer processes and accepts request
-    await dataIntegrityCredentialFormatService.processRequest(agentContext, {
-      credentialExchangeRecord: issuerCredentialRecord,
-      attachment: requestAttachment,
-    })
-    const { attachment: credentialAttachment } = await dataIntegrityCredentialFormatService.acceptRequest(
-      agentContext,
-      {
-        credentialExchangeRecord: issuerCredentialRecord,
-        requestAttachment,
-        offerAttachment,
-        requestAppendAttachments,
-        credentialFormats: {
-          dataIntegrity: {
-            credentialSubjectId: issuerKdv.did,
-            issuerVerificationMethod: issuerKdv.kid,
-          },
-        },
-      }
-    )
+    const {
+      holderCredentialRecord,
+      issuerCredentialRecord,
+      credential,
+      offerAttachment,
+      requestAttachment,
+      credentialAttachment,
+    } = await issueCredential({ issuerKdv, holderKdv })
 
     // The issuance date is not compared against the offer, so only the proof catches this change
     const { credential: issuedCredentialJson } = credentialAttachment.getDataAsJson<{ credential: JsonObject }>()
@@ -276,4 +201,142 @@ describe('data integrity format service (w3c)', () => {
       proof: expect.any(Object),
     })
   })
+
+  test('deletes the holder DID created for the credential with deleteAssociatedKeys', async () => {
+    // afterEach clears the storage, so the DID records of beforeAll are gone
+    const createdIssuerKdv = await createDidKidVerificationMethod(agentContext)
+    const createdHolderKdv = await createDidKidVerificationMethod(agentContext)
+    const { holderCredentialRecord, offerAttachment, requestAttachment, credentialAttachment } = await issueCredential({
+      issuerKdv: createdIssuerKdv,
+      holderKdv: createdHolderKdv,
+      createdForCredential: true,
+    })
+    await dataIntegrityCredentialFormatService.processCredential(agentContext, {
+      offerAttachment,
+      credentialExchangeRecord: holderCredentialRecord,
+      attachment: credentialAttachment,
+      requestAttachment,
+    })
+
+    const credentialRecordId = holderCredentialRecord.credentials[0].credentialRecordId
+    const storedRecord = await agentContext
+      .resolve(W3cCredentialService)
+      .getCredentialRecordById(agentContext, credentialRecordId)
+    expect(getCredentialHolderBindingDids(storedRecord)).toEqual([createdHolderKdv.did])
+
+    const didRepository = agentContext.resolve(DidRepository)
+    const [didRecord] = await didRepository.getCreatedDids(agentContext, { did: createdHolderKdv.did })
+    const keyId = didRecord.keys?.[0].kmsKeyId as string
+
+    await dataIntegrityCredentialFormatService.deleteCredentialById(agentContext, credentialRecordId, {
+      deleteAssociatedKeys: true,
+    })
+
+    expect(await didRepository.findCreatedDid(agentContext, createdHolderKdv.did)).toBeNull()
+    await expect(agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId })).rejects.toThrow('not found')
+  })
 })
+
+async function issueCredential(options: {
+  issuerKdv: CreateDidKidVerificationMethodReturn
+  holderKdv: CreateDidKidVerificationMethodReturn
+  createdForCredential?: boolean
+}) {
+  const { issuerKdv, holderKdv, createdForCredential } = options
+
+  const holderCredentialRecord = new DidCommCredentialExchangeRecord({
+    protocolVersion: 'v1',
+    state: DidCommCredentialState.ProposalSent,
+    role: DidCommCredentialRole.Holder,
+    threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
+  })
+
+  const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
+    protocolVersion: 'v1',
+    state: DidCommCredentialState.ProposalReceived,
+    role: DidCommCredentialRole.Issuer,
+    threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
+  })
+
+  const credentialAttributes = [
+    new DidCommCredentialPreviewAttribute({ name: 'name', value: 'John' }),
+    new DidCommCredentialPreviewAttribute({ name: 'age', value: '25' }),
+  ]
+
+  // Set attributes on the credential record, this is normally done by the protocol service
+  holderCredentialRecord.credentialAttributes = credentialAttributes
+  issuerCredentialRecord.credentialAttributes = credentialAttributes
+
+  // --------------------------------------------------------------------------------------------------------
+
+  const credential = new W3cCredential({
+    context: [
+      'https://www.w3.org/2018/credentials/v1',
+      'https://w3id.org/security/data-integrity/v2',
+      {
+        '@vocab': 'https://www.w3.org/ns/credentials/issuer-dependent#',
+      },
+    ],
+    type: ['VerifiableCredential'],
+    issuer: issuerKdv.did,
+    issuanceDate: new Date().toISOString(),
+    credentialSubject: new W3cCredentialSubject({ claims: { name: 'John', age: 25 } }),
+  })
+
+  const { attachment: offerAttachment } = await dataIntegrityCredentialFormatService.createOffer(agentContext, {
+    credentialExchangeRecord: issuerCredentialRecord,
+    credentialFormats: {
+      dataIntegrity: {
+        bindingRequired: true,
+        credential,
+        didCommSignedAttachmentBinding: {},
+      },
+    },
+  })
+
+  // Holder processes and accepts offer
+  await dataIntegrityCredentialFormatService.processOffer(agentContext, {
+    credentialExchangeRecord: holderCredentialRecord,
+    attachment: offerAttachment,
+  })
+  const { attachment: requestAttachment, appendAttachments: requestAppendAttachments } =
+    await dataIntegrityCredentialFormatService.acceptOffer(agentContext, {
+      credentialExchangeRecord: holderCredentialRecord,
+      offerAttachment,
+      credentialFormats: {
+        dataIntegrity: {
+          didCommSignedAttachment: {
+            kid: holderKdv.kid,
+            createdForCredential,
+          },
+        },
+      },
+    })
+
+  // Issuer processes and accepts request
+  await dataIntegrityCredentialFormatService.processRequest(agentContext, {
+    credentialExchangeRecord: issuerCredentialRecord,
+    attachment: requestAttachment,
+  })
+  const { attachment: credentialAttachment } = await dataIntegrityCredentialFormatService.acceptRequest(agentContext, {
+    credentialExchangeRecord: issuerCredentialRecord,
+    requestAttachment,
+    offerAttachment,
+    requestAppendAttachments,
+    credentialFormats: {
+      dataIntegrity: {
+        credentialSubjectId: issuerKdv.did,
+        issuerVerificationMethod: issuerKdv.kid,
+      },
+    },
+  })
+
+  return {
+    holderCredentialRecord,
+    issuerCredentialRecord,
+    credential,
+    offerAttachment,
+    requestAttachment,
+    credentialAttachment,
+  }
+}

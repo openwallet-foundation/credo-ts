@@ -1461,31 +1461,15 @@ describe('DCQL proof format out of band', () => {
     return message.toJSON()
   }
 
-  test("connectionless without an invitation: a request with only a '~service' is received", async () => {
+  test("connectionless without an invitation: a request with only a '~service' is rejected", async () => {
     const routing = await getRouting()
     const { message, proofRecord } = await createRequest(new DidKey(routing.recipientKey).did)
-
-    await holderAgent.dependencyManager
-      .resolve(DidCommMessageReceiver)
-      .receiveMessage(withRequestService(message, routing.recipientKey))
-    await waitForProofExchangeRecordSubject(holderReplay, {
-      threadId: proofRecord.threadId,
-      state: DidCommProofState.RequestReceived,
-    })
-  })
-
-  test("connectionless without an invitation: a request whose '~service' key is not the audience is rejected", async () => {
-    const routing = await getRouting()
-    const { message, proofRecord } = await createRequest(new DidKey(routing.recipientKey).did)
-    const otherKey = (await getRouting()).recipientKey
 
     await expect(
       holderAgent.dependencyManager
         .resolve(DidCommMessageReceiver)
-        .receiveMessage(withRequestService(message, otherKey))
-    ).rejects.toThrow(
-      `DCQL request audience 'didcomm:${new DidKey(routing.recipientKey).did}' is not the DID of the service the presentation goes to`
-    )
+        .receiveMessage(withRequestService(message, routing.recipientKey))
+    ).rejects.toThrow('No out of band record found for connection-less message')
     expect(await holderAgent.didcomm.proofs.findAllByQuery({ threadId: proofRecord.threadId })).toEqual([])
   })
 

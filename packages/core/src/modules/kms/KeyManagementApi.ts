@@ -348,7 +348,9 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
   }
 
   /**
-   * Delete a key.
+   * Delete a key. Without `backend` the key is deleted from the backend that holds it.
+   *
+   * @returns whether the key was deleted, `false` if it was not found.
    */
   public async deleteKey(options: WithBackend<KmsDeleteKeyOptions, Backends>) {
     const { backend, ...kmsOptions } = zParseWithErrorHandling(
@@ -360,8 +362,18 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
     const operation = {
       operation: 'deleteKey',
     } as const
-    const kms = this.getKms(this.agentContext, backend, operation)
-    return await kms.deleteKey(this.agentContext, kmsOptions)
+
+    if (backend) {
+      return await this.getKms(this.agentContext, backend, operation).deleteKey(this.agentContext, kmsOptions)
+    }
+
+    try {
+      const { kms } = await this.getKmsForKeyOperation(kmsOptions.keyId, operation)
+      return await kms.deleteKey(this.agentContext, kmsOptions)
+    } catch (error) {
+      if (error instanceof KeyManagementKeyNotFoundError) return false
+      throw error
+    }
   }
 
   /**

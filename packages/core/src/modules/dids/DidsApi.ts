@@ -2,8 +2,8 @@ import { AgentContext } from '../../agent'
 import { CredoError, RecordNotFoundError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
-import { checkKmsKeyReferences, KeyManagementApi } from '../kms'
-import type { ImportDidOptions } from './DidsApiOptions'
+import { checkKmsKeyReferences, deleteKmsKeys, KeyManagementApi } from '../kms'
+import type { DeleteCreatedDidOptions, ImportDidOptions } from './DidsApiOptions'
 import { DidsModuleConfig } from './DidsModuleConfig'
 import {
   type DidPurpose,
@@ -176,6 +176,56 @@ export class DidsApi {
         alternativeDids: isValidPeerDid(didDocument.id) ? getAlternativeDidsForPeerDid(did) : undefined,
       },
     })
+  }
+
+  /**
+   * Deletes the record of a did created by the agent, and with `deleteAssociatedKeys` its keys.
+   *
+   * This doesn't deactivate the did. If the did method supports it, deactivate the did with {@link deactivate} first:
+   * without its record and keys the agent can no longer deactivate or update it, and the did stays resolvable.
+   *
+   * The keys are deleted before the record, so a call that failed on a key can be retried.
+   */
+  public async deleteCreatedDid({ did, deleteAssociatedKeys }: DeleteCreatedDidOptions) {
+    const didRecord = await this.didRepository.findCreatedDid(this.agentContext, did)
+    if (!didRecord) {
+      throw new RecordNotFoundError(`Created did '${did}' not found`, { recordType: DidRecord.type })
+    }
+
+    if (deleteAssociatedKeys) {
+      await deleteKmsKeys(this.agentContext, await this.getCreatedDidKmsKeys(didRecord))
+    }
+    await this.didRepository.delete(this.agentContext, didRecord)
+  }
+
+  private async getCreatedDidKmsKeys(didRecord: DidRecord) {
+    if (didRecord.keys?.length) {
+      return didRecord.keys.map(({ kmsKeyId, kmsBackend }) => ({ keyId: kmsKeyId, kmsBackend }))
+    }
+
+    // Records without keys sign with the legacy key id of each verification method
+    let didDocument = didRecord.didDocument
+    if (!didDocument) {
+      try {
+        didDocument = await this.didResolverService.resolveDidDocument(this.agentContext, didRecord.did)
+      } catch (error) {
+        this.agentContext.config.logger.warn(
+          `Unable to resolve did '${didRecord.did}' to determine its keys. Deleting the did record without its keys.`,
+          { error }
+        )
+        return []
+      }
+    }
+    const verificationMethods = didDocument.findVerificationMethodsByPurpose([
+      'verificationMethod',
+      'authentication',
+      'assertionMethod',
+      'keyAgreement',
+      'capabilityInvocation',
+      'capabilityDelegation',
+    ])
+    const keyIds = new Set(verificationMethods.map((method) => getPublicJwkFromVerificationMethod(method).legacyKeyId))
+    return Array.from(keyIds, (keyId) => ({ keyId }))
   }
 
   public async resolveCreatedDidDocumentWithKeys(did: string) {

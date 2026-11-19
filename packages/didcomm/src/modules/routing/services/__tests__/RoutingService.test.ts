@@ -1,3 +1,4 @@
+import { DidKey, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import type { MockedClassConstructor } from '../../../../../../../tests/types'
@@ -6,6 +7,8 @@ import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../..
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../../node/src'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import { DidCommRoutingEventTypes } from '../../DidCommRoutingEvents'
+import { DidCommMediationRole } from '../../models'
+import type { DidCommMediationRecord } from '../../repository'
 import { DidCommMediationRecipientService } from '../DidCommMediationRecipientService'
 import { DidCommRoutingService } from '../DidCommRoutingService'
 
@@ -59,6 +62,68 @@ describe('DidCommRoutingService', () => {
         payload: {
           routing: newRouting,
         },
+      })
+    })
+  })
+
+  describe('deleteRouting', () => {
+    test('deletes all keys when removing them from a mediator fails', async () => {
+      const kms = agentContext.resolve(Kms.KeyManagementApi)
+      const createRoutingKey = async () => {
+        const { keyId, publicJwk } = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+        return { keyId, publicJwk: Kms.PublicJwk.fromPublicJwk(publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk> }
+      }
+      const failingMediatorKey = await createRoutingKey()
+      const otherMediatorKey = await createRoutingKey()
+      const mediationRecord = (id: string, publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>) =>
+        ({ id, recipientKeys: [TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey)] }) as DidCommMediationRecord
+      mockFunction(mediationRecipientService.findAllMediatorsByQuery).mockResolvedValue([
+        mediationRecord('failing-mediator', failingMediatorKey.publicJwk),
+        mediationRecord('other-mediator', otherMediatorKey.publicJwk),
+      ])
+      mockFunction(mediationRecipientService.removeMediationRouting).mockImplementation(async (_, { mediatorId }) => {
+        if (mediatorId === 'failing-mediator') throw new Error('mediator unreachable')
+      })
+      const routingListener = vi.fn()
+      eventEmitter.on(DidCommRoutingEventTypes.RoutingDeletedEvent, routingListener)
+
+      const keys = [failingMediatorKey, otherMediatorKey].map(({ keyId, publicJwk }) => ({
+        keyId,
+        publicJwk: publicJwk.toJson({ includeKid: false }),
+      }))
+      await routingService.deleteRouting(agentContext, { keys })
+
+      expect(mediationRecipientService.removeMediationRouting).toHaveBeenCalledTimes(2)
+      await expect(kms.getPublicKey({ keyId: failingMediatorKey.keyId })).rejects.toThrow(
+        Kms.KeyManagementKeyNotFoundError
+      )
+      await expect(kms.getPublicKey({ keyId: otherMediatorKey.keyId })).rejects.toThrow(
+        Kms.KeyManagementKeyNotFoundError
+      )
+      expect(routingListener).toHaveBeenCalledTimes(1)
+    })
+
+    test('removes P-256 keyAgreement keys from the mediator', async () => {
+      const kms = agentContext.resolve(Kms.KeyManagementApi)
+      const { keyId, publicJwk } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const keyAgreementKey = Kms.PublicJwk.fromPublicJwk(publicJwk)
+      mockFunction(mediationRecipientService.findAllMediatorsByQuery).mockResolvedValue([
+        { id: 'mediator' } as DidCommMediationRecord,
+      ])
+
+      await routingService.deleteRouting(agentContext, {
+        keys: [{ keyId, publicJwk: keyAgreementKey.toJson({ includeKid: false }) }],
+      })
+
+      const recipientDid = new DidKey(keyAgreementKey).did
+      expect(mediationRecipientService.findAllMediatorsByQuery).toHaveBeenCalledWith(agentContext, {
+        role: DidCommMediationRole.Recipient,
+        $or: [{ recipientDids: [recipientDid] }],
+      })
+      expect(mediationRecipientService.removeMediationRouting).toHaveBeenCalledWith(agentContext, {
+        recipientKeys: [expect.objectContaining({ fingerprint: keyAgreementKey.fingerprint })],
+        mediatorId: 'mediator',
+        did: undefined,
       })
     })
   })

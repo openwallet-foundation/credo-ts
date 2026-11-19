@@ -135,40 +135,36 @@ export class DidCommConnectionService {
         messageContext.message?.service?.resolvedDidCommService ?? lastReceivedMessage?.service?.resolvedDidCommService
       let ourService = lastSentMessage?.service?.resolvedDidCommService
 
-      // FIXME: we should remove support for the flow where no out of band record is used.
-      // Users have had enough time to update to the OOB API which supports legacy connectionsless
-      // invitations as well
-      // 1. check if there's an oob record associated.
       const outOfBandRepository = messageContext.agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
       const outOfBandService = messageContext.agentContext.dependencyManager.resolve(DidCommOutOfBandService)
+      // The sender picks the thread id, so with previous messages the exchange is found by their thread instead.
+      // This also covers a message on a new thread, such as a revocation notification.
+      const previousThreadId = (lastSentMessage ?? lastReceivedMessage)?.threadId
       const outOfBandRecord = await outOfBandRepository.findSingleByQuery(messageContext.agentContext, {
-        invitationRequestsThreadIds: [message.threadId],
+        invitationRequestsThreadIds: [previousThreadId ?? message.threadId],
       })
 
-      // If we have an out of band record, we can extract the service for our/the other party from the oob record
-      if (outOfBandRecord?.role === DidCommOutOfBandRole.Sender) {
+      if (!outOfBandRecord) {
+        throw new CredoError(
+          `No out of band record found for connection-less message with thread id ${message.threadId}. Use the out of band API to start a connection-less exchange.`
+        )
+      }
+
+      // Extract the service for our/the other party from the oob record
+      if (outOfBandRecord.role === DidCommOutOfBandRole.Sender) {
         ourService = await outOfBandService.getResolvedServiceForOutOfBandServices(
           messageContext.agentContext,
           outOfBandRecord.outOfBandInvitation.getServices(),
           outOfBandRecord.invitationInlineServiceKeys
         )
-      } else if (outOfBandRecord?.role === DidCommOutOfBandRole.Receiver) {
+      } else {
         theirService = await outOfBandService.getResolvedServiceForOutOfBandServices(
           messageContext.agentContext,
           outOfBandRecord.outOfBandInvitation.getServices()
         )
       }
 
-      // theirService can be null when we receive an oob invitation and process the message.
-      // In this case there MUST be an oob record, otherwise there is no way for us to reply
-      // to the message
-      if (!theirService && !outOfBandRecord) {
-        throw new CredoError(
-          'No service for incoming connection-less message and no associated out of band record found.'
-        )
-      }
-
-      // ourService can be null when we receive an oob invitation or legacy connectionless message and process the message.
+      // ourService can be null when we receive an oob invitation and process the message.
       // In this case lastSentMessage and lastReceivedMessage MUST be null, because there shouldn't be any previous exchange
       if (!ourService && (lastReceivedMessage || lastSentMessage)) {
         throw new CredoError(
@@ -198,6 +194,17 @@ export class DidCommConnectionService {
         const senderKeyFound = theirService.recipientKeys.some((key) => keyAgreementsEqual(senderKey, key))
         if (!senderKeyFound) {
           throw new CredoError(`Sender key ${senderKey.fingerprint} not found in their service.`)
+        }
+      }
+
+      // Their incoming ~service may rotate their keys, but must be sent with a key from their previous ~service.
+      // With our own invitation their previous message always has one, as we could only reply through it.
+      const previousService = lastReceivedMessage?.service?.resolvedDidCommService
+      if (lastReceivedMessage && (previousService || outOfBandRecord.role === DidCommOutOfBandRole.Sender)) {
+        const senderKeyFound =
+          senderKey && previousService?.recipientKeys.some((key) => keyAgreementsEqual(senderKey, key))
+        if (!senderKeyFound) {
+          throw new CredoError(`Sender key ${senderKey?.fingerprint} not found in their previously received service.`)
         }
       }
     }

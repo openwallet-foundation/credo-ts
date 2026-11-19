@@ -373,6 +373,25 @@ describe('KeyManagementApi', () => {
     })
   })
 
+  test('deleteKey without backend deletes the key from the backend that holds it', async () => {
+    const otherBackend = Object.assign(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), {
+      backend: 'other',
+    })
+    const kms = new KeyManagementApi(
+      new KeyManagementModuleConfig({
+        backends: [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), otherBackend],
+      }),
+      agent.context
+    )
+
+    const key = await kms.createKey({ backend: 'other', type: { kty: 'EC', crv: 'P-256' } })
+    expect(key.backend).toEqual('other')
+
+    expect(await kms.deleteKey({ keyId: key.keyId })).toEqual(true)
+    await expect(kms.getPublicKey({ keyId: key.keyId, backend: 'other' })).rejects.toThrow('not found')
+    expect(await kms.deleteKey({ keyId: key.keyId })).toEqual(false)
+  })
+
   test('encrypts, decrypts and verifies with keys that only exist in a backend that is not the default', async () => {
     const otherBackend = Object.assign(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), {
       backend: 'other',

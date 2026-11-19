@@ -80,6 +80,13 @@ export type SdJwtVcRecordInstances = NonEmptyArray<{
    * The kms backend that holds `kmsKeyId`.
    */
   kmsBackend?: string
+
+  /**
+   * How many times this instance was used through DCQL. Presentation Exchange uses
+   * the first instance without counting it. Not set before its first use. Counting
+   * started in Credo 0.8, so uses before that are not counted.
+   */
+  usageCount?: number
 }>
 
 const sdJwtVcRecordEncodingSchema = createRecordEncodingSchema(
@@ -89,6 +96,7 @@ const sdJwtVcRecordEncodingSchema = createRecordEncodingSchema(
         compactSdJwtVc: z.string(),
         kmsKeyId: z.string().nullish(),
         kmsBackend: z.string().optional(),
+        usageCount: z.number().optional(),
       })
     ).nullish(),
     multiInstanceState: z.string().nullish(),

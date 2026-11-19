@@ -10,6 +10,7 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { AskarModule } from '../../askar/src'
 import { getAskarStoreConfig, testLogger } from '../../core/tests'
 import { TenantInactiveError, TenantStatus, TenantsModule } from '../src'
+import { TenantRoutingRepository } from '../src/repository'
 import type { TenantAgent } from '../src/TenantAgent'
 
 const agent1Config: InitConfig = {
@@ -251,6 +252,41 @@ describe('Tenants E2E', () => {
     // Delete tenants (will also delete wallets)
     await agent1.modules.tenants.deleteTenantById(tenantAgent1.context.contextCorrelationId.replace('tenant-', ''))
     await agent1.modules.tenants.deleteTenantById(tenantAgent2.context.contextCorrelationId.replace('tenant-', ''))
+  })
+
+  test('deleting a connection and invitation with their keys deletes the tenant routing', async () => {
+    const tenantRecord1 = await agent1.modules.tenants.createTenant({ config: { label: 'Tenant 1' } })
+    const tenantRecord2 = await agent1.modules.tenants.createTenant({ config: { label: 'Tenant 2' } })
+    const tenantAgent1 = (await agent1.modules.tenants.getTenantAgent({
+      tenantId: tenantRecord1.id,
+    })) as TenantAgent<ReturnType<typeof getTenantsAgentModules>>
+    const tenantAgent2 = (await agent1.modules.tenants.getTenantAgent({
+      tenantId: tenantRecord2.id,
+    })) as TenantAgent<ReturnType<typeof getTenantsAgentModules>>
+
+    const outOfBandRecord = await tenantAgent1.didcomm.oob.createInvitation()
+    const { connectionRecord: tenant2ConnectionRecord } = await tenantAgent2.didcomm.oob.receiveInvitation(
+      outOfBandRecord.outOfBandInvitation,
+      { label: 'Tenant 2' }
+    )
+    await tenantAgent2.didcomm.connections.returnWhenIsConnected(tenant2ConnectionRecord?.id as string)
+    const [connectionRecord] = await tenantAgent1.didcomm.connections.findAllByOutOfBandId(outOfBandRecord.id)
+    await tenantAgent1.didcomm.connections.returnWhenIsConnected(connectionRecord.id)
+
+    const tenantRoutingRepository = agent1.dependencyManager.resolve(TenantRoutingRepository)
+    const tenant1RoutingRecords = () =>
+      tenantRoutingRepository.findByQuery(agent1.context, { tenantId: tenantRecord1.id })
+    expect(await tenant1RoutingRecords()).toHaveLength(1)
+
+    await tenantAgent1.didcomm.connections.deleteById(connectionRecord.id, { deleteAssociatedKeys: true })
+    await tenantAgent1.didcomm.oob.deleteById(outOfBandRecord.id, { deleteAssociatedKeys: true })
+
+    await vi.waitFor(async () => expect(await tenant1RoutingRecords()).toHaveLength(0))
+
+    await tenantAgent1.endSession()
+    await tenantAgent2.endSession()
+    await agent1.modules.tenants.deleteTenantById(tenantRecord1.id)
+    await agent1.modules.tenants.deleteTenantById(tenantRecord2.id)
   })
 
   test('create a connection between two tenants within different agents', async () => {
