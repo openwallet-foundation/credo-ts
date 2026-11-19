@@ -82,9 +82,10 @@ export type SdJwtVcRecordInstances = NonEmptyArray<{
   kmsBackend?: string
 
   /**
-   * How many times this instance was used through DCQL. Presentation Exchange uses
-   * the first instance without counting it. Not set before its first use. Counting
-   * started in Credo 0.8, so uses before that are not counted.
+   * How many times this instance was used. Only uses through `useInstanceFromCredentialRecord`
+   * (as used by DCQL and DIF Presentation Exchange) are counted. Use it when you present a
+   * credential from this record yourself, as direct uses are not counted. Not set before its
+   * first use. Counting started in Credo 0.8, so uses before that are not counted.
    */
   usageCount?: number
 }>

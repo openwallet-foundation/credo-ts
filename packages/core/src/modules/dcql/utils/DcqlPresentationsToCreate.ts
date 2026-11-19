@@ -50,6 +50,7 @@ export interface DcqlJwtW3cVpPresentationToCreate {
   claimFormat: ClaimFormat.JwtW3cVp
   credentialRecord: W3cV2CredentialRecord
   disclosedPayload: DcqlW3cVcCredential.Claims
+  useMode: CredentialMultiInstanceUseMode
 }
 
 export interface DcqlSdJwtW3cVpPresentationToCreate {
@@ -60,6 +61,7 @@ export interface DcqlSdJwtW3cVpPresentationToCreate {
    */
   disclosedPayload?: DcqlW3cVcCredential.Claims
   disclosedPaths?: ClaimPath[]
+  useMode: CredentialMultiInstanceUseMode
 }
 
 type DcqlPresentationToCreate =
@@ -113,6 +115,7 @@ export function dcqlGetPresentationsToCreate(
             claimFormat: ClaimFormat.JwtW3cVp,
             credentialRecord: match.credentialRecord,
             disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
+            useMode,
           }
           break
         case ClaimFormat.SdJwtW3cVc:
@@ -121,6 +124,7 @@ export function dcqlGetPresentationsToCreate(
             credentialRecord: match.credentialRecord,
             disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
             disclosedPaths: match.disclosedPaths,
+            useMode,
           }
           break
 

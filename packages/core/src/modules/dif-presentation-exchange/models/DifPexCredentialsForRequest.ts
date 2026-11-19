@@ -1,4 +1,5 @@
 import type { JsonObject } from '../../../types'
+import type { CredentialMultiInstanceUseMode } from '../../../utils/credentialUseTypes'
 import type { MdocNameSpaces, MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { ClaimFormat, W3cCredentialRecord } from '../../vc'
@@ -128,15 +129,30 @@ export type SubmissionEntryCredential =
        * existing parameters for KB-JWT so ensure you are only using this for non-default properties.
        */
       additionalPayload?: JsonObject
+
+      /**
+       * @default {@link CredentialMultiInstanceUseMode.NewOrFirst}
+       */
+      useMode?: CredentialMultiInstanceUseMode
     }
   | {
       claimFormat: ClaimFormat.JwtVc | ClaimFormat.LdpVc
       credentialRecord: W3cCredentialRecord
+
+      /**
+       * @default {@link CredentialMultiInstanceUseMode.NewOrFirst}
+       */
+      useMode?: CredentialMultiInstanceUseMode
     }
   | {
       claimFormat: ClaimFormat.MsoMdoc
       credentialRecord: MdocRecord
       disclosedPayload: MdocNameSpaces
+
+      /**
+       * @default {@link CredentialMultiInstanceUseMode.NewOrFirst}
+       */
+      useMode?: CredentialMultiInstanceUseMode
     }
 
 /**

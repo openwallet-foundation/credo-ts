@@ -324,6 +324,17 @@ describe('AnonCredsRsHolderService', () => {
     })
 
     expect(findByIdMock).toHaveBeenCalledTimes(2)
+    // Counts the use of the first instance of each credential
+    expect(w3cCredentialRepositoryMock.updateByIdWithLock).toHaveBeenCalledWith(
+      agentContext,
+      personRecord.id,
+      expect.any(Function)
+    )
+    expect(w3cCredentialRepositoryMock.updateByIdWithLock).toHaveBeenCalledWith(
+      agentContext,
+      phoneRecord.id,
+      expect.any(Function)
+    )
     // TODO: check proof object
   })
 
