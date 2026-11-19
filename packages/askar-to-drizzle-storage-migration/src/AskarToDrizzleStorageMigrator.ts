@@ -261,9 +261,7 @@ export class AskarToDrizzleStorageMigrator {
 
       const scanOptions = { askar, store, profile, askarContext }
 
-      // The record types are migrated one at a time, in the order of the foreign keys between their
-      // tables, so that a record never references a record that is not inserted yet. The order of a
-      // scan over all records depends on the database and can put a child record before its parent.
+      // Parent records first, because the tables have foreign keys between them
       let migratedRecordCount = 0
       for (const adapter of this.drizzleAdapters) {
         const recordType = adapter.recordClass.type
@@ -295,8 +293,6 @@ export class AskarToDrizzleStorageMigrator {
         migratedRecordCount += recordCount
       }
 
-      // The scans above only return records of types with an adapter. A count of all records
-      // shows whether the store holds records of other types.
       const totalRecordCount = await this.countRecords(scanOptions)
       const skippedRecordCount = totalRecordCount - migratedRecordCount
       const skippedRecordTypes = new Set<string>()
@@ -336,10 +332,6 @@ export class AskarToDrizzleStorageMigrator {
     }
   }
 
-  /**
-   * Scans the records of one category, or of all categories, and calls `handleEntry` for each record.
-   * Returns the number of records.
-   */
   private async scanRecords(
     { askar, store, profile, askarContext, category }: ScanOptions & { category?: string },
     handleEntry: (entryObject: EntryObject) => Promise<void>

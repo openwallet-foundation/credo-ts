@@ -4,10 +4,7 @@ import { CredoDrizzleStorageError } from '../error'
 import type { AnyDrizzleAdapter } from './BaseDrizzleRecordAdapter'
 
 /**
- * Sorts the adapters so that an adapter comes after the adapters whose tables its table references
- * with a foreign key. Records inserted in this order never reference a record that is not inserted yet.
- *
- * The order is read from the PostgreSQL tables. The SQLite tables have the same foreign keys.
+ * Sorts the adapters so that records can be inserted in this order without a foreign key violation.
  */
 export function sortAdaptersByForeignKeys(adapters: AnyDrizzleAdapter[]): AnyDrizzleAdapter[] {
   const parentsByAdapter = new Map<AnyDrizzleAdapter, AnyDrizzleAdapter[]>()
@@ -16,7 +13,6 @@ export function sortAdaptersByForeignKeys(adapters: AnyDrizzleAdapter[]): AnyDri
     for (const foreignKey of getTableConfig(adapter.table.postgres).foreignKeys) {
       const foreignTableName = getTableName(foreignKey.reference().foreignTable)
       const parent = adapters.find((other) => getTableName(other.table.postgres) === foreignTableName)
-      // A table without an adapter, such as `Context`, has no records to order
       if (parent && parent !== adapter) parents.add(parent)
     }
     parentsByAdapter.set(adapter, [...parents])

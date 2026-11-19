@@ -58,8 +58,7 @@ import { TenantAgent, TenantsModule } from '../../tenants/src'
 import { AskarToDrizzleStorageMigrator } from '../src'
 
 async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
-  // The mediation record references the connection and is saved first on purpose. The migration
-  // must insert the connection first, whatever the order in which Askar returns the records.
+  // Saved before its connection on purpose
   const connectionId = utils.uuid()
   await agent.dependencyManager.resolve(DidCommMediationRepository).save(
     agent.context,
