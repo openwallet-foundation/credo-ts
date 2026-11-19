@@ -4,7 +4,7 @@ import type {
   DidCommOutOfBandState,
   DidCommPlaintextMessage,
 } from '@credo-ts/didcomm'
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommOutOfBand = sqliteTable(
@@ -34,6 +34,13 @@ export const didcommOutOfBand = sqliteTable(
   },
   (table) => [
     ...sqliteBaseRecordIndexes(table, 'didcommOutOfBand'),
+
+    // Used to find the out of band record of a received message without a connection
+    index('didcommOutOfBand_recipient_routing_key_fingerprint_idx').on(
+      table.contextCorrelationId,
+      table.recipientRoutingKeyFingerprint
+    ),
+
     // foreignKey({
     //   columns: [table.reuseConnectionId, table.contextCorrelationId],
     //   foreignColumns: [didcommConnection.id, didcommConnection.contextCorrelationId],

@@ -7,6 +7,7 @@ import m0003 from './0003_add_sd_jwt_type_metadata.sql'
 import m0004 from './0004_add_w3c_v2_cryptosuites_tag.sql'
 import m0005 from './0005_add_mdoc_verification_session.sql'
 import m0006 from './0006_kms_key_references.sql'
+import m0007 from './0007_add_lookup_indexes.sql'
 import journal from './meta/_journal.json'
 
 export default {
@@ -19,5 +20,6 @@ export default {
     m0004,
     m0005,
     m0006,
+    m0007,
   },
 }

@@ -4,7 +4,7 @@ import type {
   DidCommHandshakeProtocol,
   DidCommVersion,
 } from '@credo-ts/didcomm'
-import { integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
+import { index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommConnection = sqliteTable(
@@ -40,5 +40,9 @@ export const didcommConnection = sqliteTable(
   (table) => [
     ...sqliteBaseRecordIndexes(table, 'didcommConnection'),
     unique().on(table.contextCorrelationId, table.threadId),
+
+    // Used to find the connection of each received message
+    index('didcommConnection_did_idx').on(table.contextCorrelationId, table.did),
+    index('didcommConnection_their_did_idx').on(table.contextCorrelationId, table.theirDid),
   ]
 )
