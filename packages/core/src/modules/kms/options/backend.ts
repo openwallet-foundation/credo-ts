@@ -28,6 +28,14 @@ export type WithBackend<T, Backends extends KeyManagementService[] = KeyManageme
 }
 
 /**
+ * A key in the KMS and the backend that holds it. Records store keys in this shape.
+ */
+export interface KmsKeyReference {
+  keyId: string
+  kmsBackend?: string
+}
+
+/**
  * The result of an operation, with the backend that ran it. Pass the backend to the operations that follow on the
  * same key, so the key is not looked up again to find its backend.
  */

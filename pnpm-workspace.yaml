@@ -14,7 +14,6 @@ allowBuilds:
   protobufjs: false
   secp256k1: false
   ssh2: false
-  zstd-napi: true
 
 catalog:
   '@animo-id/pex': ^6.1.1

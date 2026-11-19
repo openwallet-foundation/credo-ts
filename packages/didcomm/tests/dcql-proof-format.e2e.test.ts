@@ -906,7 +906,7 @@ describe('DCQL proof format over a DIDComm connection', () => {
           nonce: request.nonce,
         },
       }),
-      keyId: publicJwk.keyId,
+      key: publicJwk,
       protectedHeaderOptions: { typ: 'vp+sd-jwt', alg, kid },
     })
     const presentation = W3cV2SdJwtVerifiablePresentation.fromCompact(`${jws}~`)

@@ -1,3 +1,4 @@
+import type { Kms } from '@credo-ts/core'
 import type {
   OpenId4VcVerificationSessionState,
   OpenId4VpAuthorizationRequestPayload,
@@ -34,6 +35,7 @@ export const openId4VcVerificationSession = sqliteTable(
     }).$type<OpenId4VpAuthorizationResponsePayload>(),
     presentationDuringIssuanceSession: text('presentation_during_issuance_session'),
     openId4VpVersion: text('openid4vp_version').$type<OpenId4VpVersion>(),
+    responseEncryptionKey: text('response_encryption_key', { mode: 'json' }).$type<Kms.KmsKeyReference>(),
 
     // These tags may be encoded in a JWT, so we need to duplicate them
     nonce: text().notNull(),

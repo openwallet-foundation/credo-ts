@@ -1,6 +1,7 @@
 import {
   DidDocument,
   type DidResolverService,
+  DidsApi,
   InjectionSymbols,
   JsonEncoder,
   Kms,
@@ -623,6 +624,38 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       const senderKey = await resolver.resolveSenderKey(agentContext, skid)
 
       expect(senderKey?.keyId).toBe(skid)
+    })
+
+    it('does not use the kid of a published jwk as the KMS key id of a created did', async () => {
+      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+      const otherKey = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+      const kid = 'did:example:bob#key-x25519-published'
+      // The published document points the method at another KMS key, and the record doesn't list the method
+      const didDocument = new DidDocument({
+        id: 'did:example:bob',
+        keyAgreement: [
+          new VerificationMethod({
+            id: kid,
+            type: 'JsonWebKey2020',
+            controller: 'did:example:bob',
+            publicKeyJwk: { ...otherKey.publicJwk, kid: otherKey.keyId },
+          }),
+        ],
+      })
+      agentContext.dependencyManager.registerInstance(DidsApi, {
+        resolveCreatedDidDocumentWithKeys: async () => ({ didDocument, keys: undefined }),
+      } as unknown as DidsApi)
+
+      const publicJwk = Kms.PublicJwk.fromPublicJwk(otherKey.publicJwk) as Kms.PublicJwk<Kms.X25519PublicJwk>
+      const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
+        recipients: [{ key: publicJwk, kid }],
+      })
+      const resolved = await new DidCommV2KeyResolver({} as DidResolverService).resolveRecipientKey(
+        agentContext,
+        encrypted
+      )
+
+      expect(resolved?.recipientKey.keyId).toBe(publicJwk.legacyKeyId)
     })
   })
 })

@@ -8,7 +8,6 @@ import { Color, greenText, Output, purpleText, redText, writeOutput } from './Ou
 
 export enum RegistryOptions {
   cheqd = 'did:cheqd',
-  hedera = 'did:hedera',
 }
 
 export class Faber extends BaseAgent {
@@ -31,12 +30,10 @@ export class Faber extends BaseAgent {
     // and store the existing did in the wallet
     const rootKeyIds: Record<string, string> = {
       [RegistryOptions.cheqd]: '#key-1',
-      [RegistryOptions.hedera]: '#did-root-key',
     }
 
     const Dids: Record<string, string> = {
       [RegistryOptions.cheqd]: 'did:cheqd:testnet:d37eba59-513d-42d3-8f9f-d1df0548b675',
-      [RegistryOptions.hedera]: 'did:hedera:testnet:44eesExqdsUvLZ35FpnBPErqRGRnYbzzyG3wgCCYxkmq_0.0.6231121',
     }
 
     const didDocumentRelativeKeyId = rootKeyIds[registry]

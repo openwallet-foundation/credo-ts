@@ -326,7 +326,7 @@ export class Issuer extends BaseAgent<{
       }).privateJwk,
     })
     issuerCertificate = await X509Service.createCertificate(issuer.agent.context, {
-      authorityKey: Kms.PublicJwk.fromPublicJwk(importedKey.publicJwk),
+      authorityKey: Kms.PublicJwk.fromKmsKey(importedKey),
       validity: {
         notBefore: new Date('2000-01-01'),
         notAfter: new Date('2050-01-01'),

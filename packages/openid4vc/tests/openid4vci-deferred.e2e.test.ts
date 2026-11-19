@@ -260,7 +260,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         signJwt: async (_signer, { header, payload }) => {
           const jwsService = issuer.agent.dependencyManager.resolve(JwsService)
           const compact = await jwsService.createJwsCompact(issuer.agent.context, {
-            keyId: authorizationServerKey.keyId,
+            key: { keyId: authorizationServerKey.keyId },
             payload: JwtPayload.fromJson(payload),
             protectedHeaderOptions: {
               ...header,
@@ -628,7 +628,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         universityDegree: universityDegreeCredentialConfigurationSupported,
         otherUniversityDegree: universityDegreeCredentialConfigurationSupported,
       },
-      credentialRequestEncryption: { required: true, jwks: [requestEncryptionKey.publicJwk] },
+      credentialRequestEncryption: { required: true, keys: [Kms.PublicJwk.fromKmsKey(requestEncryptionKey)] },
       credentialResponseEncryption: { required: true },
     })
 
@@ -685,7 +685,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupported,
       },
-      credentialRequestEncryption: { required: true, jwks: [requestEncryptionKey.publicJwk] },
+      credentialRequestEncryption: { required: true, keys: [Kms.PublicJwk.fromKmsKey(requestEncryptionKey)] },
       credentialResponseEncryption: { required: true },
     })
 
@@ -739,7 +739,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupported,
       },
-      credentialRequestEncryption: { required: false, jwks: [requestEncryptionKey.publicJwk] },
+      credentialRequestEncryption: { required: false, keys: [Kms.PublicJwk.fromKmsKey(requestEncryptionKey)] },
       credentialResponseEncryption: { required: false },
     })
 

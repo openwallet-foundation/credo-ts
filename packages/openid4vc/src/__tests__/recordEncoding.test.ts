@@ -237,8 +237,7 @@ testRecordEncoding(path.join(__dirname, '__fixtures__/records'), {
       createdAt,
       tags: { custom: 'tag' },
       issuerId: 'issuer-id',
-      accessTokenPublicJwk: { ...holderJwk, kid: 'access-token-key-id' },
-      accessTokenSignerKmsBackend: 'remote-kms',
+      accessTokenKey: { publicJwk: holderJwk, keyId: 'access-token-key-id', kmsBackend: 'remote-kms' },
       dpopSigningAlgValuesSupported: ['ES256', 'EdDSA'],
       clientAttestationSigningAlgValuesSupported: ['ES256'],
       clientAttestationPopSigningAlgValuesSupported: ['ES256', 'ES384'],
@@ -323,8 +322,32 @@ testRecordEncoding(path.join(__dirname, '__fixtures__/records'), {
         jwt: 'eyJhbGciOiJFUzI1NiIsInR5cCI6Im9wZW5pZHZjaS1pc3N1ZXItbWV0YWRhdGErand0In0.eyJzdWIiOiJpc3N1ZXIifQ.c2lnbmF0dXJl',
       },
     })
+    // Stored before `accessTokenKey`, with the KMS key id as `kid`
+    record.accessTokenKey = undefined
+    record.accessTokenPublicJwk = { ...holderJwk, kid: 'access-token-key-id' }
+    record.accessTokenSignerKmsBackend = 'remote-kms'
     record.updatedAt = updatedAt
     record.metadata.set('meta', { key: 'value' })
+    return record
+  },
+
+  'OpenId4VcIssuerRecord.accessTokenKey': () => {
+    const record = new OpenId4VcIssuerRecord({
+      id: 'issuer-record-id',
+      createdAt,
+      issuerId: 'issuer-id',
+      accessTokenKey: { publicJwk: holderJwk, keyId: 'access-token-key-id', kmsBackend: 'remote-kms' },
+      previousAccessTokenKeys: [
+        { publicJwk: ed25519Jwk, keyId: 'previous-access-token-key-id', kmsBackend: 'previous-remote-kms' },
+      ],
+      credentialConfigurationsSupported: {
+        'diploma-jwt-vc': {
+          format: 'jwt_vc_json',
+          credential_definition: { type: ['VerifiableCredential', 'UniversityDegreeCredential'] },
+        },
+      },
+    })
+    record.updatedAt = updatedAt
     return record
   },
 
@@ -334,7 +357,7 @@ testRecordEncoding(path.join(__dirname, '__fixtures__/records'), {
       id: 'legacy-issuer-record-id',
       createdAt,
       issuerId: 'legacy-issuer-id',
-      accessTokenPublicJwk: { ...ed25519Jwk, kid: 'unused' },
+      accessTokenKey: { publicJwk: ed25519Jwk, keyId: 'unused' },
       credentialConfigurationsSupported: {
         'diploma-jwt-vc': {
           format: 'jwt_vc_json',
@@ -342,7 +365,7 @@ testRecordEncoding(path.join(__dirname, '__fixtures__/records'), {
         },
       },
     })
-    record.accessTokenPublicJwk = undefined
+    record.accessTokenKey = undefined
     record.accessTokenPublicKeyFingerprint = 'z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv'
     return record
   },

@@ -1,4 +1,5 @@
 import type {
+  Kms,
   MdocDeviceRequestDefinition,
   MdocVerificationSessionState,
   MdocVerificationSessionTranscript,
@@ -36,7 +37,9 @@ export const mdocVerificationSession = pgTable(
     sessionTranscriptType: mdocVerificationSessionTranscriptTypeEnum('session_transcript_type').notNull(),
     nonce: text(),
 
-    sessionKeyId: text('session_key_id').notNull(),
+    sessionKey: jsonb('session_key').$type<Kms.KmsKeyReference>(),
+    // No longer written. Rows from before `session_key`, also from servers not yet upgraded, only have this.
+    sessionKeyId: text('session_key_id'),
     expiresAt: timestamp('expires_at', { withTimezone: true, precision: 3 }).notNull(),
   },
   (table) => postgresBaseRecordIndexes(table, 'mdocVerificationSession')

@@ -30,12 +30,11 @@ export function getMdocSignatureAlgForJwk(publicJwk: PublicJwk) {
 }
 
 /**
- * The JSON representation of a public JWK, with `alg` filled in as the mdoc COSE structures require
- * it. The `kid` (needed to resolve the key for signing) is taken from the jwk as-is; it's up to the
- * caller to make sure the key id is set.
+ * The JSON representation of a public JWK, with `alg` filled in as the mdoc COSE structures require it. It has no `kid`,
+ * as the mdoc library would write the KMS key id into the `kid` header. Pass the key itself to the mdoc context.
  */
 export function mdocSigningJwk(publicJwk: PublicJwk) {
-  const jwk = publicJwk.toJson()
+  const jwk = publicJwk.toJson({ includeKid: false })
 
   return {
     ...jwk,

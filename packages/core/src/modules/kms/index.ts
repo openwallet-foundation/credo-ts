@@ -1,3 +1,4 @@
+export { type CheckKmsKeyReferencesOptions, checkKmsKeyReferences } from './checkKmsKeyReferences'
 export * from './cose'
 export * from './error/KeyManagementAlgorithmNotSupportedError'
 export * from './error/KeyManagementError'
