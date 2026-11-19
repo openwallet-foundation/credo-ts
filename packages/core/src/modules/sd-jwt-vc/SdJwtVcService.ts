@@ -11,13 +11,13 @@ import type { Query, QueryOptions } from '../../storage/StorageService'
 import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArrayEncoder } from '../../utils'
 import { isAllowedHttpUrl } from '../../utils/uri'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
-import { KeyManagementApi, PublicJwk } from '../kms'
+import { checkKmsKeyReferences, KeyManagementApi, PublicJwk } from '../kms'
 import { getStatusListSignerKeyPurposeOptions } from '../token-status-list/assertStatusListSignerKeyPurpose'
 import { TokenStatusListModuleConfig } from '../token-status-list/TokenStatusListModuleConfig'
 import { ClaimFormat } from '../vc/index'
 import { type EncodedX509Certificate, parseX5c, X509Certificate, X509ModuleConfig, X509Service } from '../x509'
 import { legacyTrustedCertificatesToTrustedIssuers } from '../x509/utils/convertLegacyTrustedCertificates'
-import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
+import { decodeRawSignedSdJwtVcPayload, decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcError } from './SdJwtVcError'
 import { SdJwtVcModuleConfig } from './SdJwtVcModuleConfig'
@@ -33,6 +33,7 @@ import type {
 } from './SdJwtVcOptions'
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 import {
+  type CnfPayload,
   extractKeyFromHolderBinding,
   getIssuerDidUrl,
   getSdJwtHashingAlgorithm,
@@ -84,6 +85,11 @@ export interface SdJwtVc<
    * This will only be set on the holder side if defined on the SdJwtVcRecord
    */
   kmsKeyId?: string
+
+  /**
+   * The kms backend that holds `kmsKeyId`.
+   */
+  kmsBackend?: string
 
   /**
    * The merged/resolved type metadata of the SD-JWT VC.
@@ -221,6 +227,7 @@ export class SdJwtVcService {
         ? await extractKeyFromHolderBinding(agentContext, holderBinding, {
             forSigning: true,
             jwkKeyId: sdJwtVc.kmsKeyId,
+            jwkKmsBackend: sdJwtVc.kmsBackend,
           })
         : undefined
     if (holder) {
@@ -451,6 +458,17 @@ export class SdJwtVcService {
   }
 
   public async store(agentContext: AgentContext, options: SdJwtVcStoreOptions) {
+    checkKmsKeyReferences(
+      agentContext,
+      options.record.credentialInstances
+        // A did-bound credential keeps its key reference on the did record, so only a jwk-bound one needs it here.
+        .filter(
+          ({ compactSdJwtVc, kmsKeyId }) =>
+            kmsKeyId || (decodeRawSignedSdJwtVcPayload(compactSdJwtVc).cnf as CnfPayload | undefined)?.jwk
+        )
+        .map(({ kmsKeyId, kmsBackend }) => ({ keyId: kmsKeyId, backend: kmsBackend })),
+      { missingKeyId: 'throw' }
+    )
     await this.sdJwtVcRepository.save(agentContext, options.record)
     return options.record
   }

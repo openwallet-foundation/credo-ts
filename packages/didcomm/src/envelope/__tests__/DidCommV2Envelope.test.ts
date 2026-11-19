@@ -699,7 +699,7 @@ describe('DidCommV2Envelope', () => {
         .signPlaintext(
           agent.context,
           { id: utils.uuid(), type: DidCommTrustPingMessage.type.messageTypeUri, ...plaintext },
-          { keyId: signingKeyId, kid: toAbsoluteDidUrl(didDocument.id, authentication.id), alg: 'EdDSA' }
+          { key: { keyId: signingKeyId }, kid: toAbsoluteDidUrl(didDocument.id, authentication.id), alg: 'EdDSA' }
         )
     }
 

@@ -17,10 +17,7 @@ import {
   DidCommModule,
   DidCommProofV2Protocol,
 } from '@credo-ts/didcomm'
-import { HederaDidRegistrar, HederaDidResolver, HederaModule } from '@credo-ts/hedera'
-import { HederaAnonCredsRegistry } from '@credo-ts/hedera/anoncreds'
 import { agentDependencies, DidCommHttpInboundTransport } from '@credo-ts/node'
-import type { HederaNetwork } from '@hiero-did-sdk/client'
 import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { greenText } from './OutputClass'
@@ -95,7 +92,7 @@ function getAskarAnonCredsModules(
       },
     }),
     anoncreds: new AnonCredsModule({
-      registries: [new CheqdAnonCredsRegistry(), new HederaAnonCredsRegistry()],
+      registries: [new CheqdAnonCredsRegistry()],
       anoncreds: NativeAnoncreds,
     }),
     cheqd: new CheqdModule(
@@ -110,23 +107,12 @@ function getAskarAnonCredsModules(
       })
     ),
     dids: new DidsModule({
-      resolvers: [new CheqdDidResolver(), new HederaDidResolver()],
-      registrars: [new CheqdDidRegistrar(), new HederaDidRegistrar()],
+      resolvers: [new CheqdDidResolver()],
+      registrars: [new CheqdDidRegistrar()],
     }),
     askar: new AskarModule({
       askar: NativeAskar,
       store: askarStoreConfig,
-    }),
-    hedera: new HederaModule({
-      networks: [
-        {
-          network: (process.env.HEDERA_NETWORK as HederaNetwork) ?? 'testnet',
-          operatorId: process.env.HEDERA_OPERATOR_ID ?? '0.0.5489553',
-          operatorKey:
-            process.env.HEDERA_OPERATOR_KEY ??
-            '302e020100300506032b6570042204209f54b75b6238ced43e41b1463999cb40bf2f7dd2c9fd4fd3ef780027c016a138',
-        },
-      ],
     }),
   } as const
 }

@@ -1,8 +1,16 @@
 import { generateKeyPairSync } from 'node:crypto'
-import { Kms } from '@credo-ts/core'
+import { Kms, X509ModuleConfig, X509Service } from '@credo-ts/core'
 import type { IssuerMetadataResult } from '@openid4vc/openid4vci'
 import { getAgentContext } from '../../../../core/tests'
-import { getCredentialRequestEncryption, getSupportedEncryptionJwks, selectCredentialRequestEncryption } from '../utils'
+import {
+  type CredoJwtSigner,
+  credoJwtIssuerToOpenId4VcJwtIssuer,
+  decodeJwtIssuer,
+  encodeJwtIssuer,
+  getCredentialRequestEncryption,
+  getSupportedEncryptionJwks,
+  selectCredentialRequestEncryption,
+} from '../utils'
 
 const ecJwk = (namedCurve: string) =>
   generateKeyPairSync('ec', { namedCurve }).publicKey.export({ format: 'jwk' }) as Record<string, unknown>
@@ -128,5 +136,53 @@ describe('selectCredentialRequestEncryption', () => {
         },
       } as unknown as IssuerMetadataResult)
     ).toBeUndefined()
+  })
+})
+
+describe('encodeJwtIssuer', () => {
+  test('keeps the kms backend of an x5c signer, also in the signer it creates', async () => {
+    const agentContext = getAgentContext({ registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]] })
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const authorityKey = Kms.PublicJwk.fromKmsKey(await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } }))
+    const certificate = await X509Service.createCertificate(agentContext, { authorityKey, issuer: 'C=NL' })
+
+    const encoded = encodeJwtIssuer({ method: 'x5c', x5c: [certificate] })
+    expect(encoded).toMatchObject({ leafCertificateKeyId: authorityKey.keyId, leafCertificateKmsBackend: 'node' })
+
+    const signer = await credoJwtIssuerToOpenId4VcJwtIssuer(agentContext, decodeJwtIssuer(agentContext, encoded))
+    expect((signer as CredoJwtSigner).kmsBackend).toBe('node')
+  })
+
+  test('stores the key id and backend of a jwk signer next to the jwk, and decodes signers that have it as kid', async () => {
+    const agentContext = getAgentContext()
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const jwk = Kms.PublicJwk.fromKmsKey(await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } }))
+
+    const encoded = encodeJwtIssuer({ method: 'jwk', jwk })
+    expect(encoded).toEqual({
+      method: 'jwk',
+      jwk: jwk.toJson({ includeKid: false }),
+      keyId: jwk.keyId,
+      kmsBackend: 'node',
+    })
+
+    const decoded = decodeJwtIssuer(agentContext, encoded)
+    const decodedWithKid = decodeJwtIssuer(agentContext, { method: 'jwk', jwk: jwk.toJson() })
+    expect(decoded.method === 'jwk' && decoded.jwk.keyId).toBe(jwk.keyId)
+    expect(decodedWithKid.method === 'jwk' && decodedWithKid.jwk.keyId).toBe(jwk.keyId)
+  })
+
+  test('creates a jwk signer whose public jwk has no kid, and that signs with the KMS key id and backend', async () => {
+    const agentContext = getAgentContext()
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const jwk = Kms.PublicJwk.fromKmsKey(await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } }))
+
+    expect(await credoJwtIssuerToOpenId4VcJwtIssuer(agentContext, { method: 'jwk', jwk })).toEqual({
+      method: 'jwk',
+      alg: 'ES256',
+      publicJwk: jwk.toJson({ includeKid: false }),
+      kid: jwk.keyId,
+      kmsBackend: 'node',
+    })
   })
 })

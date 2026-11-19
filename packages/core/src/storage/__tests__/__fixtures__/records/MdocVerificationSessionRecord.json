@@ -48,7 +48,10 @@
       "key": "value"
     }
   },
-  "sessionKeyId": "session-key-id",
+  "sessionKey": {
+    "keyId": "session-key-id",
+    "kmsBackend": "node"
+  },
   "sessionTranscript": {
     "encryptionInfoBase64Url": "gmVkY2FwaaJlbm9uY2VYIBAgMEBQYHCAkKCwwNDg8Q",
     "nonce": "ECAwQFBgcICQoLDA0ODxA",

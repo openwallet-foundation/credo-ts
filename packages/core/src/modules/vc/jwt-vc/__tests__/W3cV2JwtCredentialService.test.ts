@@ -193,6 +193,20 @@ describe('W3cV2JwtCredentialService', () => {
       expect(vcJwt.encoded).toEqual(CredoEs256DidJwkJwtVc)
     })
 
+    test('keeps the kid the holder sent in the cnf', async () => {
+      const holderJwk = PublicJwk.fromUnknown({ ...holderDidKey.publicJwk.toJson(), kid: 'holder-kid' })
+
+      const vcJwt = await w3cV2JwtCredentialService.signCredential(agentContext, {
+        alg: KnownJwaSignatureAlgorithms.ES256,
+        format: ClaimFormat.JwtW3cVc,
+        verificationMethod: issuerDidJwk.verificationMethodId,
+        holder: { method: 'jwk', jwk: holderJwk },
+        credential: JsonTransformer.fromJSON(Ed256DidJwkJwtVcUnsigned, W3cV2Credential),
+      })
+
+      expect(vcJwt.jwt.payload.additionalClaims.cnf).toEqual({ jwk: { ...holderJwk.toJson(), kid: 'holder-kid' } })
+    })
+
     test('throws when invalid credential is passed', async () => {
       const credentialJson = {
         '@context': ['https://www.w3.org/ns/credentials/v2'],
@@ -710,7 +724,7 @@ describe('W3cV2JwtCredentialService', () => {
               cnf: { jku: 'https://issuer.example/jwks.json' },
             },
           }),
-          keyId: publicJwk.keyId,
+          key: { keyId: publicJwk.keyId },
           protectedHeaderOptions: { typ: 'vc+jwt', alg: options.alg, kid: options.verificationMethod },
         })
         return W3cV2JwtVerifiableCredential.fromCompact(jwt)
@@ -728,7 +742,7 @@ describe('W3cV2JwtCredentialService', () => {
             aud: 'example.com',
             additionalClaims: { ...JsonTransformer.toJSON(presentation), nonce: 'challenge' },
           }),
-          keyId: publicJwk.keyId,
+          key: { keyId: publicJwk.keyId },
           protectedHeaderOptions: { typ: 'vp+jwt', alg: KnownJwaSignatureAlgorithms.EdDSA, kid: verificationMethod },
         })
         return W3cV2JwtVerifiablePresentation.fromCompact(jwt)
@@ -1251,6 +1265,41 @@ describe('W3cV2JwtCredentialService', () => {
           expect(result.isValid).toBe(true)
         })
 
+        test('signs with the legacy key id for a bound method its did record keys miss', async () => {
+          // A did created before kms key ids and updated since only lists the keys added later
+          const did = 'did:web:updated-legacy-holder.example'
+          const { privateJwk } = transformSeedToPrivateJwk({
+            type: { kty: 'OKP', crv: 'Ed25519' },
+            seed: TypedArrayEncoder.fromUtf8String('updated-legacy-holder-seed-00000'),
+          })
+          const legacyKey = PublicJwk.fromUnknown(publicJwkFromPrivateJwk(privateJwk))
+          await kms.importKey({ privateJwk: { ...privateJwk, kid: legacyKey.legacyKeyId } })
+          const newKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+          await dids.import({
+            did,
+            didDocument: new DidDocument({
+              id: did,
+              verificationMethod: [legacyKey, PublicJwk.fromPublicJwk(newKey.publicJwk)].map(
+                (publicJwk, index) =>
+                  new VerificationMethod(
+                    getJsonWebKey2020({ did, verificationMethodId: `${did}#key-${index + 1}`, publicJwk })
+                  )
+              ),
+              authentication: [`${did}#key-1`, `${did}#key-2`],
+            }),
+            keys: [{ didDocumentRelativeKeyId: '#key-2', kmsKeyId: newKey.keyId }],
+            overwrite: true,
+          })
+
+          const boundPresentation = await signPresentationFor({
+            credentials: [{ subjectIds: [did], cnf: { method: 'did', didUrl: `${did}#key-1` } }],
+          })
+          const unboundPresentation = await signPresentationFor({ credentials: [{ subjectIds: [did] }] })
+
+          expect(boundPresentation.jwt.header.kid).toBe(`${did}#key-1`)
+          expect(unboundPresentation.jwt.header.kid).toBe(`${did}#key-2`)
+        })
+
         test('throws when the cnf.kid is not an authentication method, without a holder', async () => {
           const did = 'did:web:assertion-key-holder.example'
           const [authenticationKey, assertionKey] = await Promise.all([
@@ -1360,7 +1409,7 @@ describe('W3cV2JwtCredentialService', () => {
       payload.additionalClaims.nonce = 'challenge'
       const jwt = await jwsService.createJwsCompact(agentContext, {
         payload,
-        keyId: signerKey.keyId,
+        key: { keyId: signerKey.keyId },
         protectedHeaderOptions: { typ: 'vp+jwt', alg: KnownJwaSignatureAlgorithms.EdDSA, kid: verificationMethod.id },
       })
 

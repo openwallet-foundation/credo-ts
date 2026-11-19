@@ -6,7 +6,9 @@ import {
 } from '@credo-ts/askar'
 import {
   Agent,
+  CacheModule,
   DidDocument,
+  InMemoryLruCache,
   JsonLdModule,
   JsonTransformer,
   Mdoc,
@@ -55,13 +57,21 @@ async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
       credentialInstances: [
         {
           compactSdJwtVc: sdJwtVcWithSingleDisclosure,
+          kmsKeyId: 'kms-key-1',
+          kmsBackend: 'askar',
         },
       ],
     }),
   })
   await agent.mdoc.store({
     record: new MdocRecord({
-      credentialInstances: [{ issuerSignedBase64Url: Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url).base64Url }],
+      credentialInstances: [
+        {
+          issuerSignedBase64Url: Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url).base64Url,
+          kmsKeyId: 'kms-key-2',
+          kmsBackend: 'askar',
+        },
+      ],
     }),
   })
   await agent.w3cCredentials.store({
@@ -113,6 +123,8 @@ async function expectDatabaseWithRecords(agent: Agent | TenantAgent) {
       credentialInstances: [
         {
           compactSdJwtVc: sdJwtVcWithSingleDisclosure,
+          kmsKeyId: 'kms-key-1',
+          kmsBackend: 'askar',
         },
       ],
     },
@@ -123,6 +135,8 @@ async function expectDatabaseWithRecords(agent: Agent | TenantAgent) {
       credentialInstances: [
         {
           issuerSignedBase64Url: Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url).encoded,
+          kmsKeyId: 'kms-key-2',
+          kmsBackend: 'askar',
         },
       ],
     },
@@ -304,6 +318,7 @@ describe('Askar to Drizzle Migration', () => {
         }),
         askar: askarModule,
         tenants: new TenantsModule(),
+        cache: new CacheModule({ cache: new InMemoryLruCache({ limit: 500 }) }),
       },
     })
     await askarAgent.initialize()
@@ -336,6 +351,7 @@ describe('Askar to Drizzle Migration', () => {
       modules: {
         drizzle: drizzleModule,
         tenants: new TenantsModule(),
+        cache: new CacheModule({ cache: new InMemoryLruCache({ limit: 500 }) }),
       },
     })
     await drizzleAgent.initialize()

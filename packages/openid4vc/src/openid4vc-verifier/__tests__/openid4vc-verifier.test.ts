@@ -1,4 +1,5 @@
-import { Jwt, Kms, RecordNotFoundError, utils } from '@credo-ts/core'
+import { JsonEncoder, Jwt, Kms, RecordNotFoundError, utils } from '@credo-ts/core'
+import type { TransactionDataEntry } from '@openid4vc/openid4vp'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { type AgentType, createAgentFromModules } from '../../../tests/utils'
 import { openBadgeDcqlQuery, universityDegreePresentationDefinition } from '../../../tests/utilsVp'
@@ -108,6 +109,95 @@ describe('OpenId4VcVerifier', () => {
         })
       ).rejects.toThrow(
         "OpenID4VP version 'v1.draft21' cannot be used with clientIdPrefix 'x509_hash'. Use clientIdPrefix 'x509_san_dns', or version 'v1' instead."
+      )
+    })
+
+    it('throws when transaction data references credential ids that are not in the dcql query', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+      await expect(
+        verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+          requestSigner: { method: 'did', didUrl: verifier.kid },
+          verifierId: openIdVerifier.verifierId,
+          dcql: { query: openBadgeDcqlQuery },
+          transactionData: [
+            {
+              type: 'OpenBadgeTx',
+              credential_ids: ['UnknownCredentialId', 'OpenBadgeCredentialDescriptor', 'OtherUnknownCredentialId'],
+            },
+            { type: 'OpenBadgeTx', credential_ids: ['OpenBadgeCredentialDescriptor'] },
+            { type: 'OpenBadgeTx', credential_ids: ['ThirdUnknownCredentialId'] },
+          ],
+        })
+      ).rejects.toThrow(
+        "Transaction data references credential ids that are not present in the query: entry with index 0 references 'UnknownCredentialId', 'OtherUnknownCredentialId'; entry with index 2 references 'ThirdUnknownCredentialId'."
+      )
+    })
+
+    it('throws when transaction data references credential ids that are not in the presentation definition', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+      await expect(
+        verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+          requestSigner: { method: 'did', didUrl: verifier.kid },
+          verifierId: openIdVerifier.verifierId,
+          presentationExchange: { definition: universityDegreePresentationDefinition },
+          transactionData: [{ type: 'UniversityDegreeTx', credential_ids: ['UniversityDegreeCredential'] }],
+          version: 'v1.draft24',
+        })
+      ).rejects.toThrow(
+        "Transaction data references credential ids that are not present in the query: entry with index 0 references 'UniversityDegreeCredential'."
+      )
+    })
+
+    it('includes transaction data that references input descriptor ids from the presentation definition', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const transactionData: TransactionDataEntry[] = [
+        { type: 'UniversityDegreeTx', credential_ids: ['UniversityDegree'] },
+      ]
+
+      const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        requestSigner: { method: 'did', didUrl: verifier.kid },
+        verifierId: openIdVerifier.verifierId,
+        presentationExchange: { definition: universityDegreePresentationDefinition },
+        transactionData,
+        version: 'v1.draft24',
+      })
+
+      const jwt = Jwt.fromSerializedJwt(verificationSession.authorizationRequestJwt as string)
+      expect(jwt.payload.additionalClaims.transaction_data).toEqual(
+        transactionData.map((entry) => JsonEncoder.toBase64Url(entry))
+      )
+    })
+
+    it('includes transaction data that only references credential ids from the query', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const transactionData: TransactionDataEntry[] = [
+        { type: 'OpenBadgeTx', credential_ids: ['OpenBadgeCredentialDescriptor', 'OptionalCredential'] },
+        { type: 'OpenBadgeTx', credential_ids: ['OptionalCredential'] },
+      ]
+
+      const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        requestSigner: { method: 'did', didUrl: verifier.kid },
+        verifierId: openIdVerifier.verifierId,
+        dcql: {
+          query: {
+            credentials: [
+              ...openBadgeDcqlQuery.credentials,
+              { id: 'OptionalCredential', format: 'dc+sd-jwt', meta: { vct_values: ['OptionalCredential'] } },
+            ],
+            credential_sets: [
+              { options: [['OpenBadgeCredentialDescriptor']] },
+              { options: [['OptionalCredential']], required: false },
+            ],
+          },
+        },
+        transactionData,
+      })
+
+      const jwt = Jwt.fromSerializedJwt(verificationSession.authorizationRequestJwt as string)
+      expect(jwt.payload.additionalClaims.transaction_data).toEqual(
+        transactionData.map((entry) => JsonEncoder.toBase64Url(entry))
       )
     })
 

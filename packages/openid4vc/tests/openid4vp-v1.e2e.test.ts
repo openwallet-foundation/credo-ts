@@ -4,6 +4,7 @@ import {
   DateOnly,
   type DcqlQuery,
   type GetTrustedIssuersForVerification,
+  JsonEncoder,
   Kms,
   MdocDeviceResponse,
   MdocRecord,
@@ -28,7 +29,7 @@ import {
   X509Module,
   X509Service,
 } from '@credo-ts/core'
-import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { decodeJwt, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import express, { type Express } from 'express'
 import nock from 'nock'
 import { filter, firstValueFrom } from 'rxjs'
@@ -49,6 +50,7 @@ import {
   Openid4vpAuthorizationRequestError,
 } from '../src'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
+import { getThumbprintKid } from '../src/shared/utils'
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
 import { openBadgeDcqlQuery, universityDegreeDcqlQuery } from './utilsVp'
@@ -75,6 +77,13 @@ const getLastMonth = () => {
   }
   return lastMonth
 }
+
+/** A `kms.decrypt` call with the key agreement key `keyId` in `backend`. */
+const decryptedWith = (keyId: string | undefined, backend: string | undefined) =>
+  expect.objectContaining({
+    backend,
+    key: expect.objectContaining({ keyAgreement: expect.objectContaining({ keyId }) }),
+  })
 
 describe('OpenID4VP 1.0', () => {
   let expressApp: Express
@@ -797,7 +806,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         transactionData: [
           {
             type: 'OpenBadgeTx',
-            credential_ids: ['OpenBadgeCredentialDescriptor'],
+            credential_ids: ['SomeDifferentId'],
             transaction_data_hasheks_alg: ['sha-256'],
             some_extra_prop: 'is_allowed',
           },
@@ -841,17 +850,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         transactionData: [
           {
             type: 'OpenBadgeTx',
-            credential_ids: ['UnknownCredentialId', 'OpenBadgeCredentialDescriptor', 'OtherUnknownCredentialId'],
-            transaction_data_hashes_alg: ['sha-256'],
-          },
-          {
-            type: 'OpenBadgeTx',
             credential_ids: ['OpenBadgeCredentialDescriptor'],
-            transaction_data_hashes_alg: ['sha-256'],
-          },
-          {
-            type: 'OpenBadgeTx',
-            credential_ids: ['ThirdUnknownCredentialId'],
             transaction_data_hashes_alg: ['sha-256'],
           },
         ],
@@ -868,6 +867,37 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         },
         version: 'v1',
       })
+
+    // The verifier refuses to create a request with unknown credential ids, so we re-sign it with them
+    const { header, payload } = decodeJwt({ jwt: verificationSession.authorizationRequestJwt as string })
+    const transactionData = [
+      {
+        type: 'OpenBadgeTx',
+        credential_ids: ['UnknownCredentialId', 'OpenBadgeCredentialDescriptor', 'OtherUnknownCredentialId'],
+        transaction_data_hashes_alg: ['sha-256'],
+      },
+      {
+        type: 'OpenBadgeTx',
+        credential_ids: ['OpenBadgeCredentialDescriptor'],
+        transaction_data_hashes_alg: ['sha-256'],
+      },
+      {
+        type: 'OpenBadgeTx',
+        credential_ids: ['ThirdUnknownCredentialId'],
+        transaction_data_hashes_alg: ['sha-256'],
+      },
+    ]
+    const { jwt } = await getOid4vcCallbacks(verifier.agent.context).signJwt(
+      { method: 'x5c', alg: 'EdDSA', x5c: [rawCertificate], kid: certificate.publicJwk.keyId },
+      {
+        header,
+        payload: { ...payload, transaction_data: transactionData.map((entry) => JsonEncoder.toBase64Url(entry)) },
+      }
+    )
+    verificationSession.authorizationRequestJwt = jwt
+    await verifier.agent.dependencyManager
+      .resolve(OpenId4VcVerificationSessionRepository)
+      .update(verifier.agent.context, verificationSession)
 
     const error = await holder.agent.openid4vc.holder
       .resolveOpenId4VpAuthorizationRequest(authorizationRequest)
@@ -4064,6 +4094,15 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     if (!encryptionJwk) {
       throw new Error('Expected an encryption jwk in the client metadata')
     }
+    // The client metadata publishes the jwk thumbprint as kid, only the session has the KMS key id
+    expect(encryptionJwk.kid).toEqual(getThumbprintKid(encryptionJwk as Kms.KmsJwkPublic))
+    expect(verificationSession.responseEncryptionKey).toEqual({
+      keyId: expect.any(String),
+      kmsBackend: expect.any(String),
+    })
+    expect(JSON.stringify(verificationSession.requestPayload)).not.toContain(
+      verificationSession.responseEncryptionKey?.keyId
+    )
 
     const errorResponse = {
       error: 'access_denied',
@@ -4076,6 +4115,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       JSON.stringify(errorResponse)
     )
 
+    const decrypt = vi.spyOn(verifier.agent.kms, 'decrypt')
     const response = await fetch(authorizationRequestObject.response_uri as string, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -4084,6 +4124,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     expect(response.status).toEqual(200)
     expect(await response.json()).toEqual({})
+    const { responseEncryptionKey } = verificationSession
+    expect(decrypt).toHaveBeenCalledWith(decryptedWith(responseEncryptionKey?.keyId, responseEncryptionKey?.kmsBackend))
 
     const updatedVerificationSession = await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
       contextCorrelationId: verifier.agent.context.contextCorrelationId,
@@ -4094,6 +4136,82 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(updatedVerificationSession.errorMessage).toEqual(
       `The wallet returned an openid4vp authorization error response.\n${JSON.stringify(errorResponse, null, 2)}`
     )
+  })
+
+  it('decrypts a response to a session without a response encryption key, that published the KMS key id as kid', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post.jwt',
+        dcql: { query: openBadgeDcqlQuery },
+        version: 'v1',
+      })
+    const responseEncryptionKey = verificationSession.responseEncryptionKey
+    const requestPayload = verificationSession.authorizationRequestPayload
+    const encryptionJwk = requestPayload?.client_metadata?.jwks?.keys[0]
+    if (!responseEncryptionKey || !requestPayload || !encryptionJwk) throw new Error('Expected an encryption key')
+
+    // A session created before the thumbprint was used published the KMS key id as kid, and stored no key
+    const legacyEncryptionJwk = { ...encryptionJwk, kid: responseEncryptionKey.keyId }
+    verificationSession.responseEncryptionKey = undefined
+    verificationSession.authorizationRequestPayload = {
+      ...requestPayload,
+      client_metadata: { ...requestPayload.client_metadata, jwks: { keys: [legacyEncryptionJwk] } },
+    }
+    await verifier.agent.dependencyManager
+      .resolve(OpenId4VcVerificationSessionRepository)
+      .update(verifier.agent.context, verificationSession)
+
+    const decrypt = vi.spyOn(verifier.agent.kms, 'decrypt')
+    const { jwe } = await getOid4vcCallbacks(holder.agent.context).encryptJwe(
+      { method: 'jwk', publicJwk: legacyEncryptionJwk, alg: 'ECDH-ES', enc: 'A128GCM' },
+      JSON.stringify({ error: 'access_denied', state: authorizationRequestObject.state as string })
+    )
+    const response = await fetch(authorizationRequestObject.response_uri as string, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ response: jwe }).toString(),
+    })
+
+    expect(response.status).toEqual(200)
+    expect(decrypt).toHaveBeenCalledWith(decryptedWith(responseEncryptionKey.keyId, undefined))
+  })
+
+  // @openid4vc/openid4vp only decrypts with the request's own key (the jwk in its client metadata with the JWE `kid`).
+  // This fails if that changes, as then any key the verifier holds could decrypt a response to this session.
+  it('rejects an encrypted authorization response encrypted to another key the verifier holds', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+    const createAuthorizationRequest = () =>
+      verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post.jwt',
+        dcql: { query: openBadgeDcqlQuery },
+        version: 'v1',
+      })
+    const { authorizationRequestObject } = await createAuthorizationRequest()
+    const { verificationSession: otherVerificationSession } = await createAuthorizationRequest()
+
+    const otherEncryptionJwk = otherVerificationSession.requestPayload.client_metadata?.jwks?.keys[0]
+    if (!otherEncryptionJwk) {
+      throw new Error('Expected an encryption jwk in the client metadata')
+    }
+
+    const { jwe } = await getOid4vcCallbacks(holder.agent.context).encryptJwe(
+      { method: 'jwk', publicJwk: otherEncryptionJwk, alg: 'ECDH-ES', enc: 'A128GCM' },
+      JSON.stringify({ error: 'access_denied', state: authorizationRequestObject.state })
+    )
+
+    const response = await fetch(authorizationRequestObject.response_uri as string, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ response: jwe }).toString(),
+    })
+
+    expect(response.status).toEqual(400)
+    expect(await response.json()).toMatchObject({ error: 'invalid_request' })
   })
 
   it('holder declines an authorization request (direct_post)', async () => {

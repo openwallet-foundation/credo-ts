@@ -29,8 +29,7 @@ export interface TenantsModuleConfigOptions {
 
   /**
    * Cache the id, status and storage version of the tenant record that is read when a tenant session
-   * is opened, in the cache of the agent's `CacheModule`. Set to `false` to disable. The cache is not
-   * used when the agent's cache is the `SingleContextStorageLruCache`.
+   * is opened, in the cache of the agent's `CacheModule`. Set to `false` to disable.
    *
    * With multiple instances, use a shared cache (e.g. `RedisCache` from `@credo-ts/redis-cache`).
    * Otherwise a tenant deactivated or deleted by another instance still gets sessions here until the

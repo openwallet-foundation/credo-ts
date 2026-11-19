@@ -76,8 +76,12 @@ describe('TokenStatusListService', () => {
         },
       } satisfies CreateTokenStatusListOptions
 
+      const sign = vi.spyOn(kms, 'sign')
       const result = await tokenStatusListService.createTokenStatusList(agentContext, options)
 
+      // The COSE key has no key id, the context finds the KMS key by its public key
+      expect(sign).toHaveBeenCalledWith(expect.objectContaining({ keyId: certificate.keyId }))
+      sign.mockRestore()
       expect(result).toBeDefined()
       expect(result.statusList).toBeInstanceOf(Uint8Array)
       expect(result.format).toStrictEqual('cwt')

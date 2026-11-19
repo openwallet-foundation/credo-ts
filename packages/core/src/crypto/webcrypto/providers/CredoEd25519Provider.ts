@@ -36,7 +36,7 @@ export class CredoEd25519Provider extends core.Ed25519Provider {
     keyUsages: KeyUsage[]
   ): Promise<CredoWebCryptoKeyPair> {
     const key = await this.walletWebCrypto.generate(algorithm)
-    const publicJwk = PublicJwk.fromPublicJwk(key.publicJwk)
+    const publicJwk = PublicJwk.fromKmsKey(key)
 
     return {
       publicKey: new CredoWebCryptoKey(publicJwk, algorithm, extractable, 'public', keyUsages),

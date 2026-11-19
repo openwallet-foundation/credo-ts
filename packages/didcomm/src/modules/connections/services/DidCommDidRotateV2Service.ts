@@ -499,11 +499,15 @@ export class DidCommDidRotateV2Service {
       iat: Math.floor(Date.now() / 1000),
     })
 
+    const publicJwk = getPublicJwkFromVerificationMethod(authVm)
+    publicJwk.keyId = kmsKey.kmsKeyId
+    publicJwk.kmsBackend = kmsKey.kmsBackend
+
     return this.jwsService.createJwsCompact(agentContext, {
-      keyId: kmsKey.kmsKeyId,
+      key: publicJwk,
       payload,
       protectedHeaderOptions: {
-        alg: getPublicJwkFromVerificationMethod(authVm).signatureAlgorithm,
+        alg: publicJwk.signatureAlgorithm,
         kid: toAbsoluteDidUrl(priorDid, authVm.id),
         typ: 'JWT',
       },

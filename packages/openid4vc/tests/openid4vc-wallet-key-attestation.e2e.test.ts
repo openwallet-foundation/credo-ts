@@ -7,6 +7,7 @@ import {
   Mdoc,
   MdocRecord,
   SdJwtVcRecord,
+  TypedArrayEncoder,
   utils,
   type X509Certificate,
 } from '@credo-ts/core'
@@ -434,6 +435,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       credentialBindingResolver: async () => ({
         method: 'attestation',
         keyAttestationJwt: await generateKeyAttestation(),
+        keys: attestedKeys,
       }),
     })
 
@@ -455,6 +457,82 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
         attestedKeys[credentialIndex].fingerprint
       )
     })
+  })
+
+  it('signs with the wallet attestation key and attested keys the app passes, so the attestations need no KMS key ids', async () => {
+    const createKmsKey = async () =>
+      Kms.PublicJwk.fromKmsKey(await holder.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } }))
+    const instanceKey = await createKmsKey()
+    // The issuer in this test expects 10 attested keys
+    const keys = await Promise.all(Array.from({ length: 10 }, createKmsKey))
+    const walletProvider = new Openid4vciWalletProvider({ callbacks: getOid4vcCallbacks(holder.agent.context) })
+    const walletProviderSigner = {
+      method: 'x5c' as const,
+      alg: Kms.KnownJwaSignatureAlgorithms.ES256,
+      x5c: [walletProviderCertificate.toString('base64url')],
+      kid: walletProviderCertificate.publicJwk.keyId,
+    }
+    const walletAttestationJwtWithoutKid = await walletProvider.createWalletAttestationJwt({
+      clientId: 'wallet',
+      confirmation: { jwk: instanceKey.toJson({ includeKid: false }) as Jwk },
+      issuer: 'https://wallet-provider.com',
+      signer: walletProviderSigner,
+      walletName: 'Credo Wallet',
+      expiresAt: utils.addSecondsToDate(new Date(), 300),
+    })
+    const keyAttestationJwt = await walletProvider.createKeyAttestationJwt({
+      attestedKeys: keys.map((key) => key.toJson({ includeKid: false }) as Jwk),
+      signer: walletProviderSigner,
+      use: 'proof_type.jwt',
+      keyStorage: highLevels,
+      userAuthentication: highLevels,
+      expiresAt: utils.addSecondsToDate(new Date(), 300),
+    })
+
+    const { issuanceSession, credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
+      issuerId: issuerRecord.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      authorization: { requireDpop: true, requireWalletAttestation: true },
+    })
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+    const sign = vi.spyOn(holder.agent.kms, 'sign')
+    const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
+      resolvedCredentialOffer,
+      walletAttestationJwt: walletAttestationJwtWithoutKid,
+      walletAttestationKey: instanceKey,
+      clientId: 'wallet',
+    })
+    expect(tokenResponse.dpop?.jwk.keyId).toEqual(instanceKey.keyId)
+    expect(tokenResponse.dpop?.jwk.kmsBackend).toEqual(instanceKey.kmsBackend)
+
+    const credentialResponse = await holder.agent.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponse,
+      clientId: 'wallet',
+      credentialBindingResolver: async () => ({ method: 'attestation', keyAttestationJwt, keys }),
+    })
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.Completed,
+      issuanceSessionId: issuanceSession.id,
+    })
+
+    // The DPoP proofs are signed with the instance key, the credential request proof with the first attested key
+    const signedWith = sign.mock.calls.map(([{ keyId, backend }]) => ({ keyId, backend }))
+    expect(signedWith).toContainEqual({ keyId: instanceKey.keyId, backend: instanceKey.kmsBackend })
+    expect(signedWith).toContainEqual({ keyId: keys[0].keyId, backend: keys[0].kmsBackend })
+    // No KMS key id in what the holder signed and sent
+    const signedData = sign.mock.calls
+      .flatMap(([{ data }]) => TypedArrayEncoder.toUtf8String(data).split('.'))
+      .map((part) => TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64Url(part)))
+      .join('\n')
+    for (const key of [instanceKey, ...keys]) expect(signedData).not.toContain(key.keyId)
+
+    const [credential] = credentialResponse.credentials
+    expect(credential.record.credentialInstances).toMatchObject(
+      keys.map((key) => ({ kmsKeyId: key.keyId, kmsBackend: key.kmsBackend }))
+    )
   })
 
   it('issues when the attested level is stronger than the required level (high satisfies moderate)', async () => {
@@ -487,6 +565,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
           keyStorage: highLevels,
           userAuthentication: highLevels,
         }),
+        keys: attestedKeys,
       }),
     })
 
@@ -530,6 +609,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
             keyStorage: moderateLevels,
             userAuthentication: moderateLevels,
           }),
+          keys: attestedKeys,
         }),
       })
     ).rejects.toThrow('Insufficient key_storage for key attestation')
@@ -572,6 +652,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
         credentialBindingResolver: async () => ({
           method: 'attestation',
           keyAttestationJwt: await generateDidKeyAttestation(),
+          keys: attestedKeys,
         }),
       })
     ).rejects.toThrow('Error verifying key attestation jwt')
@@ -608,6 +689,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       credentialBindingResolver: async ({ cNonce }) => ({
         method: 'attestation',
         keyAttestationJwt: await generateKeyAttestation(cNonce),
+        keys: attestedKeys,
       }),
     })
 
@@ -717,6 +799,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       credentialBindingResolver: async () => ({
         method: 'attestation',
         keyAttestationJwt: await generateKeyAttestation(),
+        keys: attestedKeys,
       }),
     })
 
@@ -854,6 +937,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       credentialBindingResolver: async () => ({
         method: 'attestation',
         keyAttestationJwt: await generateKeyAttestation(),
+        keys: attestedKeys,
       }),
     })
 
@@ -1373,6 +1457,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       credentialBindingResolver: async () => ({
         method: 'attestation',
         keyAttestationJwt: await generateKeyAttestation(),
+        keys: attestedKeys,
       }),
     })
     expect(credentials.deferredCredentials).toHaveLength(1)
@@ -1439,6 +1524,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
         credentialBindingResolver: async () => ({
           method: 'attestation',
           keyAttestationJwt: await generateKeyAttestation(),
+          keys: attestedKeys,
         }),
       })
     ).rejects.toThrow("jwt 'iss' does not match expected value")

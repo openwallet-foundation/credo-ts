@@ -176,7 +176,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     const idpSignJwt: SignJwtCallback = async (_signer, { header, payload }) => {
       const jwsService = issuer.agent.dependencyManager.resolve(JwsService)
       const compact = await jwsService.createJwsCompact(issuer.agent.context, {
-        keyId: idpServerKey.keyId,
+        key: { keyId: idpServerKey.keyId },
         payload: JwtPayload.fromJson(payload),
         protectedHeaderOptions: {
           ...header,
@@ -317,7 +317,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       const accessToken = await issuer.agent.dependencyManager
         .resolve(JwsService)
         .createJwsCompact(issuer.agent.context, {
-          keyId: idpServerKey.keyId,
+          key: { keyId: idpServerKey.keyId },
           payload: JwtPayload.fromJson({
             iss: 'http://localhost:4747',
             aud: idpClientId,
@@ -371,7 +371,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         {
           type: 'chained',
           issuer: 'http://localhost:4747',
-          dpop: { requireServerSupport: true },
+          dpop: { policy: 'required' },
           clientAuthentication: {
             type: 'clientSecret',
             clientId: idpClientId,
@@ -517,7 +517,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     const idpSignJwt: SignJwtCallback = async (_signer, { header, payload }) => {
       const jwsService = issuer.agent.dependencyManager.resolve(JwsService)
       const compact = await jwsService.createJwsCompact(issuer.agent.context, {
-        keyId: idpServerKey.keyId,
+        key: { keyId: idpServerKey.keyId },
         payload: JwtPayload.fromJson(payload),
         protectedHeaderOptions: {
           ...header,
@@ -1644,7 +1644,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           authorizationServerConfigs: [
             createDpopConfig({
               issuer: upstreamIssuer,
-              dpop: { requireServerSupport: requireDpop },
+              dpop: { policy: requireDpop ? 'required' : 'preferred' },
               clientAuthentication: {
                 type: 'clientSecret',
                 clientId: 'upstream-client',
@@ -1808,6 +1808,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         expect(persistedDpop).toMatchObject({
           keyId: expect.any(String),
           publicJwk: expect.objectContaining({ kty: 'EC' }),
+          kmsBackend: expect.any(String),
           keyGeneratedForSession: true,
         })
         const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
@@ -1910,7 +1911,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         expect(persisted.chainedIdentity?.externalDpop).toBeUndefined()
         expect(createKey).toHaveBeenCalledTimes(1)
         const key = await createKey.mock.results[0].value
-        expect(deleteKey).toHaveBeenCalledExactlyOnceWith({ keyId: key.keyId })
+        expect(deleteKey).toHaveBeenCalledExactlyOnceWith({ keyId: key.keyId, backend: key.backend })
         await expect(dpopAgent.agent.kms.getPublicKey({ keyId: key.keyId })).rejects.toThrow()
       })
 
@@ -1962,7 +1963,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           credentialConfigurationsSupported: sessionIssuer.credentialConfigurationsSupported,
           authorizationServerConfigs: [
             createDpopConfig({
-              dpop: { requireServerSupport: true },
+              dpop: { policy: 'required' },
               scopesMapping: { UniversityDegreeCredential: ['UniversityDegreeCredential'] },
             }),
           ],
@@ -2059,6 +2060,43 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       expect(newSessionOptions.session?.keyId).toBe(rotatedKey.keyId)
     })
 
+    it('does not use DPoP for new sessions when disallowed while existing sessions keep their key', async () => {
+      const issuanceSession = createDpopIssuanceSession()
+      const originalDpop = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
+        createKey: true,
+        issuanceSession,
+        chainedAuthorizationServerConfig: createDpopConfig(),
+        authorizationServerMetadata: upstreamAuthorizationServerMetadata,
+      })
+      if (!originalDpop.session) throw new Error('Expected generated chained DPoP metadata')
+      if (!issuanceSession.chainedIdentity) throw new Error('Expected chained identity metadata')
+      issuanceSession.chainedIdentity.externalDpop = originalDpop.session
+
+      const disabledConfig = createDpopConfig({ dpop: { policy: 'disallowed' } })
+      const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
+      const existingSessionOptions = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
+        issuanceSession,
+        chainedAuthorizationServerConfig: disabledConfig,
+        authorizationServerMetadata: upstreamAuthorizationServerMetadata,
+      })
+      const authorizationRequestOptions = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
+        createKey: true,
+        issuanceSession: createDpopIssuanceSession(),
+        chainedAuthorizationServerConfig: disabledConfig,
+        authorizationServerMetadata: upstreamAuthorizationServerMetadata,
+      })
+      const tokenRequestOptions = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
+        issuanceSession: createDpopIssuanceSession(),
+        chainedAuthorizationServerConfig: disabledConfig,
+        authorizationServerMetadata: upstreamAuthorizationServerMetadata,
+      })
+
+      expect(existingSessionOptions.session?.keyId).toBe(originalDpop.session.keyId)
+      expect(authorizationRequestOptions).toEqual({})
+      expect(tokenRequestOptions).toEqual({})
+      expect(createKey).not.toHaveBeenCalled()
+    })
+
     it('creates a unique chained DPoP key per session and deletes it with that session', async () => {
       const issuanceSessions = [createDpopIssuanceSession(), createDpopIssuanceSession()]
       const dpopOptions = await Promise.all(
@@ -2153,7 +2191,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           issuanceSession: createDpopIssuanceSession(),
           chainedAuthorizationServerConfig: createDpopConfig({
             dpop: {
-              requireServerSupport: false,
+              policy: 'preferred',
               // Upstream only advertises ES256
               signingAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
             },
@@ -2197,7 +2235,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
           createKey: true,
           issuanceSession: createDpopIssuanceSession(),
-          chainedAuthorizationServerConfig: createDpopConfig({ dpop: { requireServerSupport: true } }),
+          chainedAuthorizationServerConfig: createDpopConfig({ dpop: { policy: 'required' } }),
           authorizationServerMetadata: {
             issuer: upstreamAuthorizationServerMetadata.issuer,
             token_endpoint: upstreamAuthorizationServerMetadata.token_endpoint,

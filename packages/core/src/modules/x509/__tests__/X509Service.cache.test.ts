@@ -1,3 +1,4 @@
+import * as x509 from '@peculiar/x509'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { KeyManagementApi, KeyManagementModuleConfig, PublicJwk } from '../../kms'
@@ -88,6 +89,17 @@ describe('X509Service parsed certificate cache', () => {
     expect(second.rawCertificate).toEqual(leaf.rawCertificate)
     expect(second.data.notAfter).toEqual(leaf.data.notAfter)
     expect(X509Service.parseCertificate(agentContext, { encodedCertificate: encoded }).hasKeyId).toBe(false)
+  })
+
+  it('decodes an extension once for all instances of a parsed certificate', async () => {
+    const encoded = (await createRoot('Decoded once')).certificate.toString('base64')
+    const decode = vi.spyOn(x509.ExtensionFactory, 'create')
+    const first = X509Service.parseCertificate(agentContext, { encodedCertificate: encoded })
+    const second = X509Service.parseCertificate(agentContext, { encodedCertificate: encoded })
+
+    expect(first.isCertificateAuthority).toBe(true)
+    expect(second.isCertificateAuthority).toBe(true)
+    expect(decode).toHaveBeenCalledTimes(1)
   })
 
   it('uses trusted certificate instances as they are', async () => {

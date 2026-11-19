@@ -23,7 +23,7 @@ async function resolveSigningKeyFromDidUrl(
   agentContext: AgentContext,
   kid: string,
   { allowedPurposes, didMethodsSupported }: { allowedPurposes?: DidPurpose[]; didMethodsSupported?: string[] }
-): Promise<{ publicJwk: Kms.PublicJwk; keyId: string }> {
+): Promise<Kms.PublicJwk> {
   if (!kid.startsWith('did:')) {
     throw new CredoError(`kid '${kid}' is not a DID. Only dids are supported for kid`)
   }
@@ -38,17 +38,10 @@ async function resolveSigningKeyFromDidUrl(
     throw new CredoError(`DID method '${parsedDid.method}' is not supported by the issuer`)
   }
 
-  const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-  const { didDocument, keys } = await didsApi.resolveCreatedDidDocumentWithKeys(parsedDid.did)
-  const verificationMethod = didDocument.dereferenceKey(kid, allowedPurposes)
-
-  // TODO: we need an util 'getPublicJwkWithSigningKeyIdFromVerificationMethodId'
-  const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-  const keyId =
-    keys?.find(({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${parsedDid.fragment}`)?.kmsKeyId ??
-    publicJwk.legacyKeyId
-
-  return { publicJwk, keyId }
+  const { publicJwk } = await agentContext
+    .resolve(DidsApi)
+    .resolveVerificationMethodFromCreatedDidRecord(kid, allowedPurposes)
+  return publicJwk
 }
 
 /**
@@ -63,9 +56,9 @@ export async function createDidCommSignedAttachment(
   { allowedPurposes, didMethodsSupported }: { allowedPurposes?: DidPurpose[]; didMethodsSupported?: string[] } = {}
 ): Promise<DidCommAttachment> {
   const { alg } = options
-  const { publicJwk, keyId } = options.jwk
-    ? { publicJwk: options.jwk, keyId: options.jwk.keyId }
-    : await resolveSigningKeyFromDidUrl(agentContext, options.kid, { allowedPurposes, didMethodsSupported })
+  const publicJwk =
+    options.jwk ??
+    (await resolveSigningKeyFromDidUrl(agentContext, options.kid, { allowedPurposes, didMethodsSupported }))
 
   if (alg && !publicJwk.supportedSignatureAlgorithms.includes(alg as Kms.KnownJwaSignatureAlgorithm)) {
     throw new CredoError(`jwk ${publicJwk.jwkTypeHumanDescription}, does not support the JWS signature alg '${alg}'`)
@@ -80,7 +73,7 @@ export async function createDidCommSignedAttachment(
 
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
   const jws = await jwsService.createJws(agentContext, {
-    keyId,
+    key: publicJwk,
     header: {},
     payload: new JwtPayload({ additionalClaims: { nonce: data.nonce } }),
     protectedHeaderOptions: {

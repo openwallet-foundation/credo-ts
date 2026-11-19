@@ -3,6 +3,7 @@ import {
   CredoError,
   createRecordEncodingSchema,
   Jwt,
+  type Kms,
   type RecordTags,
   type TagsBase,
   utils,
@@ -56,6 +57,11 @@ export interface OpenId4VcVerificationSessionRecordProps {
    * The version of openid4vp used for the request
    */
   openId4VpVersion: OpenId4VpVersion
+
+  /**
+   * The key the authorization response is encrypted to.
+   */
+  responseEncryptionKey?: Kms.KmsKeyReference
 }
 
 const openId4VcVerificationSessionRecordEncodingSchema = createRecordEncodingSchema({
@@ -67,6 +73,7 @@ const openId4VcVerificationSessionRecordEncodingSchema = createRecordEncodingSch
   authorizationRequestUri: z.string().nullish(),
   authorizationRequestId: z.string().nullish(),
   openId4VpVersion: z.string().nullish(),
+  responseEncryptionKey: zTypedObject<Kms.KmsKeyReference>().nullish(),
   expiresAt: zIsoDate.nullish(),
   authorizationResponsePayload: zTypedObject<OpenId4VpAuthorizationResponsePayload>().nullish(),
   presentationDuringIssuanceSession: z.string().nullish(),
@@ -137,6 +144,11 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
   public openId4VpVersion?: OpenId4VpVersion
 
   /**
+   * The key the authorization response is encrypted to. Not set on sessions created before it was added.
+   */
+  public responseEncryptionKey?: Kms.KmsKeyReference
+
+  /**
    * The time at which the authorization request expires.
    *
    * @since 0.6
@@ -181,6 +193,7 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
       this.authorizationResponsePayload = props.authorizationResponsePayload
       this.expiresAt = props.expiresAt
       this.openId4VpVersion = props.openId4VpVersion
+      this.responseEncryptionKey = props.responseEncryptionKey
 
       this.presentationDuringIssuanceSession = props.presentationDuringIssuanceSession
     }

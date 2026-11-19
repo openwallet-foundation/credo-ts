@@ -1,6 +1,6 @@
 import type { InitConfig } from '@credo-ts/core'
 
-import { Agent } from '@credo-ts/core'
+import { Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
 import { DidCommModule } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { TenantsModule } from '@credo-ts/tenants'
@@ -23,6 +23,7 @@ const agent = new Agent({
       },
     }),
     tenants: new TenantsModule({ sessionAcquireTimeout: 10000 }),
+    cache: new CacheModule({ cache: new InMemoryLruCache({ limit: 500 }) }),
     inMemory: new InMemoryWalletModule(),
   },
 })

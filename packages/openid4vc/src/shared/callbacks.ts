@@ -32,6 +32,7 @@ import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../o
 import type { OpenId4VcVerificationTypes } from './OpenId4VcTrustedIssuersVerificationTypes'
 
 import {
+  type CredoJwtSigner,
   getPublicJwkFromDid,
   supportedResponseEncryptionContentAlgorithms,
   supportedResponseEncryptionKeyAgreementAlgorithms,
@@ -305,7 +306,13 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
   }
 }
 
-export function getOid4vcDecryptJweCallback(agentContext: AgentContext): DecryptJweCallback {
+/**
+ * @param decryptionKeys the KMS key for each published `kid` that decrypts. Another `kid` is used as the KMS key id.
+ */
+export function getOid4vcDecryptJweCallback(
+  agentContext: AgentContext,
+  decryptionKeys: Record<string, Kms.KmsKeyReference> = {}
+): DecryptJweCallback {
   return async (jwe, options) => {
     // TODO: use custom header zod schema to limit which algorithms can be used
     const { header } = decodeJwtHeader({ jwt: jwe })
@@ -323,10 +330,13 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
       }
     }
 
+    const kmsKey = decryptionKeys[kid]
+    if (kmsKey) kid = kmsKey.keyId
+
     // Previously we used the fingerprint as the kid for JARM
     // We try to parse it as fingerprint if it starts with z (base58 encoding)
     // It's not 100%
-    if (kid.startsWith('z')) {
+    if (!kmsKey && kid.startsWith('z')) {
       try {
         const publicJwk = Kms.PublicJwk.fromFingerprint(kid)
         if (publicJwk) kid = publicJwk.legacyKeyId
@@ -349,11 +359,13 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
 
     try {
       const jweService = agentContext.dependencyManager.resolve(JweService)
-      const decrypted = await jweService.decryptJwe(agentContext, { jwe, recipientKeyId: kid })
+      const recipientKey = Kms.PublicJwk.fromUnknown({ ...decryptionJwk, kid })
+      recipientKey.kmsBackend = kmsKey?.kmsBackend
+      const decrypted = await jweService.decryptJwe(agentContext, { jwe, recipientKey })
 
       decryptedPayload = TypedArrayEncoder.toUtf8String(decrypted.data)
     } catch (error) {
-      agentContext.config.logger.error('Error decrypting JWE', {
+      agentContext.config.logger.warn('Error decrypting JWE', {
         error,
       })
       return {
@@ -381,6 +393,8 @@ export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCal
     if (signer.method === 'custom' || signer.method === 'federation') {
       throw new CredoError(`Jwt signer method 'custom' and 'federation' are not supported for jwt signer.`)
     }
+    // The signer is the object Credo created, which carries the backend (see `CredoJwtSigner`)
+    const { kmsBackend } = signer as CredoJwtSigner
 
     if (signer.method === 'x5c') {
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: signer.x5c })
@@ -388,7 +402,7 @@ export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCal
       const jws = await jwsService.createJwsCompact(agentContext, {
         protectedHeaderOptions: { ...header, alg: signer.alg as Kms.KnownJwaSignatureAlgorithm, jwk: undefined },
         payload: JwtPayload.fromJson(payload),
-        keyId: signer.kid ?? leafCertificate.publicJwk.keyId,
+        key: { keyId: signer.kid ?? leafCertificate.publicJwk.keyId, kmsBackend },
       })
 
       return { jwt: jws, signerJwk: leafCertificate.publicJwk.toJson() as Jwk }
@@ -399,21 +413,25 @@ export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCal
       signer.method === 'did'
         ? await getPublicJwkFromDid(agentContext, signer.didUrl)
         : Kms.PublicJwk.fromUnknown(signer.publicJwk)
+    // A `kid` on the signer is the kms key id, which the jwk in the header doesn't include
+    const signingKey = signer.kid ? Kms.PublicJwk.fromUnknown({ ...publicJwk.toJson(), kid: signer.kid }) : publicJwk
+    signingKey.kmsBackend = kmsBackend ?? publicJwk.kmsBackend
 
-    if (!publicJwk.supportedSignatureAlgorithms.includes(signer.alg as Kms.KnownJwaSignatureAlgorithm)) {
-      throw new CredoError(
-        `jwk ${publicJwk.jwkTypeHumanDescription} does not support JWS signature alg '${signer.alg}'`
-      )
-    }
+    // shortcut: oauth2 puts the signer jwk in the access token header, Credo replaces it with the `kid` of the signer
+    // `publicJwk`, as in the JWKS. Remove once identity-common sets the `kid` itself.
+    const isAccessToken = header.typ === 'at+jwt'
 
+    // The KMS checks the alg against the key
     const jwt = await jwsService.createJwsCompact(agentContext, {
       protectedHeaderOptions: {
         ...header,
-        jwk: header.jwk ? publicJwk : undefined,
+        // A `kid` on the jwk would be the KMS key id
+        jwk: header.jwk && !isAccessToken ? publicJwk.toJson({ includeKid: false }) : undefined,
+        kid: isAccessToken ? publicJwk.keyId : header.kid,
         alg: signer.alg as Kms.KnownJwaSignatureAlgorithm,
       },
       payload: JsonEncoder.toUint8Array(payload),
-      keyId: signer.kid ?? publicJwk.keyId,
+      key: signingKey,
     })
 
     return { jwt, signerJwk: publicJwk.toJson() as Jwk }
@@ -426,6 +444,10 @@ export function getOid4vcCallbacks(
     trustedCertificates?: Array<EncodedX509Certificate | X509Certificate>
     isVerifyOpenId4VpAuthorizationRequest?: boolean
     issuanceSession?: OpenId4VcIssuanceSessionRecord
+    /**
+     * The KMS key for each published `kid` that decrypts. Signers carry their own key id and backend.
+     */
+    decryptionKeys?: Record<string, Kms.KmsKeyReference>
   }
 ) {
   const kms = agentContext.resolve(Kms.KeyManagementApi)
@@ -444,7 +466,7 @@ export function getOid4vcCallbacks(
     }),
     fetch: agentContext.config.agentDependencies.fetch,
     encryptJwe: getOid4vcEncryptJweCallback(agentContext),
-    decryptJwe: getOid4vcDecryptJweCallback(agentContext),
+    decryptJwe: getOid4vcDecryptJweCallback(agentContext, options?.decryptionKeys),
     getX509CertificateMetadata: (certificate: string) => {
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: [certificate] })
       return {

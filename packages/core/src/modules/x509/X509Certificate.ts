@@ -1,5 +1,5 @@
-import { AsnParser } from '@peculiar/asn1-schema'
-import { SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
+import { AsnConvert, AsnParser } from '@peculiar/asn1-schema'
+import { Certificate, type Extension, SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
@@ -51,15 +51,23 @@ export enum X509ExtendedKeyUsage {
 export type X509CertificateOptions = {
   publicJwk: PublicJwk
   x509Certificate: x509.X509Certificate
+  parseOptions?: X509ParseOptions
+  extensions?: X509CertificateExtensions
 }
+
+type X509CertificateExtensions = { asn?: Extension[]; decoded: Map<string, x509.Extension[]> }
 
 export class X509Certificate {
   public publicJwk: PublicJwk
   private x509Certificate: x509.X509Certificate
+  private parseOptions?: X509ParseOptions
+  private extensionCache: X509CertificateExtensions
 
   private constructor(options: X509CertificateOptions) {
     this.publicJwk = options.publicJwk
     this.x509Certificate = options.x509Certificate
+    this.parseOptions = options.parseOptions
+    this.extensionCache = options.extensions ?? { decoded: new Map() }
   }
 
   public set keyId(keyId: string) {
@@ -72,6 +80,17 @@ export class X509Certificate {
 
   public get hasKeyId(): boolean {
     return this.publicJwk.hasKeyId
+  }
+
+  /**
+   * The KMS backend that holds the key of `keyId`. Parsed certificates don't have it, as the certificate doesn't contain it.
+   */
+  public set kmsBackend(kmsBackend: string | undefined) {
+    this.publicJwk.kmsBackend = kmsBackend
+  }
+
+  public get kmsBackend(): string | undefined {
+    return this.publicJwk.kmsBackend
   }
 
   public static fromRawCertificate(
@@ -97,6 +116,9 @@ export class X509Certificate {
     return new X509Certificate({
       publicJwk: this.publicJwk.clone(),
       x509Certificate: this.x509Certificate,
+      parseOptions: this.parseOptions,
+      // Shared, so certificates from the parsed certificate cache decode each extension once
+      extensions: this.extensionCache,
     })
   }
 
@@ -108,11 +130,28 @@ export class X509Certificate {
     return new X509Certificate({
       publicJwk,
       x509Certificate: certificate,
+      parseOptions,
     })
   }
 
+  // Undecoded, as peculiar's `extensions` getter fails for all of them when one doesn't decode
+  private getAsnExtensions() {
+    this.extensionCache.asn ??=
+      AsnParser.parse(this.x509Certificate.rawData, Certificate, { berOptions: this.parseOptions }).tbsCertificate
+        .extensions ?? []
+    return this.extensionCache.asn
+  }
+
   private getMatchingExtensions<T = { critical: boolean }>(objectIdentifier: string): Array<T> | undefined {
-    return this.x509Certificate.extensions.filter((e) => e.type === objectIdentifier) as Array<T> | undefined
+    let decoded = this.extensionCache.decoded.get(objectIdentifier)
+    if (!decoded) {
+      decoded = this.getAsnExtensions()
+        .filter((e) => e.extnID === objectIdentifier)
+        .map((e) => x509.ExtensionFactory.create(AsnConvert.serialize(e), { berOptions: this.parseOptions }))
+      this.extensionCache.decoded.set(objectIdentifier, decoded)
+    }
+
+    return decoded as Array<T>
   }
 
   public get rawCertificate() {
@@ -227,7 +266,7 @@ export class X509Certificate {
   }
 
   public get extensions(): ReadonlyArray<{ type: string; critical: boolean }> {
-    return this.x509Certificate.extensions
+    return this.getAsnExtensions().map((e) => ({ type: e.extnID, critical: e.critical }))
   }
 
   /**
@@ -318,16 +357,16 @@ export class X509Certificate {
   }
 
   public hasExtension(id: X509ExtensionIdentifier | string): boolean {
-    return this.x509Certificate.extensions.some((extension) => extension.type === id)
+    return this.getAsnExtensions().some((extension) => extension.extnID === id)
   }
 
   public isExtensionCritical(id: X509ExtensionIdentifier | string): boolean {
-    const extension = this.getMatchingExtensions(id)
+    const extension = this.extensions.find((e) => e.type === id)
     if (!extension) {
       throw new X509Error(`extension with id '${id}' is not found`)
     }
 
-    return !!extension[0].critical
+    return extension.critical
   }
 
   public static async create(options: X509CreateCertificateOptions, webCrypto: CredoWebCrypto) {
@@ -386,6 +425,7 @@ export class X509Certificate {
 
       const certificateInstance = X509Certificate.parseCertificate(certificate)
       if (subjectPublicKey.hasKeyId) certificateInstance.publicJwk.keyId = subjectPublicKey.keyId
+      certificateInstance.kmsBackend = subjectPublicKey.kmsBackend
       return certificateInstance
     }
 
@@ -411,6 +451,7 @@ export class X509Certificate {
 
     const certificateInstance = X509Certificate.parseCertificate(certificate)
     if (subjectPublicKey.hasKeyId) certificateInstance.publicJwk.keyId = subjectPublicKey.keyId
+    certificateInstance.kmsBackend = subjectPublicKey.kmsBackend
     return certificateInstance
   }
 
@@ -477,11 +518,10 @@ export class X509Certificate {
    * point to `candidate`. Chain validation uses this to skip candidates before it verifies the signature.
    */
   public isPossiblyIssuedBy(candidate: X509Certificate): boolean {
-    const issuer = candidate.x509Certificate
-    if (issuer.subject !== this.x509Certificate.issuer) return false
+    if (candidate.subject !== this.issuer) return false
 
-    const authorityKeyId = this.x509Certificate.getExtension(x509.AuthorityKeyIdentifierExtension)?.keyId
-    const subjectKeyId = issuer.getExtension(x509.SubjectKeyIdentifierExtension)?.keyId
+    const authorityKeyId = this.authorityKeyIdentifier
+    const subjectKeyId = candidate.subjectKeyIdentifier
 
     return !authorityKeyId || !subjectKeyId || authorityKeyId === subjectKeyId
   }

@@ -4,6 +4,7 @@ import {
   getJwkHumanDescription,
   KeyManagementApi,
   KeyManagementError,
+  type KmsKeyReference,
   type KnownJwaSignatureAlgorithm,
   PublicJwk,
 } from '../modules/kms'
@@ -45,16 +46,19 @@ export class JwsService {
       ? X509Service.getLeafCertificate(agentContext, { certificateChain: x5c }).publicJwk
       : undefined
     const jwkInstance = jwk instanceof PublicJwk ? jwk : jwk ? PublicJwk.fromUnknown(jwk) : undefined
-    if (x5cPublicJwk && jwkInstance && !x5cPublicJwk.equals(jwkInstance)) {
-      throw new CredoError('Protected header JWK does not match protected header x5c.')
+    const signerKey = options.key instanceof PublicJwk ? options.key : undefined
+    const [expectedPublicJwk, ...otherKeys] = [signerKey, x5cPublicJwk, jwkInstance].filter((key) => key !== undefined)
+    if (otherKeys.some((key) => !key.equals(expectedPublicJwk))) {
+      throw new CredoError('Protected header x5c or jwk does not match the signing key.')
     }
 
-    // The KMS checks the algorithm and the key against the x5c or jwk header.
+    // The KMS checks the algorithm and the key against the signer key, or the x5c or jwk header.
     const { signature } = await kms.sign({
       algorithm: alg,
       data: TypedArrayEncoder.fromUtf8String(`${base64UrlProtectedHeader}.${base64Payload}`),
-      keyId: options.keyId,
-      expectedPublicJwk: (x5cPublicJwk ?? jwkInstance)?.toJson() ?? null,
+      keyId: options.key.keyId,
+      backend: options.key.kmsBackend,
+      expectedPublicJwk: expectedPublicJwk?.toJson() ?? null,
     })
 
     return {
@@ -66,11 +70,11 @@ export class JwsService {
 
   public async createJws(
     agentContext: AgentContext,
-    { payload, keyId, header, protectedHeaderOptions }: CreateJwsOptions
+    { payload, key, header, protectedHeaderOptions }: CreateJwsOptions
   ): Promise<JwsGeneralFormat> {
     const { base64UrlProtectedHeader, signature, base64Payload } = await this.createJwsBase(agentContext, {
       payload,
-      keyId,
+      key,
       protectedHeaderOptions,
     })
 
@@ -87,11 +91,11 @@ export class JwsService {
    * */
   public async createJwsCompact(
     agentContext: AgentContext,
-    { payload, keyId, protectedHeaderOptions }: CreateCompactJwsOptions
+    { payload, key, protectedHeaderOptions }: CreateCompactJwsOptions
   ): Promise<string> {
     const { base64Payload, base64UrlProtectedHeader, signature } = await this.createJwsBase(agentContext, {
       payload,
-      keyId,
+      key,
       protectedHeaderOptions,
     })
     return `${base64UrlProtectedHeader}.${base64Payload}.${signature}`
@@ -357,7 +361,10 @@ export class JwsService {
 
 export interface CreateJwsOptions {
   payload: Uint8Array | JwtPayload
-  keyId: string
+  /**
+   * The key to sign with. With a `PublicJwk`, the KMS checks that the key that signs has that public key.
+   */
+  key: PublicJwk | KmsKeyReference
   header: Record<string, unknown>
   protectedHeaderOptions: JwsProtectedHeaderOptions
 }
