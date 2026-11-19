@@ -1,5 +1,5 @@
 {
-  "id": "a8178ee5-1f63-4ce2-9e25-5546ba3c59d1",
+  "id": "4bd46e6d-8ecd-4a5c-b9fa-a6738b6d2ca8",
   "prevId": "cfe6c548-b7d5-4749-a098-dfe1e0e49e94",
   "version": "7",
   "dialect": "postgresql",
@@ -128,6 +128,27 @@
           "isUnique": false,
           "concurrently": false,
           "method": "gin",
+          "with": {}
+        },
+        "did_did_idx": {
+          "name": "did_did_idx",
+          "columns": [
+            {
+              "expression": "context_correlation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "did",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
           "with": {}
         }
       },

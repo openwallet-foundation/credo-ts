@@ -27,7 +27,8 @@ export const did = pgTable(
   (table) => [
     ...postgresBaseRecordIndexes(table, 'did'),
 
-    // Used to find the did of the keys of each received message
+    // Used to find the did of the keys of each received message, and the did record of each did
     index('did_recipient_key_fingerprints_idx').using('gin', table.recipientKeyFingerprints.op('jsonb_path_ops')),
+    index('did_did_idx').on(table.contextCorrelationId, table.did),
   ]
 )

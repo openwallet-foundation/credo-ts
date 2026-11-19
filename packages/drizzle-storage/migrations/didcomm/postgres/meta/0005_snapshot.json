@@ -1,5 +1,5 @@
 {
-  "id": "9642bac2-f7db-42cd-9db9-f50a44fe9617",
+  "id": "10477bd5-6aa5-4b04-a3f5-04623710f858",
   "prevId": "845834c6-8eff-434b-8797-c2953d3fb501",
   "version": "7",
   "dialect": "postgresql",
@@ -727,6 +727,42 @@
           "isUnique": false,
           "concurrently": false,
           "method": "gin",
+          "with": {}
+        },
+        "didcommMediation_recipient_dids_idx": {
+          "name": "didcommMediation_recipient_dids_idx",
+          "columns": [
+            {
+              "expression": "recipient_dids",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        },
+        "didcommMediation_connection_id_idx": {
+          "name": "didcommMediation_connection_id_idx",
+          "columns": [
+            {
+              "expression": "context_correlation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "connection_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
           "with": {}
         }
       },

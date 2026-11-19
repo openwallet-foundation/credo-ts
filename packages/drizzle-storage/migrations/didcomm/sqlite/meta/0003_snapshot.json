@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "d57920ef-7dd9-4417-9725-c4f94de3d4e1",
+  "id": "476c9dc4-253c-490c-a9ce-def283bdd6d5",
   "prevId": "6cfac836-2c30-4911-86b4-fc93d8b5472e",
   "tables": {
     "DidcommBasicMessage": {
@@ -742,7 +742,13 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "didcommMediation_connection_id_idx": {
+          "name": "didcommMediation_connection_id_idx",
+          "columns": ["context_correlation_id", "connection_id"],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "didcommMediation_fk_context": {
           "name": "didcommMediation_fk_context",
