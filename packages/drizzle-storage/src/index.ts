@@ -4,6 +4,7 @@ export {
   BaseDrizzleRecordAdapter,
   type DrizzleAdapterRecordValues,
   type DrizzleAdapterValues,
+  sortAdaptersByForeignKeys,
 } from './adapter'
 export {
   applyReactNativeMigrations,

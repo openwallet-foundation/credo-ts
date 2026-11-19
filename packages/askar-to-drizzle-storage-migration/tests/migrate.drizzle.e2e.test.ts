@@ -15,6 +15,7 @@ import {
   MdocRecord,
   SdJwtVcRecord,
   TypedArrayEncoder,
+  utils,
   W3cCredentialRecord,
   W3cJsonLdVerifiableCredential,
   W3cV2CredentialRecord,
@@ -34,6 +35,16 @@ import { customDocumentLoader } from '../../core/src/modules/vc/linked-data-proo
 import { Ed25519Signature2018Fixtures } from '../../core/src/modules/vc/linked-data-proofs/__tests__/fixtures'
 import { CredoEs256DidJwkJwtVc as CredoEs256DidJwkSdJwtVc } from '../../core/src/modules/vc/sd-jwt-vc/__tests__/fixtures/credo-sd-jwt-vc'
 import testLogger from '../../core/tests/logger'
+import {
+  DidCommConnectionRecord,
+  DidCommConnectionRepository,
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
+  DidCommMediationRecord,
+  DidCommMediationRepository,
+  DidCommMediationRole,
+  DidCommMediationState,
+} from '../../didcomm/src'
 import { anoncredsBundle } from '../../drizzle-storage/src/anoncreds/bundle'
 import { coreBundle } from '../../drizzle-storage/src/core/bundle'
 import { didcommBundle } from '../../drizzle-storage/src/didcomm/bundle'
@@ -47,6 +58,30 @@ import { TenantAgent, TenantsModule } from '../../tenants/src'
 import { AskarToDrizzleStorageMigrator } from '../src'
 
 async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
+  // The mediation record references the connection and is saved first on purpose. The migration
+  // must insert the connection first, whatever the order in which Askar returns the records.
+  const connectionId = utils.uuid()
+  await agent.dependencyManager.resolve(DidCommMediationRepository).save(
+    agent.context,
+    new DidCommMediationRecord({
+      role: DidCommMediationRole.Mediator,
+      state: DidCommMediationState.Granted,
+      connectionId,
+      threadId: 'mediation-thread',
+      recipientKeys: ['recipient-key'],
+      routingKeys: [],
+    })
+  )
+  await agent.dependencyManager.resolve(DidCommConnectionRepository).save(
+    agent.context,
+    new DidCommConnectionRecord({
+      id: connectionId,
+      role: DidCommDidExchangeRole.Responder,
+      state: DidCommDidExchangeState.Completed,
+      threadId: 'connection-thread',
+    })
+  )
+
   await agent.genericRecords.save({
     content: {
       hey: 'there',
@@ -110,6 +145,12 @@ async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
 }
 
 async function expectDatabaseWithRecords(agent: Agent | TenantAgent) {
+  const [mediationRecord] = await agent.dependencyManager.resolve(DidCommMediationRepository).getAll(agent.context)
+  expect(mediationRecord).toMatchObject({ threadId: 'mediation-thread' })
+  await expect(
+    agent.dependencyManager.resolve(DidCommConnectionRepository).getAll(agent.context)
+  ).resolves.toMatchObject([{ id: mediationRecord.connectionId, threadId: 'connection-thread' }])
+
   await expect(agent.genericRecords.getAll()).resolves.toMatchObject([
     {
       content: {

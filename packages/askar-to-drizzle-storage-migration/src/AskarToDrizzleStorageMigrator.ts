@@ -11,10 +11,29 @@ import {
   LogLevel,
   StorageVersionRecord,
 } from '@credo-ts/core'
-import { BaseDrizzleRecordAdapter, DrizzleStorageModule, DrizzleStorageModuleConfig } from '@credo-ts/drizzle-storage'
+import {
+  BaseDrizzleRecordAdapter,
+  DrizzleStorageModule,
+  DrizzleStorageModuleConfig,
+  sortAdaptersByForeignKeys,
+} from '@credo-ts/drizzle-storage'
 import { TenantsModule } from '@credo-ts/tenants'
-import { EntryList, EntryListHandle, ScanHandle } from '@openwallet-foundation/askar-shared'
+import {
+  type Askar,
+  EntryList,
+  EntryListHandle,
+  type EntryObject,
+  ScanHandle,
+  type Store,
+} from '@openwallet-foundation/askar-shared'
 import { AskarToDrizzleStorageMigrationError } from './errors/AskarToDrizzleStorageMigrationError'
+
+interface ScanOptions {
+  askar: Askar
+  store: Store
+  profile?: string
+  askarContext: AgentContext
+}
 
 /**
  * Migration class to move storage from Askar to Drizzle. Note that this does not migrate
@@ -62,7 +81,7 @@ export class AskarToDrizzleStorageMigrator {
   })
 
   private drizzleConfig = this.drizzleAgent.context.resolve(DrizzleStorageModuleConfig)
-  private drizzleAdapters = this.drizzleConfig.adapters
+  private drizzleAdapters = sortAdaptersByForeignKeys(this.drizzleConfig.adapters)
 
   private constructor(
     private drizzleModule: DrizzleStorageModule,
@@ -240,101 +259,72 @@ export class AskarToDrizzleStorageMigrator {
       // but for tenants agents we need to make sure a row exists in the `Context` table
       await this.drizzleModule.onProvisionContext(drizzleContext)
 
-      let scanHandle: ScanHandle | undefined
-      let entryListHandle: EntryListHandle | null = null
+      const scanOptions = { askar, store, profile, askarContext }
+
+      // The record types are migrated one at a time, in the order of the foreign keys between their
+      // tables, so that a record never references a record that is not inserted yet. The order of a
+      // scan over all records depends on the database and can put a child record before its parent.
       let migratedRecordCount = 0
-      let skippedRecordCount = 0
-      const skippedRecordTypes: string[] = []
-      try {
+      for (const adapter of this.drizzleAdapters) {
+        const recordType = adapter.recordClass.type
         this.logger.debug(
-          `Initializing retrieval of records from askar storage for context '${askarContext.contextCorrelationId}'`
+          `Migrating records of type '${recordType}' for context '${askarContext.contextCorrelationId}'`
         )
-        scanHandle = await askar.scanStart({
-          storeHandle: store.handle,
-          profile,
-        })
-        while (true) {
-          this.logger.debug(
-            `Fetching batch of records from askar storage for context '${askarContext.contextCorrelationId}'`
-          )
-          entryListHandle = await askar.scanNext({ scanHandle })
 
-          // We reached the end of the scan
-          if (!entryListHandle) {
+        const recordCount = await this.scanRecords({ ...scanOptions, category: recordType }, async (entryObject) => {
+          const record = recordToInstance(entryObject, adapter.recordClass)
+
+          if (record instanceof StorageVersionRecord && record.id === StorageVersionRecord.storageVersionRecordId) {
             this.logger.debug(
-              `No records returned in batch from askar storage. No records left to migrate for context '${askarContext.contextCorrelationId}'`
+              `Updating record '${record.id}' with type '${record.type}' into drizzle storage for context '${askarContext.contextCorrelationId}'`
             )
-            break
+            // A new storage version record is created when we first initialize the agent
+            // so in this case we need to update the record
+            await adapter.update(drizzleContext, record)
+          } else {
+            this.logger.debug(
+              `Inserting record '${record.id}' with type '${record.type}' into drizzle storage for context '${askarContext.contextCorrelationId}'`
+            )
+            await adapter.insert(drizzleContext, record)
           }
+        })
 
-          const list = new EntryList({ handle: entryListHandle })
-          this.logger.debug(
-            `Retrieved batch of '${list.length}' records from askar storage for context '${askarContext.contextCorrelationId}'`
+        this.logger.debug(
+          `Migrated '${recordCount}' records of type '${recordType}' for context '${askarContext.contextCorrelationId}'`
+        )
+        migratedRecordCount += recordCount
+      }
+
+      // The scans above only return records of types with an adapter. A count of all records
+      // shows whether the store holds records of other types.
+      const totalRecordCount = await this.countRecords(scanOptions)
+      const skippedRecordCount = totalRecordCount - migratedRecordCount
+      const skippedRecordTypes = new Set<string>()
+      if (skippedRecordCount > 0) {
+        await this.scanRecords(scanOptions, async (entryObject) => {
+          if (!this.getAdapterForRecordType(entryObject.category)) skippedRecordTypes.add(entryObject.category)
+        })
+        const recordTypes = [...skippedRecordTypes].map((recordType) => `'${recordType}'`).join(', ')
+
+        if (!this.skipMigrationforMissingAdapter) {
+          throw new AskarToDrizzleStorageMigrationError(
+            `Could not find a registered drizzle adapter for record types ${recordTypes}. Make sure to register the record types in the DrizzleStorageModule.`
           )
-          for (let index = 0; index < list.length; index++) {
-            const entry = list.getEntryByIndex(index)
-            const entryObject = entry.toJson()
-            this.logger.trace(
-              `Retrieved record with index '${index}', id '${entryObject.name}' and type '${entryObject.category}' from batch for context '${askarContext.contextCorrelationId}'`
-            )
-
-            const adapter = this.getAdapterForRecordType(entryObject.category)
-            if (!adapter) {
-              if (this.skipMigrationforMissingAdapter) {
-                this.logger.info(
-                  `Skippping migration of record '${entry.name}' with type '${entry.category}' due to missing drizzle adapter for context '${askarContext.contextCorrelationId}'.`
-                )
-                skippedRecordCount++
-                skippedRecordTypes.push(entryObject.category)
-                continue
-              }
-
-              throw new AskarToDrizzleStorageMigrationError(
-                `Could not find a registered drizzle adapter for record type '${entry.category}'. Make sure to register the record type in the DrizzleStorageModule.`
-              )
-            }
-            const record = recordToInstance(entryObject, adapter.recordClass)
-
-            if (record instanceof StorageVersionRecord && record.id === StorageVersionRecord.storageVersionRecordId) {
-              this.logger.debug(
-                `Updating record '${record.id}' with type '${record.type}' into drizzle storage for context '${askarContext.contextCorrelationId}'`
-              )
-              // A new storage version record is created when we first initialize the agent
-              // so in this case we need to update the record
-              await adapter.update(drizzleContext, record)
-            } else {
-              this.logger.debug(
-                `Inserting record '${record.id}' with type '${record.type}' into drizzle storage for context '${askarContext.contextCorrelationId}'`
-              )
-              await adapter.insert(drizzleContext, record)
-            }
-
-            migratedRecordCount++
-          }
-
-          this.logger.debug(`Processed all records from batch for context '${askarContext.contextCorrelationId}'`)
-
-          // Free and clear handle
-          entryListHandle.free()
-          entryListHandle = null
         }
 
-        this.logger.debug(
-          `Succesfully migrated '${migratedRecordCount}' records from Askar to Drizzle for context '${askarContext.contextCorrelationId}'`,
-          {
-            migratedRecordCount,
-            skippedRecordCount,
-            skippedRecordTypes,
-          }
+        this.logger.info(
+          `Skipped migration of '${skippedRecordCount}' records with types ${recordTypes} due to missing drizzle adapter for context '${askarContext.contextCorrelationId}'.`
         )
-      } finally {
-        // Free entry list handle if we didn't free it yet (in case of error)
-        entryListHandle?.free()
-        entryListHandle = null
-
-        scanHandle?.free()
-        scanHandle = undefined
       }
+
+      this.logger.debug(
+        `Succesfully migrated '${migratedRecordCount}' records from Askar to Drizzle for context '${askarContext.contextCorrelationId}'`,
+        {
+          migratedRecordCount,
+          skippedRecordCount,
+          skippedRecordTypes: [...skippedRecordTypes],
+        }
+      )
     } catch (error) {
       this.logger.error(`Migration failed for context '${askarContext.contextCorrelationId}'. ${error.message}`)
       throw new AskarToDrizzleStorageMigrationError(
@@ -343,6 +333,68 @@ export class AskarToDrizzleStorageMigrator {
           cause: error,
         }
       )
+    }
+  }
+
+  /**
+   * Scans the records of one category, or of all categories, and calls `handleEntry` for each record.
+   * Returns the number of records.
+   */
+  private async scanRecords(
+    { askar, store, profile, askarContext, category }: ScanOptions & { category?: string },
+    handleEntry: (entryObject: EntryObject) => Promise<void>
+  ): Promise<number> {
+    let scanHandle: ScanHandle | undefined
+    let entryListHandle: EntryListHandle | null = null
+    let recordCount = 0
+
+    try {
+      scanHandle = await askar.scanStart({
+        storeHandle: store.handle,
+        profile,
+        category,
+      })
+      while (true) {
+        entryListHandle = await askar.scanNext({ scanHandle })
+
+        // We reached the end of the scan
+        if (!entryListHandle) break
+
+        const list = new EntryList({ handle: entryListHandle })
+        this.logger.debug(
+          `Retrieved batch of '${list.length}' records from askar storage for context '${askarContext.contextCorrelationId}'`
+        )
+        for (let index = 0; index < list.length; index++) {
+          const entryObject = list.getEntryByIndex(index).toJson()
+          this.logger.trace(
+            `Retrieved record with index '${index}', id '${entryObject.name}' and type '${entryObject.category}' from batch for context '${askarContext.contextCorrelationId}'`
+          )
+          await handleEntry(entryObject)
+          recordCount++
+        }
+
+        // Free and clear handle
+        entryListHandle.free()
+        entryListHandle = null
+      }
+
+      return recordCount
+    } finally {
+      // Free entry list handle if we didn't free it yet (in case of error)
+      entryListHandle?.free()
+      entryListHandle = null
+
+      scanHandle?.free()
+      scanHandle = undefined
+    }
+  }
+
+  private async countRecords({ askar, store, profile }: ScanOptions): Promise<number> {
+    const sessionHandle = await askar.sessionStart({ storeHandle: store.handle, profile, asTransaction: false })
+    try {
+      return await askar.sessionCount({ sessionHandle })
+    } finally {
+      await askar.sessionClose({ sessionHandle, commit: false })
     }
   }
 
