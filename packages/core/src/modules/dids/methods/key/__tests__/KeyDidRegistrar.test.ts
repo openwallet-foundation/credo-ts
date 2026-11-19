@@ -111,6 +111,18 @@ describe('DidRegistrar', () => {
       })
     })
 
+    it('should delete the created key when creating the did fails', async () => {
+      mockFunction(didRepositoryMock.save).mockRejectedValueOnce(new Error('save failed'))
+
+      const result = await keyDidRegistrar.create(agentContext, {
+        method: 'key',
+        options: { createKey: { keyId: 'did-key-rollback', type: { kty: 'OKP', crv: 'Ed25519' } } },
+      })
+
+      expect(result.didState).toEqual({ state: 'failed', reason: 'unknownError: save failed' })
+      await expect(kms.getPublicKey({ keyId: 'did-key-rollback' })).rejects.toThrow('not found')
+    })
+
     it('should return an error state when calling update', async () => {
       const result = await keyDidRegistrar.update()
 
@@ -120,19 +132,6 @@ describe('DidRegistrar', () => {
         didState: {
           state: 'failed',
           reason: 'notSupported: cannot update did:key did',
-        },
-      })
-    })
-
-    it('should return an error state when calling deactivate', async () => {
-      const result = await keyDidRegistrar.deactivate()
-
-      expect(result).toEqual({
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'failed',
-          reason: 'notSupported: cannot deactivate did:key did',
         },
       })
     })

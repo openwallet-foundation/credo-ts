@@ -3,8 +3,9 @@ import { InjectionSymbols } from '../../../constants'
 import type { Logger } from '../../../logger'
 import { inject, injectable } from '../../../plugins'
 import { DidsModuleConfig } from '../DidsModuleConfig'
-import type { DidRegistrar } from '../domain/DidRegistrar'
+import { type DidDeactivationSupport, type DidRegistrar, deleteDidKeys } from '../domain/DidRegistrar'
 import { tryParseDid } from '../domain/parse'
+import { DidRecordStatus, DidRepository } from '../repository'
 import type {
   DidCreateOptions,
   DidCreateResult,
@@ -120,7 +121,12 @@ export class DidRegistrarService {
     // Invalidate cache before updating
     await this.didResolverService.invalidateCacheForDid(agentContext, options.did)
 
-    return await registrar.update(agentContext, options)
+    const result = await registrar.update(agentContext, options)
+    if (options.deleteRemovedKeys && result.didState.state === 'finished' && result.removedKeys) {
+      await deleteDidKeys(agentContext, result.removedKeys, `after updating ${options.did}`)
+    }
+
+    return result
   }
 
   public async deactivate(agentContext: AgentContext, options: DidDeactivateOptions): Promise<DidDeactivateResult> {
@@ -160,7 +166,68 @@ export class DidRegistrarService {
     // Invalidate cache before deactivating
     await this.didResolverService.invalidateCacheForDid(agentContext, options.did)
 
+    // If deactivation is not supported by method, we only deactivate the
+    // local did record
+    if (registrar.deactivationSupport === 'notSupportedByMethod') {
+      return await this.deactivateDidRecord(agentContext, options.did)
+    }
+
+    if (!registrar.deactivate) {
+      return {
+        ...errorResult,
+        didState: {
+          ...errorResult.didState,
+          reason: `notSupported: registrar for did method '${method}' doesn't support deactivation`,
+        },
+      }
+    }
+
     return await registrar.deactivate(agentContext, options)
+  }
+
+  /**
+   * Deactivates a did whose method has no deactivation, such as did:key, by only setting the status of its created did record.
+   */
+  private async deactivateDidRecord(agentContext: AgentContext, did: string): Promise<DidDeactivateResult> {
+    const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+    const didRecord = await didRepository.findCreatedDid(agentContext, did)
+    if (!didRecord) {
+      return {
+        didDocumentMetadata: {},
+        didRegistrationMetadata: {},
+        didState: { state: 'failed', did, reason: `notFound: created did '${did}' not found` },
+      }
+    }
+
+    let didDocument = didRecord.didDocument
+    if (!didDocument) {
+      const resolutionResult = await this.didResolverService.resolve(agentContext, did)
+      if (!resolutionResult.didDocument) {
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: { state: 'failed', did, reason: `notFound: ${resolutionResult.didResolutionMetadata.message}` },
+        }
+      }
+      didDocument = resolutionResult.didDocument
+    }
+
+    didRecord.status = DidRecordStatus.Deactivated
+    await didRepository.update(agentContext, didRecord)
+
+    return {
+      didDocumentMetadata: {},
+      didRegistrationMetadata: {},
+      didState: { state: 'finished', did, didDocument },
+    }
+  }
+
+  /**
+   * Whether the did can be deactivated. `notSupportedByRegistrar` when no registrar supports the did method.
+   */
+  public getDeactivationSupport(did: string): DidDeactivationSupport {
+    const method = tryParseDid(did)?.method
+    return (method && this.findRegistrarForMethod(method)?.deactivationSupport) || 'notSupportedByRegistrar'
   }
 
   private findRegistrarForMethod(method: string): DidRegistrar | null {

@@ -701,7 +701,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       credentialBindingResolver: () => ({
         method: 'did',
         didUrls: [holder1.verificationMethod.id],
-        createdForCredential: true,
+        deleteWithRecord: true,
       }),
     })
     const [deferred] = credentialResponse.deferredCredentials

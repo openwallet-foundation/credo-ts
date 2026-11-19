@@ -1,7 +1,7 @@
 import type { AnonCredsCredentialDefinition, AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
 import {
-  DidRepository,
+  DidsApi,
   DidsModuleConfig,
   MultiBaseEncoder,
   MultiHashEncoder,
@@ -27,9 +27,9 @@ import {
 
 const mockResolveResource = vi.fn()
 
-const mockFindCreatedDid = vi.fn()
-const mockDidsRepository = {
-  findCreatedDid: mockFindCreatedDid,
+const mockGetActiveCreatedDid = vi.fn()
+const mockDidsApi = {
+  getActiveCreatedDid: mockGetActiveCreatedDid,
 }
 
 const mockDataIntegrityVerifyProof = vi.fn()
@@ -46,7 +46,7 @@ describe('WebVhAnonCredsRegistry', () => {
   beforeEach(() => {
     // Reset the mocks before each test
     mockResolveResource.mockReset()
-    mockFindCreatedDid.mockReset()
+    mockGetActiveCreatedDid.mockReset()
     mockDataIntegrityVerifyProof.mockReset()
     mockDataIntegrityCreateProofOrThrow.mockReset()
 
@@ -69,7 +69,7 @@ describe('WebVhAnonCredsRegistry', () => {
       agentConfig,
       registerInstances: [
         [W3cDataIntegrityApi, mockDataIntegrityApi],
-        [DidRepository, mockDidsRepository],
+        [DidsApi, mockDidsApi],
         [DidsModuleConfig, new DidsModuleConfig({ resolvers: [webvhResolver] })],
       ],
     })
@@ -344,7 +344,7 @@ describe('WebVhAnonCredsRegistry', () => {
       }
 
       mockResolveResource.mockResolvedValue(mockResolverResponse)
-      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+      mockGetActiveCreatedDid.mockResolvedValue(mockResolvedDidRecord)
       const schema = mockSchemaResource.content
 
       const result = await registry.registerSchema(agentContext, { schema })
@@ -397,7 +397,7 @@ describe('WebVhAnonCredsRegistry', () => {
       }
 
       mockResolveResource.mockResolvedValue(mockResolverResponse)
-      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+      mockGetActiveCreatedDid.mockResolvedValue(mockResolvedDidRecord)
       const schema = mockSchemaResource.content
 
       const result = await registry.registerSchema(agentContext, {
@@ -475,7 +475,7 @@ describe('WebVhAnonCredsRegistry', () => {
       }
 
       mockResolveResource.mockResolvedValue(mockResolverResponse)
-      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+      mockGetActiveCreatedDid.mockResolvedValue(mockResolvedDidRecord)
 
       const result = await registry.registerCredentialDefinition(agentContext, { credentialDefinition, options: {} })
       const credDef = await registry.getCredentialDefinition(agentContext, mockCredDefResource.id)
@@ -513,7 +513,7 @@ describe('WebVhAnonCredsRegistry', () => {
       }
 
       mockResolveResource.mockResolvedValue(mockResolverResponse)
-      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+      mockGetActiveCreatedDid.mockResolvedValue(mockResolvedDidRecord)
 
       const result = await registry.registerCredentialDefinition(agentContext, { credentialDefinition, options: {} })
       const credDef = await registry.getCredentialDefinition(agentContext, mockCredDefResourceWithExtraMetadata.id)
@@ -582,7 +582,7 @@ describe('WebVhAnonCredsRegistry', () => {
       }
 
       mockResolveResource.mockResolvedValue(mockResolverResponse)
-      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+      mockGetActiveCreatedDid.mockResolvedValue(mockResolvedDidRecord)
 
       const result = await registry.registerRevocationRegistryDefinition(agentContext, {
         revocationRegistryDefinition,
@@ -612,7 +612,7 @@ describe('WebVhAnonCredsRegistry', () => {
       // Remove timestamp from validations
       const { timestamp: _, ...revocationStatusList } = mockRegRevEntryResource.content
 
-      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+      mockGetActiveCreatedDid.mockResolvedValue(mockResolvedDidRecord)
 
       const result = await registry.registerRevocationStatusList(agentContext, {
         revocationStatusList,

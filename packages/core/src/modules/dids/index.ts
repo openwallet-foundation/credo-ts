@@ -1,3 +1,4 @@
+export * from './DidDeactivatedError'
 export * from './DidsApi'
 export * from './DidsApiOptions'
 export * from './DidsModule'

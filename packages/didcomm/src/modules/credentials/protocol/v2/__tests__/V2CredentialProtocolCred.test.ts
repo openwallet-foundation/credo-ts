@@ -775,6 +775,10 @@ describe('credentialProtocol', () => {
   })
 
   describe('deleteCredential', () => {
+    beforeEach(() => {
+      mockFunction(testCredentialFormatService.deleteCredentialById).mockResolvedValue(undefined)
+    })
+
     it('should call delete from repository', async () => {
       const credentialExchangeRecord = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credentialExchangeRecord))

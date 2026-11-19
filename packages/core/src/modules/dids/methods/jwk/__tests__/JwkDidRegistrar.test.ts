@@ -139,6 +139,18 @@ describe('DidRegistrar', () => {
       })
     })
 
+    it('should delete the created key when creating the did fails', async () => {
+      mockFunction(didRepositoryMock.save).mockRejectedValueOnce(new Error('save failed'))
+
+      const result = await jwkDidRegistrar.create(agentContext, {
+        method: 'jwk',
+        options: { createKey: { keyId: 'did-jwk-rollback', type: { kty: 'EC', crv: 'P-256' } } },
+      })
+
+      expect(result.didState).toEqual({ state: 'failed', reason: 'unknownError: save failed' })
+      await expect(kms.getPublicKey({ keyId: 'did-jwk-rollback' })).rejects.toThrow('not found')
+    })
+
     it('should return an error state when calling update', async () => {
       const result = await jwkDidRegistrar.update()
 
@@ -148,19 +160,6 @@ describe('DidRegistrar', () => {
         didState: {
           state: 'failed',
           reason: 'notSupported: cannot update did:jwk did',
-        },
-      })
-    })
-
-    it('should return an error state when calling deactivate', async () => {
-      const result = await jwkDidRegistrar.deactivate()
-
-      expect(result).toEqual({
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'failed',
-          reason: 'notSupported: cannot deactivate did:jwk did',
         },
       })
     })

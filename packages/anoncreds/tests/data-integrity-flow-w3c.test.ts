@@ -209,7 +209,7 @@ describe('data integrity format service (w3c)', () => {
     const { holderCredentialRecord, offerAttachment, requestAttachment, credentialAttachment } = await issueCredential({
       issuerKdv: createdIssuerKdv,
       holderKdv: createdHolderKdv,
-      createdForCredential: true,
+      deleteWithRecord: true,
     })
     await dataIntegrityCredentialFormatService.processCredential(agentContext, {
       offerAttachment,
@@ -240,9 +240,9 @@ describe('data integrity format service (w3c)', () => {
 async function issueCredential(options: {
   issuerKdv: CreateDidKidVerificationMethodReturn
   holderKdv: CreateDidKidVerificationMethodReturn
-  createdForCredential?: boolean
+  deleteWithRecord?: boolean
 }) {
-  const { issuerKdv, holderKdv, createdForCredential } = options
+  const { issuerKdv, holderKdv, deleteWithRecord } = options
 
   const holderCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v1',
@@ -307,7 +307,7 @@ async function issueCredential(options: {
         dataIntegrity: {
           didCommSignedAttachment: {
             kid: holderKdv.kid,
-            createdForCredential,
+            deleteWithRecord,
           },
         },
       },

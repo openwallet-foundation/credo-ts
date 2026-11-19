@@ -125,6 +125,7 @@ export {
 } from './utils'
 export {
   addCredentialHolderBindingDids,
+  assertDidDeletableWithRecord,
   deleteHolderBinding,
   getCredentialHolderBindingDids,
 } from './utils/credentialHolderBinding'

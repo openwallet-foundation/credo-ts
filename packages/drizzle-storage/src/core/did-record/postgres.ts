@@ -1,10 +1,13 @@
-import type { DidDocumentKey, DidDocumentRole } from '@credo-ts/core'
+import type { DidDocumentKey, DidDocumentRole, DidRecordStatus } from '@credo-ts/core'
 import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
 
 const didRoles = exhaustiveArray({} as DidDocumentRole, ['created', 'received'] as const)
 export const didRoleEnum = pgEnum('didRole', didRoles)
+
+const didStatuses = exhaustiveArray({} as DidRecordStatus, ['active', 'deactivated'] as const)
+export const didStatusEnum = pgEnum('didStatus', didStatuses)
 
 export const did = pgTable(
   'Did',
@@ -13,6 +16,7 @@ export const did = pgTable(
 
     did: text().notNull(),
     role: didRoleEnum().notNull(),
+    status: didStatusEnum(),
     didDocument: jsonb('did_document'),
     keys: jsonb().$type<DidDocumentKey[]>(),
 

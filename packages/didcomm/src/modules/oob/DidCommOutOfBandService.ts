@@ -50,11 +50,7 @@ export class DidCommOutOfBandService {
 
     // Verify it is a valid did and it is present in the wallet
     const publicDid = parseDid(did)
-    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-    const [createdDid] = await didsApi.getCreatedDids({ did: publicDid.did })
-    if (!createdDid) {
-      throw new CredoError(`Referenced public did ${did} not found.`)
-    }
+    await agentContext.resolve(DidsApi).getActiveCreatedDid(publicDid.did)
 
     // Recreate an 'implicit invitation' matching the parameters used by the invitee when
     // initiating the flow

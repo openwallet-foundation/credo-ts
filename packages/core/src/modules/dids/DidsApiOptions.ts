@@ -55,4 +55,11 @@ export interface DeleteCreatedDidOptions {
    * Whether to also delete the keys of the did from the kms. Only delete them when nothing else uses them.
    */
   deleteAssociatedKeys: boolean
+
+  /**
+   * Delete the did while it is still active. Not needed when the did method has no deactivation, such as did:key.
+   *
+   * @default false
+   */
+  deleteActiveDid?: boolean
 }

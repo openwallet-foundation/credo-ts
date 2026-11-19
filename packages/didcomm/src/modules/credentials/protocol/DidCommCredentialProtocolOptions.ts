@@ -178,8 +178,8 @@ export interface DeleteCredentialOptions {
   deleteAssociatedDidCommMessages?: boolean
 
   /**
-   * Also delete the holder binding of the associated credentials, such as the DIDs marked `createdForCredential` or
-   * `didCreatedForCredential` and their keys. For a credential that wasn't received, deletes the DIDs marked for it.
+   * Also delete the holder binding of the associated credentials, such as the DIDs marked `deleteWithRecord` or
+   * `deleteDidWithRecord` and their keys. For a credential that wasn't received, deletes the DIDs marked for it.
    *
    * @default false
    */

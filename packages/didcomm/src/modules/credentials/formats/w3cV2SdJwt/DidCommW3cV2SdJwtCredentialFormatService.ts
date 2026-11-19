@@ -1,6 +1,7 @@
 import type { AgentContext, JsonObject, SdJwtVcHolderBinding, SingleOrArray } from '@credo-ts/core'
 import {
   addCredentialHolderBindingDids,
+  assertDidDeletableWithRecord,
   ClaimFormat,
   CredoError,
   deepEquality,
@@ -204,10 +205,10 @@ export class DidCommW3cV2SdJwtCredentialFormatService
         didcomm_signed_attachment: { attachment_id: signedAttachment.id },
       }
 
-      if (didCommSignedAttachmentOptions.createdForCredential) {
-        addExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey, [
-          parseDid(didCommSignedAttachmentOptions.kid).did,
-        ])
+      if (didCommSignedAttachmentOptions.deleteWithRecord) {
+        const { did } = parseDid(didCommSignedAttachmentOptions.kid)
+        assertDidDeletableWithRecord(agentContext, did)
+        addExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey, [did])
       }
     }
 

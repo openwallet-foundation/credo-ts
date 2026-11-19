@@ -1,5 +1,5 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
-import { AgentContext, CredoError, DidResolverService, injectable } from '@credo-ts/core'
+import { AgentContext, CredoError, DidResolverService, DidsApi, injectable } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { PthidRegExp } from '../../decorators/thread/ThreadDecorator'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
@@ -113,6 +113,8 @@ export class DidCommConnectionsApi {
     if (protocol === DidCommHandshakeProtocol.None) {
       // V2 OOB: create connection without handshake (no ConnectionRequest/Response sent)
       if (ourDid) {
+        // Throws when ourDid isn't a DID we created or is deactivated
+        await this.agentContext.resolve(DidsApi).getActiveCreatedDid(ourDid)
         const theirDid = outOfBandRecord.outOfBandInvitation.v2Invitation?.from
         const existingConnection = theirDid
           ? await this.connectionService.findByDids(this.agentContext, { ourDid, theirDid })

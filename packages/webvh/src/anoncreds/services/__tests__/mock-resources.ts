@@ -1,4 +1,4 @@
-import { DidDocument, JsonTransformer } from '@credo-ts/core'
+import { DidDocument, DidDocumentRole, DidRecord, JsonTransformer } from '@credo-ts/core'
 
 export const issuerId = 'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01'
 export const verificationMethodId = `${issuerId}#z6MkukEa8GPVCEPy7EzRSbeHPXD1vsuPy3eD13CkDKQsoCGS`
@@ -64,15 +64,12 @@ export const mockSchemaResource = {
   },
 }
 
-export const mockResolvedDidRecord = {
+export const mockResolvedDidRecord = new DidRecord({
   did: 'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01',
-  role: 'created',
+  role: DidDocumentRole.Created,
   didDocument: JsonTransformer.fromJSON(mockResolvedDidDocument, DidDocument),
-  getTag: (key: string) => {
-    if (key === 'domain') return 'id.test-suite.app/credo/01'
-    return undefined
-  },
-}
+  tags: { domain: 'id.test-suite.app/credo/01' },
+})
 
 export const mockCredDefResource = {
   '@context': [

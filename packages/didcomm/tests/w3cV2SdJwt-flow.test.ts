@@ -126,7 +126,7 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
       issuerKdv,
       holderKdv: createdHolderKdv,
       bindingRequired: true,
-      createdForCredential: true,
+      deleteWithRecord: true,
     })
 
     const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
@@ -150,7 +150,7 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
       issuerKdv,
       holderKdv: createdHolderKdv,
       bindingRequired: true,
-      createdForCredential: true,
+      deleteWithRecord: true,
       otherFormatHolderBindingDid: otherFormatKdv.did,
     })
 
@@ -1105,10 +1105,10 @@ async function issuanceFlowTest(options: {
   issuerKdv: CreateDidKidVerificationMethodReturn
   holderKdv: CreateDidKidVerificationMethodReturn
   bindingRequired: boolean
-  createdForCredential?: boolean
+  deleteWithRecord?: boolean
   otherFormatHolderBindingDid?: string
 }) {
-  const { issuerKdv: issuer, holderKdv: holder, bindingRequired, createdForCredential } = options
+  const { issuerKdv: issuer, holderKdv: holder, bindingRequired, deleteWithRecord } = options
 
   const holderCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v2',
@@ -1169,7 +1169,7 @@ async function issuanceFlowTest(options: {
       credentialExchangeRecord: holderCredentialRecord,
       offerAttachment,
       credentialFormats: bindingRequired
-        ? { w3cV2SdJwt: { didCommSignedAttachment: { kid: holder.kid, createdForCredential } } }
+        ? { w3cV2SdJwt: { didCommSignedAttachment: { kid: holder.kid, deleteWithRecord } } }
         : { w3cV2SdJwt: {} },
     })
 

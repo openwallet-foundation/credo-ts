@@ -1,4 +1,5 @@
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../tests/helpers'
+import { KeyManagementApi } from '../../../kms'
 import { DidsModuleConfig } from '../../DidsModuleConfig'
 import type { DidDocument, DidRegistrar } from '../../domain'
 import { DidRegistrarService } from '../DidRegistrarService'
@@ -9,10 +10,11 @@ const agentContext = getAgentContext()
 
 const didRegistrarMock = {
   supportedMethods: ['key'],
+  deactivationSupport: 'supported',
   create: vi.fn(),
   update: vi.fn(),
   deactivate: vi.fn(),
-} as DidRegistrar
+} as Required<DidRegistrar>
 
 const didResolverMock = {
   invalidateCacheForDid: vi.fn(),
@@ -161,6 +163,54 @@ describe('DidResolverService', () => {
     })
   })
 
+  describe('update with deleteRemovedKeys', () => {
+    const kms = agentContext.resolve(KeyManagementApi)
+    const finished = {
+      didDocumentMetadata: {},
+      didRegistrationMetadata: {},
+      didState: { state: 'finished', did: 'did:key:xxxx', didDocument: {} as DidDocument },
+    } as const
+
+    it('deletes the removed keys the registrar returns, and continues when a delete fails', async () => {
+      const [removedKey1, removedKey2] = await Promise.all(
+        [0, 1].map(() => kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } }))
+      )
+      const removedKeys = [removedKey1, removedKey2].map(({ keyId }) => ({ keyId }))
+      mockFunction(didRegistrarMock.update).mockResolvedValue({ ...finished, removedKeys })
+      const deleteKey = vi.spyOn(kms, 'deleteKey').mockRejectedValueOnce(new Error('delete failed'))
+
+      const result = await didRegistrarService.update(agentContext, {
+        did: 'did:key:xxxx',
+        didDocument: {},
+        deleteRemovedKeys: true,
+      })
+
+      expect(result).toEqual({ ...finished, removedKeys })
+      expect(deleteKey.mock.calls).toEqual([
+        [{ keyId: removedKey1.keyId, backend: undefined }],
+        [{ keyId: removedKey2.keyId, backend: undefined }],
+      ])
+      await expect(kms.getPublicKey({ keyId: removedKey2.keyId })).rejects.toThrow('not found')
+    })
+
+    it('keeps the keys when the update did not finish', async () => {
+      mockFunction(didRegistrarMock.update).mockResolvedValue({
+        ...finished,
+        didState: { state: 'failed', reason: ':(' },
+        removedKeys: [{ keyId: 'key-1' }],
+      })
+      const deleteKey = vi.spyOn(kms, 'deleteKey')
+
+      await didRegistrarService.update(agentContext, {
+        did: 'did:key:xxxx',
+        didDocument: {},
+        deleteRemovedKeys: true,
+      })
+
+      expect(deleteKey).not.toHaveBeenCalled()
+    })
+  })
+
   describe('deactivate', () => {
     it('should correctly find and call the correct registrar for a specified did', async () => {
       const returnValue = {
@@ -207,6 +257,32 @@ describe('DidResolverService', () => {
           reason: "Unsupported did method: 'something'",
         },
       })
+    })
+
+    it('should return error with state failed if the registrar does not implement deactivate', async () => {
+      const registrarService = new DidRegistrarService(
+        agentConfig.logger,
+        new DidsModuleConfig({
+          registrars: [{ ...didRegistrarMock, deactivationSupport: 'notSupportedByRegistrar', deactivate: undefined }],
+        }),
+        didResolverMock
+      )
+
+      const result = await registrarService.deactivate(agentContext, { did: 'did:key:xxxx' })
+
+      expect(result.didState).toEqual({
+        state: 'failed',
+        did: 'did:key:xxxx',
+        reason: "notSupported: registrar for did method 'key' doesn't support deactivation",
+      })
+    })
+  })
+
+  describe('getDeactivationSupport', () => {
+    it('should return the deactivation support of the registrar of the did', () => {
+      expect(didRegistrarService.getDeactivationSupport('did:key:123')).toBe('supported')
+      expect(didRegistrarService.getDeactivationSupport('did:something:123')).toBe('notSupportedByRegistrar')
+      expect(didRegistrarService.getDeactivationSupport('invalid')).toBe('notSupportedByRegistrar')
     })
   })
 })

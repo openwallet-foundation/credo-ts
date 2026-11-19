@@ -5,6 +5,7 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../../../../../../core/src/modules/dids'
+import { DidRegistrarService } from '../../../../../../../core/src/modules/dids/services/DidRegistrarService'
 import { DidResolverService } from '../../../../../../../core/src/modules/dids/services/DidResolverService'
 import { Ed25519PublicJwk } from '../../../../../../../core/src/modules/kms'
 import {
@@ -248,6 +249,7 @@ describe('JsonLd CredentialFormatService', () => {
     agentContext = getAgentContext({
       registerInstances: [
         [DidResolverService, didResolver],
+        [DidRegistrarService, { getDeactivationSupport: () => 'notSupportedByMethod' }],
         [W3cCredentialService, w3cCredentialService],
         [W3cJsonLdCredentialService, w3cJsonLdCredentialService],
         [SignatureSuiteRegistry, signatureSuiteRegistry],
@@ -401,7 +403,7 @@ describe('JsonLd CredentialFormatService', () => {
       const credentialExchangeRecord = mockCredentialRecord({ state: DidCommCredentialState.OfferReceived })
 
       await jsonLdFormatService.acceptOffer(agentContext, {
-        credentialFormats: { jsonld: { didCreatedForCredential: holderDid } },
+        credentialFormats: { jsonld: { deleteDidWithRecord: holderDid } },
         offerAttachment: new DidCommAttachment({
           data: new DidCommAttachmentData({ base64: JsonEncoder.toBase64(holderBoundCredentialOptions) }),
         }),
@@ -416,15 +418,13 @@ describe('JsonLd CredentialFormatService', () => {
 
       await expect(
         jsonLdFormatService.acceptOffer(agentContext, {
-          credentialFormats: { jsonld: { didCreatedForCredential: 'did:key:z6MkotherDid' } },
+          credentialFormats: { jsonld: { deleteDidWithRecord: 'did:key:z6MkotherDid' } },
           offerAttachment: new DidCommAttachment({
             data: new DidCommAttachmentData({ base64: JsonEncoder.toBase64(holderBoundCredentialOptions) }),
           }),
           credentialExchangeRecord,
         })
-      ).rejects.toThrow(
-        "didCreatedForCredential 'did:key:z6MkotherDid' is not a credentialSubject id of the credential"
-      )
+      ).rejects.toThrow("deleteDidWithRecord 'did:key:z6MkotherDid' is not a credentialSubject id of the credential")
       expect(takeExchangeHolderBindingDids(credentialExchangeRecord, 'jsonld')).toEqual([])
     })
   })
@@ -434,7 +434,7 @@ describe('JsonLd CredentialFormatService', () => {
       const credentialExchangeRecord = mockCredentialRecord({ role: DidCommCredentialRole.Holder })
 
       const { attachment } = await jsonLdFormatService.createRequest(agentContext, {
-        credentialFormats: { jsonld: { ...holderBoundCredentialOptions, didCreatedForCredential: holderDid } },
+        credentialFormats: { jsonld: { ...holderBoundCredentialOptions, deleteDidWithRecord: holderDid } },
         credentialExchangeRecord,
       })
 

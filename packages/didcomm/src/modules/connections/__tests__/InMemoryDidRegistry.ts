@@ -15,6 +15,7 @@ import { DidDocumentRole, DidRecord, DidRepository } from '@credo-ts/core'
 
 export class InMemoryDidRegistry implements DidRegistrar, DidResolver {
   public readonly supportedMethods = ['inmemory']
+  public readonly deactivationSupport = 'notSupportedByRegistrar'
 
   public readonly allowsCaching = false
 

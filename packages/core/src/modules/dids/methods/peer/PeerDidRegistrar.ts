@@ -6,15 +6,16 @@ import {
   KeyManagementApi,
   type KmsCreateKeyOptions,
   type KmsCreateKeyTypeAsymmetric,
+  type KmsKeyReference,
   PublicJwk,
   type WithCreateKeyBackend,
 } from '../../../kms'
 import type { DidDocumentKey } from '../../DidsApiOptions'
 import { DidDocument } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
-import type { DidRegistrar } from '../../domain/DidRegistrar'
+import { type DidRegistrar, deleteDidKeys } from '../../domain/DidRegistrar'
 import { DidRecord, DidRepository } from '../../repository'
-import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
+import type { DidCreateOptions, DidCreateResult, DidDeactivateOptions, DidUpdateResult } from '../../types'
 import { getAlternativeDidsForPeerDid, PeerDidNumAlgo } from './didPeer'
 import { publicJwkToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didDocumentJsonToNumAlgo1Did } from './peerDidNumAlgo1'
@@ -23,6 +24,7 @@ import { didDocumentToNumAlgo4Did } from './peerDidNumAlgo4'
 
 export class PeerDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['peer']
+  public readonly deactivationSupport = 'notSupportedByMethod'
 
   public async create(
     agentContext: AgentContext,
@@ -39,6 +41,7 @@ export class PeerDidRegistrar implements DidRegistrar {
     let didDocument: DidDocument
 
     let keys: DidDocumentKey[]
+    let createdKey: KmsKeyReference | undefined
 
     try {
       if (isPeerDidNumAlgo0CreateOptions(options)) {
@@ -46,6 +49,7 @@ export class PeerDidRegistrar implements DidRegistrar {
 
         if (options.options.createKey) {
           const createKeyResult = await kms.createKey(options.options.createKey)
+          createdKey = { keyId: createKeyResult.keyId, kmsBackend: createKeyResult.backend }
           publicJwk = PublicJwk.fromPublicJwk(createKeyResult.publicJwk)
           keys = [
             {
@@ -168,6 +172,7 @@ export class PeerDidRegistrar implements DidRegistrar {
         },
       }
     } catch (error) {
+      if (createdKey) await deleteDidKeys(agentContext, [createdKey], 'after failed did:peer creation')
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
@@ -186,17 +191,6 @@ export class PeerDidRegistrar implements DidRegistrar {
       didState: {
         state: 'failed',
         reason: 'notImplemented: updating did:peer not implemented yet',
-      },
-    }
-  }
-
-  public async deactivate(): Promise<DidDeactivateResult> {
-    return {
-      didDocumentMetadata: {},
-      didRegistrationMetadata: {},
-      didState: {
-        state: 'failed',
-        reason: 'notImplemented: deactivating did:peer not implemented yet',
       },
     }
   }
@@ -288,6 +282,6 @@ export interface PeerDidNumAlgo4CreateOptions extends DidCreateOptions {
   secret?: never
 }
 
-// Update and Deactivate not supported for did:peer
+// Update not supported for did:peer
 export type PeerDidUpdateOptions = never
-export type PeerDidDeactivateOptions = never
+export type PeerDidDeactivateOptions = DidDeactivateOptions

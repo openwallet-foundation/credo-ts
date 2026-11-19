@@ -5,6 +5,7 @@ import { Agent } from '../../../agent/Agent'
 import type { KeyDidCreateOptions } from '../methods/key/KeyDidRegistrar'
 import { PeerDidNumAlgo } from '../methods/peer/didPeer'
 import type { PeerDidNumAlgo0CreateOptions } from '../methods/peer/PeerDidRegistrar'
+import { DidRecordStatus } from '../repository'
 
 const agentOptions = getAgentOptions('Faber Dids Registrar')
 
@@ -158,6 +159,38 @@ describe('dids', () => {
           id: 'did:peer:0z6Mkuo91yRhTWDrFkdNBcLXAbvtUiq2J9E4QQcfYZt4hevkh',
         },
       },
+    })
+  })
+
+  describe('deactivate did:key', () => {
+    const createDidKey = async () => {
+      const { didState } = await agent.dids.create<KeyDidCreateOptions>({
+        method: 'key',
+        options: { createKey: { type: { kty: 'OKP', crv: 'Ed25519' } } },
+      })
+      if (didState.state !== 'finished') throw new Error('did:key not created')
+
+      const [didRecord] = await agent.dids.getCreatedDids({ did: didState.did })
+      return { did: didState.did, keyId: didRecord.keys?.[0].kmsKeyId as string }
+    }
+
+    it('marks the did record deactivated and keeps the keys', async () => {
+      const { did, keyId } = await createDidKey()
+      expect(await agent.dids.getCreatedDids({ did })).toMatchObject([{ status: DidRecordStatus.Active }])
+
+      const result = await agent.dids.deactivate({ did })
+
+      expect(result.didState).toMatchObject({ state: 'finished', did, didDocument: { id: did } })
+      expect(await agent.dids.getCreatedDids({ did })).toMatchObject([{ status: DidRecordStatus.Deactivated }])
+      await expect(agent.kms.getPublicKey({ keyId })).resolves.toBeDefined()
+    })
+
+    it('fails for a did:key the agent did not create', async () => {
+      const did = 'did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK'
+
+      const result = await agent.dids.deactivate({ did })
+
+      expect(result.didState).toEqual({ state: 'failed', did, reason: `notFound: created did '${did}' not found` })
     })
   })
 })

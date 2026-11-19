@@ -136,7 +136,7 @@ describe('OpenId4VcHolder', () => {
         credentialBindingResolver: () => ({
           method: 'did',
           didUrls: [holderVerificationMethod],
-          createdForCredential: true,
+          deleteWithRecord: true,
         }),
       })
 

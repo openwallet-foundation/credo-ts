@@ -14,17 +14,21 @@ import {
   DID_V1_CONTEXT_URL,
   type DidCreateOptions,
   type DidCreateResult,
+  type DidDeactivateOptions,
   type DidDeactivateResult,
   DidDocument,
   type DidDocumentKey,
   DidDocumentRole,
   DidRecord,
+  DidRecordStatus,
   type DidRegistrar,
   DidRepository,
   type DidUpdateOptions,
   type DidUpdateResult,
+  deleteDidKeys,
   getDidDocumentKeyForVerificationMethod,
   getPublicJwkFromVerificationMethod,
+  getRemovedDidKeys,
   JsonTransformer,
   Kms,
   SECURITY_ED25519_2018_CONTEXT_URL,
@@ -48,6 +52,7 @@ import {
 
 export class CheqdDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['cheqd']
+  public readonly deactivationSupport = 'supported'
   private contextMapping = {
     Ed25519VerificationKey2018: SECURITY_ED25519_2018_CONTEXT_URL,
     Ed25519VerificationKey2020: SECURITY_ED25519_2020_CONTEXT_URL,
@@ -97,6 +102,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
     const versionId = options.options?.versionId ?? utils.uuid()
 
     let keys: DidDocumentKey[] = []
+    let createdKey: Kms.KmsKeyReference | undefined
 
     try {
       if (options.didDocument) {
@@ -156,6 +162,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         let publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' }
         if (options.options.createKey) {
           const createKeyResult = await kms.createKey(options.options.createKey)
+          createdKey = { keyId: createKeyResult.keyId, kmsBackend: createKeyResult.backend }
           publicJwk = createKeyResult.publicJwk
           keys.push({
             kmsKeyId: createKeyResult.keyId,
@@ -245,8 +252,13 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
       const signInputs = await this.signPayload(agentContext, payloadToSign, authentication, keys)
 
+      // A write that throws can still reach the ledger, so the key that controls the did is only deleted when the
+      // ledger rejects the write
+      const unpublishedKey = createdKey
+      createdKey = undefined
       const response = await cheqdLedgerService.create(didDocumentJson, signInputs, versionId)
       if (response.code !== 0) {
+        createdKey = unpublishedKey
         throw new Error(`${response.rawLog}`)
       }
 
@@ -271,6 +283,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
       }
     } catch (error) {
       agentContext.config.logger.error('Error registering DID', error)
+      if (createdKey) await deleteDidKeys(agentContext, [createdKey], 'after failed did:cheqd creation')
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
@@ -318,7 +331,9 @@ export class CheqdDidRegistrar implements DidRegistrar {
           }
         }
 
-        const keys = didRecord.keys ?? []
+        // A record without keys would otherwise lose the created key
+        didRecord.keys ??= []
+        const keys = didRecord.keys
         if (options.options?.createKey || options.options?.keyId) {
           const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
           let createdKey: DidDocumentKey
@@ -387,22 +402,21 @@ export class CheqdDidRegistrar implements DidRegistrar {
           const jwk = Kms.PublicJwk.fromPublicJwk(publicJwk)
 
           keys.push(createdKey)
-          didDocument.verificationMethod?.concat(
-            JsonTransformer.fromJSON(
-              createDidVerificationMethod(
-                [verificationMethod],
-                [
-                  {
-                    methodSpecificId: didDocument.id.split(':')[3],
-                    didUrl: didDocument.id,
-                    keyId: `${didDocument.id}${createdKey.didDocumentRelativeKeyId}` as `${string}#${string}-${number}`,
-                    publicKey: TypedArrayEncoder.toHex(jwk.publicKey.publicKey),
-                  },
-                ]
-              ),
-              VerificationMethod
-            )
+          const createdVerificationMethods = createDidVerificationMethod(
+            [verificationMethod],
+            [
+              {
+                methodSpecificId: didDocument.id.split(':')[3],
+                didUrl: didDocument.id,
+                keyId: `${didDocument.id}${createdKey.didDocumentRelativeKeyId}` as `${string}#${string}-${number}`,
+                publicKey: TypedArrayEncoder.toBase64(jwk.publicKey.publicKey),
+              },
+            ]
           )
+          didDocument.verificationMethod = [
+            ...(didDocument.verificationMethod ?? []),
+            ...createdVerificationMethods.map((method) => JsonTransformer.fromJSON(method, VerificationMethod)),
+          ]
         }
       } else {
         return {
@@ -416,6 +430,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
       }
 
       // Filter out all keys that are not present in the did document anymore
+      const previousKeys = didRecord.keys ?? []
       didRecord.keys = didRecord.keys?.filter(({ didDocumentRelativeKeyId }) => {
         try {
           didDocument.dereferenceKey(didDocumentRelativeKeyId)
@@ -484,6 +499,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
           didDocument,
           secret: options.secret,
         },
+        removedKeys: getRemovedDidKeys(previousKeys, didRecord.keys),
       }
     } catch (error) {
       agentContext.config.logger.error('Error updating DID', error)
@@ -512,13 +528,29 @@ export class CheqdDidRegistrar implements DidRegistrar {
       const { didDocument, didDocumentMetadata } = await cheqdLedgerService.resolve(did)
 
       const didRecord = await didRepository.findCreatedDid(agentContext, did)
-      if (!didDocument || didDocumentMetadata.deactivated || !didRecord) {
+      if (!didDocument || !didRecord) {
         return {
           didDocumentMetadata: {},
           didRegistrationMetadata: {},
           didState: {
             state: 'failed',
             reason: 'Did not found',
+          },
+        }
+      }
+
+      // Deactivated outside this agent, so only the did record still has to be marked deactivated
+      if (didDocumentMetadata.deactivated) {
+        didRecord.status = DidRecordStatus.Deactivated
+        await didRepository.update(agentContext, didRecord)
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'finished',
+            did: didDocument.id,
+            didDocument: JsonTransformer.fromJSON(didRecord.didDocument, DidDocument),
+            secret: options.secret,
           },
         }
       }
@@ -542,6 +574,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         throw new Error(`${response.rawLog}`)
       }
 
+      didRecord.status = DidRecordStatus.Deactivated
       await didRepository.update(agentContext, didRecord)
 
       return {
@@ -572,13 +605,23 @@ export class CheqdDidRegistrar implements DidRegistrar {
     const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
     const { didDocument, didDocumentMetadata } = await cheqdLedgerService.resolve(did)
     const didRecord = await didRepository.findCreatedDid(agentContext, did)
-    if (!didDocument || didDocumentMetadata.deactivated || !didRecord) {
+    if (!didDocument || !didRecord) {
       return {
         resourceMetadata: {},
         resourceRegistrationMetadata: {},
         resourceState: {
           state: 'failed',
           reason: `DID: ${did} not found`,
+        },
+      }
+    }
+    if (didDocumentMetadata.deactivated || didRecord.status === DidRecordStatus.Deactivated) {
+      return {
+        resourceMetadata: {},
+        resourceRegistrationMetadata: {},
+        resourceState: {
+          state: 'failed',
+          reason: `did '${did}' is deactivated`,
         },
       }
     }
@@ -736,7 +779,7 @@ export interface CheqdDidUpdateOptions extends DidUpdateOptions {
   } & XOR<{ createKey?: KmsCreateKeyOptionsOkpEd25519 }, { keyId?: string }>
 }
 
-export interface CheqdDidDeactivateOptions extends DidCreateOptions {
+export interface CheqdDidDeactivateOptions extends DidDeactivateOptions {
   method: 'cheqd'
   did: string
   options: {

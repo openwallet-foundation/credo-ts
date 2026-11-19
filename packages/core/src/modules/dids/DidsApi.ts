@@ -12,7 +12,7 @@ import {
   parseDid,
 } from './domain'
 import { getAlternativeDidsForPeerDid, isValidPeerDid } from './methods'
-import { DidRecord, DidRepository } from './repository'
+import { DidRecord, DidRecordStatus, DidRepository } from './repository'
 import { DidRegistrarService, DidResolverService } from './services'
 import type {
   DidCreateOptions,
@@ -181,15 +181,28 @@ export class DidsApi {
   /**
    * Deletes the record of a did created by the agent, and with `deleteAssociatedKeys` its keys.
    *
-   * This doesn't deactivate the did. If the did method supports it, deactivate the did with {@link deactivate} first:
-   * without its record and keys the agent can no longer deactivate or update it, and the did stays resolvable.
+   * This doesn't deactivate the did. Without its record and keys the agent can no longer deactivate or update it, and the
+   * did stays resolvable. So unless the did method has no deactivation, such as did:key, it throws for a did that isn't
+   * deactivated with {@link deactivate}, unless you pass `deleteActiveDid`.
    *
    * The keys are deleted before the record, so a call that failed on a key can be retried.
    */
-  public async deleteCreatedDid({ did, deleteAssociatedKeys }: DeleteCreatedDidOptions) {
+  public async deleteCreatedDid({ did, deleteAssociatedKeys, deleteActiveDid }: DeleteCreatedDidOptions) {
     const didRecord = await this.didRepository.findCreatedDid(this.agentContext, did)
     if (!didRecord) {
       throw new RecordNotFoundError(`Created did '${did}' not found`, { recordType: DidRecord.type })
+    }
+    const deactivationSupport = this.didRegistrarService.getDeactivationSupport(did)
+    if (
+      !deleteActiveDid &&
+      didRecord.status !== DidRecordStatus.Deactivated &&
+      deactivationSupport !== 'notSupportedByMethod'
+    ) {
+      throw new CredoError(
+        deactivationSupport === 'supported'
+          ? `Did '${did}' is still active. Deactivate it first, or pass deleteActiveDid to delete it anyway.`
+          : `Did '${did}' is still active and its registrar can't deactivate it. Pass deleteActiveDid to delete it anyway.`
+      )
     }
 
     if (deleteAssociatedKeys) {
@@ -228,12 +241,18 @@ export class DidsApi {
     return Array.from(keyIds, (keyId) => ({ keyId }))
   }
 
-  public async resolveCreatedDidDocumentWithKeys(did: string) {
-    const [didRecord] = await this.didRepository.getCreatedDids(this.agentContext, { did })
+  /**
+   * Gets the record of a did created by the agent, and throws when it is not found or is deactivated.
+   */
+  public async getActiveCreatedDid(did: string) {
+    const didRecord = await this.didRepository.getCreatedDid(this.agentContext, did)
+    didRecord.assertActive()
 
-    if (!didRecord) {
-      throw new RecordNotFoundError(`Created did '${did}' not found`, { recordType: DidRecord.type })
-    }
+    return didRecord
+  }
+
+  public async resolveCreatedDidDocumentWithKeys(did: string) {
+    const didRecord = await this.getActiveCreatedDid(did)
 
     if (didRecord.didDocument) {
       return {

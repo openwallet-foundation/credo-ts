@@ -5,16 +5,23 @@ import { createRecordEncodingSchema } from '../../../storage/recordEncodingSchem
 import { zJsonTransformerClass } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { zTypedObject } from '../../../utils/zod'
+import { DidDeactivatedError } from '../DidDeactivatedError'
 import type { DidDocumentKey } from '../DidsApiOptions'
 import { DidDocument } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { parseDid } from '../domain/parse'
 import type { DidRecordMetadata } from './didRecordMetadataTypes'
 
+export enum DidRecordStatus {
+  Active = 'active',
+  Deactivated = 'deactivated',
+}
+
 export interface DidRecordProps {
   id?: string
   did: string
   role: DidDocumentRole
+  status?: DidRecordStatus
   didDocument?: DidDocument
   createdAt?: Date
   tags?: CustomDidTags
@@ -41,6 +48,7 @@ type DefaultDidTags = {
   recipientKeyFingerprints?: string[]
 
   role: DidDocumentRole
+  status?: DidRecordStatus
   method: string
   methodSpecificIdentifier: string
   did: string
@@ -51,6 +59,7 @@ const didRecordEncodingSchema = createRecordEncodingSchema({
   // Records stored before 0.3.1 don't have a did property
   did: z.string().nullish(),
   role: z.enum(DidDocumentRole),
+  status: z.enum(DidRecordStatus).nullish(),
   keys: z.array(zTypedObject<DidDocumentKey>()).nullish(),
 })
 
@@ -64,6 +73,13 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
   public did!: string
 
   public role!: DidDocumentRole
+
+  /**
+   * Records stored before the status was added don't have one, and are active. Their `status` tag is missing in Askar,
+   * so query active dids with `$not: { status: DidRecordStatus.Deactivated }`
+   * to include DIDs created before Credo 0.8.
+   */
+  public status?: DidRecordStatus
 
   public static readonly type = 'DidRecord'
   public readonly type = DidRecord.type
@@ -81,6 +97,7 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
       this.id = props.id ?? uuid()
       this.did = props.did
       this.role = props.role
+      this.status = props.status ?? DidRecordStatus.Active
       this.didDocument = props.didDocument
       this.createdAt = props.createdAt ?? new Date()
       this._tags = props.tags ?? {}
@@ -94,6 +111,7 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
     return {
       ...this._tags,
       role: this.role,
+      status: this.status,
       method: did.method,
       did: this.did,
       methodSpecificIdentifier: did.id,
@@ -103,6 +121,12 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
       recipientKeyFingerprints: this.didDocument
         ? this.didDocument.allDidCommRecipientKeys.map((recipientKey) => recipientKey.fingerprint)
         : this._tags.recipientKeyFingerprints,
+    }
+  }
+
+  public assertActive() {
+    if (this.status === DidRecordStatus.Deactivated) {
+      throw new DidDeactivatedError(this.did)
     }
   }
 }

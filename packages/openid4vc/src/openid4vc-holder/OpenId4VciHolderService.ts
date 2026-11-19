@@ -1,6 +1,7 @@
 import {
   AgentContext,
   addCredentialHolderBindingDids,
+  assertDidDeletableWithRecord,
   CredoError,
   DidsApi,
   InjectionSymbols,
@@ -977,6 +978,11 @@ export class OpenId4VciHolderService {
         throw new CredoError("Using a did for credential binding is not supported for the 'mso_mdoc' format.")
       }
 
+      const holderBindingDids = credentialBinding.deleteWithRecord
+        ? credentialBinding.didUrls.map((didUrl) => parseDid(didUrl).did)
+        : undefined
+      for (const did of holderBindingDids ?? []) assertDidDeletableWithRecord(agentContext, did)
+
       const { publicJwk: firstKey } = await dids.resolveVerificationMethodFromCreatedDidRecord(firstDid.didUrl)
       const algorithm = proofTypes.jwt.supportedSignatureAlgorithms.find((algorithm) =>
         firstKey.supportedSignatureAlgorithms.includes(algorithm)
@@ -1003,9 +1009,7 @@ export class OpenId4VciHolderService {
 
       const client = this.getClient(agentContext)
       return {
-        holderBindingDids: credentialBinding.createdForCredential
-          ? credentialBinding.didUrls.map((didUrl) => parseDid(didUrl).did)
-          : undefined,
+        holderBindingDids,
         proofs: {
           jwt: await Promise.all(
             keys.map((key) =>
