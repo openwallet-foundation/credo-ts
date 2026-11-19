@@ -6,7 +6,6 @@ import { JsonTransformer } from '../../../../../../../core/src/utils/JsonTransfo
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../../../core/tests/helpers'
 import { DummyTransportSession } from '../../../../../__tests__/stubs'
-import { DidCommEventTypes } from '../../../../../DidCommEvents'
 import { DidCommMessageReceiver } from '../../../../../DidCommMessageReceiver'
 import { DidCommMessageSender } from '../../../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../../../DidCommModuleConfig'
@@ -621,6 +620,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
         attachments: ['1', '2', '3'].map((id) => new DidCommAttachment({ id, data: { json: { id } } })),
       })
       const messageContext = new DidCommInboundMessageContext(messageDeliveryMessage, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
@@ -643,6 +643,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
         attachments: [new DidCommAttachment({ id: '1', data: { json: { a: 'value' } } })],
       })
       const messageContext = new DidCommInboundMessageContext(messageDeliveryMessage, {
+        senderKey: testSenderKey,
         connection: mockConnection,
         agentContext,
       })
