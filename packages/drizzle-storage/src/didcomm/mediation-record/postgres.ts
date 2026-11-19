@@ -1,5 +1,5 @@
 import type { DidCommMediationRole, DidCommMediationState, DidCommMediatorPickupStrategy } from '@credo-ts/didcomm'
-import { boolean, foreignKey, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
+import { boolean, foreignKey, index, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
 import { didcommConnection } from '../connection-record/postgres'
@@ -41,6 +41,10 @@ export const didcommMediation = pgTable(
   },
   (table) => [
     ...postgresBaseRecordIndexes(table, 'didcommMediation'),
+
+    // Used to find the mediation record of each forward message
+    index('didcommMediation_recipient_keys_idx').using('gin', table.recipientKeys),
+
     foreignKey({
       columns: [table.connectionId, table.contextCorrelationId],
       foreignColumns: [didcommConnection.id, didcommConnection.contextCorrelationId],

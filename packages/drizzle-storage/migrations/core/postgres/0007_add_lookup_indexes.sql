@@ -1,0 +1,1 @@
+CREATE INDEX "did_recipient_key_fingerprints_idx" ON "Did" USING gin ("recipient_key_fingerprints" jsonb_path_ops);

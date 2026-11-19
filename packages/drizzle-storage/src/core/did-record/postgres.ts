@@ -1,5 +1,5 @@
 import type { DidDocumentKey, DidDocumentRole } from '@credo-ts/core'
-import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
+import { index, jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
 
@@ -24,5 +24,10 @@ export const did = pgTable(
     // Custom Tags
     alternativeDids: text('alternative_dids').array(),
   },
-  (table) => postgresBaseRecordIndexes(table, 'did')
+  (table) => [
+    ...postgresBaseRecordIndexes(table, 'did'),
+
+    // Used to find the did of the keys of each received message
+    index('did_recipient_key_fingerprints_idx').using('gin', table.recipientKeyFingerprints.op('jsonb_path_ops')),
+  ]
 )
