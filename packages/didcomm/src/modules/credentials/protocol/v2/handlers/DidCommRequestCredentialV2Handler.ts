@@ -32,7 +32,7 @@ export class DidCommRequestCredentialV2Handler implements DidCommMessageHandler 
     credentialExchangeRecord: DidCommCredentialExchangeRecord,
     messageContext: DidCommInboundMessageContext<DidCommRequestCredentialV2Message>
   ) {
-    messageContext.agentContext.config.logger.info('Automatically sending credential with autoAccept')
+    messageContext.agentContext.config.logger.debug('Automatically sending credential with autoAccept')
 
     const offerMessage = await this.credentialProtocol.findOfferMessage(
       messageContext.agentContext,

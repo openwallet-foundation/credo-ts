@@ -1472,7 +1472,7 @@ export class OpenId4VpVerifierService {
         presentation: verifiablePresentation,
       }
     } catch (error) {
-      agentContext.config.logger.warn('Error occurred during verification of presentation', {
+      agentContext.config.logger.debug('Error occurred during verification of presentation', {
         error,
       })
       return {

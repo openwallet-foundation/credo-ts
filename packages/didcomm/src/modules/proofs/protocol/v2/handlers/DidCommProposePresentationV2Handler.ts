@@ -28,7 +28,7 @@ export class DidCommProposePresentationV2Handler implements DidCommMessageHandle
     proofRecord: DidCommProofExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<DidCommProposePresentationV2Handler>
   ) {
-    messageContext.agentContext.config.logger.info('Automatically sending request with autoAccept')
+    messageContext.agentContext.config.logger.debug('Automatically sending request with autoAccept')
 
     if (!messageContext.connection) {
       messageContext.agentContext.config.logger.error('No connection on the messageContext, aborting auto accept')

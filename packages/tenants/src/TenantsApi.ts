@@ -100,7 +100,8 @@ export class TenantsApi<AgentModules extends AgentModulesInput = DefaultAgentMod
     // Deleting agent context will also end the session since there is no session anymore if the agent context is deleted
     await this.agentContextProvider.deleteAgentContext(tenantAgent.context)
 
-    return this.tenantRecordService.deleteTenantById(this.rootAgentContext, tenantId)
+    await this.tenantRecordService.deleteTenantById(this.rootAgentContext, tenantId)
+    this.logger.info(`Successfully deleted tenant '${tenantId}'`)
   }
 
   public async updateTenant(tenant: TenantRecord) {
