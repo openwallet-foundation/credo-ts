@@ -28,10 +28,16 @@ import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
 import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessionCoordinator'
-import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciIssuerInfo, OpenId4VciSignMdocCredentials } from '../src'
+import type {
+  OpenId4VcIssuerModuleConfigOptions,
+  OpenId4VciCredentialConfigurationSupportedWithFormats,
+  OpenId4VciIssuerInfo,
+  OpenId4VciSignMdocCredentials,
+} from '../src'
 import {
   OpenId4VcIssuanceSessionState,
   OpenId4VcIssuerModuleConfig,
+  OpenId4VcIssuerService,
   OpenId4VciCredentialFormatProfile,
   OpenId4VcModule,
 } from '../src'
@@ -41,6 +47,7 @@ import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import {
   universityDegreeCredentialConfigurationSupported,
+  universityDegreeCredentialConfigurationSupportedBearer,
   universityDegreeCredentialConfigurationSupportedJwkOnly,
   universityDegreeCredentialConfigurationSupportedMdoc,
 } from './utilsVci'
@@ -120,6 +127,26 @@ describe('OpenId4Vc', () => {
               const verificationMethod = didDocument.verificationMethod?.[0]
               if (!verificationMethod) {
                 throw new Error('No verification method found')
+              }
+              if (!holderBinding) {
+                if (
+                  credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtDc &&
+                  credentialConfiguration.vct
+                ) {
+                  return {
+                    type: 'credentials',
+                    format: 'dc+sd-jwt',
+                    credentials: [
+                      {
+                        payload: { vct: credentialConfiguration.vct, university: 'innsbruck', degree: 'bachelor' },
+                        issuer: { method: 'did', didUrl: verificationMethod.id },
+                        disclosureFrame: { _sd: ['university', 'degree'] },
+                      },
+                    ],
+                  }
+                }
+
+                throw new Error('Expected holder binding in credential request mapper')
               }
 
               if (
@@ -1440,5 +1467,243 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(response.status).toBe(500)
     expect(response.headers.get('WWW-Authenticate')).toBeNull()
     expect(await response.json()).toEqual({ error: 'server_error' })
+  })
+
+  describe('credentials without cryptographic holder binding', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    const disableIssuerHolderBindingRequirement = () =>
+      vi
+        .spyOn(
+          issuer.agent.dependencyManager.resolve(OpenId4VcIssuerModuleConfig),
+          'requireCryptographicHolderBinding',
+          'get'
+        )
+        .mockReturnValue(false)
+
+    const startIssuance = async (
+      credentialConfigurationsSupported: Parameters<
+        typeof issuer.agent.openid4vc.issuer.createIssuer
+      >[0]['credentialConfigurationsSupported'],
+      credentialConfigurationIds = Object.keys(credentialConfigurationsSupported)
+    ) => {
+      const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+      const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+      const { issuerId } = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+        credentialConfigurationsSupported,
+      })
+      const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+        issuerId,
+        credentialConfigurationIds,
+        preAuthorizedCodeFlowConfig: {},
+        version: 'v1',
+      })
+
+      const resolvedCredentialOffer =
+        await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+      const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+      const getIssuanceSessionState = async () =>
+        (await issuerTenant.modules.openid4vc.issuer.getIssuanceSessionById(issuanceSession.id)).state
+
+      const endSessions = async () => {
+        await holderTenant.endSession()
+        await issuerTenant.endSession()
+      }
+
+      return {
+        issuerTenant,
+        holderTenant,
+        issuanceSession,
+        resolvedCredentialOffer,
+        tokenResponse,
+        getIssuanceSessionState,
+        endSessions,
+      }
+    }
+
+    it('issues a credential without holder binding when both issuer and holder opt out', async () => {
+      disableIssuerHolderBindingRequirement()
+      const { issuerTenant, holderTenant, issuanceSession, resolvedCredentialOffer, tokenResponse, endSessions } =
+        await startIssuance({ universityDegree: universityDegreeCredentialConfigurationSupportedBearer })
+
+      const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
+        resolvedCredentialOffer,
+        ...tokenResponse,
+        requireCryptographicHolderBinding: false,
+      })
+
+      await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+        state: OpenId4VcIssuanceSessionState.Completed,
+        issuanceSessionId: issuanceSession.id,
+        contextCorrelationId: issuerTenant.context.contextCorrelationId,
+      })
+
+      expect(credentialResponse.credentials).toHaveLength(1)
+      const sdJwtVc = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+      expect(sdJwtVc.holder).toBeUndefined()
+      expect(sdJwtVc.kmsKeyId).toBeUndefined()
+      expect(sdJwtVc.payload).not.toHaveProperty('cnf')
+      expect(sdJwtVc.payload.vct).toEqual('UniversityDegreeCredential')
+
+      await endSessions()
+    })
+
+    it('does not request the credential when the holder keeps requiring holder binding', async () => {
+      disableIssuerHolderBindingRequirement()
+      const { holderTenant, resolvedCredentialOffer, tokenResponse, getIssuanceSessionState, endSessions } =
+        await startIssuance({ universityDegree: universityDegreeCredentialConfigurationSupportedBearer })
+
+      await expect(
+        holderTenant.modules.openid4vc.holder.requestCredentials({
+          resolvedCredentialOffer,
+          ...tokenResponse,
+          credentialBindingResolver,
+        })
+      ).rejects.toThrow(/does not specify proof_types_supported.*requireCryptographicHolderBinding/)
+
+      expect(await getIssuanceSessionState()).toEqual(OpenId4VcIssuanceSessionState.AccessTokenCreated)
+
+      await endSessions()
+    })
+
+    it('rejects the credential request when the holder opts out but the issuer still requires holder binding', async () => {
+      const { holderTenant, resolvedCredentialOffer, tokenResponse, getIssuanceSessionState, endSessions } =
+        await startIssuance({ universityDegree: universityDegreeCredentialConfigurationSupportedBearer })
+
+      await expect(
+        holderTenant.modules.openid4vc.holder.requestCredentials({
+          resolvedCredentialOffer,
+          ...tokenResponse,
+          requireCryptographicHolderBinding: false,
+        })
+      ).rejects.toThrow(/Missing required proof\(s\) in credential request/)
+
+      expect(await getIssuanceSessionState()).not.toEqual(OpenId4VcIssuanceSessionState.Completed)
+
+      await endSessions()
+    })
+
+    it.each<[string, OpenId4VciCredentialConfigurationSupportedWithFormats]>([
+      [
+        'an mdoc configuration',
+        {
+          format: OpenId4VciCredentialFormatProfile.MsoMdoc,
+          doctype: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
+        },
+      ],
+      [
+        'a configuration with cryptographic_binding_methods_supported',
+        { ...universityDegreeCredentialConfigurationSupportedBearer, cryptographic_binding_methods_supported: ['jwk'] },
+      ],
+    ])(
+      'throws before requesting %s without proof_types_supported when the holder opts out',
+      async (_, configuration) => {
+        const { holderTenant, resolvedCredentialOffer, tokenResponse, getIssuanceSessionState, endSessions } =
+          await startIssuance({ universityDegree: configuration })
+
+        await expect(
+          holderTenant.modules.openid4vc.holder.requestCredentials({
+            resolvedCredentialOffer,
+            ...tokenResponse,
+            requireCryptographicHolderBinding: false,
+          })
+        ).rejects.toThrow('does not specify proof_types_supported, while the credential is bound to a key')
+
+        expect(await getIssuanceSessionState()).toEqual(OpenId4VcIssuanceSessionState.AccessTokenCreated)
+
+        await endSessions()
+      }
+    )
+
+    it('throws when a configuration requires a proof but no credentialBindingResolver is provided', async () => {
+      const { holderTenant, resolvedCredentialOffer, tokenResponse, endSessions } = await startIssuance({
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      })
+
+      await expect(
+        holderTenant.modules.openid4vc.holder.requestCredentials({ resolvedCredentialOffer, ...tokenResponse })
+      ).rejects.toThrow("requires a proof, but no 'credentialBindingResolver' was provided.")
+
+      await endSessions()
+    })
+
+    it('rejects an SD-JWT VC bound to a key that is received for a request without proofs', async () => {
+      disableIssuerHolderBindingRequirement()
+      const { issuerTenant, holderTenant, resolvedCredentialOffer, tokenResponse, endSessions } = await startIssuance({
+        universityDegree: universityDegreeCredentialConfigurationSupportedBearer,
+      })
+
+      const { compact } = await issuerTenant.sdJwtVc.sign({
+        payload: { vct: universityDegreeCredentialConfigurationSupportedBearer.vct },
+        issuer: { method: 'did', didUrl: issuer1.verificationMethod.id },
+        holder: { method: 'did', didUrl: holder1.verificationMethod.id },
+      })
+      vi.spyOn(
+        OpenId4VcIssuerService.prototype as unknown as {
+          getSignedCredentials: () => Promise<{ credentials: string[]; format: string }>
+        },
+        'getSignedCredentials'
+      ).mockResolvedValue({ credentials: [compact], format: 'dc+sd-jwt' })
+
+      await expect(
+        holderTenant.modules.openid4vc.holder.requestCredentials({
+          resolvedCredentialOffer,
+          ...tokenResponse,
+          requireCryptographicHolderBinding: false,
+        })
+      ).rejects.toThrow(
+        'Received a credential that is bound to a key, while the credential request contained no proofs.'
+      )
+
+      await endSessions()
+    })
+
+    it('only calls the credentialBindingResolver for the credential that requires a proof', async () => {
+      disableIssuerHolderBindingRequirement()
+      const { issuerTenant, holderTenant, issuanceSession, resolvedCredentialOffer, tokenResponse, endSessions } =
+        await startIssuance({
+          bound: universityDegreeCredentialConfigurationSupportedJwkOnly,
+          bearer: universityDegreeCredentialConfigurationSupportedBearer,
+        })
+      const resolver = vi.fn<OpenId4VciCredentialBindingResolver>(() => ({
+        method: 'jwk',
+        keys: [holder1.publicJwk],
+      }))
+
+      const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
+        resolvedCredentialOffer,
+        ...tokenResponse,
+        requireCryptographicHolderBinding: false,
+        credentialBindingResolver: resolver,
+      })
+
+      await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+        state: OpenId4VcIssuanceSessionState.Completed,
+        issuanceSessionId: issuanceSession.id,
+        contextCorrelationId: issuerTenant.context.contextCorrelationId,
+      })
+
+      expect(resolver).toHaveBeenCalledTimes(1)
+      expect(resolver).toHaveBeenCalledWith(expect.objectContaining({ credentialConfigurationId: 'bound' }))
+
+      expect(credentialResponse.credentials).toHaveLength(2)
+      const byConfigurationId = Object.fromEntries(
+        credentialResponse.credentials.map((credential) => [
+          credential.credentialConfigurationId,
+          (credential.record as SdJwtVcRecord).firstCredential,
+        ])
+      )
+      expect(byConfigurationId.bound.holder?.method).toEqual('jwk')
+      expect(byConfigurationId.bound.payload).toHaveProperty('cnf')
+      expect(byConfigurationId.bearer.holder).toBeUndefined()
+      expect(byConfigurationId.bearer.kmsKeyId).toBeUndefined()
+      expect(byConfigurationId.bearer.payload).not.toHaveProperty('cnf')
+
+      await endSessions()
+    })
   })
 })

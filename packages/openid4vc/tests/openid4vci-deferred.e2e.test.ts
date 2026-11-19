@@ -37,11 +37,13 @@ import {
   OpenId4VcModule,
 } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
+import { OpenId4VcIssuerService } from '../src/openid4vc-issuer/OpenId4VcIssuerService'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import {
   universityDegreeCredentialConfigurationSupported,
+  universityDegreeCredentialConfigurationSupportedBearer,
   universityDegreeCredentialConfigurationSupportedMdoc,
 } from './utilsVci'
 
@@ -215,6 +217,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   afterEach(async () => {
+    vi.restoreAllMocks()
     clearNock()
 
     await issuer.agent.shutdown()
@@ -615,6 +618,64 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(firstMdoc.docType).toEqual('UniversityDegreeCredential')
 
     await holderTenant.endSession()
+  })
+
+  it('holder rejects a deferred sd-jwt-vc bound to a key that was requested without proofs', async () => {
+    const issuerConfig = issuer.agent.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+    vi.spyOn(issuerConfig, 'requireCryptographicHolderBinding', 'get').mockReturnValue(false)
+    vi.spyOn(issuerConfig, 'deferredCredentialRequestToCredentialMapper', 'get').mockReturnValue(() => ({
+      type: 'credentials',
+      format: 'dc+sd-jwt',
+      credentials: [],
+    }))
+
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const { issuerId } = await issuerTenant.openid4vc.issuer.createIssuer({
+      dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
+      credentialConfigurationsSupported: { universityDegree: universityDegreeCredentialConfigurationSupportedBearer },
+    })
+    const { credentialOffer } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
+      issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+
+    const { compact } = await issuerTenant.sdJwtVc.sign({
+      payload: { vct: universityDegreeCredentialConfigurationSupportedBearer.vct },
+      issuer: { method: 'did', didUrl: issuer1.verificationMethod.id },
+      holder: { method: 'did', didUrl: holder1.verificationMethod.id },
+    })
+    vi.spyOn(
+      OpenId4VcIssuerService.prototype as unknown as {
+        getSignedCredentials: () => Promise<{ credentials: string[]; format: string }>
+      },
+      'getSignedCredentials'
+    ).mockResolvedValue({ credentials: [compact], format: 'dc+sd-jwt' })
+
+    const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+    const { deferredCredentials } = await holderTenant.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponse,
+      requireCryptographicHolderBinding: false,
+    })
+    expect(deferredCredentials).toHaveLength(1)
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    await expect(
+      holderTenant.openid4vc.holder.requestDeferredCredentials({
+        ...tokenResponse,
+        ...deferredCredentials[0],
+        issuerMetadata: resolvedCredentialOffer.metadata,
+      })
+    ).rejects.toThrow('Received a credential that is bound to a key, while the credential request contained no proofs.')
+
+    await holderTenant.endSession()
+    await issuerTenant.endSession()
   })
 
   it('holder uses a new response encryption key for each credential and deferred credential request', async () => {

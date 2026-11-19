@@ -128,6 +128,13 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   pkceRequired?: boolean
 
   /**
+   * When false, credential configurations without `proof_types_supported` are issued without holder binding.
+   *
+   * @default true
+   */
+  requireCryptographicHolderBinding?: boolean
+
+  /**
    * Invalid `tx_code` attempts before the issuance session moves to `Error`, enforced across concurrent
    * requests only with storage that supports locking (e.g. Postgres).
    *
@@ -476,6 +483,10 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get pkceRequired(): boolean {
     return this.options.pkceRequired ?? true
+  }
+
+  public get requireCryptographicHolderBinding(): boolean {
+    return this.options.requireCryptographicHolderBinding ?? true
   }
 
   /**
