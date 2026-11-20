@@ -1086,7 +1086,44 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     await issuerTenant.endSession()
   })
 
-  it('responds with 201 Created to a successful pushed authorization request', async () => {
+  const pushedAuthorizationRequestDpopTestCases: Array<{
+    name: string
+    issuerConfig: Pick<OpenId4VcIssuerModuleConfigOptions, 'dpopRequired'>
+    dpopJkt?: string
+    dpopHeaders?: Record<string, string>
+    expectedDpop?: { dpopJkt: string; required: boolean }
+    expectedStatus: number
+  }> = [
+    {
+      name: 'when DPoP is required only at the token endpoint',
+      issuerConfig: { dpopRequired: 'atTokenEndpoint' },
+      expectedDpop: undefined,
+      expectedStatus: 201,
+    },
+    {
+      name: 'with a supplied DPoP key thumbprint',
+      issuerConfig: { dpopRequired: 'atTokenEndpoint' },
+      dpopJkt: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      expectedDpop: { dpopJkt: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', required: true },
+      expectedStatus: 201,
+    },
+    {
+      name: 'by default without an early DPoP binding',
+      issuerConfig: {},
+      expectedDpop: undefined,
+      expectedStatus: 400,
+    },
+    {
+      name: 'with an invalid optional DPoP proof',
+      issuerConfig: { dpopRequired: 'atTokenEndpoint' },
+      dpopHeaders: { DPoP: 'invalid' },
+      expectedDpop: undefined,
+      expectedStatus: 400,
+    },
+  ]
+
+  it.each(pushedAuthorizationRequestDpopTestCases)('handles pushed authorization requests $name', async (options) => {
+    const { issuerConfig, dpopJkt, dpopHeaders, expectedDpop, expectedStatus } = options
     issuer = (await createAgentFromModules(
       {
         inMemory: new InMemoryWalletModule(),
@@ -1095,6 +1132,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           issuer: {
             baseUrl: issuanceBaseUrl,
             credentialRequestToCredentialMapper,
+            ...issuerConfig,
           },
         }),
         tenants: new TenantsModule(),
@@ -1146,7 +1184,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     const response = await fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/par`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...dpopHeaders },
       body: JSON.stringify({
         client_id: 'wallet',
         response_type: 'code',
@@ -1156,15 +1194,22 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         issuer_state: issuanceSession.authorization?.issuerState,
         code_challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         code_challenge_method: 'S256',
-        dpop_jkt: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        dpop_jkt: dpopJkt,
       }),
     })
 
-    expect(response.status).toBe(201)
-    expect(await response.json()).toMatchObject({
-      request_uri: expect.any(String),
-      expires_in: expect.any(Number),
-    })
+    expect(response.status).toBe(expectedStatus)
+    if (expectedStatus === 201) {
+      expect(await response.json()).toMatchObject({
+        request_uri: expect.any(String),
+        expires_in: expect.any(Number),
+      })
+      expect(await issuerTenant.openid4vc.issuer.getIssuanceSessionById(issuanceSession.id)).toMatchObject({
+        dpop: expectedDpop,
+      })
+    } else {
+      expect(await response.json()).toMatchObject({ error: 'invalid_dpop_proof' })
+    }
 
     clearIdpNock()
 

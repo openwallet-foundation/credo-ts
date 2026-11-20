@@ -169,8 +169,8 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           dpop: {
             ...dpop,
             allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
-            // First session config, fall back to global config
-            required: issuanceSession.dpop?.required ?? config.dpopRequired,
+            // First session config, fall back to the global token endpoint requirement.
+            required: issuanceSession.dpop?.required ?? config.dpopRequired !== false,
           },
           expectedTxCode: issuanceSession.userPin,
           preAuthorizedCodeExpiresAt:
@@ -215,11 +215,9 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           dpop: {
             ...dpop,
             allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
-            // NOTE: we don't look at the global config here. As we already checked and
-            // set required to true previously if client attestations were provided or required.
-            required: issuanceSession.dpop?.required,
-
-            // Ensure it matches previously provided jwk thumbprint
+            // A DPoP key supplied during authorization remains bound to the code. Without an early binding,
+            // the token endpoint still enforces the session or global token endpoint requirement.
+            required: issuanceSession.dpop?.required ?? config.dpopRequired !== false,
             expectedJwkThumbprint: issuanceSession.dpop?.dpopJkt,
           },
           pkce:
@@ -257,7 +255,9 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             ...dpop,
             allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
             // A DPoP-bound refresh token can only be used with a proof for the same key (RFC 9449 §5)
-            required: parsedRefreshToken.dpop !== undefined || (issuanceSession.dpop?.required ?? config.dpopRequired),
+            required:
+              parsedRefreshToken.dpop !== undefined ||
+              (issuanceSession.dpop?.required ?? config.dpopRequired !== false),
             expectedJwkThumbprint: parsedRefreshToken.dpop?.jwkThumbprint,
           },
           refreshTokenExpiresAt: parsedRefreshToken?.expiresAt,

@@ -268,8 +268,8 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     dpop: {
       ...parseResult.dpop,
       allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
-      // First session config, fall back to global config
-      required: issuanceSession.dpop?.required ?? config.dpopRequired,
+      // A per-session DPoP setting takes precedence over the global authorization request requirement.
+      required: issuanceSession.dpop?.required ?? config.dpopRequired === true,
     },
   })
 

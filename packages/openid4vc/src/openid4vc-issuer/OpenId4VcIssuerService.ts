@@ -419,8 +419,8 @@ export class OpenId4VcIssuerService {
           authorizationFlow: 'external',
           credentialConfigurationIds: Object.keys(requestedCredentialConfigurations),
         },
-        // The legacy dynamic issuance session honors the global `dpopRequired` config.
-        requireDpop: this.openId4VcIssuerConfig.dpopRequired,
+        // The legacy dynamic issuance session honors the global token endpoint DPoP requirement.
+        requireDpop: this.openId4VcIssuerConfig.dpopRequired !== false,
       })
     }
 
@@ -2520,7 +2520,7 @@ export class OpenId4VcIssuerService {
   // Refresh tokens are only issued bound to a DPoP key, as a wallet is a public client (RFC 9700 §2.2.2)
   private assertRefreshTokensRequireDpop(options: { generateRefreshTokens?: boolean; requireDpop?: boolean }) {
     const generateRefreshTokens = options.generateRefreshTokens ?? this.openId4VcIssuerConfig.generateRefreshTokens
-    const requireDpop = options.requireDpop ?? this.openId4VcIssuerConfig.dpopRequired
+    const requireDpop = options.requireDpop ?? this.openId4VcIssuerConfig.dpopRequired !== false
 
     if (generateRefreshTokens && !requireDpop) {
       throw new CredoError(

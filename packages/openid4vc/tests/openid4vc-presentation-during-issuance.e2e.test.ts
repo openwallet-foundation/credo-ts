@@ -1,6 +1,12 @@
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2, SdJwtVc, SdJwtVcIssuer } from '@credo-ts/core'
 import { ClaimFormat, SdJwtVcRecord } from '@credo-ts/core'
-import { createDpopHeadersForRequest, type Jwk } from '@openid4vc/oauth2'
+import {
+  calculateJwkThumbprint,
+  createDpopHeadersForRequest,
+  decodeJwt,
+  HashAlgorithm,
+  type Jwk,
+} from '@openid4vc/oauth2'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
@@ -642,8 +648,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
     })
 
-    // Simulate a client that did not use pkce in the authorization challenge request (allowed because
-    // `requirePkce` is `false` for this session), by removing the bound code challenge from the issuance session.
+    // Simulate an authorization request that did not bind PKCE.
     const issuanceSessionRepository = issuer.agent.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
     const issuanceSessionRecord = await issuanceSessionRepository.getById(issuer.agent.context, issuanceSession.id)
     issuanceSessionRecord.pkce = undefined
@@ -653,16 +658,18 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     const tokenEndpoint = resolvedCredentialOffer.metadata.authorizationServers[0].token_endpoint!
     const dpop = resolvedAuthorization.dpop
     if (!dpop) throw new Error('Expected dpop')
-    const requestAccessToken = async (additionalPayload: Record<string, string>) =>
+    const requestAccessToken = async (additionalPayload: Record<string, string>, includeDpop = true) =>
       fetch(tokenEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          ...(await createDpopHeadersForRequest({
-            request: { method: 'POST', url: tokenEndpoint },
-            callbacks: getOid4vcCallbacks(holder.agent.context),
-            signer: { method: 'jwk', alg: dpop.alg, publicJwk: dpop.jwk.toJson() as Jwk },
-          })),
+          ...(includeDpop
+            ? await createDpopHeadersForRequest({
+                request: { method: 'POST', url: tokenEndpoint },
+                callbacks: getOid4vcCallbacks(holder.agent.context),
+                signer: { method: 'jwk', alg: dpop.alg, publicJwk: dpop.jwk.toJson() as Jwk },
+              })
+            : undefined),
         },
         body: new URLSearchParams({
           grant_type: 'authorization_code',
@@ -681,10 +688,36 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       error_description: `Unexpected 'code_verifier' in access token request, no code challenge is bound to the grant`,
     })
 
-    // Without a code verifier the code can still be redeemed, as pkce was not required for this session
+    // A DPoP key committed during authorization can only redeem the code with that same key.
+    issuanceSessionRecord.dpop = {
+      required: true,
+      dpopJkt: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    }
+    await issuanceSessionRepository.update(issuer.agent.context, issuanceSessionRecord)
+    const mismatchedDpopResponse = await requestAccessToken({})
+    expect(mismatchedDpopResponse.status).toBe(400)
+    expect(await mismatchedDpopResponse.json()).toMatchObject({ error: 'invalid_dpop_proof' })
+
+    // Simulate an authorization request accepted without an early DPoP binding.
+    issuanceSessionRecord.dpop = undefined
+    await issuanceSessionRepository.update(issuer.agent.context, issuanceSessionRecord)
+    // DPoP remains mandatory at the token endpoint when there was no early binding.
+    const missingDpopResponse = await requestAccessToken({}, false)
+    expect(missingDpopResponse.status).toBe(400)
+    expect(await missingDpopResponse.json()).toMatchObject({ error: 'invalid_dpop_proof' })
+
+    // A DPoP proof at the token endpoint binds the access token when the authorization code was not bound.
     const tokenResponse = await requestAccessToken({})
     expect(tokenResponse.status).toBe(200)
-    expect(await tokenResponse.json()).toMatchObject({ access_token: expect.any(String) })
+    const tokenResponseBody = (await tokenResponse.json()) as { access_token: string; token_type: string }
+    expect(tokenResponseBody.token_type).toBe('DPoP')
+    expect(decodeJwt({ jwt: tokenResponseBody.access_token }).payload.cnf).toEqual({
+      jkt: await calculateJwkThumbprint({
+        hashAlgorithm: HashAlgorithm.Sha256,
+        hashCallback: getOid4vcCallbacks(holder.agent.context).hash,
+        jwk: dpop.jwk.toJson() as Jwk,
+      }),
+    })
   })
 
   it('e2e flow with requesting presentation of credentials before issuance but fails because invalid auth session', async () => {

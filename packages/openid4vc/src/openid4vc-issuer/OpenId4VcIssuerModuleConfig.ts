@@ -95,15 +95,18 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   requestUriExpiresInSeconds?: number
 
   /**
-   * Whether DPoP is required for all issuance sessions. If dpop is not required, but used by a client in the
-   * first request to credo, DPoP will be required going forward.
+   * Controls when DPoP is required for all issuance sessions.
+   *
+   * - `true` requires DPoP in authorization requests and at the token endpoint.
+   * - `false` does not require DPoP. A supplied proof is still validated and binds later requests to its key.
+   * - `'atTokenEndpoint'` permits authorization requests without DPoP, but requires it at the token endpoint.
    *
    * This value can be overridden per issuance session when creating a credential offer (`authorization.requireDpop`)
    * or in the `getDynamicIssuanceSession` callback (`requireDpop`).
    *
    * @default true
    */
-  dpopRequired?: boolean
+  dpopRequired?: boolean | 'atTokenEndpoint'
 
   /**
    * The DPoP signing algorithms supported by all issuers. Can be overridden per issuer with
@@ -446,15 +449,11 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
-   * Whether DPoP is required for all issuance sessions. If dpop is not required, but used by a client in the
-   * first request to credo, DPoP will be required going forward.
-   *
-   * This value can be overridden per issuance session when creating a credential offer (`authorization.requireDpop`)
-   * or in the `getDynamicIssuanceSession` callback (`requireDpop`).
+   * Controls when DPoP is required for all issuance sessions.
    *
    * @default true
    */
-  public get dpopRequired(): boolean {
+  public get dpopRequired(): boolean | 'atTokenEndpoint' {
     return this.options.dpopRequired ?? true
   }
 
