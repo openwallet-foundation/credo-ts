@@ -31,7 +31,7 @@ export class DidCommIssueCredentialV2Handler implements DidCommMessageHandler {
     credentialExchangeRecord: DidCommCredentialExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<DidCommIssueCredentialV2Handler>
   ) {
-    messageContext.agentContext.config.logger.info('Automatically sending acknowledgement with autoAccept')
+    messageContext.agentContext.config.logger.debug('Automatically sending acknowledgement with autoAccept')
     const { message } = await this.credentialProtocol.acceptCredential(messageContext.agentContext, {
       credentialExchangeRecord,
     })

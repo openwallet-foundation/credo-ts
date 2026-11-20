@@ -32,5 +32,11 @@ export interface W3cDataIntegrityCryptosuite {
     unsecuredDocument: W3cDataIntegrityUnsecuredDocument,
     options: W3cDataIntegrityCryptosuiteProofOptions
   ): Promise<W3cDataIntegrityCryptosuiteProof>
+
+  /**
+   * Returns `verified: false` when the proof does not verify. Implementations may also throw, for example for an
+   * unsupported key or a malformed `proofValue`. `W3cDataIntegrityProofService` reports a thrown
+   * `W3cDataIntegrityProcessingError` with its own issue, and any other error as a `PROOF_VERIFICATION_ERROR`.
+   */
   verifyProof(input: W3cDataIntegrityProofVerificationInput): Promise<W3cDataIntegrityProofVerificationResult>
 }

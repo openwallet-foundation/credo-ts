@@ -30,7 +30,7 @@ export class DidCommPresentationV2Handler implements DidCommMessageHandler {
     proofRecord: DidCommProofExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<DidCommPresentationV2Handler>
   ) {
-    messageContext.agentContext.config.logger.info('Automatically sending acknowledgement with autoAccept')
+    messageContext.agentContext.config.logger.debug('Automatically sending acknowledgement with autoAccept')
 
     const { message } = await this.proofProtocol.acceptPresentation(messageContext.agentContext, {
       proofRecord,

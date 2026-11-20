@@ -1,5 +1,5 @@
 import type { DidDocumentKey, DidDocumentRole } from '@credo-ts/core'
-import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { index, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const did = sqliteTable(
@@ -20,5 +20,10 @@ export const did = sqliteTable(
     // Custom Tags
     alternativeDids: text('alternative_dids', { mode: 'json' }).$type<string[]>(),
   },
-  (table) => sqliteBaseRecordIndexes(table, 'did')
+  (table) => [
+    ...sqliteBaseRecordIndexes(table, 'did'),
+
+    // Used to find the did record of each did
+    index('did_did_idx').on(table.contextCorrelationId, table.did),
+  ]
 )

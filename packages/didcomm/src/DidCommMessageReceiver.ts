@@ -183,7 +183,8 @@ export class DidCommMessageReceiver {
       await this.receiveMessageWithProgress(inboundMessage, options, progress)
       return 'processed'
     } catch (error) {
-      this.logger.error('Failed to process message', { error })
+      // A warning, as it's mostly the sender's message that is wrong. Services log their own failures as errors
+      this.logger.warn('Failed to process message', { error })
       const processingError =
         error instanceof Error
           ? error
@@ -290,9 +291,9 @@ export class DidCommMessageReceiver {
     const { plaintextMessage, senderKey, recipientKey, authenticatedSenderDid, recipientDid } = decryptedMessage
 
     this.logger.info(
-      `Received message with type '${plaintextMessage['@type']}', recipient key ${recipientKey?.fingerprint} and sender key ${senderKey?.fingerprint}`,
-      plaintextMessage
+      `Received message with type '${plaintextMessage['@type']}', recipient key ${recipientKey?.fingerprint} and sender key ${senderKey?.fingerprint}`
     )
+    this.logger.debug(`Contents of received message with type '${plaintextMessage['@type']}'`, plaintextMessage)
 
     const { connection, linkedByFromPrior, linkedBySupersededKey } = await this.findConnection(
       agentContext,
@@ -436,11 +437,11 @@ export class DidCommMessageReceiver {
     try {
       return await envelope.unpack(agentContext, message)
     } catch (error) {
-      this.logger.error('Error while decrypting message', {
+      this.logger.warn('Error while decrypting message', {
         error,
-        encryptedMessage: message,
         errorMessage: error instanceof Error ? error.message : error,
       })
+      this.logger.debug('Contents of message that failed decrypting', { encryptedMessage: message })
       throw error
     }
   }
@@ -774,10 +775,8 @@ export class DidCommMessageReceiver {
     try {
       messageTransformed = JsonTransformer.fromJSON(message, MessageClass)
     } catch (error) {
-      this.logger.error(`Error validating message ${message['@type']}`, {
-        errors: error,
-        message: JSON.stringify(message),
-      })
+      this.logger.warn(`Error validating message ${message['@type']}`, { errors: error })
+      this.logger.debug(`Contents of message ${message['@type']} that failed validating`, { message })
       throw new DidCommProblemReportError(`Error validating message ${message['@type']}`, {
         problemCode: DidCommProblemReportReason.MessageParseFailure,
       })

@@ -31,7 +31,7 @@ export class DidCommRequestPresentationV2Handler implements DidCommMessageHandle
     proofRecord: DidCommProofExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<DidCommRequestPresentationV2Handler>
   ) {
-    messageContext.agentContext.config.logger.info('Automatically sending presentation with autoAccept')
+    messageContext.agentContext.config.logger.debug('Automatically sending presentation with autoAccept')
 
     const { message } = await this.proofProtocol.acceptRequest(messageContext.agentContext, {
       proofRecord,

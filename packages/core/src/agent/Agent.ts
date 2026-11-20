@@ -129,5 +129,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     await this.dependencyManager.closeAgentContext(this.agentContext)
 
     this._isInitialized = false
+    this.logger.info('Agent shut down')
   }
 }

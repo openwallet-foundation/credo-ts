@@ -842,6 +842,56 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
         { recipientDid, action: KeylistUpdateActionV2.add, result: KeylistUpdateResultV2.ClientError },
       ])
     })
+
+    test('adds the did:key of an X25519 key agreement key', async () => {
+      const ed25519RecipientDid = 'did:key:z6Mkk5MA1CHPqnzvuCkrnevzvMJFJ5fXoYJjDNf6dn5i9Xf7'
+      const x25519RecipientDid = 'did:key:z6LSrxSLdK2MGB1kWYtJgNb7oVmLEN89Tniy39EqxVUncbGv'
+      const mediationRecord = new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
+        threadId: 'threadId',
+        protocolVersion: 'v2',
+      })
+
+      mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+      mockFunction(mediationRepository.findByQuery).mockResolvedValue([])
+      mockFunction(mediationRepository.update).mockResolvedValue(undefined)
+
+      // A v2 mediatee registers both the Ed25519 and the X25519 did:key of a new connection
+      const keylistUpdate = new DidCommKeylistUpdateV2Message({
+        updates: [
+          { recipientDid: ed25519RecipientDid, action: KeylistUpdateActionV2.add },
+          { recipientDid: x25519RecipientDid, action: KeylistUpdateActionV2.add },
+        ],
+      })
+      keylistUpdate.setThread({ threadId: 'threadId' })
+
+      const response = await mediatorService.processKeylistUpdateV2(
+        new DidCommInboundMessageContext(keylistUpdate, {
+          senderKey: testSenderKey,
+          connection: mockConnection,
+          agentContext,
+        })
+      )
+
+      // The Ed25519 did:key is checked in both indexes, the X25519 did:key only in `recipientDids`
+      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        { recipientKeys: [didKeyToVerkey(ed25519RecipientDid)] },
+        { limit: 1 }
+      )
+      expect(mediationRepository.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        { recipientDids: [x25519RecipientDid] },
+        { limit: 1 }
+      )
+      expect(mediationRecord.recipientDids).toEqual([ed25519RecipientDid, x25519RecipientDid])
+      expect(response.updated).toEqual([
+        { recipientDid: ed25519RecipientDid, action: KeylistUpdateActionV2.add, result: KeylistUpdateResultV2.Success },
+        { recipientDid: x25519RecipientDid, action: KeylistUpdateActionV2.add, result: KeylistUpdateResultV2.Success },
+      ])
+    })
   })
 
   describe('processForwardMessage (v1)', () => {

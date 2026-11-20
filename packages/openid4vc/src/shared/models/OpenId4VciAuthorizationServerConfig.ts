@@ -52,6 +52,17 @@ export interface OpenId4VciDirectAuthorizationServerConfig {
   clientAuthentication?: Optional<OpenId4VciAuthorizationServerClientAuthenticationClientSecret, 'type'>
 }
 
+/**
+ * Whether to use DPoP towards a chained authorization server:
+ * - `required`: use DPoP, the authorization request fails if the server does not advertise support
+ * - `preferred`: use DPoP if the server advertises support
+ * - `disallowed`: do not use DPoP, also when the server advertises support. Issuance sessions
+ *   that already use DPoP keep using it.
+ *
+ * When DPoP is used and Credo cannot create a compatible proof, it errors rather than falling back.
+ */
+export type OpenId4VciChainedAuthorizationServerDpopPolicy = 'required' | 'preferred' | 'disallowed'
+
 export interface OpenId4VciChainedAuthorizationServerConfig {
   type: 'chained'
 
@@ -69,17 +80,12 @@ export interface OpenId4VciChainedAuthorizationServerConfig {
 
   dpop?: {
     /**
-     * Whether to use DPoP towards this authorization server:
-     * - `required`: use DPoP, the authorization request fails if the server does not advertise support
-     * - `preferred`: use DPoP if the server advertises support
-     * - `disallowed`: do not use DPoP, also when the server advertises support. Issuance sessions
-     *   that already use DPoP keep using it.
-     *
-     * When DPoP is used and Credo cannot create a compatible proof, it errors rather than falling back.
+     * Whether to use DPoP towards this authorization server. Can be overridden per issuance session
+     * with `dpopPolicy` from the `getChainedAuthorizationRequestParameters` callback.
      *
      * @default 'preferred'
      */
-    policy?: 'required' | 'preferred' | 'disallowed'
+    policy?: OpenId4VciChainedAuthorizationServerDpopPolicy
 
     /**
      * Existing KMS key id to use for new DPoP sessions. Existing issuance sessions retain their
