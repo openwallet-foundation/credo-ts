@@ -6,7 +6,7 @@ import { JsonTransformer } from '../../../../../../../core/src/utils/JsonTransfo
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../../../core/tests/helpers'
 import { DummyTransportSession } from '../../../../../__tests__/stubs'
-import { DidCommEventTypes } from '../../../../../DidCommEvents'
+import { DidCommMessageReceiver } from '../../../../../DidCommMessageReceiver'
 import { DidCommMessageSender } from '../../../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../../../DidCommModuleConfig'
 import { DidCommTransportService } from '../../../../../DidCommTransportService'
@@ -66,6 +66,7 @@ const messageSender = new MessageSenderMock()
 const eventEmitter = new EventEmitterMock()
 const connectionService = new ConnectionServiceMock()
 const sessionService = new DidCommMessagePickupSessionService()
+const messageReceiver = { receiveMessageAndReportFailure: vi.fn().mockResolvedValue('processed') }
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -75,6 +76,7 @@ const agentContext = getAgentContext({
     [DidCommModuleConfig, didCommModuleConfig],
     [DidCommMessagePickupModuleConfig, messagePickupModuleConfig],
     [DidCommMessagePickupSessionService, sessionService],
+    [DidCommMessageReceiver, messageReceiver],
   ],
 })
 const transportService = new DidCommTransportService(agentContext, eventEmitter)
@@ -574,29 +576,14 @@ describe('DidCommMessagePickupV2Protocol', () => {
       expect(messagesReceivedMessage).toEqual(expectedMessagesReceived)
     })
 
-    it('calls the event emitter for each message', async () => {
-      // This is to not take into account events previously emitted
+    it('processes each message in order', async () => {
       vi.clearAllMocks()
 
       const messageDeliveryMessage = new DidCommMessageDeliveryV2Message({
         threadId: uuid(),
         attachments: [
-          new DidCommAttachment({
-            id: '1',
-            data: {
-              json: {
-                first: 'value',
-              },
-            },
-          }),
-          new DidCommAttachment({
-            id: '2',
-            data: {
-              json: {
-                second: 'value',
-              },
-            },
-          }),
+          new DidCommAttachment({ id: '1', data: { json: { first: 'value' } } }),
+          new DidCommAttachment({ id: '2', data: { json: { second: 'value' } } }),
         ],
       })
       const messageContext = new DidCommInboundMessageContext(messageDeliveryMessage, {
@@ -607,21 +594,68 @@ describe('DidCommMessagePickupV2Protocol', () => {
 
       await pickupProtocol.processDelivery(messageContext)
 
-      expect(eventEmitter.emit).toHaveBeenCalledTimes(2)
-      expect(eventEmitter.emit).toHaveBeenNthCalledWith(1, agentContext, {
-        type: DidCommEventTypes.DidCommMessageReceived,
-        payload: {
-          message: { first: 'value' },
-          contextCorrelationId: agentContext.contextCorrelationId,
-        },
+      expect(messageReceiver.receiveMessageAndReportFailure).toHaveBeenCalledTimes(2)
+      expect(messageReceiver.receiveMessageAndReportFailure).toHaveBeenNthCalledWith(
+        1,
+        agentContext,
+        { first: 'value' },
+        { agentContext }
+      )
+      expect(messageReceiver.receiveMessageAndReportFailure).toHaveBeenNthCalledWith(
+        2,
+        agentContext,
+        { second: 'value' },
+        { agentContext }
+      )
+    })
+
+    it('acknowledges unreadable messages but not messages whose processing failed', async () => {
+      messageReceiver.receiveMessageAndReportFailure
+        .mockResolvedValueOnce('processed')
+        .mockResolvedValueOnce('unreadable')
+        .mockResolvedValueOnce('failed')
+
+      const messageDeliveryMessage = new DidCommMessageDeliveryV2Message({
+        threadId: uuid(),
+        attachments: ['1', '2', '3'].map((id) => new DidCommAttachment({ id, data: { json: { id } } })),
       })
-      expect(eventEmitter.emit).toHaveBeenNthCalledWith(2, agentContext, {
-        type: DidCommEventTypes.DidCommMessageReceived,
-        payload: {
-          message: { second: 'value' },
-          contextCorrelationId: agentContext.contextCorrelationId,
-        },
+      const messageContext = new DidCommInboundMessageContext(messageDeliveryMessage, {
+        senderKey: testSenderKey,
+        connection: mockConnection,
+        agentContext,
       })
+
+      const messagesReceivedMessage = await pickupProtocol.processDelivery(messageContext)
+
+      expect(messagesReceivedMessage.messageIdList).toEqual(['1', '2'])
+    })
+
+    it('acknowledges the messages only after they have been processed', async () => {
+      let finishProcessing: () => void = () => {}
+      messageReceiver.receiveMessageAndReportFailure.mockReturnValueOnce(
+        new Promise<void>((resolve) => {
+          finishProcessing = resolve
+        })
+      )
+
+      const messageDeliveryMessage = new DidCommMessageDeliveryV2Message({
+        threadId: uuid(),
+        attachments: [new DidCommAttachment({ id: '1', data: { json: { a: 'value' } } })],
+      })
+      const messageContext = new DidCommInboundMessageContext(messageDeliveryMessage, {
+        senderKey: testSenderKey,
+        connection: mockConnection,
+        agentContext,
+      })
+
+      const onAcknowledged = vi.fn()
+      const delivery = pickupProtocol.processDelivery(messageContext).then(onAcknowledged)
+      await new Promise((resolve) => setImmediate(resolve))
+      expect(onAcknowledged).not.toHaveBeenCalled()
+
+      finishProcessing()
+      await delivery
+      expect(onAcknowledged).toHaveBeenCalledWith(expect.any(DidCommMessagesReceivedV2Message))
     })
   })
 })
