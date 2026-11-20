@@ -27,6 +27,7 @@ import {
   DidCommDidRotateProblemReportMessage,
   DidCommHangupMessage,
 } from '../messages'
+import { DidCommConnectionHangupReason, DidCommDidExchangeState } from '../models'
 import type { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 
@@ -107,21 +108,24 @@ export class DidCommDidRotateService {
 
     const message = new DidCommHangupMessage({})
 
-    // Remove did to indicate termination status for this connection
+    // Remove did and abandon the connection to indicate its termination
     if (connection.did) {
       connection.previousDids = [...connection.previousDids, connection.did]
     }
 
     connection.did = undefined
+    connection.errorMessage = DidCommConnectionHangupReason.ByUs
 
-    await agentContext.dependencyManager.resolve(DidCommConnectionService).update(agentContext, connection)
+    await agentContext
+      .resolve(DidCommConnectionService)
+      .updateState(agentContext, connection, DidCommDidExchangeState.Abandoned)
 
     return message
   }
 
   /**
-   * Process a Hangup message and mark connection's theirDid as undefined so it is effectively terminated.
-   * Connection Record itself is not deleted (TODO: config parameter to automatically do so)
+   * Process a Hangup message: remove the connection's theirDid and set its state to abandoned, so it is
+   * effectively terminated. Connection Record itself is not deleted (TODO: config parameter to automatically do so)
    *
    * Its previous did will be stored in record in order to be able to recognize any message received
    * afterwards.
@@ -138,8 +142,11 @@ export class DidCommDidRotateService {
 
     const previousTheirDid = connection.theirDid
     connection.theirDid = undefined
+    connection.errorMessage = DidCommConnectionHangupReason.ByOtherParty
 
-    await agentContext.dependencyManager.resolve(DidCommConnectionService).update(agentContext, connection)
+    await agentContext
+      .resolve(DidCommConnectionService)
+      .updateState(agentContext, connection, DidCommDidExchangeState.Abandoned)
     this.emitDidRotatedEvent(agentContext, connection, {
       previousTheirDid,
     })

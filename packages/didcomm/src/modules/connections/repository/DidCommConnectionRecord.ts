@@ -3,7 +3,12 @@ import { BaseRecord, CredoError, createRecordEncodingSchema, utils, zWithUpgrade
 import { z } from 'zod'
 import type { DidCommVersion } from '../../../util/didcommVersion'
 import type { DidCommConnectionType } from '../models'
-import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from '../models'
+import {
+  DidCommConnectionHangupReason,
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
+  DidCommHandshakeProtocol,
+} from '../models'
 import type { DidCommConnectionMetadata } from './DidCommConnectionMetadataTypes'
 
 export interface DidCommConnectionRecordProps {
@@ -47,33 +52,56 @@ export type DefaultDidCommConnectionTags = {
   previousTheirDids?: Array<string>
 }
 
-const didCommConnectionRecordEncodingSchema = createRecordEncodingSchema({
-  state: z.string().nullish(),
-  role: z.string().nullish(),
-  did: z.string().nullish(),
-  theirDid: z.string().nullish(),
-  theirLabel: z.string().nullish(),
-  alias: z.string().nullish(),
-  autoAcceptConnection: z.boolean().nullish(),
-  imageUrl: z.string().nullish(),
-  threadId: z.string().nullish(),
-  mediatorId: z.string().nullish(),
-  errorMessage: z.string().nullish(),
+// A hang-up used to only remove the did of the party that hung up, and left the connection in a ready state
+const upgradeHungUpConnection = (encoded: Record<string, unknown>) => {
+  const isReadyState =
+    encoded.state === DidCommDidExchangeState.Completed || encoded.state === DidCommDidExchangeState.ResponseSent
+  if (!isReadyState) return encoded
 
-  // We used to store connection record using major.minor version, but we now
-  // only store the major version, storing .x for the minor version. We have this
-  // transformation so we don't have to migrate the data in the database.
-  protocol: zWithUpgrade(z.string(), (value) => {
-    if (!value || typeof value !== 'string' || !value.includes('.') || value.endsWith('.x')) return value
-    return `${value.split('.').slice(0, -1).join('.')}.x`
-  }).nullish(),
-  outOfBandId: z.string().nullish(),
-  invitationDid: z.string().nullish(),
-  connectionTypes: z.array(z.string()).nullish(),
-  previousDids: z.array(z.string()).nullish(),
-  previousTheirDids: z.array(z.string()).nullish(),
-  didcommVersion: z.enum(['v1', 'v2']).nullish(),
-})
+  const hasPrevious = (dids: unknown) => Array.isArray(dids) && dids.length > 0
+  const hungUpByUs = !encoded.did && hasPrevious(encoded.previousDids)
+  const hungUpByOtherParty = !encoded.theirDid && hasPrevious(encoded.previousTheirDids)
+  if (!hungUpByUs && !hungUpByOtherParty) return encoded
+
+  return {
+    ...encoded,
+    state: DidCommDidExchangeState.Abandoned,
+    errorMessage:
+      encoded.errorMessage ??
+      (hungUpByUs ? DidCommConnectionHangupReason.ByUs : DidCommConnectionHangupReason.ByOtherParty),
+  }
+}
+
+const didCommConnectionRecordEncodingSchema = createRecordEncodingSchema(
+  {
+    state: z.string().nullish(),
+    role: z.string().nullish(),
+    did: z.string().nullish(),
+    theirDid: z.string().nullish(),
+    theirLabel: z.string().nullish(),
+    alias: z.string().nullish(),
+    autoAcceptConnection: z.boolean().nullish(),
+    imageUrl: z.string().nullish(),
+    threadId: z.string().nullish(),
+    mediatorId: z.string().nullish(),
+    errorMessage: z.string().nullish(),
+
+    // We used to store connection record using major.minor version, but we now
+    // only store the major version, storing .x for the minor version. We have this
+    // transformation so we don't have to migrate the data in the database.
+    protocol: zWithUpgrade(z.string(), (value) => {
+      if (!value || typeof value !== 'string' || !value.includes('.') || value.endsWith('.x')) return value
+      return `${value.split('.').slice(0, -1).join('.')}.x`
+    }).nullish(),
+    outOfBandId: z.string().nullish(),
+    invitationDid: z.string().nullish(),
+    connectionTypes: z.array(z.string()).nullish(),
+    previousDids: z.array(z.string()).nullish(),
+    previousTheirDids: z.array(z.string()).nullish(),
+    didcommVersion: z.enum(['v1', 'v2']).nullish(),
+  },
+  { upgrade: upgradeHungUpConnection }
+)
 
 export class DidCommConnectionRecord extends BaseRecord<
   DefaultDidCommConnectionTags,
