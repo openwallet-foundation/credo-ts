@@ -71,7 +71,10 @@ import {
   getScopesFromCredentialConfigurationsSupported,
 } from '../shared/issuerMetadataUtils'
 import { getLocalAccessTokenJwks, getOid4vcLocalJwksCallback } from '../shared/localJwks'
-import type { OpenId4VciChainedAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
+import type {
+  OpenId4VciChainedAuthorizationServerConfig,
+  OpenId4VciChainedAuthorizationServerDpopPolicy,
+} from '../shared/models/OpenId4VciAuthorizationServerConfig'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import {
   credoJwtIssuerToOpenId4VcJwtIssuer,
@@ -1992,6 +1995,8 @@ export class OpenId4VcIssuerService {
       authorizationServerMetadata: AuthorizationServerMetadata
       // Only the authorization request creates a key, later requests reuse the persisted one.
       createKey?: boolean
+      // Overrides the policy of the authorization server config. Only used by the authorization request.
+      policy?: OpenId4VciChainedAuthorizationServerDpopPolicy
     }
   ): Promise<{
     dpop?: RequestDpopOptions
@@ -1999,16 +2004,17 @@ export class OpenId4VcIssuerService {
   }> {
     const persisted = options.issuanceSession.chainedIdentity?.externalDpop
     const dpopConfig = options.chainedAuthorizationServerConfig.dpop
+    const policy = options.policy ?? dpopConfig?.policy
     const supportedSigningAlgorithms = options.authorizationServerMetadata.dpop_signing_alg_values_supported
 
-    // A session that started with DPoP keeps the key it started with.
-    if (dpopConfig?.policy === 'disallowed' && !persisted) return {}
+    // The authorization request decides on DPoP. Later requests use the key it stored, or no DPoP without one.
+    if (!persisted && (!options.createKey || policy === 'disallowed')) return {}
 
     if (!supportedSigningAlgorithms) {
       if (persisted) {
         throw new CredoError('Authorization server no longer advertises DPoP support for this issuance session.')
       }
-      if (dpopConfig?.policy === 'required') {
+      if (policy === 'required') {
         throw new CredoError(`Authorization server does not support DPoP.`)
       }
 
@@ -2018,10 +2024,6 @@ export class OpenId4VcIssuerService {
     if (supportedSigningAlgorithms.length === 0) {
       throw new CredoError(`Authorization server advertises DPoP support without any signing algorithms.`)
     }
-    if (!persisted && !options.createKey) {
-      throw new CredoError('Chained DPoP key was not initialized during the authorization request.')
-    }
-
     const persistedPublicJwk = persisted?.publicJwk
       ? Kms.PublicJwk.fromKmsKey({
           keyId: persisted.keyId,
