@@ -52,7 +52,6 @@ import {
   createdRoutingKmsKeys,
   createPeerDidFromServices,
   getResolvedDidcommServiceWithSigningKeyId,
-  routingKmsKeys,
   routingToServices,
 } from './services/helpers'
 
@@ -364,7 +363,7 @@ export class DidExchangeProtocol {
       did: didDocument.id,
       // Without routing the did uses the invitation keys, which a single-use invitation passes on
       keys: routing
-        ? routingKmsKeys(routing)
+        ? createdRoutingKmsKeys(routing, outOfBandRecord)
         : (outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.CreatedKeys)?.keys ?? []),
     })
 

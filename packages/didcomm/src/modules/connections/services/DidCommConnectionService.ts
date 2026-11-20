@@ -197,8 +197,8 @@ export class DidCommConnectionService {
         }
       }
 
-      // Their incoming ~service may rotate their keys, but must be sent with a key from their previous ~service.
-      // With our own invitation their previous message always has one, as we could only reply through it.
+      // An incoming ~service may rotate their keys, so it must be sent with a key from their previous ~service.
+      // As the invitation's sender their previous message always has one, as we could only reply through it.
       const previousService = lastReceivedMessage?.service?.resolvedDidCommService
       if (lastReceivedMessage && (previousService || outOfBandRecord.role === DidCommOutOfBandRole.Sender)) {
         const senderKeyFound =

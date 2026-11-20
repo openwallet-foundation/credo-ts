@@ -29,11 +29,9 @@ export interface SendPingOptions {
 
 export interface DidCommDeleteConnectionOptions {
   /**
-   * Also delete the did:peer DIDs and the KMS keys Credo created for the connection. DIDs and keys you passed in
-   * (`ourDid`, `toDid`, `routing`), and the ones its invitation or another connection from that invitation still has,
-   * are kept, unless the routing has `deleteWithRecord`. A DID Credo created for the connection is deleted even when
-   * you passed it as `ourDid` elsewhere, so don't reuse it. Nothing is deleted for connections created before this
-   * option existed, as they don't record which keys are theirs.
+   * Also delete the did:peer DIDs and KMS keys Credo created for the connection. DIDs and keys you passed in are kept
+   * unless the routing has `deleteWithRecord`, as are those its invitation or another connection still uses. Nothing
+   * is deleted for connections created before this option existed.
    *
    * Delete an invitation and its connections one after the other. Run in parallel, each keeps the keys they share.
    *
@@ -240,7 +238,7 @@ export class DidCommConnectionsApi {
     // 2. When the out-of-band invitation has no inline services, as we don't want to generate a legacy did doc from a service did
     const routing =
       outOfBandRecord.reusable || outOfBandRecord.outOfBandInvitation.getInlineServices().length === 0
-        ? await this.routingService.getRouting(this.agentContext)
+        ? { ...(await this.routingService.getRouting(this.agentContext)), deleteWithRecord: true }
         : undefined
 
     const message = await this.didExchangeProtocol.createResponse(
@@ -410,10 +408,14 @@ export class DidCommConnectionsApi {
    * Terminate a connection by sending a hang-up message to the other party. The connection record itself and any
    * keys used for mediation will only be deleted if `deleteAfterHangup` flag is set.
    *
-   * @param options.deleteAssociatedKeys with `deleteAfterHangup`, also delete the DIDs and keys Credo created for the
-   * connection (see {@link DidCommDeleteConnectionOptions.deleteAssociatedKeys})
+   * @param options.deleteAssociatedKeys also delete the DIDs and keys Credo created for the connection (see
+   * {@link DidCommDeleteConnectionOptions.deleteAssociatedKeys}). Requires `deleteAfterHangup`.
    */
   public async hangup(options: { connectionId: string; deleteAfterHangup?: boolean; deleteAssociatedKeys?: boolean }) {
+    if (options.deleteAssociatedKeys && !options.deleteAfterHangup) {
+      throw new CredoError(`'deleteAssociatedKeys' requires 'deleteAfterHangup'`)
+    }
+
     const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
 
     const connectionBeforeHangup = connection.clone()
@@ -559,16 +561,16 @@ export class DidCommConnectionsApi {
     if (options?.deleteAssociatedKeys && createdKeys) {
       const { outOfBandId } = connection
       const outOfBandRecord = outOfBandId ? await this.outOfBandService.findById(this.agentContext, outOfBandId) : null
-      const otherConnections = outOfBandId
-        ? (await this.connectionService.findAllByOutOfBandId(this.agentContext, outOfBandId)).filter(
-            ({ id }) => id !== connectionId
-          )
-        : []
 
-      await deleteCreatedDidsAndKeys(this.agentContext, createdKeys, [
-        outOfBandRecord?.metadata.get(DidCommOutOfBandRecordMetadataKeys.CreatedKeys),
-        ...otherConnections.map((other) => other.metadata.get(DidCommConnectionMetadataKeys.CreatedKeys)),
-      ])
+      await deleteCreatedDidsAndKeys(
+        this.agentContext,
+        createdKeys,
+        // The other connections of the invitation aren't loaded: a DID they still use is found by query
+        [outOfBandRecord?.metadata.get(DidCommOutOfBandRecordMetadataKeys.CreatedKeys)],
+        // Exclude both record from "other records still using it", so the DID is not kipped
+        // due to the records referencing each other.
+        outOfBandId ? [connectionId, outOfBandId] : [connectionId]
+      )
     }
 
     return this.connectionService.deleteById(this.agentContext, connectionId)

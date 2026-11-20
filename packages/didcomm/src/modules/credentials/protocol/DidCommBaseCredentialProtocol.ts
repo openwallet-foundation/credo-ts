@@ -283,14 +283,14 @@ export abstract class DidCommBaseCredentialProtocol<
     if (deleteAssociatedCredentials) {
       for (const credential of credentialExchangeRecord.credentials) {
         const formatService = this.getFormatServiceForRecordType(credential.credentialRecordType)
-        await formatService
-          .deleteCredentialById(agentContext, credential.credentialRecordId, {
+        try {
+          await formatService.deleteCredentialById(agentContext, credential.credentialRecordId, {
             deleteAssociatedKeys: options?.deleteAssociatedKeys,
           })
-          .catch((error) => {
-            // Deleted by an earlier call that failed afterwards
-            if (!(error instanceof RecordNotFoundError)) throw error
-          })
+        } catch (error) {
+          // Deleted by an earlier call that failed afterwards
+          if (!(error instanceof RecordNotFoundError)) throw error
+        }
       }
     }
 

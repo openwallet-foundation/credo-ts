@@ -92,6 +92,10 @@ describe('deleteById with deleteAssociatedKeys', () => {
     const [, aliceConnection] = await makeConnection(faber, alice)
     const [keyId] = await didKeyIds(alice, aliceConnection.did as string)
 
+    await expect(
+      alice.didcomm.connections.hangup({ connectionId: aliceConnection.id, deleteAssociatedKeys: true })
+    ).rejects.toThrow("'deleteAssociatedKeys' requires 'deleteAfterHangup'")
+
     await alice.didcomm.connections.hangup({
       connectionId: aliceConnection.id,
       deleteAfterHangup: true,
@@ -266,6 +270,37 @@ describe('deleteById with deleteAssociatedKeys', () => {
     for (const keyId of keyIds) expect(await keyExists(faber, keyId)).toBe(true)
   })
 
+  test('keeps a DID that another invitation or connection got as ourDid', async () => {
+    // Faber's second invitation gets the DID of its connection, and Alice's connection the DID of her invitation
+    const [faberConnection, aliceConnection] = await makeConnection(faber, alice, { didCommVersion: 'v2' })
+    const faberDid = faberConnection.did as string
+    const aliceDid = aliceConnection.did as string
+    const faberKeyIds = await didKeyIds(faber, faberDid)
+    const aliceKeyIds = await didKeyIds(alice, aliceDid)
+
+    await faber.didcomm.connections.deleteById(faberConnection.id, { deleteAssociatedKeys: true })
+    expect(await didKeyIds(faber, faberDid)).toEqual(faberKeyIds)
+    for (const keyId of faberKeyIds) expect(await keyExists(faber, keyId)).toBe(true)
+
+    const aliceInvitation = (await alice.didcomm.oob.getAll()).find(
+      (record) => record.outOfBandInvitation.v2Invitation?.from === aliceDid
+    )
+    await alice.didcomm.oob.deleteById(aliceInvitation?.id as string, { deleteAssociatedKeys: true })
+    expect(await didKeyIds(alice, aliceDid)).toEqual(aliceKeyIds)
+    for (const keyId of aliceKeyIds) expect(await keyExists(alice, keyId)).toBe(true)
+  })
+
+  test('keeps a DID that a v1 invitation got as invitationDid', async () => {
+    const [, aliceConnection] = await makeConnection(faber, alice)
+    const did = aliceConnection.did as string
+    const keyIds = await didKeyIds(alice, did)
+    await alice.didcomm.oob.createInvitation({ didCommVersion: 'v1', invitationDid: did })
+
+    await alice.didcomm.connections.deleteById(aliceConnection.id, { deleteAssociatedKeys: true })
+    expect(await didKeyIds(alice, did)).toEqual(keyIds)
+    for (const keyId of keyIds) expect(await keyExists(alice, keyId)).toBe(true)
+  })
+
   test('keeps the DID of a reusable v2 invitation until the invitation and its connections are deleted', async () => {
     const outOfBandRecord = await faber.didcomm.oob.createInvitation({ didCommVersion: 'v2', multiUseInvitation: true })
     const invitationDid = outOfBandRecord.outOfBandInvitation.v2Invitation?.from as string
@@ -287,6 +322,34 @@ describe('deleteById with deleteAssociatedKeys', () => {
     await faber.didcomm.connections.deleteById(faberConnection.id, { deleteAssociatedKeys: true })
     expect(await faber.dids.getCreatedDids({ did: invitationDid })).toHaveLength(0)
     for (const keyId of [...invitationKeyIds, ...rotatedKeyIds]) expect(await keyExists(faber, keyId)).toBe(false)
+  })
+
+  test('keeps the DID of a deleted reusable v2 invitation while another of its connections uses it', async () => {
+    const outOfBandRecord = await faber.didcomm.oob.createInvitation({ didCommVersion: 'v2', multiUseInvitation: true })
+    const invitationDid = outOfBandRecord.outOfBandInvitation.v2Invitation?.from as string
+    const invitationKeyIds = await didKeyIds(faber, invitationDid)
+
+    for (const [agent, content] of [
+      [alice, 'hello from alice'],
+      [acme, 'hello from acme'],
+    ] as const) {
+      const { connectionRecord } = await agent.didcomm.oob.receiveInvitation(outOfBandRecord.outOfBandInvitation, {
+        label: '',
+      })
+      await agent.didcomm.basicMessages.sendMessage(connectionRecord?.id as string, content)
+      await waitForBasicMessageSubject(faberReplay, { content })
+    }
+    const [first, second] = await faber.didcomm.connections.findAllByOutOfBandId(outOfBandRecord.id)
+    expect(second.previousDids).toEqual([invitationDid])
+
+    await faber.didcomm.oob.deleteById(outOfBandRecord.id, { deleteAssociatedKeys: true })
+    await faber.didcomm.connections.deleteById(first.id, { deleteAssociatedKeys: true })
+    expect(await didKeyIds(faber, invitationDid)).toEqual(invitationKeyIds)
+    for (const keyId of invitationKeyIds) expect(await keyExists(faber, keyId)).toBe(true)
+
+    await faber.didcomm.connections.deleteById(second.id, { deleteAssociatedKeys: true })
+    expect(await faber.dids.getCreatedDids({ did: invitationDid })).toHaveLength(0)
+    for (const keyId of invitationKeyIds) expect(await keyExists(faber, keyId)).toBe(false)
   })
 
   test('keeps the DID of a single-use v2 invitation until both records are deleted', async () => {

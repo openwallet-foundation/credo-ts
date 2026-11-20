@@ -67,11 +67,9 @@ const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 
 export interface DidCommDeleteOutOfBandOptions {
   /**
-   * Also delete the KMS keys and the did:peer DID Credo created for the invitation. Keys and DIDs you passed in
-   * (`routing`, `ourDid`, `invitationDid`), and the ones a connection from the invitation still has, are kept, unless
-   * the routing has `deleteWithRecord`. A DID Credo created for the invitation is deleted even when you passed it as
-   * `ourDid` elsewhere, so don't reuse it. Nothing is deleted for out-of-band records created before this option
-   * existed, as they don't record which keys are theirs.
+   * Also delete the did:peer DID and KMS keys Credo created for the invitation. DIDs and keys you passed in are kept
+   * unless the routing has `deleteWithRecord`, as are those a connection or another invitation still uses. Nothing
+   * is deleted for out-of-band records created before this option existed.
    *
    * Delete an invitation and its connections one after the other. Run in parallel, each keeps the keys they share.
    *
@@ -1008,7 +1006,11 @@ export class DidCommOutOfBandApi {
   }
 
   /**
-   * Delete an out of band record by id
+   * Delete an out of band record by id.
+   *
+   *
+   * For out of band records used with a connection-less exchange this prevents sending or
+   * receiving later messages on it, such as a revocation notification.
    *
    * @param outOfBandId the out of band record id
    * @param options.deleteAssociatedKeys also delete the keys and DID Credo created for the invitation
@@ -1044,7 +1046,8 @@ export class DidCommOutOfBandApi {
       await deleteCreatedDidsAndKeys(
         this.agentContext,
         createdKeys,
-        relatedConnections.map((connection) => connection.metadata.get(DidCommConnectionMetadataKeys.CreatedKeys))
+        relatedConnections.map((connection) => connection.metadata.get(DidCommConnectionMetadataKeys.CreatedKeys)),
+        [outOfBandId]
       )
     }
 

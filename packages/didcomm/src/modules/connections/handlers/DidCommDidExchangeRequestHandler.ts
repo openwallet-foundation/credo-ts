@@ -95,7 +95,7 @@ export class DidCommDidExchangeRequestHandler implements DidCommMessageHandler {
       // 2. When the out-of-band invitation has no inline services, as we don't want to generate a legacy did doc from a service did
       const routing =
         outOfBandRecord.reusable || outOfBandRecord.outOfBandInvitation.getInlineServices().length === 0
-          ? await this.routingService.getRouting(agentContext)
+          ? { ...(await this.routingService.getRouting(agentContext)), deleteWithRecord: true }
           : undefined
 
       const message = await this.didExchangeProtocol.createResponse(

@@ -215,18 +215,18 @@ export class TenantAgentContextProvider implements AgentContextProvider {
       const contextCorrelationId = event.metadata.contextCorrelationId
       if (contextCorrelationId === this.rootAgentContext.contextCorrelationId) return
 
-      this.tenantSessionCoordinator.assertTenantContextCorrelationId(contextCorrelationId)
-      const tenantId = this.tenantSessionCoordinator.getTenantIdForContextCorrelationId(contextCorrelationId)
-      // Nothing awaits this listener, so an error would be an unhandled rejection
       for (const recipientKey of event.payload.recipientKeys) {
-        await this.tenantRecordService
-          .deleteTenantRoutingRecord(this.rootAgentContext, tenantId, recipientKey)
-          .catch((error) =>
-            this.logger.warn(
-              `Failed to delete tenant routing record for recipient key ${recipientKey.fingerprint} of tenant '${tenantId}'`,
-              { error }
-            )
+        // Nothing awaits this listener, so an error would be an unhandled rejection
+        try {
+          this.tenantSessionCoordinator.assertTenantContextCorrelationId(contextCorrelationId)
+          const tenantId = this.tenantSessionCoordinator.getTenantIdForContextCorrelationId(contextCorrelationId)
+          await this.tenantRecordService.deleteTenantRoutingRecord(this.rootAgentContext, tenantId, recipientKey)
+        } catch (error) {
+          this.logger.warn(
+            `Failed to delete tenant routing record for recipient key ${recipientKey.fingerprint} of tenant context '${contextCorrelationId}'`,
+            { error }
           )
+        }
       }
     })
   }

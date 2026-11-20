@@ -5,6 +5,7 @@ import {
   DidKey,
   type KeyDidCreateOptions,
   SdJwtVcRecord,
+  SdJwtVcRepository,
   TypedArrayEncoder,
   useInstanceFromCredentialRecord,
 } from '@credo-ts/core'
@@ -338,9 +339,9 @@ describe('sd-jwt-vc end to end test', () => {
       holder: { method: 'jwk', jwk: holderJwk },
       issuer: { didUrl: issuerDidUrl, method: 'did' },
     })
-    const record = await holder.sdJwtVc.store({
-      record: new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: compact }] }),
-    })
+    // `store` requires the key id, so save the record like a version before key ids did
+    const record = new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: compact }] })
+    await holder.dependencyManager.resolve(SdJwtVcRepository).save(holder.context, record)
 
     await holder.sdJwtVc.deleteById(record.id, { deleteAssociatedKeys: true })
     await expect(holder.kms.getPublicKey({ keyId })).rejects.toThrow('not found')
@@ -378,7 +379,12 @@ describe('sd-jwt-vc end to end test', () => {
       })
       const did = didState.did as string
       const [didRecord] = await holder.dids.getCreatedDids({ did })
-      const record = new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVc }] })
+      const { compact } = await issuer.sdJwtVc.sign({
+        payload: { vct: 'https://example.com/vct-type' },
+        holder: { method: 'did', didUrl: `${did}#${did.split(':')[2]}` },
+        issuer: { didUrl: issuerDidUrl, method: 'did' },
+      })
+      const record = new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: compact }] })
       addCredentialHolderBindingDids(record, [did])
       await holder.sdJwtVc.store({ record })
       return { record, did, keyId: didRecord.keys?.[0].kmsKeyId as string }
