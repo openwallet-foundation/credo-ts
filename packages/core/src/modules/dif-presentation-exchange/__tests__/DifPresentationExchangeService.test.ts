@@ -7,6 +7,7 @@ import type { AgentContext } from '../../../agent'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
 import { JsonEncoder, JsonTransformer } from '../../../utils'
+import { CredentialMultiInstanceState, CredentialMultiInstanceUseMode } from '../../../utils/credentialUseTypes'
 import {
   DidDocumentBuilder,
   DidKey,
@@ -19,7 +20,7 @@ import {
 import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../kms'
 import { MdocDeviceResponse, MdocRecord, MdocRepository } from '../../mdoc'
 import { sprindFunkeTestVectorBase64Url } from '../../mdoc/__tests__/mdoc.fixtures'
-import { SdJwtVcRecord, SdJwtVcRepository } from '../../sd-jwt-vc'
+import { SdJwtVcModuleConfig, SdJwtVcRecord, SdJwtVcRepository } from '../../sd-jwt-vc'
 import {
   ClaimFormat,
   defaultDocumentLoader,
@@ -52,6 +53,7 @@ const agentContext = getAgentContext({
     [InjectionSymbols.Stop$, new Subject<boolean>()],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
+    [SdJwtVcModuleConfig, new SdJwtVcModuleConfig()],
   ],
 })
 
@@ -1170,6 +1172,58 @@ describe('DifPresentationExchangeService', () => {
     expect(getProofTypeForLdpVc).toThrow("No signature suite supports the verification method type 'Multikey'")
   })
 
+  test('presents and counts a new instance of an SD-JWT VC based on the use mode', async () => {
+    const [{ compactSdJwtVc }] = sdJwtVcRecord.credentialInstances
+    const record = new SdJwtVcRecord({
+      credentialInstances: [
+        { compactSdJwtVc, kmsKeyId: 'first-instance-key' },
+        { compactSdJwtVc, kmsKeyId: 'new-instance-key' },
+      ],
+    })
+    await sdJwtVcRepository.save(agentContext, record)
+    const signSpy = vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]), backend: 'node' })
+
+    const createPresentation = async (useMode?: CredentialMultiInstanceUseMode) =>
+      pexService.createPresentation(agentContext, {
+        presentationDefinition: {
+          id: 'sd-jwt-definition',
+          input_descriptors: [
+            { id: 'pid', constraints: { limit_disclosure: 'required', fields: [{ path: ['$.given_name'] }] } },
+          ],
+        },
+        credentialsForInputDescriptor: {
+          pid: [
+            {
+              claimFormat: ClaimFormat.SdJwtDc,
+              credentialRecord: await sdJwtVcRepository.getById(agentContext, record.id),
+              disclosedPayload: {},
+              useMode,
+            },
+          ],
+        },
+        challenge: 'challenge',
+        domain: 'verifier.example.com',
+        presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
+      })
+    const usageCounts = async () =>
+      (await sdJwtVcRepository.getById(agentContext, record.id)).credentialInstances.map(({ usageCount }) => usageCount)
+
+    await createPresentation()
+    expect(signSpy).toHaveBeenLastCalledWith(expect.objectContaining({ keyId: 'new-instance-key' }))
+    expect(await usageCounts()).toStrictEqual([undefined, 1])
+
+    await createPresentation(CredentialMultiInstanceUseMode.New)
+    expect(signSpy).toHaveBeenLastCalledWith(expect.objectContaining({ keyId: 'first-instance-key' }))
+    expect(await usageCounts()).toStrictEqual([1, 1])
+
+    await expect(createPresentation(CredentialMultiInstanceUseMode.New)).rejects.toThrow(
+      'No new credential instance available'
+    )
+    expect(await usageCounts()).toStrictEqual([1, 1])
+
+    await sdJwtVcRepository.deleteById(agentContext, record.id)
+  })
+
   describe('ldp_vp and jwt_vp with an external submission', () => {
     const definition: DifPresentationExchangeDefinitionV2 = {
       id: 'degree-definition',
@@ -1362,7 +1416,7 @@ describe('DifPresentationExchangeService', () => {
         proofType: 'Ed25519Signature2018',
         verificationMethod: `${issuerDid}#${DidKey.fromDid(issuerDid).publicJwk.fingerprint}`,
       })
-      credentialRecord = W3cCredentialRecord.fromCredential(credential)
+      credentialRecord = await agent.w3cCredentials.store({ record: W3cCredentialRecord.fromCredential(credential) })
     })
 
     afterAll(async () => {
@@ -1401,6 +1455,19 @@ describe('DifPresentationExchangeService', () => {
       expect(presentation.proof).toMatchObject({ type: 'Ed25519Signature2020', verificationMethod: holderKid })
       const verification = await agent.w3cCredentials.verifyPresentation({ presentation, challenge, domain })
       expect(verification.isValid).toBe(true)
+    })
+
+    test('counts the use of the first instance', async () => {
+      const usageCount = async () =>
+        (await agent.w3cCredentials.getById(credentialRecord.id)).credentialInstances[0].usageCount ?? 0
+      const usageCountBefore = await usageCount()
+
+      await createPresentation({})
+
+      expect(await usageCount()).toBe(usageCountBefore + 1)
+      expect((await agent.w3cCredentials.getById(credentialRecord.id)).multiInstanceState).toBe(
+        CredentialMultiInstanceState.SingleInstanceUsed
+      )
     })
 
     test.each([

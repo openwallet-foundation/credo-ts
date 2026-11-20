@@ -957,15 +957,19 @@ export class DcqlService {
           createdPresentation = signedPresentation
         } else if (presentationToCreate.claimFormat === ClaimFormat.JwtW3cVp) {
           const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
-          const firstCredential = presentationToCreate.credentialRecord.firstCredential
+          const { credentialInstance } = await useInstanceFromCredentialRecord({
+            agentContext,
+            useMode: presentationToCreate.useMode,
+            credentialRecord: presentationToCreate.credentialRecord,
+          })
 
-          if (firstCredential.claimFormat === ClaimFormat.DiVc) {
+          if (credentialInstance.claimFormat === ClaimFormat.DiVc) {
             throw new DcqlError('DCQL JWT W3C VP creation does not support W3C V2 Data Integrity credentials yet')
           }
 
           const w3cV2Presentation = new W3cV2Presentation({
-            holder: firstCredential.resolvedCredential.credentialSubjectIds[0],
-            verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(firstCredential)],
+            holder: credentialInstance.resolvedCredential.credentialSubjectIds[0],
+            verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credentialInstance)],
           })
 
           const signedPresentation = await w3cV2CredentialService.signPresentation<ClaimFormat.JwtW3cVp>(agentContext, {
@@ -978,23 +982,26 @@ export class DcqlService {
           encodedCreatedPresentation = signedPresentation.encoded
           createdPresentation = signedPresentation
         } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtW3cVp) {
-          const presentationFrame = this.getPresentationFrame(
-            presentationToCreate.credentialRecord.firstCredential.encoded,
-            presentationToCreate
-          )
           if (!domain) {
             throw new DcqlError('Missing domain property for creating SdJwtVc presentation.')
           }
 
+          const { credentialInstance } = await useInstanceFromCredentialRecord({
+            agentContext,
+            useMode: presentationToCreate.useMode,
+            credentialRecord: presentationToCreate.credentialRecord,
+          })
+          const presentationFrame = this.getPresentationFrame(credentialInstance.encoded, presentationToCreate)
+
           const w3cV2SdJwtCredentialService = agentContext.resolve(W3cV2SdJwtCredentialService)
           const sdJwtVc = await w3cV2SdJwtCredentialService.present(agentContext, {
-            credential: presentationToCreate.credentialRecord.firstCredential.encoded,
+            credential: credentialInstance.encoded,
             presentationFrame,
           })
 
           const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
           const w3cV2Presentation = new W3cV2Presentation({
-            holder: presentationToCreate.credentialRecord.firstCredential.resolvedCredential.credentialSubjectIds[0],
+            holder: credentialInstance.resolvedCredential.credentialSubjectIds[0],
             verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(sdJwtVc)],
           })
 
