@@ -408,15 +408,10 @@ export type MdocDcApiVerifyResponseOptions = {
   now?: Date
 }
 
-export type MdocDcApiResolveRequestOptions = {
-  request: MdocDcApiRequest
-
-  /**
-   * The origin as provided by the platform. Annex C C.5 requires the mdoc to abort when the DC API
-   * did not provide one, so resolving without an origin is rejected.
-   */
-  origin: string
-
+/**
+ * The options for resolving a device request that do not depend on how it was received.
+ */
+export type MdocResolveRequestBaseOptions = {
   /**
    * Trust anchors the reader certificate chain of each doc request is validated against.
    *
@@ -433,8 +428,8 @@ export type MdocDcApiResolveRequestOptions = {
   /**
    * Values the wallet can disclose device signed. A requested element that is not issuer signed in
    * a stored mdoc only matches when its value is provided here and the device key is authorized for
-   * it in the MSO. Pass the same values in the `deviceNameSpaces` of the credential to
-   * `createDcApiResponse`.
+   * it in the MSO. Pass the same values in the `deviceNameSpaces` of the credential when creating
+   * the response.
    */
   deviceNameSpaces?: MdocNameSpaces
 
@@ -468,6 +463,34 @@ export type MdocDcApiResolveRequestOptions = {
   treatAmbiguousMultipleDocRequestsAsAlternatives?: boolean
 
   now?: Date
+}
+
+export type MdocDcApiResolveRequestOptions = MdocResolveRequestBaseOptions & {
+  request: MdocDcApiRequest
+
+  /**
+   * The origin as provided by the platform. Annex C C.5 requires the mdoc to abort when the DC API
+   * did not provide one, so resolving without an origin is rejected.
+   */
+  origin: string
+}
+
+/**
+ * A device request received over a channel the application handles itself, such as ISO/IEC 18013-5
+ * proximity (BLE, NFC or Wi-Fi Aware) or ISO/IEC TS 18013-7 Annex A. The application decrypts the
+ * session messages and builds the session transcript; Credo only sees the plain device request.
+ */
+export type MdocResolveDeviceRequestOptions = MdocResolveRequestBaseOptions & {
+  /**
+   * The `DeviceRequest` CBOR, decrypted from the session message it was received in.
+   */
+  deviceRequest: Uint8Array
+
+  /**
+   * The `SessionTranscript` CBOR of the session, or the `SessionTranscriptBytes` that wrap it. Reader
+   * authentication is verified over it, and the device response is signed over it.
+   */
+  sessionTranscript: Uint8Array
 }
 
 /**
@@ -630,6 +653,15 @@ export type MdocDcApiResolvedRequest = MdocResolvedRequest & {
 }
 
 /**
+ * A device request resolved with `resolveDeviceRequest`. The response is created for the device
+ * request and session transcript it was resolved with.
+ */
+export type MdocResolvedDeviceRequest = MdocResolvedRequest & {
+  deviceRequest: Uint8Array
+  sessionTranscript: Uint8Array
+}
+
+/**
  * A credential to answer a doc request of a resolved request with.
  */
 export type MdocCredentialForRequest = {
@@ -680,6 +712,11 @@ export type MdocDcApiCreateResponseOptions = {
   credentials: MdocCredentialForRequest[]
 }
 
+export type MdocCreateDeviceResponseOptions = {
+  resolvedRequest: MdocResolvedDeviceRequest
+  credentials: MdocCredentialForRequest[]
+}
+
 export type MdocSelectCredentialsForRequestOptions = {
   /**
    * Which mode to use for usage of the credential instances. Only credentials that can provide an
@@ -691,8 +728,9 @@ export type MdocSelectCredentialsForRequestOptions = {
 }
 
 /**
- * The credentials selected to answer a resolved request, together with that request. For a resolved
- * DC API request it can be passed to `createDcApiResponse` as is.
+ * The credentials selected to answer a resolved request, together with that request. It can be
+ * passed as is to `MdocApi.createDcApiResponse` for a resolved DC API request, and to
+ * `MdocApi.createDeviceResponse` for a request resolved with `MdocApi.resolveDeviceRequest`.
  */
 export type MdocSelectedCredentials<ResolvedRequest extends MdocResolvedRequest = MdocResolvedRequest> = {
   resolvedRequest: ResolvedRequest

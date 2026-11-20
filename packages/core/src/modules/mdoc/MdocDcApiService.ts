@@ -2,6 +2,7 @@ import {
   CoseKey,
   type CredentialMatchFailure,
   type CredentialMatchSuccess,
+  DeviceRequest,
   defaultVerificationCallback,
   EncryptionInfo,
   Holder,
@@ -34,14 +35,20 @@ import { MdocDeviceResponse } from './MdocDeviceResponse'
 import { MdocDeviceRequestNotSatisfiedError, MdocError, MdocVerificationSessionExpiredError } from './MdocError'
 import { MdocEventTypes, type MdocVerificationSessionStateChangedEvent } from './MdocEvents'
 import type {
+  MdocCreateDeviceResponseOptions,
+  MdocCredentialForRequest,
   MdocDcApiCreateResponseOptions,
   MdocDcApiCreateVerificationSessionOptions,
   MdocDcApiResolvedRequest,
   MdocDcApiResolveRequestOptions,
   MdocDcApiVerifyResponseOptions,
   MdocFailedCredential,
+  MdocResolveDeviceRequestOptions,
+  MdocResolvedDeviceRequest,
   MdocResolvedDocRequest,
   MdocResolvedDocRequestSuccess,
+  MdocResolvedRequest,
+  MdocResolveRequestBaseOptions,
   MdocValidCredential,
 } from './MdocOptions'
 import { MdocVerificationSessionState } from './MdocVerificationSessionState'
@@ -64,7 +71,9 @@ import {
 const defaultExpiresInSeconds = 5 * 60
 
 /**
- * Verifier and wallet APIs for the ISO/IEC TS 18013-7:2025 Annex C (`org-iso-mdoc`) DC API.
+ * Verifier and wallet APIs for the ISO/IEC TS 18013-7:2025 Annex C (`org-iso-mdoc`) DC API, and
+ * wallet APIs for device requests received over a channel the application handles itself, such as
+ * ISO/IEC 18013-5 proximity.
  *
  * @internal
  */
@@ -418,9 +427,9 @@ export class MdocDcApiService {
   ): Promise<MdocDcApiResolvedRequest> {
     const mdocContext = getMdocContext(agentContext)
 
-    // Reader trust is not resolved here, but per doc request below. `parseRequest` takes a single
-    // list of trust anchors for the whole request, while every doc request carries its own reader
-    // certificate chain and the trust callbacks are scoped to the chain they are asked about.
+    // Reader trust is not resolved here, but per doc request in `matchDeviceRequest`. `parseRequest`
+    // takes a single list of trust anchors for the whole request, while every doc request carries its
+    // own reader certificate chain and the trust callbacks are scoped to the chain they are asked about.
     // `parseRequest` therefore only verifies the reader auth signatures.
     const parsedRequest = await IsoMdocDcApi.parseRequest(
       {
@@ -432,9 +441,62 @@ export class MdocDcApiService {
       mdocContext
     )
 
+    const resolvedRequest = await this.matchDeviceRequest(agentContext, parsedRequest.deviceRequest, {
+      ...options,
+      exchange: { type: 'dcApi', origin: parsedRequest.origin },
+    })
+
+    return { ...resolvedRequest, origin: parsedRequest.origin, parsedRequest }
+  }
+
+  /**
+   * Verify the reader authentication of a device request received over a channel the application
+   * handles itself, such as ISO/IEC 18013-5 proximity (wallet side), and match it against stored
+   * mdocs.
+   */
+  public async resolveDeviceRequest(
+    agentContext: AgentContext,
+    options: MdocResolveDeviceRequestOptions
+  ): Promise<MdocResolvedDeviceRequest> {
+    let deviceRequest: DeviceRequest
+    try {
+      deviceRequest = DeviceRequest.decode(options.deviceRequest)
+    } catch (error) {
+      throw new MdocError('Unable to decode the device request', { cause: error })
+    }
+
+    // Like `parseRequest` in `resolveRequest`, only the reader auth signatures are verified here. The
+    // reader certificate chain of every doc request is checked in `matchDeviceRequest`.
+    await Holder.verifyDeviceRequest(
+      {
+        deviceRequest,
+        sessionTranscript: options.sessionTranscript,
+        disableCertificateChainValidation: true,
+        now: options.now,
+      },
+      getMdocContext(agentContext)
+    )
+
+    const resolvedRequest = await this.matchDeviceRequest(agentContext, deviceRequest, {
+      ...options,
+      exchange: { type: 'deviceRequest' },
+    })
+
+    return { ...resolvedRequest, deviceRequest: options.deviceRequest, sessionTranscript: options.sessionTranscript }
+  }
+
+  /**
+   * Match a device request, of which the reader auth signatures are verified, against the stored
+   * mdocs, and check the reader certificate chain of every doc request.
+   */
+  private async matchDeviceRequest(
+    agentContext: AgentContext,
+    deviceRequest: DeviceRequest,
+    options: MdocResolveRequestBaseOptions & { exchange: VerificationTypeMdocReaderAuth['exchange'] }
+  ): Promise<MdocResolvedRequest> {
     const candidates = await this.getCandidates(
       agentContext,
-      parsedRequest.docRequests.map((docRequest) => docRequest.docType),
+      deviceRequest.docRequests.map((docRequest) => docRequest.itemsRequest.docType),
       options.useMode ?? CredentialMultiInstanceUseMode.NewOrFirst
     )
 
@@ -444,7 +506,7 @@ export class MdocDcApiService {
       ? nameSpacesRecordToDeviceNamespaces(options.deviceNameSpaces)
       : undefined
     const holderMatch = Holder.matchDeviceRequest({
-      deviceRequest: parsedRequest.deviceRequest,
+      deviceRequest,
       credentials: candidates.map(({ mdoc }) => ({ issuerSigned: mdoc.issuerSigned, deviceNamespaces })),
       treatAmbiguousMultipleDocRequestsAsAlternatives: options.treatAmbiguousMultipleDocRequestsAsAlternatives,
     })
@@ -465,17 +527,18 @@ export class MdocDcApiService {
     })
 
     const docRequests: MdocResolvedDocRequest[] = []
-    for (const [docRequestIndex, docRequest] of parsedRequest.docRequests.entries()) {
+    for (const [docRequestIndex, docRequest] of deviceRequest.docRequests.entries()) {
+      const { itemsRequest } = docRequest
       const nameSpaces = Object.fromEntries(
-        Array.from(docRequest.namespaces.entries()).map(([nameSpace, elements]) => [
+        Array.from(itemsRequest.namespaces.entries()).map(([nameSpace, elements]) => [
           nameSpace,
           Object.fromEntries(elements.entries()),
         ])
       )
 
-      const readerAuth = docRequest.hasReaderAuth
+      const readerAuth = docRequest.readerAuth
         ? {
-            certificateChain: (docRequest.readerCertificateChain ?? []).map((certificate) =>
+            certificateChain: docRequest.readerAuth.certificateChain.map((certificate) =>
               X509Service.parseCertificate(agentContext, { encodedCertificate: certificate })
             ),
           }
@@ -486,8 +549,8 @@ export class MdocDcApiService {
           certificateChain: readerAuth.certificateChain,
           verification: {
             type: 'mdocReaderAuth',
-            exchange: { type: 'dcApi', origin: parsedRequest.origin },
-            docType: docRequest.docType,
+            exchange: options.exchange,
+            docType: itemsRequest.docType,
             nameSpaces,
           },
           trustedReaderCertificates: options.trustedReaderCertificates,
@@ -496,10 +559,10 @@ export class MdocDcApiService {
       }
 
       const docRequestMatch = holderMatch.docRequests[docRequestIndex]
-      const requestInfo = docRequest.docRequest.itemsRequest.requestInfo
+      const requestInfo = itemsRequest.requestInfo
       const resolvedDocRequest = {
         docRequestIndex,
-        docType: docRequest.docType,
+        docType: itemsRequest.docType,
         nameSpaces,
         requestInfo: requestInfo ? fromDocRequestInfo(requestInfo) : undefined,
         readerAuth,
@@ -521,19 +584,15 @@ export class MdocDcApiService {
     // whether the request can be answered. The doc requests are only narrowed to the successful ones
     // when every doc request is requested, as otherwise the failed ones are kept so the wallet can
     // see which use cases it can answer.
-    const resolvedRequest = {
-      origin: parsedRequest.origin,
-      useCases: holderMatch.useCases.map(toResolvedUseCase),
-      parsedRequest,
-    }
+    const useCases = holderMatch.useCases.map(toResolvedUseCase)
 
     if (!holderMatch.success) {
-      return { ...resolvedRequest, success: false, useCasesSource: holderMatch.useCasesSource, docRequests }
+      return { useCases, success: false, useCasesSource: holderMatch.useCasesSource, docRequests }
     }
 
     if (holderMatch.useCasesSource === 'allDocRequests') {
       return {
-        ...resolvedRequest,
+        useCases,
         success: true,
         useCasesSource: holderMatch.useCasesSource,
         docRequests: docRequests.filter(
@@ -542,7 +601,7 @@ export class MdocDcApiService {
       }
     }
 
-    return { ...resolvedRequest, success: true, useCasesSource: holderMatch.useCasesSource, docRequests }
+    return { useCases, success: true, useCasesSource: holderMatch.useCasesSource, docRequests }
   }
 
   /**
@@ -576,42 +635,75 @@ export class MdocDcApiService {
     options: MdocDcApiCreateResponseOptions
   ): Promise<IsoMdocDcApiResponse> {
     const parsedRequest = options.resolvedRequest.parsedRequest as IsoMdocDcApiParsedRequest
-    const deviceKeys: PublicJwk[] = []
-
-    const documents = await Promise.all(
-      options.credentials.map(
-        async ({ docRequestIndex, record, useMode, elements, alternatives, deviceNameSpaces }) => {
-          const mdocRecord =
-            record instanceof MdocRecord ? record : await this.mdocRepository.getById(agentContext, record)
-
-          const { credentialInstance: mdoc } = await useInstanceFromCredentialRecord({
-            agentContext,
-            credentialRecord: mdocRecord,
-            useMode: useMode ?? CredentialMultiInstanceUseMode.NewOrFirst,
-          })
-
-          const deviceKey = mdoc.deviceKey
-          if (!deviceKey.hasKeyId) {
-            throw new MdocError('Unable to create device response. The mdoc device key has no key id.')
-          }
-          deviceKeys.push(deviceKey)
-
-          return {
-            docRequestIndex,
-            issuerSigned: mdoc.issuerSigned,
-            deviceKey: CoseKey.fromJwk(mdocSigningJwk(deviceKey)),
-            elements,
-            alternatives,
-            deviceNamespaces: deviceNameSpaces ? nameSpacesRecordToDeviceNamespaces(deviceNameSpaces) : undefined,
-          }
-        }
-      )
-    )
+    const { documents, deviceKeys } = await this.getResponseDocuments(agentContext, options.credentials)
 
     return await IsoMdocDcApi.createResponse(
       { parsedRequest, documents },
       getMdocContext(agentContext, { keys: deviceKeys })
     )
+  }
+
+  /**
+   * Create the device response for a request resolved with {@link MdocDcApiService.resolveDeviceRequest}
+   * (wallet side). It is not encrypted, as the application encrypts it for its session.
+   */
+  public async createDeviceResponse(
+    agentContext: AgentContext,
+    options: MdocCreateDeviceResponseOptions
+  ): Promise<MdocDeviceResponse> {
+    const { documents, deviceKeys } = await this.getResponseDocuments(agentContext, options.credentials)
+
+    const deviceResponse = await Holder.createDeviceResponseForDeviceRequest(
+      {
+        deviceRequest: DeviceRequest.decode(options.resolvedRequest.deviceRequest),
+        sessionTranscript: options.resolvedRequest.sessionTranscript,
+        documents: documents.map(({ deviceKey, ...document }) => ({
+          ...document,
+          signature: { signingKey: deviceKey },
+        })),
+      },
+      getMdocContext(agentContext, { keys: deviceKeys })
+    )
+
+    return MdocDeviceResponse.fromBase64Url(TypedArrayEncoder.toBase64Url(deviceResponse.encode()))
+  }
+
+  /**
+   * The documents to answer a resolved request with, one per credential, and the device keys to sign
+   * them with.
+   */
+  private async getResponseDocuments(agentContext: AgentContext, credentials: MdocCredentialForRequest[]) {
+    const deviceKeys: PublicJwk[] = []
+
+    const documents = await Promise.all(
+      credentials.map(async ({ docRequestIndex, record, useMode, elements, alternatives, deviceNameSpaces }) => {
+        const mdocRecord =
+          record instanceof MdocRecord ? record : await this.mdocRepository.getById(agentContext, record)
+
+        const { credentialInstance: mdoc } = await useInstanceFromCredentialRecord({
+          agentContext,
+          credentialRecord: mdocRecord,
+          useMode: useMode ?? CredentialMultiInstanceUseMode.NewOrFirst,
+        })
+
+        const deviceKey = mdoc.deviceKey
+        if (!deviceKey.hasKeyId) {
+          throw new MdocError('Unable to create device response. The mdoc device key has no key id.')
+        }
+        deviceKeys.push(deviceKey)
+
+        return {
+          docRequestIndex,
+          issuerSigned: mdoc.issuerSigned,
+          deviceKey: CoseKey.fromJwk(mdocSigningJwk(deviceKey)),
+          elements,
+          alternatives,
+          deviceNamespaces: deviceNameSpaces ? nameSpacesRecordToDeviceNamespaces(deviceNameSpaces) : undefined,
+        }
+      })
+    )
+
+    return { documents, deviceKeys }
   }
 
   private async updateState(

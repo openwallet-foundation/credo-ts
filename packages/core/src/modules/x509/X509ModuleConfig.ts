@@ -39,7 +39,7 @@ export type X509VerificationTypeCredential = {
  * Reader authentication on an incoming mdoc request.
  *
  * There is no separate legacy shape for this verification type: reader authentication is only
- * resolved on the DC API paths that were added after this callback was deprecated, so the type of
+ * resolved on the mdoc request paths that were added after this callback was deprecated, so the type of
  * the `getTrustedIssuersForVerification` callback is reused as-is.
  */
 export type X509VerificationTypeMdocReaderAuth = VerificationTypeMdocReaderAuth
