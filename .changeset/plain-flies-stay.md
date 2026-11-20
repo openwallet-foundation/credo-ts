@@ -2,7 +2,6 @@
 "@credo-ts/anoncreds": patch
 "@credo-ts/askar": patch
 "@credo-ts/askar-to-drizzle-storage-migration": patch
-"@credo-ts/cheqd": patch
 "@credo-ts/core": patch
 "@credo-ts/didcomm": patch
 "@credo-ts/drizzle-storage": patch

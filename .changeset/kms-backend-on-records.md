@@ -2,11 +2,10 @@
 '@credo-ts/core': minor
 '@credo-ts/didcomm': minor
 '@credo-ts/openid4vc': minor
-'@credo-ts/cheqd': patch
 '@credo-ts/webvh': patch
 ---
 
-Records now store KMS keys as a `KmsKeyReference` (`{ keyId, kmsBackend }`), so key operations no longer search every backend. Older records still work. Storing a key without its backend logs a warning. Create keys you pass to Credo with `PublicJwk.fromKmsKey(await agent.kms.createKey(...))` to keep the backend. The did:key, did:jwk, did:peer and did:cheqd registrars accept a `backend` in `createKey`, and the chained authorization server takes `dpop.kmsBackend`.
+Records now store KMS keys as a `KmsKeyReference` (`{ keyId, kmsBackend }`), so key operations no longer search every backend. Older records still work. Storing a key without its backend logs a warning. Create keys you pass to Credo with `PublicJwk.fromKmsKey(await agent.kms.createKey(...))` to keep the backend. The did:key, did:jwk and did:peer registrars accept a `backend` in `createKey`, and the chained authorization server takes `dpop.kmsBackend`.
 
 Breaking changes:
 

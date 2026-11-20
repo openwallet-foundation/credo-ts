@@ -45,28 +45,17 @@ When running in a container your project root directory will be `/work`. Use thi
 
 ## Running tests
 
-Test are executed using vitest. E2E tests (ending in `.e2e.test.ts`) require the **cheqd ledger**, **postgres database**, or **redis** to be running. Drizzle tests (ending in `drizzle.e2e.test.ts`) require the **postgres database** to be running.
+Test are executed using vitest. E2E tests (ending in `.e2e.test.ts`) require the **postgres database** or **redis** to be running. Drizzle tests (ending in `drizzle.e2e.test.ts`) require the **postgres database** to be running.
 
 NOTE: when running the Drizzle tests, you must first run `pnpm build`, as the CLI requires the built packages.
 
 ### Quick Setup
 
-To quickly set up all services needed to run tests (Postgres, Redis and Cheqd Ledger), run the following command:
+To quickly set up all services needed to run tests (Postgres and Redis), run the following command:
 
 ```sh
 docker compose up -d
 ```
-
-If you're running on an ARM based machine (such as Apple Silicon), use the `docker-compose.arm.yml` file instead:
-
-```sh
-docker compose -f docker-compose.arm.yml up --build -d --wait --wait-timeout 600
-```
-
-This builds a local cheqd image with the official Linux ARM64 `cheqd-noded` release archive.
-The upstream 4.2.1 ARM64 image contains an AMD64 node binary; the build verifies the archive
-checksum before replacing that binary. Update the pinned archive, checksum, and base image
-together when upgrading cheqd.
 
 ### Run all tests
 
@@ -88,4 +77,4 @@ You can also run **all** tests:
 pnpm test
 ```
 
-Ledger integrations such as Indy VDR and Hedera, and their test ledgers, are maintained in [credo-ts-ext](https://github.com/openwallet-foundation/credo-ts-ext).
+Ledger integrations such as Indy VDR, Hedera and cheqd, and their test ledgers, are maintained in [credo-ts-ext](https://github.com/openwallet-foundation/credo-ts-ext).
