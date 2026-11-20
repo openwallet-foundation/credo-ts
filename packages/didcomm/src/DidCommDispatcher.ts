@@ -144,13 +144,14 @@ export class DidCommDispatcher {
           })
         }
       } else {
-        this.logger.error(`Error handling message with type ${message.type}`, {
-          message: message.toJSON(),
+        this.logger.warn(`Error handling message with type ${message.type}`, {
+          messageId: message.id,
           error,
           senderKey: senderKey?.fingerprint,
           recipientKey: recipientKey?.fingerprint,
           connectionId: connection?.id,
         })
+        this.logger.debug(`Contents of message ${message.id} that failed handling`, { message: message.toJSON() })
 
         throw error
       }

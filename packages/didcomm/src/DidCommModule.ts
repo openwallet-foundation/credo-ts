@@ -203,7 +203,8 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
                 receivedAt: e.payload.receivedAt,
               })
               .catch((error) => {
-                agentContext.config.logger.error('Failed to process message', { error })
+                // A warning, as it's mostly the sender's message that is wrong. Services log their own failures as errors
+                agentContext.config.logger.warn('Failed to process message', { error })
                 const processingError =
                   error instanceof Error
                     ? error
