@@ -2,7 +2,7 @@ import { Subject } from 'rxjs'
 import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import type { AgentContext } from '../../../../../../../core/src/agent'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
-import { CredoError } from '../../../../../../../core/src/error'
+import { CredoError, RecordNotFoundError } from '../../../../../../../core/src/error'
 import { JsonTransformer } from '../../../../../../../core/src/utils'
 import { JsonEncoder } from '../../../../../../../core/src/utils/JsonEncoder'
 import {
@@ -798,7 +798,44 @@ describe('credentialProtocol', () => {
       expect(deleteCredentialMock).toHaveBeenNthCalledWith(
         1,
         agentContext,
-        credentialExchangeRecord.credentials[0].credentialRecordId
+        credentialExchangeRecord.credentials[0].credentialRecordId,
+        { deleteAssociatedKeys: undefined }
+      )
+    })
+
+    it('keeps the exchange record when deleting a credential fails, and skips deleted credentials on retry', async () => {
+      const deleteCredentialMock = mockFunction(testCredentialFormatService.deleteCredentialById)
+      const repositoryDeleteSpy = mockFunction(credentialRepository.delete)
+      const credentialExchangeRecord = mockCredentialRecord()
+      const options = { deleteAssociatedDidCommMessages: false, deleteAssociatedKeys: true }
+
+      deleteCredentialMock.mockRejectedValueOnce(new CredoError('KMS unavailable'))
+      await expect(credentialProtocol.delete(agentContext, credentialExchangeRecord, options)).rejects.toThrow(
+        'KMS unavailable'
+      )
+      expect(repositoryDeleteSpy).not.toHaveBeenCalled()
+
+      deleteCredentialMock.mockRejectedValueOnce(
+        new RecordNotFoundError('not found', { recordType: 'W3cCredentialRecord' })
+      )
+      await credentialProtocol.delete(agentContext, credentialExchangeRecord, options)
+      expect(repositoryDeleteSpy).toHaveBeenCalledWith(agentContext, credentialExchangeRecord)
+    })
+
+    it('passes deleteAssociatedKeys to deleteCredentialById', async () => {
+      const deleteCredentialMock = mockFunction(testCredentialFormatService.deleteCredentialById)
+
+      const credentialExchangeRecord = mockCredentialRecord()
+      await credentialProtocol.delete(agentContext, credentialExchangeRecord, {
+        deleteAssociatedDidCommMessages: false,
+        deleteAssociatedKeys: true,
+      })
+
+      expect(deleteCredentialMock).toHaveBeenNthCalledWith(
+        1,
+        agentContext,
+        credentialExchangeRecord.credentials[0].credentialRecordId,
+        { deleteAssociatedKeys: true }
       )
     })
 
@@ -827,7 +864,8 @@ describe('credentialProtocol', () => {
       expect(deleteCredentialMock).toHaveBeenNthCalledWith(
         1,
         agentContext,
-        credentialExchangeRecord.credentials[0].credentialRecordId
+        credentialExchangeRecord.credentials[0].credentialRecordId,
+        { deleteAssociatedKeys: undefined }
       )
     })
     it('deleteAssociatedDidCommMessages should default to true', async () => {
@@ -841,7 +879,8 @@ describe('credentialProtocol', () => {
       expect(deleteCredentialMock).toHaveBeenNthCalledWith(
         1,
         agentContext,
-        credentialExchangeRecord.credentials[0].credentialRecordId
+        credentialExchangeRecord.credentials[0].credentialRecordId,
+        { deleteAssociatedKeys: undefined }
       )
       expect(didCommMessageRepository.delete).toHaveBeenCalledTimes(3)
     })

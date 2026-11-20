@@ -5,12 +5,20 @@ import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { Kms, TypedArrayEncoder } from '../../../../../core/src/index'
 import { DidDocumentRole } from '../../../../../core/src/modules/dids/domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../../../../core/src/modules/dids/repository'
-import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../core/tests/helpers'
+import {
+  getAgentConfig,
+  getAgentContext,
+  getMockConnection,
+  getMockOutOfBand,
+  mockFunction,
+} from '../../../../../core/tests/helpers'
 import { DidCommMessage } from '../../../DidCommMessage'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
+import { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
 import type { DidCommRouting } from '../../../models'
 import { DidCommInboundMessageContext } from '../../../models'
 import { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
+import { DidCommOutOfBandRole } from '../../oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandRepository } from '../../oob/repository/DidCommOutOfBandRepository'
 import { DidCommTrustPingMessage, DidCommTrustPingV2Message } from '../messages'
 import { DidCommDidExchangeState } from '../models'
@@ -144,6 +152,16 @@ describe('DidCommConnectionService', () => {
   })
 
   describe('assertConnectionOrOutOfBandExchange', () => {
+    beforeEach(() => {
+      mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(getMockOutOfBand())
+      mockFunction(outOfBandService.getResolvedServiceForOutOfBandServices).mockResolvedValue({
+        id: '#inline-0',
+        serviceEndpoint: '',
+        recipientKeys: [],
+        routingKeys: [],
+      })
+    })
+
     it('should throw an error when a expectedConnectionId is present, but no connection is present in the messageContext', async () => {
       expect.assertions(1)
 
@@ -197,7 +215,7 @@ describe('DidCommConnectionService', () => {
       )
     })
 
-    it('should not throw an error when no connection record is present in the messageContext and no additional data, but the message has a ~service decorator', async () => {
+    it('should throw an error when no connection record and no out of band record are present, but the message has a ~service decorator', async () => {
       expect.assertions(1)
 
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(null)
@@ -210,7 +228,9 @@ describe('DidCommConnectionService', () => {
       })
       const messageContext = new DidCommInboundMessageContext(message, { agentContext })
 
-      await expect(connectionService.assertConnectionOrOutOfBandExchange(messageContext)).resolves.not.toThrow()
+      await expect(connectionService.assertConnectionOrOutOfBandExchange(messageContext)).rejects.toThrow(
+        'No out of band record found for connection-less message'
+      )
     })
 
     it('should not throw when a fully valid connection-less input is passed', async () => {
@@ -234,12 +254,13 @@ describe('DidCommConnectionService', () => {
         routingKeys: [],
       })
 
-      const lastReceivedMessage = new DidCommMessage()
-      lastReceivedMessage.setService({
+      const theirService = new ServiceDecorator({
         recipientKeys: [TypedArrayEncoder.toBase58(senderKey.publicKey.publicKey)],
         serviceEndpoint: '',
         routingKeys: [],
       })
+      const lastReceivedMessage = new DidCommMessage()
+      lastReceivedMessage.service = theirService
 
       const message = new DidCommMessage()
       message.setService({
@@ -248,6 +269,9 @@ describe('DidCommConnectionService', () => {
         routingKeys: [],
       })
       const messageContext = new DidCommInboundMessageContext(message, { agentContext, recipientKey, senderKey })
+      mockFunction(outOfBandService.getResolvedServiceForOutOfBandServices).mockResolvedValue(
+        theirService.resolvedDidCommService
+      )
 
       await expect(
         connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
@@ -351,11 +375,12 @@ describe('DidCommConnectionService', () => {
       const anotherKeyBase58 = '6fioC1zcDPyPEL19pXRS2E4iJ46zH7xP6uSgAaPdwDrx'
 
       const lastReceivedMessage = new DidCommMessage()
-      lastReceivedMessage.setService({
+      const theirService = new ServiceDecorator({
         recipientKeys: [anotherKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
       })
+      lastReceivedMessage.service = theirService
 
       const lastSentMessage = new DidCommMessage()
       lastSentMessage.setService({
@@ -378,6 +403,9 @@ describe('DidCommConnectionService', () => {
           publicKey: TypedArrayEncoder.fromBase58(ourRecipientKeyBase58),
         }),
       })
+      mockFunction(outOfBandService.getResolvedServiceForOutOfBandServices).mockResolvedValue(
+        theirService.resolvedDidCommService
+      )
 
       await expect(
         connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
@@ -385,6 +413,62 @@ describe('DidCommConnectionService', () => {
           lastSentMessage,
         })
       ).rejects.toThrow('Sender key z6MkkbTaLstV4fwr1rNf5CSxdS2rGbwxi3V5y6NnVFTZ2V1w not found in their service.')
+    })
+
+    describe('with our own out of band invitation', () => {
+      const toPublicJwk = (base58: string) =>
+        Kms.PublicJwk.fromPublicKey({ kty: 'OKP', crv: 'Ed25519', publicKey: TypedArrayEncoder.fromBase58(base58) })
+      const ourKey = '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'
+      const previousKey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const rotatedKey = '6fioC1zcDPyPEL19pXRS2E4iJ46zH7xP6uSgAaPdwDrx'
+
+      const assertExchange = (senderKey: string, { previousService = true } = {}) => {
+        const lastSentMessage = new DidCommMessage()
+        lastSentMessage.setService({ recipientKeys: [ourKey], serviceEndpoint: '', routingKeys: [] })
+        const lastReceivedMessage = new DidCommMessage()
+        if (previousService) {
+          lastReceivedMessage.setService({ recipientKeys: [previousKey], serviceEndpoint: '', routingKeys: [] })
+        }
+
+        const message = new DidCommMessage()
+        message.setService({ recipientKeys: [senderKey, rotatedKey], serviceEndpoint: '', routingKeys: [] })
+        const messageContext = new DidCommInboundMessageContext(message, {
+          agentContext,
+          senderKey: toPublicJwk(senderKey),
+          recipientKey: toPublicJwk(ourKey),
+        })
+
+        return connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
+          lastReceivedMessage,
+          lastSentMessage,
+        })
+      }
+
+      beforeEach(() => {
+        mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(
+          getMockOutOfBand({ role: DidCommOutOfBandRole.Sender })
+        )
+        mockFunction(outOfBandService.getResolvedServiceForOutOfBandServices).mockResolvedValue({
+          id: '#inline-0',
+          serviceEndpoint: '',
+          recipientKeys: [toPublicJwk(ourKey)],
+          routingKeys: [],
+        })
+      })
+
+      it('accepts a new ~service sent with their previous key', async () => {
+        await expect(assertExchange(previousKey)).resolves.not.toThrow()
+      })
+
+      it('refuses a new ~service sent with a key not in their previous ~service', async () => {
+        await expect(assertExchange(rotatedKey)).rejects.toThrow('not found in their previously received service')
+      })
+
+      it('refuses a message when their previous message has no ~service', async () => {
+        await expect(assertExchange(previousKey, { previousService: false })).rejects.toThrow(
+          'not found in their previously received service'
+        )
+      })
     })
   })
 

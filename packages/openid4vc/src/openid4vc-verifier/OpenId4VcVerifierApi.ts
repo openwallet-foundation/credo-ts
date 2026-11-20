@@ -7,6 +7,7 @@ import type {
   OpenId4VpCreateAuthorizationRequestOptions,
   OpenId4VpCreateAuthorizationRequestReturn,
   OpenId4VpCreateVerifierOptions,
+  OpenId4VpDeleteVerificationSessionOptions,
   OpenId4VpVerifyAuthorizationResponseOptions,
 } from './OpenId4VpVerifierServiceOptions'
 import type { OpenId4VcVerificationSessionRecord } from './repository'
@@ -65,10 +66,18 @@ export class OpenId4VcVerifierApi {
   }
 
   /**
-   * Delete a verification session record by id.
+   * Delete a verification session record by id. By default the key Credo created to decrypt the
+   * authorization response is deleted along with it.
    */
-  public async deleteVerificationSessionById(verificationSessionId: string) {
-    return this.openId4VpVerifierService.deleteVerificationSessionById(this.agentContext, verificationSessionId)
+  public async deleteVerificationSessionById(
+    verificationSessionId: string,
+    options?: OpenId4VpDeleteVerificationSessionOptions
+  ) {
+    return this.openId4VpVerifierService.deleteVerificationSessionById(
+      this.agentContext,
+      verificationSessionId,
+      options
+    )
   }
 
   /**

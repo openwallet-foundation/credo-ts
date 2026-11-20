@@ -99,7 +99,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     let schemaId: string
     if (issuerId.startsWith('did:indy:')) {
       schemaId = `${issuerId}/anoncreds/v0/SCHEMA/${options.schema.name}/${options.schema.version}`
-    } else if (issuerId.startsWith('did:cheqd:')) {
+    } else if (/^did:(cheqd|key):/.test(issuerId)) {
       schemaId = `${issuerId}/resources/${utils.uuid()}`
     } else {
       throw new Error(`Cannot register Schema. Unsupported issuerId '${issuerId}'`)
@@ -158,7 +158,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       const indyLedgerSeqNo = getSeqNoFromSchemaId(schemaId)
 
       credentialDefinitionId = `${options.credentialDefinition.issuerId}/anoncreds/v0/CLAIM_DEF/${indyLedgerSeqNo}/${options.credentialDefinition.tag}`
-    } else if (schemaId.startsWith('did:cheqd:')) {
+    } else if (/^did:(cheqd|key):/.test(schemaId)) {
       credentialDefinitionId = `${options.credentialDefinition.issuerId}/resources/${utils.uuid()}`
     } else {
       throw new Error(`Cannot register Credential Definition. Unsupported schemaId '${schemaId}'`)

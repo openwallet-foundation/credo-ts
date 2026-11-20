@@ -150,6 +150,17 @@ describe('credentialUse', () => {
       ).toEqual(true)
     })
 
+    test('returns true if CredentialMultiInstanceUseMode is New and only the first instance was used', () => {
+      const record = new SdJwtVcRecord({
+        credentialInstances: [{ compactSdJwtVc: 'first~', usageCount: 1 }, { compactSdJwtVc: 'second~' }],
+      })
+      record.multiInstanceState = CredentialMultiInstanceState.MultiInstanceFirstUsed
+
+      expect(
+        canUseInstanceFromCredentialRecord({ credentialRecord: record, useMode: CredentialMultiInstanceUseMode.New })
+      ).toEqual(true)
+    })
+
     test("returns false if CredentialMultiInstanceUseMode is New and there's no new credential available", () => {
       expect(
         canUseInstanceFromCredentialRecord({
@@ -200,7 +211,7 @@ describe('credentialUse', () => {
         expect(sdJwtVcRepository.update).not.toHaveBeenCalled()
       })
 
-      test('uses and removes new instance with New mode', async () => {
+      test('uses new instance with New mode and counts its use', async () => {
         const firstCompact =
           'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature1~'
         const secondCompact =
@@ -228,10 +239,32 @@ describe('credentialUse', () => {
         expect(result.isLastNewInstance).toBe(false)
         expect(result.credentialInstance.kmsKeyId).toBe('key-123')
         expect(result.credentialInstance.compact).toBe(secondCompact)
-        expect(record.credentialInstances).toHaveLength(1)
-        expect(record.credentialInstances[0].compactSdJwtVc).toBe(firstCompact)
+        expect(record.credentialInstances).toHaveLength(2)
+        expect(record.credentialInstances[0].usageCount).toBeUndefined()
+        expect(record.credentialInstances[1].usageCount).toBe(1)
         expect(record.multiInstanceState).toBe(CredentialMultiInstanceState.MultiInstanceFirstUnused)
         expect(sdJwtVcRepository.update).toHaveBeenCalledWith(agentContext, record)
+      })
+
+      test('skips used instances with New mode', async () => {
+        const compactSdJwtVc = sdJwtVcRecord.credentialInstances[0].compactSdJwtVc
+        const record = new SdJwtVcRecord({
+          credentialInstances: [
+            { compactSdJwtVc },
+            { compactSdJwtVc, kmsKeyId: 'key-2' },
+            { compactSdJwtVc, kmsKeyId: 'key-3', usageCount: 1 },
+          ],
+        })
+
+        const result = await useInstanceFromCredentialRecord({
+          agentContext,
+          credentialRecord: record,
+          useMode: CredentialMultiInstanceUseMode.New,
+          updateMode: CredentialMultiInstanceUseUpdateMode.None,
+        })
+
+        expect(result.credentialInstance.kmsKeyId).toBe('key-2')
+        expect(record.credentialInstances.map(({ usageCount }) => usageCount)).toEqual([undefined, 1, 1])
       })
 
       test('throws error with New mode when only single instance available and state is used', async () => {
@@ -279,8 +312,7 @@ describe('credentialUse', () => {
 
         expect(result.isReused).toBe(false)
         expect(result.credentialInstance.compact).toBe(secondCompact)
-        expect(record.credentialInstances).toHaveLength(1)
-        expect(record.credentialInstances[0].compactSdJwtVc).toBe(firstCompact)
+        expect(record.credentialInstances[1].usageCount).toBe(1)
         expect(record.multiInstanceState).toBe(CredentialMultiInstanceState.MultiInstanceFirstUnused)
       })
 
@@ -300,6 +332,7 @@ describe('credentialUse', () => {
           agentContext,
           credentialRecord: record,
           useMode: CredentialMultiInstanceUseMode.NewOrFirst,
+          updateMode: CredentialMultiInstanceUseUpdateMode.None,
         })
 
         expect(result.isReused).toBe(true)
@@ -349,14 +382,13 @@ describe('credentialUse', () => {
           agentContext,
           credentialRecord: record,
           useMode: CredentialMultiInstanceUseMode.NewIfReceivedInBatch,
+          updateMode: CredentialMultiInstanceUseUpdateMode.None,
         })
 
         expect(result.isReused).toBe(true)
         expect(result.isLastNewInstance).toBe(false)
         expect(result.credentialInstance.compact).toBe(compactSdJwtVc)
-        expect(record.credentialInstances).toHaveLength(1)
         expect(record.multiInstanceState).toBe(CredentialMultiInstanceState.SingleInstanceUsed)
-        expect(sdJwtVcRepository.update).not.toHaveBeenCalled()
       })
 
       test('uses new instance with NewIfReceivedInBatch mode for multi instance record', async () => {
@@ -385,8 +417,7 @@ describe('credentialUse', () => {
         expect(result.isReused).toBe(false)
         expect(result.isLastNewInstance).toBe(false)
         expect(result.credentialInstance.compact).toBe(secondCompact)
-        expect(record.credentialInstances).toHaveLength(1)
-        expect(record.credentialInstances[0].compactSdJwtVc).toBe(firstCompact)
+        expect(record.credentialInstances[1].usageCount).toBe(1)
         expect(record.multiInstanceState).toBe(CredentialMultiInstanceState.MultiInstanceFirstUnused)
         expect(sdJwtVcRepository.update).toHaveBeenCalled()
       })
@@ -442,9 +473,7 @@ describe('credentialUse', () => {
         expect(result.isReused).toBe(false)
         expect(result.isLastNewInstance).toBe(false)
         expect(result.credentialInstance.compact).toBe(thirdCompact)
-        expect(record.credentialInstances).toHaveLength(2)
-        expect(record.credentialInstances[0].compactSdJwtVc).toBe(firstCompact)
-        expect(record.credentialInstances[1].compactSdJwtVc).toBe(secondCompact)
+        expect(record.credentialInstances.map(({ usageCount }) => usageCount)).toEqual([undefined, undefined, 1])
         expect(record.multiInstanceState).toBe(CredentialMultiInstanceState.MultiInstanceFirstUnused)
       })
 
@@ -492,8 +521,7 @@ describe('credentialUse', () => {
             ],
           })
 
-          // Pop the second one to simulate it being used
-          record.credentialInstances.pop()
+          record.credentialInstances[1].usageCount = 1
 
           // Verify initial state
           expect(record.multiInstanceState).toBe(CredentialMultiInstanceState.MultiInstanceFirstUnused)
@@ -511,7 +539,7 @@ describe('credentialUse', () => {
           expect(sdJwtVcRepository.update).toHaveBeenCalledWith(agentContext, record)
         })
 
-        test('does not change state when reusing already used instance', async () => {
+        test('does not change state but counts the use when reusing already used instance', async () => {
           const compactSdJwtVc =
             'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature~'
           const record = new SdJwtVcRecord({
@@ -535,7 +563,8 @@ describe('credentialUse', () => {
           expect(result.isReused).toBe(true)
           expect(result.isLastNewInstance).toBe(false)
           expect(record.multiInstanceState).toBe(CredentialMultiInstanceState.SingleInstanceUsed)
-          expect(sdJwtVcRepository.update).not.toHaveBeenCalled()
+          expect(record.credentialInstances[0].usageCount).toBe(1)
+          expect(sdJwtVcRepository.update).toHaveBeenCalledWith(agentContext, record)
         })
       })
 
@@ -567,7 +596,7 @@ describe('credentialUse', () => {
           expect(sdJwtVcRepository.updateByIdWithLock).not.toHaveBeenCalled()
         })
 
-        test('does not update record with Update mode when first instance is used and was already used', async () => {
+        test('updates record with Update mode when first instance is reused', async () => {
           const compactSdJwtVc =
             'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature~'
           const record = new SdJwtVcRecord({
@@ -586,7 +615,7 @@ describe('credentialUse', () => {
             updateMode: CredentialMultiInstanceUseUpdateMode.Update,
           })
 
-          expect(sdJwtVcRepository.update).not.toHaveBeenCalled()
+          expect(sdJwtVcRepository.update).toHaveBeenCalledWith(agentContext, record)
           expect(sdJwtVcRepository.updateByIdWithLock).not.toHaveBeenCalled()
         })
 
@@ -674,9 +703,16 @@ describe('credentialUse', () => {
           expect(sdJwtVcRepository.update).not.toHaveBeenCalled()
         })
 
-        test('does not refetch with RefetchAndUpdateWithLock mode when first instance is used', async () => {
+        test('refetches and counts the use with RefetchAndUpdateWithLock mode when first instance is reused', async () => {
           const compactSdJwtVc =
             'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature~'
+          let freshRecord: SdJwtVcRecord | undefined
+          vi.mocked(sdJwtVcRepository.updateByIdWithLock).mockImplementationOnce(async (ctx, id, callback) => {
+            freshRecord = new SdJwtVcRecord({ id, credentialInstances: [{ compactSdJwtVc, usageCount: 2 }] })
+            freshRecord.multiInstanceState = CredentialMultiInstanceState.SingleInstanceUsed
+            return callback(freshRecord)
+          })
+
           const record = new SdJwtVcRecord({
             credentialInstances: [
               {
@@ -693,7 +729,8 @@ describe('credentialUse', () => {
             updateMode: CredentialMultiInstanceUseUpdateMode.RefetchAndUpdateWithLock,
           })
 
-          expect(sdJwtVcRepository.updateByIdWithLock).not.toHaveBeenCalled()
+          expect(sdJwtVcRepository.updateByIdWithLock).toHaveBeenCalled()
+          expect(freshRecord?.credentialInstances[0].usageCount).toBe(3)
           expect(sdJwtVcRepository.update).not.toHaveBeenCalled()
         })
 

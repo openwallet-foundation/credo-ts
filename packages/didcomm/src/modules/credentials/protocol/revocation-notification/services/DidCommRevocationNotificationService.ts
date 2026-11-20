@@ -9,7 +9,6 @@ import {
 } from '@credo-ts/core'
 import type { DidCommInboundMessageContext } from '../../../../../models'
 import { DidCommConnectionService } from '../../../../connections'
-import { keyAgreementsEqual } from '../../../../connections/services/helpers'
 import type { DidCommRevocationNotificationReceivedEvent } from '../../../DidCommCredentialEvents'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { DidCommCredentialsModuleConfig } from '../../../DidCommCredentialsModuleConfig'
@@ -115,15 +114,6 @@ export class DidCommRevocationNotificationService {
         lastSentMessage: requestMessage,
         expectedConnectionId: credentialExchangeRecord.connectionId,
       })
-
-    // The shared check trusts the notification's own ~service, so pin the sender to the credential message ~service.
-    const senderKey = messageContext.senderKeyAgreementKey ?? messageContext.senderKey
-    const issuerKeys = credentialMessage.service?.resolvedDidCommService.recipientKeys ?? []
-    if (!senderKey || !issuerKeys.some((key) => keyAgreementsEqual(senderKey, key))) {
-      throw new CredoError(
-        `Sender key ${senderKey?.fingerprint} not found in the ~service of credential message ${credentialMessage.id}`
-      )
-    }
   }
 
   /**

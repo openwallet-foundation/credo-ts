@@ -21,6 +21,7 @@ import {
 import { Ed25519Signature2018Fixtures } from '../../../../../../../core/src/modules/vc/linked-data-proofs/__tests__/fixtures'
 import { W3cJsonLdCredentialService } from '../../../../../../../core/src/modules/vc/linked-data-proofs/W3cJsonLdCredentialService'
 import { JsonTransformer } from '../../../../../../../core/src/utils'
+import { getCredentialHolderBindingDids } from '../../../../../../../core/src/utils/credentialHolderBinding'
 import { JsonEncoder } from '../../../../../../../core/src/utils/JsonEncoder'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../../core/tests/helpers'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../../../decorators/attachment/DidCommAttachment'
@@ -29,6 +30,7 @@ import type { DidCommCredentialPreviewAttribute } from '../../../models/DidCommC
 import { DidCommCredentialV2Preview } from '../../../protocol/v2/messages'
 import type { CustomDidCommCredentialExchangeTags } from '../../../repository/DidCommCredentialExchangeRecord'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
+import { addExchangeHolderBindingDids, takeExchangeHolderBindingDids } from '../../../util/holderBinding'
 import type { DidCommCredentialFormatService } from '../../DidCommCredentialFormatService'
 import type {
   DidCommJsonLdCredentialDetailFormat,
@@ -164,6 +166,12 @@ const signCredentialOptions: DidCommJsonLdCredentialDetailFormat = {
     proofPurpose: 'assertionMethod',
     proofType: 'Ed25519Signature2018',
   },
+}
+
+const holderDid = 'did:key:z6MkholderCreatedForCredential'
+const holderBoundCredentialOptions: DidCommJsonLdCredentialDetailFormat = {
+  ...signCredentialOptions,
+  credential: { ...inputDocAsJson, credentialSubject: { ...inputDocAsJson.credentialSubject, id: holderDid } },
 }
 
 const requestAttachment = new DidCommAttachment({
@@ -388,6 +396,51 @@ describe('JsonLd CredentialFormatService', () => {
         format: 'aries/ld-proof-vc-detail@v1.0',
       })
     })
+
+    test('marks the DID created for the credential on the credential exchange', async () => {
+      const credentialExchangeRecord = mockCredentialRecord({ state: DidCommCredentialState.OfferReceived })
+
+      await jsonLdFormatService.acceptOffer(agentContext, {
+        credentialFormats: { jsonld: { didCreatedForCredential: holderDid } },
+        offerAttachment: new DidCommAttachment({
+          data: new DidCommAttachmentData({ base64: JsonEncoder.toBase64(holderBoundCredentialOptions) }),
+        }),
+        credentialExchangeRecord,
+      })
+
+      expect(takeExchangeHolderBindingDids(credentialExchangeRecord, 'jsonld')).toEqual([holderDid])
+    })
+
+    test('rejects a DID created for the credential that is not the credential subject', async () => {
+      const credentialExchangeRecord = mockCredentialRecord({ state: DidCommCredentialState.OfferReceived })
+
+      await expect(
+        jsonLdFormatService.acceptOffer(agentContext, {
+          credentialFormats: { jsonld: { didCreatedForCredential: 'did:key:z6MkotherDid' } },
+          offerAttachment: new DidCommAttachment({
+            data: new DidCommAttachmentData({ base64: JsonEncoder.toBase64(holderBoundCredentialOptions) }),
+          }),
+          credentialExchangeRecord,
+        })
+      ).rejects.toThrow(
+        "didCreatedForCredential 'did:key:z6MkotherDid' is not a credentialSubject id of the credential"
+      )
+      expect(takeExchangeHolderBindingDids(credentialExchangeRecord, 'jsonld')).toEqual([])
+    })
+  })
+
+  describe('Create Credential Request', () => {
+    test('marks the DID created for the credential and leaves it out of the request', async () => {
+      const credentialExchangeRecord = mockCredentialRecord({ role: DidCommCredentialRole.Holder })
+
+      const { attachment } = await jsonLdFormatService.createRequest(agentContext, {
+        credentialFormats: { jsonld: { ...holderBoundCredentialOptions, didCreatedForCredential: holderDid } },
+        credentialExchangeRecord,
+      })
+
+      expect(attachment.getDataAsJson()).toEqual(holderBoundCredentialOptions)
+      expect(takeExchangeHolderBindingDids(credentialExchangeRecord, 'jsonld')).toEqual([holderDid])
+    })
   })
 
   describe('Accept Credential Proposal', () => {
@@ -564,6 +617,23 @@ describe('JsonLd CredentialFormatService', () => {
       expect(credentialExchangeRecord.credentials.length).toBe(1)
       expect(credentialExchangeRecord.credentials[0].credentialRecordType).toBe('w3c')
       expect(credentialExchangeRecord.credentials[0].credentialRecordId).toBe('foo')
+    })
+
+    test('stores the DIDs created for the credential on the credential record', async () => {
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c))
+      const credentialExchangeRecord = mockCredentialRecord({ state: DidCommCredentialState.RequestSent })
+      addExchangeHolderBindingDids(credentialExchangeRecord, 'jsonld', [holderDid])
+
+      await jsonLdFormatService.processCredential(agentContext, {
+        offerAttachment,
+        attachment: credentialAttachment,
+        requestAttachment: requestAttachment,
+        credentialExchangeRecord,
+      })
+
+      const { record } = mockFunction(w3cCredentialService.storeCredential).mock.calls[0][1]
+      expect(getCredentialHolderBindingDids(record)).toEqual([holderDid])
+      expect(takeExchangeHolderBindingDids(credentialExchangeRecord, 'jsonld')).toEqual([])
     })
 
     test('throws error if credential subject not equal to request subject', async () => {
@@ -786,7 +856,11 @@ describe('JsonLd CredentialFormatService', () => {
       await jsonLdFormatService.deleteCredentialById(agentContext, credentialRecordId)
 
       expect(w3cCredentialService.removeCredentialRecord).toHaveBeenCalledTimes(1)
-      expect(w3cCredentialService.removeCredentialRecord).toHaveBeenCalledWith(agentContext, credentialRecordId)
+      expect(w3cCredentialService.removeCredentialRecord).toHaveBeenCalledWith(
+        agentContext,
+        credentialRecordId,
+        undefined
+      )
     })
   })
 })

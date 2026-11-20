@@ -19,11 +19,25 @@ import type { DidCommConnectionRecord } from './repository'
 import type { DidCommConnectionMetadata } from './repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionMetadataKeys } from './repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService, DidCommDidRotateService, DidCommDidRotateV2Service } from './services'
-import { createPeerDidForV2OOB } from './services/helpers'
+import { deleteCreatedDidsAndKeys } from './services/deleteCreatedDidsAndKeys'
+import { createdRoutingKmsKeys, createPeerDidForV2OOB } from './services/helpers'
 
 export interface SendPingOptions {
   responseRequested?: boolean
   withReturnRouting?: boolean
+}
+
+export interface DidCommDeleteConnectionOptions {
+  /**
+   * Also delete the did:peer DIDs and KMS keys Credo created for the connection. DIDs and keys you passed in are kept
+   * unless the routing has `deleteWithRecord`, as are those its invitation or another connection still uses. Nothing
+   * is deleted for connections created before this option existed.
+   *
+   * Delete an invitation and its connections one after the other. Run in parallel, each keeps the keys they share.
+   *
+   * @default false
+   */
+  deleteAssociatedKeys?: boolean
 }
 
 @injectable()
@@ -88,7 +102,10 @@ export class DidCommConnectionsApi {
     // Only generate routing if ourDid hasn't been provided
     let routing = config.routing
     if (!routing && !ourDid) {
-      routing = await this.routingService.getRouting(this.agentContext, { mediatorId: outOfBandRecord.mediatorId })
+      routing = {
+        ...(await this.routingService.getRouting(this.agentContext, { mediatorId: outOfBandRecord.mediatorId })),
+        deleteWithRecord: true,
+      }
     }
 
     if (protocol === DidCommHandshakeProtocol.None) {
@@ -145,7 +162,13 @@ export class DidCommConnectionsApi {
           mediatorId: routing.mediatorId,
         },
         true,
-        this.getPendingOutOfBandParentThreadIdMetadata(outOfBandRecord)
+        {
+          ...this.getPendingOutOfBandParentThreadIdMetadata(outOfBandRecord),
+          [DidCommConnectionMetadataKeys.CreatedKeys]: {
+            dids: [did],
+            keys: createdRoutingKmsKeys(routing, outOfBandRecord),
+          },
+        }
       )
       return connectionRecord
     }
@@ -215,7 +238,7 @@ export class DidCommConnectionsApi {
     // 2. When the out-of-band invitation has no inline services, as we don't want to generate a legacy did doc from a service did
     const routing =
       outOfBandRecord.reusable || outOfBandRecord.outOfBandInvitation.getInlineServices().length === 0
-        ? await this.routingService.getRouting(this.agentContext)
+        ? { ...(await this.routingService.getRouting(this.agentContext)), deleteWithRecord: true }
         : undefined
 
     const message = await this.didExchangeProtocol.createResponse(
@@ -338,7 +361,10 @@ export class DidCommConnectionsApi {
       const didRotateV2Service = this.agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
       const routing =
         !toDid && !options.routing
-          ? await this.routingService.getRouting(this.agentContext, { mediatorId: connection.mediatorId })
+          ? {
+              ...(await this.routingService.getRouting(this.agentContext, { mediatorId: connection.mediatorId })),
+              deleteWithRecord: true,
+            }
           : options.routing
 
       const { newDid } = await didRotateV2Service.rotateOurDid(this.agentContext, connection, { toDid, routing })
@@ -363,14 +389,10 @@ export class DidCommConnectionsApi {
 
     let routing = options.routing
     if (!toDid && !routing) {
-      routing = await this.routingService.getRouting(this.agentContext, {})
+      routing = { ...(await this.routingService.getRouting(this.agentContext, {})), deleteWithRecord: true }
     }
 
-    const message = await this.didRotateService.createRotate(this.agentContext, {
-      connection,
-      toDid,
-      routing,
-    })
+    const message = await this.didRotateService.createRotate(this.agentContext, { connection, toDid, routing })
 
     const outboundMessageContext = new DidCommOutboundMessageContext(message, {
       agentContext: this.agentContext,
@@ -386,9 +408,14 @@ export class DidCommConnectionsApi {
    * Terminate a connection by sending a hang-up message to the other party. The connection record itself and any
    * keys used for mediation will only be deleted if `deleteAfterHangup` flag is set.
    *
-   * @param options connectionId
+   * @param options.deleteAssociatedKeys also delete the DIDs and keys Credo created for the connection (see
+   * {@link DidCommDeleteConnectionOptions.deleteAssociatedKeys}). Requires `deleteAfterHangup`.
    */
-  public async hangup(options: { connectionId: string; deleteAfterHangup?: boolean }) {
+  public async hangup(options: { connectionId: string; deleteAfterHangup?: boolean; deleteAssociatedKeys?: boolean }) {
+    if (options.deleteAssociatedKeys && !options.deleteAfterHangup) {
+      throw new CredoError(`'deleteAssociatedKeys' requires 'deleteAfterHangup'`)
+    }
+
     const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
 
     const connectionBeforeHangup = connection.clone()
@@ -418,7 +445,7 @@ export class DidCommConnectionsApi {
     // After hang-up message submission, delete connection if required.
     // deleteById removes the mediator routing of the hung-up did as well.
     if (options.deleteAfterHangup) {
-      await this.deleteById(connection.id)
+      await this.deleteById(connection.id, { deleteAssociatedKeys: options.deleteAssociatedKeys })
     }
   }
 
@@ -523,11 +550,28 @@ export class DidCommConnectionsApi {
    * Delete a connection record by id
    *
    * @param connectionId the connection record id
+   * @param options.deleteAssociatedKeys also delete the DIDs and keys Credo created for the connection
    */
-  public async deleteById(connectionId: string) {
+  public async deleteById(connectionId: string, options?: DidCommDeleteConnectionOptions) {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
     await this.removeRouting(connection)
+
+    const createdKeys = connection.metadata.get(DidCommConnectionMetadataKeys.CreatedKeys)
+    if (options?.deleteAssociatedKeys && createdKeys) {
+      const { outOfBandId } = connection
+      const outOfBandRecord = outOfBandId ? await this.outOfBandService.findById(this.agentContext, outOfBandId) : null
+
+      await deleteCreatedDidsAndKeys(
+        this.agentContext,
+        createdKeys,
+        // The other connections of the invitation aren't loaded: a DID they still use is found by query
+        [outOfBandRecord?.metadata.get(DidCommOutOfBandRecordMetadataKeys.CreatedKeys)],
+        // Exclude both record from "other records still using it", so the DID is not kipped
+        // due to the records referencing each other.
+        outOfBandId ? [connectionId, outOfBandId] : [connectionId]
+      )
+    }
 
     return this.connectionService.deleteById(this.agentContext, connectionId)
   }

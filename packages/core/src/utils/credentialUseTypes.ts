@@ -14,13 +14,13 @@ export enum CredentialMultiInstanceState {
 
   /**
    * Indicates the credential record is a multi instance record, where the first instance is used. It may still have other
-   * instances that are unused (which can be detected if the length of credentialInstances > 1)
+   * instances that are unused (which can be detected by a credential instance without `usageCount`)
    */
   MultiInstanceFirstUsed = 'MultiInstanceFirstUsed',
 
   /**
    * Indicates the credential record is a multi instance record, where the first instance has not been used. It may still have other
-   * instances that are unused (which can be detected if the length of credentialInstances > 1)
+   * instances that are unused (which can be detected by a credential instance without `usageCount`)
    */
   MultiInstanceFirstUnused = 'MultiInstanceFirstUnused',
 }
@@ -31,7 +31,7 @@ export enum CredentialMultiInstanceState {
 export enum CredentialMultiInstanceUseMode {
   /**
    * Always use a new unused instance. If not available an error will be thrown
-   * that a new instance could not be extracted. This removes the instance from the record.
+   * that a new instance could not be extracted. This marks the instance as used on the record.
    */
   New = 'New',
 
@@ -43,14 +43,12 @@ export enum CredentialMultiInstanceUseMode {
 
   /**
    * use a new unused instance if available, or fallback to the
-   * first one if not available. This is a combination of the `first` and `new` modes, and the same
-   * behavior applies (in terms of whether the instance is removed from the record).
+   * first one if not available. This is a combination of the `first` and `new` modes.
    */
   NewOrFirst = 'NewOrFirst',
 
   /**
-   * Always use the first credential instance on the record. This does not remove
-   * the credential instance from the record, and it also does not prevent reusing.
+   * Always use the first credential instance on the record. This does not prevent reusing.
    */
   First = 'First',
 }
@@ -63,7 +61,7 @@ export enum CredentialMultiInstanceUseUpdateMode {
   None = 'None',
 
   /**
-   * Update the provided record if a new instance is used. This may result in race conditions
+   * Update the provided record. This may result in race conditions
    * if multiple processes are using the record at the same time (e.g. in a server environment)
    */
   Update = 'Update',

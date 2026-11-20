@@ -76,10 +76,19 @@ export function canUseInstanceFromCredentialRecord({
   }
 
   // Otherwise we return whether we can use a new instance
-  return (
-    credentialRecord.multiInstanceState === CredentialMultiInstanceState.MultiInstanceFirstUnused ||
-    credentialRecord.multiInstanceState === CredentialMultiInstanceState.SingleInstanceUnused
-  )
+  return credentialRecord.credentialInstances.some((_, index) => isInstanceUnused(credentialRecord, index))
+}
+
+function isInstanceUnused(credentialRecord: CredentialRecord, index: number) {
+  // Records stored before `usageCount` only track the use of the first instance in `multiInstanceState`
+  if (index === 0) {
+    return (
+      credentialRecord.multiInstanceState === CredentialMultiInstanceState.MultiInstanceFirstUnused ||
+      credentialRecord.multiInstanceState === CredentialMultiInstanceState.SingleInstanceUnused
+    )
+  }
+
+  return !credentialRecord.credentialInstances[index].usageCount
 }
 
 export interface UseInstanceFromCredentialRecordOptions<Record extends CredentialRecord> {
@@ -93,7 +102,7 @@ export interface UseInstanceFromCredentialRecordOptions<Record extends Credentia
   credentialRecord: Record
 
   /**
-   * The update mode for the credential record when a new instance is used.
+   * The update mode for the credential record, which stores the usage count of the instance.
    *
    * @default `CredentialMultiInstanceUseUpdateMode.RefetchAndUpdateWithLock`
    */
@@ -117,21 +126,18 @@ export interface UseInstanceFromCredentialRecordReturn<Record extends Credential
    * Whether the last new instance was used. If `isReused` is `true` this value will
    * always be `false`.
    *
-   * The last new instance is the second entry in the mdoc instances, since the first
-   * one is reserved for 'reused' usage.
+   * The last new instance is the first entry in the instances, since it is reserved
+   * for 'reused' usage.
    */
   isLastNewInstance: boolean
 }
 
 /**
  * Extract an instance with the correct kms key id from the credential instances
- * on the record. Note that if an instance is extracted (that is not reused) it
- * will remove the instance from the record, and the record should be updated in
- * storage after usage.
+ * on the record, and increase its `usageCount`. Used instances stay on the record.
  *
- * Note that the last credential instance is never removed from the record. So if the
- * method indicates the last instance has been used, you should remove the credential
- * from storage if you don't want it to be used anymore in the future.
+ * If the method indicates the last new instance has been used, you should remove the
+ * credential from storage if you don't want it to be used anymore in the future.
  */
 export async function useInstanceFromCredentialRecord<Record extends CredentialRecord>({
   credentialRecord,
@@ -144,17 +150,11 @@ export async function useInstanceFromCredentialRecord<Record extends CredentialR
     useMode,
   })
 
-  if (
-    (!extractResult.isReused || extractResult.isLastNewInstance) &&
-    updateMode === CredentialMultiInstanceUseUpdateMode.Update
-  ) {
+  if (updateMode === CredentialMultiInstanceUseUpdateMode.Update) {
     await updateCredentialRecord(agentContext, credentialRecord)
   }
 
-  if (
-    (!extractResult.isReused || extractResult.isLastNewInstance) &&
-    updateMode === CredentialMultiInstanceUseUpdateMode.RefetchAndUpdateWithLock
-  ) {
+  if (updateMode === CredentialMultiInstanceUseUpdateMode.RefetchAndUpdateWithLock) {
     // the method is generic, but the types don't work well generically
     const repository = repositoryForRecord(agentContext, credentialRecord) as SdJwtVcRepository
 
@@ -215,10 +215,21 @@ function extractInstanceAndUpdateRecord<Record extends CredentialRecord>({
   credentialRecord,
   useMode,
 }: Pick<UseInstanceFromCredentialRecordOptions<Record>, 'credentialRecord' | 'useMode'>) {
-  if (credentialRecord.credentialInstances.length === 1 || useMode === CredentialMultiInstanceUseMode.First) {
-    const isFirstUnused =
-      credentialRecord.multiInstanceState === CredentialMultiInstanceState.MultiInstanceFirstUnused ||
-      credentialRecord.multiInstanceState === CredentialMultiInstanceState.SingleInstanceUnused
+  const { credentialInstances } = credentialRecord
+
+  // The first instance is reserved for reuse, so the other instances are used first, starting from the last one
+  let newInstanceIndex = -1
+  if (useMode !== CredentialMultiInstanceUseMode.First) {
+    for (let index = credentialInstances.length - 1; index > 0; index--) {
+      if (isInstanceUnused(credentialRecord, index)) {
+        newInstanceIndex = index
+        break
+      }
+    }
+  }
+
+  if (newInstanceIndex === -1) {
+    const isFirstUnused = isInstanceUnused(credentialRecord, 0)
 
     const isMultiInstance =
       credentialRecord.multiInstanceState === CredentialMultiInstanceState.MultiInstanceFirstUnused ||
@@ -245,23 +256,21 @@ function extractInstanceAndUpdateRecord<Record extends CredentialRecord>({
       )
     }
 
+    const credentialInstance = credentialInstances[0]
+    credentialInstance.usageCount = (credentialInstance.usageCount ?? 0) + 1
+
     return {
       isReused: !isFirstUnused,
-      credentialInstance: credentialRecord.credentialInstances[0],
+      credentialInstance,
       isLastNewInstance: isFirstUnused,
     }
   }
 
-  // We have multiple instances, so we pop the last one (never the first one)
-  const _credentialInstance = credentialRecord.credentialInstances.pop()
-  if (!_credentialInstance) {
-    throw new CredoError(
-      `Unable to extract credential instance from ${credentialRecord.type} with id '${credentialRecord.id}', since the credential record does not contain any credential instances.`
-    )
-  }
+  const credentialInstance = credentialInstances[newInstanceIndex]
+  credentialInstance.usageCount = 1
 
   return {
-    credentialInstance: _credentialInstance,
+    credentialInstance,
     isReused: false,
     isLastNewInstance: false,
   }

@@ -77,7 +77,14 @@ export interface DidCommCredentialFormatService<CF extends DidCommCredentialForm
     options: DidCommCredentialFormatAutoRespondCredentialOptions
   ): Promise<boolean>
 
-  deleteCredentialById(agentContext: AgentContext, credentialId: string): Promise<void>
+  /**
+   * @param options.deleteAssociatedKeys also delete the holder binding of the credential, for formats that have one
+   */
+  deleteCredentialById(
+    agentContext: AgentContext,
+    credentialId: string,
+    options?: { deleteAssociatedKeys?: boolean }
+  ): Promise<void>
 
   supportsFormat(formatIdentifier: string): boolean
 }

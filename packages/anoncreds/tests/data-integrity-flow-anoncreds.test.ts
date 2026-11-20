@@ -28,12 +28,18 @@ import {
   DidResolverService,
   DidsModuleConfig,
   defaultDocumentLoader,
+  Ed25519Signature2018,
+  getCredentialHolderBindingDids,
   InjectionSymbols,
   InMemoryLruCache,
   JsonLdModuleConfig,
   KeyDidRegistrar,
   KeyDidResolver,
+  Kms,
   SignatureSuiteRegistry,
+  type SuiteInfo,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
@@ -54,7 +60,14 @@ import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
+import type { CreateDidKidVerificationMethodReturn } from '../../core/tests'
+import {
+  agentDependencies,
+  createDidKidVerificationMethod,
+  getAgentConfig,
+  getAgentContext,
+  testLogger,
+} from '../../core/tests'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
 import { AnonCredsLinkSecretBindingProvider } from '../src/formats/AnonCredsLinkSecretBindingProvider'
 import { NativeAnoncreds } from './helpers'
@@ -97,7 +110,20 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [JsonLdModuleConfig, new JsonLdModuleConfig({ documentLoader: defaultDocumentLoader })],
-    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
+    [
+      SignatureSuiteRegistry,
+      new SignatureSuiteRegistry([
+        {
+          suiteClass: Ed25519Signature2018,
+          proofType: 'Ed25519Signature2018',
+          verificationMethodTypes: [
+            VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+            VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+          ],
+          supportedPublicJwkTypes: [Kms.Ed25519PublicJwk],
+        } satisfies SuiteInfo,
+      ]),
+    ],
     [
       CacheModuleConfig,
       new CacheModuleConfig({
@@ -136,10 +162,20 @@ describe('data integrity format service (anoncreds)', () => {
   test('issuance and verification flow anoncreds starting from offer without negotiation and with revocation', async () => {
     await anonCredsFlowTest({ issuerId: indyDid, revocable: true })
   })
+
+  test('issuance and verification flow anoncreds with a credential also bound to a holder DID', async () => {
+    const issuerKdv = await createDidKidVerificationMethod(agentContext)
+    const holderKdv = await createDidKidVerificationMethod(agentContext)
+    await anonCredsFlowTest({ issuerId: issuerKdv.did, revocable: false, didBinding: { issuerKdv, holderKdv } })
+  })
 })
 
-async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean }) {
-  const { issuerId, revocable } = options
+async function anonCredsFlowTest(options: {
+  issuerId: string
+  revocable: boolean
+  didBinding?: { issuerKdv: CreateDidKidVerificationMethodReturn; holderKdv: CreateDidKidVerificationMethodReturn }
+}) {
+  const { issuerId, revocable, didBinding } = options
 
   const schema = await anonCredsIssuerService.createSchema(agentContext, {
     attrNames: ['name', 'age'],
@@ -359,6 +395,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
           anonCredsLinkSecret: {
             linkSecretId: linkSecret.linkSecretId,
           },
+          didCommSignedAttachment: didBinding && { kid: didBinding.holderKdv.kid, createdForCredential: true },
         },
       },
     })
@@ -379,7 +416,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     requestAttachment,
     offerAttachment,
     requestAppendAttachments,
-    credentialFormats: { dataIntegrity: {} },
+    credentialFormats: { dataIntegrity: { issuerVerificationMethod: didBinding?.issuerKdv.kid } },
   })
 
   // Holder processes and accepts credential
@@ -398,6 +435,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
   const credentialExchangeRecord = await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
   const credentialId = credentialExchangeRecord.id
+  expect(getCredentialHolderBindingDids(credentialExchangeRecord)).toEqual(didBinding ? [didBinding.holderKdv.did] : [])
 
   const anonCredsCredential = await anonCredsHolderService.getCredential(agentContext, {
     id: credentialId,

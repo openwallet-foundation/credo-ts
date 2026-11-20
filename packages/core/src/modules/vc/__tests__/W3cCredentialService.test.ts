@@ -99,7 +99,7 @@ describe('W3cCredentialsService', () => {
 
   describe('Credential Storage', () => {
     let w3cCredentialRecord: W3cCredentialRecord
-    let w3cCredentialRepositoryDeleteMock: MockedFunction<(typeof w3cCredentialsRepository)['deleteById']>
+    let w3cCredentialRepositoryDeleteMock: MockedFunction<(typeof w3cCredentialsRepository)['delete']>
 
     beforeEach(async () => {
       const credential = JsonTransformer.fromJSON(
@@ -111,7 +111,7 @@ describe('W3cCredentialsService', () => {
 
       mockFunction(w3cCredentialsRepository.getById).mockResolvedValue(w3cCredentialRecord)
       mockFunction(w3cCredentialsRepository.getAll).mockResolvedValue([w3cCredentialRecord])
-      w3cCredentialRepositoryDeleteMock = mockFunction(w3cCredentialsRepository.deleteById).mockResolvedValue()
+      w3cCredentialRepositoryDeleteMock = mockFunction(w3cCredentialsRepository.delete).mockResolvedValue()
     })
     describe('storeCredential', () => {
       it('should store a credential and expand the tags correctly', async () => {
@@ -148,7 +148,7 @@ describe('W3cCredentialsService', () => {
       it('should remove a credential', async () => {
         await w3cCredentialService.removeCredentialRecord(agentContext, 'some-id')
 
-        expect(w3cCredentialRepositoryDeleteMock).toHaveBeenCalledWith(agentContext, 'some-id')
+        expect(w3cCredentialRepositoryDeleteMock).toHaveBeenCalledWith(agentContext, w3cCredentialRecord)
       })
     })
 

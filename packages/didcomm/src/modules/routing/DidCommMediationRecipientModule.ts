@@ -128,7 +128,10 @@ export class DidCommMediationRecipientModule implements Module {
     if (!connection) {
       agentContext.config.logger.debug('Mediation connection does not exist, creating connection')
       // We don't want to use the current default mediator when connecting to another mediator
-      const routing = await mediationRecipientApi.getRouting({ useDefaultMediator: false })
+      const routing = {
+        ...(await mediationRecipientApi.getRouting({ useDefaultMediator: false })),
+        deleteWithRecord: true,
+      }
 
       agentContext.config.logger.debug('Routing created', {
         endpoints: routing.endpoints,

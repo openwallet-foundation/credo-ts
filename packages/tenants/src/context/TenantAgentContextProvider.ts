@@ -15,7 +15,7 @@ import {
   UpdateAssistant,
   type UpdateAssistantUpdateOptions,
 } from '@credo-ts/core'
-import type { DidCommEncryptedMessage, DidCommRoutingCreatedEvent } from '@credo-ts/didcomm'
+import type { DidCommEncryptedMessage, DidCommRoutingCreatedEvent, DidCommRoutingDeletedEvent } from '@credo-ts/didcomm'
 import { DidCommRoutingEventTypes, isValidJweStructure } from '@credo-ts/didcomm'
 import { TenantInactiveError } from '../error/TenantInactiveError'
 import { type TenantRecord, TenantStatus } from '../repository'
@@ -47,6 +47,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
 
     // Start listener for newly created routing keys, so we can register a mapping for each new key for the tenant
     this.listenForRoutingKeyCreatedEvents()
+    this.listenForRoutingKeyDeletedEvents()
   }
 
   public getContextCorrelationIdForTenantId(tenantId: string) {
@@ -206,6 +207,27 @@ export class TenantAgentContextProvider implements AgentContextProvider {
         this.tenantSessionCoordinator.getTenantIdForContextCorrelationId(contextCorrelationId),
         recipientKey
       )
+    })
+  }
+
+  private listenForRoutingKeyDeletedEvents() {
+    this.eventEmitter.on<DidCommRoutingDeletedEvent>(DidCommRoutingEventTypes.RoutingDeletedEvent, async (event) => {
+      const contextCorrelationId = event.metadata.contextCorrelationId
+      if (contextCorrelationId === this.rootAgentContext.contextCorrelationId) return
+
+      for (const recipientKey of event.payload.recipientKeys) {
+        // Nothing awaits this listener, so an error would be an unhandled rejection
+        try {
+          this.tenantSessionCoordinator.assertTenantContextCorrelationId(contextCorrelationId)
+          const tenantId = this.tenantSessionCoordinator.getTenantIdForContextCorrelationId(contextCorrelationId)
+          await this.tenantRecordService.deleteTenantRoutingRecord(this.rootAgentContext, tenantId, recipientKey)
+        } catch (error) {
+          this.logger.warn(
+            `Failed to delete tenant routing record for recipient key ${recipientKey.fingerprint} of tenant context '${contextCorrelationId}'`,
+            { error }
+          )
+        }
+      }
     })
   }
 

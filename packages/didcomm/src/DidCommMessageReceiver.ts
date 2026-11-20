@@ -41,11 +41,17 @@ import {
   DidCommHandshakeProtocol,
 } from './modules/connections'
 import { DidCommConnectionRecord, type DidCommConnectionRecordProps } from './modules/connections/repository'
-import { DidCommConnectionMetadataKeys } from './modules/connections/repository/DidCommConnectionMetadataTypes'
+import {
+  DidCommConnectionMetadataKeys,
+  type DidCommCreatedKeys,
+} from './modules/connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommDidRotateV2Service } from './modules/connections/services/DidCommDidRotateV2Service'
+import { deleteCreatedDidsAndKeys } from './modules/connections/services/deleteCreatedDidsAndKeys'
+import { routingKmsKeys } from './modules/connections/services/helpers'
 import { DidCommOutOfBandService } from './modules/oob/DidCommOutOfBandService'
 import { DidCommOutOfBandRole, DidCommOutOfBandState } from './modules/oob/domain'
-import { DidCommRoutingService, type RemoveRoutingOptions } from './modules/routing/services/DidCommRoutingService'
+import { DidCommOutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
+import { DidCommRoutingService } from './modules/routing/services/DidCommRoutingService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isDidCommV2SignedMessage } from './util/didcommVersion'
 import { isValidJweStructure } from './util/JWE'
@@ -486,7 +492,9 @@ export class DidCommMessageReceiver {
             invitationDid: outOfBandRecord.getTags().sharedRecipientDid ? recipient : undefined,
             didcommVersion: 'v2',
           },
-          outOfBandRecord.reusable
+          outOfBandRecord.reusable,
+          // The connection uses the invitation did, until it rotates away from it for a reusable invitation
+          outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.CreatedKeys) ?? undefined
         )
         if (created && !outOfBandRecord.reusable) {
           await this.outOfBandService.updateState(agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
@@ -588,12 +596,14 @@ export class DidCommMessageReceiver {
   private async createFirstMessageConnection(
     agentContext: AgentContext,
     props: DidCommConnectionRecordProps & { did: string; theirDid: string },
-    rotate: boolean
+    rotate: boolean,
+    createdKeys?: DidCommCreatedKeys
   ): Promise<{ connection: DidCommConnectionRecord; created: boolean }> {
     const connection = new DidCommConnectionRecord({
       ...props,
       id: firstMessageConnectionId(props.did, props.theirDid),
     })
+    if (createdKeys) connection.metadata.set(DidCommConnectionMetadataKeys.CreatedKeys, createdKeys)
     const routing = rotate ? await this.rotateInviterDidForV2OOB(agentContext, connection) : undefined
 
     for (;;) {
@@ -608,7 +618,7 @@ export class DidCommMessageReceiver {
 
       const existing = await this.connectionService.getById(agentContext, connection.id)
       if (existing.theirDid && areEquivalentDidPeer4Forms(existing.theirDid, props.theirDid)) {
-        if (routing && connection.did) await this.discardUnusedDid(agentContext, connection.did, routing)
+        if (routing && connection.did) await this.discardUnusedRouting(agentContext, routing, connection.did)
         return { connection: existing, created: false }
       }
 
@@ -627,9 +637,10 @@ export class DidCommMessageReceiver {
     agentContext: AgentContext,
     connection: DidCommConnectionRecord
   ): Promise<DidCommRouting | undefined> {
+    let routing: DidCommRouting | undefined
     try {
       const routingService = agentContext.dependencyManager.resolve(DidCommRoutingService)
-      const routing = await routingService.getRouting(agentContext, {})
+      routing = { ...(await routingService.getRouting(agentContext, {})), deleteWithRecord: true }
       const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
       await didRotateV2Service.rotateOurDid(agentContext, connection, { routing, save: false })
       return routing
@@ -638,30 +649,17 @@ export class DidCommMessageReceiver {
         connectionId: connection.id,
         error: error instanceof Error ? error.message : String(error),
       })
+      // A failed rotation already deleted the did it created
+      if (routing) await this.discardUnusedRouting(agentContext, routing)
       return undefined
     }
   }
 
-  private async discardUnusedDid(agentContext: AgentContext, did: string, routing: DidCommRouting): Promise<void> {
-    const keys = routing.keyAgreementKey ? [routing.recipientKey, routing.keyAgreementKey] : [routing.recipientKey]
+  private async discardUnusedRouting(agentContext: AgentContext, routing: DidCommRouting, did?: string) {
     try {
-      if (routing.mediatorId) {
-        const routingService = agentContext.dependencyManager.resolve(DidCommRoutingService)
-        await routingService.removeRouting(agentContext, {
-          recipientKeys: keys as RemoveRoutingOptions['recipientKeys'],
-          mediatorId: routing.mediatorId,
-          did,
-        })
-      }
-
-      const didRepository = agentContext.dependencyManager.resolve(DidRepository)
-      const didRecord = await didRepository.findCreatedDid(agentContext, did)
-      if (didRecord) await didRepository.delete(agentContext, didRecord)
-
-      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-      for (const key of keys) await kms.deleteKey({ keyId: key.keyId, backend: key.kmsBackend })
+      await deleteCreatedDidsAndKeys(agentContext, { dids: did ? [did] : [], keys: routingKmsKeys(routing) }, [])
     } catch (error) {
-      this.logger.warn('Failed to clean up the unused DID of a duplicate first message connection', {
+      this.logger.warn('Failed to clean up unused routing of a v2 OOB connection', {
         did,
         error: error instanceof Error ? error.message : String(error),
       })
