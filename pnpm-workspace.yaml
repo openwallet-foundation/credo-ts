@@ -75,3 +75,4 @@ minimumReleaseAgeExclude:
   - '@peculiar/x509@2.2.0'
   - nock@15.0.2
   - '@animo-id/expo-secure-environment@0.3.0'
+  - '@didx509/core@0.1.3'
