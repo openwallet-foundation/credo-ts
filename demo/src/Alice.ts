@@ -1,3 +1,4 @@
+import type { KeyDidCreateOptions } from '@credo-ts/core'
 import type {
   DidCommConnectionRecord,
   DidCommCredentialExchangeRecord,
@@ -10,6 +11,7 @@ import { greenText, Output, redText } from './OutputClass'
 export class Alice extends BaseAgent {
   public connected: boolean
   public connectionRecordFaberId?: string
+  public holderDid?: string
 
   public constructor(port: number, name: string) {
     super({ port, name })
@@ -66,10 +68,52 @@ export class Alice extends BaseAgent {
     this.connectionRecordFaberId = await this.waitForConnection(connectionRecord)
   }
 
-  public async acceptCredentialOffer(credentialExchangeRecord: DidCommCredentialExchangeRecord) {
-    await this.agent.didcomm.credentials.acceptOffer({
-      credentialExchangeRecordId: credentialExchangeRecord.id,
+  // The did:key is kept in Alice's wallet, so it is reused across runs.
+  private async getHolderDid() {
+    if (this.holderDid) return this.holderDid
+
+    const [createdDid] = await this.agent.dids.getCreatedDids({ method: 'key' })
+    if (createdDid) {
+      this.holderDid = createdDid.did
+      return this.holderDid
+    }
+
+    const { didState } = await this.agent.dids.create<KeyDidCreateOptions>({
+      method: 'key',
+      options: { createKey: { type: { kty: 'OKP', crv: 'Ed25519' } } },
     })
+    if (didState.state !== 'finished') {
+      throw new Error(redText(`Error creating holder did:key: ${didState.state === 'failed' ? didState.reason : ''}`))
+    }
+
+    this.holderDid = didState.did
+    return this.holderDid
+  }
+
+  // Alice signs presentations with the credential subject's DID. Faber can't know her did:key when it makes the
+  // offer, so she accepts by proposing the same credential with her did:key as the subject.
+  public async acceptCredentialOffer(credentialExchangeRecord: DidCommCredentialExchangeRecord) {
+    const { offer } = await this.agent.didcomm.credentials.getFormatData(credentialExchangeRecord.id)
+    const offered = offer?.jsonld
+    const proofPurpose = offered?.options.proofPurpose
+    if (!offered || !proofPurpose || Array.isArray(offered.credential.credentialSubject)) {
+      throw new Error(redText('Expected a JSON-LD credential offer with a single credential subject'))
+    }
+
+    const holderDid = await this.getHolderDid()
+    await this.agent.didcomm.credentials.negotiateOffer({
+      credentialExchangeRecordId: credentialExchangeRecord.id,
+      credentialFormats: {
+        jsonld: {
+          options: { ...offered.options, proofPurpose },
+          credential: {
+            ...offered.credential,
+            credentialSubject: { ...offered.credential.credentialSubject, id: holderDid },
+          },
+        },
+      },
+    })
+    console.log(greenText(`\nRequested the credential for ${holderDid}\n`))
   }
 
   public async acceptProofRequest(proofExchangeRecord: DidCommProofExchangeRecord) {

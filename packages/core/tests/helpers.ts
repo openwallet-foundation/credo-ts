@@ -1,6 +1,4 @@
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
-import { readFileSync } from 'fs'
-import path from 'path'
 import type { Observable } from 'rxjs'
 import { firstValueFrom, lastValueFrom, ReplaySubject } from 'rxjs'
 import { catchError, filter, map, take, timeout } from 'rxjs/operators'
@@ -55,16 +53,7 @@ import type { AnyDrizzleDatabase } from '../../drizzle-storage/src/DrizzleStorag
 import { didcommBundle } from '../../drizzle-storage/src/didcomm/bundle'
 import { agentDependencies, NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../node/src'
 import type { Agent, AgentDependencies, BaseEvent, InitConfig, InjectionToken, KeyDidCreateOptions } from '../src'
-import {
-  AgentConfig,
-  AgentContext,
-  DependencyManager,
-  DidDocument,
-  DidsApi,
-  Kms,
-  TypedArrayEncoder,
-  X509Api,
-} from '../src'
+import { AgentConfig, AgentContext, DependencyManager, DidsApi, Kms, TypedArrayEncoder, X509Api } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import { DidKey } from '../src/modules/dids/methods/key'
 import { KeyManagementApi, type KeyManagementService, PublicJwk } from '../src/modules/kms'
@@ -72,15 +61,6 @@ import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
 import testLogger, { TestLogger } from './logger'
 
-export const genesisPath = process.env.GENESIS_TXN_PATH
-  ? path.resolve(process.env.GENESIS_TXN_PATH)
-  : path.join(__dirname, '../../../network/genesis/local-genesis.txn')
-
-export const genesisTransactions = readFileSync(genesisPath).toString('utf-8')
-
-export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
-export const taaVersion = (process.env.TEST_AGENT_TAA_VERSION ?? '1') as `${number}.${number}` | `${number}`
-export const taaAcceptanceMechanism = process.env.TEST_AGENT_TAA_ACCEPTANCE_MECHANISM ?? 'accept'
 export { agentDependencies }
 
 /**
@@ -244,54 +224,6 @@ export function getAgentOptions<
         AgentModules & { drizzle?: DrizzleStorageModule },
     dependencies: agentDependencies,
   } as const
-}
-
-export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: Uint8Array) {
-  const { privateJwk } = transformPrivateKeyToPrivateJwk({
-    privateKey,
-    type: {
-      kty: 'OKP',
-      crv: 'Ed25519',
-    },
-  })
-
-  const key = await agent.kms.importKey({
-    privateJwk,
-  })
-
-  const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk as Kms.KmsJwkPublicOkp & { crv: 'Ed25519' })
-
-  // did is first 16 bytes of public key encoded as base58
-  const unqualifiedIndyDid = TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey.slice(0, 16))
-  const did = `did:indy:pool:localtest:${unqualifiedIndyDid}`
-
-  // Import with a local DID document to avoid resolver/ledger calls during test setup.
-  const didDocument = new DidDocument({
-    id: did,
-    verificationMethod: [
-      {
-        id: `${did}#verkey`,
-        type: 'Ed25519VerificationKey2018',
-        controller: did,
-        publicKeyBase58: TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey),
-      },
-    ],
-    authentication: [`${did}#verkey`],
-  })
-
-  // import the did in the wallet so it can be used
-  await agent.dids.import({
-    did,
-    didDocument,
-    keys: [
-      {
-        didDocumentRelativeKeyId: '#verkey',
-        kmsKeyId: key.keyId,
-      },
-    ],
-  })
-
-  return unqualifiedIndyDid
 }
 
 export function getAgentConfig(
