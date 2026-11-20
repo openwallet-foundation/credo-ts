@@ -84,6 +84,34 @@ describe('DidCommDispatcher', () => {
       )
     })
 
+    it('logs a message that fails handling as a warning, without the message', async () => {
+      const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
+      const dispatcher = new DidCommDispatcher(
+        new MessageSenderMock(),
+        eventEmitter,
+        messageHandlerRegistry,
+        agentConfig.logger
+      )
+      const inboundMessageContext = new DidCommInboundMessageContext(new CustomProtocolMessage({}), { agentContext })
+      const error = new Error('handler failed')
+      messageHandlerRegistry.registerMessageHandler({
+        supportedMessages: [CustomProtocolMessage],
+        handle: vi.fn().mockRejectedValue(error),
+      })
+      const warn = vi.spyOn(agentConfig.logger, 'warn')
+      const logError = vi.spyOn(agentConfig.logger, 'error')
+
+      await expect(dispatcher.dispatch(inboundMessageContext)).rejects.toThrow(error)
+
+      expect(warn).toHaveBeenCalledWith(
+        'Error handling message with type https://didcomm.org/fake-protocol/1.5/message',
+        expect.objectContaining({ error, messageId: inboundMessageContext.message.id })
+      )
+      // The message itself is only logged at debug
+      expect(warn.mock.calls[0][1]).not.toHaveProperty('message')
+      expect(logError).not.toHaveBeenCalled()
+    })
+
     it.each([
       'https://didcomm.org/report-problem/2.0/problem-report',
       'https://didcomm.org/report-problem/2.1/problem-report',

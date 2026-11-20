@@ -224,7 +224,7 @@ export class DidCommMediatorService {
     }
 
     if (!mediationRecord) {
-      throw new RecordNotFoundError(`MediationRecord: no record found for forward message recipient`, {
+      throw new RecordNotFoundError(`No record found for forward recipient '${recipientDid}'`, {
         recordType: DidCommMediationRecord.type,
       })
     }
