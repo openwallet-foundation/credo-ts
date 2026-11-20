@@ -1,4 +1,5 @@
 export * from './jwk'
 export * from './key'
 export * from './peer'
+export * from './universal'
 export * from './web'
