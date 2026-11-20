@@ -2,7 +2,13 @@ import type { AgentContext } from '../../agent'
 import { CredoWebCrypto } from '../../crypto/webcrypto'
 import { injectable } from '../../plugins'
 import { validateCriticalCrlExtensionIds } from './utils/criticalExtensions'
-import { fetchCrl, getCachedCrlSummary, setCachedCrlSummary } from './utils/crlFetcher'
+import {
+  fetchCrl,
+  getCachedCrlDownloadFailures,
+  getCachedCrlSummary,
+  setCachedCrlDownloadFailures,
+  setCachedCrlSummary,
+} from './utils/crlFetcher'
 import {
   buildCrlSummary,
   CrlSummaryVerifiedCrl,
@@ -42,10 +48,26 @@ interface FetchCrlOptions {
   url: string
   issuerCertificate: X509Certificate
   verificationDate: Date
-  options: Pick<X509RevocationCheckOptionsWithDefaults, 'timeoutMs' | 'maxCrlSizeBytes' | 'crlCacheExpirySeconds'>
+  options: Pick<
+    X509RevocationCheckOptionsWithDefaults,
+    'timeoutMs' | 'maxCrlSizeBytes' | 'crlCacheExpirySeconds' | 'crlUnavailableCacheExpirySeconds'
+  >
   useCache: boolean
   parseOptions: X509ParseOptions
 }
+
+// `summary` lets checks that share a download reuse it without reading it back from the cache
+type FetchCrlResult =
+  | { success: true; crl: VerifiedCrl; summary?: X509CrlSummary }
+  | { success: false; error: string; reachable: boolean }
+
+// Running CRL downloads by url and download limits, so concurrent checks of the same CRL share one
+// download and parse, and a check with a short timeout doesn't fail checks with a longer one
+const crlDownloadsInFlight = new Map<string, Promise<FetchCrlResult>>()
+
+// A distribution point is only remembered as unavailable after this many failed downloads in a row,
+// so one failed download does not fail the checks that follow it
+const crlDownloadFailuresBeforeUnavailable = 3
 
 @injectable()
 // biome-ignore lint/complexity/noStaticOnlyClass: Service class pattern used in Credo
@@ -601,39 +623,69 @@ export class X509RevocationService {
     agentContext: AgentContext,
     fetchOptions: FetchCrlOptions,
     webCrypto: CredoWebCrypto
-  ): Promise<{ success: true; crl: VerifiedCrl } | { success: false; error: string; reachable: boolean }> {
-    const { url, issuerCertificate, verificationDate, useCache } = fetchOptions
+  ): Promise<FetchCrlResult> {
+    const { url, verificationDate, useCache } = fetchOptions
+    if (!useCache) return X509RevocationService.fetchParseVerifyAndCacheCrl(agentContext, fetchOptions, webCrypto)
 
-    if (useCache) {
-      const summary = await getCachedCrlSummary(agentContext, url)
-      const verificationTime = verificationDate.getTime()
-      const issuerKeyUsage = issuerCertificate.keyUsage
-      if (
-        summary &&
-        summary.issuerNameSha256 === computeIssuerNameSha256(issuerCertificate) &&
-        summary.issuerPublicJwkThumbprint === computeIssuerPublicJwkThumbprint(issuerCertificate) &&
-        // Mirror verify()'s cRLSign check: key usage, when present and non-empty, must include cRLSign
-        !(issuerKeyUsage && issuerKeyUsage.length > 0 && !issuerKeyUsage.includes(X509KeyUsage.CrlSign)) &&
-        // Mirror verify()'s validity window checks (isNotYetValid/isExpired use strict comparisons)
-        verificationTime >= summary.thisUpdate &&
-        (summary.nextUpdate === undefined || verificationTime <= summary.nextUpdate)
-      ) {
-        if (summary.staleAt > verificationTime) {
-          return { success: true, crl: new CrlSummaryVerifiedCrl(summary) }
-        }
+    const isFresh = (summary: X509CrlSummary | undefined): summary is X509CrlSummary =>
+      summary !== undefined && summary.staleAt > verificationDate.getTime()
 
-        // Stale but otherwise reusable: revalidate on the full path. Only a summary that passed
-        // every reuse gate may be revalidated by bytes hash — hash-based reuse must not resurrect
-        // a summary bound to a different issuer or an uncovered validity window.
-        return X509RevocationService.fetchParseVerifyAndCacheCrl(
-          agentContext,
-          { ...fetchOptions, staleSummary: summary },
-          webCrypto
-        )
-      }
+    const summary = X509RevocationService.getReusableCrlSummary(
+      await getCachedCrlSummary(agentContext, url),
+      fetchOptions
+    )
+    if (isFresh(summary)) return { success: true, crl: new CrlSummaryVerifiedCrl(summary) }
+
+    // Another check is downloading this CRL, so its result is used instead of a second download
+    const downloadKey = `${url}|${fetchOptions.options.timeoutMs}|${fetchOptions.options.maxCrlSizeBytes}`
+    const running = crlDownloadsInFlight.get(downloadKey)
+    if (running) {
+      const result = await running
+      if (!result.success && !result.reachable) return result
+
+      // The download was verified for another issuer certificate and date, so it goes through this check's gates
+      const shared = X509RevocationService.getReusableCrlSummary(
+        result.success ? result.summary : undefined,
+        fetchOptions
+      )
+      if (isFresh(shared)) return { success: true, crl: new CrlSummaryVerifiedCrl(shared) }
     }
 
-    return X509RevocationService.fetchParseVerifyAndCacheCrl(agentContext, fetchOptions, webCrypto)
+    const download = X509RevocationService.fetchParseVerifyAndCacheCrl(
+      agentContext,
+      { ...fetchOptions, staleSummary: summary },
+      webCrypto
+    )
+    crlDownloadsInFlight.set(downloadKey, download)
+    try {
+      return await download
+    } finally {
+      if (crlDownloadsInFlight.get(downloadKey) === download) crlDownloadsInFlight.delete(downloadKey)
+    }
+  }
+
+  /**
+   * The summary of a verified CRL, when it can be reused for this issuer certificate and
+   * verification date. It can be stale (`staleAt` has passed).
+   */
+  private static getReusableCrlSummary(
+    summary: X509CrlSummary | null | undefined,
+    { issuerCertificate, verificationDate }: FetchCrlOptions
+  ): X509CrlSummary | undefined {
+    const verificationTime = verificationDate.getTime()
+    const issuerKeyUsage = issuerCertificate.keyUsage
+
+    const isReusable =
+      summary &&
+      summary.issuerNameSha256 === computeIssuerNameSha256(issuerCertificate) &&
+      summary.issuerPublicJwkThumbprint === computeIssuerPublicJwkThumbprint(issuerCertificate) &&
+      // Mirror verify()'s cRLSign check: key usage, when present and non-empty, must include cRLSign
+      !(issuerKeyUsage && issuerKeyUsage.length > 0 && !issuerKeyUsage.includes(X509KeyUsage.CrlSign)) &&
+      // Mirror verify()'s validity window checks (isNotYetValid/isExpired use strict comparisons)
+      verificationTime >= summary.thisUpdate &&
+      (summary.nextUpdate === undefined || verificationTime <= summary.nextUpdate)
+
+    return isReusable ? summary : undefined
   }
 
   /**
@@ -657,9 +709,19 @@ export class X509RevocationService {
       parseOptions,
     }: FetchCrlOptions & { staleSummary?: X509CrlSummary },
     webCrypto: CredoWebCrypto
-  ): Promise<{ success: true; crl: VerifiedCrl } | { success: false; error: string; reachable: boolean }> {
+  ): Promise<FetchCrlResult> {
     // Whether the CRL bytes were downloaded successfully.
     let reachable = false
+
+    const unavailablePeriodMs = options.crlUnavailableCacheExpirySeconds * 1000
+    const failures = useCache ? await getCachedCrlDownloadFailures(agentContext, url) : null
+    if (
+      failures &&
+      failures.count >= crlDownloadFailuresBeforeUnavailable &&
+      Date.now() - failures.failedAt < unavailablePeriodMs
+    ) {
+      return { success: false, error: failures.error, reachable }
+    }
 
     try {
       const crlData = await fetchCrl({
@@ -670,6 +732,9 @@ export class X509RevocationService {
       })
 
       reachable = true
+      if (failures) {
+        await setCachedCrlDownloadFailures(agentContext, url, null, options.crlUnavailableCacheExpirySeconds)
+      }
 
       const crlCacheExpirySeconds = options.crlCacheExpirySeconds
       const staleAt = verificationDate.getTime() + crlCacheExpirySeconds * 1000
@@ -685,7 +750,7 @@ export class X509RevocationService {
           X509RevocationService.computeCacheTtlSeconds(staleSummary.nextUpdate, verificationDate, crlCacheExpirySeconds)
         )
 
-        return { success: true, crl: new CrlSummaryVerifiedCrl(refreshed) }
+        return { success: true, crl: new CrlSummaryVerifiedCrl(refreshed), summary: refreshed }
       }
 
       const crl = X509CertificateRevocationList.fromRaw(crlData, parseOptions)
@@ -696,6 +761,7 @@ export class X509RevocationService {
         return { success: false, error: verifyResult.error?.message ?? 'CRL verification failed', reachable }
       }
 
+      let summary: X509CrlSummary | undefined
       if (useCache) {
         // The entry lives until the CRL's own `nextUpdate` so an expired CRL is never served from
         // the cache; freshness within that window is governed by the summary's `staleAt`.
@@ -710,15 +776,28 @@ export class X509RevocationService {
         // (e.g. duplicate extensions) throws while deriving the summary; skip caching it so such
         // CRLs keep surfacing that error at applicability time.
         try {
-          await setCachedCrlSummary(agentContext, url, buildCrlSummary(crl, issuerCertificate, staleAt), ttlSeconds)
+          summary = buildCrlSummary(crl, issuerCertificate, staleAt)
+          await setCachedCrlSummary(agentContext, url, summary, ttlSeconds)
         } catch {
           // the summary cache is an optimization only
         }
       }
 
-      return { success: true, crl }
+      return { success: true, crl, summary }
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error), reachable }
+      const message = error instanceof Error ? error.message : String(error)
+      if (useCache && !reachable) {
+        const count = (failures?.count ?? 0) + 1
+        await setCachedCrlDownloadFailures(
+          agentContext,
+          url,
+          { error: message, count, failedAt: Date.now() },
+          // Kept for two periods, so the retry after the unavailable period still sees the count
+          options.crlUnavailableCacheExpirySeconds * 2
+        )
+      }
+
+      return { success: false, error: message, reachable }
     }
   }
 
@@ -820,7 +899,7 @@ export class X509RevocationService {
         url,
         issuerCertificate: parsedIssuerCertificate,
         verificationDate,
-        options,
+        options: { ...options, crlUnavailableCacheExpirySeconds: 0 },
         // This is an explicit, one-off fetch; don't read from or populate the revocation cache.
         useCache: false,
         parseOptions: effectiveParseOptions,

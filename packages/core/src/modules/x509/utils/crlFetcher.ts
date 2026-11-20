@@ -91,3 +91,44 @@ export async function setCachedCrlSummary(
     .set(agentContext, crlSummaryCacheKey(url), summary, expiresInSeconds, { scope: 'global' })
     .catch(() => null)
 }
+
+function crlDownloadFailuresCacheKey(url: string): string {
+  return `x509:crl-download-failures:v1:${url}`
+}
+
+export interface X509CrlDownloadFailures {
+  /** The error of the last failed download */
+  error: string
+  count: number
+  /** Time of the last failed download, in milliseconds since the epoch */
+  failedAt: number
+}
+
+/**
+ * Return the failed downloads of the CRL at a URL since its last successful download, or `null` when
+ * there are none.
+ */
+export async function getCachedCrlDownloadFailures(
+  agentContext: AgentContext,
+  url: string
+): Promise<X509CrlDownloadFailures | null> {
+  const cache = agentContext.resolve(CacheModuleConfig).cache
+  return cache.get<X509CrlDownloadFailures>(agentContext, crlDownloadFailuresCacheKey(url), { scope: 'global' })
+}
+
+/**
+ * Remember the failed downloads of the CRL at a URL for `expiresInSeconds`, or forget them when
+ * `failures` is `null`.
+ */
+export async function setCachedCrlDownloadFailures(
+  agentContext: AgentContext,
+  url: string,
+  failures: X509CrlDownloadFailures | null,
+  expiresInSeconds: number
+): Promise<void> {
+  const cache = agentContext.resolve(CacheModuleConfig).cache
+  const key = crlDownloadFailuresCacheKey(url)
+  if (!failures) return cache.remove(agentContext, key, { scope: 'global' })
+  if (expiresInSeconds <= 0) return
+  await cache.set(agentContext, key, failures, expiresInSeconds, { scope: 'global' })
+}
