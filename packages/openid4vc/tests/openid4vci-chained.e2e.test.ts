@@ -1882,7 +1882,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         }
       )
 
-      it('does not create a key after a PAR without DPoP support', async () => {
+      it('does not use DPoP after a PAR without DPoP support', async () => {
         upstreamMetadata.dpop_signing_alg_values_supported = undefined
         const issuanceSession = await startAuthorization()
         expect(issuanceSession.chainedIdentity?.externalDpop).toBeUndefined()
@@ -1894,7 +1894,25 @@ describe('OpenId4Vc (Chained Authorization)', () => {
             chainedAuthorizationServerConfig: createDpopConfig(),
             authorizationServerMetadata: upstreamAuthorizationServerMetadata,
           })
-        ).rejects.toThrow('Chained DPoP key was not initialized during the authorization request.')
+        ).resolves.toEqual({})
+        expect(createKey).not.toHaveBeenCalled()
+      })
+
+      it('does not use DPoP for a session when the callback disallows it', async () => {
+        dpopAgent.agent.context.resolve(OpenId4VcIssuerModuleConfig).getChainedAuthorizationRequestParameters =
+          async () => ({ scopes: ['UniversityDegreeCredential'], dpopPolicy: 'disallowed' })
+        const createKey = vi.spyOn(dpopAgent.agent.kms, 'createKeyForSignatureAlgorithm')
+
+        const issuanceSession = await startAuthorization()
+
+        expect(issuanceSession.chainedIdentity?.externalDpop).toBeUndefined()
+        await expect(
+          issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
+            issuanceSession,
+            chainedAuthorizationServerConfig: createDpopConfig(),
+            authorizationServerMetadata: upstreamAuthorizationServerMetadata,
+          })
+        ).resolves.toEqual({})
         expect(createKey).not.toHaveBeenCalled()
       })
 

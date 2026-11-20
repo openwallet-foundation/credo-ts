@@ -40,6 +40,43 @@ describe('EddsaJcs2022Cryptosuite', () => {
     x: 'IP071Y_MG-ovNPMJIWj75YyvgD8j0tC74EMAfvRIWoc',
   }
 
+  // The key of mockVerificationMethod, and the legacy KMS key ID that createProof resolves for it
+  const mockPublicJwk = PublicJwk.fromFingerprint('z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL')
+  const mockKmsKeyId = '3Dn1SJNPaCXcvvJvSbsFWP2xaCjMom3can8CQNhWrTRx'
+  const mockSigningPublicJwk = () => {
+    const publicJwk = PublicJwk.fromFingerprint('z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL')
+    publicJwk.keyId = mockKmsKeyId
+    return publicJwk
+  }
+
+  // A P-256 verification method, which eddsa-jcs-2022 does not support
+  const p256PublicJwk = PublicJwk.fromFingerprint('zDnaepBuvsQ8cpsWrVKw8fbpGpvPeNSjVPTWoq6cRqaYzBKVP')
+  const mockP256VerificationMethod = () =>
+    mockDidsApi.resolveDidDocument.mockResolvedValueOnce({
+      dereferenceVerificationMethod: vi.fn().mockReturnValue({
+        id: mockVerificationMethod,
+        type: 'JsonWebKey2020',
+        controller: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        publicKeyJwk: p256PublicJwk.toJson(),
+      }),
+    })
+
+  async function expectProcessingErrorAsync(
+    promise: Promise<unknown>,
+    errorCode: W3cDataIntegrityProcessingErrorCode,
+    message: string
+  ) {
+    const error = await promise.then(
+      () => undefined,
+      (error: unknown) => error
+    )
+    expect(error).toBeInstanceOf(W3cDataIntegrityProcessingError)
+    expect((error as W3cDataIntegrityProcessingError).issue.type).toBe(errorCode)
+    expect((error as W3cDataIntegrityProcessingError).message).toContain(message)
+  }
+
+  const unsupportedKeyMessage = "The 'eddsa-jcs-2022' cryptosuite only supports Ed25519 keys"
+
   const mockProofValue = MultiBaseEncoder.encode(new Uint8Array(64).fill(7), 'base58btc')
 
   const specCredential: W3cDataIntegrityUnsecuredDocument = {
@@ -203,6 +240,29 @@ describe('EddsaJcs2022Cryptosuite', () => {
       expect(optionsArg).toHaveProperty('verificationMethod', mockVerificationMethod)
     })
 
+    // Spec: VC DI EdDSA v1.0 section 3.3.6 step 1 retrieves the private key associated with the verification method.
+    it('signs with the KMS key of the verification method', async () => {
+      await cryptosuite.createProof({ type: 'VerifiableCredential' }, mockProofOptions)
+
+      expect(mockKeyManagementApi.sign).toHaveBeenCalledWith({
+        keyId: mockKmsKeyId,
+        expectedPublicJwk: expect.objectContaining({ kty: 'OKP', crv: 'Ed25519', x: mockPublicJwkJson.x }),
+        algorithm: 'EdDSA',
+        data: expect.any(Uint8Array),
+      })
+    })
+
+    it('throws PROOF_GENERATION_ERROR for a verification method that is not an Ed25519 key', async () => {
+      mockP256VerificationMethod()
+
+      await expectProcessingErrorAsync(
+        cryptosuite.createProof({ type: 'VerifiableCredential' }, mockProofOptions),
+        W3cDataIntegrityProcessingErrorCode.ProofGenerationError,
+        `${unsupportedKeyMessage}, found EC key with crv 'P-256'`
+      )
+      expect(mockKeyManagementApi.sign).not.toHaveBeenCalled()
+    })
+
     // Spec: VC DI EdDSA v1.0 §3.3.1 step 3 requires calling proofConfiguration with the modified proof (after @context injection).
     it('calls proofConfiguration with the @context-injected proof', async () => {
       const documentContext = ['https://www.w3.org/ns/credentials/v2']
@@ -321,6 +381,36 @@ describe('EddsaJcs2022Cryptosuite', () => {
       expect(mockKeyManagementApi.verify).not.toHaveBeenCalled()
     })
 
+    // Spec: VC DI EdDSA v1.0 section 3.3.2 step 4.1 compares values, and an inline context object is a new object after parsing.
+    it('compares inline @context objects by value', async () => {
+      const proofContext = [
+        'https://www.w3.org/ns/credentials/v2',
+        { myWebsite: 'https://vocabulary.example/myWebsite' },
+      ]
+      const proofWithContext: W3cDataIntegrityCryptosuiteProof = {
+        ...mockProofOptions,
+        '@context': proofContext,
+        proofValue: mockProofValue,
+      }
+
+      const sameInlineContext = await cryptosuite.verifyProof({
+        unsecuredDocument: { '@context': JSON.parse(JSON.stringify(proofContext)), type: 'VerifiableCredential' },
+        proof: proofWithContext,
+      })
+      expect(sameInlineContext).toMatchObject({ verified: true })
+
+      mockKeyManagementApi.verify.mockClear()
+      const otherInlineContext = await cryptosuite.verifyProof({
+        unsecuredDocument: {
+          '@context': ['https://www.w3.org/ns/credentials/v2', { myWebsite: 'https://other.example/myWebsite' }],
+          type: 'VerifiableCredential',
+        },
+        proof: proofWithContext,
+      })
+      expect(otherInlineContext).toEqual({ verified: false, verifiedDocument: null })
+      expect(mockKeyManagementApi.verify).not.toHaveBeenCalled()
+    })
+
     // Spec: VC DI EdDSA v1.0 §3.3.2 step 4.2 restores proof @context onto the unsecured document before transformation and hashing.
     it('restores proof @context onto the verified document before transformation', async () => {
       const proofContext = ['https://w3id.org/security/data-integrity/v2']
@@ -435,6 +525,20 @@ describe('EddsaJcs2022Cryptosuite', () => {
       })
     })
 
+    it('throws PROOF_VERIFICATION_ERROR for a verification method that is not an Ed25519 key', async () => {
+      mockP256VerificationMethod()
+
+      await expectProcessingErrorAsync(
+        cryptosuite.verifyProof({
+          unsecuredDocument: { id: 'urn:example:test' },
+          proof: { ...mockProofOptions, proofValue: mockProofValue },
+        }),
+        W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
+        `${unsupportedKeyMessage}, found EC key with crv 'P-256'`
+      )
+      expect(mockKeyManagementApi.verify).not.toHaveBeenCalled()
+    })
+
     // Spec: VC DI EdDSA v1.0 §3.3.2 step 9 returns verified false and verifiedDocument null when cryptographic verification fails.
     it('returns false and a null verifiedDocument when EdDSA verification fails', async () => {
       mockKeyManagementApi.verify.mockResolvedValueOnce({ verified: false })
@@ -477,6 +581,8 @@ describe('EddsaJcs2022Cryptosuite', () => {
       const signCall = mockKeyManagementApi.sign.mock.calls[0][0]
       const verifyCall = mockKeyManagementApi.verify.mock.calls[0][0]
       expect(verifyCall.data).toEqual(signCall.data)
+      // Spec: section 3.3.7 step 1 retrieves the public key from the verification method of the proof.
+      expect(verifyCall.key).toEqual({ publicJwk: mockPublicJwkJson })
     })
   })
 
@@ -638,7 +744,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
       const transformedDoc = cryptosuite.transformation(specCredential, specProofOptions)
       const proofOptionsWithContext = { ...specProofOptions, '@context': specCredential['@context'] }
       const proofConfig = cryptosuite.proofConfiguration(proofOptionsWithContext)
-      const hashData = cryptosuite.hashing(transformedDoc, proofConfig)
+      const hashData = cryptosuite.hashing(transformedDoc, proofConfig, mockPublicJwk)
       const hex = TypedArrayEncoder.toHex(hashData)
       expect(hex).toBe(expectedHashDataHex)
     })
@@ -648,7 +754,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
       const transformedDoc = cryptosuite.transformation(specCredential, specProofOptions)
       const proofOptionsWithContext = { ...specProofOptions, '@context': specCredential['@context'] }
       const proofConfig = cryptosuite.proofConfiguration(proofOptionsWithContext)
-      const hashData = cryptosuite.hashing(transformedDoc, proofConfig)
+      const hashData = cryptosuite.hashing(transformedDoc, proofConfig, mockPublicJwk)
       expect(hashData).toHaveLength(64)
       const firstHalf = TypedArrayEncoder.toHex(hashData.subarray(0, 32))
       const secondHalf = TypedArrayEncoder.toHex(hashData.subarray(32, 64))
@@ -804,14 +910,14 @@ describe('EddsaJcs2022Cryptosuite', () => {
   })
 
   describe('3.3.6 Proof Serialization (eddsa-jcs-2022)', () => {
-    // Spec: VC DI EdDSA v1.0 §3.3.6 steps 1-3 requires resolving the signing key from verificationMethod and returning proof bytes.
-    it('signs hashData with the private key associated with verificationMethod', async () => {
+    // Spec: VC DI EdDSA v1.0 section 3.3.6 steps 2-3 sign hashData with the key and return the proof bytes.
+    it('signs hashData with the KMS key of the public key', async () => {
       const hashData = new Uint8Array([1, 2, 3, 4])
 
-      const proofBytes = await cryptosuite.proofSerialization(hashData, mockProofOptions)
+      const proofBytes = await cryptosuite.proofSerialization(hashData, mockProofOptions, mockSigningPublicJwk())
 
       expect(mockKeyManagementApi.sign).toHaveBeenCalledWith({
-        keyId: '3Dn1SJNPaCXcvvJvSbsFWP2xaCjMom3can8CQNhWrTRx',
+        keyId: mockKmsKeyId,
         backend: undefined,
         expectedPublicJwk: expect.objectContaining({ kty: 'OKP', crv: 'Ed25519' }),
         algorithm: 'EdDSA',
@@ -826,8 +932,12 @@ describe('EddsaJcs2022Cryptosuite', () => {
       const hashData = new Uint8Array([1, 2, 3, 4])
       const { type: _type, ...optionsWithoutType } = mockProofOptions
 
-      // @ts-expect-error testing lower-level signing behavior with missing `type`
-      const proofBytes = await cryptosuite.proofSerialization(hashData, optionsWithoutType)
+      const proofBytes = await cryptosuite.proofSerialization(
+        hashData,
+        // @ts-expect-error testing lower-level signing behavior with missing `type`
+        optionsWithoutType,
+        mockSigningPublicJwk()
+      )
       expect(proofBytes).toHaveLength(64)
     })
 
@@ -837,7 +947,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
       // biome-ignore lint/suspicious/noExplicitAny: testing runtime type validation with invalid type
       const optionsWithInvalidType = { ...mockProofOptions, type: 123 } as any
 
-      const proofBytes = await cryptosuite.proofSerialization(hashData, optionsWithInvalidType)
+      const proofBytes = await cryptosuite.proofSerialization(hashData, optionsWithInvalidType, mockSigningPublicJwk())
       expect(proofBytes).toHaveLength(64)
     })
 
@@ -846,17 +956,19 @@ describe('EddsaJcs2022Cryptosuite', () => {
       mockKeyManagementApi.sign.mockResolvedValueOnce({ signature: new Uint8Array(32) })
       const hashData = new Uint8Array([1, 2, 3, 4])
 
-      await expect(cryptosuite.proofSerialization(hashData, mockProofOptions)).rejects.toThrow(CredoError)
+      await expect(cryptosuite.proofSerialization(hashData, mockProofOptions, mockSigningPublicJwk())).rejects.toThrow(
+        CredoError
+      )
     })
   })
 
   describe('3.3.7 Proof Verification (eddsa-jcs-2022)', () => {
-    // Spec: VC DI EdDSA v1.0 §3.3.7 steps 1-3 requires resolving the public key from verificationMethod and returning the EdDSA verification result.
-    it('verifies proof bytes against hashData using the verificationMethod public key', async () => {
+    // Spec: VC DI EdDSA v1.0 section 3.3.7 steps 2-3 verify the proof bytes with the public key and return the result.
+    it('verifies proof bytes against hashData with the given public key', async () => {
       const hashData = new Uint8Array([5, 6, 7, 8])
       const proofBytes = new Uint8Array(64).fill(9)
 
-      const verified = await cryptosuite.proofVerification(hashData, proofBytes, mockProofOptions)
+      const verified = await cryptosuite.proofVerification(hashData, proofBytes, mockProofOptions, mockPublicJwk)
 
       expect(verified).toBe(true)
       expect(mockKeyManagementApi.verify).toHaveBeenCalledWith({
@@ -871,9 +983,35 @@ describe('EddsaJcs2022Cryptosuite', () => {
     it('returns false when EdDSA signature verification fails', async () => {
       mockKeyManagementApi.verify.mockResolvedValueOnce({ verified: false })
 
-      const verified = await cryptosuite.proofVerification(new Uint8Array([1]), new Uint8Array(64), mockProofOptions)
+      const verified = await cryptosuite.proofVerification(
+        new Uint8Array([1]),
+        new Uint8Array(64),
+        mockProofOptions,
+        mockPublicJwk
+      )
 
       expect(verified).toBe(false)
+    })
+
+    // Spec: VC DI EdDSA v1.0 section 3.3.7. An Ed25519 signature is always 64 bytes.
+    it('returns false without calling the KMS for a signature that is not 64 bytes', async () => {
+      const verified = await cryptosuite.proofVerification(
+        new Uint8Array([1]),
+        new Uint8Array(63),
+        mockProofOptions,
+        mockPublicJwk
+      )
+
+      expect(verified).toBe(false)
+      expect(mockKeyManagementApi.verify).not.toHaveBeenCalled()
+    })
+
+    it('throws PROOF_VERIFICATION_ERROR for a key that is not Ed25519', async () => {
+      await expectProcessingErrorAsync(
+        cryptosuite.proofVerification(new Uint8Array([1]), new Uint8Array(64), mockProofOptions, p256PublicJwk),
+        W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
+        unsupportedKeyMessage
+      )
     })
   })
 

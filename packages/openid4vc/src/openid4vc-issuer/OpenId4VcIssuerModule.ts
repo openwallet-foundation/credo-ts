@@ -1,4 +1,10 @@
-import { type AgentContext, type DependencyManager, joinUriParts, type Module } from '@credo-ts/core'
+import {
+  type AgentContext,
+  type DependencyManager,
+  joinUriParts,
+  type Module,
+  RecordNotFoundError,
+} from '@credo-ts/core'
 import type { NextFunction, Response } from 'express'
 import {
   endRequestSession,
@@ -100,12 +106,17 @@ export class OpenId4VcIssuerModule implements Module {
         }
         registerRequestSession(req, res, agentContext)
       } catch (error) {
-        agentContext?.config.logger.error(
-          'Failed to correlate incoming oid4vci request to existing tenant and issuer',
-          {
-            error,
-          }
-        )
+        // An unknown issuer id is a client error, not a failure of the agent.
+        if (error instanceof RecordNotFoundError) {
+          agentContext?.config.logger.warn(`No issuer found for incoming oid4vci request with issuerId '${issuerId}'`)
+        } else {
+          agentContext?.config.logger.error(
+            'Failed to correlate incoming oid4vci request to existing tenant and issuer',
+            {
+              error,
+            }
+          )
+        }
         // If the opening failed
         await agentContext?.endSession()
 

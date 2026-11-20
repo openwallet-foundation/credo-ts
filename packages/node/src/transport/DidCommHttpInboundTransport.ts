@@ -4,6 +4,7 @@ import type {
   DidCommEncryptedMessage,
   DidCommInboundTransport,
   DidCommMessageProcessedEvent,
+  DidCommMessageProcessingFailedEvent,
   DidCommMessageReceivedEvent,
   DidCommTransportSession,
 } from '@credo-ts/didcomm'
@@ -20,7 +21,7 @@ import {
 import type { Express, Request, Response } from 'express'
 import express, { text } from 'express'
 import type { Server } from 'http'
-import { filter, firstValueFrom, ReplaySubject, take, timeout } from 'rxjs'
+import { filter, firstValueFrom, merge, ReplaySubject, take, timeout } from 'rxjs'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
 
@@ -116,15 +117,21 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
         const encryptedMessage = JSON.parse(message) as DidCommEncryptedMessage
 
         const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
-        const observable = eventEmitter.observable<DidCommMessageProcessedEvent>(
-          DidCommEventTypes.DidCommMessageProcessed
-        )
-        const subject = new ReplaySubject(1)
+        const subject = new ReplaySubject<DidCommMessageProcessedEvent | DidCommMessageProcessingFailedEvent>(1)
 
-        observable
-          .pipe(
+        merge(
+          eventEmitter.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
             filter((e) => e.type === DidCommEventTypes.DidCommMessageProcessed),
-            filter((e) => e.payload.encryptedMessage === encryptedMessage),
+            filter((e) => e.payload.encryptedMessage === encryptedMessage)
+          ),
+          eventEmitter
+            .observable<DidCommMessageProcessingFailedEvent>(DidCommEventTypes.DidCommMessageProcessingFailed)
+            .pipe(
+              filter((e) => e.type === DidCommEventTypes.DidCommMessageProcessingFailed),
+              filter((e) => e.payload.message === encryptedMessage)
+            )
+        )
+          .pipe(
             timeout({
               first: this.processedMessageListenerTimeoutMs,
               meta: 'DidCommHttpInboundTransport.start',
@@ -142,7 +149,12 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
         })
 
         // Wait for message to be processed
-        await firstValueFrom(subject)
+        const event = await firstValueFrom(subject)
+
+        // The failure is already logged where the event is emitted
+        if (event.type === DidCommEventTypes.DidCommMessageProcessingFailed && !res.headersSent) {
+          res.status(500).send('Error processing message')
+        }
 
         // If agent did not use session when processing message we need to send response here.
         // 202 Accepted, as no response travels back on this connection: https://identity.foundation/didcomm-messaging/spec/v2.1/#https
