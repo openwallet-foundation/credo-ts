@@ -392,9 +392,6 @@ importers:
 
   demo:
     dependencies:
-      '@hyperledger/anoncreds-nodejs':
-        specifier: 'catalog:'
-        version: 0.6.0
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
         version: 0.7.1
@@ -402,15 +399,9 @@ importers:
         specifier: ^14.2.5
         version: 14.2.5(@types/node@22.20.4)
     devDependencies:
-      '@credo-ts/anoncreds':
-        specifier: workspace:*
-        version: link:../packages/anoncreds
       '@credo-ts/askar':
         specifier: workspace:*
         version: link:../packages/askar
-      '@credo-ts/cheqd':
-        specifier: workspace:*
-        version: link:../packages/cheqd
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../packages/core

@@ -37,18 +37,23 @@ export class Listener {
     this.on = false
   }
 
-  private printCredentialAttributes(credentialExchangeRecord: DidCommCredentialExchangeRecord) {
-    if (credentialExchangeRecord.credentialAttributes) {
-      const attribute = credentialExchangeRecord.credentialAttributes
-      console.log('\n\nCredential preview:')
-      for (const element of attribute) {
-        console.log(purpleText(`${element.name} ${Color.Reset}${element.value}`))
-      }
-    }
+  private async printCredentialOffer(alice: Alice, credentialExchangeRecord: DidCommCredentialExchangeRecord) {
+    const { offer } = await alice.agent.didcomm.credentials.getFormatData(credentialExchangeRecord.id)
+    const credential = offer?.jsonld?.credential
+    if (!credential) return
+
+    console.log('\n\nCredential offer:')
+    const issuer = typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id
+    console.log(purpleText(`Issuer: ${Color.Reset}${issuer}`))
+    console.log(purpleText(`Claims: ${Color.Reset}${JSON.stringify(credential.credentialSubject, null, 2)}`))
   }
 
-  private async newCredentialPrompt(credentialRecord: DidCommCredentialExchangeRecord, aliceInquirer: AliceInquirer) {
-    this.printCredentialAttributes(credentialRecord)
+  private async newCredentialPrompt(
+    alice: Alice,
+    credentialRecord: DidCommCredentialExchangeRecord,
+    aliceInquirer: AliceInquirer
+  ) {
+    await this.printCredentialOffer(alice, credentialRecord)
     this.turnListenerOn()
     await aliceInquirer.acceptCredentialOffer(credentialRecord)
     this.turnListenerOff()
@@ -59,8 +64,23 @@ export class Listener {
     alice.agent.events.on(
       DidCommCredentialEventTypes.DidCommCredentialStateChanged,
       async ({ payload }: DidCommCredentialStateChangedEvent) => {
-        if (payload.credentialExchangeRecord.state === DidCommCredentialState.OfferReceived) {
-          await this.newCredentialPrompt(payload.credentialExchangeRecord, aliceInquirer)
+        if (payload.credentialExchangeRecord.state !== DidCommCredentialState.OfferReceived) return
+
+        // An offer that answers Alice's own proposal is accepted automatically.
+        const { proposal } = await alice.agent.didcomm.credentials.getFormatData(payload.credentialExchangeRecord.id)
+        if (proposal) return
+
+        await this.newCredentialPrompt(alice, payload.credentialExchangeRecord, aliceInquirer)
+      }
+    )
+  }
+
+  public credentialProposalListener(faber: Faber) {
+    faber.agent.events.on(
+      DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+      async ({ payload }: DidCommCredentialStateChangedEvent) => {
+        if (payload.credentialExchangeRecord.state === DidCommCredentialState.ProposalReceived) {
+          await faber.acceptSubjectProposal(payload.credentialExchangeRecord)
         }
       }
     )
@@ -108,12 +128,12 @@ export class Listener {
     )
   }
 
-  public proofAcceptedListener(faber: Faber, faberInquirer: FaberInquirer) {
+  public proofDoneListener(faber: Faber) {
     faber.agent.events.on(
       DidCommProofEventTypes.ProofStateChanged,
       async ({ payload }: DidCommProofStateChangedEvent) => {
         if (payload.proofRecord.state === DidCommProofState.Done) {
-          await faberInquirer.processAnswer()
+          await faber.printVerifiedPresentation(payload.proofRecord.id)
         }
       }
     )

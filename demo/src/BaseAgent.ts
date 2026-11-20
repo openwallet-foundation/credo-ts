@@ -1,30 +1,24 @@
-import { AnonCredsModule } from '@credo-ts/anoncreds'
-import {
-  AnonCredsDidCommCredentialFormatService,
-  AnonCredsDidCommProofFormatService,
-} from '@credo-ts/anoncreds/didcomm'
 import type { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
 import { AskarModule } from '@credo-ts/askar'
-import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule, CheqdModuleConfig } from '@credo-ts/cheqd'
-import { CheqdAnonCredsRegistry } from '@credo-ts/cheqd/anoncreds'
-import { Agent, DidsModule } from '@credo-ts/core'
+import { Agent } from '@credo-ts/core'
 import type { DidCommModuleConfigOptions, DidCommVersion } from '@credo-ts/didcomm'
 import {
   DidCommAutoAcceptCredential,
   DidCommAutoAcceptProof,
   DidCommCredentialV2Protocol,
+  DidCommDifPresentationExchangeProofFormatService,
   DidCommHttpOutboundTransport,
+  DidCommJsonLdCredentialFormatService,
   DidCommModule,
   DidCommProofV2Protocol,
 } from '@credo-ts/didcomm'
 import { agentDependencies, DidCommHttpInboundTransport } from '@credo-ts/node'
-import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { greenText } from './OutputClass'
 
 const didcommVersion: DidCommVersion = process.env.DIDCOMM_VERSION === 'v2' ? 'v2' : 'v1'
 
-type DemoAgent = Agent<ReturnType<typeof getAskarAnonCredsModules>>
+type DemoAgent = Agent<ReturnType<typeof getDemoModules>>
 
 export class BaseAgent {
   public port: number
@@ -40,7 +34,7 @@ export class BaseAgent {
     this.agent = new Agent({
       config: {},
       dependencies: agentDependencies,
-      modules: getAskarAnonCredsModules(
+      modules: getDemoModules(
         {
           endpoints: [`http://localhost:${this.port}`],
           transports: {
@@ -61,7 +55,7 @@ export class BaseAgent {
   }
 }
 
-function getAskarAnonCredsModules(
+function getDemoModules(
   didcommConfig: Omit<DidCommModuleConfigOptions, 'credentials' | 'proofs' | 'connections'>,
   askarStoreConfig: AskarModuleConfigStoreOptions,
   options?: { didcommVersion?: DidCommVersion }
@@ -78,7 +72,7 @@ function getAskarAnonCredsModules(
         autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
         credentialProtocols: [
           new DidCommCredentialV2Protocol({
-            credentialFormats: [new AnonCredsDidCommCredentialFormatService()],
+            credentialFormats: [new DidCommJsonLdCredentialFormatService()],
           }),
         ],
       },
@@ -86,29 +80,10 @@ function getAskarAnonCredsModules(
         autoAcceptProofs: DidCommAutoAcceptProof.ContentApproved,
         proofProtocols: [
           new DidCommProofV2Protocol({
-            proofFormats: [new AnonCredsDidCommProofFormatService()],
+            proofFormats: [new DidCommDifPresentationExchangeProofFormatService()],
           }),
         ],
       },
-    }),
-    anoncreds: new AnonCredsModule({
-      registries: [new CheqdAnonCredsRegistry()],
-      anoncreds: NativeAnoncreds,
-    }),
-    cheqd: new CheqdModule(
-      new CheqdModuleConfig({
-        networks: [
-          {
-            network: 'testnet',
-            cosmosPayerSeed:
-              'robust across amount corn curve panther opera wish toe ring bleak empower wreck party abstract glad average muffin picnic jar squeeze annual long aunt',
-          },
-        ],
-      })
-    ),
-    dids: new DidsModule({
-      resolvers: [new CheqdDidResolver()],
-      registrars: [new CheqdDidRegistrar()],
     }),
     askar: new AskarModule({
       askar: NativeAskar,
