@@ -273,6 +273,40 @@ describe('W3cDataIntegrityProofService', () => {
     )
   })
 
+  test('createProof returns PROOF_TRANSFORMATION_ERROR for a document with a circular reference', async () => {
+    const createProof = vi.fn()
+
+    mockCreateByCryptosuite.mockReturnValue({
+      cryptosuite: 'eddsa-jcs-2022',
+      createProof,
+    })
+
+    const nested: Record<string, unknown> = { keep: 'value' }
+    nested.self = nested
+
+    const result = await service.createProof(agentContext, {
+      unsecuredDocument: {
+        id: 'urn:example:test',
+        nested,
+      },
+      verificationMethod: 'did:example:123#key-1',
+      proofPurpose: 'assertionMethod',
+      cryptosuite: 'eddsa-jcs-2022',
+    })
+
+    expect(result).toMatchObject({
+      created: false,
+      proof: null,
+      errors: [
+        {
+          type: 'https://w3id.org/security#PROOF_TRANSFORMATION_ERROR',
+          title: expect.stringContaining('circular reference at $.nested.self'),
+        },
+      ],
+    })
+    expect(createProof).not.toHaveBeenCalled()
+  })
+
   test('createProof returns structured generation error when required verificationMethod is undefined and stripped', async () => {
     const createProof = vi.fn().mockRejectedValue(new Error('Missing required proof option: verificationMethod'))
 
@@ -403,6 +437,38 @@ describe('W3cDataIntegrityProofService', () => {
       },
       proof: securedDocument.proof,
     })
+  })
+
+  test('verifyProof returns PROOF_TRANSFORMATION_ERROR for a document with a circular reference', async () => {
+    const verifyProof = vi.fn()
+
+    mockCreateByCryptosuite.mockReturnValue({ verifyProof })
+
+    const nested: Record<string, unknown> = { keep: 'value' }
+    nested.self = nested
+
+    const result = await service.verifyProof(agentContext, {
+      id: 'urn:example:test',
+      nested,
+      proof: {
+        type: 'DataIntegrityProof',
+        cryptosuite: 'eddsa-jcs-2022',
+        verificationMethod: 'did:example:123#key-1',
+        proofPurpose: 'assertionMethod',
+        proofValue: validProofValue,
+      },
+    })
+
+    expect(result.verified).toBe(false)
+    expect(result).toMatchObject({
+      errors: [
+        {
+          type: 'https://w3id.org/security#PROOF_TRANSFORMATION_ERROR',
+          title: expect.stringContaining('circular reference at $.nested.self'),
+        },
+      ],
+    })
+    expect(verifyProof).not.toHaveBeenCalled()
   })
 
   test('verifyProof rejects malformed verificationMethod values before cryptosuite verification', async () => {

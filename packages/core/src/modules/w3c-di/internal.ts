@@ -1,6 +1,7 @@
 /**
  * Internal Data Integrity surface for internal modules and direct-import consumers
  */
+export { EcdsaJcs2019Cryptosuite } from './cryptosuites/ecdsa-jcs-2019/EcdsaJcs2019Cryptosuite'
 export { EddsaJcs2022Cryptosuite } from './cryptosuites/eddsa-jcs-2022/EddsaJcs2022Cryptosuite'
 export type { W3cDataIntegrityCryptosuite, W3cDataIntegrityCryptosuiteInfo } from './cryptosuites/types'
 export { W3cDataIntegrityCryptosuiteToken } from './cryptosuites/types'
