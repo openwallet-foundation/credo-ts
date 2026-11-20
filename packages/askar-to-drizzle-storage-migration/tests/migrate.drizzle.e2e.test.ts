@@ -36,6 +36,9 @@ import { Ed25519Signature2018Fixtures } from '../../core/src/modules/vc/linked-d
 import { CredoEs256DidJwkJwtVc as CredoEs256DidJwkSdJwtVc } from '../../core/src/modules/vc/sd-jwt-vc/__tests__/fixtures/credo-sd-jwt-vc'
 import testLogger from '../../core/tests/logger'
 import {
+  DidCommBasicMessageRecord,
+  DidCommBasicMessageRepository,
+  DidCommBasicMessageRole,
   DidCommConnectionRecord,
   DidCommConnectionRepository,
   DidCommDidExchangeRole,
@@ -78,6 +81,17 @@ async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
       role: DidCommDidExchangeRole.Responder,
       state: DidCommDidExchangeState.Completed,
       threadId: 'connection-thread',
+    })
+  )
+
+  // Askar keeps the basic message when its connection is deleted, Drizzle deletes it
+  await agent.dependencyManager.resolve(DidCommBasicMessageRepository).save(
+    agent.context,
+    new DidCommBasicMessageRecord({
+      connectionId: utils.uuid(),
+      role: DidCommBasicMessageRole.Sender,
+      content: 'orphan',
+      sentTime: new Date().toISOString(),
     })
   )
 
@@ -143,7 +157,11 @@ async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
   })
 }
 
-async function expectDatabaseWithRecords(agent: Agent | TenantAgent) {
+async function expectDatabaseWithRecords(agent: Agent | TenantAgent, storage: 'askar' | 'drizzle') {
+  await expect(
+    agent.dependencyManager.resolve(DidCommBasicMessageRepository).getAll(agent.context)
+  ).resolves.toHaveLength(storage === 'askar' ? 1 : 0)
+
   const [mediationRecord] = await agent.dependencyManager.resolve(DidCommMediationRepository).getAll(agent.context)
   expect(mediationRecord).toMatchObject({ threadId: 'mediation-thread' })
   await expect(
@@ -290,10 +308,10 @@ describe('Askar to Drizzle Migration', () => {
       await migrator.migrate()
 
       // Now expect all the populated records to be available in the Drizzle database
-      await expectDatabaseWithRecords(drizzleAgent)
+      await expectDatabaseWithRecords(drizzleAgent, 'drizzle')
 
       // We also still expect all the populated records to be available in the Askar database
-      await expectDatabaseWithRecords(askarAgent)
+      await expectDatabaseWithRecords(askarAgent, 'askar')
 
       // After succesfull migration we delete the storage records
       await migrator.deleteStorageRecords()
@@ -397,30 +415,30 @@ describe('Askar to Drizzle Migration', () => {
     await drizzleAgent.initialize()
 
     // Now expect all the populated records to be available in the Drizzle database
-    await expectDatabaseWithRecords(drizzleAgent)
+    await expectDatabaseWithRecords(drizzleAgent, 'drizzle')
 
     // We also still expect all the populated records to be available in the Askar database
-    await expectDatabaseWithRecords(askarAgent)
+    await expectDatabaseWithRecords(askarAgent, 'askar')
 
     // And in the tenants databases
     await drizzleAgent.modules.tenants.withTenantAgent({ tenantId: tenant1.id }, async (tenantAgent) =>
-      expectDatabaseWithRecords(tenantAgent)
+      expectDatabaseWithRecords(tenantAgent, 'drizzle')
     )
     await drizzleAgent.modules.tenants.withTenantAgent({ tenantId: tenant2.id }, (tenantAgent) =>
-      expectDatabaseWithRecords(tenantAgent)
+      expectDatabaseWithRecords(tenantAgent, 'drizzle')
     )
     await drizzleAgent.modules.tenants.withTenantAgent({ tenantId: tenant3.id }, (tenantAgent) =>
-      expectDatabaseWithRecords(tenantAgent)
+      expectDatabaseWithRecords(tenantAgent, 'drizzle')
     )
     // And in the tenants databases
     await askarAgent.modules.tenants.withTenantAgent({ tenantId: tenant1.id }, async (tenantAgent) =>
-      expectDatabaseWithRecords(tenantAgent)
+      expectDatabaseWithRecords(tenantAgent, 'askar')
     )
     await askarAgent.modules.tenants.withTenantAgent({ tenantId: tenant2.id }, (tenantAgent) =>
-      expectDatabaseWithRecords(tenantAgent)
+      expectDatabaseWithRecords(tenantAgent, 'askar')
     )
     await askarAgent.modules.tenants.withTenantAgent({ tenantId: tenant3.id }, (tenantAgent) =>
-      expectDatabaseWithRecords(tenantAgent)
+      expectDatabaseWithRecords(tenantAgent, 'askar')
     )
 
     // After succesfull migration we delete the storage records
@@ -462,4 +480,63 @@ describe('Askar to Drizzle Migration', () => {
     await drizzleAgent.shutdown()
     await postgresDatabase?.teardown()
   })
+
+  test.each(['sqlite', 'postgres'] as const)(
+    '%s askar to drizzle fails before it writes a record when a record type has no adapter',
+    async (databaseType) => {
+      const storeId = `askar ${databaseType} to drizzle ${databaseType} missing adapter ${Math.random()}`
+
+      const postgresDatabase = databaseType === 'postgres' ? await createDrizzlePostgresTestDatabase() : undefined
+      const database = postgresDatabase?.drizzle ?? (await inMemoryDrizzleSqliteDatabase())
+
+      // Without the didcomm bundle, the connection, mediation and basic message records have no adapter
+      const drizzleModule = new DrizzleStorageModule({ bundles: [coreBundle], database })
+      const askarModule = new AskarModule({
+        askar: NativeAskar,
+        store: {
+          id: storeId,
+          key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
+          keyDerivationMethod: 'raw',
+          database: databaseType === 'postgres' ? askarPostgresStorageConfig : undefined,
+        },
+      })
+
+      await pushDrizzleSchema(drizzleModule)
+
+      const migrator = await AskarToDrizzleStorageMigrator.initialize({
+        drizzleModule,
+        askarModule,
+        agentDependencies,
+        logger: testLogger,
+      })
+
+      const askarAgent = new Agent({
+        dependencies: agentDependencies,
+        config: { logger: testLogger },
+        modules: {
+          jsonLd: new JsonLdModule({ documentLoader: customDocumentLoader }),
+          askar: askarModule,
+        },
+      })
+      await askarAgent.initialize()
+      await populateDatabaseWithRecords(askarAgent)
+      await askarAgent.shutdown()
+
+      await expect(migrator.migrate()).rejects.toThrow(
+        /Could not find a registered drizzle adapter for record types .*'ConnectionRecord'/
+      )
+
+      const drizzleAgent = new Agent({
+        dependencies: agentDependencies,
+        config: { logger: testLogger },
+        modules: { drizzle: drizzleModule },
+      })
+      await drizzleAgent.initialize()
+      expect(await drizzleAgent.genericRecords.getAll()).toEqual([])
+      expect(await drizzleAgent.dids.getCreatedDids()).toEqual([])
+
+      await drizzleAgent.shutdown()
+      await postgresDatabase?.teardown()
+    }
+  )
 })

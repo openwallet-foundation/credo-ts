@@ -4,4 +4,8 @@ export {
   type DrizzleAdapterRecordValues,
   type DrizzleAdapterValues,
 } from './BaseDrizzleRecordAdapter'
-export { sortAdaptersByForeignKeys } from './sortAdaptersByForeignKeys'
+export {
+  type DrizzleAdapterForeignKey,
+  getAdapterForeignKeys,
+  sortAdaptersByForeignKeys,
+} from './sortAdaptersByForeignKeys'
