@@ -11,6 +11,7 @@ import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommEventTypes } from '../../../../../DidCommEvents'
 import { DidCommCredentialState } from '../../../models'
 import { DidCommCredentialExchangeRecord } from '../../../repository'
+import type { DidCommRevocationNotificationFormatService } from '../../revocation-notification/DidCommRevocationNotificationFormatService'
 import { DidCommRevocationNotificationV2Message } from '../../revocation-notification/messages'
 import type { DidCommOfferCredentialV2Message } from '../messages/DidCommOfferCredentialV2Message'
 
@@ -38,8 +39,23 @@ describe('credentials', () => {
   let faberReplay: EventReplaySubject
   let aliceAgent: JsonLdTestsAgent
   let aliceReplay: EventReplaySubject
+  let credentialRecordForRevocationNotification: DidCommCredentialExchangeRecord | undefined
+
+  const testRevocationNotificationFormatService: DidCommRevocationNotificationFormatService = {
+    supportedRevocationFormats: ['anoncreds'],
+    async findCredentialExchangeRecord() {
+      if (!credentialRecordForRevocationNotification) {
+        throw new Error('No credential record configured for the revocation notification test')
+      }
+      return credentialRecordForRevocationNotification
+    },
+    async getCredentialId() {
+      return 'test-credential-id'
+    },
+  }
 
   beforeEach(async () => {
+    credentialRecordForRevocationNotification = undefined
     ;({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
@@ -49,6 +65,7 @@ describe('credentials', () => {
       issuerName: 'Faber LD connection-less Credentials V2',
       holderName: 'Alice LD connection-less Credentials V2',
       createConnections: false,
+      revocationNotificationFormats: [testRevocationNotificationFormatService],
     }))
 
     const key = await faberAgent.kms.importKey({
@@ -213,6 +230,7 @@ describe('credentials', () => {
       state: DidCommCredentialState.Done,
     })
     expect(faberCredentialRecord.connectionId).toBeUndefined()
+    credentialRecordForRevocationNotification = aliceCredentialRecord
 
     const revocationNotificationProcessed = waitForAgentMessageProcessedEventSubject(
       aliceAgent.events.observable(DidCommEventTypes.DidCommMessageProcessed),

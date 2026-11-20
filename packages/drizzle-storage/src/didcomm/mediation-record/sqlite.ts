@@ -1,5 +1,5 @@
 import type { DidCommMediationRole, DidCommMediationState, DidCommMediatorPickupStrategy } from '@credo-ts/didcomm'
-import { foreignKey, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { foreignKey, index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 import { didcommConnection } from '../connection-record/sqlite'
 
@@ -26,6 +26,10 @@ export const didcommMediation = sqliteTable(
   },
   (table) => [
     ...sqliteBaseRecordIndexes(table, 'didcommMediation'),
+
+    // Used to find the mediation record of each keylist update
+    index('didcommMediation_connection_id_idx').on(table.contextCorrelationId, table.connectionId),
+
     foreignKey({
       columns: [table.connectionId, table.contextCorrelationId],
       foreignColumns: [didcommConnection.id, didcommConnection.contextCorrelationId],

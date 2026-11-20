@@ -73,7 +73,7 @@ export class W3cV2JwtCredentialService {
     // Sign the JWT
     const jwt = await this.jwsService.createJwsCompact(agentContext, {
       payload: jwtPayload,
-      keyId: publicJwk.keyId,
+      key: publicJwk,
       protectedHeaderOptions: {
         typ: 'vc+jwt',
         alg: options.alg,
@@ -246,7 +246,7 @@ export class W3cV2JwtCredentialService {
     // Sign JWT
     const jwt = await this.jwsService.createJwsCompact(agentContext, {
       payload: jwtPayload,
-      keyId: holder.publicJwk.keyId,
+      key: holder.publicJwk,
       protectedHeaderOptions: {
         typ: 'vp+jwt',
         alg: holder.alg,

@@ -320,7 +320,7 @@ testRecordEncoding(fixturesDirectory, {
         nonce: 'ECAwQFBgcICQoLDA0ODxA',
         origin: 'https://verifier.example.com',
       },
-      sessionKeyId: 'session-key-id',
+      sessionKey: { keyId: 'session-key-id', kmsBackend: 'node' },
       expiresAt: new Date('2026-01-01T00:05:00.000Z'),
     })
     record.updatedAt = updatedAt
@@ -439,5 +439,24 @@ describe('legacy credential record formats', () => {
     expect(
       JSON.parse(JSON.stringify({ record: JsonTransformer.toJSON(record), tags: record.getTags() }))
     ).toStrictEqual(fixture)
+  })
+
+  test('MdocVerificationSessionRecord with a session key id', () => {
+    const record = JsonTransformer.fromJSON(
+      { ...legacyBase, sessionKeyId: 'session-key-id' },
+      MdocVerificationSessionRecord
+    )
+
+    expect(record.sessionKey).toEqual({ keyId: 'session-key-id' })
+    expect(JsonTransformer.toJSON(record)).not.toHaveProperty('sessionKeyId')
+  })
+
+  test('MdocVerificationSessionRecord with a session key and a session key id', () => {
+    const record = JsonTransformer.fromJSON(
+      { ...legacyBase, sessionKey: { keyId: 'session-key', kmsBackend: 'node' }, sessionKeyId: 'session-key-id' },
+      MdocVerificationSessionRecord
+    )
+
+    expect(record.sessionKey).toEqual({ keyId: 'session-key', kmsBackend: 'node' })
   })
 })

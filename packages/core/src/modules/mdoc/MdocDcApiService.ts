@@ -26,7 +26,7 @@ import {
   canUseInstanceFromCredentialRecord,
   useInstanceFromCredentialRecord,
 } from '../../utils/credentialUse'
-import { KeyManagementApi } from '../kms'
+import { KeyManagementApi, type KmsJwkPublicAsymmetric, PublicJwk } from '../kms'
 import { type EncodedX509Certificate, X509Certificate, X509ModuleConfig, X509Service } from '../x509'
 import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
 import { Mdoc } from './Mdoc'
@@ -89,11 +89,10 @@ export class MdocDcApiService {
     options: MdocDcApiCreateVerificationSessionOptions
   ): Promise<{ verificationSession: MdocVerificationSessionRecord; request: IsoMdocDcApiRequest }> {
     const kms = agentContext.resolve(KeyManagementApi)
-    const mdocContext = getMdocContext(agentContext)
 
     const deviceRequestDefinition = createDeviceRequestDefinition(options)
 
-    const { keyId, publicJwk } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const { keyId, publicJwk, backend } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
 
     try {
       const readerCertificateChain = options.readerAuth
@@ -101,6 +100,8 @@ export class MdocDcApiService {
           ? options.readerAuth.certificate
           : [options.readerAuth.certificate]
         : undefined
+      const readerKey = readerCertificateChain?.[0].publicJwk
+      const mdocContext = getMdocContext(agentContext, { keys: readerKey ? [readerKey] : [] })
 
       const { request, encryptionInfo } = await IsoMdocDcApi.createRequest(
         {
@@ -124,7 +125,8 @@ export class MdocDcApiService {
           deviceRequestInfo: options.deviceRequestInfo
             ? toDeviceRequestInfoOptions(options.deviceRequestInfo)
             : undefined,
-          recipientPublicKey: CoseKey.fromJwk({ ...publicJwk, kid: keyId }),
+          // The kms key id stays local, the session record binds it again when decrypting
+          recipientPublicKey: CoseKey.fromJwk(PublicJwk.fromPublicJwk(publicJwk).toJson({ includeKid: false })),
           readerAuth:
             readerCertificateChain && options.readerAuth
               ? {
@@ -146,7 +148,7 @@ export class MdocDcApiService {
           encryptionInfoBase64Url: request.encryptionInfo,
           nonce: TypedArrayEncoder.toBase64Url(encryptionInfo.nonce),
         },
-        sessionKeyId: keyId,
+        sessionKey: { keyId, kmsBackend: backend },
         expiresAt: new Date(Date.now() + (options.expiresInSeconds ?? defaultExpiresInSeconds) * 1000),
       })
 
@@ -155,7 +157,7 @@ export class MdocDcApiService {
 
       return { verificationSession, request }
     } catch (error) {
-      await kms.deleteKey({ keyId }).catch((deleteError) => {
+      await kms.deleteKey({ keyId, backend }).catch((deleteError) => {
         agentContext.config.logger.error(`Failed to delete session key ${keyId} after failed request creation`, {
           deleteError,
           requestCreationError: error,
@@ -174,8 +176,6 @@ export class MdocDcApiService {
    * origin fail.
    */
   public async verifyResponse(agentContext: AgentContext, options: MdocDcApiVerifyResponseOptions) {
-    const mdocContext = getMdocContext(agentContext)
-
     const verificationSession = await this.mdocVerificationSessionRepository.getById(
       agentContext,
       options.verificationSessionId
@@ -190,13 +190,16 @@ export class MdocDcApiService {
         throw new MdocVerificationSessionExpiredError(verificationSession.expiresAt)
       }
 
-      // The recipient key is identified by the `keyId` on the public key, the same way signing keys
-      // are resolved. Take the public key from the `encryptionInfo` we sent, and bind the `keyId`
-      // from the session record so the KMS resolves the private key we created for this session.
-      const recipientKey = CoseKey.fromJwk({
-        ...EncryptionInfo.fromBase64Url(sessionTranscript.encryptionInfoBase64Url).recipientPublicKey.jwk,
-        kid: verificationSession.sessionKeyId,
+      // The public key is the one in the `encryptionInfo` we sent. The context finds the KMS key of the session by it.
+      const { kid: _, ...recipientJwk } = EncryptionInfo.fromBase64Url(sessionTranscript.encryptionInfoBase64Url)
+        .recipientPublicKey.jwk
+      const recipientKey = CoseKey.fromJwk(recipientJwk)
+      const sessionKey = PublicJwk.fromKmsKey({
+        keyId: verificationSession.sessionKey.keyId,
+        backend: verificationSession.sessionKey.kmsBackend,
+        publicJwk: recipientJwk as KmsJwkPublicAsymmetric,
       })
+      const mdocContext = getMdocContext(agentContext, { keys: [sessionKey] })
 
       const decrypted = await IsoMdocDcApi.decryptResponse(
         {
@@ -572,8 +575,8 @@ export class MdocDcApiService {
     agentContext: AgentContext,
     options: MdocDcApiCreateResponseOptions
   ): Promise<IsoMdocDcApiResponse> {
-    const mdocContext = getMdocContext(agentContext)
     const parsedRequest = options.resolvedRequest.parsedRequest as IsoMdocDcApiParsedRequest
+    const deviceKeys: PublicJwk[] = []
 
     const documents = await Promise.all(
       options.credentials.map(
@@ -587,15 +590,16 @@ export class MdocDcApiService {
             useMode: useMode ?? CredentialMultiInstanceUseMode.NewOrFirst,
           })
 
-          const deviceKeyJwk = mdocSigningJwk(mdoc.deviceKey)
-          if (!deviceKeyJwk.kid) {
+          const deviceKey = mdoc.deviceKey
+          if (!deviceKey.hasKeyId) {
             throw new MdocError('Unable to create device response. The mdoc device key has no key id.')
           }
+          deviceKeys.push(deviceKey)
 
           return {
             docRequestIndex,
             issuerSigned: mdoc.issuerSigned,
-            deviceKey: CoseKey.fromJwk(deviceKeyJwk),
+            deviceKey: CoseKey.fromJwk(mdocSigningJwk(deviceKey)),
             elements,
             alternatives,
             deviceNamespaces: deviceNameSpaces ? nameSpacesRecordToDeviceNamespaces(deviceNameSpaces) : undefined,
@@ -604,7 +608,10 @@ export class MdocDcApiService {
       )
     )
 
-    return await IsoMdocDcApi.createResponse({ parsedRequest, documents }, mdocContext)
+    return await IsoMdocDcApi.createResponse(
+      { parsedRequest, documents },
+      getMdocContext(agentContext, { keys: deviceKeys })
+    )
   }
 
   private async updateState(

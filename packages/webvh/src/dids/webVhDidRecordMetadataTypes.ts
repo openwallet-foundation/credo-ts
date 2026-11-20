@@ -1,3 +1,4 @@
+import type { Kms } from '@credo-ts/core'
 import type { WebVhDidLog } from '../resources'
 
 export enum WebVhDidRecordMetadataKeys {
@@ -8,5 +9,6 @@ export enum WebVhDidRecordMetadataKeys {
 
 export type WebVhDidRecordMetadata = {
   [WebVhDidRecordMetadataKeys.DidLog]: WebVhDidLog
-  [WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds]: Record<string, string>
+  // Records created before the backend was stored hold only the key id
+  [WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds]: Record<string, string | Kms.KmsKeyReference>
 }

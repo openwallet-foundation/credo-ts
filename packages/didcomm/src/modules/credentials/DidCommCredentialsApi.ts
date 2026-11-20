@@ -524,6 +524,10 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
    */
   public async sendRevocationNotification(options: SendRevocationNotificationOptions): Promise<void> {
     const { connectionId, credentialExchangeRecordId, revocationId, revocationFormat, comment, requestAck } = options
+    const formatService = this.revocationNotificationService.getFormatServiceForFormat(
+      this.agentContext,
+      revocationFormat
+    )
 
     let credentialExchangeRecord: DidCommCredentialExchangeRecord | undefined
     let connectionRecord: DidCommConnectionRecord | undefined
@@ -551,12 +555,21 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       throw new CredoError('Either credentialExchangeId or connectionId must be defined')
     }
 
+    const credentialId =
+      revocationId ??
+      (credentialExchangeRecord
+        ? await formatService.getCredentialId(this.agentContext, credentialExchangeRecord, revocationFormat)
+        : undefined)
+    if (!credentialId) {
+      throw new CredoError('revocationId is required when no credentialExchangeRecordId is provided')
+    }
+
     if (!connectionId && !credentialMessage) {
       throw new CredoError('No associated DIDComm connection was found for the revocation notification')
     }
 
     const { message } = await this.revocationNotificationService.v2CreateRevocationNotification({
-      credentialId: revocationId,
+      credentialId,
       revocationFormat,
       comment,
       requestAck,

@@ -13,6 +13,7 @@ export interface DeliverMessagesProtocolOptions {
   messages?: QueuedDidCommMessage[]
   recipientKey?: string
   recipientDid?: string
+  messageIds?: string[]
   batchSize?: number
 }
 

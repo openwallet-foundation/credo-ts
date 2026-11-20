@@ -61,6 +61,7 @@ export async function signData(
     data: dataBuffer,
     algorithm: 'EdDSA',
     keyId: signerKey.keyId,
+    backend: signerKey.kmsBackend,
     expectedPublicJwk: signerKey.toJson(),
   })
 

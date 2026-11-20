@@ -63,6 +63,7 @@ import {
   simpleX509WithoutIss,
 } from './sdjwtvc.fixtures'
 
+const extractJwt = SDJwt.extractJwt
 const mockJwtDecode = (mockedPayload: Partial<Jwt>) =>
   mockProperty(
     SDJwt,
@@ -142,7 +143,7 @@ const generateStatusList = async (
 
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
   return jwsService.createJwsCompact(agentContext, {
-    keyId: key.keyId,
+    key: { keyId: key.keyId },
     payload: JwtPayload.fromJson(payload),
     protectedHeaderOptions: {
       ...header,
@@ -180,7 +181,7 @@ const generateX509StatusList = async (
 
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
   return jwsService.createJwsCompact(agentContext, {
-    keyId: key.keyId,
+    key: { keyId: key.keyId },
     payload: JwtPayload.fromJson(payload),
     protectedHeaderOptions: {
       alg: 'ES256',
@@ -828,6 +829,28 @@ describe('SdJwtVcService', () => {
   })
 
   describe('SdJwtVcService.receive', () => {
+    test('throws for a jwk-bound credential without key id and warns without backend', async () => {
+      const warn = vi.spyOn(agent.context.config.logger, 'warn')
+
+      await sdJwtVcService.store(agent.context, {
+        record: new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVcWithoutHolderBinding }] }),
+      })
+      expect(warn).not.toHaveBeenCalled()
+
+      await expect(
+        sdJwtVcService.store(agent.context, {
+          record: new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVc }] }),
+        })
+      ).rejects.toThrow('(key without key id or backend)')
+
+      await sdJwtVcService.store(agent.context, {
+        record: new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVc, kmsKeyId: 'key-id' }] }),
+      })
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("('key-id' without backend)"))
+
+      warn.mockRestore()
+    })
+
     test('Receive sd-jwt-vc from a basic payload without disclosures', async () => {
       const sdJwtVc = sdJwtVcService.fromCompact(simpleJwtVc)
       const sdJwtVcRecord = await sdJwtVcService.store(agent.context, {
@@ -835,6 +858,7 @@ describe('SdJwtVcService', () => {
           credentialInstances: [
             {
               compactSdJwtVc: simpleJwtVc,
+              kmsKeyId: holderKey.keyId,
             },
           ],
         }),
@@ -3546,6 +3570,33 @@ describe('SdJwtVcService', () => {
 
       expect(customResolver).toHaveBeenCalledWith('urn:custom:namespace:identity', customIntegrity, expect.any(Object))
 
+      expect(result).toEqual({
+        mergedTypeMetadata: mockMetadata,
+        typeMetadataChain: [mockMetadata],
+        vctValues: ['urn:custom:namespace:identity'],
+      })
+    })
+
+    test('Fetch type metadata from a vct and vct#integrity', async () => {
+      const mockMetadata = { vct: 'urn:custom:namespace:identity', name: 'Custom Identity Credential' }
+      const customResolver = vi.fn((async () => mockMetadata) satisfies CustomTypeMetadataResolver)
+
+      mockProperty(SDJwt, 'extractJwt', extractJwt)
+      agent.context.dependencyManager.registerInstance(
+        SdJwtVcModuleConfig,
+        new SdJwtVcModuleConfig({ customTypeMetadataResolver: customResolver })
+      )
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        vct: 'urn:custom:namespace:identity',
+        'vct#integrity': 'sha256-abc123',
+      })
+
+      expect(customResolver).toHaveBeenCalledWith(
+        'urn:custom:namespace:identity',
+        'sha256-abc123',
+        expect.objectContaining({ isExtendedVct: false })
+      )
       expect(result).toEqual({
         mergedTypeMetadata: mockMetadata,
         typeMetadataChain: [mockMetadata],

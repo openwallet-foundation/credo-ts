@@ -90,6 +90,7 @@ export class DidCommEnvelopeService {
       const recipientX25519JwkForKey = toX25519(recipientKey).toJson()
 
       const { encrypted, iv } = await kms.encrypt({
+        backend: senderKey?.kmsBackend,
         key: {
           keyAgreement: {
             algorithm: 'ECDH-HSALSA20',
@@ -202,6 +203,7 @@ export class DidCommEnvelopeService {
     let senderPublicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk> | undefined
     if (recipient.header.sender) {
       const { data } = await kms.decrypt({
+        backend: recipientKey.kmsBackend,
         key: {
           keyAgreement: {
             algorithm: 'ECDH-HSALSA20',
@@ -223,6 +225,7 @@ export class DidCommEnvelopeService {
 
     // Perofrm the actual decryption
     const { data: contentEncryptionKey } = await kms.decrypt({
+      backend: recipientKey.kmsBackend,
       decryption: {
         algorithm: 'XSALSA20-POLY1305',
         iv: recipient.header.iv ? TypedArrayEncoder.fromBase64Url(recipient.header.iv) : undefined,
@@ -332,15 +335,14 @@ export class DidCommEnvelopeService {
       )
 
       const verificationMethod = didDocument.findVerificationMethodByPublicKey(publicKey)
-      const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
-        verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-      )?.kmsKeyId
+      const key = keys?.find(({ didDocumentRelativeKeyId }) => verificationMethod.id.endsWith(didDocumentRelativeKeyId))
 
       agentContext.config.logger.debug(
         `Found did '${didDocument.id}' for recipient key '${publicKey.fingerprint}' for incoming didcomm message`
       )
 
-      publicKey.keyId = kmsKeyId ?? publicKey.legacyKeyId
+      publicKey.keyId = key?.kmsKeyId ?? publicKey.legacyKeyId
+      publicKey.kmsBackend = key?.kmsBackend
       return publicKey
     } catch (error) {
       // If there is no did record yet, we first look at the mediator routing record
@@ -417,6 +419,7 @@ export class DidCommEnvelopeService {
           const recipieintRouting = outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.RecipientRouting)
           if (recipieintRouting?.recipientKeyFingerprint === publicKey.fingerprint) {
             publicKey.keyId = recipieintRouting.recipientKeyId ?? publicKey.legacyKeyId
+            publicKey.kmsBackend = recipieintRouting.recipientKmsBackend
             return publicKey
           }
         }
@@ -442,6 +445,7 @@ export class DidCommEnvelopeService {
           )
 
           publicKey.keyId = publicKey.legacyKeyId
+          publicKey.kmsBackend = kmsJwkPublic.backend
           return publicKey
         }
       }

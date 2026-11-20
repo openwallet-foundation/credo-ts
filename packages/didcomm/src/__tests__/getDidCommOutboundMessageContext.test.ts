@@ -59,7 +59,9 @@ describe('getConnectionlessOutboundMessageContext', () => {
     role: DidCommOutOfBandRole.Sender,
     state: DidCommOutOfBandState.AwaitResponse,
     recipientKeys: [new DidKey(ourPublicJwk).did],
-    invitationInlineServiceKeys: [{ recipientKeyFingerprint: ourPublicJwk.fingerprint, kmsKeyId: 'our-kms-key-id' }],
+    invitationInlineServiceKeys: [
+      { recipientKeyFingerprint: ourPublicJwk.fingerprint, kmsKeyId: 'our-kms-key-id', kmsBackend: 'askar' },
+    ],
   })
 
   const ourDidKey = new DidKey(ourPublicJwk)
@@ -103,6 +105,7 @@ describe('getConnectionlessOutboundMessageContext', () => {
     })
 
     expect(outboundMessageContext.serviceParams?.senderKey.keyId).toEqual('our-kms-key-id')
+    expect(outboundMessageContext.serviceParams?.senderKey.kmsBackend).toEqual('askar')
     expect(outOfBandRepository.findByQuery).toHaveBeenCalledWith(agentContext, {
       role: DidCommOutOfBandRole.Sender,
       recipientKeyFingerprints: [ourPublicJwk.fingerprint],
@@ -127,7 +130,13 @@ describe('getConnectionlessOutboundMessageContext', () => {
   test('sets the sender key id from our did record for an invitation created with invitationDid', async () => {
     mockFunction(didCommDocumentService.resolveCreatedDidDocumentWithKeysByRecipientKey).mockResolvedValue({
       didDocument: ourDidKey.didDocument,
-      keys: [{ didDocumentRelativeKeyId: `#${ourPublicJwk.fingerprint}`, kmsKeyId: 'our-did-kms-key-id' }],
+      keys: [
+        {
+          didDocumentRelativeKeyId: `#${ourPublicJwk.fingerprint}`,
+          kmsKeyId: 'our-did-kms-key-id',
+          kmsBackend: 'askar',
+        },
+      ],
     })
     mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(null)
     mockFunction(outOfBandRepository.findByQuery).mockResolvedValue([didOutOfBandRecord])
@@ -139,6 +148,7 @@ describe('getConnectionlessOutboundMessageContext', () => {
     })
 
     expect(outboundMessageContext.serviceParams?.senderKey.keyId).toEqual('our-did-kms-key-id')
+    expect(outboundMessageContext.serviceParams?.senderKey.kmsBackend).toEqual('askar')
     expect(didCommDocumentService.resolveServicesFromDid).not.toHaveBeenCalled()
   })
 

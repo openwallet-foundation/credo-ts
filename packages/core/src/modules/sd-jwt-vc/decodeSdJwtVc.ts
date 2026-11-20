@@ -1,5 +1,5 @@
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/core'
-import { Hasher } from '../../crypto'
+import { Hasher, Jwt } from '../../crypto'
 import { ClaimFormat } from '../vc/index'
 import type { SdJwtVcHeader, SdJwtVcPayload } from './SdJwtVcOptions'
 import type { SdJwtVc } from './SdJwtVcService'
@@ -8,6 +8,13 @@ import { parseHolderBindingFromCredential, parseIssuerFromCredential } from './u
 
 export function sdJwtVcHasher(data: string | ArrayBufferLike, alg: string) {
   return Hasher.hash(typeof data === 'string' ? data : new Uint8Array(data), alg)
+}
+
+/**
+ * Decodes only the payload of the issuer-signed JWT. Disclosures are not hashed, so selectively disclosable claims are missing.
+ */
+export function decodeRawSignedSdJwtVcPayload(compactSdJwtVc: string) {
+  return Jwt.fromSerializedJwt(compactSdJwtVc.split('~')[0]).payload.toJson()
 }
 
 export function decodeSdJwtVc<

@@ -43,6 +43,7 @@ describe('out of band', () => {
       const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
         handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
       })
+      expect(outOfBandRecord.invitationInlineServiceKeys?.[0].kmsBackend).toEqual(expect.any(String))
       const { outOfBandInvitation } = outOfBandRecord
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
@@ -91,6 +92,28 @@ describe('out of band', () => {
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       expect(receiverSenderConnection).toBeConnectedWith(senderReceiverConnection!)
       expect(senderReceiverConnection).toBeConnectedWith(receiverSenderConnection)
+    })
+
+    test('keeps the kms backend of the routing when the invitation is accepted later', async () => {
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+      })
+      const routing = await faberAgent.didcomm.mediationRecipient.getRouting({})
+      expect(routing.recipientKey.kmsBackend).toEqual(expect.any(String))
+
+      const { outOfBandRecord: receivedOutOfBandRecord } = await faberAgent.didcomm.oob.receiveInvitation(
+        outOfBandRecord.outOfBandInvitation,
+        { label: 'faber', autoAcceptInvitation: false, routing }
+      )
+      const { connectionRecord } = await faberAgent.didcomm.oob.acceptInvitation(receivedOutOfBandRecord.id, {
+        label: 'faber',
+      })
+
+      const [didRecord] = await faberAgent.dids.getCreatedDids({ did: connectionRecord?.did })
+      expect(didRecord.keys?.map((key) => key.kmsBackend)).toEqual([
+        routing.recipientKey.kmsBackend,
+        routing.recipientKey.kmsBackend,
+      ])
     })
   })
 })

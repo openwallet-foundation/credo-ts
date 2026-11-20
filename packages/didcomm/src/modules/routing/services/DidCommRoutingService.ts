@@ -31,8 +31,7 @@ export class DidCommRoutingService {
 
     // Create Ed25519 key for authentication/signing (used by V1 and V2).
     const createdKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
-    const recipientKey = Kms.PublicJwk.fromPublicJwk(createdKey.publicJwk)
-    recipientKey.keyId = createdKey.keyId
+    const recipientKey = Kms.PublicJwk.fromKmsKey(createdKey)
 
     // Create separate keyAgreement key for V2 (ECDH-ES / ECDH-1PU) only when the agent
     // supports DIDComm V2. V1-only agents derive X25519 from Ed25519 at runtime via Askar's
@@ -43,8 +42,7 @@ export class DidCommRoutingService {
       const createdKeyAgreementKey = await kms.createKey({
         type: keyTypeForCurve(didcommConfig.v2KeyAgreementCurve),
       })
-      keyAgreementKey = Kms.PublicJwk.fromPublicJwk(createdKeyAgreementKey.publicJwk) as DidCommV2KeyAgreementJwk
-      keyAgreementKey.keyId = createdKeyAgreementKey.keyId
+      keyAgreementKey = Kms.PublicJwk.fromKmsKey(createdKeyAgreementKey) as DidCommV2KeyAgreementJwk
     }
 
     let routing: DidCommRouting = {

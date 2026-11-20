@@ -1,9 +1,10 @@
 import type { AgentContext } from '@credo-ts/core'
-import { Agent } from '@credo-ts/core'
+import { Agent, Kms } from '@credo-ts/core'
 import type { Jwk } from '@openid4vc/oauth2'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcModule } from '../../OpenId4VcModule'
+import type { OpenId4VcIssuerRecord } from '../../openid4vc-issuer/repository'
 import { getLocalAccessTokenJwks, getOid4vcLocalJwksCallback } from '../localJwks'
 
 const accessTokenPublicJwk = {
@@ -11,7 +12,11 @@ const accessTokenPublicJwk = {
   crv: 'P-256',
   x: 'rQbiDHRutR4YcJaWRV54Dx-sx81VlK7xuohm4-RXRT0',
   y: 'YM4MRy90G9PW59wKcawyrHDCPp7QsE6l5QT-H2Koz_M',
+  kid: 'access-token-key',
 } satisfies Jwk
+const issuer = {
+  resolvedAccessTokenPublicJwks: [Kms.PublicJwk.fromUnknown(accessTokenPublicJwk)],
+} as unknown as OpenId4VcIssuerRecord
 
 const localJwksUri = 'https://issuer.com/oid4vci/issuer-id/jwks'
 
@@ -36,20 +41,16 @@ describe('getOid4vcLocalJwksCallback', () => {
     await agent.shutdown()
   })
 
-  test('resolves a local jwks for the jwks uri it is published on', async () => {
-    const { getJwks } = getOid4vcLocalJwksCallback(
-      agentContext,
-      getLocalAccessTokenJwks(localJwksUri, accessTokenPublicJwk)
-    )
+  test('resolves a local jwks for the jwks uri it is published on, with the jwk thumbprint as kid', async () => {
+    const { getJwks } = getOid4vcLocalJwksCallback(agentContext, getLocalAccessTokenJwks(localJwksUri, issuer))
 
-    expect(await getJwks?.(localJwksUri)).toEqual({ keys: [accessTokenPublicJwk] })
+    expect(await getJwks?.(localJwksUri)).toEqual({
+      keys: [{ ...accessTokenPublicJwk, kid: 'DlKUlIlnqkwfpU5oqXLODfa24aYsdSnUlSZ-mktH7sI' }],
+    })
   })
 
   test('returns undefined for a jwks uri that is not local, so it is fetched as usual', async () => {
-    const { getJwks } = getOid4vcLocalJwksCallback(
-      agentContext,
-      getLocalAccessTokenJwks(localJwksUri, accessTokenPublicJwk)
-    )
+    const { getJwks } = getOid4vcLocalJwksCallback(agentContext, getLocalAccessTokenJwks(localJwksUri, issuer))
 
     expect(await getJwks?.('https://external-authorization-server.com/jwks')).toBeUndefined()
   })

@@ -1,12 +1,5 @@
 import type { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
-import {
-  CacheModuleConfig,
-  injectable,
-  isStorageUpToDate,
-  SingleContextStorageLruCache,
-  UpdateAssistant,
-  utils,
-} from '@credo-ts/core'
+import { CacheModuleConfig, injectable, isStorageUpToDate, UpdateAssistant, utils } from '@credo-ts/core'
 import type { TenantConfig } from '../models/TenantConfig'
 
 import { TenantRecord, TenantRepository, TenantRoutingRecord, TenantRoutingRepository } from '../repository'
@@ -18,7 +11,6 @@ export type TenantSessionProperties = Pick<TenantRecord, 'id' | 'status' | 'stor
 export class TenantRecordService {
   private tenantRepository: TenantRepository
   private tenantRoutingRepository: TenantRoutingRepository
-  private hasWarnedAboutCache = false
 
   public constructor(tenantRepository: TenantRepository, tenantRoutingRepository: TenantRoutingRepository) {
     this.tenantRepository = tenantRepository
@@ -88,16 +80,7 @@ export class TenantRecordService {
   public async deleteTenantById(agentContext: AgentContext, tenantId: string) {
     const tenantRecord = await this.getTenantById(agentContext, tenantId)
 
-    const tenantRoutingRecords = await this.tenantRoutingRepository.findByQuery(agentContext, {
-      tenantId: tenantRecord.id,
-    })
-
-    // Delete all tenant routing records
-    await Promise.all(
-      tenantRoutingRecords.map((tenantRoutingRecord) =>
-        this.tenantRoutingRepository.delete(agentContext, tenantRoutingRecord)
-      )
-    )
+    await this.tenantRoutingRepository.deleteByQuery(agentContext, { tenantId: tenantRecord.id })
 
     // Delete tenant record
     await this.tenantRepository.delete(agentContext, tenantRecord)
@@ -147,19 +130,6 @@ export class TenantRecordService {
     const options = agentContext.resolve(TenantsModuleConfig).tenantRecordCache
     if (!options) return undefined
 
-    const cache = agentContext.resolve(CacheModuleConfig).cache
-
-    // This cache writes to storage on every change and only supports one agent context
-    if (cache instanceof SingleContextStorageLruCache) {
-      if (!this.hasWarnedAboutCache) {
-        agentContext.config.logger.warn(
-          "The tenant record cache is not used with the 'SingleContextStorageLruCache'. Register the 'CacheModule' with another cache, such as the 'InMemoryLruCache' or the 'RedisCache' from '@credo-ts/redis-cache', or set 'tenantRecordCache' to false in the tenants module config."
-        )
-        this.hasWarnedAboutCache = true
-      }
-      return undefined
-    }
-
-    return { cache, expiryInSeconds: options.expiryInSeconds }
+    return { cache: agentContext.resolve(CacheModuleConfig).cache, expiryInSeconds: options.expiryInSeconds }
   }
 }

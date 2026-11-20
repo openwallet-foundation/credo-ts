@@ -31,7 +31,7 @@ export class DidCommProposeCredentialV2Handler implements DidCommMessageHandler 
     credentialExchangeRecord: DidCommCredentialExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<DidCommProposeCredentialV2Handler>
   ) {
-    messageContext.agentContext.config.logger.info('Automatically sending offer with autoAccept')
+    messageContext.agentContext.config.logger.debug('Automatically sending offer with autoAccept')
 
     if (!messageContext.connection) {
       messageContext.agentContext.config.logger.error('No connection on the messageContext, aborting auto accept')

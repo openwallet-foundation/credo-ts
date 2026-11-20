@@ -75,6 +75,11 @@ export type SdJwtVcRecordInstances = NonEmptyArray<{
    * - is bound to a did (which stores the kms key id on the did record)
    */
   kmsKeyId?: string
+
+  /**
+   * The kms backend that holds `kmsKeyId`.
+   */
+  kmsBackend?: string
 }>
 
 const sdJwtVcRecordEncodingSchema = createRecordEncodingSchema(
@@ -83,6 +88,7 @@ const sdJwtVcRecordEncodingSchema = createRecordEncodingSchema(
       z.object({
         compactSdJwtVc: z.string(),
         kmsKeyId: z.string().nullish(),
+        kmsBackend: z.string().optional(),
       })
     ).nullish(),
     multiInstanceState: z.string().nullish(),
@@ -150,6 +156,7 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
     return {
       ...sdJwtVc,
       kmsKeyId: getStoredHolderKmsKeyId(sdJwtVc.holder, this.credentialInstances[0].kmsKeyId),
+      kmsBackend: this.credentialInstances[0].kmsBackend,
     }
   }
 
@@ -164,6 +171,7 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
         {
           compactSdJwtVc: sdJwtVc.compact,
           kmsKeyId: sdJwtVc.kmsKeyId,
+          kmsBackend: sdJwtVc.kmsBackend,
         },
       ],
       typeMetadata: sdJwtVc.typeMetadata,

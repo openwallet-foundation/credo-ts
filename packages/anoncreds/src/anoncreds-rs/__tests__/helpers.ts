@@ -134,13 +134,11 @@ export async function createCredentialForHolder(options: {
   const timeCreateRevStatusList = 12
   const revocationStatusList = RevocationStatusList.create({
     credentialDefinition,
-    revocationRegistryDefinitionPrivate: new RevocationRegistryDefinitionPrivate(
-      revocationRegistryDefinitionPrivate.handle
-    ),
+    revocationRegistryDefinitionPrivate: new RevocationRegistryDefinitionPrivate(revocationRegistryDefinitionPrivate),
     issuerId: credentialDefinition.issuerId as string,
     timestamp: timeCreateRevStatusList,
     issuanceByDefault: true,
-    revocationRegistryDefinition: new RevocationRegistryDefinition(revocationRegistryDefinition.handle),
+    revocationRegistryDefinition: new RevocationRegistryDefinition(revocationRegistryDefinition),
     revocationRegistryDefinitionId: 'mock:uri',
   })
 
@@ -152,8 +150,8 @@ export async function createCredentialForHolder(options: {
     attributeRawValues: attributes,
     revocationConfiguration: new CredentialRevocationConfig({
       statusList: revocationStatusList,
-      registryDefinition: new RevocationRegistryDefinition(revocationRegistryDefinition.handle),
-      registryDefinitionPrivate: new RevocationRegistryDefinitionPrivate(revocationRegistryDefinitionPrivate.handle),
+      registryDefinition: new RevocationRegistryDefinition(revocationRegistryDefinition),
+      registryDefinitionPrivate: new RevocationRegistryDefinitionPrivate(revocationRegistryDefinitionPrivate),
       registryIndex: 9,
     }),
   })

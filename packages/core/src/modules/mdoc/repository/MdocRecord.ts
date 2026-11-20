@@ -48,6 +48,11 @@ export type MdocRecordInstances = NonEmptyArray<{
    * credential is bound to a legacy key id (which can be calculated based on the key)
    */
   kmsKeyId?: string
+
+  /**
+   * The kms backend that holds `kmsKeyId`.
+   */
+  kmsBackend?: string
 }>
 
 const mdocRecordEncodingSchema = createRecordEncodingSchema(
@@ -56,6 +61,7 @@ const mdocRecordEncodingSchema = createRecordEncodingSchema(
       z.object({
         issuerSignedBase64Url: z.string(),
         kmsKeyId: z.string().nullish(),
+        kmsBackend: z.string().optional(),
       })
     ).nullish(),
     multiInstanceState: z.string().nullish(),
@@ -116,6 +122,7 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
 
     const mdoc = new Mdoc(this.#decodedFirstCredential.issuerSigned)
     mdoc.deviceKeyId = this.credentialInstances[0].kmsKeyId ?? mdoc.deviceKey?.legacyKeyId
+    mdoc.deviceKmsBackend = this.credentialInstances[0].kmsBackend
 
     return mdoc
   }
@@ -131,6 +138,7 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
         {
           issuerSignedBase64Url: mdoc.base64Url,
           kmsKeyId: mdoc.deviceKeyId,
+          kmsBackend: mdoc.deviceKmsBackend,
         },
       ],
     })

@@ -36,6 +36,11 @@ export class Mdoc {
 
   #deviceKeyId?: string
 
+  /**
+   * The kms backend that holds the device key.
+   */
+  public deviceKmsBackend?: string
+
   public constructor(public issuerSigned: IssuerSigned) {}
 
   /**
@@ -61,6 +66,7 @@ export class Mdoc {
     const publicJwk = PublicJwk.fromUnknown(deviceKeyJwk)
 
     if (this.#deviceKeyId) publicJwk.keyId = this.#deviceKeyId
+    publicJwk.kmsBackend = this.deviceKmsBackend
     return publicJwk
   }
 
@@ -125,7 +131,8 @@ export class Mdoc {
 
   public static async sign(agentContext: AgentContext, options: MdocSignOptions) {
     const { docType, validityInfo, namespaces, holderKey, issuerCertificate, keyAuthorizations } = options
-    const mdocContext = getMdocContext(agentContext)
+    const issuerKey = Array.isArray(issuerCertificate) ? issuerCertificate[0].publicJwk : issuerCertificate.publicJwk
+    const mdocContext = getMdocContext(agentContext, { keys: [issuerKey] })
 
     const issuer = new Issuer(docType, mdocContext)
 
@@ -133,7 +140,6 @@ export class Mdoc {
       issuer.addIssuerNamespace(namespace, namespaceRecord)
     }
 
-    const issuerKey = Array.isArray(issuerCertificate) ? issuerCertificate[0].publicJwk : issuerCertificate.publicJwk
     const alg = issuerKey.supportedSignatureAlgorithms.find(isMdocSupportedSignatureAlgorithm)
     if (!alg) {
       throw new MdocError(
@@ -168,7 +174,8 @@ export class Mdoc {
             })
           : undefined,
       }),
-      signingKey: issuerKey.toJson(),
+      // Without a key id, so the IssuerAuth has no `kid` header. The mdoc context finds the KMS key in `keys`.
+      signingKey: issuerKey.toJson({ includeKid: false }),
       status: options.statusInfo
         ? {
             statusList: {

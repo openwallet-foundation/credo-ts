@@ -1,5 +1,5 @@
 import type { AgentContext, BaseRecordAny, ResolvedDidCommService } from '@credo-ts/core'
-import { CredoError, Kms, RecordNotFoundError } from '@credo-ts/core'
+import { CredoError, getDidDocumentKeyForVerificationMethod, Kms, RecordNotFoundError } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { ServiceDecorator } from './decorators/service/ServiceDecorator'
@@ -165,13 +165,7 @@ async function setSenderKeyId(
     )
   )
 
-  if (!inlineOutOfBandRecord) {
-    const createdDidKeyId = await findCreatedDidKeyId(agentContext, senderKey)
-    if (createdDidKeyId) {
-      senderKey.keyId = createdDidKeyId
-      return
-    }
-  }
+  if (!inlineOutOfBandRecord && (await setCreatedDidKeyId(agentContext, senderKey))) return
 
   const senderOutOfBandRecord = inlineOutOfBandRecord ?? senderOutOfBandRecords[0]
   if (!senderOutOfBandRecord) return
@@ -187,22 +181,23 @@ async function setSenderKeyId(
   const ourKey = ourService.recipientKeys.find(({ fingerprint }) => fingerprint === senderKey.fingerprint)
   if (ourKey?.hasKeyId) {
     senderKey.keyId = ourKey.keyId
+    senderKey.kmsBackend = ourKey.kmsBackend
   }
 }
 
-async function findCreatedDidKeyId(agentContext: AgentContext, publicJwk: Kms.PublicJwk): Promise<string | undefined> {
+async function setCreatedDidKeyId(agentContext: AgentContext, publicJwk: Kms.PublicJwk): Promise<boolean> {
   try {
     const { didDocument, keys } = await agentContext.dependencyManager
       .resolve(DidCommDocumentService)
       .resolveCreatedDidDocumentWithKeysByRecipientKey(agentContext, publicJwk)
 
     const verificationMethod = didDocument.findVerificationMethodByPublicKey(publicJwk)
-    return (
-      keys?.find(({ didDocumentRelativeKeyId }) => verificationMethod.id.endsWith(didDocumentRelativeKeyId))
-        ?.kmsKeyId ?? publicJwk.legacyKeyId
-    )
+    const key = getDidDocumentKeyForVerificationMethod(verificationMethod, keys)
+    publicJwk.keyId = key?.kmsKeyId ?? publicJwk.legacyKeyId
+    publicJwk.kmsBackend = key?.kmsBackend
+    return true
   } catch (error) {
-    if (error instanceof RecordNotFoundError) return undefined
+    if (error instanceof RecordNotFoundError) return false
     throw error
   }
 }
@@ -298,6 +293,7 @@ async function getServicesForMessage(
     if (oobRecordRecipientRouting && ourService) {
       ourService.recipientKeys[0].keyId =
         oobRecordRecipientRouting.recipientKeyId ?? ourService.recipientKeys[0].legacyKeyId
+      ourService.recipientKeys[0].kmsBackend = oobRecordRecipientRouting.recipientKmsBackend
     }
   }
   // we either miss ourService (even though a message was sent) or we miss recipientService
@@ -349,6 +345,7 @@ async function createOurService(
     ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
     recipientPublicJwk.keyId = oobRecordRecipientRouting.recipientKeyId ?? recipientPublicJwk.legacyKeyId
+    recipientPublicJwk.kmsBackend = oobRecordRecipientRouting.recipientKmsBackend
 
     // Restore the independent keyAgreement key (X25519 or P-256) from metadata if available.
     let keyAgreementKey: DidCommV2KeyAgreementJwk | undefined
@@ -357,6 +354,7 @@ async function createOurService(
         oobRecordRecipientRouting.keyAgreementKeyFingerprint
       ) as DidCommV2KeyAgreementJwk
       keyAgreementKey.keyId = oobRecordRecipientRouting.keyAgreementKeyId ?? keyAgreementKey.legacyKeyId
+      keyAgreementKey.kmsBackend = oobRecordRecipientRouting.keyAgreementKmsBackend
     }
 
     const baseRouting = {
@@ -387,8 +385,10 @@ async function createOurService(
       outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.RecipientRouting, {
         recipientKeyFingerprint: routing.recipientKey.fingerprint,
         recipientKeyId: routing.recipientKey.keyId,
+        recipientKmsBackend: routing.recipientKey.kmsBackend,
         keyAgreementKeyFingerprint: routing.keyAgreementKey?.fingerprint,
         keyAgreementKeyId: routing.keyAgreementKey?.keyId,
+        keyAgreementKmsBackend: routing.keyAgreementKey?.kmsBackend,
         routingKeyFingerprints: (routing.routingKeys ?? []).map((key) => key.fingerprint),
         endpoints: routing.endpoints,
         mediatorId: routing.mediatorId,

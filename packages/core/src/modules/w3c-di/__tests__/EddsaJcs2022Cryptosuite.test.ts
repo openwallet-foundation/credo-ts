@@ -918,6 +918,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
       expect(mockKeyManagementApi.sign).toHaveBeenCalledWith({
         keyId: mockKmsKeyId,
+        backend: undefined,
         expectedPublicJwk: expect.objectContaining({ kty: 'OKP', crv: 'Ed25519' }),
         algorithm: 'EdDSA',
         data: hashData,

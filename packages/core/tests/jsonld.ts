@@ -3,6 +3,7 @@ import type {
   DidCommAutoAcceptProof,
   DidCommConnectionRecord,
   DidCommModuleConfigOptions,
+  DidCommRevocationNotificationFormatService,
 } from '../../didcomm/src'
 import {
   DidCommCredentialEventTypes,
@@ -31,10 +32,12 @@ export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules>>
 export const getJsonLdModules = ({
   autoAcceptCredentials,
   autoAcceptProofs,
+  revocationNotificationFormats,
   extraDidCommConfig,
 }: {
   autoAcceptCredentials?: DidCommAutoAcceptCredential
   autoAcceptProofs?: DidCommAutoAcceptProof
+  revocationNotificationFormats?: DidCommRevocationNotificationFormatService[]
   extraDidCommConfig?: DidCommModuleConfigOptions
 } = {}) =>
   ({
@@ -48,6 +51,7 @@ export const getJsonLdModules = ({
           new DidCommCredentialV2Protocol({ credentialFormats: [new DidCommJsonLdCredentialFormatService()] }),
         ],
         autoAcceptCredentials,
+        revocationNotificationFormats,
       },
       proofs: {
         autoAcceptProofs,
@@ -103,12 +107,14 @@ export async function setupJsonLdTests<
   autoAcceptProofs,
   createConnections,
   didCommVersion,
+  revocationNotificationFormats,
 }: {
   issuerName: string
   holderName: string
   verifierName?: VerifierName
   autoAcceptCredentials?: DidCommAutoAcceptCredential
   autoAcceptProofs?: DidCommAutoAcceptProof
+  revocationNotificationFormats?: DidCommRevocationNotificationFormatService[]
   createConnections?: CreateConnections
   /** DIDComm envelope version for connections. Defaults to DIDCOMM_VERSION env var, else v1. */
   didCommVersion?: 'v1' | 'v2'
@@ -125,6 +131,7 @@ export async function setupJsonLdTests<
       getJsonLdModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        revocationNotificationFormats,
         extraDidCommConfig: {
           endpoints: ['rxjs:issuer'],
           ...getDefaultDidCommConfigForTests(),
@@ -143,6 +150,7 @@ export async function setupJsonLdTests<
       getJsonLdModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        revocationNotificationFormats,
         extraDidCommConfig: {
           endpoints: ['rxjs:holder'],
           ...getDefaultDidCommConfigForTests(),
@@ -162,6 +170,7 @@ export async function setupJsonLdTests<
           getJsonLdModules({
             autoAcceptCredentials,
             autoAcceptProofs,
+            revocationNotificationFormats,
             extraDidCommConfig: {
               endpoints: ['rxjs:verifier'],
               ...getDefaultDidCommConfigForTests(),

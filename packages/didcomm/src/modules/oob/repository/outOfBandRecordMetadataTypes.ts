@@ -16,6 +16,10 @@ export type DidCommOutOfBandRecordMetadata = {
      */
     recipientKeyId?: string
     /**
+     * The KMS backend that holds the recipient key.
+     */
+    recipientKmsBackend?: string
+    /**
      * Fingerprint of the separate X25519 key agreement key (when using independent keys).
      * If not set, the X25519 key is derived from the Ed25519 recipientKey at runtime.
      */
@@ -24,6 +28,10 @@ export type DidCommOutOfBandRecordMetadata = {
      * KMS key id for the separate X25519 key agreement key (when using independent keys).
      */
     keyAgreementKeyId?: string
+    /**
+     * The KMS backend that holds the key agreement key.
+     */
+    keyAgreementKmsBackend?: string
     routingKeyFingerprints: string[]
     endpoints: string[]
     mediatorId?: string

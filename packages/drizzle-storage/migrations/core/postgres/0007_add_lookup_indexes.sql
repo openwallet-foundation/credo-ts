@@ -1,0 +1,2 @@
+CREATE INDEX "did_recipient_key_fingerprints_idx" ON "Did" USING gin ("recipient_key_fingerprints" jsonb_path_ops);--> statement-breakpoint
+CREATE INDEX "did_did_idx" ON "Did" USING btree ("context_correlation_id","did");

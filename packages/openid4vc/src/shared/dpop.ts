@@ -1,5 +1,6 @@
 import { AgentContext, CredoError, Kms } from '@credo-ts/core'
-import type { Jwk, RequestDpopOptions } from '@openid4vc/oauth2'
+import type { RequestDpopOptions } from '@openid4vc/oauth2'
+import { getJwkSigner } from './utils'
 
 export async function getDpopOptions(
   agentContext: AgentContext,
@@ -7,17 +8,20 @@ export async function getDpopOptions(
     dpopSigningAlgValuesSupported: string[]
     signingAlgValuesSupported?: Kms.KnownJwaSignatureAlgorithm[]
     keyId?: string
+    kmsBackend?: string
     jwk?: Kms.PublicJwk
     nonce?: string
   }
-) {
+): Promise<RequestDpopOptions> {
   const kms = agentContext.resolve(Kms.KeyManagementApi)
   const publicJwk = options.jwk
     ? options.jwk
     : options.keyId
-      ? await kms.getPublicKey({ keyId: options.keyId }).then(({ publicKey: key }) => {
-          if (!key || key.kty === 'oct') throw new CredoError(`Unable to resolve DPoP key '${options.keyId}'.`)
-          return Kms.PublicJwk.fromPublicJwk(key)
+      ? await kms.getPublicKey({ keyId: options.keyId, backend: options.kmsBackend }).then(({ publicKey, backend }) => {
+          if (!publicKey || publicKey.kty === 'oct') {
+            throw new CredoError(`Unable to resolve DPoP key '${options.keyId}'.`)
+          }
+          return Kms.PublicJwk.fromKmsKey({ publicJwk: publicKey, keyId: options.keyId as string, backend })
         })
       : undefined
   const algorithms = options.dpopSigningAlgValuesSupported.filter(
@@ -48,13 +52,11 @@ export async function getDpopOptions(
     )
   }
 
-  const resolvedPublicJwk =
+  const resolvedPublicJwk: Kms.PublicJwk =
     publicJwk ??
-    Kms.PublicJwk.fromPublicJwk(
-      (await kms.createKeyForSignatureAlgorithm({ algorithm: alg as Kms.KnownJwaSignatureAlgorithm })).publicJwk
+    Kms.PublicJwk.fromKmsKey(
+      await kms.createKeyForSignatureAlgorithm({ algorithm: alg as Kms.KnownJwaSignatureAlgorithm })
     )
-  return {
-    signer: { method: 'jwk', alg, publicJwk: resolvedPublicJwk.toJson() as Jwk },
-    nonce: options.nonce,
-  } satisfies RequestDpopOptions
+  // RFC 9449 doesn't need a `kid` in the DPoP `jwk` header
+  return { signer: getJwkSigner(resolvedPublicJwk, alg), nonce: options.nonce }
 }

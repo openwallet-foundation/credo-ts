@@ -57,6 +57,7 @@ import type { AnonCredsDidCommOfferCredentialFormat } from '../src/didcomm'
 import {
   AnonCredsDidCommCredentialFormatService,
   AnonCredsDidCommProofFormatService,
+  AnonCredsDidCommRevocationNotificationFormatService,
   AnonCredsLinkSecretBindingProvider,
 } from '../src/didcomm'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
@@ -99,6 +100,7 @@ export const getAnonCredsModules = ({
   })
 
   const anonCredsCredentialFormatService = new AnonCredsDidCommCredentialFormatService()
+  const anonCredsRevocationNotificationFormatService = new AnonCredsDidCommRevocationNotificationFormatService()
   const anonCredsProofFormatService = new AnonCredsDidCommProofFormatService()
   const presentationExchangeProofFormatService = new DidCommDifPresentationExchangeProofFormatService()
 
@@ -112,6 +114,7 @@ export const getAnonCredsModules = ({
       ...extraDidCommConfig,
       credentials: {
         autoAcceptCredentials,
+        revocationNotificationFormats: [anonCredsRevocationNotificationFormatService],
         credentialProtocols: [
           new DidCommCredentialV2Protocol({
             credentialFormats: [dataIntegrityCredentialFormatService, anonCredsCredentialFormatService],

@@ -17,6 +17,7 @@ import { type DidCommOutOfBandRecordMetadata, DidCommOutOfBandRecordMetadataKeys
 export interface DidCommOutOfBandInlineServiceKey {
   recipientKeyFingerprint: string
   kmsKeyId: string
+  kmsBackend?: string
 }
 
 type DefaultDidCommOutOfBandRecordTags = {
@@ -138,6 +139,7 @@ const didCommOutOfBandRecordEncodingSchema = createRecordEncodingSchema(
         z.object({
           recipientKeyFingerprint: z.string(),
           kmsKeyId: z.string(),
+          kmsBackend: z.string().optional(),
         })
       )
       .nullish(),

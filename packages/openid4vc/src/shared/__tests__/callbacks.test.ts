@@ -1,3 +1,4 @@
+import { generateKeyPairSync } from 'node:crypto'
 import type { AgentContext, KeyDidCreateOptions } from '@credo-ts/core'
 import { Agent, DidKey, JwtPayload, Kms, utils, X509ModuleConfig } from '@credo-ts/core'
 import type { Jwk, JwtSigner } from '@openid4vc/oauth2'
@@ -334,6 +335,27 @@ describe('getOid4vcDecryptJweCallback', () => {
     await expect(getOid4vcDecryptJweCallback(agent.context)(jwe)).resolves.toMatchObject({
       decrypted: false,
       header: { kid: encryptionJwk.kid },
+    })
+  })
+
+  // Verification sessions created before `responseEncryptionKey` published the KMS key id, or for JARM the
+  // fingerprint, as `kid`
+  test.each([
+    ['KMS key id', (publicJwk: Kms.PublicJwk) => publicJwk.legacyKeyId],
+    ['fingerprint', (publicJwk: Kms.PublicJwk) => publicJwk.fingerprint],
+  ])('decrypts with a published %s as kid when no decryption key is mapped', async (_, getKid) => {
+    const { privateKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' })
+    const { d, ...jwk } = privateKey.export({ format: 'jwk' }) as Kms.KmsJwkPrivateEc
+    const publicJwk = Kms.PublicJwk.fromUnknown(jwk)
+    const privateJwk = { ...jwk, d } as Kms.KmsJwkPrivateEc
+    await agent.kms.importKey({ privateJwk: { ...privateJwk, kid: publicJwk.legacyKeyId } })
+
+    const encryptionJwk = { ...publicJwk.toJson({ includeKid: false }), kid: getKid(publicJwk) } as Jwk
+    const jwe = await encrypt(encryptionJwk)
+
+    await expect(getOid4vcDecryptJweCallback(agent.context)(jwe, { jwk: encryptionJwk })).resolves.toMatchObject({
+      decrypted: true,
+      payload: 'secret payload',
     })
   })
 

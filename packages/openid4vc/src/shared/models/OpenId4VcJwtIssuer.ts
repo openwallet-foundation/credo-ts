@@ -35,6 +35,11 @@ export interface OpenId4VcJwtIssuerX5cEncoded {
    * key id associated with the leaf certificate
    */
   leafCertificateKeyId: string
+
+  /**
+   * The KMS backend that holds the key of the leaf certificate
+   */
+  leafCertificateKmsBackend?: string
 }
 
 export interface OpenId4VcJwtIssuerJwk {
@@ -44,7 +49,14 @@ export interface OpenId4VcJwtIssuerJwk {
 
 export interface OpenId4VcJwtIssuerJwkEncoded {
   method: 'jwk'
+
+  /**
+   * The public jwk, without `kid`. Encoded signers without `keyId` have the KMS key id as `kid`.
+   */
   jwk: Kms.KmsJwkPublic
+
+  keyId?: string
+  kmsBackend?: string
 }
 
 export type OpenId4VcJwtIssuer = OpenId4VcJwtIssuerDid | OpenId4VcJwtIssuerX5c | OpenId4VcJwtIssuerJwk

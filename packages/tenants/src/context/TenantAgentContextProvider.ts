@@ -253,6 +253,8 @@ export class TenantAgentContextProvider implements AgentContextProvider {
       tenantRecord.storageVersion = await updateAssistant.getCurrentAgentStorageVersion()
       const tenantRecordService = this.rootAgentContext.dependencyManager.resolve(TenantRecordService)
       await tenantRecordService.updateTenant(this.rootAgentContext, tenantRecord)
+
+      this.logger.info(`Updated storage for tenant '${tenantRecord.id}' to version ${tenantRecord.storageVersion}`)
     } catch (error) {
       this.logger.error(`Error occurred while updating tenant storage for tenant ${tenantRecord.id}`, error)
       throw error

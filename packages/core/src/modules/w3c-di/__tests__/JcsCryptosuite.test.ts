@@ -26,6 +26,7 @@ class TestJcsCryptosuite extends JcsCryptosuite {
 const p256Fingerprint = 'zDnaepBuvsQ8cpsWrVKw8fbpGpvPeNSjVPTWoq6cRqaYzBKVP'
 const ed25519Fingerprint = 'z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2'
 const kmsKeyId = 'test-kms-key-id'
+const kmsBackend = 'test-kms-backend'
 
 const proofOptions: W3cDataIntegrityCryptosuiteProofOptions = {
   type: 'DataIntegrityProof',
@@ -70,7 +71,9 @@ describe('JcsCryptosuite', () => {
 
     const didsApi = {
       resolveDidDocument: vi.fn(async (didUrl: string) => DidKey.fromDid(parseDid(didUrl).did).didDocument),
-      getCreatedDids: vi.fn(async () => [{ keys: [{ didDocumentRelativeKeyId: `#${p256Fingerprint}`, kmsKeyId }] }]),
+      getCreatedDids: vi.fn(async () => [
+        { keys: [{ didDocumentRelativeKeyId: `#${p256Fingerprint}`, kmsKeyId, kmsBackend }] },
+      ]),
     }
     const agentContext = getAgentContext({
       agentConfig: getAgentConfig('JcsCryptosuiteTest'),
@@ -92,6 +95,7 @@ describe('JcsCryptosuite', () => {
 
     expect(keyManagementApi.sign).toHaveBeenCalledWith({
       keyId: kmsKeyId,
+      backend: kmsBackend,
       expectedPublicJwk: expect.objectContaining({ kty: 'EC', crv: 'P-256' }),
       algorithm: 'ES256',
       data: new Uint8Array([...proofConfigHash, ...documentHash]),

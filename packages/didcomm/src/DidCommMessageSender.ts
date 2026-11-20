@@ -52,6 +52,7 @@ import {
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommOutOfBandRepository } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
+import type { AddMessageOptions } from './transport/queue/QueueTransportRepositoryOptions'
 import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
 import type { DidCommVersion } from './util/didcommVersion'
 
@@ -280,7 +281,7 @@ export class DidCommMessageSender {
       agentContext.config.logger.debug(
         `Queue packed message for connection ${connection.id} (${connection.theirLabel})`
       )
-      await this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, {
+      await this.queueMessage(agentContext, {
         connectionId: connection.id,
         recipientDids: [verkeyToDidKey(recipientKey)],
         payload: encryptedMessage,
@@ -396,10 +397,12 @@ export class DidCommMessageSender {
       .findVerificationMethodsByPurpose(['authentication'])
       .map((verificationMethod) => {
         const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-        const kmsKeyId = keys?.find((key) => verificationMethod.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
+        const key = keys?.find((key) => verificationMethod.id.endsWith(key.didDocumentRelativeKeyId))
+        const kmsKeyId = key?.kmsKeyId
 
         // Set stored key id, or fallback to legacy key id
         publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
+        publicJwk.kmsBackend = key?.kmsBackend
 
         return { verificationMethod, publicJwk, kmsKeyId }
       })
@@ -527,7 +530,7 @@ export class DidCommMessageSender {
       }
 
       const encryptedMessage = await this.encryptMessage(agentContext, { message, keys, connection })
-      await this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, {
+      await this.queueMessage(agentContext, {
         connectionId: connection.id,
         recipientDids: keys.recipientKeys.map((item) => new DidKey(item).did),
         payload: encryptedMessage,
@@ -548,6 +551,10 @@ export class DidCommMessageSender {
       `Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`,
       { category: categorizeMessageSendingAttempts(attempts), attempts }
     )
+  }
+
+  public async queueMessage(agentContext: AgentContext, options: AddMessageOptions) {
+    return this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, options)
   }
 
   private async sendMessageToService(

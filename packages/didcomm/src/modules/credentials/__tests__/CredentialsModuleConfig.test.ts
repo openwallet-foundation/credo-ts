@@ -10,6 +10,7 @@ describe('CredentialsModuleConfig', () => {
 
     expect(config.autoAcceptCredentials).toBe(DidCommAutoAcceptCredential.Never)
     expect(config.credentialProtocols).toEqual([])
+    expect(config.revocationNotificationFormats).toEqual([])
   })
 
   test('sets values', () => {

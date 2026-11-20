@@ -11,13 +11,13 @@ import type { Query, QueryOptions } from '../../storage/StorageService'
 import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArrayEncoder } from '../../utils'
 import { isAllowedHttpUrl } from '../../utils/uri'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
-import { KeyManagementApi, PublicJwk } from '../kms'
+import { checkKmsKeyReferences, KeyManagementApi, PublicJwk } from '../kms'
 import { getStatusListSignerKeyPurposeOptions } from '../token-status-list/assertStatusListSignerKeyPurpose'
 import { TokenStatusListModuleConfig } from '../token-status-list/TokenStatusListModuleConfig'
 import { ClaimFormat } from '../vc/index'
 import { type EncodedX509Certificate, parseX5c, X509Certificate, X509ModuleConfig, X509Service } from '../x509'
 import { legacyTrustedCertificatesToTrustedIssuers } from '../x509/utils/convertLegacyTrustedCertificates'
-import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
+import { decodeRawSignedSdJwtVcPayload, decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcError } from './SdJwtVcError'
 import { SdJwtVcModuleConfig } from './SdJwtVcModuleConfig'
@@ -33,6 +33,7 @@ import type {
 } from './SdJwtVcOptions'
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 import {
+  type CnfPayload,
   extractKeyFromHolderBinding,
   getIssuerDidUrl,
   getSdJwtHashingAlgorithm,
@@ -86,6 +87,11 @@ export interface SdJwtVc<
   kmsKeyId?: string
 
   /**
+   * The kms backend that holds `kmsKeyId`.
+   */
+  kmsBackend?: string
+
+  /**
    * The merged/resolved type metadata of the SD-JWT VC.
    */
   typeMetadata?: SdJwtVcTypeMetadata
@@ -134,7 +140,11 @@ export class SdJwtVcService {
     const issuer = await this.extractKeyFromIssuer(agentContext, options.issuer, true)
 
     // holer binding is optional
-    const holderBinding = options.holder ? await extractKeyFromHolderBinding(agentContext, options.holder) : undefined
+    const holderBinding = options.holder
+      ? await extractKeyFromHolderBinding(agentContext, options.holder, {
+          didPurposes: ['authentication', 'assertionMethod'],
+        })
+      : undefined
 
     const header = {
       alg: issuer.alg,
@@ -217,6 +227,7 @@ export class SdJwtVcService {
         ? await extractKeyFromHolderBinding(agentContext, holderBinding, {
             forSigning: true,
             jwkKeyId: sdJwtVc.kmsKeyId,
+            jwkKmsBackend: sdJwtVc.kmsBackend,
           })
         : undefined
     if (holder) {
@@ -304,8 +315,11 @@ export class SdJwtVcService {
           : returnSdJwtVc.issuer
       const { trustedIssuer } = await this.verifyIssuer(agentContext, returnSdJwtVc, issuer, trustedIssuers)
       const issuerWithKey = await this.extractKeyFromIssuer(agentContext, issuer)
+      // assertionMethod stays accepted for holders that already rely on it
       const holder = returnSdJwtVc.holder
-        ? await extractKeyFromHolderBinding(agentContext, returnSdJwtVc.holder)
+        ? await extractKeyFromHolderBinding(agentContext, returnSdJwtVc.holder, {
+            didPurposes: ['authentication', 'assertionMethod'],
+          })
         : undefined
 
       const statusValidationDisabled = disableStatusValidation === true || verifyCredentialStatus === false
@@ -417,26 +431,44 @@ export class SdJwtVcService {
    */
   public async fetchTypeMetadata(
     agentContext: AgentContext,
-    sdJwtVc: SdJwtVc,
+    sdJwtVcOrVct: SdJwtVc | { vct: string; 'vct#integrity'?: string },
     {
       throwErrorOnFetchError = true,
       throwErrorOnUnsupportedVctValue = true,
     }: { throwErrorOnFetchError?: boolean; throwErrorOnUnsupportedVctValue?: boolean } = {}
   ) {
+    const baseVct = 'payload' in sdJwtVcOrVct ? sdJwtVcOrVct.payload.vct : sdJwtVcOrVct.vct
     const sdjwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       vctFetcher: this.getVctFetcher(agentContext, {
-        baseVct: sdJwtVc.payload.vct,
+        baseVct,
         throwErrorOnFetchError,
         throwErrorOnUnsupportedVctValue,
       }),
     })
 
-    const typeMetadata = await sdjwt.getVct(sdJwtVc.compact)
+    // getVct only decodes the JWT payload, it never verifies the signature
+    const compact =
+      'payload' in sdJwtVcOrVct
+        ? sdJwtVcOrVct.compact
+        : `${JsonEncoder.toBase64Url({ alg: 'none' })}.${JsonEncoder.toBase64Url({ vct: sdJwtVcOrVct.vct, 'vct#integrity': sdJwtVcOrVct['vct#integrity'] })}.~`
+
+    const typeMetadata = await sdjwt.getVct(compact)
     return typeMetadata
   }
 
   public async store(agentContext: AgentContext, options: SdJwtVcStoreOptions) {
+    checkKmsKeyReferences(
+      agentContext,
+      options.record.credentialInstances
+        // A did-bound credential keeps its key reference on the did record, so only a jwk-bound one needs it here.
+        .filter(
+          ({ compactSdJwtVc, kmsKeyId }) =>
+            kmsKeyId || (decodeRawSignedSdJwtVcPayload(compactSdJwtVc).cnf as CnfPayload | undefined)?.jwk
+        )
+        .map(({ kmsKeyId, kmsBackend }) => ({ keyId: kmsKeyId, backend: kmsBackend })),
+      { missingKeyId: 'throw' }
+    )
     await this.sdJwtVcRepository.save(agentContext, options.record)
     return options.record
   }

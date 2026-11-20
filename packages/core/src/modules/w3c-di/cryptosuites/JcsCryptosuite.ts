@@ -201,6 +201,7 @@ export abstract class JcsCryptosuite implements W3cDataIntegrityCryptosuite {
 
     const { signature: proofBytes } = await this.keyManagementApi.sign({
       keyId: publicJwk.keyId,
+      backend: publicJwk.kmsBackend,
       expectedPublicJwk: publicJwk.toJson(),
       algorithm: signatureAlgorithm,
       data: hashData,
