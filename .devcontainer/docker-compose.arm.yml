@@ -41,35 +41,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
-
-  indy-pool:
-    networks:
-      - local_credo_network
-    build:
-      context: ../.
-      dockerfile: network/indy-pool-arm.dockerfile
-    platform: linux/arm64/v8
-    ports:
-      - '9701-9708:9701-9708'
-    # Start supervisord in bg, run commands, bring supervisor to fg.
-    # The ready marker is written once the DIDs the tests depend on are on the ledger
-    command: >
-      /bin/bash -c "
-        rm -f /tmp/indy-pool-ready;
-        /usr/bin/supervisord &
-        indy-cli-setup &&
-        add-did-from-seed 00000000000000000000000Endorser9 ENDORSER &&
-        add-did-from-seed 000000000000000000000000Trustee9 TRUSTEE &&
-        touch /tmp/indy-pool-ready &&
-        /usr/bin/supervisord -n
-      "
-    healthcheck:
-      test: ['CMD-SHELL', 'test -f /tmp/indy-pool-ready']
-      interval: 5s
-      timeout: 5s
-      retries: 60
-      start_period: 10s
-
   cheqd-ledger:
     networks:
       - local_credo_network

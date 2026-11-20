@@ -39,25 +39,19 @@ Existing TTL and per-call cache controls remain unchanged. Key, JWK, and Peer re
 
 This project comes with a [.devcontainer](./devcontainer) to make it as easy as possible to setup your dev environment and begin contributing to this project.
 
-All the [environment variables](https://code.visualstudio.com/remote/advancedcontainers/environment-variables) noted below can be added to [devcontainer.env](./devcontainer.env) and exposed to the development docker container.
+[Environment variables](https://code.visualstudio.com/remote/advancedcontainers/environment-variables) can be added to [devcontainer.env](./devcontainer.env) and exposed to the development docker container.
 
-When running in a container your project root directory will be `/work`. Use this to correctly path any environment variables, for example:
-
-```console
-GENESIS_TXN_PATH=/work/network/genesis/local-genesis.txn
-```
+When running in a container your project root directory will be `/work`. Use this to correctly path any environment variables.
 
 ## Running tests
 
-Test are executed using vitest. E2E tests (ending in `.e2e.test.ts`) require the **indy ledger**, **cheqd ledger**, **postgres database**, or **redis** to be running. Drizzle tests (ending in `drizzle.e2e.test.ts`) require the **postgres database** to be running.
+Test are executed using vitest. E2E tests (ending in `.e2e.test.ts`) require the **cheqd ledger**, **postgres database**, or **redis** to be running. Drizzle tests (ending in `drizzle.e2e.test.ts`) require the **postgres database** to be running.
 
 NOTE: when running the Drizzle tests, you must first run `pnpm build`, as the CLI requires the built packages.
 
-When running tests that require a connection to the indy ledger pool, you can set the `TEST_AGENT_PUBLIC_DID_SEED`, `ENDORSER_AGENT_PUBLIC_DID_SEED` and `GENESIS_TXN_PATH` environment variables.
-
 ### Quick Setup
 
-To quickly set up all services needed to run tests (Postgres, Hyperledger Indy Ledger, and Cheqd Ledger), run the following command:
+To quickly set up all services needed to run tests (Postgres, Redis and Cheqd Ledger), run the following command:
 
 ```sh
 docker compose up -d
@@ -94,17 +88,4 @@ You can also run **all** tests:
 pnpm test
 ```
 
-### Setting environment variables
-
-If you're using the setup as described in this document, you don't need to provide any environment variables as the default will be sufficient.
-
-- `GENESIS_TXN_PATH`: The path to the genesis transaction that allows us to connect to the indy pool.
-  - `GENESIS_TXN_PATH=network/genesis/local-genesis.txn` - default. Works with the [ledger setup](#setup-indy-ledger) from the previous step.
-  - `GENESIS_TXN_PATH=network/genesis/builder-net-genesis.txn` - Sovrin BuilderNet genesis.
-  - `GENESIS_TXN_PATH=/path/to/any/ledger/you/like`
-- `TEST_AGENT_PUBLIC_DID_SEED`: The seed to use for the public DID. This will be used to do public write operations to the ledger. You should use a seed for a DID that is already registered on the ledger.
-  - If using the local or default genesis, use the same seed you used for the `add-did-from-seed` command from the [ledger setup](#setup-indy-ledger) in the previous step. (default is `000000000000000000000000Trustee9`)
-  - If using the BuilderNet genesis, make sure your seed is registered on the BuilderNet using [selfserve.sovrin.org](https://selfserve.sovrin.org/) and you have read and accepted the associated [Transaction Author Agreement](https://github.com/sovrin-foundation/sovrin/blob/master/TAA/TAA.md). We are not responsible for any unwanted consequences of using the BuilderNet.
-- `ENDORSER_AGENT_PUBLIC_DID_SEED`: The seed to use for the public Endorser DID. This will be used to endorse transactions. You should use a seed for a DID that is already registered on the ledger.
-  - If using the local or default genesis, use the same seed you used for the `add-did-from-seed` command from the [ledger setup](#setup-indy-ledger) in the previous step. (default is `00000000000000000000000Endorser9`)
-  - If using the BuilderNet genesis, make sure your seed is registered on the BuilderNet using [selfserve.sovrin.org](https://selfserve.sovrin.org/) and you have read and accepted the associated [Transaction Author Agreement](https://github.com/sovrin-foundation/sovrin/blob/master/TAA/TAA.md). We are not responsible for any unwanted consequences of using the BuilderNet.
+Ledger integrations such as Indy VDR and Hedera, and their test ledgers, are maintained in [credo-ts-ext](https://github.com/openwallet-foundation/credo-ts-ext).
