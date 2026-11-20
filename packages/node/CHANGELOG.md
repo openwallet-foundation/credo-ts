@@ -1,5 +1,301 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- fb968ea: The KMS now creates the ECDH ephemeral key itself and never stores it. `encrypt` returns its public key as `ephemeralPublicJwk`. `ECDH-ES` and `ECDH-ES+KW` no longer take a `keyId`, and passing one now fails validation. In `encrypt`, a `keyId` in `keyAgreement` now always means the sender's key.
+  
+  `encryption.aad` can now be a callback that gets the `ephemeralPublicJwk` and returns the AAD, so you can put the `epk` in a JWE protected header. This is only allowed with `ECDH-ES`, `ECDH-ES+KW` and `ECDH-1PU+A256KW`. These now only allow authenticated content encryption in both `encrypt` and `decrypt`, and `encrypt` no longer takes an `iv` for them.
+  
+  Askar no longer reports `ECDH-ES` with `A256CBC-HS512` as supported, as its key derivation can't produce the 64 byte key. Agents that also register the Node backend now encrypt it with Node.
+  
+  ```ts
+  // before
+  const ephemeralKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+  const header = JsonEncoder.toBase64Url({ alg: 'ECDH-ES', enc: 'A256GCM', epk: ephemeralKey.publicJwk })
+  const { encrypted, iv, tag } = await agent.kms.encrypt({
+    key: { keyAgreement: { algorithm: 'ECDH-ES', keyId: ephemeralKey.keyId, externalPublicJwk: recipientJwk } },
+    encryption: { algorithm: 'A256GCM', aad: TypedArrayEncoder.fromUtf8String(header) },
+    data,
+  })
+  await agent.kms.deleteKey({ keyId: ephemeralKey.keyId })
+  
+  // after
+  let header: string | undefined
+  const { encrypted, iv, tag } = await agent.kms.encrypt({
+    key: { keyAgreement: { algorithm: 'ECDH-ES', externalPublicJwk: recipientJwk } },
+    encryption: {
+      algorithm: 'A256GCM',
+      aad: ({ ephemeralPublicJwk }) => {
+        header = JsonEncoder.toBase64Url({ alg: 'ECDH-ES', enc: 'A256GCM', epk: ephemeralPublicJwk })
+        return TypedArrayEncoder.fromUtf8String(header)
+      },
+    },
+    data,
+  })
+  ```
+- fb968ea: KMS `encrypt` can now wrap the content key for more than one recipient. `ECDH-ES+A128KW`, `ECDH-ES+A192KW`, `ECDH-ES+A256KW` and the new `ECDH-1PU+A256KW` take a `recipients` array instead of `externalPublicJwk`, and return `encryptedKeys` in the same order. All recipients must use the same key type and curve, since they share one ephemeral key. The single `encryptedKey` is removed from the result.
+  
+  The Askar and Node backends support `ECDH-1PU+A256KW`, which needs an `A*CBC-HS*` content encryption algorithm in both `encrypt` and `decrypt`. `supportedBackendsForOperation` returns no backends for content encryption that `encrypt` or `decrypt` rejects.
+  
+  ```ts
+  const { encrypted, iv, tag, ephemeralPublicJwk, encryptedKeys } = await agent.kms.encrypt({
+    key: {
+      keyAgreement: {
+        algorithm: 'ECDH-1PU+A256KW',
+        keyId: senderKeyId,
+        recipients: [{ externalPublicJwk: aliceJwk }, { externalPublicJwk: bobJwk }],
+      },
+    },
+    encryption: { algorithm: 'A256CBC-HS512' },
+    data,
+  })
+  ```
+- 0aa231d: `@credo-ts/node` now hashes with `node:crypto` instead of the JavaScript implementation. It sets this up when imported. Other platforms can plug in a native hash implementation with `Hasher.setImplementation`, which applies to every agent in the process.
+- b21bba5: HTTP requests now have a response size limit and a timeout, so a malicious server can't exhaust memory or keep a request open. The agent wraps `agentDependencies.fetch` with the new `fetchLimits` agent config, which defaults to 10 MiB and 30 seconds. This also covers requests that libraries make with it, such as OpenID4VC and mdoc requests. A response over the limit is aborted and its request fails.
+  
+  These options override `maxResponseBytes` for specific requests:
+  
+  - `maxTypeMetadataBytes` on `SdJwtVcModule` for type metadata.
+  - `maxStatusListBytes` on the new `TokenStatusListModule` config for status lists of Token Status Lists, SD-JWT VCs and mdocs.
+  - `maxDidDocumentBytes` on `WebDidResolver`.
+  - `maxResourceBytes` on `WebVhDidResolver`.
+  - `maxResponseBytes` on `DidCommHttpOutboundTransport`.
+  - `maxInvitationBytes` on `DidCommModule` for short URL invitations.
+  
+  The download stops at the limit when the `fetch` in the agent dependencies exposes the response body as a stream. On React Native, recent Expo versions use `expo/fetch` as the global fetch, which supports this. React Native's built-in fetch doesn't: it only returns a response after the whole body is downloaded. A response over the limit then still fails, but it doesn't protect memory. We recommend `expo/fetch`, or another fetch implementation that supports streaming.
+  
+  When `DidCommWsInboundTransport` creates the server from `port`, it now limits received messages to 5 MiB, the same as `DidCommHttpInboundTransport`. Before, the limit was 100 MiB, the default of `ws`. A larger message now closes the socket. Agents that receive larger messages, for example a mediator receiving `forward` messages with large attachments, can raise the limit with the new `maxPayloadBytes` option. When you pass your own `server`, set `maxPayload` on it yourself.
+- 194cf1e: Make published TypeScript declarations resolvable without development dependencies. Move `@types/events` to dependencies in `@credo-ts/core`, and `@types/node` and `@types/ws` to dependencies in `@credo-ts/node`. Replace non-portable and self-referential imports in core, and use `AgentDependencies` for the WebSocket type in `@credo-ts/didcomm` instead of importing from undeclared `ws`.
+
+### Patch Changes
+
+- 3985e5b: Add DIDComm v2 ([DIDComm Messaging v2.1](https://identity.foundation/didcomm-messaging/spec/v2.1/)) next to DIDComm v1. Support for v2 is opt-in: `didcommVersions` defaults to `['v1']`, and an agent without v2 rejects v2 envelopes and keeps its v1 behaviour. An agent with both versions talks v1 and v2 at the same time. The version of a connection is stored on the connection record, so existing v1 connections keep working and new connections use the version of the invitation they come from. The public API has no breaking changes: all v2 additions are new types, members, options or overloads next to the existing ones.
+  
+  ```ts
+  const agent = new Agent({
+    modules: {
+      didcomm: new DidCommModule({
+        didcommVersions: ['v1', 'v2'],
+        // optional, these are the defaults
+        v2KeyAgreementCurve: 'X25519', // or 'P-256' | 'P-384'
+        v2DefaultAuthcryptContentEncryption: 'A256CBC-HS512',
+        v2DefaultAnoncryptContentEncryption: 'A256CBC-HS512', // or 'A256GCM' | 'XC20P'
+        peerDidNumAlgoForV2OOB: PeerDidNumAlgo.ShortFormAndLongForm, // did:peer:4
+        basicMessages: { protocols: ['v1', 'v2'] },
+      }),
+      connections: new DidCommConnectionsModule({ autoCreateConnectionOnFirstMessage: true }),
+      mediationRecipient: new DidCommMediationRecipientModule({ mediationProtocolVersions: ['v1', 'v2'] }),
+      mediator: new DidCommMediatorModule({ mediationProtocolVersions: ['v1', 'v2'] }),
+    },
+  })
+  
+  const { outOfBandInvitation } = await agent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+  ```
+  
+  `@credo-ts/didcomm`:
+  
+  - Envelopes: `DidCommV2EnvelopeService` packs and unpacks authcrypt (`ECDH-1PU+A256KW` with `A256CBC-HS512`) and anoncrypt (`ECDH-ES+A256KW` with `A256CBC-HS512`, `A256GCM` or `XC20P`) JWEs in general JSON serialization with `apu`/`apv`, for X25519, P-256 and P-384 key agreement, and verifies signed messages (`application/didcomm-signed+json` with EdDSA, ES256 or ES256K), also when they are nested in an encrypted message. The `DidCommEnvelope` interface with `DidCommV1Envelope`, `DidCommV2Envelope` and the `DidCommEnvelopeRegistry` picks the version per message: the version of the inbound session, else the version of the connection, else v1. Outbound messages are always authcrypt, except forwards, which are anoncrypt. Credo's X25519 keys are independent keys and are no longer derived from Ed25519 keys.
+  - Message handling: v2 plaintext messages are converted to the v1 shape (`@id`, `@type`, `~thread`, `~attach`, `~timing`, `~transport`) before they reach the handlers, and back when they are sent, so protocol implementations are version-agnostic. Message classes can shape their own v2 headers and body. Inbound v2 messages are matched to a connection by the `to`/`from` DID pair, then by `theirDid`, by keys, or by a `from_prior` issuer or a verified `alsoKnownAs` alias. Replies over a transport session use the version of the inbound message. Problem reports use report-problem/2.0 on v2 connections. Message ids and `pthid` accept 1 to 64 characters including `~`.
+  - Connections and out-of-band: out-of-band 2.0 invitations (`DidCommOutOfBandInvitationV2`, `_oob` URL parameter, attachments). `createInvitation` takes `didCommVersion`, `peerDidNumAlgoForV2OOB` and `ourDid`; `receiveImplicitInvitation` takes `didCommVersion` and detects it from the DID document when omitted. v2 connections have no handshake (`DidCommHandshakeProtocol.None`): accepting the invitation creates a completed connection and the first message carries the invitation id as `pthid`. With `autoCreateConnectionOnFirstMessage` a first v2 message opens a connection, bound to the invitation named by `pthid` or to an implicit invitation (one of our public DIDs). Connection reuse works through `pthid` (`reuseForOutOfBandInvitation`). `DidCommConnectionRecord.didcommVersion` (`'v1' | 'v2'`) is also a queryable tag. DID rotation with `from_prior` and hangup (`connections.rotate()`, `connections.hangup()`) work on v2 connections.
+  - Protocols over v2: Trust Ping 2.0, Basic Message 2.0 (`basicMessages: { protocols }`), Discover Features 2.0, Routing 2.0 (`forward`), Coordinate Mediation 2.0, Message Pickup 4.0 (`PickUpV4` and `PickUpV4LiveMode` strategies), Report Problem 2.0 and the empty message. Connection request and response (DID Exchange) stay v1. Out of Band 2.0, Message Pickup 4.0 and `empty/1.0` are registered and advertised in discover-features only when v2 is enabled.
+  - Mediation: Coordinate Mediation 2.0 on both sides (mediate-request/grant/deny, keylist-update, keylist-query with pagination, `routing_did` in the grant). `mediationProtocolVersions` defaults to `['v1']` on the recipient and mediator modules. The mediator publishes a routing DID (`mediatorRoutingDid`, or a did:peer:2 built from its routing record) and adds an X25519 routing key to its routing record when v2 is enabled. The pickup strategy follows the mediation version (4.0 on CM 2.0, 2.0 on CM 1.0). v1 peers reach a recipient behind a CM 2.0 mediator: a `did-communication` service whose endpoint is a routing DID is expanded to the mediator endpoint and its routing keys. `DidCommRouting` gains the optional `keyAgreementKey` and `routingDid`. `DidCommMediationRecord` gains `routingDid`, `recipientDids` and `protocolVersion`. `notifyKeylistUpdate` has a new overload `(mediationRecord, recipientKeyOrDid, action?)`.
+  - `DidCommInboundMessageContext` gains the optional `recipientDid`, `senderKeyAgreementKey` and `recipientKeyAgreementKey`; `senderKey` and `recipientKey` stay Ed25519 keys. `DidCommMessagePickupModule` defaults `protocols` to v1, v2 and v4; v4 is skipped when v2 is not enabled. `DidCommMessageSender` and `DidCommMessageReceiver` take the `DidCommEnvelopeRegistry` in their constructors.
+  
+  Behaviour changes for agents that do not enable v2: the recipient-key fingerprints of a DID document that advertises a `DIDCommMessaging` service include its `keyAgreement` keys (stored records keep their tags until they are saved again), a v1 forward is also matched by the recipient DID, a `did-communication` service with a DID endpoint is expanded, and HTTP inbound content types are matched case-insensitively and without parameters. When v2 is enabled, `oob.createInvitation()` without v1-only options (`handshakeProtocols`, `messages`, `appendedAttachments`, `routing`) creates a v2 invitation; pass `didCommVersion: 'v1'` to keep v1.
+  
+  `@credo-ts/core`:
+  
+  - `DidDocument` gains `didCommV2Services`, `allDidCommRecipientKeys` (the v1 recipient keys plus the `keyAgreement` keys of a document with a v2 service) and `getKeyAgreementRecipientKeysWithVerificationMethod()`. `didCommServices`, `recipientKeys` and `getRecipientKeysWithVerificationMethod()` keep their v1 content.
+  - `DidRecord.recipientKeyFingerprints` and the `recipientKeyFingerprints` tag of created DIDs are built from `allDidCommRecipientKeys`, so a DID with a v2 service is also found by its `keyAgreement` keys.
+  - `utils.uuidFromName`, `didToNumAlgo2DidDocument`, `didToNumAlgo4DidDocument`, `areEquivalentDidPeer4Forms`, `getDidPeer4ShortFormForEquivalence`, `isShortFormDidPeer4` and `getAlternativeDidsForNumAlgo4Did` are exported. `PublicJwk.is()` accepts up to four types.
+  
+  `@credo-ts/node`:
+  
+  - `DidCommHttpInboundTransport` accepts `application/didcomm-encrypted+json` and `application/didcomm-signed+json` when v2 is enabled, and answers with the v2 media type when the reply is a v2 envelope.
+  
+  Askar and in-memory storage need no migration, all new record fields are optional. Drizzle storage needs the `didcomm` bundle migrations, see the `@credo-ts/drizzle-storage` changelog.
+- fbb6517: Allow HTTP DIDComm routes to be hosted on an externally managed Express application and make listener startup failures observable.
+- e336427: The HTTP inbound transport answers 500 as soon as processing a message fails. It used to wait for the processing timeout and log a timeout error.
+- 0a8066d: `KeyManagementApi.sign` requires a new `expectedPublicJwk` option and only returns the signature if the key and algorithm match it. Pass `null` for symmetric keys or when the public key isn't known. This breaks direct `sign` callers. Credo passes the key where the signer has it: a JWS with an `x5c` or `jwk` header, COSE Sign1, linked data proofs, Data Integrity, SD-JWT, DIDComm signature decorators, and the cheqd, Indy VDR, Hedera and webvh DID signers. An mdoc or CWT status list signed with a key that doesn't match its certificate now fails. The key is checked before it signs. If the API already read the key to find its backend, it checks it there. Otherwise it passes `expectedPublicJwk` to the backend, which must check the key before signing and return it as `publicJwk`. `KmsSignOptions` now requires `expectedPublicJwk`, which is `null` when the backend doesn't need to check. Custom backends need to add the check, for example with `assertExpectedSigningKey`. Askar, Node and the secure environment backend do. Askar no longer exports the private key when signing.
+- 82a6efd: Update the TypeScript development dependency to TypeScript 7 (`typescript@^7.0.2`, installed as `@typescript/native`) for type checking. The `typescript` package is now an alias of `@typescript/typescript6@^6.0.2`, so tools that use the TypeScript compiler API, such as `tsdown` when generating declaration files, keep working.
+  
+  This has no effect on runtime behaviour. `getPublicJwkFromDid` in `@credo-ts/openid4vc` now declares its `Promise<PublicJwk>` return type, which is the type it already returned.
+- 2eb0806: AES-GCM decryption in the Node key management service now requires a 16-byte authentication tag. Before, it also accepted truncated tags of 4 to 15 bytes.
+- a702ce8: The HTTP inbound transport now answers `202 Accepted` instead of `200 OK` when a received DIDComm message is processed without a response message travelling back over the same HTTP connection, as DIDComm Messaging recommends. A response message is still returned with `200 OK`.
+- e3788dc: ECDH-ES with `A192GCM` content encryption in the node KMS now uses a 192 bit key, so it no longer fails.
+- e3788dc: ECDH-ES in the node KMS now works with X25519 keys and with key wrapping, including 64 byte keys such as for `A256CBC-HS512`. P-384 and P-521 now derive keys with SHA-256 like other JOSE libraries, so data encrypted with the old node KMS on those curves won't decrypt.
+- e3788dc: The node KMS now returns `Uint8Array` instead of `Buffer` from `randomBytes`, `sign`, `encrypt` and `decrypt`.
+- 526a989: feat: support node 26
+- 1689ee4: Fix replies going to the wrong transport session when one connection has several requests open at the same time, for example a wallet that sends two message pickup requests with `return_route` over HTTP while `processDidCommMessagesConcurrently` is enabled. One of the requests was answered with the reply to the other and the other request failed with a 500 response.
+  
+  `DidCommTransportService.saveSession` no longer removes the open single response sessions of the connection, so each request keeps its own session. A new long-lived session still replaces an open long-lived session of the same type, which may be half open after the client reconnected. A reply to an inbound message is sent over the session that message came in on. If that session is gone, for example because a WebSocket client reconnected, the reply goes over another open session of the connection, but never over a session that answers a single request, such as an HTTP session. Without such a session it goes to a service endpoint or the queue.
+  
+  `DidCommTransportSession` has two new optional properties for this, which the sessions of `@credo-ts/node` implement: `isClosed` and `isSingleResponse`. `findSessionByConnectionId` returns the most recently saved session and skips closed ones. It returns a single request session only when the connection has no other open session. `DidCommMessageSender.sendPackage` never uses a single request session, so a forwarded message no longer takes the response of an open HTTP request. A custom inbound transport should remove its sessions when they end. `transportSessionTable` is now a `Map`, so the most recently saved session is found for any session id.
+  
+  Live delivery of message pickup 2.0 and 4.0 is now refused for a single request session, as it is gone after the status reply.
+  
+  The HTTP inbound transport now removes a session when the client closes the connection. It listened on the request, which closes as soon as the body is read. The polling pickup loop of the mediation recipient no longer starts a round while the previous one is still sending and keeps polling after a failed round.
+- Updated dependencies [457f5a6]
+- Updated dependencies [c2bb4d5]
+- Updated dependencies [0b9531a]
+- Updated dependencies [c452dfc]
+- Updated dependencies [a75afb3]
+- Updated dependencies [a75afb3]
+- Updated dependencies [2c4e3a2]
+- Updated dependencies [1689ee4]
+- Updated dependencies [798c401]
+- Updated dependencies [1689ee4]
+- Updated dependencies [ed4a10d]
+- Updated dependencies [ed4a10d]
+- Updated dependencies [b77a2c3]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [8abea64]
+- Updated dependencies [3564660]
+- Updated dependencies [8a6af0b]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [33d3f53]
+- Updated dependencies [6849789]
+- Updated dependencies [93907de]
+- Updated dependencies [f3d537a]
+- Updated dependencies [de1c035]
+- Updated dependencies [2485e36]
+- Updated dependencies [51bd389]
+- Updated dependencies [9eadcb8]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [14e84ce]
+- Updated dependencies [34e21e6]
+- Updated dependencies [218237d]
+- Updated dependencies [63f8684]
+- Updated dependencies [fac9757]
+- Updated dependencies [95b0dd5]
+- Updated dependencies [81265f5]
+- Updated dependencies [b77a2c3]
+- Updated dependencies [92f08a0]
+- Updated dependencies [3d4b386]
+- Updated dependencies [9105c2d]
+- Updated dependencies [7f0b154]
+- Updated dependencies [b51f8b5]
+- Updated dependencies [75f7139]
+- Updated dependencies [3985e5b]
+- Updated dependencies [366120e]
+- Updated dependencies [77fe670]
+- Updated dependencies [dbde0f1]
+- Updated dependencies [526a989]
+- Updated dependencies [6849789]
+- Updated dependencies [6849789]
+- Updated dependencies [820d809]
+- Updated dependencies [c452dfc]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [e336427]
+- Updated dependencies [eb5b763]
+- Updated dependencies [3354c95]
+- Updated dependencies [4dd128a]
+- Updated dependencies [82a6efd]
+- Updated dependencies [e243cc9]
+- Updated dependencies [da2a293]
+- Updated dependencies [a362176]
+- Updated dependencies [4500aca]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [165329c]
+- Updated dependencies [4c2f93b]
+- Updated dependencies [82a2e7c]
+- Updated dependencies [dde35e0]
+- Updated dependencies [4fc9f29]
+- Updated dependencies [1de1ead]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [820d809]
+- Updated dependencies [0a8066d]
+- Updated dependencies [716cb84]
+- Updated dependencies [0a8066d]
+- Updated dependencies [56734e3]
+- Updated dependencies [82a6efd]
+- Updated dependencies [667c462]
+- Updated dependencies [9303c90]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [c25a507]
+- Updated dependencies [d865973]
+- Updated dependencies [1bbcdc3]
+- Updated dependencies [0a8066d]
+- Updated dependencies [e851280]
+- Updated dependencies [c25a507]
+- Updated dependencies [3c27483]
+- Updated dependencies [7fb55cc]
+- Updated dependencies [cf46149]
+- Updated dependencies [56516ee]
+- Updated dependencies [333bfb7]
+- Updated dependencies [0aa231d]
+- Updated dependencies [4fed115]
+- Updated dependencies [4b137e8]
+- Updated dependencies [aadabc9]
+- Updated dependencies [e930e66]
+- Updated dependencies [ae0fe8e]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [357a5da]
+- Updated dependencies [0814729]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [fb99743]
+- Updated dependencies [b9c051d]
+- Updated dependencies [d93f2c5]
+- Updated dependencies [526a989]
+- Updated dependencies [25199e8]
+- Updated dependencies [4fc9f29]
+- Updated dependencies [1689ee4]
+- Updated dependencies [d086b7a]
+- Updated dependencies [3678fb3]
+- Updated dependencies [c705815]
+- Updated dependencies [b21bba5]
+- Updated dependencies [626b919]
+- Updated dependencies [0a8066d]
+- Updated dependencies [d865973]
+- Updated dependencies [3354c95]
+- Updated dependencies [0523bd0]
+- Updated dependencies [d865973]
+- Updated dependencies [0b7ba8d]
+- Updated dependencies [2f20e2e]
+- Updated dependencies [8a6af0b]
+- Updated dependencies [e37b36e]
+- Updated dependencies [8178149]
+- Updated dependencies [b1090de]
+- Updated dependencies [78d5cfb]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [0a8066d]
+- Updated dependencies [194cf1e]
+- Updated dependencies [ac3b95b]
+- Updated dependencies [ae0fe8e]
+- Updated dependencies [64fec67]
+- Updated dependencies [cbfe06b]
+- Updated dependencies [47691c2]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [56ae9a6]
+- Updated dependencies [47691c2]
+- Updated dependencies [93907de]
+- Updated dependencies [94faeed]
+- Updated dependencies [02fb7ee]
+- Updated dependencies [dbbef02]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [47691c2]
+- Updated dependencies [eab1d3b]
+- Updated dependencies [8114e84]
+- Updated dependencies [dbafd1e]
+- Updated dependencies [2151443]
+- Updated dependencies [d865973]
+- Updated dependencies [8ce03d9]
+- Updated dependencies [c05145a]
+- Updated dependencies [d865973]
+- Updated dependencies [ad928f5]
+- Updated dependencies [808e873]
+- Updated dependencies [d865973]
+- Updated dependencies [81265f5]
+  - @credo-ts/didcomm@0.8.0
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes
