@@ -47,7 +47,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     this.isActive = false
 
     for (const socketId of [...this.transportTable.keys()]) {
-      this.dropSocket(socketId)
+      this.dropSocket(socketId, 'Outbound transport is not active. Not sending message.')
     }
   }
 
@@ -98,31 +98,26 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     for (const [socketId, entry] of [...this.transportTable]) {
       if (entry.connectionId !== connectionId) continue
 
-      this.dropSocket(socketId)
+      this.dropSocket(socketId, 'WebSocket was closed before it opened')
       closed = true
     }
     return closed
   }
 
-  private dropSocket(socketId: string) {
+  private dropSocket(socketId: string, reason: string) {
     const entry = this.transportTable.get(socketId)
     if (!entry) return
 
     this.transportTable.delete(socketId)
-    const opened = entry.socket.readyState !== this.WebSocketClass.CONNECTING
-    entry.rejectOpening(new CredoError('Outbound transport is not active. Not sending message.'))
-    this.closeSocket(socketId, entry, { emitClosedEvent: opened })
+    entry.rejectOpening(new CredoError(reason))
+    this.closeSocket(socketId, entry)
   }
 
   /**
    * Closes the socket without waiting for the close handshake, which on a dead link only ends after a timeout
    * (30 s in Node ws, 60 s on Android, none on iOS)
    */
-  private closeSocket(
-    socketId: string,
-    { socket, connectionId }: Pick<TransportTableEntry, 'socket' | 'connectionId'>,
-    { emitClosedEvent }: { emitClosedEvent: boolean }
-  ) {
+  private closeSocket(socketId: string, { socket, connectionId }: TransportTableEntry) {
     socket.removeEventListener('message', this.handleMessageEvent)
     socket.onclose = null
 
@@ -133,8 +128,6 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     } catch (error) {
       this.logger.error('Error while closing a WebSocket', { error, socketId, connectionId })
     }
-
-    if (!emitClosedEvent) return
 
     // The socket is already dropped, so a throwing listener must not fail stop() or agent shutdown
     try {
@@ -168,8 +161,12 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
       return existing
     }
 
-    const entry = this.createSocketConnection({ endpoint, socketId, connectionId })
-    entry.closeAfterSend = !responseRequested
+    const entry = this.createSocketConnection({
+      endpoint,
+      socketId,
+      connectionId,
+      closeAfterSend: !responseRequested,
+    })
     this.transportTable.set(socketId, entry)
     return entry
   }
@@ -205,10 +202,12 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     socketId,
     endpoint,
     connectionId,
+    closeAfterSend,
   }: {
     socketId: string
     endpoint: string
     connectionId?: string
+    closeAfterSend: boolean
   }): TransportTableEntry {
     this.logger.debug(`Connecting to WebSocket ${endpoint}`)
     const socket = new this.WebSocketClass(endpoint)
@@ -273,6 +272,6 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
       }
     })
 
-    return { socket, connectionId, opening, rejectOpening, pendingSends: 0, closeAfterSend: false }
+    return { socket, connectionId, opening, rejectOpening, pendingSends: 0, closeAfterSend }
   }
 }

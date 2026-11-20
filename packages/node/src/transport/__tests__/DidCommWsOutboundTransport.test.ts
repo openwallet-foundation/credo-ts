@@ -291,6 +291,39 @@ describe('DidCommWsOutboundTransport', () => {
     expect(peerSockets).toHaveLength(1)
   })
 
+  it('rejects the sends of a socket that is still connecting and emits its closed event when its connection is closed', async () => {
+    const { endpoint, peerSocketsClosed, heldHandshakes, releaseHandshakes, receivedFrames } = await startSilentServer({
+      holdHandshakes: true,
+    })
+    const agentContext = createAgentContext()
+    const transport = await startTransport(agentContext)
+    const closedEvents = collectClosedEvents(agentContext)
+
+    const sendErrors = Promise.all(
+      [0, 1].map(() =>
+        transport.sendMessage({ payload, endpoint, connectionId: 'connection-id', responseRequested: true }).then(
+          () => undefined,
+          (error: unknown) => error
+        )
+      )
+    )
+    await waitUntil(() => heldHandshakes.length === 1, 1000, 'The handshake was not requested')
+
+    expect(transport.closeSocketByConnectionId('connection-id')).toBe(true)
+
+    const errors = await withTimeout(sendErrors, 1000, 'The sends did not settle')
+    for (const error of errors) {
+      expect(error).toBeInstanceOf(CredoError)
+      expect((error as CredoError).message).toBe('WebSocket was closed before it opened')
+    }
+    await withTimeout(Promise.all(peerSocketsClosed), 1000, 'The peer socket was not closed')
+    releaseHandshakes()
+
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(closedEvents).toEqual([{ socketId: `${endpoint}-connection-id`, connectionId: 'connection-id' }])
+    expect(receivedFrames).toEqual([])
+  })
+
   it('closes a socket opened for messages without return routing after the last of them is sent', async () => {
     const { endpoint, serverSockets } = await startServer()
     const transport = await startTransport()
@@ -491,7 +524,7 @@ describe('DidCommWsOutboundTransport', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 50))
       expect(openedEvents).toEqual([])
-      expect(closedEvents).toEqual([])
+      expect(closedEvents).toEqual([{ socketId: `${endpoint}-connection-id`, connectionId: 'connection-id' }])
       expect(transport.closeSocketByConnectionId('connection-id')).toBe(false)
       expect(receivedFrames).toEqual([])
     })
