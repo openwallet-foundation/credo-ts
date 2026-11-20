@@ -29,6 +29,7 @@ import {
   makeConnection,
   waitForAgentMessageProcessedEventSubject,
   waitForBasicMessageSubject,
+  waitForConnectionRecordSubject,
   waitForDidRotateSubject,
 } from '../../../../../core/tests/helpers'
 import { DidCommDispatcher } from '../../../DidCommDispatcher'
@@ -58,6 +59,7 @@ import {
   DidCommDidRotateProblemReportMessage,
   DidCommHangupMessage,
 } from '../messages'
+import { DidCommConnectionHangupReason, DidCommDidExchangeState } from '../models'
 import { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../services'
@@ -561,6 +563,15 @@ describe('Rotation E2E tests', () => {
         connectionRecord: bobAliceConnection?.clone(),
       })
 
+      const connectionsAbandoned = Promise.all(
+        [aliceAgent, bobAgent].map((agent) =>
+          waitForConnectionRecordSubject(
+            agent.events.observable(DidCommConnectionEventTypes.DidCommConnectionStateChanged),
+            { state: DidCommDidExchangeState.Abandoned, previousState: DidCommDidExchangeState.Completed }
+          )
+        )
+      )
+
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       await aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection?.id! })
 
@@ -569,20 +580,41 @@ describe('Rotation E2E tests', () => {
         messageType: DidCommHangupMessage.type.messageTypeUri,
       })
 
+      const [aliceAbandoned, bobAbandoned] = await connectionsAbandoned
+      expect(aliceAbandoned.errorMessage).toEqual(DidCommConnectionHangupReason.ByUs)
+      expect(bobAbandoned.errorMessage).toEqual(DidCommConnectionHangupReason.ByOtherParty)
+
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      expect(await aliceAgent.didcomm.connections.getById(aliceBobConnection?.id!)).toMatchObject({
+        state: DidCommDidExchangeState.Abandoned,
+        errorMessage: DidCommConnectionHangupReason.ByUs,
+        isReady: false,
+      })
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      expect(await bobAgent.didcomm.connections.getById(bobAliceConnection?.id!)).toMatchObject({
+        state: DidCommDidExchangeState.Abandoned,
+        errorMessage: DidCommConnectionHangupReason.ByOtherParty,
+        isReady: false,
+      })
+
       // If Bob attempts to send a message to Alice after they received the hangup, framework should reject it
       await expect(
         // biome-ignore lint/style/noNonNullAssertion: no explanation
         bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Message after hangup')
       ).rejects.toThrow()
 
-      // If Bob sends a message afterwards, Alice should still be able to receive it
+      // Subscribe before sending, as delivery may be synchronous
+      const observable = aliceAgent.events.observable('AgentReceiveMessageError')
+      const subject = new ReplaySubject(1)
+      observable.pipe(first(), timeout({ first: 10000 })).subscribe(subject)
+
+      // RFC 0794 gives no period to accept messages after a hangup, so Alice does not process a message that arrives later
       await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageBeforeHangup)
 
-      await waitForBasicMessageSubject(aliceReplay, {
-        threadId: messageBeforeHangup.message.threadId,
-        content: 'Message before hangup',
-        connectionId: aliceBobConnection?.id,
-      })
+      await firstValueWithStackTrace(subject)
+
+      const aliceBasicMessages = await aliceAgent.didcomm.basicMessages.findAllByQuery({})
+      expect(aliceBasicMessages.find((message) => message.content === 'Message before hangup')).toBeUndefined()
     })
 
     test('Hangup and delete connection record', async () => {
@@ -714,11 +746,15 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     const aliceAfter = await aliceAgent.didcomm.connections.findById(aliceBobConnection?.id!)
     expect(aliceAfter?.did).toBeUndefined()
     expect(aliceAfter?.previousDids).toContain(aliceDidBeforeHangup)
+    expect(aliceAfter?.state).toEqual(DidCommDidExchangeState.Abandoned)
+    expect(aliceAfter?.errorMessage).toEqual(DidCommConnectionHangupReason.ByUs)
 
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     const bobAfter = await bobAgent.didcomm.connections.findById(bobAliceConnection?.id!)
     expect(bobAfter?.theirDid).toBeUndefined()
     expect(bobAfter?.previousTheirDids).toContain(aliceDidBeforeHangup)
+    expect(bobAfter?.state).toEqual(DidCommDidExchangeState.Abandoned)
+    expect(bobAfter?.errorMessage).toEqual(DidCommConnectionHangupReason.ByOtherParty)
   })
 
   test('rotate-to-nothing wraps one forward per routing key, each naming the hop it encloses', async () => {
@@ -1246,6 +1282,8 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       const bobAfter = await getBobConnection()
       expect(bobAfter.theirDid).toBeUndefined()
       expect(bobAfter.previousTheirDids).toContain(aliceDid)
+      expect(bobAfter.state).toEqual(DidCommDidExchangeState.Abandoned)
+      // The message that ends the relationship is its last message
       expect(await bobContents()).toContain('goodbye')
     })
 
