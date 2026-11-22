@@ -10,6 +10,7 @@ import {
   toAbsoluteDidUrl,
   type VerificationMethod,
 } from '../dids'
+import { isSameDidReference, parseDidReference } from '../dids/domain/parse'
 import { type KnownJwaSignatureAlgorithm, type PublicJwk } from '../kms'
 import { extractKeyFromHolderBinding, parseHolderBindingFromCredential } from '../sd-jwt-vc/utils'
 import { CREDENTIALS_UNDEFINED_TERMS_V2_URL } from './constants'
@@ -21,7 +22,7 @@ import type { W3cV2Presentation, W3cV2PresentationCredentialEntry } from './mode
 import { resolveJwtSigner } from './resolveSigner'
 import { W3cV2SdJwtVerifiableCredential } from './sd-jwt-vc/W3cV2SdJwtVerifiableCredential'
 import { W3cV2SdJwtVerifiablePresentation } from './sd-jwt-vc/W3cV2SdJwtVerifiablePresentation'
-import { normalizeDidIdentifier } from './util'
+import { getCredentialSubjectIdProblem, normalizeDidIdentifier } from './util'
 
 export async function validateAndResolveVerificationMethod(
   agentContext: AgentContext,
@@ -62,7 +63,8 @@ export async function validateAndResolveVerificationMethod(
  *   that is a DID URL counts as its DID.
  * - The signing key is the key all `cnf`s resolve to (a `cnf.kid` is resolved under `authentication`),
  *   else the single local `authentication` method of the signer DID. A `credentialSubject.id` that is
- *   a DID URL must be the signing key, like a `cnf.kid`.
+ *   a DID URL must be the signing key, like a `cnf.kid`. One with a path, a query or an empty fragment
+ *   is rejected, as the verifier rejects it.
  * - The key must be a local `authentication` method of the signer DID, controlled by that DID. The
  *   `kid` is its absolute id, so the verifier needs no `iss`.
  * - The signer DID must be a DID created by this agent, and signing throws instead of guessing when
@@ -106,9 +108,19 @@ export async function resolvePresentationSigner(
     )
   }
 
+  // As the verifier does, ignore a subject id with a path, query or empty fragment when the credential has another
+  // id for the signer; otherwise give its explicit error instead of the generic "not bound" one.
+  for (const subjectIds of credentialSubjectIds) {
+    const signerSubjectIds = subjectIds.filter((subjectId) => normalizeDidIdentifier(subjectId) === signerDid)
+    if (signerSubjectIds.some((subjectId) => parseDidReference(subjectId))) continue
+
+    const problem = getCredentialSubjectIdProblem(signerSubjectIds[0])
+    if (problem) throw new CredoError(problem)
+  }
+
   // A credentialSubject.id that is a DID URL binds the credential to that verification method
   const subjectMethodIds = credentialSubjectIds.flatMap((subjectIds) => {
-    const signerSubjectIds = subjectIds.filter((subjectId) => normalizeDidIdentifier(subjectId) === signerDid)
+    const signerSubjectIds = subjectIds.filter((subjectId) => parseDidReference(subjectId)?.did === signerDid)
     return signerSubjectIds.includes(signerDid) ? [] : [signerSubjectIds]
   })
 
@@ -168,7 +180,9 @@ export async function resolvePresentationSigner(
   const candidateMethods = localMethods.filter(
     (method) =>
       (!boundKey || getPublicJwkFromVerificationMethod(method).equals(boundKey)) &&
-      subjectMethodIds.every((methodIds) => methodIds.includes(toAbsoluteDidUrl(signerDid, method.id)))
+      subjectMethodIds.every((methodIds) =>
+        methodIds.some((subjectId) => isSameDidReference(subjectId, method.id, signerDid))
+      )
   )
 
   const isBound = boundKey !== undefined || subjectMethodIds.length > 0
