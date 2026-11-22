@@ -3,9 +3,10 @@ import { CredoError } from '../../error'
 import { isDid } from '../../utils'
 import { type DidPurpose, DidsApi, toAbsoluteDidUrl, type VerificationMethod } from '../dids'
 import { getSupportedVerificationMethodTypesForPublicJwk } from '../dids/domain/key-type/keyDidMapping'
-import { tryParseDid } from '../dids/domain/parse'
+import { isSameDidReference, parseDidReference } from '../dids/domain/parse'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import type { SingleValidationResult } from './models/W3cVerifyResult'
+import { getCredentialSubjectIdProblem } from './util'
 
 export interface ResolvedSigner {
   verificationMethod: VerificationMethod
@@ -95,23 +96,53 @@ export async function resolveJwtSigner(
 /**
  * Resolves the `authentication` verification method a holder presents a credential with, for one of its
  * `credentialSubject.id`s. A DID URL names the method, else it is the first method of the DID. This is the
- * key `validateCredentialSubjectAuthentication` accepts.
+ * key `validateCredentialSubjectAuthentication` accepts, and a DID URL with a path, a query or an empty
+ * fragment is rejected here as it is there.
  */
 export async function resolveCredentialSubjectVerificationMethod(
   agentContext: AgentContext,
   credentialSubjectId: string
 ): Promise<ResolvedSigner> {
-  const parsedDid = tryParseDid(credentialSubjectId)
-  if (!parsedDid) {
-    throw new CredoError(`Only dids are supported as credentialSubject id. ${credentialSubjectId} is not a valid did`)
+  const reference = parseDidReference(credentialSubjectId)
+  if (!reference) {
+    throw new CredoError(
+      getCredentialSubjectIdProblem(credentialSubjectId) ??
+        `Only dids are supported as credentialSubject id. ${credentialSubjectId} is not a valid did`
+    )
   }
 
-  if (parsedDid.fragment) return resolveSigner(agentContext, credentialSubjectId, ['authentication'])
+  const didDocument = await agentContext.dependencyManager.resolve(DidsApi).resolveDidDocument(reference.did)
 
-  const didDocument = await agentContext.dependencyManager.resolve(DidsApi).resolveDidDocument(credentialSubjectId)
+  if (reference.kind === 'verificationMethod') {
+    // Checks the listed ids, without dereferencing them, to explain why resolveSigner would not find the method
+    const isListedUnder = (purposes: ReadonlyArray<DidPurpose | 'verificationMethod'>) =>
+      purposes.some((purpose) =>
+        (didDocument[purpose] ?? []).some((entry) =>
+          isSameDidReference(typeof entry === 'string' ? entry : entry.id, credentialSubjectId, didDocument.id)
+        )
+      )
+
+    if (!isListedUnder(['authentication'])) {
+      const isOtherMethod = isListedUnder([
+        'verificationMethod',
+        'assertionMethod',
+        'keyAgreement',
+        'capabilityInvocation',
+        'capabilityDelegation',
+      ])
+      throw new CredoError(
+        isOtherMethod
+          ? `credentialSubject.id '${credentialSubjectId}' names a verification method that is not an authentication method of ${reference.did}`
+          : `credentialSubject.id '${credentialSubjectId}' names a verification method that is not in the DID document of ${reference.did}`
+      )
+    }
+
+    return resolveSigner(agentContext, credentialSubjectId, ['authentication'])
+  }
+
   const [verificationMethod] = didDocument.findVerificationMethodsByPurpose(['authentication'])
   if (!verificationMethod) {
-    throw new CredoError(`No authentication verificationMethods found for did ${parsedDid.did} in did document`)
+    throw new CredoError(`No authentication verificationMethods found for did ${reference.did} in did document`)
   }
 
   assertControlledByDid(verificationMethod, didDocument.id)

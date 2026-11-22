@@ -1,4 +1,5 @@
 import { DidDocument, getJsonWebKey2020, VerificationMethod } from '../../dids'
+import { tryParseDid } from '../../dids/domain/parse'
 import { didDocumentToNumAlgo4Did, didToNumAlgo4DidDocument } from '../../dids/methods/peer/peerDidNumAlgo4'
 import { KnownJwaSignatureAlgorithms, PublicJwk } from '../../kms'
 import {
@@ -7,6 +8,7 @@ import {
   resolveSigner,
   validateSignerIsExpectedParty,
 } from '../resolveSigner'
+import { validateCredentialSubjectAuthentication } from '../util'
 
 const publicJwk = PublicJwk.fromPublicJwk({
   kty: 'OKP',
@@ -29,7 +31,7 @@ function createAgentContext(...didDocuments: DidDocument[]) {
     dependencyManager: {
       resolve: () => ({
         resolveDidDocument: async (didUrl: string) => {
-          const didDocument = didDocuments.find(({ id }) => id === didUrl.split('#')[0])
+          const didDocument = didDocuments.find(({ id }) => id === tryParseDid(didUrl)?.did)
           if (!didDocument) throw new Error(`Unable to resolve did document for did '${didUrl}'`)
           return didDocument
         },
@@ -248,7 +250,13 @@ describe('resolveCredentialSubjectVerificationMethod', () => {
 
   test('rejects a DID URL that is not an authentication method', async () => {
     await expect(resolveCredentialSubjectVerificationMethod(holderContext, `${holderDid}#key-3`)).rejects.toThrow(
-      `Unable to locate verification method with id '${holderDid}#key-3'`
+      `credentialSubject.id '${holderDid}#key-3' names a verification method that is not an authentication method of ${holderDid}`
+    )
+  })
+
+  test('rejects a DID URL that is not in the DID document', async () => {
+    await expect(resolveCredentialSubjectVerificationMethod(holderContext, `${holderDid}#key-4`)).rejects.toThrow(
+      `credentialSubject.id '${holderDid}#key-4' names a verification method that is not in the DID document of ${holderDid}`
     )
   })
 
@@ -256,5 +264,65 @@ describe('resolveCredentialSubjectVerificationMethod', () => {
     await expect(resolveCredentialSubjectVerificationMethod(holderContext, 'urn:uuid:1234')).rejects.toThrow(
       'Only dids are supported as credentialSubject id'
     )
+  })
+
+  test.each([
+    ['a query', `${holderDid}?versionId=1#key-2`],
+    ['a query', `${holderDid}?versionId=1`],
+    ['a path', `${holderDid}/path#key-2`],
+    ['an empty fragment', `${holderDid}#`],
+  ])('rejects a credentialSubject.id with %s: %s', async (problem, subjectId) => {
+    await expect(resolveCredentialSubjectVerificationMethod(holderContext, subjectId)).rejects.toThrow(
+      `credentialSubject.id '${subjectId}' must be a DID`
+    )
+  })
+
+  test.each([holderDid, `${holderDid}#key-2`])(
+    'resolves a key for %s that validateCredentialSubjectAuthentication accepts',
+    async (subjectId) => {
+      const resolved = await resolveCredentialSubjectVerificationMethod(holderContext, subjectId)
+      expect(validateCredentialSubjectAuthentication([subjectId], resolved)).toEqual({ isValid: true })
+    }
+  )
+
+  // DID Core allows any DID URL as a verification method id, not only one with a fragment
+  const createContextWithAuthenticationMethod = (methodId: string) => {
+    const method = new VerificationMethod({
+      ...getJsonWebKey2020({ did: holderDid, verificationMethodId: `${holderDid}#key-1`, publicJwk }),
+      id: methodId,
+    })
+    return createAgentContext(
+      new DidDocument({ id: holderDid, verificationMethod: [method], authentication: [method.id] })
+    )
+  }
+
+  test.each([
+    ['a path', `${holderDid}/keys/1`],
+    ['no #', 'key-1'],
+  ])(
+    'resolves a key for the DID that validateCredentialSubjectAuthentication accepts, when the authentication method id has %s',
+    async (_, methodId) => {
+      const resolved = await resolveCredentialSubjectVerificationMethod(
+        createContextWithAuthenticationMethod(methodId),
+        holderDid
+      )
+
+      expect(resolved.verificationMethodId).toBe(methodId)
+      expect(validateCredentialSubjectAuthentication([holderDid], resolved)).toEqual({ isValid: true })
+    }
+  )
+
+  test('rejects a credentialSubject.id that names an authentication method by a path, when signing and verifying', async () => {
+    const methodId = `${holderDid}/keys/1`
+
+    await expect(
+      resolveCredentialSubjectVerificationMethod(createContextWithAuthenticationMethod(methodId), methodId)
+    ).rejects.toThrow(`credentialSubject.id '${methodId}' must be a DID`)
+    const result = validateCredentialSubjectAuthentication([methodId], {
+      signer: holderDid,
+      verificationMethodId: methodId,
+    })
+    expect(result.isValid).toBe(false)
+    expect(result.error?.message).toContain(`credentialSubject.id '${methodId}' must be a DID`)
   })
 })
