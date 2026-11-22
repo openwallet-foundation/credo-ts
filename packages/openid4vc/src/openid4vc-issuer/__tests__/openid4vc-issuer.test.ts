@@ -56,12 +56,12 @@ import { getOid4vcEncryptJweCallback } from '../../shared/callbacks'
 import { getAccessTokenJwks } from '../../shared/localJwks'
 import { getAccessTokenSigner, getThumbprintKid } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
-import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { getCredentialRequestDecryptionMetadata, OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import type {
   OpenId4VciCredentialRequestEncryptionOptions,
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciDeferredCredentialRequestToCredentialMapper,
+  OpenId4VciIssuerCredentialConfigurationSupported,
   OpenId4VciVersion,
 } from '../OpenId4VcIssuerServiceOptions'
 import type { OpenId4VcIssuerRecord } from '../repository'
@@ -74,12 +74,17 @@ const decryptedWith = (keyId: string, backend: string | undefined) =>
     key: expect.objectContaining({ keyAgreement: expect.objectContaining({ keyId }) }),
   })
 
+const proofTypesSupported = {
+  jwt: { proof_signing_alg_values_supported: ['EdDSA', 'ES256'] },
+}
+
 const openBadgeCredential = {
   id: 'openBadgeCredential',
   format: OpenId4VciCredentialFormatProfile.JwtVcJson,
   credential_definition: {
     type: ['VerifiableCredential', 'OpenBadgeCredential'],
   },
+  proof_types_supported: proofTypesSupported,
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 const openBadgeCredentialSdJwtVc = {
@@ -88,6 +93,7 @@ const openBadgeCredentialSdJwtVc = {
   credential_definition: {
     type: ['VerifiableCredential', 'OpenBadgeCredentialSdJwtVc'],
   },
+  proof_types_supported: proofTypesSupported,
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 const universityDegreeCredential = {
@@ -96,6 +102,7 @@ const universityDegreeCredential = {
   credential_definition: {
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
   },
+  proof_types_supported: proofTypesSupported,
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 const universityDegreeCredentialLd = {
@@ -105,6 +112,7 @@ const universityDegreeCredentialLd = {
     '@context': [],
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
   },
+  proof_types_supported: proofTypesSupported,
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 const verifiableCredentialLdpVc = {
@@ -114,12 +122,14 @@ const verifiableCredentialLdpVc = {
     '@context': ['https://www.w3.org/2018/credentials/v1'],
     type: ['VerifiableCredential'],
   },
+  proof_types_supported: proofTypesSupported,
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 const universityDegreeCredentialSdJwt = {
   id: 'universityDegreeCredentialSdJwt',
   format: OpenId4VciCredentialFormatProfile.SdJwtVc,
   vct: 'UniversityDegreeCredential',
+  proof_types_supported: proofTypesSupported,
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 const modules = {
@@ -2484,7 +2494,8 @@ describe('OpenId4VcIssuer', () => {
       id: 'bearerCredential',
       format: OpenId4VciCredentialFormatProfile.SdJwtDc,
       vct: 'BearerCredential',
-    } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
+      requireCryptographicHolderBinding: false,
+    } satisfies OpenId4VciIssuerCredentialConfigurationSupported
 
     const proofRequiredCredential = {
       id: 'proofRequiredCredential',
@@ -2493,15 +2504,21 @@ describe('OpenId4VcIssuer', () => {
       proof_types_supported: { jwt: { proof_signing_alg_values_supported: ['EdDSA'] } },
     } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
-    const bindingMethodsOnlyCredential = {
-      id: 'bindingMethodsOnlyCredential',
+    const storedSdJwtWithoutProofTypes = {
+      id: 'storedSdJwtWithoutProofTypes',
       format: OpenId4VciCredentialFormatProfile.SdJwtDc,
-      vct: 'BindingMethodsOnlyCredential',
+      vct: 'StoredCredential',
+    } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
+
+    const storedSdJwtWithOnlyBindingMethods = {
+      id: 'storedSdJwtWithOnlyBindingMethods',
+      format: OpenId4VciCredentialFormatProfile.SdJwtDc,
+      vct: 'StoredCredentialWithBindingMethods',
       cryptographic_binding_methods_supported: ['jwk'],
     } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
-    const mdocWithoutProofTypes = {
-      id: 'mdocWithoutProofTypes',
+    const storedMdocWithoutProofTypes = {
+      id: 'storedMdocWithoutProofTypes',
       format: OpenId4VciCredentialFormatProfile.MsoMdoc,
       doctype: 'org.iso.18013.5.1.mDL',
     } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
@@ -2514,23 +2531,23 @@ describe('OpenId4VcIssuer', () => {
       },
     } as const
 
-    const disableHolderBindingRequirement = () =>
-      vi
-        .spyOn(
-          issuer.context.dependencyManager.resolve(OpenId4VcIssuerModuleConfig),
-          'requireCryptographicHolderBinding',
-          'get'
-        )
-        .mockReturnValue(false)
+    // Issuers stored before 0.8 can have configurations that can't be created or updated anymore
+    const storeCredentialConfigurations = async (
+      credentialConfigurationsSupported: OpenId4VcIssuerRecord['credentialConfigurationsSupported']
+    ) => {
+      const issuerRecord = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+      issuerRecord.credentialConfigurationsSupported = credentialConfigurationsSupported
+      await issuer.context.dependencyManager.resolve(OpenId4VcIssuerRepository).update(issuer.context, issuerRecord)
+    }
 
-    const unboundCredential = () => ({
-      payload: { vct: bearerCredential.vct, university: 'innsbruck' },
+    const unboundCredential = (vct: string = bearerCredential.vct) => ({
+      payload: { vct, university: 'innsbruck' },
       issuer: { method: 'did' as const, didUrl: issuerVerificationMethod.id },
       disclosureFrame: { _sd: ['university'] },
     })
 
-    const boundCredential = () => ({
-      ...unboundCredential(),
+    const boundCredential = (vct?: string) => ({
+      ...unboundCredential(vct),
       holder: { method: 'did' as const, didUrl: holderVerificationMethod.id },
     })
 
@@ -2613,23 +2630,11 @@ describe('OpenId4VcIssuer', () => {
           ...openId4VcIssuer.credentialConfigurationsSupported,
           bearerCredential,
           proofRequiredCredential,
-          bindingMethodsOnlyCredential,
-          mdocWithoutProofTypes,
         },
       })
     })
 
-    it('rejects a request without proof for a configuration without proof types by default', async () => {
-      const mapper = createMapper()
-
-      await expect(requestWithoutProof(bearerCredential.id, { mapper })).rejects.toMatchObject(
-        invalidProof('Missing required proof(s) in credential request')
-      )
-      expect(mapper).not.toHaveBeenCalled()
-    })
-
-    it('rejects a request without proof for a configuration with proof_types_supported when holder binding is not required', async () => {
-      disableHolderBindingRequirement()
+    it('rejects a request without proof for a configuration with proof_types_supported', async () => {
       const mapper = createMapper()
 
       await expect(requestWithoutProof(proofRequiredCredential.id, { mapper })).rejects.toMatchObject(
@@ -2638,20 +2643,9 @@ describe('OpenId4VcIssuer', () => {
       expect(mapper).not.toHaveBeenCalled()
     })
 
-    it('rejects a request without proof for a configuration with cryptographic_binding_methods_supported when holder binding is not required', async () => {
-      disableHolderBindingRequirement()
-      const mapper = createMapper()
-
-      await expect(requestWithoutProof(bindingMethodsOnlyCredential.id, { mapper })).rejects.toMatchObject(
-        invalidProof('Missing required proof(s) in credential request')
-      )
-      expect(mapper).not.toHaveBeenCalled()
-    })
-
     it.each<OpenId4VciVersion>(['v1', 'v1.draft15'])(
-      'issues a credential without holder binding on a %s session when holder binding is not required',
+      'issues a credential without holder binding on a %s session for a configuration that opts out',
       async (version) => {
-        disableHolderBindingRequirement()
         const mapper = createMapper()
         const issuanceSession = await createSession(bearerCredential.id, version)
 
@@ -2676,8 +2670,7 @@ describe('OpenId4VcIssuer', () => {
       }
     )
 
-    it('still requires a proof on a v1.draft11-14 session when holder binding is not required', async () => {
-      disableHolderBindingRequirement()
+    it('still requires a proof on a v1.draft11-14 session for a configuration that opts out', async () => {
       const mapper = createMapper()
 
       await expect(
@@ -2686,8 +2679,7 @@ describe('OpenId4VcIssuer', () => {
       expect(mapper).not.toHaveBeenCalled()
     })
 
-    it('rejects a request with a proof for a configuration without proof types when holder binding is not required', async () => {
-      disableHolderBindingRequirement()
+    it('rejects a request with a proof for a configuration that opts out', async () => {
       const mapper = createMapper()
       const issuanceSession = await createSession(bearerCredential.id)
 
@@ -2704,21 +2696,27 @@ describe('OpenId4VcIssuer', () => {
     })
 
     it('rejects a mapper returning a credential bound to a holder for a request without proof', async () => {
-      disableHolderBindingRequirement()
-
       await expect(
         requestWithoutProof(bearerCredential.id, { mapper: createMapper(() => [boundCredential()]) })
       ).rejects.toThrow('returned a credential bound to a holder key, while the credential request contained no proofs')
     })
 
     it('rejects a mapper returning more than one credential for a request without proof', async () => {
-      disableHolderBindingRequirement()
-
       await expect(
         requestWithoutProof(bearerCredential.id, {
           mapper: createMapper(() => [unboundCredential(), unboundCredential()]),
         })
       ).rejects.toThrow("returned '2' credential(s) to be signed, while '1' were expected")
+    })
+
+    it('does not publish requireCryptographicHolderBinding in the issuer metadata', async () => {
+      const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+
+      expect(issuerMetadata.credentialIssuer.credential_configurations_supported.bearerCredential).toEqual({
+        id: bearerCredential.id,
+        format: bearerCredential.format,
+        vct: bearerCredential.vct,
+      })
     })
 
     describe('deferred issuance', () => {
@@ -2752,8 +2750,6 @@ describe('OpenId4VcIssuer', () => {
         })
 
       it('stores a transaction for a single unbound credential and issues it', async () => {
-        disableHolderBindingRequirement()
-
         const { credentialResponse, issuanceSession } = await deferBearerCredential()
 
         expect(credentialResponse.transaction_id).toEqual(transactionId)
@@ -2776,8 +2772,6 @@ describe('OpenId4VcIssuer', () => {
       })
 
       it('rejects a deferred mapper returning a credential bound to a holder', async () => {
-        disableHolderBindingRequirement()
-
         const { issuanceSession } = await deferBearerCredential()
 
         await expect(
@@ -2791,63 +2785,125 @@ describe('OpenId4VcIssuer', () => {
         )
       })
 
-      it('issues a bound credential for a transaction stored without holder binding when holder binding is required', async () => {
-        const holderBindingRequirement = disableHolderBindingRequirement()
-        const { issuanceSession } = await deferBearerCredential()
-        holderBindingRequirement.mockRestore()
+      it('issues a bound credential for a transaction stored before 0.6.3, which has no holder binding either', async () => {
+        const issuanceSession = await createSession(proofRequiredCredential.id)
+        issuanceSession.state = OpenId4VcIssuanceSessionState.CredentialRequestReceived
+        issuanceSession.transactions = [
+          { transactionId, numberOfCredentials: 1, credentialConfigurationId: proofRequiredCredential.id },
+        ]
+        await issuer.context.dependencyManager
+          .resolve(OpenId4VcIssuanceSessionRepository)
+          .update(issuer.context, issuanceSession)
 
         const { deferredCredentialResponse } = await requestDeferred(issuanceSession.id, () => ({
           type: 'credentials',
           format: 'dc+sd-jwt',
-          credentials: [boundCredential()],
+          credentials: [boundCredential(proofRequiredCredential.vct)],
         }))
 
         expect(deferredCredentialResponse.credentials).toEqual([{ credential: expect.any(String) }])
       })
     })
 
-    describe('mso_mdoc configurations', () => {
-      it('rejects creating an issuer with an mdoc configuration without proof_types_supported', async () => {
-        disableHolderBindingRequirement()
+    describe('stored configurations without proof_types_supported that do not opt out', () => {
+      beforeEach(async () => {
+        await storeCredentialConfigurations({
+          storedSdJwtWithoutProofTypes,
+          storedSdJwtWithOnlyBindingMethods,
+          storedMdocWithoutProofTypes,
+        })
+      })
+
+      it.each([storedSdJwtWithoutProofTypes, storedSdJwtWithOnlyBindingMethods, storedMdocWithoutProofTypes])(
+        'rejects a request without proof for $id',
+        async ({ id }) => {
+          const mapper = createMapper()
+
+          await expect(requestWithoutProof(id, { mapper })).rejects.toMatchObject(
+            invalidProof('Missing required proof(s) in credential request')
+          )
+          expect(mapper).not.toHaveBeenCalled()
+        }
+      )
+
+      it('issues a bound credential for a request with a jwt proof', async () => {
+        const mapper = createMapper(() => [boundCredential(storedSdJwtWithoutProofTypes.vct)])
+        const issuanceSession = await createSession(storedSdJwtWithoutProofTypes.id)
+
+        const { credentialResponse } = await requestCredential(
+          issuanceSession.id,
+          { credential_configuration_id: storedSdJwtWithoutProofTypes.id, proofs: { jwt: [await createProofJwt()] } },
+          mapper
+        )
+
+        expect(mapper.mock.calls[0][0].holderBinding?.keys).toHaveLength(1)
+        expect(credentialResponse.credentials).toEqual([{ credential: expect.any(String) }])
+      })
+
+      it('can only be updated once every configuration declares its proof types or opts out', async () => {
+        const issuerRecord = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+
+        await expect(issuer.openid4vc.issuer.updateIssuer(issuerRecord)).rejects.toThrow(
+          `Credential configuration '${storedSdJwtWithoutProofTypes.id}' does not declare 'proof_types_supported'`
+        )
+
+        issuerRecord.credentialConfigurationsSupported = {
+          storedSdJwtWithoutProofTypes: {
+            ...storedSdJwtWithoutProofTypes,
+            proof_types_supported: proofRequiredCredential.proof_types_supported,
+          },
+        }
+        await expect(issuer.openid4vc.issuer.updateIssuer(issuerRecord)).resolves.toBeUndefined()
+      })
+    })
+
+    it.each([
+      { ...proofRequiredCredential, requireCryptographicHolderBinding: false },
+      { ...storedSdJwtWithOnlyBindingMethods, requireCryptographicHolderBinding: false },
+      { ...storedMdocWithoutProofTypes, requireCryptographicHolderBinding: false },
+    ])('still requires a proof for a stored $id that opts out', async (configuration) => {
+      await storeCredentialConfigurations({ [configuration.id]: configuration })
+      const mapper = createMapper()
+
+      await expect(requestWithoutProof(configuration.id, { mapper })).rejects.toMatchObject(
+        invalidProof('Missing required proof(s) in credential request')
+      )
+      expect(mapper).not.toHaveBeenCalled()
+    })
+
+    describe('creating and updating an issuer', () => {
+      it.each([
+        storedSdJwtWithoutProofTypes,
+        storedSdJwtWithOnlyBindingMethods,
+        { ...storedSdJwtWithoutProofTypes, requireCryptographicHolderBinding: true },
+      ])('rejects $id without proof_types_supported that does not opt out', async (configuration) => {
+        const error = `Credential configuration '${configuration.id}' does not declare 'proof_types_supported'. Declare the proof types the credential is bound to the holder with, or set 'requireCryptographicHolderBinding' to false on the configuration to issue it without holder binding.`
 
         await expect(
           issuer.openid4vc.issuer.createIssuer({
-            credentialConfigurationsSupported: { mdocWithoutProofTypes },
+            credentialConfigurationsSupported: { [configuration.id]: configuration },
           })
-        ).rejects.toThrow(
-          `Credential configuration '${mdocWithoutProofTypes.id}' has format 'mso_mdoc' and no 'proof_types_supported'`
-        )
-      })
-
-      it('rejects updating an issuer with an mdoc configuration without proof_types_supported', async () => {
-        disableHolderBindingRequirement()
-
+        ).rejects.toThrow(error)
         await expect(
           issuer.openid4vc.issuer.updateIssuerMetadata({
             issuerId: openId4VcIssuer.issuerId,
-            credentialConfigurationsSupported: { mdocWithoutProofTypes },
+            credentialConfigurationsSupported: { [configuration.id]: configuration },
+          })
+        ).rejects.toThrow(error)
+      })
+
+      it.each([
+        { ...proofRequiredCredential, requireCryptographicHolderBinding: false },
+        { ...storedSdJwtWithOnlyBindingMethods, requireCryptographicHolderBinding: false },
+        { ...storedMdocWithoutProofTypes, requireCryptographicHolderBinding: false },
+      ])('rejects opting out for $id', async (configuration) => {
+        await expect(
+          issuer.openid4vc.issuer.createIssuer({
+            credentialConfigurationsSupported: { [configuration.id]: configuration },
           })
         ).rejects.toThrow(
-          `Credential configuration '${mdocWithoutProofTypes.id}' has format 'mso_mdoc' and no 'proof_types_supported'`
+          `Credential configuration '${configuration.id}' sets 'requireCryptographicHolderBinding' to false, which can't be combined with 'proof_types_supported', 'cryptographic_binding_methods_supported' or the 'mso_mdoc' format.`
         )
-      })
-
-      it('accepts an mdoc configuration without proof_types_supported by default', async () => {
-        const created = await issuer.openid4vc.issuer.createIssuer({
-          credentialConfigurationsSupported: { mdocWithoutProofTypes },
-        })
-
-        expect(created.credentialConfigurationsSupported).toHaveProperty(mdocWithoutProofTypes.id)
-      })
-
-      it('rejects a request without proof for an existing mdoc configuration without proof_types_supported', async () => {
-        disableHolderBindingRequirement()
-        const mapper = createMapper()
-
-        await expect(requestWithoutProof(mdocWithoutProofTypes.id, { mapper })).rejects.toMatchObject(
-          invalidProof('Missing required proof(s) in credential request')
-        )
-        expect(mapper).not.toHaveBeenCalled()
       })
     })
   })

@@ -1,5 +1,8 @@
 import { Kms } from '@credo-ts/core'
-import type { OpenId4VciCredentialConfigurationSupportedWithFormats } from '../src'
+import type {
+  OpenId4VciCredentialConfigurationSupportedWithFormats,
+  OpenId4VciIssuerCredentialConfigurationSupported,
+} from '../src'
 
 import { OpenId4VciCredentialFormatProfile } from '../src'
 
@@ -127,4 +130,5 @@ export const universityDegreeCredentialConfigurationSupportedBearer = {
   format: OpenId4VciCredentialFormatProfile.SdJwtDc,
   scope: 'UniversityDegreeCredential',
   vct: 'UniversityDegreeCredential',
-} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
+  requireCryptographicHolderBinding: false,
+} satisfies OpenId4VciIssuerCredentialConfigurationSupported

@@ -622,7 +622,6 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
   it('holder rejects a deferred sd-jwt-vc bound to a key that was requested without proofs', async () => {
     const issuerConfig = issuer.agent.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
-    vi.spyOn(issuerConfig, 'requireCryptographicHolderBinding', 'get').mockReturnValue(false)
     vi.spyOn(issuerConfig, 'deferredCredentialRequestToCredentialMapper', 'get').mockReturnValue(() => ({
       type: 'credentials',
       format: 'dc+sd-jwt',

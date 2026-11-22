@@ -31,6 +31,7 @@ import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessio
 import type {
   OpenId4VcIssuerModuleConfigOptions,
   OpenId4VciCredentialConfigurationSupportedWithFormats,
+  OpenId4VciIssuerCredentialConfigurationsSupported,
   OpenId4VciIssuerInfo,
   OpenId4VciSignMdocCredentials,
 } from '../src'
@@ -42,6 +43,7 @@ import {
   OpenId4VcModule,
 } from '../src'
 import type { OpenId4VciCredentialBindingResolver, OpenId4VciDpopRequestOptions } from '../src/openid4vc-holder'
+import { OpenId4VcIssuerRepository } from '../src/openid4vc-issuer/repository'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForCredentialIssuanceSessionRecordSubject } from './utils'
@@ -1474,30 +1476,30 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       vi.restoreAllMocks()
     })
 
-    const disableIssuerHolderBindingRequirement = () =>
-      vi
-        .spyOn(
-          issuer.agent.dependencyManager.resolve(OpenId4VcIssuerModuleConfig),
-          'requireCryptographicHolderBinding',
-          'get'
-        )
-        .mockReturnValue(false)
-
     const startIssuance = async (
-      credentialConfigurationsSupported: Parameters<
-        typeof issuer.agent.openid4vc.issuer.createIssuer
-      >[0]['credentialConfigurationsSupported'],
-      credentialConfigurationIds = Object.keys(credentialConfigurationsSupported)
+      credentialConfigurationsSupported: OpenId4VciIssuerCredentialConfigurationsSupported,
+      options: { storedBeforeHolderBindingWasRequired?: boolean } = {}
     ) => {
       const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
       const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
 
-      const { issuerId } = await issuerTenant.modules.openid4vc.issuer.createIssuer({
-        credentialConfigurationsSupported,
+      const issuerRecord = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+        credentialConfigurationsSupported: options.storedBeforeHolderBindingWasRequired
+          ? { universityDegree: universityDegreeCredentialConfigurationSupported }
+          : credentialConfigurationsSupported,
       })
+      // Issuers stored before 0.8 can have configurations without proof types that can't be created anymore
+      if (options.storedBeforeHolderBindingWasRequired) {
+        issuerRecord.credentialConfigurationsSupported = credentialConfigurationsSupported
+        await issuerTenant.dependencyManager
+          .resolve(OpenId4VcIssuerRepository)
+          .update(issuerTenant.context, issuerRecord)
+      }
+
+      const { issuerId } = issuerRecord
       const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
         issuerId,
-        credentialConfigurationIds,
+        credentialConfigurationIds: Object.keys(credentialConfigurationsSupported),
         preAuthorizedCodeFlowConfig: {},
         version: 'v1',
       })
@@ -1526,9 +1528,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     }
 
     it('issues a credential without holder binding when both issuer and holder opt out', async () => {
-      disableIssuerHolderBindingRequirement()
       const { issuerTenant, holderTenant, issuanceSession, resolvedCredentialOffer, tokenResponse, endSessions } =
         await startIssuance({ universityDegree: universityDegreeCredentialConfigurationSupportedBearer })
+      expect(resolvedCredentialOffer.offeredCredentialConfigurations.universityDegree).not.toHaveProperty(
+        'requireCryptographicHolderBinding'
+      )
 
       const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
         resolvedCredentialOffer,
@@ -1553,7 +1557,6 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     it('does not request the credential when the holder keeps requiring holder binding', async () => {
-      disableIssuerHolderBindingRequirement()
       const { holderTenant, resolvedCredentialOffer, tokenResponse, getIssuanceSessionState, endSessions } =
         await startIssuance({ universityDegree: universityDegreeCredentialConfigurationSupportedBearer })
 
@@ -1571,8 +1574,13 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     it('rejects the credential request when the holder opts out but the issuer still requires holder binding', async () => {
+      const { requireCryptographicHolderBinding: _, ...configurationWithoutOptOut } =
+        universityDegreeCredentialConfigurationSupportedBearer
       const { holderTenant, resolvedCredentialOffer, tokenResponse, getIssuanceSessionState, endSessions } =
-        await startIssuance({ universityDegree: universityDegreeCredentialConfigurationSupportedBearer })
+        await startIssuance(
+          { universityDegree: configurationWithoutOptOut },
+          { storedBeforeHolderBindingWasRequired: true }
+        )
 
       await expect(
         holderTenant.modules.openid4vc.holder.requestCredentials({
@@ -1582,7 +1590,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         })
       ).rejects.toThrow(/Missing required proof\(s\) in credential request/)
 
-      expect(await getIssuanceSessionState()).not.toEqual(OpenId4VcIssuanceSessionState.Completed)
+      expect(await getIssuanceSessionState()).toEqual(OpenId4VcIssuanceSessionState.Error)
 
       await endSessions()
     })
@@ -1597,13 +1605,17 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       ],
       [
         'a configuration with cryptographic_binding_methods_supported',
-        { ...universityDegreeCredentialConfigurationSupportedBearer, cryptographic_binding_methods_supported: ['jwk'] },
+        {
+          format: OpenId4VciCredentialFormatProfile.SdJwtDc,
+          vct: universityDegreeCredentialConfigurationSupportedBearer.vct,
+          cryptographic_binding_methods_supported: ['jwk'],
+        },
       ],
     ])(
       'throws before requesting %s without proof_types_supported when the holder opts out',
       async (_, configuration) => {
         const { holderTenant, resolvedCredentialOffer, tokenResponse, getIssuanceSessionState, endSessions } =
-          await startIssuance({ universityDegree: configuration })
+          await startIssuance({ universityDegree: configuration }, { storedBeforeHolderBindingWasRequired: true })
 
         await expect(
           holderTenant.modules.openid4vc.holder.requestCredentials({
@@ -1632,7 +1644,6 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     it('rejects an SD-JWT VC bound to a key that is received for a request without proofs', async () => {
-      disableIssuerHolderBindingRequirement()
       const { issuerTenant, holderTenant, resolvedCredentialOffer, tokenResponse, endSessions } = await startIssuance({
         universityDegree: universityDegreeCredentialConfigurationSupportedBearer,
       })
@@ -1663,7 +1674,6 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     it('only calls the credentialBindingResolver for the credential that requires a proof', async () => {
-      disableIssuerHolderBindingRequirement()
       const { issuerTenant, holderTenant, issuanceSession, resolvedCredentialOffer, tokenResponse, endSessions } =
         await startIssuance({
           bound: universityDegreeCredentialConfigurationSupportedJwkOnly,
