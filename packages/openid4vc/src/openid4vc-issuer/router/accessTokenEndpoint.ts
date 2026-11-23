@@ -170,7 +170,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             ...dpop,
             allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
             // First session config, fall back to the global token endpoint requirement.
-            required: issuanceSession.dpop?.required ?? config.dpopRequired !== false,
+            required: (issuanceSession.dpop?.required ?? config.dpopRequired) !== false,
           },
           expectedTxCode: issuanceSession.userPin,
           preAuthorizedCodeExpiresAt:
@@ -217,7 +217,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
             // A DPoP key supplied during authorization remains bound to the code. Without an early binding,
             // the token endpoint still enforces the session or global token endpoint requirement.
-            required: issuanceSession.dpop?.required ?? config.dpopRequired !== false,
+            required: (issuanceSession.dpop?.required ?? config.dpopRequired) !== false,
             expectedJwkThumbprint: issuanceSession.dpop?.dpopJkt,
           },
           pkce:
@@ -257,7 +257,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             // A DPoP-bound refresh token can only be used with a proof for the same key (RFC 9449 §5)
             required:
               parsedRefreshToken.dpop !== undefined ||
-              (issuanceSession.dpop?.required ?? config.dpopRequired !== false),
+              (issuanceSession.dpop?.required ?? config.dpopRequired) !== false,
             expectedJwkThumbprint: parsedRefreshToken.dpop?.jwkThumbprint,
           },
           refreshTokenExpiresAt: parsedRefreshToken?.expiresAt,

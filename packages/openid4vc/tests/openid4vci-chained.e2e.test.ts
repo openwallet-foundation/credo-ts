@@ -16,7 +16,11 @@ import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
 import { TenantSessionCoordinator } from '../../tenants/src/context/TenantSessionCoordinator'
-import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciCredentialRequestToCredentialMapper } from '../src'
+import type {
+  OpenId4VcDpopRequirement,
+  OpenId4VcIssuerModuleConfigOptions,
+  OpenId4VciCredentialRequestToCredentialMapper,
+} from '../src'
 import { OpenId4VcIssuanceSessionState, OpenId4VcModule } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import { OpenId4VcIssuerModuleConfig } from '../src/openid4vc-issuer/OpenId4VcIssuerModuleConfig'
@@ -1089,15 +1093,23 @@ describe('OpenId4Vc (Chained Authorization)', () => {
   const pushedAuthorizationRequestDpopTestCases: Array<{
     name: string
     issuerConfig: Pick<OpenId4VcIssuerModuleConfigOptions, 'dpopRequired'>
+    authorization?: { requireDpop: OpenId4VcDpopRequirement }
     dpopJkt?: string
     dpopHeaders?: Record<string, string>
-    expectedDpop?: { dpopJkt: string; required: boolean }
+    expectedDpop?: { dpopJkt?: string; required: OpenId4VcDpopRequirement }
     expectedStatus: number
   }> = [
     {
       name: 'when DPoP is required only at the token endpoint',
       issuerConfig: { dpopRequired: 'atTokenEndpoint' },
       expectedDpop: undefined,
+      expectedStatus: 201,
+    },
+    {
+      name: 'when the issuance session requires DPoP only at the token endpoint',
+      issuerConfig: { dpopRequired: true },
+      authorization: { requireDpop: 'atTokenEndpoint' },
+      expectedDpop: { required: 'atTokenEndpoint' },
       expectedStatus: 201,
     },
     {
@@ -1123,7 +1135,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
   ]
 
   it.each(pushedAuthorizationRequestDpopTestCases)('handles pushed authorization requests $name', async (options) => {
-    const { issuerConfig, dpopJkt, dpopHeaders, expectedDpop, expectedStatus } = options
+    const { issuerConfig, authorization, dpopJkt, dpopHeaders, expectedDpop, expectedStatus } = options
     issuer = (await createAgentFromModules(
       {
         inMemory: new InMemoryWalletModule(),
@@ -1180,6 +1192,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       authorizationCodeFlowConfig: {
         authorizationServerUrl: 'http://localhost:4747',
       },
+      authorization,
     })
 
     const response = await fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/par`, {

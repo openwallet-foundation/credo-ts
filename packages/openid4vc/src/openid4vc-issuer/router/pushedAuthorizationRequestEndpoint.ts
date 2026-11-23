@@ -120,7 +120,7 @@ export async function handlePushedAuthorizationRequest(
       ...parsedAuthorizationRequest.dpop,
       allowedSigningAlgs: internalAuthorizationServerMetadata.dpop_signing_alg_values_supported,
       // A per-session DPoP setting takes precedence over the global authorization request requirement.
-      required: issuanceSession.dpop?.required ?? config.dpopRequired === true,
+      required: (issuanceSession.dpop?.required ?? config.dpopRequired) === true,
     },
   })
 

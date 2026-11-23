@@ -1,6 +1,7 @@
 import type { Kms } from '@credo-ts/core'
 import type { Express } from 'express'
 import type {
+  OpenId4VcDpopRequirement,
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciDeferredCredentialRequestToCredentialMapper,
   OpenId4VciGetChainedAuthorizationRequestParameters,
@@ -106,7 +107,7 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
    *
    * @default true
    */
-  dpopRequired?: boolean | 'atTokenEndpoint'
+  dpopRequired?: OpenId4VcDpopRequirement
 
   /**
    * The DPoP signing algorithms supported by all issuers. Can be overridden per issuer with
@@ -453,7 +454,7 @@ export class OpenId4VcIssuerModuleConfig {
    *
    * @default true
    */
-  public get dpopRequired(): boolean | 'atTokenEndpoint' {
+  public get dpopRequired(): OpenId4VcDpopRequirement {
     return this.options.dpopRequired ?? true
   }
 

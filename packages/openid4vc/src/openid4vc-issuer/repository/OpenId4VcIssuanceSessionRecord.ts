@@ -14,17 +14,15 @@ import { type AccessTokenResponse, type AuthorizationServerMetadata, PkceCodeCha
 import { z } from 'zod'
 import type { OpenId4VciCredentialOfferPayload, VerifiedOpenId4VcCredentialHolderBinding } from '../../shared'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
-import type { OpenId4VciVersion } from '../OpenId4VcIssuerServiceOptions'
+import type { OpenId4VcDpopRequirement, OpenId4VciVersion } from '../OpenId4VcIssuerServiceOptions'
 
 export type OpenId4VcIssuanceSessionRecordTags = RecordTags<OpenId4VcIssuanceSessionRecord>
 
 export interface OpenId4VcIssuanceSessionDpop {
   /**
-   * Whether dpop is required. Can be set to false to override the
-   * global config
+   * Controls when DPoP is required for the issuance session.
    */
-  required: boolean
-
+  required: OpenId4VcDpopRequirement
   /**
    * JWK thumbprint of the dpop key. This is mostly used when a dpop key is bound
    * to the issuance session before the access token is created (which contains the dpop key)
