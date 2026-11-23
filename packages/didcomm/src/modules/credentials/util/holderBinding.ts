@@ -1,14 +1,14 @@
 import { type AgentContext, deleteHolderBinding, type Kms } from '@credo-ts/core'
 import type { DidCommCredentialExchangeRecord } from '../repository/DidCommCredentialExchangeRecord'
 
-const holderBindingDidsMetadataKey = '_internal/holderBindingDids'
+const exchangeHolderBindingDidsMetadataKey = '_internal/exchangeHolderBindingDids'
 const exchangeHolderBindingKeysMetadataKey = '_internal/exchangeHolderBindingKeys'
 
 // Per format key, as one exchange can issue a credential for each of several formats
 type HolderBindingDids = Record<string, string[]>
 
 function getHolderBindingDids(credentialExchangeRecord: DidCommCredentialExchangeRecord): HolderBindingDids {
-  return credentialExchangeRecord.metadata.get<HolderBindingDids>(holderBindingDidsMetadataKey) ?? {}
+  return credentialExchangeRecord.metadata.get<HolderBindingDids>(exchangeHolderBindingDidsMetadataKey) ?? {}
 }
 
 /**
@@ -22,7 +22,7 @@ export function addExchangeHolderBindingDids(
   if (dids.length === 0) return
   const holderBindingDids = getHolderBindingDids(credentialExchangeRecord)
   holderBindingDids[formatKey] = [...new Set([...(holderBindingDids[formatKey] ?? []), ...dids])]
-  credentialExchangeRecord.metadata.set(holderBindingDidsMetadataKey, holderBindingDids)
+  credentialExchangeRecord.metadata.set(exchangeHolderBindingDidsMetadataKey, holderBindingDids)
 }
 
 /**
@@ -36,9 +36,9 @@ export function takeExchangeHolderBindingDids(
   if (!dids) return []
 
   if (Object.keys(otherFormats).length > 0) {
-    credentialExchangeRecord.metadata.set(holderBindingDidsMetadataKey, otherFormats)
+    credentialExchangeRecord.metadata.set(exchangeHolderBindingDidsMetadataKey, otherFormats)
   } else {
-    credentialExchangeRecord.metadata.delete(holderBindingDidsMetadataKey)
+    credentialExchangeRecord.metadata.delete(exchangeHolderBindingDidsMetadataKey)
   }
   return dids
 }
