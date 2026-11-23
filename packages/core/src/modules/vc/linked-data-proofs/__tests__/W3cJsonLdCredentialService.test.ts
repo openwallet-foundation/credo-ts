@@ -1080,6 +1080,26 @@ describe('W3cJsonLdCredentialsService', () => {
         expect(result.isValid).toBe(isValid)
       })
 
+      it.each([
+        ['a query', () => `${issuerDidKey.did}?versionId=1#${issuerDidKey.publicJwk.fingerprint}`],
+        ['a path', () => `${issuerDidKey.did}/path#${issuerDidKey.publicJwk.fingerprint}`],
+        ['an empty fragment', () => `${issuerDidKey.did}#`],
+      ])('should fail when the credentialSubject id is a DID URL with %s', async (problem, getSubjectId) => {
+        const subjectId = getSubjectId()
+        const verifiablePresentation = await signPresentationForSubject(subjectId)
+
+        const result = await w3cJsonLdCredentialService.verifyPresentation(agentContext, {
+          presentation: verifiablePresentation as W3cJsonLdVerifiablePresentation,
+          challenge: 'challenge-holder-binding',
+        })
+
+        expect(result.isValid).toBe(false)
+        expect(result.validations.vcJs?.isValid).toBe(true)
+        expect(
+          result.validations.credentials?.[0].validations.credentialSubjectAuthentication?.error?.message
+        ).toContain(`credentialSubject.id '${subjectId}' must be a DID`)
+      })
+
       it('should verify a presentation when the signer (holder) is the credentialSubject', async () => {
         const verifiablePresentation = await signPresentationForSubject(issuerDidKey.did)
 

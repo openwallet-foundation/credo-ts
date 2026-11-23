@@ -1174,6 +1174,7 @@ describe('DifPresentationExchangeService', () => {
     // did:web resolves from the local did record, and its document can hold an Ed25519VerificationKey2020 method
     const holderDid = 'did:web:holder-2020.example.com'
     const holderKid = `${holderDid}#key-1`
+    const secondHolderKid = `${holderDid}#key-2`
     const challenge = 'challenge-123'
     const domain = 'verifier.example.com'
     let credentialRecord: W3cCredentialRecord
@@ -1187,14 +1188,25 @@ describe('DifPresentationExchangeService', () => {
         controller: holderDid,
         publicJwk: PublicJwk.fromPublicJwk(holderKey.publicJwk) as PublicJwk<Ed25519PublicJwk>,
       })
+      const secondHolderKey = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const secondVerificationMethod = getEd25519VerificationKey2020({
+        id: secondHolderKid,
+        controller: holderDid,
+        publicJwk: PublicJwk.fromPublicJwk(secondHolderKey.publicJwk) as PublicJwk<Ed25519PublicJwk>,
+      })
       await agent.dids.import({
         did: holderDid,
         didDocument: new DidDocumentBuilder(holderDid)
           .addContext('https://w3id.org/security/suites/ed25519-2020/v1')
           .addVerificationMethod(verificationMethod)
+          .addVerificationMethod(secondVerificationMethod)
           .addAuthentication(holderKid)
+          .addAuthentication(secondHolderKid)
           .build(),
-        keys: [{ didDocumentRelativeKeyId: '#key-1', kmsKeyId: holderKey.keyId }],
+        keys: [
+          { didDocumentRelativeKeyId: '#key-1', kmsKeyId: holderKey.keyId },
+          { didDocumentRelativeKeyId: '#key-2', kmsKeyId: secondHolderKey.keyId },
+        ],
       })
 
       const issuerKey = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
@@ -1219,7 +1231,10 @@ describe('DifPresentationExchangeService', () => {
       await agent.shutdown()
     })
 
-    const createPresentation = (proofTypes: { definition?: string[]; inputDescriptor?: string[] }) =>
+    const createPresentation = (
+      proofTypes: { definition?: string[]; inputDescriptor?: string[] },
+      record = credentialRecord
+    ) =>
       agent.dependencyManager.resolve(DifPresentationExchangeService).createPresentation(agent.context, {
         presentationDefinition: {
           id: 'ldp-definition',
@@ -1232,7 +1247,7 @@ describe('DifPresentationExchangeService', () => {
             },
           ],
         },
-        credentialsForInputDescriptor: { ldp: [{ claimFormat: ClaimFormat.LdpVc, credentialRecord }] },
+        credentialsForInputDescriptor: { ldp: [{ claimFormat: ClaimFormat.LdpVc, credentialRecord: record }] },
         challenge,
         domain,
       })
@@ -1260,6 +1275,30 @@ describe('DifPresentationExchangeService', () => {
       await expect(createPresentation(proofTypes)).rejects.toThrow(
         /No possible signature suite found for the given verification method\.\nVerification method type: Ed25519VerificationKey2020/
       )
+    })
+
+    test('signs with the key a DID URL credentialSubject.id names, as the bare DID, and verifies', async () => {
+      const issuerDid = credentialRecord.firstCredential.issuerId
+      const credential = await agent.w3cCredentials.signCredential({
+        format: ClaimFormat.LdpVc,
+        credential: new W3cCredential({
+          context: ['https://www.w3.org/2018/credentials/v1'],
+          type: ['VerifiableCredential'],
+          issuer: new W3cIssuer({ id: issuerDid }),
+          credentialSubject: new W3cCredentialSubject({ id: secondHolderKid }),
+          issuanceDate: w3cDate(Date.now()),
+        }),
+        proofType: 'Ed25519Signature2018',
+        verificationMethod: `${issuerDid}#${DidKey.fromDid(issuerDid).publicJwk.fingerprint}`,
+      })
+
+      const { verifiablePresentations } = await createPresentation({}, W3cCredentialRecord.fromCredential(credential))
+      const presentation = verifiablePresentations[0] as W3cJsonLdVerifiablePresentation
+
+      expect(presentation.proof).toMatchObject({ verificationMethod: secondHolderKid })
+      expect(presentation.holder).toBe(holderDid)
+      const verification = await agent.w3cCredentials.verifyPresentation({ presentation, challenge, domain })
+      expect(verification.isValid).toBe(true)
     })
   })
 })

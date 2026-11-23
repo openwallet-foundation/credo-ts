@@ -1124,6 +1124,20 @@ describe('W3cV2JwtCredentialService', () => {
             'the DID of the key that is the credentialSubject.id',
             () => ({ credentials: [{ subjectIds: [didBinding(holderDidKey).didUrl] }] }),
           ],
+          [
+            'the holder, ignoring another credentialSubject.id with a query as the verifier does',
+            () => ({
+              holder: holderDidKey.did,
+              credentials: [
+                {
+                  subjectIds: [
+                    holderDidKey.did,
+                    `${holderDidKey.did}?versionId=1#${holderDidKey.publicJwk.fingerprint}`,
+                  ],
+                },
+              ],
+            }),
+          ],
         ])('signs as %s, and the verifier accepts it', async (_, getSignerCase) => {
           const presentation = await signPresentationFor(getSignerCase())
 
@@ -1171,6 +1185,25 @@ describe('W3cV2JwtCredentialService', () => {
               error: `Unable to determine signer key for presentation holder '${holderDidKey.did}'. The presentation credentials are bound to a key that is not a locally controlled authentication verification method of the holder.`,
             }),
           ],
+          ...(['a query', 'a path', 'an empty fragment'] as const).map(
+            (problem) =>
+              [
+                `the credentialSubject.id has ${problem}`,
+                () => {
+                  const { did, publicJwk } = holderDidKey
+                  const subjectId = {
+                    'a query': `${did}?versionId=1#${publicJwk.fingerprint}`,
+                    'a path': `${did}/path#${publicJwk.fingerprint}`,
+                    'an empty fragment': `${did}#`,
+                  }[problem]
+                  return {
+                    holder: did,
+                    credentials: [{ subjectIds: [subjectId] }],
+                    error: `credentialSubject.id '${subjectId}' must be a DID`,
+                  }
+                },
+              ] as [string, () => SignerCase & { error: string }]
+          ),
           [
             'the credentials share no credentialSubject.id, without a holder',
             () => ({

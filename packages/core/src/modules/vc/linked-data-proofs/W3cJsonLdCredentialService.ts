@@ -14,7 +14,7 @@ import jsonld from '../jsonld/jsonld'
 import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
 import { assertControlledByDid } from '../resolveSigner'
-import { validateCredentialSubjectAuthentication, w3cDate } from '../util'
+import { getCredentialSubjectIdProblem, validateCredentialSubjectAuthentication, w3cDate } from '../util'
 import type {
   W3cJsonLdSignCredentialOptions,
   W3cJsonLdSignPresentationOptions,
@@ -283,7 +283,8 @@ export class W3cJsonLdCredentialService {
       // `@id` or another alias of `@id`.
       const [holders, credentialsSubjectIds] = await Promise.all([
         Promise.all(
-          // resolveSigner parses the proof verificationMethod as a DID URL, so it is absolute
+          // The raw proof verificationMethod is passed on, as validateCredentialSubjectAuthentication compares
+          // parsed DID references, and one with a path, a query or an empty fragment never matches
           Array.from(holderVerificationMethods, async (verificationMethodId) => ({
             signer: await this.resolveSigner(agentContext, verificationMethodId),
             verificationMethodId,
@@ -307,7 +308,8 @@ export class W3cJsonLdCredentialService {
           : {
               isValid: false,
               error: new CredoError(
-                'Presentation does not authenticate the credentialSubject of one or more included credentials'
+                credentialSubjectIds.map(getCredentialSubjectIdProblem).find((problem) => problem !== undefined) ??
+                  'Presentation does not authenticate the credentialSubject of one or more included credentials'
               ),
             }
 

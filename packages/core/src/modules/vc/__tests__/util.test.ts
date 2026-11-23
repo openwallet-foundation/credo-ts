@@ -47,6 +47,28 @@ describe('validateCredentialSubjectAuthentication', () => {
     expect(validateCredentialSubjectAuthentication([], signer)).toEqual({ isValid: true })
   })
 
+  // vc-js reports the proof verificationMethod as written, so a DID URL with a query or path can reach this check
+  test.each([
+    ['a query', `${did}?versionId=1#0`],
+    ['a path', `${did}/path#0`],
+    ['an empty fragment', `${did}#`],
+  ])('does not match a did url credential subject id with %s, even against the same id', (problem, subjectId) => {
+    const result = validateCredentialSubjectAuthentication([subjectId], {
+      signer: did,
+      verificationMethodId: subjectId,
+    })
+    expect(result.isValid).toBe(false)
+    expect(result.error?.message).toContain(`credentialSubject.id '${subjectId}' must be a DID`)
+  })
+
+  test('does not match a did url credential subject id against a verification method id with a query', () => {
+    const result = validateCredentialSubjectAuthentication([`${did}#0`], {
+      signer: did,
+      verificationMethodId: `${did}?versionId=1#0`,
+    })
+    expect(result.isValid).toBe(false)
+  })
+
   test('does not match a non-did identifier against the signer', () => {
     const result = validateCredentialSubjectAuthentication(['urn:uuid:0c07c1ce-57cb-41af-bef2-1b932b986873'], signer)
     expect(result.isValid).toBe(false)

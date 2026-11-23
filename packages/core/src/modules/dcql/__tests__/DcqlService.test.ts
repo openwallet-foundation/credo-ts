@@ -109,23 +109,35 @@ describe('DcqlService', () => {
   describe('createPresentation for ldp_vc', () => {
     const holderDid = 'did:example:holder'
     const verificationMethodId = `${holderDid}#key-1`
+    const secondVerificationMethodId = `${holderDid}#key-2`
     const publicJwk = PublicJwk.fromFingerprint(
       'z6MkvBpZTRb7tjuUF5AkmhG1JDV928hZbg5KAQJcogvhz9ax'
     ) as PublicJwk<Ed25519PublicJwk>
+    const secondPublicJwk = PublicJwk.fromFingerprint(
+      'z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV'
+    ) as PublicJwk<Ed25519PublicJwk>
 
-    const createPresentation = async (verificationMethodType: string) => {
+    const createPresentation = async (verificationMethodType: string, credentialSubjectId = holderDid) => {
       const getVerificationMethod =
         verificationMethodType === VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018
           ? getEd25519VerificationKey2018
           : getEd25519VerificationKey2020
       // Overriding the type of a 2020 method gives a Multikey method, which also uses publicKeyMultibase
-      const verificationMethod = new VerificationMethod({
-        ...getVerificationMethod({ id: verificationMethodId, controller: holderDid, publicJwk }),
-        type: verificationMethodType,
-      })
+      const [verificationMethod, secondVerificationMethod] = [
+        { id: verificationMethodId, publicJwk },
+        { id: secondVerificationMethodId, publicJwk: secondPublicJwk },
+      ].map(
+        ({ id, publicJwk }) =>
+          new VerificationMethod({
+            ...getVerificationMethod({ id, controller: holderDid, publicJwk }),
+            type: verificationMethodType,
+          })
+      )
       const didDocument = new DidDocumentBuilder(holderDid)
         .addVerificationMethod(verificationMethod)
+        .addVerificationMethod(secondVerificationMethod)
         .addAuthentication(verificationMethodId)
+        .addAuthentication(secondVerificationMethodId)
         .build()
 
       const signPresentation = vi.fn().mockResolvedValue({ encoded: {} })
@@ -164,7 +176,7 @@ describe('DcqlService', () => {
               ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
               credentialSubject: {
                 ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED.credentialSubject,
-                id: holderDid,
+                id: credentialSubjectId,
               },
             },
           },
@@ -199,6 +211,30 @@ describe('DcqlService', () => {
       await expect(createPresentation('Multikey')).rejects.toThrow(
         new DcqlError("No signature suite supports the verification method type 'Multikey'")
       )
+    })
+
+    test('signs with the key a DID URL credentialSubject.id names, as the bare DID', async () => {
+      const signPresentation = await createPresentation(
+        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+        secondVerificationMethodId
+      )
+
+      expect(signPresentation).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          verificationMethod: secondVerificationMethodId,
+          presentation: expect.objectContaining({ holder: holderDid }),
+        })
+      )
+    })
+
+    test.each([
+      ['a query', `${holderDid}?versionId=1#key-2`],
+      ['a path', `${holderDid}/path#key-2`],
+    ])('throws when the credentialSubject.id has %s', async (problem, credentialSubjectId) => {
+      await expect(
+        createPresentation(VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018, credentialSubjectId)
+      ).rejects.toThrow(`credentialSubject.id '${credentialSubjectId}' must be a DID`)
     })
   })
 
