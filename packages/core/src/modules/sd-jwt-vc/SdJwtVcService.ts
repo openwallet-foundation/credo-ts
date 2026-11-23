@@ -9,7 +9,11 @@ import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArrayEncoder } from '../../utils'
-import { deleteHolderBinding, getCredentialHolderBindingDids } from '../../utils/credentialHolderBinding'
+import {
+  deleteHolderBinding,
+  getCredentialHolderBindingDids,
+  getCredentialHolderBindingKeys,
+} from '../../utils/credentialHolderBinding'
 import { isAllowedHttpUrl } from '../../utils/uri'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { checkKmsKeyReferences, KeyManagementApi, PublicJwk } from '../kms'
@@ -40,7 +44,6 @@ import {
   getSdJwtHashingAlgorithm,
   getSdJwtSigner,
   getSdJwtVerifier,
-  getStoredHolderKmsKeyId,
   parseHolderBindingFromCredential,
   resolveDidUrl,
   resolveSigningPublicJwkFromDidUrl,
@@ -495,11 +498,11 @@ export class SdJwtVcService {
     const sdJwtVcRecord = await this.sdJwtVcRepository.getById(agentContext, id)
 
     if (options?.deleteAssociatedKeys) {
-      const holderKeys = sdJwtVcRecord.credentialInstances.flatMap(({ compactSdJwtVc, kmsKeyId, kmsBackend }) => {
-        const keyId = getStoredHolderKmsKeyId(decodeSdJwtVc(compactSdJwtVc).holder, kmsKeyId)
-        return keyId ? [{ keyId, kmsBackend }] : []
-      })
-      await deleteHolderBinding(agentContext, getCredentialHolderBindingDids(sdJwtVcRecord), holderKeys)
+      await deleteHolderBinding(
+        agentContext,
+        getCredentialHolderBindingDids(sdJwtVcRecord),
+        getCredentialHolderBindingKeys(sdJwtVcRecord)
+      )
     }
 
     await this.sdJwtVcRepository.delete(agentContext, sdJwtVcRecord)

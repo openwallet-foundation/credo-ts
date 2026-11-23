@@ -3,6 +3,7 @@ import {
   Agent,
   DidKey,
   getCredentialHolderBindingDids,
+  getCredentialHolderBindingKeys,
   type KeyDidCreateOptions,
   Kms,
   SdJwtVcRecord,
@@ -245,8 +246,13 @@ describe('OpenId4VcHolder', () => {
         credentialConfigurationIds: Object.entries(resolvedCredentialOffer.offeredCredentialConfigurations)
           .filter(([, configuration]) => configuration.format === 'dc+sd-jwt')
           .map(([id]) => id),
-        credentialBindingResolver: () => ({ method: 'jwk', keys: [holderKey] }),
+        credentialBindingResolver: () => ({ method: 'jwk', keys: [holderKey], createdForCredential: true }),
       })
+
+      // Stored so that deleting the credential with `deleteAssociatedKeys` also deletes the key
+      expect(getCredentialHolderBindingKeys(credentialResponse.credentials[0].record)).toEqual([
+        { keyId: holderKey.keyId, kmsBackend: holderKey.kmsBackend },
+      ])
 
       if (!credentialResponse.credentials[0]?.notificationId) throw new Error("Notification metadata wasn't returned")
 

@@ -1,6 +1,7 @@
 import {
   Agent,
   addCredentialHolderBindingDids,
+  addCredentialHolderBindingKeys,
   CredentialMultiInstanceUseMode,
   DidKey,
   type KeyDidCreateOptions,
@@ -307,25 +308,29 @@ describe('sd-jwt-vc end to end test', () => {
     nock.cleanAll()
   })
 
-  test('deletes the holder binding key with the credential only when asked', async () => {
-    const store = async () => {
+  test('deletes the holder binding key created for the credential only when asked', async () => {
+    const storeWithKey = async (createdForCredential: boolean) => {
       const { keyId } = await holder.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
-      const record = await holder.sdJwtVc.store({
-        record: new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVc, kmsKeyId: keyId }] }),
-      })
+      const record = new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVc, kmsKeyId: keyId }] })
+      if (createdForCredential) addCredentialHolderBindingKeys(record, [{ keyId }])
+      await holder.sdJwtVc.store({ record })
       return { record, keyId }
     }
 
-    const kept = await store()
+    const notCreatedForCredential = await storeWithKey(false)
+    await holder.sdJwtVc.deleteById(notCreatedForCredential.record.id, { deleteAssociatedKeys: true })
+    await expect(holder.kms.getPublicKey({ keyId: notCreatedForCredential.keyId })).resolves.toBeDefined()
+
+    const kept = await storeWithKey(true)
     await holder.sdJwtVc.deleteById(kept.record.id)
     await expect(holder.kms.getPublicKey({ keyId: kept.keyId })).resolves.toBeDefined()
 
-    const deleted = await store()
+    const deleted = await storeWithKey(true)
     await holder.sdJwtVc.deleteById(deleted.record.id, { deleteAssociatedKeys: true })
     await expect(holder.kms.getPublicKey({ keyId: deleted.keyId })).rejects.toThrow('not found')
   })
 
-  test('deletes the legacy holder binding key of a credential stored without a key id', async () => {
+  test('keeps the legacy holder binding key of a credential stored without a key id', async () => {
     const { privateJwk } = transformSeedToPrivateJwk({
       seed: TypedArrayEncoder.fromUtf8String('00000000000000000000000000000002'),
       type: { crv: 'Ed25519', kty: 'OKP' },
@@ -344,20 +349,23 @@ describe('sd-jwt-vc end to end test', () => {
     await holder.dependencyManager.resolve(SdJwtVcRepository).save(holder.context, record)
 
     await holder.sdJwtVc.deleteById(record.id, { deleteAssociatedKeys: true })
-    await expect(holder.kms.getPublicKey({ keyId })).rejects.toThrow('not found')
+    await expect(holder.kms.getPublicKey({ keyId })).resolves.toBeDefined()
   })
 
   test('deletes the binding keys of used instances with the credential', async () => {
     const createKey = () => holder.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
     const [first, second] = [await createKey(), await createKey()]
-    const record = await holder.sdJwtVc.store({
-      record: new SdJwtVcRecord({
-        credentialInstances: [
-          { compactSdJwtVc: simpleJwtVc, kmsKeyId: first.keyId, kmsBackend: first.backend },
-          { compactSdJwtVc: simpleJwtVc, kmsKeyId: second.keyId, kmsBackend: second.backend },
-        ],
-      }),
+    const record = new SdJwtVcRecord({
+      credentialInstances: [
+        { compactSdJwtVc: simpleJwtVc, kmsKeyId: first.keyId, kmsBackend: first.backend },
+        { compactSdJwtVc: simpleJwtVc, kmsKeyId: second.keyId, kmsBackend: second.backend },
+      ],
     })
+    addCredentialHolderBindingKeys(record, [
+      { keyId: first.keyId, kmsBackend: first.backend },
+      { keyId: second.keyId, kmsBackend: second.backend },
+    ])
+    await holder.sdJwtVc.store({ record })
 
     await useInstanceFromCredentialRecord({
       agentContext: holder.context,
