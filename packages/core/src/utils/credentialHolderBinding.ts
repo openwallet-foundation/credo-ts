@@ -10,6 +10,7 @@ import {
 import type { BaseRecordAny } from '../storage/BaseRecord'
 
 const holderBindingDidsMetadataKey = '_internal/holderBindingDids'
+const holderBindingKeysMetadataKey = '_internal/holderBindingKeys'
 
 /**
  * The DIDs that were created only to bind this credential, so deleting its holder binding also deletes them.
@@ -25,6 +26,27 @@ export function addCredentialHolderBindingDids(record: BaseRecordAny, dids: stri
   if (dids.length === 0) return
   const allDids = new Set([...getCredentialHolderBindingDids(record), ...dids])
   record.metadata.set(holderBindingDidsMetadataKey, { dids: [...allDids] })
+}
+
+/**
+ * The keys that were created only to bind this credential, so deleting its holder binding also deletes them.
+ */
+export function getCredentialHolderBindingKeys(record: BaseRecordAny): KmsKeyReference[] {
+  return record.metadata.get<{ keys: KmsKeyReference[] }>(holderBindingKeysMetadataKey)?.keys ?? []
+}
+
+/**
+ * Marks keys as created only to bind this credential.
+ */
+export function addCredentialHolderBindingKeys(record: BaseRecordAny, keys: KmsKeyReference[]) {
+  if (keys.length === 0) return
+  const allKeys = [...getCredentialHolderBindingKeys(record)]
+  for (const key of keys) {
+    if (!allKeys.some(({ keyId, kmsBackend }) => keyId === key.keyId && kmsBackend === key.kmsBackend)) {
+      allKeys.push({ keyId: key.keyId, kmsBackend: key.kmsBackend })
+    }
+  }
+  record.metadata.set(holderBindingKeysMetadataKey, { keys: allKeys })
 }
 
 /**

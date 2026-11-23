@@ -54,6 +54,14 @@ export interface OpenId4VcCredentialHolderDidBinding {
 export interface OpenId4VcCredentialHolderJwkBinding {
   method: 'jwk'
   keys: Kms.PublicJwk[]
+
+  /**
+   * Whether the keys were created only for this credential. The credential record then stores them, and deleting it
+   * with `deleteAssociatedKeys` deletes the keys. Don't set it for keys that a DID or another credential uses.
+   *
+   * @default false
+   */
+  createdForCredential?: boolean
 }
 
 export type VerifiedOpenId4VcCredentialHolderBinding = {
