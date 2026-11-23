@@ -1123,6 +1123,12 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       name: 'by default without an early DPoP binding',
       issuerConfig: {},
       expectedDpop: undefined,
+      expectedStatus: 201,
+    },
+    {
+      name: 'when DPoP is required during authorization',
+      issuerConfig: { dpopRequired: true },
+      expectedDpop: undefined,
       expectedStatus: 400,
     },
     {

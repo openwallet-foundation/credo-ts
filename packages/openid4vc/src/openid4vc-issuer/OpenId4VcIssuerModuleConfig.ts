@@ -105,7 +105,7 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
    * This value can be overridden per issuance session when creating a credential offer (`authorization.requireDpop`)
    * or in the `getDynamicIssuanceSession` callback (`requireDpop`).
    *
-   * @default true
+   * @default 'atTokenEndpoint'
    */
   dpopRequired?: OpenId4VcDpopRequirement
 
@@ -452,10 +452,10 @@ export class OpenId4VcIssuerModuleConfig {
   /**
    * Controls when DPoP is required for all issuance sessions.
    *
-   * @default true
+   * @default 'atTokenEndpoint'
    */
   public get dpopRequired(): OpenId4VcDpopRequirement {
-    return this.options.dpopRequired ?? true
+    return this.options.dpopRequired ?? 'atTokenEndpoint'
   }
 
   /**
