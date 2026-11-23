@@ -125,8 +125,10 @@ export {
 } from './utils'
 export {
   addCredentialHolderBindingDids,
+  addCredentialHolderBindingKeys,
   deleteHolderBinding,
   getCredentialHolderBindingDids,
+  getCredentialHolderBindingKeys,
 } from './utils/credentialHolderBinding'
 export type {
   CredentialMultiInstanceUseUpdateMode,

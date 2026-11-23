@@ -164,7 +164,9 @@ describe('Data Integrity link-secret binding injection', () => {
     test('rejects a credential without an issuer proof', async () => {
       const mocks = setup()
 
-      await expect(processCredential(mocks, [anonCredsProof])).rejects.toThrow('missing an issuer proof')
+      await expect(processCredential(mocks, [anonCredsProof])).rejects.toThrow(
+        'has no issuer proof next to the anoncreds proof'
+      )
       expect(mocks.provider.storeBoundCredential).not.toHaveBeenCalled()
     })
   })

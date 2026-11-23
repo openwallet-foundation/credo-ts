@@ -858,6 +858,19 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
     })
   })
 
+  test('deletes the jwk binding key created for the credential with the exchange', async () => {
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const jwk = Kms.PublicJwk.fromKmsKey(await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } }))
+    const { issuerCredentialRecord } = await offerAndBoundRequest({
+      jwk,
+      createdForCredential: true,
+      offerBinding: { algsSupported: ['EdDSA'], didMethodsSupported: [], jwkSupported: true },
+    })
+
+    await deleteExchangeHolderBinding(agentContext, issuerCredentialRecord)
+    await expect(kms.getPublicKey({ keyId: jwk.keyId })).rejects.toThrow('not found')
+  })
+
   test('acceptOffer rejects a jwk binding proof when the offer does not set jwk_supported', async () => {
     await expect(offerAndBoundRequest({ jwk: holderKdv.publicJwk })).rejects.toThrow(
       "The offer does not accept a 'jwk' binding proof"
@@ -912,11 +925,13 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
   async function offerAndBoundRequest({
     kid,
     jwk,
+    createdForCredential,
     offerBinding = { algsSupported: ['EdDSA'], didMethodsSupported: ['key', 'peer'] },
     tamperHolderOffer = (bindingMethod) => bindingMethod,
   }: {
     kid?: string
     jwk?: Kms.PublicJwk
+    createdForCredential?: boolean
     offerBinding?: { algsSupported?: string[]; didMethodsSupported?: string[]; jwkSupported?: boolean }
     tamperHolderOffer?: (bindingMethod: JsonObject) => JsonObject
   }) {
@@ -954,7 +969,11 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
             didcomm_signed_attachment: tamperHolderOffer(offer.binding_method.didcomm_signed_attachment),
           },
         }),
-        credentialFormats: { w3cV2SdJwt: { didCommSignedAttachment: jwk ? { jwk } : { kid: kid as string } } },
+        credentialFormats: {
+          w3cV2SdJwt: {
+            didCommSignedAttachment: jwk ? { jwk, createdForCredential } : { kid: kid as string, createdForCredential },
+          },
+        },
       })
 
     return { issuerCredentialRecord, offerAttachment, requestAttachment, requestAppendAttachments }

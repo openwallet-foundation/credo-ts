@@ -112,6 +112,12 @@ export interface OpenId4VciDeferredCredentialResponse {
   holderBindingDids?: string[]
 
   /**
+   * The keys the binding resolver created for this credential (`createdForCredential`). Pass them on when retrieving
+   * the deferred credentials, so the credential record stores them.
+   */
+  holderBindingKeys?: Kms.KmsKeyReference[]
+
+  /**
    * The `credentialResponseEncryption` value of the credential request. Pass it on when retrieving the
    * deferred credentials.
    */
@@ -406,6 +412,11 @@ export interface OpenId4VciDeferredCredentialRequestOptions {
    * The DIDs created for this credential, returned in the deferred credential return value.
    */
   holderBindingDids?: string[]
+
+  /**
+   * The keys created for this credential, returned in the deferred credential return value.
+   */
+  holderBindingKeys?: Kms.KmsKeyReference[]
 
   /**
    * Whether to request an encrypted deferred credential response, see the `credentialResponseEncryption`

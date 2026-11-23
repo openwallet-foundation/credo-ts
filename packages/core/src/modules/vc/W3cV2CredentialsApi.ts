@@ -32,8 +32,8 @@ export class W3cV2CredentialsApi {
   /**
    * Delete a credential record by id.
    *
-   * @param options.deleteAssociatedKeys also delete the DIDs marked as created for the credential
-   * (`createdForCredential`) with their keys. Defaults to `false`.
+   * @param options.deleteAssociatedKeys also delete the holder keys and DIDs marked as created for the credential
+   * (`createdForCredential`), with the keys of the DIDs. Defaults to `false`.
    */
   public async deleteById(id: string, options?: { deleteAssociatedKeys?: boolean }) {
     return this.w3cV2CredentialService.removeCredentialRecord(this.agentContext, id, options)

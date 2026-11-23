@@ -146,7 +146,7 @@ export class DidCommConnectionService {
 
       if (!outOfBandRecord) {
         throw new CredoError(
-          `No out of band record found for connection-less message with thread id ${message.threadId}. Use the out of band API to start a connection-less exchange.`
+          `No out of band record found for connection-less message with thread id ${message.threadId}. Connection-less exchanges need their out of band record for as long as messages are expected, so it may have been deleted. Use the out of band API to start a connection-less exchange.`
         )
       }
 

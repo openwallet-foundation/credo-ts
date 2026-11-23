@@ -279,10 +279,16 @@ describe('DidCommRevocationNotificationService', () => {
       )
     }
 
+    // Errors of the connection-less sender checks are wrapped with the credential exchange id
     const expectRefused = (reason: string) => {
       expect(warnSpy).toHaveBeenCalledWith(
         'Failed to process revocation notification message',
-        expect.objectContaining({ error: expect.objectContaining({ message: expect.stringContaining(reason) }) })
+        expect.objectContaining({
+          error: expect.objectContaining({
+            message: expect.stringContaining(`credential exchange '${credentialRecord.id}'`),
+            cause: expect.objectContaining({ message: expect.stringContaining(reason) }),
+          }),
+        })
       )
       expect(credentialRecord.revocationNotification).toBeUndefined()
       expect(credentialRepository.update).not.toHaveBeenCalled()
@@ -390,7 +396,15 @@ describe('DidCommRevocationNotificationService', () => {
 
       await process({ senderVerkey: issuerVerkey })
 
-      expectRefused('No credential message found')
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Failed to process revocation notification message',
+        expect.objectContaining({
+          error: expect.objectContaining({ message: expect.stringContaining('No credential message found') }),
+        })
+      )
+      expect(credentialRecord.revocationNotification).toBeUndefined()
+      expect(credentialRepository.update).not.toHaveBeenCalled()
+      expect(eventListenerMock).not.toHaveBeenCalled()
     })
 
     test('does not perform connectionless sender-key checks for connected messages', async () => {

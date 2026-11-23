@@ -961,7 +961,8 @@ function withoutAnonCredsProof(credentialJson: JsonObject) {
   const proofs = asArray(credentialJson.proof as JsonObject | JsonObject[]).filter(
     (proof) => proof.cryptosuite !== ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE
   )
-  if (proofs.length === 0) throw new CredoError('Credential bound to a DID is missing an issuer proof')
+  if (proofs.length === 0)
+    throw new CredoError('Credential bound to a DID has no issuer proof next to the anoncreds proof')
 
   return JsonTransformer.fromJSON({ ...credentialJson, proof: proofs }, W3cJsonLdVerifiableCredential)
 }

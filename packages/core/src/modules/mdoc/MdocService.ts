@@ -1,7 +1,11 @@
 import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
-import { deleteHolderBinding, getCredentialHolderBindingDids } from '../../utils/credentialHolderBinding'
+import {
+  deleteHolderBinding,
+  getCredentialHolderBindingDids,
+  getCredentialHolderBindingKeys,
+} from '../../utils/credentialHolderBinding'
 import { canUseInstanceFromCredentialRecord } from '../../utils/credentialUse'
 import { CredentialMultiInstanceUseMode } from '../../utils/credentialUseTypes'
 import { checkKmsKeyReferences, KeyManagementApi } from '../kms'
@@ -307,12 +311,11 @@ export class MdocService {
     const mdocRecord = await this.mdocRepository.getById(agentContext, id)
 
     if (options?.deleteAssociatedKeys) {
-      // Records stored before the key id was stored use the legacy key id
-      const holderKeys = mdocRecord.credentialInstances.map(({ issuerSignedBase64Url, kmsKeyId, kmsBackend }) => ({
-        keyId: kmsKeyId ?? Mdoc.fromBase64Url(issuerSignedBase64Url).deviceKey.legacyKeyId,
-        kmsBackend,
-      }))
-      await deleteHolderBinding(agentContext, getCredentialHolderBindingDids(mdocRecord), holderKeys)
+      await deleteHolderBinding(
+        agentContext,
+        getCredentialHolderBindingDids(mdocRecord),
+        getCredentialHolderBindingKeys(mdocRecord)
+      )
     }
 
     await this.mdocRepository.delete(agentContext, mdocRecord)

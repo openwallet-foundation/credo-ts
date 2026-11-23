@@ -30,7 +30,18 @@ export interface DidCommSignedAttachmentCredentialRequestOptions {
 
 export type DidCommSignedAttachmentWithJwkCredentialRequestOptions = XOR<
   DidCommSignedAttachmentCredentialRequestOptions,
-  { alg?: string; jwk: Kms.PublicJwk }
+  {
+    alg?: string
+    jwk: Kms.PublicJwk
+
+    /**
+     * Whether the key of `jwk` was created only for this credential. The credential record then stores it, and
+     * deleting the credential with `deleteAssociatedKeys` deletes the key.
+     *
+     * @default false
+     */
+    createdForCredential?: boolean
+  }
 >
 
 export interface DidCommSignedAttachmentOfferBindingMethodOptions {

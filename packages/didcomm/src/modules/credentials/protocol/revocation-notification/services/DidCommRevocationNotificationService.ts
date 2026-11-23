@@ -107,13 +107,20 @@ export class DidCommRevocationNotificationService {
       throw new CredoError(`No request message found for credential record with id '${credentialExchangeRecord.id}'`)
     }
 
-    await agentContext.dependencyManager
-      .resolve(DidCommConnectionService)
-      .assertConnectionOrOutOfBandExchange(messageContext, {
-        lastReceivedMessage: credentialMessage,
-        lastSentMessage: requestMessage,
-        expectedConnectionId: credentialExchangeRecord.connectionId,
-      })
+    try {
+      await agentContext.dependencyManager
+        .resolve(DidCommConnectionService)
+        .assertConnectionOrOutOfBandExchange(messageContext, {
+          lastReceivedMessage: credentialMessage,
+          lastSentMessage: requestMessage,
+          expectedConnectionId: credentialExchangeRecord.connectionId,
+        })
+    } catch (error) {
+      throw new CredoError(
+        `Revocation notification for credential exchange '${credentialExchangeRecord.id}' failed the connection-less sender checks`,
+        { cause: error }
+      )
+    }
   }
 
   /**

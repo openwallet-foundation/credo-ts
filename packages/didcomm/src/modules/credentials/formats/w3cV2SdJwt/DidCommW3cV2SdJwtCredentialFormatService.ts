@@ -1,6 +1,7 @@
 import type { AgentContext, JsonObject, SdJwtVcHolderBinding, SingleOrArray } from '@credo-ts/core'
 import {
   addCredentialHolderBindingDids,
+  addCredentialHolderBindingKeys,
   ClaimFormat,
   CredoError,
   deepEquality,
@@ -27,7 +28,12 @@ import {
 } from '../../util/didCommSignedAttachment'
 import type { DidCommSignedAttachmentCredentialRequestBindingProof } from '../../util/didCommSignedAttachmentBinding'
 import { findSentOfferAttachment, getFormatDataAttachment } from '../../util/formatData'
-import { addExchangeHolderBindingDids, takeExchangeHolderBindingDids } from '../../util/holderBinding'
+import {
+  addExchangeHolderBindingDids,
+  addExchangeHolderBindingKeys,
+  takeExchangeHolderBindingDids,
+  takeExchangeHolderBindingKeys,
+} from '../../util/holderBinding'
 import { selectJwaSignatureAlgorithm } from '../../util/signatureAlgorithm'
 import { getIssuerVerificationMethod } from '../../util/verificationMethod'
 import type { DidCommCredentialFormatService } from '../DidCommCredentialFormatService'
@@ -205,9 +211,14 @@ export class DidCommW3cV2SdJwtCredentialFormatService
       }
 
       if (didCommSignedAttachmentOptions.createdForCredential) {
-        addExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey, [
-          parseDid(didCommSignedAttachmentOptions.kid).did,
-        ])
+        const { jwk, kid } = didCommSignedAttachmentOptions
+        if (jwk) {
+          addExchangeHolderBindingKeys(credentialExchangeRecord, this.formatKey, [
+            { keyId: jwk.keyId, kmsBackend: jwk.kmsBackend },
+          ])
+        } else {
+          addExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey, [parseDid(kid).did])
+        }
       }
     }
 
@@ -398,6 +409,10 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     addCredentialHolderBindingDids(
       credentialRecord,
       takeExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey)
+    )
+    addCredentialHolderBindingKeys(
+      credentialRecord,
+      takeExchangeHolderBindingKeys(credentialExchangeRecord, this.formatKey)
     )
     const record = await w3cV2CredentialService.storeCredential(agentContext, { record: credentialRecord })
 

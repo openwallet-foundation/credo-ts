@@ -179,7 +179,8 @@ export interface DeleteCredentialOptions {
 
   /**
    * Also delete the holder binding of the associated credentials, such as the DIDs marked `createdForCredential` or
-   * `didCreatedForCredential` and their keys. For a credential that wasn't received, deletes the DIDs marked for it.
+   * `didCreatedForCredential` and their keys. For a credential that wasn't received, deletes the DIDs and keys marked
+   * for it.
    *
    * @default false
    */
