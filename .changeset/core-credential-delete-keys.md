@@ -2,7 +2,9 @@
 '@credo-ts/core': patch
 ---
 
-`sdJwtVc.deleteById`, `mdoc.deleteById`, `w3cCredentials.deleteById` and `w3cV2Credentials.deleteById` take a `deleteAssociatedKeys` option. It deletes the holder binding keys of the credential (`credentialInstances[].kmsKeyId`), including those of instances that were already used. For instances stored without a `kmsKeyId` it deletes the key under the legacy key id. It also deletes the DID records and keys of DIDs that were created only for the credential, which OpenID4VCI and DIDComm issuance store on the record when you set `createdForCredential`. The option is off by default.
+`sdJwtVc.deleteById`, `mdoc.deleteById`, `w3cCredentials.deleteById` and `w3cV2Credentials.deleteById` take a `deleteAssociatedKeys` option. It deletes the holder keys and DIDs stored on the credential record as created only for that credential, with the keys of those DIDs. The OpenID4VCI holder and the DIDComm credential formats store them on the record when the holder binding has `createdForCredential`. Other keys and DIDs are kept, including those of records without this information, such as records stored before this change. The option is off by default.
+
+Deletion doesn't check whether another credential or a DID uses a stored key or DID, so `createdForCredential` must only be set on a binding used by one credential.
 
 ```ts
 await agent.sdJwtVc.deleteById(recordId, { deleteAssociatedKeys: true })

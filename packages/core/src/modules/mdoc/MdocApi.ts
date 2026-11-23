@@ -77,8 +77,8 @@ export class MdocApi {
   /**
    * Delete a credential record by id.
    *
-   * @param options.deleteAssociatedKeys also delete the device keys (`credentialInstances[].kmsKeyId`) of the
-   * credential. Defaults to `false`.
+   * @param options.deleteAssociatedKeys also delete the device keys marked as created for the credential
+   * (`createdForCredential`). Defaults to `false`.
    */
   public async deleteById(id: string, options?: { deleteAssociatedKeys?: boolean }) {
     return await this.mdocService.deleteById(this.agentContext, id, options)
