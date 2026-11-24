@@ -17,6 +17,10 @@ type WebSocket = InstanceType<AgentDependencies['WebSocketClass']>
 interface TransportTableEntry {
   socket: WebSocket
   connectionId?: string
+  opening: Promise<WebSocket>
+  rejectOpening: (error: Error) => void
+  pendingSends: number
+  closeAfterSend: boolean
 }
 
 export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
@@ -43,7 +47,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     this.isActive = false
 
     for (const socketId of [...this.transportTable.keys()]) {
-      this.dropSocket(socketId)
+      this.dropSocket(socketId, 'Outbound transport is not active. Not sending message.')
     }
   }
 
@@ -62,16 +66,30 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     }
 
     const socketId = `${endpoint}-${connectionId}`
-    const isNewSocket = this.transportTable.get(socketId)?.socket.readyState !== this.WebSocketClass.OPEN
-    const socket = await this.resolveSocket({ socketId, endpoint, connectionId })
+    const entry = this.resolveSocket({
+      socketId,
+      endpoint,
+      connectionId,
+      responseRequested: outboundPackage.responseRequested,
+    })
 
-    // If the socket was created for this message and we don't have return routing enabled
-    // We can close the socket as it shouldn't return messages anymore
-    // make sure to use the socket in a manner that is compliant with the https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
-    // (React Native) and https://github.com/websockets/ws (NodeJs)
-    socket.send(JsonEncoder.toUint8Array(payload))
-    if (isNewSocket && !outboundPackage.responseRequested) {
-      socket.close()
+    entry.pendingSends++
+    try {
+      const socket = await entry.opening
+      if (socket.readyState !== this.WebSocketClass.OPEN) {
+        throw new CredoError('Socket is not open.')
+      }
+
+      socket.send(JsonEncoder.toUint8Array(payload))
+    } finally {
+      entry.pendingSends--
+      // If the socket was created for these messages and none of them has return routing enabled
+      // We can close the socket as it shouldn't return messages anymore
+      // make sure to use the socket in a manner that is compliant with the https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
+      // (React Native) and https://github.com/websockets/ws (NodeJs)
+      if (entry.closeAfterSend && entry.pendingSends === 0 && entry.socket.readyState === this.WebSocketClass.OPEN) {
+        entry.socket.close()
+      }
     }
   }
 
@@ -80,17 +98,18 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     for (const [socketId, entry] of [...this.transportTable]) {
       if (entry.connectionId !== connectionId) continue
 
-      this.dropSocket(socketId)
+      this.dropSocket(socketId, 'WebSocket was closed before it opened')
       closed = true
     }
     return closed
   }
 
-  private dropSocket(socketId: string) {
+  private dropSocket(socketId: string, reason: string) {
     const entry = this.transportTable.get(socketId)
     if (!entry) return
 
     this.transportTable.delete(socketId)
+    entry.rejectOpening(new CredoError(reason))
     this.closeSocket(socketId, entry)
   }
 
@@ -123,43 +142,33 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     }
   }
 
-  private async resolveSocket({
+  private resolveSocket({
     socketId,
     endpoint,
     connectionId,
+    responseRequested,
   }: {
     socketId: string
-    endpoint?: string
+    endpoint: string
     connectionId?: string
-  }) {
-    // Reuse the socket if it's still open, otherwise replace it with a new connection
-    let socket = this.transportTable.get(socketId)?.socket
-
-    if (!socket || socket.readyState !== this.WebSocketClass.OPEN) {
-      if (!endpoint) {
-        throw new CredoError(`Missing endpoint. I don't know how and where to send the message.`)
-      }
-      socket = await this.createSocketConnection({
-        endpoint,
-        socketId,
-        connectionId,
-      })
-
-      // stop() could not close this socket, as it was still connecting
-      if (!this.isActive) {
-        this.closeSocket(socketId, { socket, connectionId })
-        throw new CredoError('Outbound transport is not active. Not sending message.')
-      }
-
-      this.transportTable.set(socketId, { socket, connectionId })
-      this.listenOnWebSocketMessages(socket)
+    responseRequested?: boolean
+  }): TransportTableEntry {
+    // Reuse the socket if it's open or still connecting, otherwise replace it with a new connection
+    const existing = this.transportTable.get(socketId)
+    const { OPEN, CONNECTING } = this.WebSocketClass
+    if (existing && (existing.socket.readyState === OPEN || existing.socket.readyState === CONNECTING)) {
+      if (responseRequested) existing.closeAfterSend = false
+      return existing
     }
 
-    if (socket.readyState !== this.WebSocketClass.OPEN) {
-      throw new CredoError('Socket is not open.')
-    }
-
-    return socket
+    const entry = this.createSocketConnection({
+      endpoint,
+      socketId,
+      connectionId,
+      closeAfterSend: !responseRequested,
+    })
+    this.transportTable.set(socketId, entry)
+    return entry
   }
 
   // NOTE: Because this method is passed to the event handler this must be a lambda method
@@ -193,20 +202,26 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     socketId,
     endpoint,
     connectionId,
+    closeAfterSend,
   }: {
     socketId: string
     endpoint: string
     connectionId?: string
-  }): Promise<WebSocket> {
-    return new Promise((resolve, reject) => {
-      this.logger.debug(`Connecting to WebSocket ${endpoint}`)
-      const socket = new this.WebSocketClass(endpoint)
-      const eventEmitter = this.agentContext.dependencyManager.resolve(EventEmitter)
-      let openedAt: number | undefined
+    closeAfterSend: boolean
+  }): TransportTableEntry {
+    this.logger.debug(`Connecting to WebSocket ${endpoint}`)
+    const socket = new this.WebSocketClass(endpoint)
+    const eventEmitter = this.agentContext.dependencyManager.resolve(EventEmitter)
+    let openedAt: number | undefined
+    let rejectOpening!: (error: Error) => void
+
+    const opening = new Promise<WebSocket>((resolve, reject) => {
+      rejectOpening = reject
 
       socket.onopen = () => {
         openedAt = Date.now()
         this.logger.debug(`Successfully connected to WebSocket ${endpoint}`)
+        this.listenOnWebSocketMessages(socket)
         resolve(socket)
 
         eventEmitter.emit<DidCommOutboundWebSocketOpenedEvent>(this.agentContext, {
@@ -222,6 +237,9 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
         this.logger.debug(`Error while connecting to WebSocket ${endpoint}`, {
           error,
         })
+        if (openedAt === undefined && this.transportTable.get(socketId)?.socket === socket) {
+          this.transportTable.delete(socketId)
+        }
         reject(error)
       }
 
@@ -253,5 +271,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
         })
       }
     })
+
+    return { socket, connectionId, opening, rejectOpening, pendingSends: 0, closeAfterSend }
   }
 }
