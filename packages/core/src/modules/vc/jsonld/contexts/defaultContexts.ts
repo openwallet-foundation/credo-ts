@@ -6,6 +6,7 @@ import { DID_V1 } from './did_v1'
 import { ED25519_2020_V1 } from './ed25519_2020_v1'
 import { ED25519_V1 } from './ed25519_v1'
 import { JWK_V1 } from './jwk_v1'
+import { JWS_2020_V1 } from './jws_2020_v1'
 import { LINKED_VP_V1 } from './linkedvp_v1'
 import { MULTIKEY_V1 } from './multikey_v1'
 import { ODRL } from './odrl'
@@ -27,6 +28,7 @@ export const DEFAULT_CONTEXTS = {
   'https://w3id.org/security/suites/secp256k1-2019/v1': SECP256K1_V1,
   'https://w3id.org/security/multikey/v1': MULTIKEY_V1,
   'https://w3id.org/security/jwk/v1': JWK_V1,
+  'https://w3id.org/security/suites/jws-2020/v1': JWS_2020_V1,
   'https://www.w3.org/2018/credentials/v1': CREDENTIALS_V1,
   'https://www.w3.org/ns/credentials/v2': CREDENTIALS_V2,
   'https://www.w3.org/ns/cid/v1': CID_V1,

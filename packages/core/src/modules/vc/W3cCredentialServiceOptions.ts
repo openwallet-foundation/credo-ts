@@ -101,6 +101,13 @@ export interface W3cJwtVerifyCredentialOptions extends W3cVerifyCredentialOption
 export interface W3cJsonLdVerifyCredentialOptions extends W3cVerifyCredentialOptionsBase {
   credential: W3cJsonLdVerifiableCredential
   proofPurpose?: ProofPurpose
+  /**
+   * Verify even if some terms of the document are not defined by any `@context`. Such terms are dropped from the data the
+   * proof signs, so their values are NOT protected by the signature and can be changed without invalidating it. They are
+   * listed in `validations.vcJs.undefinedTerms` of the result. This exists to check credentials issued by software that
+   * accepts such documents (Veramo does); leave it off for anything you issue.
+   */
+  allowUndefinedTerms?: boolean
 }
 
 export interface W3cCreatePresentationOptions {
@@ -198,6 +205,13 @@ export interface W3cJwtVerifyPresentationOptions extends W3cVerifyPresentationOp
 export interface W3cJsonLdVerifyPresentationOptions extends W3cVerifyPresentationOptionsBase {
   presentation: W3cJsonLdVerifiablePresentation
   purpose?: ProofPurpose
+  /**
+   * Verify even if some terms of the document are not defined by any `@context`. Such terms are dropped from the data the
+   * proof signs, so their values are NOT protected by the signature and can be changed without invalidating it. They are
+   * listed in `validations.vcJs.undefinedTerms` of the result. This exists to check credentials issued by software that
+   * accepts such documents (Veramo does); leave it off for anything you issue.
+   */
+  allowUndefinedTerms?: boolean
 }
 
 export type W3cStoreCredentialOptions = {

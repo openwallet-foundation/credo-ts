@@ -1,3 +1,4 @@
 export * from './Ed25519Signature2018'
 export * from './Ed25519Signature2020'
+export * from './JsonWebSignature2020'
 export * from './JwsLinkedDataSignature'
