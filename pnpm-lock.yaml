@@ -55,8 +55,8 @@ catalogs:
       specifier: ^2.3.2
       version: 2.3.2
     '@stablelib/ed25519':
-      specifier: ^2.0.2
-      version: 2.1.0
+      specifier: ^2.1.1
+      version: 2.1.1
     '@types/express':
       specifier: ^5.0.6
       version: 5.0.6
@@ -521,7 +521,7 @@ importers:
         version: link:../core
       '@stablelib/ed25519':
         specifier: 'catalog:'
-        version: 2.1.0
+        version: 2.1.1
       buffer:
         specifier: ^6.0.3
         version: 6.0.3
@@ -609,7 +609,7 @@ importers:
         version: 0.33.0
       '@stablelib/ed25519':
         specifier: 'catalog:'
-        version: 2.1.0
+        version: 2.1.1
       '@types/events':
         specifier: ^3.0.3
         version: 3.0.3
@@ -878,8 +878,8 @@ importers:
         specifier: 'catalog:'
         version: 0.3.0
       '@stablelib/ed25519':
-        specifier: ^2.0.2
-        version: 2.1.0
+        specifier: 'catalog:'
+        version: 2.1.1
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
@@ -3819,8 +3819,8 @@ packages:
   '@stablelib/binary@2.0.1':
     resolution: {integrity: sha512-U9iAO8lXgEDONsA0zPPSgcf3HUBNAqHiJmSHgZz62OvC3Hi2Bhc5kTnQ3S1/L+sthDTHtCMhcEiklmIly6uQ3w==}
 
-  '@stablelib/ed25519@2.1.0':
-    resolution: {integrity: sha512-8GLWoJur9nJiErABKHs5MjceSiYJJ2n8QP9k8Q5x6GWU2y5oAQ6qzPh8kCgQy5aHlUxcmRA1frQ5Gu2bHoIDPw==}
+  '@stablelib/ed25519@2.1.1':
+    resolution: {integrity: sha512-A4VE8ylbvQANsl0M2HaS5LD7il0orXuqRzkky3lijJ+efcU9b+GrllOzQt/sxsJZz7IbeRzh4DSzEs9FtNSX2g==}
 
   '@stablelib/hash@2.0.0':
     resolution: {integrity: sha512-u3WPSqGido8lwJuMcrBgM5K54LrPGhkWAdtsyccf7dGsLixAZUds77zOAbu7bvKPwQlmoByH0txBi5rTmEKuHg==}
@@ -3831,8 +3831,8 @@ packages:
   '@stablelib/random@2.0.1':
     resolution: {integrity: sha512-W6GAtXEEs7r+dSbuBsvoFmlyL3gLxle41tQkjKu17dDWtDdjhVUbtRfRCQcCUeczwkgjQxMPopgwYEvxXtHXGw==}
 
-  '@stablelib/sha512@2.0.1':
-    resolution: {integrity: sha512-DUNe5cbnoH3sSIN+MG04RvTCLXtkbyy/SnQxiNO+GgF/KSXkkUSlF6mUVvCUdZBZ2X3NgogR+tAvaRSn8wxnLw==}
+  '@stablelib/sha512@2.0.2':
+    resolution: {integrity: sha512-GXsvhU3Q0EA+aXEy1f/misPZVOrgJQeKBaI9x7sp9ipjyv1zZpRrjh1hmHnfzsqFKI01SF3Ojh6JBdxbQYHc+A==}
 
   '@stablelib/wipe@2.0.1':
     resolution: {integrity: sha512-1eU2K9EgOcV4qc9jcP6G72xxZxEm5PfeI5H55l08W95b4oRJaqhmlWRc4xZAm6IVSKhVNxMi66V67hCzzuMTAg==}
@@ -8689,7 +8689,7 @@ snapshots:
       '@cosmjs/stargate': 0.36.2
       '@cosmjs/tendermint-rpc': 0.36.2
       '@cosmjs/utils': 0.36.2
-      '@stablelib/ed25519': 2.1.0
+      '@stablelib/ed25519': 2.1.1
       '@types/secp256k1': 4.0.7
       cosmjs-types: 0.10.1
       did-jwt: 8.0.18
@@ -10923,10 +10923,10 @@ snapshots:
     dependencies:
       '@stablelib/int': 2.0.1
 
-  '@stablelib/ed25519@2.1.0':
+  '@stablelib/ed25519@2.1.1':
     dependencies:
       '@stablelib/random': 2.0.1
-      '@stablelib/sha512': 2.0.1
+      '@stablelib/sha512': 2.0.2
       '@stablelib/wipe': 2.0.1
 
   '@stablelib/hash@2.0.0': {}
@@ -10938,7 +10938,7 @@ snapshots:
       '@stablelib/binary': 2.0.1
       '@stablelib/wipe': 2.0.1
 
-  '@stablelib/sha512@2.0.1':
+  '@stablelib/sha512@2.0.2':
     dependencies:
       '@stablelib/binary': 2.0.1
       '@stablelib/hash': 2.0.0
