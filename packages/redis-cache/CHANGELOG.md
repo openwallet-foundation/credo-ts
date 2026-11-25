@@ -1,5 +1,12 @@
 # @credo-ts/redis-cache
 
+## 0.7.6
+
+### Patch Changes
+
+- Updated dependencies [9863c11]
+  - @credo-ts/core@0.7.6
+
 ## 0.7.5
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.6
+
+### Patch Changes
+
+- 9863c11: Require `@stablelib/ed25519` `^2.1.1`, which fixes Ed25519 signature malleability ([GHSA-x3ff-w252-2g7j](https://github.com/advisories/GHSA-x3ff-w252-2g7j)) in versions up to 2.0.2.
+
 ## 0.7.5
 
 ### Patch Changes
