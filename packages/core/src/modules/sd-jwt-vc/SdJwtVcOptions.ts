@@ -36,11 +36,22 @@ export interface SdJwtVcHolderJwkBinding {
   jwk: PublicJwk
 }
 
-export interface SdJwtVcIssuerDid {
+export interface SdJwtVcIssuerDid<Certificate extends X509Certificate | EncodedX509Certificate = X509Certificate> {
   method: 'did'
 
   // didUrl referencing a specific key in a did document.
   didUrl: string
+
+  /**
+   * Certificate chain, leaf certificate first and the CA certificate (trust anchor) last.
+   *
+   * Only supported for `did:x509` issuers, where it is required. It is placed in the `x5c` header
+   * next to the `kid` when signing, and read from the `x5c` header when verifying. The chain is not
+   * the issuer identity: the credential stays bound to the DID in `iss`. The chain is the evidence
+   * used to resolve the DID (passed to the did resolver as the `x509chain` resolution option) and it
+   * must chain up to a trusted certificate (see the x509 trusted certificates configuration).
+   */
+  x5c?: Certificate[]
 }
 
 export interface SdJwtVcIssuerX5c<Certificate extends X509Certificate | EncodedX509Certificate = X509Certificate> {
@@ -66,7 +77,7 @@ export type SdJwtVcHolderBinding = SdJwtVcHolderDidBinding | SdJwtVcHolderJwkBin
 // We only support did and x509 based issuance currently, but we might want to add support
 // for issuer metadata (as defined in SD-JWT VC) in the future
 export type SdJwtVcIssuer<Certificate extends X509Certificate | EncodedX509Certificate = X509Certificate> =
-  | SdJwtVcIssuerDid
+  | SdJwtVcIssuerDid<Certificate>
   | SdJwtVcIssuerX5c<Certificate>
 
 export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayload> {
