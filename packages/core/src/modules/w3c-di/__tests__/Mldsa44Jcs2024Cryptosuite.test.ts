@@ -70,7 +70,7 @@ describe('Mldsa44Jcs2024Cryptosuite', () => {
     const proof = await cryptosuite.createProof(document, proofOptions)
     const decodedProof = MultiBaseEncoder.decode(proof.proofValue)
 
-    expect(decodedProof.baseName).toBe('base58btc')
+    expect(decodedProof.baseName).toBe('base64url')
     expect(decodedProof.data).toHaveLength(2420)
     expect(keyManagementApi.sign).toHaveBeenCalledWith(
       expect.objectContaining({ algorithm: 'ML-DSA-44', keyId: 'mldsa-key' })
@@ -83,14 +83,18 @@ describe('Mldsa44Jcs2024Cryptosuite', () => {
     )
   })
 
-  test('rejects signatures with an invalid length without calling verification', async () => {
-    const proof = {
-      ...proofOptions,
-      proofValue: MultiBaseEncoder.encode(new Uint8Array(2419), 'base58btc'),
-    }
-    const result = await cryptosuite.verifyProof({ unsecuredDocument: { id: 'urn:example:1' }, proof })
+  test('rejects signatures with an invalid encoding or length without calling verification', async () => {
+    const document = { id: 'urn:example:1' }
+    const invalidProofs = [
+      { ...proofOptions, proofValue: MultiBaseEncoder.encode(new Uint8Array(2420), 'base58btc') },
+      { ...proofOptions, proofValue: MultiBaseEncoder.encode(new Uint8Array(2419), 'base64url') },
+    ]
 
-    expect(result).toEqual({ verified: false, verifiedDocument: null })
+    for (const proof of invalidProofs) {
+      const result = await cryptosuite.verifyProof({ unsecuredDocument: document, proof })
+      expect(result).toEqual({ verified: false, verifiedDocument: null })
+    }
+
     expect(keyManagementApi.verify).not.toHaveBeenCalled()
   })
 

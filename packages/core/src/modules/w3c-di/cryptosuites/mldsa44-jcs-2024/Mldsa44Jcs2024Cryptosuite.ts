@@ -62,7 +62,7 @@ export class Mldsa44Jcs2024Cryptosuite implements W3cDataIntegrityCryptosuite {
 
     return {
       ...proof,
-      proofValue: MultiBaseEncoder.encode(proofBytes, 'base58btc'),
+      proofValue: MultiBaseEncoder.encode(proofBytes, 'base64url'),
     }
   }
 
@@ -74,8 +74,8 @@ export class Mldsa44Jcs2024Cryptosuite implements W3cDataIntegrityCryptosuite {
     const { proofValue, ...proofOptions } = proof
     this.assertProofTypeAndCryptosuite(proofOptions, W3cDataIntegrityProcessingErrorCode.ProofVerificationError)
 
-    const proofBytes = MultiBaseEncoder.decode(proofValue).data
-    if (proofBytes.length !== signatureLength) {
+    const decodedProof = MultiBaseEncoder.decode(proofValue)
+    if (decodedProof.baseName !== 'base64url' || decodedProof.data.length !== signatureLength) {
       return { verified: false, verifiedDocument: null }
     }
 
@@ -93,7 +93,7 @@ export class Mldsa44Jcs2024Cryptosuite implements W3cDataIntegrityCryptosuite {
     const transformedDocument = this.transformation(unsecuredDocument, proofOptions)
     const proofConfig = this.proofConfiguration(proofOptions)
     const hashData = this.hashing(transformedDocument, proofConfig)
-    const verified = await this.proofVerification(hashData, proofBytes, proofOptions)
+    const verified = await this.proofVerification(hashData, decodedProof.data, proofOptions)
 
     return { verified, verifiedDocument: verified ? unsecuredDocument : null }
   }
