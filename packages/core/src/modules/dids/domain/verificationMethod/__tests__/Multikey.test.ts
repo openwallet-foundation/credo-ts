@@ -1,5 +1,6 @@
 import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../../../../../utils'
 import { PublicJwk } from '../../../../kms'
+import { AkpPublicJwk } from '../../../../kms/jwk/kty/akp/AkpPublicJwk'
 import { getMultikey, getPublicJwkFromMultikey, isMultikey } from '../Multikey'
 
 const did = 'did:example:123'
@@ -12,7 +13,33 @@ describe('Multikey', () => {
     if (!isMultikey(verificationMethod)) throw new Error('Expected a Multikey verification method')
 
     expect(verificationMethod.publicKeyMultibase).toBe(fingerprint)
-    expect(getPublicJwkFromMultikey(verificationMethod).fingerprint).toBe(fingerprint)
+    const publicJwk = getPublicJwkFromMultikey(verificationMethod)
+    expect(publicJwk.toJson()).toMatchObject({ kty: 'OKP', crv: 'Ed25519' })
+    expect(publicJwk.fingerprint).toBe(fingerprint)
+  })
+
+  it('parses a u-prefixed ML-DSA-44 Multikey without assuming Ed25519', () => {
+    const rawPublicKey = new Uint8Array(1312).fill(0x42)
+    const publicKeyMultibase = MultiBaseEncoder.encode(
+      TypedArrayEncoder.concat([VarintEncoder.encode(0x1210), rawPublicKey]),
+      'base64url'
+    )
+    const verificationMethod = {
+      id: `${did}#${publicKeyMultibase}`,
+      type: 'Multikey' as const,
+      controller: did,
+      publicKeyMultibase,
+    }
+
+    const publicJwk = getPublicJwkFromMultikey(verificationMethod)
+
+    expect(publicKeyMultibase[0]).toBe('u')
+    expect(publicJwk.is(AkpPublicJwk)).toBe(true)
+    expect(publicJwk.toJson()).toEqual({
+      kty: 'AKP',
+      alg: 'ML-DSA-44',
+      pub: TypedArrayEncoder.toBase64Url(rawPublicKey),
+    })
   })
 
   it('rejects malformed fingerprint key lengths', () => {

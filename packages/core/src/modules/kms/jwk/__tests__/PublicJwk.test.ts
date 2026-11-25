@@ -43,11 +43,28 @@ describe('PublicJwk AKP support', () => {
     const publicJwk = PublicJwk.fromUnknown({ kty: 'AKP', alg, pub: TypedArrayEncoder.toBase64Url(rawPublicKey) })
     const expectedFingerprint = MultiBaseEncoder.encode(
       TypedArrayEncoder.concat([VarintEncoder.encode(prefix), rawPublicKey]),
-      'base58btc'
+      'base64url'
     )
 
     expect(publicJwk.fingerprint).toBe(expectedFingerprint)
     expect(PublicJwk.fromFingerprint(expectedFingerprint).toJson()).toEqual(publicJwk.toJson())
+  })
+
+  test('decodes a base64url multibase ML-DSA-44 Multikey fingerprint', () => {
+    const rawPublicKey = new Uint8Array(1312).fill(0x42)
+    const fingerprint = MultiBaseEncoder.encode(
+      TypedArrayEncoder.concat([VarintEncoder.encode(0x1210), rawPublicKey]),
+      'base64url'
+    )
+
+    const publicJwk = PublicJwk.fromFingerprint(fingerprint)
+
+    expect(fingerprint[0]).toBe('u')
+    expect(publicJwk.toJson()).toEqual({
+      kty: 'AKP',
+      alg: 'ML-DSA-44',
+      pub: TypedArrayEncoder.toBase64Url(rawPublicKey),
+    })
   })
 
   test.each([

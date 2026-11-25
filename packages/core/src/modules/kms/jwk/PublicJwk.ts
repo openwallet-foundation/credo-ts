@@ -1,6 +1,6 @@
 import type { HashName } from '../../../crypto'
 import { CredoError } from '../../../error'
-import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../../../utils'
+import { MultiBaseEncoder, VarintEncoder } from '../../../utils'
 import type { Constructor } from '../../../utils/mixins'
 import { zParseWithErrorHandling } from '../../../utils/zod'
 import { KeyManagementError } from '../error/KeyManagementError'
@@ -314,7 +314,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
   }
 
   /**
-   * Returns the jwk encoded a Base58 multibase encoded multicodec key
+   * Returns the JWK encoded as a multibase-encoded multicodec key
    */
   public get fingerprint() {
     if (this.jwk.multicodecPrefix === undefined) {
@@ -324,23 +324,30 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     const prefixBytes = VarintEncoder.encode(this.jwk.multicodecPrefix)
     const prefixedPublicKey = new Uint8Array([...prefixBytes, ...this.jwk.multicodec])
 
-    return `z${TypedArrayEncoder.toBase58(prefixedPublicKey)}`
+    return MultiBaseEncoder.encode(prefixedPublicKey, this.jwk.jwk.kty === 'AKP' ? 'base64url' : 'base58btc')
   }
 
   /**
-   * Create a jwk instance based on a Base58 multibase encoded multicodec key
+   * Create a JWK instance based on a multibase-encoded multicodec key
    */
   public static fromFingerprint(fingerprint: string) {
     const { data } = MultiBaseEncoder.decode(fingerprint)
     const [code, byteLength] = VarintEncoder.decode(data)
     const publicKey = data.slice(byteLength)
 
-    const PublicJwkClass = SupportedPublicJwks.find(
-      (JwkClass) => JwkClass.multicodecPrefix !== undefined && JwkClass.multicodecPrefix === code
-    )
     if (AkpPublicJwk.supportsMulticodecPrefix(code)) {
       return PublicJwk.fromPublicJwk(AkpPublicJwk.fromMulticodecPrefix(code, publicKey).jwk)
     }
+
+    if (fingerprint[0] !== 'z') {
+      throw new KeyManagementError(
+        `Unsupported multibase '${fingerprint[0]}' for multicodec public key with prefix '${code}'`
+      )
+    }
+
+    const PublicJwkClass = SupportedPublicJwks.find(
+      (JwkClass) => JwkClass.multicodecPrefix !== undefined && JwkClass.multicodecPrefix === code
+    )
     if (!PublicJwkClass) {
       throw new KeyManagementError(`Unsupported multicodec public key with prefix '${code}'`)
     }
