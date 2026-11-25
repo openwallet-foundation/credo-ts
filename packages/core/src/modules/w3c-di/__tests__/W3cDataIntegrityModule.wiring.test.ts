@@ -1,5 +1,6 @@
 import type { DependencyManager } from '../../../plugins'
-import { AkpPublicJwk } from '../../kms'
+import { AkpPublicJwk, P256PublicJwk, P384PublicJwk } from '../../kms'
+import { EcdsaJcs2019Cryptosuite } from '../cryptosuites/ecdsa-jcs-2019/EcdsaJcs2019Cryptosuite'
 import { Mldsa44Jcs2024Cryptosuite } from '../cryptosuites/mldsa44-jcs-2024/Mldsa44Jcs2024Cryptosuite'
 import { W3cDataIntegrityCryptosuiteToken } from '../cryptosuites/types'
 import { W3cDataIntegrityApi } from '../W3cDataIntegrityApi'
@@ -26,6 +27,18 @@ describe('W3cDataIntegrityModule wiring', () => {
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(W3cDataIntegrityProofService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(W3cDataIntegrityCryptosuiteRegistry)
+  })
+
+  test('registers ECDSA JCS 2019 for P-256 and P-384 keys', () => {
+    const module = new W3cDataIntegrityModule()
+
+    module.register(dependencyManager)
+
+    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(W3cDataIntegrityCryptosuiteToken, {
+      cryptosuiteClass: EcdsaJcs2019Cryptosuite,
+      cryptosuite: 'ecdsa-jcs-2019',
+      supportedPublicJwkTypes: [P256PublicJwk, P384PublicJwk],
+    })
   })
 
   test('registers ML-DSA-44 without making it eligible for automatic selection', () => {
