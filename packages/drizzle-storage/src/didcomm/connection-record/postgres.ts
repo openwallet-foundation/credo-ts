@@ -4,7 +4,7 @@ import type {
   DidCommHandshakeProtocol,
   DidCommVersion,
 } from '@credo-ts/didcomm'
-import { boolean, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
+import { boolean, index, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
 
@@ -74,5 +74,9 @@ export const didcommConnection = pgTable(
   (table) => [
     ...postgresBaseRecordIndexes(table, 'didcommConnection'),
     unique().on(table.contextCorrelationId, table.threadId),
+
+    // Used to find the connection of each received message
+    index('didcommConnection_did_idx').on(table.contextCorrelationId, table.did),
+    index('didcommConnection_their_did_idx').on(table.contextCorrelationId, table.theirDid),
   ]
 )

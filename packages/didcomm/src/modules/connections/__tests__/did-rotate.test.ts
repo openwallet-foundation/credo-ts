@@ -5,8 +5,11 @@ import {
   getDidPeer4ShortFormForEquivalence,
   getEd25519VerificationKey2018,
   getJsonWebKey2020,
+  getPublicJwkFromVerificationMethod,
   getX25519KeyAgreementKey2019,
   JsonEncoder,
+  JwsService,
+  JwtPayload,
   Kms,
   NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
@@ -26,6 +29,7 @@ import {
   makeConnection,
   waitForAgentMessageProcessedEventSubject,
   waitForBasicMessageSubject,
+  waitForConnectionRecordSubject,
   waitForDidRotateSubject,
 } from '../../../../../core/tests/helpers'
 import { DidCommDispatcher } from '../../../DidCommDispatcher'
@@ -55,6 +59,7 @@ import {
   DidCommDidRotateProblemReportMessage,
   DidCommHangupMessage,
 } from '../messages'
+import { DidCommConnectionHangupReason, DidCommDidExchangeState } from '../models'
 import { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../services'
@@ -62,6 +67,7 @@ import { DidCommDidRotateV2Service } from '../services/DidCommDidRotateV2Service
 import {
   createPeerDidForV2OOB,
   findOwnKeyAgreementKey,
+  toAbsoluteDidUrl,
   toKeyAgreement,
   toKeyAgreementDidUrl,
 } from '../services/helpers'
@@ -557,6 +563,15 @@ describe('Rotation E2E tests', () => {
         connectionRecord: bobAliceConnection?.clone(),
       })
 
+      const connectionsAbandoned = Promise.all(
+        [aliceAgent, bobAgent].map((agent) =>
+          waitForConnectionRecordSubject(
+            agent.events.observable(DidCommConnectionEventTypes.DidCommConnectionStateChanged),
+            { state: DidCommDidExchangeState.Abandoned, previousState: DidCommDidExchangeState.Completed }
+          )
+        )
+      )
+
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       await aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection?.id! })
 
@@ -565,20 +580,41 @@ describe('Rotation E2E tests', () => {
         messageType: DidCommHangupMessage.type.messageTypeUri,
       })
 
+      const [aliceAbandoned, bobAbandoned] = await connectionsAbandoned
+      expect(aliceAbandoned.errorMessage).toEqual(DidCommConnectionHangupReason.ByUs)
+      expect(bobAbandoned.errorMessage).toEqual(DidCommConnectionHangupReason.ByOtherParty)
+
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      expect(await aliceAgent.didcomm.connections.getById(aliceBobConnection?.id!)).toMatchObject({
+        state: DidCommDidExchangeState.Abandoned,
+        errorMessage: DidCommConnectionHangupReason.ByUs,
+        isReady: false,
+      })
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      expect(await bobAgent.didcomm.connections.getById(bobAliceConnection?.id!)).toMatchObject({
+        state: DidCommDidExchangeState.Abandoned,
+        errorMessage: DidCommConnectionHangupReason.ByOtherParty,
+        isReady: false,
+      })
+
       // If Bob attempts to send a message to Alice after they received the hangup, framework should reject it
       await expect(
         // biome-ignore lint/style/noNonNullAssertion: no explanation
         bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Message after hangup')
       ).rejects.toThrow()
 
-      // If Bob sends a message afterwards, Alice should still be able to receive it
+      // Subscribe before sending, as delivery may be synchronous
+      const observable = aliceAgent.events.observable('AgentReceiveMessageError')
+      const subject = new ReplaySubject(1)
+      observable.pipe(first(), timeout({ first: 10000 })).subscribe(subject)
+
+      // RFC 0794 gives no period to accept messages after a hangup, so Alice does not process a message that arrives later
       await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageBeforeHangup)
 
-      await waitForBasicMessageSubject(aliceReplay, {
-        threadId: messageBeforeHangup.message.threadId,
-        content: 'Message before hangup',
-        connectionId: aliceBobConnection?.id,
-      })
+      await firstValueWithStackTrace(subject)
+
+      const aliceBasicMessages = await aliceAgent.didcomm.basicMessages.findAllByQuery({})
+      expect(aliceBasicMessages.find((message) => message.content === 'Message before hangup')).toBeUndefined()
     })
 
     test('Hangup and delete connection record', async () => {
@@ -710,11 +746,15 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     const aliceAfter = await aliceAgent.didcomm.connections.findById(aliceBobConnection?.id!)
     expect(aliceAfter?.did).toBeUndefined()
     expect(aliceAfter?.previousDids).toContain(aliceDidBeforeHangup)
+    expect(aliceAfter?.state).toEqual(DidCommDidExchangeState.Abandoned)
+    expect(aliceAfter?.errorMessage).toEqual(DidCommConnectionHangupReason.ByUs)
 
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     const bobAfter = await bobAgent.didcomm.connections.findById(bobAliceConnection?.id!)
     expect(bobAfter?.theirDid).toBeUndefined()
     expect(bobAfter?.previousTheirDids).toContain(aliceDidBeforeHangup)
+    expect(bobAfter?.state).toEqual(DidCommDidExchangeState.Abandoned)
+    expect(bobAfter?.errorMessage).toEqual(DidCommConnectionHangupReason.ByOtherParty)
   })
 
   test('rotate-to-nothing wraps one forward per routing key, each naming the hop it encloses', async () => {
@@ -1110,6 +1150,8 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
         const terminated = await getBobConnection()
         expect(terminated.theirDid).toBeUndefined()
         expect(dispatch).toHaveBeenCalledTimes(1)
+        // Nobody authenticated as the peer, so the empty message runs without the connection
+        expect(dispatch.mock.calls[0][0].connection).toBeUndefined()
 
         await receiveOnBob(termination)
         expect(dispatch).toHaveBeenCalledTimes(1)
@@ -1117,6 +1159,49 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       } finally {
         dispatch.mockRestore()
       }
+    })
+
+    test('an anoncrypt message that carries a termination is processed without the connection', async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const termination = await aliceRotateService().createFromPriorForTermination(aliceAgent.context, aliceDid)
+      const message = await anoncryptToBob({
+        type: DidCommBasicMessageV2.type.messageTypeUri,
+        from_prior: termination,
+        created_time: Math.floor(Date.now() / 1000),
+        body: { content: 'with termination' },
+      })
+
+      const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
+      try {
+        // The termination is applied, and the body runs without the connection, which a basic message needs
+        await expect(receiveOnBob(message)).rejects.toThrow(/No connection associated/)
+        expect(dispatch).toHaveBeenCalledTimes(1)
+        expect(dispatch.mock.calls[0][0].connection).toBeUndefined()
+      } finally {
+        dispatch.mockRestore()
+      }
+
+      expect((await getBobConnection()).theirDid).toBeUndefined()
+      expect(await bobContents()).not.toContain('with termination')
+    })
+
+    test('a termination carried by a message from another DID is dropped and changes nothing', async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const otherDid = await createAliceDid()
+      const termination = await aliceRotateService().createFromPriorForTermination(aliceAgent.context, aliceDid)
+
+      const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
+      try {
+        await receiveOnBob(await sendBasicMessageAs(otherDid, termination, 'carried termination'))
+        expect(dispatch).not.toHaveBeenCalled()
+      } finally {
+        dispatch.mockRestore()
+      }
+
+      expect((await getBobConnection()).theirDid).toEqual(aliceDid)
+      expect(await bobContents()).not.toContain('carried termination')
     })
 
     test.each([
@@ -1197,7 +1282,56 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       const bobAfter = await getBobConnection()
       expect(bobAfter.theirDid).toBeUndefined()
       expect(bobAfter.previousTheirDids).toContain(aliceDid)
+      expect(bobAfter.state).toEqual(DidCommDidExchangeState.Abandoned)
+      // The message that ends the relationship is its last message
       expect(await bobContents()).toContain('goodbye')
+    })
+
+    describe('from_prior JWT shape', () => {
+      // Signs any claims with the authentication key of Alice, as the service does for a from_prior
+      const signAsAlice = async (claims: Record<string, unknown>, typ?: string) => {
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        const aliceDid = aliceBobConnection!.did!
+        const { didDocument, keys } = await aliceAgent.dids.resolveCreatedDidDocumentWithKeys(aliceDid)
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        const authRef = didDocument.authentication![0]
+        const vm = typeof authRef === 'string' ? didDocument.dereferenceKey(authRef, ['authentication']) : authRef
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        const { kmsKeyId, kmsBackend } = keys!.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))!
+
+        return aliceAgent.dependencyManager.resolve(JwsService).createJwsCompact(aliceAgent.context, {
+          key: { keyId: kmsKeyId, kmsBackend },
+          payload: JwtPayload.fromJson({ iss: aliceDid, iat: Math.floor(Date.now() / 1000), ...claims }),
+          protectedHeaderOptions: {
+            alg: getPublicJwkFromVerificationMethod(vm).signatureAlgorithm,
+            kid: toAbsoluteDidUrl(aliceDid, vm.id),
+            ...(typ ? { typ } : {}),
+          },
+        })
+      }
+      const verifyOnBob = (jwt: string) =>
+        bobAgent.dependencyManager.resolve(DidCommDidRotateV2Service).verifyFromPrior(bobAgent.context, jwt)
+
+      test('accepts a JWT without typ', async () => {
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        await expect(verifyOnBob(await signAsAlice({}))).resolves.toMatchObject({ iss: aliceBobConnection!.did })
+      })
+
+      test('rejects a JWT whose typ is not JWT', async () => {
+        await expect(verifyOnBob(await signAsAlice({}, 'dc+sd-jwt'))).rejects.toThrow(/typ 'dc\+sd-jwt'/)
+      })
+
+      test('rejects a JWT with a claim the spec does not define', async () => {
+        await expect(verifyOnBob(await signAsAlice({ vct: 'https://example.com/vct' }, 'JWT'))).rejects.toThrow(
+          /claims other than iss, sub and iat: vct/
+        )
+      })
+
+      test('rejects a JWT with a registered claim the spec does not define', async () => {
+        await expect(verifyOnBob(await signAsAlice({ aud: 'https://example.com' }))).rejects.toThrow(
+          /claims other than iss, sub and iat: aud/
+        )
+      })
     })
 
     test('a from_prior with a non-string sub drops the message', async () => {

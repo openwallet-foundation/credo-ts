@@ -88,6 +88,12 @@ export abstract class BaseDrizzleRecordAdapter<
    */
   public customTagColumns: string[] = []
 
+  /**
+   * Columns that are no longer a record property. They are passed to the record's `encodingSchema`
+   * when a record is loaded, so its `upgrade` can convert rows written in an older format.
+   */
+  public legacyColumns: string[] = []
+
   public constructor(
     public database: DrizzleDatabase<PostgresSchema, SQLiteSchema>,
     table: {
@@ -186,8 +192,9 @@ export abstract class BaseDrizzleRecordAdapter<
     const encodedRecord: Record<string, unknown> = {}
     const tags: Record<string, unknown> = {}
     for (const [columnName, value] of Object.entries(columnValues)) {
-      if (recordPropertyNames.includes(columnName)) encodedRecord[columnName] = value
-      else if (this.customTagColumns.includes(columnName)) tags[columnName] = value
+      if (recordPropertyNames.includes(columnName) || this.legacyColumns.includes(columnName)) {
+        encodedRecord[columnName] = value
+      } else if (this.customTagColumns.includes(columnName)) tags[columnName] = value
     }
 
     const record = JsonTransformer.fromJSON(encodedRecord, this.recordClass)
@@ -275,6 +282,12 @@ export abstract class BaseDrizzleRecordAdapter<
     }
 
     return recordPropertyNames
+  }
+
+  // Logged here, as callers can't tell a failing database from a failure caused by their input
+  private storageError(agentContext: AgentContext, message: string, cause: Error) {
+    agentContext.config.logger.error(message, { error: cause })
+    return new CredoDrizzleStorageError(message, { cause })
   }
 
   public async query(agentContext: AgentContext, query?: Query<CredoRecord>, queryOptions?: QueryOptions) {
@@ -433,7 +446,7 @@ export abstract class BaseDrizzleRecordAdapter<
     } catch (error) {
       if (error instanceof CredoError) throw error
 
-      throw new CredoDrizzleStorageError(`Error querying '${this.recordClass.type}' record with query`)
+      throw this.storageError(agentContext, `Error querying '${this.recordClass.type}' record with query`, error)
     }
 
     throw new CredoDrizzleStorageError('Unsupported database type')
@@ -497,9 +510,7 @@ export abstract class BaseDrizzleRecordAdapter<
     } catch (error) {
       if (error instanceof CredoError) throw error
 
-      throw new CredoDrizzleStorageError(`Error retrieving '${this.recordClass.type}' record with id '${id}'`, {
-        cause: error,
-      })
+      throw this.storageError(agentContext, `Error retrieving '${this.recordClass.type}' record with id '${id}'`, error)
     }
 
     throw new CredoDrizzleStorageError('Unsupported database type')
@@ -534,9 +545,7 @@ export abstract class BaseDrizzleRecordAdapter<
         }
       }
 
-      throw new CredoDrizzleStorageError(`Error saving '${record.type}' record with id '${record.id}'`, {
-        cause: error,
-      })
+      throw this.storageError(agentContext, `Error saving '${record.type}' record with id '${record.id}'`, error)
     }
 
     throw new CredoDrizzleStorageError('Unsupported database type')
@@ -624,9 +633,7 @@ export abstract class BaseDrizzleRecordAdapter<
     } catch (error) {
       if (error instanceof CredoError) throw error
 
-      throw new CredoDrizzleStorageError(`Error updating '${record.type}' record with id '${record.id}'`, {
-        cause: error,
-      })
+      throw this.storageError(agentContext, `Error updating '${record.type}' record with id '${record.id}'`, error)
     }
 
     throw new CredoDrizzleStorageError('Unsupported database type')
@@ -685,9 +692,7 @@ export abstract class BaseDrizzleRecordAdapter<
     } catch (error) {
       if (error instanceof CredoError) throw error
 
-      throw new CredoDrizzleStorageError(`Error deleting record '${this.recordClass.type}' with id '${id}'`, {
-        cause: error,
-      })
+      throw this.storageError(agentContext, `Error deleting record '${this.recordClass.type}' with id '${id}'`, error)
     }
 
     throw new CredoDrizzleStorageError('Unsupported database type')
@@ -723,9 +728,7 @@ export abstract class BaseDrizzleRecordAdapter<
     } catch (error) {
       if (error instanceof CredoError) throw error
 
-      throw new CredoDrizzleStorageError(`Error deleting '${this.recordClass.type}' records by query`, {
-        cause: error,
-      })
+      throw this.storageError(agentContext, `Error deleting '${this.recordClass.type}' records by query`, error)
     }
 
     throw new CredoDrizzleStorageError('Unsupported database type')

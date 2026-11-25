@@ -68,14 +68,15 @@ export abstract class BaseAgent<AgentModules extends AgentModulesInput = EmptyMo
     public readonly dependencyManager: DependencyManager
   ) {
     this.logger = this.agentConfig.logger
+    this.agentContext = this.dependencyManager.resolve(AgentContext)
 
-    this.logger.info('Creating agent with config', {
+    // A tenant agent is created for every session, so it logs at debug
+    this.logger[this.agentContext.isRootAgentContext ? 'info' : 'debug']('Creating agent with config', {
       agentConfig: agentConfig.toJSON(),
     })
 
     // Resolve instances after everything is registered
     this.eventEmitter = this.dependencyManager.resolve(EventEmitter)
-    this.agentContext = this.dependencyManager.resolve(AgentContext)
 
     this.genericRecords = this.dependencyManager.resolve(GenericRecordsApi)
     this.dids = this.dependencyManager.resolve(DidsApi)

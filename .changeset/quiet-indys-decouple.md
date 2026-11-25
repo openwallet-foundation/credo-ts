@@ -1,6 +1,5 @@
 ---
 '@credo-ts/anoncreds': minor
-'@credo-ts/indy-vdr': minor
 ---
 
 Move did:indy identifier utilities into `@credo-ts/indy-vdr` and make its AnonCreds registry optional.

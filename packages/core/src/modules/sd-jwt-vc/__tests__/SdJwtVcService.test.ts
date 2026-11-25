@@ -143,7 +143,7 @@ const generateStatusList = async (
 
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
   return jwsService.createJwsCompact(agentContext, {
-    keyId: key.keyId,
+    key: { keyId: key.keyId },
     payload: JwtPayload.fromJson(payload),
     protectedHeaderOptions: {
       ...header,
@@ -181,7 +181,7 @@ const generateX509StatusList = async (
 
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
   return jwsService.createJwsCompact(agentContext, {
-    keyId: key.keyId,
+    key: { keyId: key.keyId },
     payload: JwtPayload.fromJson(payload),
     protectedHeaderOptions: {
       alg: 'ES256',
@@ -829,6 +829,28 @@ describe('SdJwtVcService', () => {
   })
 
   describe('SdJwtVcService.receive', () => {
+    test('throws for a jwk-bound credential without key id and warns without backend', async () => {
+      const warn = vi.spyOn(agent.context.config.logger, 'warn')
+
+      await sdJwtVcService.store(agent.context, {
+        record: new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVcWithoutHolderBinding }] }),
+      })
+      expect(warn).not.toHaveBeenCalled()
+
+      await expect(
+        sdJwtVcService.store(agent.context, {
+          record: new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVc }] }),
+        })
+      ).rejects.toThrow('(key without key id or backend)')
+
+      await sdJwtVcService.store(agent.context, {
+        record: new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: simpleJwtVc, kmsKeyId: 'key-id' }] }),
+      })
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("('key-id' without backend)"))
+
+      warn.mockRestore()
+    })
+
     test('Receive sd-jwt-vc from a basic payload without disclosures', async () => {
       const sdJwtVc = sdJwtVcService.fromCompact(simpleJwtVc)
       const sdJwtVcRecord = await sdJwtVcService.store(agent.context, {
@@ -836,6 +858,7 @@ describe('SdJwtVcService', () => {
           credentialInstances: [
             {
               compactSdJwtVc: simpleJwtVc,
+              kmsKeyId: holderKey.keyId,
             },
           ],
         }),

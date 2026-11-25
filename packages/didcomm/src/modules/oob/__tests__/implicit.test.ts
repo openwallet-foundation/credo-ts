@@ -884,6 +884,29 @@ describe('out of band implicit', () => {
     expect(await aliceAgent.didcomm.connections.findByInvitationDid(inMemoryDid)).toEqual([aliceFaberConnection])
   })
 
+  test(`make a connection with ${DidCommHandshakeProtocol.DidExchange} based on implicit OOB invitation to a DID whose DIDComm v1 service lists an X25519 key`, async () => {
+    const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber', { x25519DidCommV1RecipientKey: true })
+
+    const { connectionRecord } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+      did: inMemoryDid,
+      didCommVersion: 'v1',
+      label: 'alice',
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+    })
+
+    let faberAliceConnection = await waitForConnectionRecordSubject(faberReplay, {
+      threadId: connectionRecord?.threadId,
+      state: DidCommDidExchangeState.RequestReceived,
+    })
+    await faberAgent.didcomm.connections.acceptRequest(faberAliceConnection.id)
+    faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection.id)
+
+    // The response is signed with the Ed25519 key the X25519 key was derived from, which Alice takes as invitation key
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(connectionRecord?.id!)
+    expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+  })
+
   test(`make a connection with ${DidCommHandshakeProtocol.DidExchange} based on implicit OOB invitation pointing to specific service`, async () => {
     const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
     const inMemoryDidDocument = await faberAgent.dids.resolveDidDocument(inMemoryDid)
@@ -1018,7 +1041,11 @@ function resolveAliasTo(aliasDid: string, didDocument: DidDocument): MockInstanc
 async function createInMemoryDid(
   agent: Agent,
   endpoint: string,
-  { withKeyAgreement = false, alsoKnownAs }: { withKeyAgreement?: boolean; alsoKnownAs?: string[] } = {}
+  {
+    withKeyAgreement = false,
+    alsoKnownAs,
+    x25519DidCommV1RecipientKey = false,
+  }: { withKeyAgreement?: boolean; alsoKnownAs?: string[]; x25519DidCommV1RecipientKey?: boolean } = {}
 ): Promise<string> {
   const ed25519Key = await agent.kms.createKey({
     type: {
@@ -1037,6 +1064,14 @@ async function createInMemoryDid(
     id: `${did}#${publicJwk.fingerprint}`,
     controller: did,
   })
+  // A DIDComm v1 service may list the X25519 key derived from the Ed25519 key instead of the Ed25519 key itself
+  const x25519RecipientVerificationMethod = x25519DidCommV1RecipientKey
+    ? getX25519KeyAgreementKey2019({
+        id: `${did}#key-agreement-derived`,
+        controller: did,
+        publicJwk: publicJwk.convertTo(Kms.X25519PublicJwk),
+      })
+    : undefined
 
   builder.addService(
     new DidDocumentService({
@@ -1049,7 +1084,7 @@ async function createInMemoryDid(
     new DidCommV1Service({
       id: `${did}#did-communication`,
       priority: 0,
-      recipientKeys: [ed25519VerificationMethod.id],
+      recipientKeys: [(x25519RecipientVerificationMethod ?? ed25519VerificationMethod).id],
       routingKeys: [],
       serviceEndpoint: endpoint,
       accept: ['didcomm/aip2;env=rfc19'],
@@ -1070,6 +1105,7 @@ async function createInMemoryDid(
   builder.addVerificationMethod(ed25519VerificationMethod)
   builder.addAuthentication(ed25519VerificationMethod.id)
   builder.addAssertionMethod(ed25519VerificationMethod.id)
+  if (x25519RecipientVerificationMethod) builder.addKeyAgreement(x25519RecipientVerificationMethod)
   if (x25519Key) {
     builder.addKeyAgreement(
       getX25519KeyAgreementKey2019({

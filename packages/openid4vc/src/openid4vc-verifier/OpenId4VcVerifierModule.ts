@@ -1,4 +1,4 @@
-import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
+import { type AgentContext, type DependencyManager, type Module, RecordNotFoundError } from '@credo-ts/core'
 import type { NextFunction, Response } from 'express'
 import {
   endRequestSession,
@@ -141,12 +141,19 @@ export class OpenId4VcVerifierModule implements Module {
         }
         registerRequestSession(req, res, agentContext)
       } catch (error) {
-        agentContext?.config.logger.error(
-          'Failed to correlate incoming openid request to existing tenant and verifier',
-          {
-            error,
-          }
-        )
+        // An unknown verifier id is a client error, not a failure of the agent.
+        if (error instanceof RecordNotFoundError) {
+          agentContext?.config.logger.warn(
+            `No verifier found for incoming openid request with verifierId '${verifierId}'`
+          )
+        } else {
+          agentContext?.config.logger.error(
+            'Failed to correlate incoming openid request to existing tenant and verifier',
+            {
+              error,
+            }
+          )
+        }
         // If the opening failed
         await agentContext?.endSession()
         return res.status(404).send('Not found')

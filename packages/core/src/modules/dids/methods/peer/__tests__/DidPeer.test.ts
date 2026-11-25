@@ -1,6 +1,29 @@
+import { performance } from 'node:perf_hooks'
+
 import { getNumAlgoFromPeerDid, isValidPeerDid, PeerDidNumAlgo } from '../didPeer'
 
 describe('didPeer', () => {
+  test('isValidPeerDid rejects num-algo 2 segments that are not separated by a dot', () => {
+    expect(isValidPeerDid('did:peer:2xEz6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc')).toBe(false)
+    expect(
+      isValidPeerDid(
+        'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc-SeyJ0IjoiZG0iLCJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9lbmRwb2ludCJ9'
+      )
+    ).toBe(false)
+  })
+
+  test('isValidPeerDid does not backtrack catastrophically on a crafted num-algo 2 did', () => {
+    // Every character is base58 and the tail is not, so a regex with unescaped separators retries every split
+    const craftedDid = `did:peer:2${'1Azaaaaa'.repeat(27)}0`
+
+    const start = performance.now()
+    const isValid = isValidPeerDid(craftedDid)
+    const durationMs = performance.now() - start
+
+    expect(isValid).toBe(false)
+    expect(durationMs).toBeLessThan(100)
+  })
+
   test('isValidPeerDid', () => {
     expect(isValidPeerDid('did:peer:0z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')).toBe(true)
     expect(isValidPeerDid('did:peer:1zQmZMygzYqNwU6Uhmewx5Xepf2VLp5S4HLSwwgf2aiKZuwa')).toBe(true)

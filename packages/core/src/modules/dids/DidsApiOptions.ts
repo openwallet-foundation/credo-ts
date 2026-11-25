@@ -7,6 +7,11 @@ export interface DidDocumentKey {
   kmsKeyId: string
 
   /**
+   * The kms backend that holds the key. Not set on keys stored before it was added.
+   */
+  kmsBackend?: string
+
+  /**
    * The key id
    */
   didDocumentRelativeKeyId: string

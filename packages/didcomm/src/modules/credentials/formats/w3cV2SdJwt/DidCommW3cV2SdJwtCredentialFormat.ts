@@ -7,8 +7,8 @@ import type {
   W3cV2Issuer,
 } from '@credo-ts/core'
 import type {
-  DidCommSignedAttachmentCreateOfferOptions,
-  DidCommSignedAttachmentCredentialRequestOptions,
+  DidCommSignedAttachmentWithJwkCreateOfferOptions,
+  DidCommSignedAttachmentWithJwkCredentialRequestOptions,
 } from '../../util/didCommSignedAttachmentBinding'
 import type { DidCommCredentialFormat } from '../DidCommCredentialFormat'
 import type { W3cV2SdJwtCredential, W3cV2SdJwtCredentialOffer, W3cV2SdJwtCredentialRequest } from './w3cV2SdJwtExchange'
@@ -17,11 +17,11 @@ export interface DidCommW3cV2SdJwtOfferCredentialFormat {
   credential: W3cV2Credential | JsonObject
   bindingRequired?: boolean
   disclosureFrame?: IDisclosureFrame
-  didCommSignedAttachmentBinding?: DidCommSignedAttachmentCreateOfferOptions
+  didCommSignedAttachmentBinding?: DidCommSignedAttachmentWithJwkCreateOfferOptions
 }
 
 export interface DidCommW3cV2SdJwtAcceptOfferFormat {
-  didCommSignedAttachment?: DidCommSignedAttachmentCredentialRequestOptions
+  didCommSignedAttachment?: DidCommSignedAttachmentWithJwkCredentialRequestOptions
 }
 
 export interface DidCommW3cV2SdJwtAcceptRequestFormat {
@@ -52,8 +52,9 @@ export interface DidCommW3cV2SdJwtAcceptRequestFormat {
   disclosureFrame?: IDisclosureFrame
 
   /**
-   * The holder to bind the credential to, adding a `cnf` claim to the issued credential. When omitted,
-   * it is derived from the binding proof in the request.
+   * The holder to bind the credential to, adding a `cnf` claim to the issued credential. Only used when
+   * the request has no binding proof. When it has one, RFC 0881 requires the `cnf` to be the key of the
+   * binding proof, so the credential is always bound to that key and a different `holder` is rejected.
    */
   holder?: SdJwtVcHolderBinding
 

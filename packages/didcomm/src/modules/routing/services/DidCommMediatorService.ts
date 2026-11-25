@@ -24,14 +24,12 @@ import {
 } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
-import { DidCommTransportService } from '../../../DidCommTransportService'
-import { MessageSendingError } from '../../../errors'
 import type { DidCommInboundMessageContext } from '../../../models'
 import type { DidCommEncryptedMessage } from '../../../types'
 import type { DidCommConnectionRecord } from '../../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../../connections/services'
-import { DidCommMessagePickupApi, DidCommMessagePickupSessionService } from '../../message-pickup'
+import { DidCommMessagePickupApi } from '../../message-pickup'
 import { DidCommMessagePickupSessionRole } from '../../message-pickup/DidCommMessagePickupSession'
 import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
 import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
@@ -59,7 +57,7 @@ import {
   KeylistUpdateActionV2,
   KeylistUpdateResultV2,
 } from '../protocol/v2/messages'
-import { DidCommMediatorRoutingRecord } from '../repository'
+import { DidCommMediatorRoutingRecord, type DidCommMediatorRoutingRecordRoutingKey } from '../repository'
 import { DidCommMediationRecord } from '../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../repository/DidCommMediationRepository'
 import { DidCommMediatorRoutingRepository } from '../repository/DidCommMediatorRoutingRepository'
@@ -214,7 +212,10 @@ export class DidCommMediatorService {
       recipientDid = getDidPeer4ShortFormForEquivalence(rawDid) ?? rawDid
       // A v1 client registers the key, a v2 client registers its did:key. Both indexes are read, so a
       // key one mediatee holds in each index does not route the traffic of the other one.
-      const byKey = await this.mediationRepository.findSingleByRecipientKey(agentContext, message.to)
+      const byKey = await this.mediationRepository.findSingleByRecipientKey(
+        agentContext,
+        isDidKey(message.to) ? didKeyToVerkey(message.to) : message.to
+      )
       const byDid = await this.mediationRepository.findSingleByRecipientDid(agentContext, recipientDid)
       if (byKey && byDid && byKey.id !== byDid.id) {
         throw new CredoError(`Forward recipient '${message.to}' is registered by two mediation records`)
@@ -223,7 +224,7 @@ export class DidCommMediatorService {
     }
 
     if (!mediationRecord) {
-      throw new RecordNotFoundError(`MediationRecord: no record found for forward message recipient`, {
+      throw new RecordNotFoundError(`No record found for forward recipient '${recipientDid}'`, {
         recordType: DidCommMediationRecord.type,
       })
     }
@@ -248,12 +249,14 @@ export class DidCommMediatorService {
         }
         break
       case DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery: {
+        const messageIds: string[] = []
         for (const encryptedMessage of encryptedMessages) {
-          await messagePickupApi.queueMessage({
+          const { messageId } = await messagePickupApi.queueMessage({
             connectionId: mediationRecord.connectionId,
             recipientDids: [recipientDid],
             message: encryptedMessage,
           })
+          messageIds.push(messageId)
         }
         const session = await messagePickupApi.getLiveModeSession({
           connectionId: mediationRecord.connectionId,
@@ -264,31 +267,12 @@ export class DidCommMediatorService {
             await messagePickupApi.deliverMessagesFromQueue({
               pickupSessionId: session.id,
               recipientDid,
+              messageIds,
             })
           } catch (error) {
-            const sessionService = agentContext.dependencyManager.resolve(DidCommMessagePickupSessionService)
-            const endSession =
-              error instanceof MessageSendingError &&
-              sessionService.getLiveSession(agentContext, session.id) !== undefined
-            this.logger.warn(
-              `Live mode delivery failed for connection '${mediationRecord.connectionId}'${endSession ? ', ending its live mode session' : ''}`,
-              { error: error.message }
-            )
-            if (endSession) {
-              sessionService.removeLiveSession(agentContext, { connectionId: mediationRecord.connectionId })
-              // a Credo recipient only restarts pickup when its socket closes
-              try {
-                await agentContext.dependencyManager
-                  .resolve(DidCommTransportService)
-                  .findSessionById(session.transportSessionId)
-                  ?.close()
-              } catch (closeError) {
-                this.logger.warn(
-                  `Unable to close the transport session of connection '${mediationRecord.connectionId}'`,
-                  { error: closeError.message }
-                )
-              }
-            }
+            this.logger.warn(`Live mode delivery failed for connection '${mediationRecord.connectionId}'`, {
+              error: error.message,
+            })
           }
         }
         break
@@ -525,9 +509,13 @@ export class DidCommMediatorService {
       let result = KeylistUpdateResultV2.NoChange
       const canonicalRecipientDid = getDidPeer4ShortFormForEquivalence(update.recipientDid) ?? update.recipientDid
       if (update.action === KeylistUpdateActionV2.add) {
+        // A Coordinate Mediation 1.0 mediatee registers only Ed25519 keys, so `recipientKeys` cannot hold another key type
+        const didKeyPublicJwk = isDidKey(canonicalRecipientDid)
+          ? DidKey.fromDid(canonicalRecipientDid).publicJwk
+          : undefined
         const taken = await this.isRegisteredToAnotherMediatee(messageContext.agentContext, mediationRecord, {
           did: canonicalRecipientDid,
-          key: isDidKey(canonicalRecipientDid) ? didKeyToVerkey(canonicalRecipientDid) : undefined,
+          key: didKeyPublicJwk?.is(Kms.Ed25519PublicJwk) ? didKeyToVerkey(canonicalRecipientDid) : undefined,
         })
         if (taken) {
           result = KeylistUpdateResultV2.ClientError
@@ -629,6 +617,7 @@ export class DidCommMediatorService {
         {
           routingKeyFingerprint: publicJwk.fingerprint,
           kmsKeyId: routingKey.keyId,
+          kmsBackend: routingKey.backend,
         },
         // DIDComm v2 forwards encrypt to an X25519 key, which the KMS does not derive from the Ed25519 key
         ...(didcommConfig.isSupported('v2') ? [await this.createV2RoutingKey(agentContext)] : []),
@@ -654,9 +643,9 @@ export class DidCommMediatorService {
       if (error instanceof RecordDuplicateError) {
         // the record already exists, which is our intended end state
         // we can ignore this error and fetch the existing record
-        for (const { keyId } of routingRecord.routingKeysWithKeyId) {
+        for (const { keyId, kmsBackend } of routingRecord.routingKeysWithKeyId) {
           try {
-            await kms.deleteKey({ keyId })
+            await kms.deleteKey({ keyId, backend: kmsBackend })
           } catch (error) {
             this.logger.warn(`Unable to delete unused mediator routing key '${keyId}'`, { error })
           }
@@ -697,7 +686,7 @@ export class DidCommMediatorService {
       })
     } catch (error) {
       if (!(error instanceof V2RoutingKeyAlreadyStoredError)) {
-        await this.deleteUnusedRoutingKey(agentContext, v2RoutingKey.kmsKeyId)
+        await this.deleteUnusedRoutingKey(agentContext, v2RoutingKey)
         throw error
       }
     }
@@ -706,7 +695,7 @@ export class DidCommMediatorService {
     const storedRecord = await this.mediatorRoutingRepository.getById(agentContext, routingRecord.id)
     const storedV2RoutingKeys = this.getV2RoutingKeys(storedRecord)
     if (!storedV2RoutingKeys.some((routingKey) => routingKey.keyId === v2RoutingKey.kmsKeyId)) {
-      await this.deleteUnusedRoutingKey(agentContext, v2RoutingKey.kmsKeyId)
+      await this.deleteUnusedRoutingKey(agentContext, v2RoutingKey)
     }
     if (storedV2RoutingKeys.length > 1) {
       this.logger.warn('Mediator routing record has more than one X25519 routing key, DIDComm v2 uses the first one')
@@ -719,22 +708,24 @@ export class DidCommMediatorService {
     return routingRecord.routingKeysWithKeyId.filter((routingKey) => routingKey.is(Kms.X25519PublicJwk))
   }
 
-  private async deleteUnusedRoutingKey(agentContext: AgentContext, keyId: string): Promise<void> {
+  private async deleteUnusedRoutingKey(
+    agentContext: AgentContext,
+    { kmsKeyId, kmsBackend }: DidCommMediatorRoutingRecordRoutingKey
+  ): Promise<void> {
     try {
-      await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId })
+      await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: kmsKeyId, backend: kmsBackend })
     } catch (error) {
-      this.logger.warn(`Unable to delete unused mediator routing key '${keyId}'`, { error })
+      this.logger.warn(`Unable to delete unused mediator routing key '${kmsKeyId}'`, { error })
     }
   }
 
-  private async createV2RoutingKey(
-    agentContext: AgentContext
-  ): Promise<{ routingKeyFingerprint: string; kmsKeyId: string }> {
+  private async createV2RoutingKey(agentContext: AgentContext): Promise<DidCommMediatorRoutingRecordRoutingKey> {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
     const routingKey = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
     return {
       routingKeyFingerprint: Kms.PublicJwk.fromPublicJwk(routingKey.publicJwk).fingerprint,
       kmsKeyId: routingKey.keyId,
+      kmsBackend: routingKey.backend,
     }
   }
 

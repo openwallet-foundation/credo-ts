@@ -51,10 +51,16 @@ See [Supported Features](https://credo.js.org/guides/features) on the Credo webs
 
 - 🏃 **Platform agnostic** - out of the box support for Node.JS and React Native
 - 🔒 **DIDComm and AIP** - Support for [DIDComm v1](https://hyperledger.github.io/aries-rfcs/latest/concepts/0005-didcomm/), and both v1 and v2 of the [Aries Interop Profile](https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0302-aries-interop-profile/README.md).
-- 🛂 **Extendable [DID](https://www.w3.org/TR/did-core/) resolver and registrar** - out of the box support for `did:web`, `did:webvh`, `did:key`, `did:jwk`, `did:peer`, `did:sov`, `did:indy`, `did:cheqd` and `did:hedera`.
+- 🛂 **Extendable [DID](https://www.w3.org/TR/did-core/) resolver and registrar** - out of the box support for `did:web`, `did:webvh`, `did:key`, `did:jwk` and `did:peer`.
 - 🔑 **[OpenID4VC](https://openid.net/sg/openid4vc/)** - support for [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html), [OpenID for Verifiable Presentations](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html) and [Self-Issued OpenID Provider v2](https://openid.net/specs/openid-connect-self-issued-v2-1_0.html).
 - 🪪 **Multiple credential formats** - [W3C Verifiable Credential Data Model v1.1](https://www.w3.org/TR/vc-data-model/), [SD-JWT VCs](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-03.html), and [AnonCreds](https://hyperledger.github.io/anoncreds-spec/).
 - 🏢 **Multi-tenant** - Optional multi-tenant module for managing multiple tenants under a single agent.
+
+Indy VDR, Hedera and cheqd integrations are maintained separately in
+[credo-ts-ext](https://github.com/openwallet-foundation/credo-ts-ext), including
+[@credo-ts/indy-vdr](https://github.com/openwallet-foundation/credo-ts-ext/tree/main/packages/indy-vdr),
+[@credo-ts/hedera](https://github.com/openwallet-foundation/credo-ts-ext/tree/main/packages/hedera) and
+[@credo-ts/cheqd](https://github.com/openwallet-foundation/credo-ts-ext/tree/main/packages/cheqd).
 
 ### Packages
 
@@ -88,22 +94,6 @@ See [Supported Features](https://credo.js.org/guides/features) on the Credo webs
     </td>
   </tr>
   <tr>
-    <td>@credo-ts/indy-vdr</td>
-    <td>
-      <a href="https://npmjs.com/package/@credo-ts/indy-vdr">
-        <img alt="@credo-ts/indy-vdr version" src="https://img.shields.io/npm/v/@credo-ts/indy-vdr"/>
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td>@credo-ts/cheqd</td>
-    <td>
-      <a href="https://npmjs.com/package/@credo-ts/cheqd">
-        <img alt="@credo-ts/cheqd version" src="https://img.shields.io/npm/v/@credo-ts/cheqd"/>
-      </a>
-    </td>
-  </tr>  
-  <tr>
     <td>@credo-ts/askar</td>
     <td>
       <a href="https://npmjs.com/package/@credo-ts/askar">
@@ -135,14 +125,6 @@ See [Supported Features](https://credo.js.org/guides/features) on the Credo webs
       </a>
     </td>
   </tr>
-  <tr>
-    <td>@credo-ts/hedera</td>
-    <td>
-      <a href="https://npmjs.com/package/@credo-ts/hedera">
-        <img alt="@credo-ts/hedera version" src="https://img.shields.io/npm/v/@credo-ts/hedera"/>
-      </a>
-    </td>
-  </tr>  
   <tr>
     <td><s>@aries-framework/indy-sdk-to-askar-migration</s> (deprecated, unmaintained after 0.5.x)</td>
     <td>

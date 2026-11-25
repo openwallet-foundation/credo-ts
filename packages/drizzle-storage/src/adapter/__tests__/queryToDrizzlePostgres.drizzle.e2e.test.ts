@@ -1,3 +1,4 @@
+import type { Query } from '@credo-ts/core'
 import { DidCommConnectionRecord, DidCommDidExchangeRole, DidCommDidExchangeState } from '@credo-ts/didcomm'
 import { pushSchema } from 'drizzle-kit/api'
 import { createDrizzlePostgresTestDatabase, type DrizzlePostgresTestDatabase } from '../../../tests/testDatabase'
@@ -36,12 +37,27 @@ describe('queryToDrizzlePostgres', () => {
       customTags: {
         myCustomTag: ['First', 'Second'],
         anotherCustomTag: true,
+        stringCustomTag: 'true',
       },
     })
   })
 
   afterAll(async () => {
     await postgresDatabase.teardown()
+  })
+
+  test('should bind quotes in custom tag names and values instead of interpolating them', async () => {
+    const select = (query: Record<string, unknown>) =>
+      postgresDatabase.drizzle
+        .select()
+        .from(didcommConnection)
+        .where(queryToDrizzlePostgres<DidCommConnectionRecord>(query, didcommConnection))
+
+    expect(await select({ myCustomTag: ["x']'::jsonb; select pg_sleep(0); --"] })).toHaveLength(0)
+    expect(await select({ myCustomTag: ["it's"] })).toHaveLength(0)
+    expect(await select({ "my'Tag": ['First'] })).toHaveLength(0)
+    expect(await select({ "my'Tag": 'value' })).toHaveLength(0)
+    expect(await select({ myCustomTag: ['First'] })).toHaveLength(1)
   })
 
   test('should correctly query column', async () => {
@@ -151,6 +167,20 @@ describe('queryToDrizzlePostgres', () => {
           )
         )
     ).toHaveLength(0)
+  })
+
+  test('should compare custom tag values with their type', async () => {
+    const select = (query: Query<DidCommConnectionRecord>) =>
+      postgresDatabase.drizzle.select().from(didcommConnection).where(queryToDrizzlePostgres(query, didcommConnection))
+
+    expect(await select({ anotherCustomTag: true })).toHaveLength(1)
+    expect(await select({ anotherCustomTag: 'true' })).toHaveLength(0)
+    expect(await select({ stringCustomTag: 'true' })).toHaveLength(1)
+    expect(await select({ stringCustomTag: true })).toHaveLength(0)
+    expect(await select({ stringCustomTag: ['true'] })).toHaveLength(0)
+    expect(await select({ myCustomTag: ['Second', 'First'] })).toHaveLength(1)
+    expect(await select({ myCustomTag: ['First', 'Third'] })).toHaveLength(0)
+    expect(await select({ myCustomTag: 'First' })).toHaveLength(0)
   })
 
   test('should correctly query custom tag column array value', async () => {

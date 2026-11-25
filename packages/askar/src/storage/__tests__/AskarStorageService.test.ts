@@ -163,6 +163,22 @@ describe('AskarStorageService', () => {
     })
   })
 
+  describe('store failures', () => {
+    it('logs an error when the store fails, not when the record already exists', async () => {
+      const logError = vi.spyOn(agentContext.config.logger, 'error')
+      const record = await insertRecord({ id: 'test-id' })
+
+      await expect(storageService.save(agentContext, record)).rejects.toThrow(RecordDuplicateError)
+      expect(logError).not.toHaveBeenCalled()
+
+      const cause = new Error('store is gone')
+      vi.spyOn(storeManager, 'getInitializedStoreWithProfile').mockRejectedValueOnce(cause)
+
+      await expect(storageService.save(agentContext, record)).rejects.toThrow('Error saving record')
+      expect(logError).toHaveBeenCalledWith('Error occurred during transaction, rollback', { error: cause })
+    })
+  })
+
   describe('getById()', () => {
     it('should throw RecordNotFoundError if the record does not exist', async () => {
       return expect(() => storageService.getById(agentContext, TestRecord, 'does-not-exist')).rejects.toThrow(

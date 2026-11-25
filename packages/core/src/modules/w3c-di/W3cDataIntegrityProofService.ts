@@ -90,8 +90,6 @@ export class W3cDataIntegrityProofService {
     agentContext: AgentContext,
     options: W3cDataIntegrityCreateProofOptions
   ): Promise<W3cDataIntegrityCreateSuccess | W3cDataIntegrityCreateFailure> {
-    const normalizedUnsecuredDocument = omitUndefinedFields(options.unsecuredDocument)
-
     let cryptosuite: W3cDataIntegrityCryptosuite
     try {
       cryptosuite = this.dataIntegrityCryptosuiteRegistry.createByCryptosuite(agentContext, options.cryptosuite)
@@ -130,6 +128,7 @@ export class W3cDataIntegrityProofService {
     )
 
     try {
+      const normalizedUnsecuredDocument = omitUndefinedFields(options.unsecuredDocument)
       const proof = await cryptosuite.createProof(normalizedUnsecuredDocument, proofOptions)
       assertCreatedProofPostconditions(
         proof,

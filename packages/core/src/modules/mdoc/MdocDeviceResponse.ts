@@ -261,7 +261,7 @@ export class MdocDeviceResponse {
           ),
       })
 
-      const mdocContext = getMdocContext(agentContext)
+      const mdocContext = getMdocContext(agentContext, { keys: [deviceKeyJwk] })
       const deviceResponse = await DeviceResponse.createWithDeviceRequest(
         {
           deviceRequest: deviceRequestForDocument,
@@ -279,7 +279,8 @@ export class MdocDeviceResponse {
                 ? nameSpacesRecordToDeviceNamespaces(options.deviceNameSpaces)
                 : undefined,
               signature: {
-                signingKey: CoseKey.fromJwk(deviceKeyJwk.toJson()),
+                // Without a key id, so the DeviceSignature has no `kid` header
+                signingKey: CoseKey.fromJwk(deviceKeyJwk.toJson({ includeKid: false })),
               },
             },
           ],

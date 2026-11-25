@@ -4,7 +4,7 @@ import type {
   DidCommOutOfBandState,
   DidCommPlaintextMessage,
 } from '@credo-ts/didcomm'
-import { boolean, jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
+import { boolean, index, jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
 
@@ -42,6 +42,14 @@ export const didcommOutOfBand = pgTable(
   },
   (table) => [
     ...postgresBaseRecordIndexes(table, 'didcommOutOfBand'),
+
+    // Used to find the out of band record of a received message without a connection
+    index('didcommOutOfBand_recipient_key_fingerprints_idx').using('gin', table.recipientKeyFingerprints),
+    index('didcommOutOfBand_recipient_routing_key_fingerprint_idx').on(
+      table.contextCorrelationId,
+      table.recipientRoutingKeyFingerprint
+    ),
+
     // foreignKey({
     //   columns: [table.reuseConnectionId, table.contextCorrelationId],
     //   foreignColumns: [didcommConnection.id, didcommConnection.contextCorrelationId],

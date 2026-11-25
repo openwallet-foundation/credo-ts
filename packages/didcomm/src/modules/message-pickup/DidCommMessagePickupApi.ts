@@ -12,9 +12,11 @@ import type { DidCommMessageProcessedEvent } from '../../DidCommEvents'
 import { DidCommEventTypes } from '../../DidCommEvents'
 import type { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { DidCommModuleConfig } from '../../DidCommModuleConfig'
+import { DidCommTransportService } from '../../DidCommTransportService'
+import { MessageSendingError } from '../../errors'
 import { DidCommOutboundMessageContext } from '../../models'
 import { assertDidCommV1Connection, assertDidCommV2Connection } from '../../util/didcommVersion'
+import type { DidCommConnectionRecord } from '../connections/repository'
 import { DidCommConnectionService } from '../connections/services'
 import type {
   DeliverMessagesFromQueueOptions,
@@ -115,14 +117,13 @@ export class DidCommMessagePickupApi<
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
     // Queue accepts both v1 and v2 connections (recipientDids used for v2 mediation)
 
-    const queueTransportRepository =
-      this.agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
-
-    await queueTransportRepository.addMessage(this.agentContext, {
+    const messageId = await this.messageSender.queueMessage(this.agentContext, {
       connectionId: connectionRecord.id,
       recipientDids,
       payload: message,
     })
+
+    return { messageId }
   }
 
   /**
@@ -168,13 +169,7 @@ export class DidCommMessagePickupApi<
     })
 
     if (createDeliveryReturn) {
-      await this.messageSender.sendMessage(
-        new DidCommOutboundMessageContext(createDeliveryReturn.message, {
-          agentContext: this.agentContext,
-          connection: connectionRecord,
-        }),
-        { transportPriority: { schemes: ['wss', 'ws'] } }
-      )
+      await this.sendLiveDelivery(session, connectionRecord, createDeliveryReturn.message)
     }
   }
 
@@ -189,7 +184,7 @@ export class DidCommMessagePickupApi<
   public async deliverMessagesFromQueue(options: DeliverMessagesFromQueueOptions) {
     this.logger.debug('Delivering queued messages')
 
-    const { pickupSessionId, recipientDid: recipientKey, batchSize } = options
+    const { pickupSessionId, recipientDid: recipientKey, messageIds, batchSize } = options
 
     const session = this.messagePickupSessionService.getLiveSession(this.agentContext, pickupSessionId)
 
@@ -213,17 +208,51 @@ export class DidCommMessagePickupApi<
       connectionRecord,
       recipientKey: session.protocolVersion === 'v4' ? undefined : recipientKey,
       recipientDid: session.protocolVersion === 'v4' ? recipientKey : undefined,
+      messageIds,
       batchSize,
     })
 
     if (deliverMessagesReturn) {
+      await this.sendLiveDelivery(session, connectionRecord, deliverMessagesReturn.message)
+    }
+  }
+
+  private async sendLiveDelivery(
+    session: DidCommMessagePickupSession,
+    connectionRecord: DidCommConnectionRecord,
+    message: DidCommMessage
+  ) {
+    try {
       await this.messageSender.sendMessage(
-        new DidCommOutboundMessageContext(deliverMessagesReturn.message, {
+        new DidCommOutboundMessageContext(message, {
           agentContext: this.agentContext,
           connection: connectionRecord,
+          sessionId: session.transportSessionId,
         }),
         { transportPriority: { schemes: ['wss', 'ws'] } }
       )
+    } catch (error) {
+      if (
+        error instanceof MessageSendingError &&
+        this.messagePickupSessionService.getLiveSession(this.agentContext, session.id) !== undefined
+      ) {
+        this.logger.warn(
+          `Live mode delivery failed for connection '${session.connectionId}', ending its live mode session`,
+          { error: error.message }
+        )
+        this.messagePickupSessionService.removeLiveSession(this.agentContext, { connectionId: session.connectionId })
+        try {
+          await this.agentContext.dependencyManager
+            .resolve(DidCommTransportService)
+            .findSessionById(session.transportSessionId)
+            ?.close()
+        } catch (closeError) {
+          this.logger.warn(`Unable to close the transport session of connection '${session.connectionId}'`, {
+            error: closeError.message,
+          })
+        }
+      }
+      throw error
     }
   }
 

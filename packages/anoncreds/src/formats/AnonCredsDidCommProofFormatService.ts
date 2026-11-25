@@ -40,6 +40,7 @@ import {
 } from '../utils'
 import { encodeCredentialValue } from '../utils/credential'
 import { getCredentialsForAnonCredsProofRequest } from '../utils/getCredentialsForAnonCredsRequest'
+import { withCanonicalRestrictionIdentifiers } from '../utils/identifierVariants'
 import type {
   AnonCredsDidCommProofFormat,
   AnonCredsGetCredentialsForProofRequestOptions,
@@ -292,7 +293,10 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
     const proposalJson = proposalAttachment.getDataAsJson<AnonCredsProofRequest>()
     const requestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
 
-    const areRequestsEqual = areAnonCredsProofRequestsEqual(proposalJson, requestJson)
+    const areRequestsEqual = areAnonCredsProofRequestsEqual(
+      withCanonicalRestrictionIdentifiers(agentContext, proposalJson),
+      withCanonicalRestrictionIdentifiers(agentContext, requestJson)
+    )
     agentContext.config.logger.debug(`AnonCreds request and proposal are are equal: ${areRequestsEqual}`, {
       proposalJson,
       requestJson,
@@ -302,13 +306,16 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
   }
 
   public async shouldAutoRespondToRequest(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     { proposalAttachment, requestAttachment }: DidCommProofFormatAutoRespondRequestOptions
   ): Promise<boolean> {
     const proposalJson = proposalAttachment.getDataAsJson<AnonCredsProofRequest>()
     const requestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
 
-    return areAnonCredsProofRequestsEqual(proposalJson, requestJson)
+    return areAnonCredsProofRequestsEqual(
+      withCanonicalRestrictionIdentifiers(agentContext, proposalJson),
+      withCanonicalRestrictionIdentifiers(agentContext, requestJson)
+    )
   }
 
   public async shouldAutoRespondToPresentation(

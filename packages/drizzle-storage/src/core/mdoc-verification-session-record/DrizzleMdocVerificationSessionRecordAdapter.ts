@@ -12,6 +12,9 @@ export class DrizzleMdocVerificationSessionRecordAdapter extends BaseDrizzleReco
   typeof sqlite.mdocVerificationSession,
   typeof sqlite
 > {
+  // Rows written before `session_key` was added only have `session_key_id`
+  public legacyColumns = ['sessionKeyId']
+
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
     super(
       database,

@@ -12,6 +12,9 @@ export interface OpenId4VcRequestContext {
   agentContext: AgentContext
 }
 
+// A request the client got wrong is an expected outcome, only a server error is a warning
+const errorResponseLogLevel = (status: number) => (status >= 500 ? 'warn' : 'info')
+
 export function sendUnauthorizedError(
   response: Response,
   next: NextFunction,
@@ -20,7 +23,7 @@ export function sendUnauthorizedError(
   status?: number
 ) {
   const errorMessage = error instanceof Error ? error.message : error
-  logger.warn(`[OID4VC] Sending authorization error response: ${JSON.stringify(errorMessage)}`, {
+  logger.info(`[OID4VC] Sending authorization error response: ${JSON.stringify(errorMessage)}`, {
     error,
   })
 
@@ -45,9 +48,12 @@ export function sendOauth2ErrorResponse(
   logger: Logger,
   error: Oauth2ServerErrorResponseError
 ) {
-  logger.warn(`[OID4VC] Sending oauth2 error response: ${JSON.stringify(error.message)}`, {
-    error,
-  })
+  logger[errorResponseLogLevel(error.status)](
+    `[OID4VC] Sending oauth2 error response: ${JSON.stringify(error.message)}`,
+    {
+      error,
+    }
+  )
 
   response.status(error.status).json(error.errorResponse)
   next(error)
@@ -95,7 +101,7 @@ export function sendErrorResponse(
     error_description: errorDescription,
     ...additionalPayload,
   }
-  logger.warn(`[OID4VC] Sending error response: ${JSON.stringify(body)}`, {
+  logger[errorResponseLogLevel(status)](`[OID4VC] Sending error response: ${JSON.stringify(body)}`, {
     error,
   })
 

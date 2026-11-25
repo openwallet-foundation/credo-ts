@@ -3,9 +3,6 @@
 '@credo-ts/askar': patch
 '@credo-ts/node': patch
 '@credo-ts/didcomm': patch
-'@credo-ts/cheqd': patch
-'@credo-ts/indy-vdr': patch
-'@credo-ts/hedera': patch
 '@credo-ts/webvh': patch
 '@credo-ts/react-native': patch
 ---

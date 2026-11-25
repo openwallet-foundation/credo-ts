@@ -1,6 +1,6 @@
 {
   "name": "Credo",
-  "dockerComposeFile": ["docker-compose.yml"], // if you are on arm, change this to docker-compose.arm.yml
+  "dockerComposeFile": ["docker-compose.yml"],
   "service": "credo",
   "remoteUser": "node",
   "workspaceFolder": "/work",

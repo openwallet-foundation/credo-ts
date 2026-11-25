@@ -1,0 +1,1 @@
+CREATE INDEX `did_did_idx` ON `Did` (`context_correlation_id`,`did`);

@@ -4,6 +4,7 @@ import { BaseRecord, type TagsBase } from '../../../storage/BaseRecord'
 import { createRecordEncodingSchema } from '../../../storage/recordEncodingSchema'
 import { uuid } from '../../../utils/uuid'
 import { zIsoDate, zTypedObject } from '../../../utils/zod'
+import type { KmsKeyReference } from '../../kms'
 import type { MdocDeviceRequestDefinition } from '../MdocOptions'
 import type { MdocVerificationSessionState } from '../MdocVerificationSessionState'
 
@@ -73,19 +74,25 @@ export interface MdocVerificationSessionRecordProps {
   deviceRequestDefinition: MdocDeviceRequestDefinition
   sessionTranscript: MdocVerificationSessionTranscript
 
-  sessionKeyId: string
+  sessionKey: KmsKeyReference
   expiresAt: Date
 }
 
-const mdocVerificationSessionRecordEncodingSchema = createRecordEncodingSchema({
-  state: z.string().nullish(),
-  errorMessage: z.string().nullish(),
-  deviceRequestBase64Url: z.string().nullish(),
-  deviceRequestDefinition: zTypedObject<MdocDeviceRequestDefinition>().nullish(),
-  sessionTranscript: zTypedObject<MdocVerificationSessionTranscript>().nullish(),
-  sessionKeyId: z.string().nullish(),
-  expiresAt: zIsoDate.nullish(),
-})
+const mdocVerificationSessionRecordEncodingSchema = createRecordEncodingSchema(
+  {
+    state: z.string().nullish(),
+    errorMessage: z.string().nullish(),
+    deviceRequestBase64Url: z.string().nullish(),
+    deviceRequestDefinition: zTypedObject<MdocDeviceRequestDefinition>().nullish(),
+    sessionTranscript: zTypedObject<MdocVerificationSessionTranscript>().nullish(),
+    sessionKey: zTypedObject<KmsKeyReference>().nullish(),
+    expiresAt: zIsoDate.nullish(),
+  },
+  {
+    upgrade: ({ sessionKeyId, ...encoded }) =>
+      sessionKeyId !== undefined ? { ...encoded, sessionKey: encoded.sessionKey ?? { keyId: sessionKeyId } } : encoded,
+  }
+)
 
 /**
  * A verification session for an mdoc presentation, currently the ISO/IEC TS 18013-7:2025 Annex C
@@ -135,13 +142,13 @@ export class MdocVerificationSessionRecord extends BaseRecord<DefaultMdocVerific
   public sessionTranscript!: MdocVerificationSessionTranscript
 
   /**
-   * Key id of the ephemeral key this agent created for the session. For the DC API this is the
+   * The ephemeral key this agent created for the session. For the DC API this is the
    * recipient key the device response is encrypted to.
    *
    * The key outlives the session: it is deleted when the session record is deleted, so a session
    * can be inspected and its response re-processed for as long as the record is kept.
    */
-  public sessionKeyId!: string
+  public sessionKey!: KmsKeyReference
 
   public expiresAt!: Date
 
@@ -158,7 +165,7 @@ export class MdocVerificationSessionRecord extends BaseRecord<DefaultMdocVerific
       this.deviceRequestBase64Url = props.deviceRequestBase64Url
       this.deviceRequestDefinition = props.deviceRequestDefinition
       this.sessionTranscript = props.sessionTranscript
-      this.sessionKeyId = props.sessionKeyId
+      this.sessionKey = props.sessionKey
       this.expiresAt = props.expiresAt
     }
   }

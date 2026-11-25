@@ -43,6 +43,20 @@
       "when": 1789043294850,
       "tag": "0005_add_mdoc_verification_session",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794768023994,
+      "tag": "0006_kms_key_references",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795093585724,
+      "tag": "0007_add_lookup_indexes",
+      "breakpoints": true
     }
   ]
 }

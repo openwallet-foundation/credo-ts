@@ -200,9 +200,11 @@ const testCases: AdapterTestCase[] = [
           docRequests: [],
         } as unknown as MdocVerificationSessionRecord['deviceRequestDefinition'],
         sessionTranscript: { type: 'isoMdocDcApi', encryptionInfoBase64Url: 'ZW5jcnlwdGlvbi1pbmZv', nonce: 'nonce' },
-        sessionKeyId: 'session-key-id',
+        sessionKey: { keyId: 'session-key-id', kmsBackend: 'node' },
         expiresAt: new Date('2026-01-03T00:00:00.000Z'),
       }),
+
+    unsetColumns: ['sessionKeyId'],
   },
   {
     name: 'W3cCredentialRecord',
@@ -495,13 +497,18 @@ const testCases: AdapterTestCase[] = [
     createRecord: () =>
       new OpenId4VcIssuerRecord({
         issuerId: 'issuer-id',
-        accessTokenPublicJwk: {
-          kty: 'OKP',
-          crv: 'Ed25519',
-          x: '11qYAYdk9Jtz7bQHmbT5D_Iy_fqpI6bD7Z2p1l9tUoQ',
-          kid: 'key-id',
+        accessTokenKey: {
+          publicJwk: { kty: 'OKP', crv: 'Ed25519', x: '11qYAYdk9Jtz7bQHmbT5D_Iy_fqpI6bD7Z2p1l9tUoQ' },
+          keyId: 'key-id',
+          kmsBackend: 'backend',
         },
-        accessTokenSignerKmsBackend: 'backend',
+        previousAccessTokenKeys: [
+          {
+            publicJwk: { kty: 'OKP', crv: 'Ed25519', x: 'a2MV1EhywNkwJAStsNWmpa7IRKjaCpu7niIKJQ3xTRI' },
+            keyId: 'previous-key-id',
+            kmsBackend: 'backend',
+          },
+        ],
         credentialConfigurationsSupported: {
           credential: { format: 'vc+sd-jwt', vct: 'IdentityCredential' },
         } as OpenId4VcIssuerRecord['credentialConfigurationsSupported'],
@@ -727,6 +734,17 @@ describe.each(testCases)('drizzle adapter for $name', ({ drizzleRecord, createRe
       )
     ).toEqual([])
   })
+})
+
+test('reads the session key of an mdoc verification session row from before session_key was added', () => {
+  const adapter: AnyDrizzleAdapter = new mdocVerificationSessionDrizzleRecord.adapter({} as never)
+  const record = testCases.find(({ name }) => name === 'MdocVerificationSessionRecord')?.createRecord()
+  if (!record) throw new Error('No MdocVerificationSessionRecord test case')
+
+  const { sessionKey, ...storedValues } = storeValues(adapter.getValuesWithBase(agentContext, record))
+  const loadedRecord = adapter.toRecord({ ...storedValues, sessionKeyId: 'session-key-id' })
+
+  expect((loadedRecord as MdocVerificationSessionRecord).sessionKey).toEqual({ keyId: 'session-key-id' })
 })
 
 describe('validateRecordMapping', () => {

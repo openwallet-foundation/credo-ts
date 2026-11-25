@@ -4,7 +4,7 @@ import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTran
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import type { AnonCredsDidCommCredentialFormatService } from '../../anoncreds/src/didcomm'
-import { getAnonCredsIndyModules } from '../../anoncreds/tests/indyAnonCredsSetup'
+import { getAnonCredsModules } from '../../anoncreds/tests/anoncredsSetup'
 import {
   anoncredsDefinitionFourAttributesNoRevocation,
   storePreCreatedAnonCredsDefinition,
@@ -42,7 +42,7 @@ const faberAgent = new Agent(
     'Faber Agent OOB',
     {},
     {},
-    getAnonCredsIndyModules({
+    getAnonCredsModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
       extraDidCommConfig: {
         endpoints: ['rxjs:faber'],
@@ -56,7 +56,7 @@ const aliceAgent = new Agent(
     'Alice Agent OOB',
     {},
     {},
-    getAnonCredsIndyModules({
+    getAnonCredsModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
       extraDidCommConfig: {
         endpoints: ['rxjs:alice'],

@@ -7,7 +7,10 @@ import {
 } from '@openid4vc/oauth2'
 import { addSecondsToDate } from '@openid4vc/utils'
 import type { NextFunction, Response, Router } from 'express'
-import type { OpenId4VciCredentialConfigurationsSupportedWithFormats } from '../../shared'
+import type {
+  OpenId4VciChainedAuthorizationServerDpopPolicy,
+  OpenId4VciCredentialConfigurationsSupportedWithFormats,
+} from '../../shared'
 import {
   getAllowedAndRequestedScopeValues,
   getCredentialConfigurationsSupportedForScopes,
@@ -220,6 +223,7 @@ export async function handlePushedAuthorizationRequest(
   let scopes: string[] = []
   let additionalRequestPayload: Record<string, unknown> | undefined
   let redirectUris: string[] | undefined = authorizationServerConfig.redirectUris
+  let dpopPolicy: OpenId4VciChainedAuthorizationServerDpopPolicy | undefined
 
   if (config.getChainedAuthorizationRequestParameters) {
     const dynamicConfiguration = await config.getChainedAuthorizationRequestParameters({
@@ -232,6 +236,7 @@ export async function handlePushedAuthorizationRequest(
     scopes = dynamicConfiguration.scopes
     additionalRequestPayload = dynamicConfiguration.additionalPayload
     redirectUris = dynamicConfiguration.redirectUris
+    dpopPolicy = dynamicConfiguration.dpopPolicy
   } else {
     try {
       scopes = openId4VcIssuerService.getStaticChainedAuthorizationScopes({
@@ -268,6 +273,7 @@ export async function handlePushedAuthorizationRequest(
     chainedAuthorizationServerConfig: authorizationServerConfig,
     authorizationServerMetadata,
     createKey: true,
+    policy: dpopPolicy,
   })
 
   // Store a new key before calling upstream, so a failed request doesn't orphan it and a retry reuses it
@@ -279,7 +285,9 @@ export async function handlePushedAuthorizationRequest(
     } catch (error) {
       if (externalDpop.keyGeneratedForSession) {
         try {
-          await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId: externalDpop.keyId })
+          await agentContext
+            .resolve(Kms.KeyManagementApi)
+            .deleteKey({ keyId: externalDpop.keyId, backend: externalDpop.kmsBackend })
         } catch (cleanupError) {
           agentContext.config.logger.error(
             'Failed to delete DPoP key after storing it on the issuance session failed',

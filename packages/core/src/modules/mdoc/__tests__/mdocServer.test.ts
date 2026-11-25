@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer'
+import { RegisteredCwtHeaderClaimKey } from '@owf/cose'
 import { MediaTypes, StatusType } from '@owf/token-status-list'
 import nock from 'nock'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
@@ -118,6 +119,51 @@ describe('mdoc service test', () => {
     mdoc.deviceKeyId = holderKey.keyId
     expect(mdoc.deviceKey.keyId).toEqual(holderKey.keyId)
     expect(MdocRecord.fromMdoc(mdoc).credentialInstances[0].kmsKeyId).toEqual(holderKey.keyId)
+  })
+
+  test('signs the IssuerAuth and DeviceSignature with the KMS key and backend, without a kid header', async () => {
+    const issuerCertificate = certificate.clone()
+    issuerCertificate.keyId = issuerKey.keyId
+    issuerCertificate.kmsBackend = issuerKey.backend
+    const sign = vi.spyOn(kms, 'sign')
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromKmsKey(holderKey),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate,
+      validityInfo: { validUntil: nextDay },
+    })
+    expect(sign).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keyId: issuerKey.keyId, backend: issuerKey.backend })
+    )
+    const { issuerAuth } = Mdoc.fromBase64Url(mdoc.base64Url).issuerSigned
+    expect(issuerAuth.unprotectedHeaders.headers.get(RegisteredCwtHeaderClaimKey.X5Chain)).toBeDefined()
+    expect(issuerAuth.unprotectedHeaders.headers.get(RegisteredCwtHeaderClaimKey.KeyId)).toBeUndefined()
+
+    mdoc.deviceKeyId = holderKey.keyId
+    mdoc.deviceKmsBackend = holderKey.backend
+
+    const deviceResponse = await MdocDeviceResponse.createDeviceResponse(agentContext, {
+      mdocs: [mdoc],
+      documentRequests: [{ docType: 'org.iso.18013.5.1.mDL', nameSpaces: { hello: { world: false } } }],
+      sessionTranscriptOptions: {
+        type: 'openId4VpDraft18',
+        mdocGeneratedNonce: 'something',
+        verifierGeneratedNonce: 'something-else',
+        clientId: 'something',
+        responseUri: 'something',
+      },
+    })
+    expect(sign).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keyId: holderKey.keyId, backend: holderKey.backend })
+    )
+    const [document] = MdocDeviceResponse.fromBase64Url(deviceResponse.encoded).deviceResponse.documents ?? []
+    const { deviceSignature } = document.deviceSigned.deviceAuth
+    if (!deviceSignature) throw new Error('Expected a device signature')
+    expect(deviceSignature.unprotectedHeaders.headers.get(RegisteredCwtHeaderClaimKey.KeyId)).toBeUndefined()
+
+    sign.mockRestore()
   })
 
   test('can create and verify mdoc', async () => {

@@ -1,5 +1,6 @@
 import {
   AgentContext,
+  CredoError,
   type DependencyManager,
   type FileSystem,
   InjectionSymbols,
@@ -545,7 +546,13 @@ export class AskarStoreManager {
 
       return result
     } catch (error) {
-      agentContext.config.logger.error('Error occurred during transaction, rollback', {
+      // A duplicate or missing entry and the errors a callback throws are not failures of the store
+      const isStoreFailure =
+        error instanceof AskarStoreError ||
+        (!(error instanceof CredoError) &&
+          !isAskarError(error, AskarErrorCode.Duplicate) &&
+          !isAskarError(error, AskarErrorCode.NotFound))
+      agentContext.config.logger[isStoreFailure ? 'error' : 'debug']('Error occurred during transaction, rollback', {
         error,
       })
       if (transaction && session?.handle) {

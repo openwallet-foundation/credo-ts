@@ -19,8 +19,10 @@ import {
   DidDocument,
   DidDocumentService,
   DidRepository,
+  getJsonWebKey2020,
   InjectionSymbols,
   InMemoryLruCache,
+  Kms,
   VerificationMethod,
 } from '@credo-ts/core'
 import { resolveDIDFromLog } from 'didwebvh-ts'
@@ -127,6 +129,26 @@ describe('WebVhDidRegistrar boundary contracts', () => {
       expect(log).toHaveLength(2)
     })
 
+    it('updates with an update key stored as only a key id, as before the backend was stored', async () => {
+      const createResult = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
+      const { did, didDocument } = createResult.didState
+      if (!did || !didDocument) throw new Error('create failed')
+      const record = await repository.getSingleByQuery(agentContext, { did })
+      const [[updateKey, storedKey]] = Object.entries(
+        record.metadata.get(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds) ?? {}
+      )
+      expect(storedKey).toEqual({ keyId: expect.any(String), kmsBackend: 'node' })
+
+      record.keys = undefined
+      record.metadata.set(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds, {
+        [updateKey]: (storedKey as Kms.KmsKeyReference).keyId,
+      })
+      await repository.update(agentContext, record)
+
+      const updateResult = await registrar.update(agentContext, { did, didDocument })
+      expect(updateResult.didState.state).toBe('finished')
+    })
+
     it('version indices are monotonically increasing across log entries', async () => {
       const createResult = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
       const { did, didDocument } = createResult.didState
@@ -188,6 +210,35 @@ describe('WebVhDidRegistrar boundary contracts', () => {
       expect(resolved.meta.error).toBeUndefined()
       expect(resolved.doc.service).toBeDefined()
     })
+
+    it('updates to a document with only a JsonWebKey2020 verification method, signed with the update key', async () => {
+      const createResult = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
+      const { did, didDocument } = createResult.didState
+      if (!did || !didDocument) throw new Error('create failed')
+
+      const { publicJwk } = await agentContext.resolve(Kms.KeyManagementApi).createKey({
+        type: { kty: 'EC', crv: 'P-256' },
+      })
+      didDocument.verificationMethod = [
+        new VerificationMethod(
+          getJsonWebKey2020({
+            did,
+            verificationMethodId: `${did}#jwk-1`,
+            publicJwk: Kms.PublicJwk.fromPublicJwk(publicJwk),
+          })
+        ),
+      ]
+      didDocument.assertionMethod = [`${did}#jwk-1`]
+      const updateResult = await registrar.update(agentContext, { did, didDocument })
+      expect(updateResult.didState.state).toBe('finished')
+
+      const record = await repository.getSingleByQuery(agentContext, { did })
+      const log = record.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
+      const resolved = await resolveDIDFromLog(log, { verifier: new WebVhDidCrypto(agentContext) })
+
+      expect(resolved.meta.error).toBeUndefined()
+      expect(resolved.doc.verificationMethod).toEqual([expect.objectContaining({ id: `${did}#jwk-1` })])
+    })
   })
 
   describe('assertionMethod conformance', () => {
@@ -236,7 +287,6 @@ describe('WebVhDidRegistrar boundary contracts', () => {
       const { did, didDocument } = createResult.didState
       if (!did || !didDocument) throw new Error('create failed')
 
-      // The update key must stay first, as the registrar signs the log entry with it
       const updateKeyVerificationMethod = didDocument.verificationMethod?.[0] as VerificationMethod
       const extraVerificationMethod = new VerificationMethod({
         id: `${did}#extrakey1`,
@@ -245,7 +295,8 @@ describe('WebVhDidRegistrar boundary contracts', () => {
         publicKeyMultibase: 'z6MkukEa8GPVCEPy7EzRSbeHPXD1vsuPy3eD13CkDKQsoCGS',
       })
 
-      didDocument.verificationMethod = [updateKeyVerificationMethod, extraVerificationMethod]
+      // The log entry is signed with the update key, wherever it is in the list
+      didDocument.verificationMethod = [extraVerificationMethod, updateKeyVerificationMethod]
       didDocument.assertionMethod = [updateKeyVerificationMethod.id, extraVerificationMethod.id]
       const withExtraKey = await registrar.update(agentContext, { did, didDocument })
       expect(withExtraKey.didState.didDocument?.assertionMethod).toHaveLength(2)

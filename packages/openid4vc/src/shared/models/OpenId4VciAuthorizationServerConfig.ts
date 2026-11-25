@@ -52,6 +52,17 @@ export interface OpenId4VciDirectAuthorizationServerConfig {
   clientAuthentication?: Optional<OpenId4VciAuthorizationServerClientAuthenticationClientSecret, 'type'>
 }
 
+/**
+ * Whether to use DPoP towards a chained authorization server:
+ * - `required`: use DPoP, the authorization request fails if the server does not advertise support
+ * - `preferred`: use DPoP if the server advertises support
+ * - `disallowed`: do not use DPoP, also when the server advertises support. Issuance sessions
+ *   that already use DPoP keep using it.
+ *
+ * When DPoP is used and Credo cannot create a compatible proof, it errors rather than falling back.
+ */
+export type OpenId4VciChainedAuthorizationServerDpopPolicy = 'required' | 'preferred' | 'disallowed'
+
 export interface OpenId4VciChainedAuthorizationServerConfig {
   type: 'chained'
 
@@ -69,13 +80,12 @@ export interface OpenId4VciChainedAuthorizationServerConfig {
 
   dpop?: {
     /**
-     * Require the chained authorization server to advertise DPoP support. If support is not
-     * advertised, the authorization request fails. When the server advertises DPoP, Credo always
-     * uses it and errors rather than falling back if it cannot create a compatible proof.
+     * Whether to use DPoP towards this authorization server. Can be overridden per issuance session
+     * with `dpopPolicy` from the `getChainedAuthorizationRequestParameters` callback.
      *
-     * @default false
+     * @default 'preferred'
      */
-    requireServerSupport?: boolean
+    policy?: OpenId4VciChainedAuthorizationServerDpopPolicy
 
     /**
      * Existing KMS key id to use for new DPoP sessions. Existing issuance sessions retain their
@@ -83,6 +93,11 @@ export interface OpenId4VciChainedAuthorizationServerConfig {
      * Keep old configured keys available until no active sessions need them.
      */
     keyId?: string
+
+    /**
+     * The KMS backend that holds `keyId`, so the key isn't looked up in each backend.
+     */
+    kmsBackend?: string
 
     /**
      * Restrict the DPoP signing algorithms Credo uses towards this authorization server. Does not affect

@@ -3,7 +3,7 @@ import figlet from 'figlet'
 import inquirer from 'inquirer'
 
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
-import { Faber, RegistryOptions } from './Faber'
+import { Faber } from './Faber'
 import { Listener } from './Listener'
 import { Title } from './OutputClass'
 
@@ -34,6 +34,8 @@ export class FaberInquirer extends BaseInquirer {
     this.listener = new Listener()
     this.promptOptionsString = Object.values(PromptOptions)
     this.listener.messageListener(this.faber.agent, this.faber.name)
+    this.listener.credentialProposalListener(this.faber)
+    this.listener.proofDoneListener(this.faber)
   }
 
   public static async build(): Promise<FaberInquirer> {
@@ -90,10 +92,6 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   public async credential() {
-    const registry = await inquirer.prompt([
-      this.inquireOptions([RegistryOptions.indy, RegistryOptions.cheqd, RegistryOptions.hedera]),
-    ])
-    await this.faber.importDid(registry.options)
     await this.faber.issueCredential()
     const title = 'Is the credential offer accepted?'
     await this.listener.newAcceptedPrompt(title, this)

@@ -283,6 +283,33 @@ describe('DIDComm inbound transports', () => {
     expect(response.status).toBe(202)
   })
 
+  it('answers 500 as soon as processing the message fails, without logging the failure again', async () => {
+    const app = createApp()
+    const agentContext = createAgentContext()
+    const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
+    const events = eventEmitter.observable(
+      DidCommEventTypes.DidCommMessageProcessingFailed
+    ) as unknown as Subject<unknown>
+    vi.mocked(eventEmitter.emit).mockImplementation((_agentContext, event) =>
+      events.next({
+        type: DidCommEventTypes.DidCommMessageProcessingFailed,
+        payload: { error: new Error('failed'), message: (event.payload as { message: unknown }).message },
+      })
+    )
+    const transport = new DidCommHttpInboundTransport({ app, path: '/didcomm' })
+
+    await transport.start(agentContext)
+    const port = await listen(createServer(app))
+    const response = await fetch(`http://127.0.0.1:${port}/didcomm`, {
+      method: 'POST',
+      headers: { 'content-type': DidCommMimeType.V1 },
+      body: '{"protected":"e30"}',
+    })
+
+    expect(response.status).toBe(500)
+    expect(agentContext.config.logger.error).not.toHaveBeenCalled()
+  })
+
   it('rejects the DIDComm v2 encrypted media type when v2 is not enabled', async () => {
     const app = createApp()
     const agentContext = createAgentContext()

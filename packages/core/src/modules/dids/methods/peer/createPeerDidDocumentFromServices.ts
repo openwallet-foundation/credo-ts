@@ -55,10 +55,12 @@ export function createPeerDidDocumentFromServices<WithKeys extends boolean>(
         keys.push({
           didDocumentRelativeKeyId: ed25519RelativeVerificationMethodId,
           kmsKeyId: recipientKey.keyId,
+          kmsBackend: recipientKey.kmsBackend,
         })
         keys.push({
           didDocumentRelativeKeyId: x25519RelativeVerificationMethodId,
           kmsKeyId: recipientKey.keyId,
+          kmsBackend: recipientKey.kmsBackend,
         })
       }
 

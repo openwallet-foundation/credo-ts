@@ -6,6 +6,7 @@ import {
   DidKey,
   DidRepository,
   DidsApi,
+  findMatchingEd25519Key,
   getAlternativeDidsForPeerDid,
   getNumAlgoFromPeerDid,
   getPublicJwkFromVerificationMethod,
@@ -134,11 +135,12 @@ export class DidExchangeProtocol {
       .filter(({ publicJwk }) => publicJwk.is(Kms.Ed25519PublicJwk))
       .map(({ publicJwk, verificationMethod }) => {
         // Bind the kmsKeyIds
-        const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
+        const key = keys?.find(({ didDocumentRelativeKeyId }) =>
           verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-        )?.kmsKeyId
+        )
 
-        publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
+        publicJwk.keyId = key?.kmsKeyId ?? publicJwk.legacyKeyId
+        publicJwk.kmsBackend = key?.kmsBackend
 
         return publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>
       })
@@ -313,39 +315,33 @@ export class DidExchangeProtocol {
       const dids = agentContext.resolve(DidsApi)
       const resolved = await dids.resolveCreatedDidDocumentWithKeys(parseDid(did).did)
 
-      // Collect the verification method ids that DIDComm v1 services explicitly point to
-      // as recipient keys. The receiver only stores those (after Ed25519 filtering — see
-      // processResponse) as `invitationKeys`, so the responder must restrict itself to the
-      // same set: signing with extra keys (e.g. a webvh update key, or unrelated Ed25519
-      // verification methods that happen to be present in `authentication` / `keyAgreement`)
-      // would produce signer keys that are not invitation keys and the receiver would
-      // reject the response with `response_not_accepted`.
-      const v1RecipientKeyVmIds = new Set<string>()
+      // Only the keys the receiver takes as invitation keys (see DidCommDocumentService.resolveServicesFromDid) may sign,
+      // any other key makes it reject the response: the DIDComm v1 recipient keys, X25519 mapped to its Ed25519 key.
       for (const service of resolved.didDocument.didCommServices) {
-        if (service instanceof DidCommV1Service) {
-          for (const recipientKey of service.recipientKeys) {
-            const vm = resolved.didDocument.dereferenceKey(recipientKey, ['authentication', 'keyAgreement'])
-            v1RecipientKeyVmIds.add(vm.id)
-          }
+        if (!(service instanceof DidCommV1Service)) continue
+
+        for (const recipientKey of service.recipientKeys) {
+          const verificationMethod = resolved.didDocument.dereferenceKey(recipientKey, [
+            'authentication',
+            'keyAgreement',
+          ])
+          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+          const signingKey = publicJwk.is(Kms.X25519PublicJwk)
+            ? findMatchingEd25519Key(publicJwk, resolved.didDocument)
+            : { publicJwk, verificationMethod }
+
+          if (!signingKey?.publicJwk.is(Kms.Ed25519PublicJwk)) continue
+          if (invitationRecipientKeys.some((key) => key.fingerprint === signingKey.publicJwk.fingerprint)) continue
+
+          const key = resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
+            signingKey.verificationMethod.id.endsWith(didDocumentRelativeKeyId)
+          )
+
+          signingKey.publicJwk.keyId = key?.kmsKeyId ?? signingKey.publicJwk.legacyKeyId
+          signingKey.publicJwk.kmsBackend = key?.kmsBackend
+          invitationRecipientKeys.push(signingKey.publicJwk)
         }
       }
-
-      invitationRecipientKeys.push(
-        ...resolved.didDocument
-          .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
-          .filter(
-            ({ publicJwk, verificationMethod }) =>
-              publicJwk.is(Kms.Ed25519PublicJwk) && v1RecipientKeyVmIds.has(verificationMethod.id)
-          )
-          .map(({ publicJwk, verificationMethod }) => {
-            const kmsKeyId = resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
-              verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-            )?.kmsKeyId
-
-            publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
-            return publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>
-          })
-      )
     }
 
     if (numAlgo === PeerDidNumAlgo.GenesisDoc) {
@@ -535,7 +531,7 @@ export class DidExchangeProtocol {
 
         const jws = await this.jwsService.createJws(agentContext, {
           payload,
-          keyId: signingKey.keyId,
+          key: signingKey,
           header: {
             kid,
           },

@@ -33,10 +33,13 @@ import { DidCommRoutingService } from '../../routing/services/DidCommRoutingServ
 import { getMediationRecordForDidDocument } from '../../routing/services/helpers'
 import type { DidCommConnectionDidRotatedEvent } from '../DidCommConnectionEvents'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
+import { DidCommConnectionHangupReason, DidCommDidExchangeState } from '../models'
 import type { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from './DidCommConnectionService'
 import { addSharedDid, createPeerDidForV2OOB, toAbsoluteDidUrl } from './helpers'
+
+const FROM_PRIOR_CLAIMS = ['iss', 'sub', 'iat']
 
 export interface FromPriorPayload {
   iss: string
@@ -194,6 +197,15 @@ export class DidCommDidRotateV2Service {
     }
 
     if (payload.sub === undefined) {
+      // A termination travels anoncrypt or authcrypt from the DID it ends; carried by another DID it is a replay
+      if (senderDid && !areEquivalentDidPeer4Forms(payload.iss, senderDid)) {
+        this.logger.warn("Ignoring termination from_prior whose 'iss' is not the authenticated sender", {
+          connectionId: connection.id,
+          iss: payload.iss,
+          senderDid,
+        })
+        return 'ignored'
+      }
       await this.processRotateToNothing(agentContext, connection)
       return 'applied'
     }
@@ -302,7 +314,10 @@ export class DidCommDidRotateV2Service {
     }
     const previousTheirDid = connection.theirDid
     connection.theirDid = undefined
-    await agentContext.dependencyManager.resolve(DidCommConnectionService).update(agentContext, connection)
+    connection.errorMessage = DidCommConnectionHangupReason.ByOtherParty
+    await agentContext
+      .resolve(DidCommConnectionService)
+      .updateState(agentContext, connection, DidCommDidExchangeState.Abandoned)
     this.emitDidRotatedEvent(agentContext, connection, { previousTheirDid })
   }
 
@@ -445,7 +460,20 @@ export class DidCommDidRotateV2Service {
   }
 
   private decodeFromPrior(jws: string): FromPriorPayload {
-    const { payload } = Jwt.fromSerializedJwt(jws)
+    const { header, payload } = Jwt.fromSerializedJwt(jws)
+
+    // A DID may sign other JWTs with its authentication key, such as SD-JWT VCs. Those have another typ
+    // or claims of their own, and must not rotate or end a relationship. typ may be absent for interop.
+    const typ = (header as { typ?: unknown }).typ
+    if (typ !== undefined && typ !== 'JWT') {
+      throw new CredoError(`from_prior JWT has typ '${typ}', expected 'JWT'`)
+    }
+    // The spec defines only these claims, so any other one is another kind of JWT or an extension we cannot interpret
+    const unknownClaims = Object.keys(payload.toJson()).filter((claim) => !FROM_PRIOR_CLAIMS.includes(claim))
+    if (unknownClaims.length > 0) {
+      throw new CredoError(`from_prior JWT has claims other than iss, sub and iat: ${unknownClaims.join(', ')}`)
+    }
+
     if (typeof payload.iss !== 'string') throw new CredoError("from_prior JWT missing 'iss'")
     if (typeof payload.iat !== 'number') throw new CredoError("from_prior JWT missing 'iat'")
     if (payload.sub !== undefined && typeof payload.sub !== 'string') {
@@ -475,11 +503,15 @@ export class DidCommDidRotateV2Service {
       iat: Math.floor(Date.now() / 1000),
     })
 
+    const publicJwk = getPublicJwkFromVerificationMethod(authVm)
+    publicJwk.keyId = kmsKey.kmsKeyId
+    publicJwk.kmsBackend = kmsKey.kmsBackend
+
     return this.jwsService.createJwsCompact(agentContext, {
-      keyId: kmsKey.kmsKeyId,
+      key: publicJwk,
       payload,
       protectedHeaderOptions: {
-        alg: getPublicJwkFromVerificationMethod(authVm).signatureAlgorithm,
+        alg: publicJwk.signatureAlgorithm,
         kid: toAbsoluteDidUrl(priorDid, authVm.id),
         typ: 'JWT',
       },

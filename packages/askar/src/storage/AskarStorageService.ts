@@ -244,6 +244,8 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
       return instances
     } catch (error) {
       if (error instanceof RecordDecodingError) throw error
+      // The scan runs outside the session, which logs the other store failures
+      agentContext.config.logger.error('Error executing query', { error })
       throw new AskarError(`Error executing query. ${error.message}`, { cause: error })
     }
   }

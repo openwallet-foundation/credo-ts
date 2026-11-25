@@ -89,20 +89,23 @@ export class KeyManagementApi<Backends extends KeyManagementService[] = KeyManag
   }
 
   /**
-   * The JWA signature algorithms that at least one backend can sign with.
+   * The JWA signature algorithms that at least one backend can sign with, or verify with when
+   * `operation` is `verify`.
    *
    * Symmetric (HMAC) algorithms are excluded by default, since in most cases signatures are
    * verified by another party using a public key.
    */
   public supportedJwaSignatureAlgorithms(options?: {
     includeSymmetricAlgorithms?: boolean
+    operation?: 'sign' | 'verify'
   }): KnownJwaSignatureAlgorithm[] {
     const includeSymmetricAlgorithms = options?.includeSymmetricAlgorithms ?? false
+    const operation = options?.operation ?? 'sign'
 
     return Object.values(KnownJwaSignatureAlgorithms).filter(
       (algorithm) =>
         (includeSymmetricAlgorithms || createKeyTypeForSigningAlgorithm(algorithm).kty !== 'oct') &&
-        this.supportedBackendsForOperation({ operation: 'sign', algorithm }).length > 0
+        this.supportedBackendsForOperation({ operation, algorithm }).length > 0
     )
   }
 

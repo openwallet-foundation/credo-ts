@@ -55,7 +55,8 @@ export interface DidCommV2AnoncryptKeys {
 }
 
 export interface DidCommV2Signer {
-  keyId: string
+  /** With a `PublicJwk`, the KMS checks that the key that signs has that public key. */
+  key: Kms.PublicJwk | Kms.KmsKeyReference
   /** DID URL of the signing key, sent in the unprotected per-signature JWS header. */
   kid: string
   alg: DidCommV2SigningAlgorithm
@@ -101,6 +102,7 @@ export class DidCommV2EnvelopeService {
 
     let protectedHeader: string | undefined
     const result = await kms.encrypt({
+      backend: keys.senderKey.kmsBackend,
       key: {
         keyAgreement: {
           algorithm: 'ECDH-1PU+A256KW',
@@ -194,7 +196,7 @@ export class DidCommV2EnvelopeService {
     // didcomm-rust and didcomm-python require it there.
     const signed = await this.jwsService.createJws(agentContext, {
       payload: JsonEncoder.toUint8Array(plaintext),
-      keyId: signer.keyId,
+      key: signer.key,
       header: { kid: signer.kid },
       protectedHeaderOptions: {
         typ: DIDCOMM_V2_SIGNED_MIME_TYPE,
@@ -308,6 +310,7 @@ export class DidCommV2EnvelopeService {
     }
 
     const { data } = await kms.decrypt({
+      backend: keys.recipientKey.kmsBackend,
       key: {
         keyAgreement: {
           algorithm: 'ECDH-1PU+A256KW',
@@ -355,6 +358,7 @@ export class DidCommV2EnvelopeService {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
     const { data } = await kms.decrypt({
+      backend: keys.recipientKey.kmsBackend,
       key: {
         keyAgreement: {
           algorithm: 'ECDH-ES+A256KW',
