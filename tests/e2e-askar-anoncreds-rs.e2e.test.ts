@@ -62,7 +62,7 @@ const senderAgentOptions = getAgentOptions(
   { requireDidcomm: true }
 )
 
-describe('E2E Askar-AnonCredsRS-IndyVDR Subject tests', () => {
+describe('E2E Askar-AnonCredsRS Subject tests', () => {
   let recipientAgent: AnonCredsTestsAgent
   let mediatorAgent: AnonCredsTestsAgent
   let senderAgent: AnonCredsTestsAgent

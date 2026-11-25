@@ -15,14 +15,11 @@
     "faber:v2": "DIDCOMM_VERSION=v2 vite-node src/FaberInquirer.ts"
   },
   "dependencies": {
-    "@hyperledger/anoncreds-nodejs": "catalog:",
     "@openwallet-foundation/askar-nodejs": "catalog:",
     "inquirer": "^14.2.5"
   },
   "devDependencies": {
-    "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/askar": "workspace:*",
-    "@credo-ts/cheqd": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
     "@credo-ts/node": "workspace:*",

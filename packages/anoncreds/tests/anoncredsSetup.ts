@@ -1,13 +1,4 @@
-import type { CheqdDidCreateOptions } from '@credo-ts/cheqd'
-import {
-  Agent,
-  CacheModule,
-  CredoError,
-  DidDocumentBuilder,
-  DidsModule,
-  InMemoryLruCache,
-  TypedArrayEncoder,
-} from '@credo-ts/core'
+import { Agent, CacheModule, CredoError, DidDocumentBuilder, DidsModule, InMemoryLruCache } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
   type DidCommAutoAcceptProof,
@@ -25,9 +16,6 @@ import {
 } from '@credo-ts/didcomm'
 
 import { randomUUID } from 'crypto'
-import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
-import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../../cheqd/src/index'
-import { getCheqdModuleConfig } from '../../cheqd/tests/setupCheqdModule'
 import { sleep } from '../../core/src/utils/sleep'
 import type { EventReplaySubject } from '../../core/tests'
 import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
@@ -73,16 +61,11 @@ export const getAnonCredsModules = ({
   autoAcceptCredentials,
   autoAcceptProofs,
   registries,
-  cheqd,
   extraDidCommConfig,
 }: {
   autoAcceptCredentials?: DidCommAutoAcceptCredential
   autoAcceptProofs?: DidCommAutoAcceptProof
   registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
-  cheqd?: {
-    rpcUrl?: string
-    seed?: string
-  }
   extraDidCommConfig?: Omit<DidCommModuleConfigOptions, 'proofs' | 'credentials'>
 } = {}) => {
   const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService({
@@ -104,9 +87,7 @@ export const getAnonCredsModules = ({
   const anonCredsProofFormatService = new AnonCredsDidCommProofFormatService()
   const presentationExchangeProofFormatService = new DidCommDifPresentationExchangeProofFormatService()
 
-  const cheqdSdk = cheqd ? new CheqdModule(getCheqdModuleConfig(cheqd.seed, cheqd.rpcUrl)) : undefined
   const modules = {
-    ...(cheqdSdk && { cheqdSdk }),
     didcomm: new DidCommModule({
       connections: {
         autoAcceptConnections: true,
@@ -137,8 +118,7 @@ export const getAnonCredsModules = ({
       anoncreds: NativeAnoncreds,
     }),
     dids: new DidsModule({
-      resolvers: cheqd ? [new CheqdDidResolver()] : [new LocalDidResolver()],
-      registrars: cheqd ? [new CheqdDidRegistrar()] : undefined,
+      resolvers: [new LocalDidResolver()],
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
@@ -333,14 +313,9 @@ export async function setupAnonCredsTests<
   createConnections,
   supportRevocation,
   registries,
-  cheqd,
   didCommVersion,
 }: {
-  issuerId?: string
-  cheqd?: {
-    rpcUrl?: string
-    seed?: string
-  }
+  issuerId: string
   issuerName: string
   holderName: string
   verifierName?: VerifierName
@@ -366,7 +341,6 @@ export async function setupAnonCredsTests<
         autoAcceptCredentials,
         autoAcceptProofs,
         registries,
-        cheqd,
         extraDidCommConfig: {
           endpoints: ['rxjs:issuer'],
           ...extraDidCommConfigForVersion,
@@ -385,7 +359,6 @@ export async function setupAnonCredsTests<
         autoAcceptCredentials,
         autoAcceptProofs,
         registries,
-        cheqd,
         extraDidCommConfig: {
           endpoints: ['rxjs:holder'],
           ...extraDidCommConfigForVersion,
@@ -405,7 +378,6 @@ export async function setupAnonCredsTests<
             autoAcceptCredentials,
             autoAcceptProofs,
             registries,
-            cheqd,
             extraDidCommConfig: {
               endpoints: ['rxjs:verifier'],
               ...extraDidCommConfigForVersion,
@@ -436,34 +408,8 @@ export async function setupAnonCredsTests<
     setAsDefault: true,
   })
 
-  if (issuerId) {
-    const didDocument = new DidDocumentBuilder(issuerId).build()
-    await issuerAgent.dids.import({ did: issuerId, didDocument })
-  } else if (cheqd) {
-    const privateKey = TypedArrayEncoder.fromUtf8String('000000000000000000000000001cheqd')
-    const { privateJwk } = transformPrivateKeyToPrivateJwk({
-      type: {
-        kty: 'OKP',
-        crv: 'Ed25519',
-      },
-      privateKey,
-    })
-    const didDocumentKey = await issuerAgent.kms.importKey({
-      privateJwk,
-    })
-
-    const did = await issuerAgent.dids.create<CheqdDidCreateOptions>({
-      method: 'cheqd',
-      options: {
-        network: 'testnet',
-        methodSpecificIdAlgo: 'uuid',
-        keyId: didDocumentKey.keyId,
-      },
-    })
-    issuerId = did.didState.did as string
-  } else {
-    throw new CredoError('issuerId is required if cheqd is not used')
-  }
+  const didDocument = new DidDocumentBuilder(issuerId).build()
+  await issuerAgent.dids.import({ did: issuerId, didDocument })
 
   const { credentialDefinition, revocationRegistryDefinition, revocationStatusList, schema } =
     await prepareForAnonCredsIssuance(issuerAgent, {
