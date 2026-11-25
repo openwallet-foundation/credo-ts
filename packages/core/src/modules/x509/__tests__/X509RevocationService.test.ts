@@ -5,7 +5,7 @@ import type { Agent } from '../../../agent/Agent'
 import type { AgentContext } from '../../../agent/context'
 import type { InMemoryLruCache } from '../../cache'
 import type { KeyManagementApi, PublicJwk } from '../../kms'
-import { getCachedCrlSummary } from '../utils/crlFetcher'
+import { getCachedCrlDownloadFailures, getCachedCrlSummary } from '../utils/crlFetcher'
 import { X509Certificate, X509KeyUsage } from '../X509Certificate'
 import {
   X509CertificateRevocationList,
@@ -187,7 +187,7 @@ describe('X509RevocationService', () => {
 
   it('passes on network error in SoftFail but fails in Require', async () => {
     const leaf = await createLeaf({ serialNumber: '1005', crlDistributionPoints: { urls: [FULL_URL] } })
-    // A failed fetch is not cached, so both checks attempt a fetch.
+    // A single failed download is not remembered as unavailable, so both checks attempt a fetch.
     mockCrlNetworkError(FULL_URL, { times: 2 })
 
     const soft = await checkRevocation(leaf, issuerCertificate, {
@@ -201,6 +201,147 @@ describe('X509RevocationService', () => {
     })
     expect(required.isValid).toBe(false)
     expect(required.error?.message).toContain('Required revocation check failed')
+  })
+
+  it('remembers a distribution point as unavailable after three failed downloads in a row', async () => {
+    const leaf = await createLeaf({ serialNumber: '1015', crlDistributionPoints: { urls: [FULL_URL] } })
+    const options = { mode: X509RevocationCheckMode.Require }
+
+    // A successful download in between starts the count again
+    mockCrlNetworkError(FULL_URL, { times: 2 })
+    for (let i = 0; i < 2; i++) expect((await checkRevocation(leaf, issuerCertificate, options)).isValid).toBe(false)
+    expect((await getCachedCrlDownloadFailures(agentContext, FULL_URL))?.count).toBe(2)
+    mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+    expect((await checkRevocation(leaf, issuerCertificate, options)).isValid).toBe(true)
+    expect(await getCachedCrlDownloadFailures(agentContext, FULL_URL)).toBeNull()
+    cache.clear()
+
+    mockCrlNetworkError(FULL_URL, { times: 3 })
+    let failed = await checkRevocation(leaf, issuerCertificate, options)
+    for (let i = 0; i < 2; i++) failed = await checkRevocation(leaf, issuerCertificate, options)
+    expect(failed.isValid).toBe(false)
+
+    // The distribution point is back, but it is not tried within the unavailable period
+    const recovered = mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+    const remembered = await checkRevocation(leaf, issuerCertificate, options)
+    expect(remembered.isValid).toBe(false)
+    expect(remembered.error?.message).toEqual(failed.error?.message)
+    expect(recovered.isDone()).toBe(false)
+    const soft = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.SoftFail })
+    expect(soft.isValid).toBe(true)
+    expect(soft.details).toContain('SoftFail')
+
+    // Once the entry is gone the download is tried again
+    cache.clear()
+    const retried = await checkRevocation(leaf, issuerCertificate, options)
+    expect(retried.isValid).toBe(true)
+    expect(recovered.isDone()).toBe(true)
+  })
+
+  it('tries one download after the unavailable period and stays unavailable when it fails', async () => {
+    const leaf = await createLeaf({ serialNumber: '1019', crlDistributionPoints: { urls: [FULL_URL] } })
+    const options = { mode: X509RevocationCheckMode.Require }
+    const now = Date.now()
+    const dateNowSpy = vi.spyOn(Date, 'now').mockReturnValue(now)
+
+    mockCrlNetworkError(FULL_URL, { times: 3 })
+    for (let i = 0; i < 3; i++) await checkRevocation(leaf, issuerCertificate, options)
+
+    // After the period one download is tried, and its failure makes the url unavailable again
+    dateNowSpy.mockReturnValue(now + 11_000)
+    const probe = mockCrlNetworkError(FULL_URL)
+    expect((await checkRevocation(leaf, issuerCertificate, options)).isValid).toBe(false)
+    expect(probe.isDone()).toBe(true)
+    const recovered = mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+    expect((await checkRevocation(leaf, issuerCertificate, options)).isValid).toBe(false)
+    expect(recovered.isDone()).toBe(false)
+
+    // After the next period the recovered distribution point is used again
+    dateNowSpy.mockReturnValue(now + 22_000)
+    expect((await checkRevocation(leaf, issuerCertificate, options)).isValid).toBe(true)
+    expect(recovered.isDone()).toBe(true)
+    expect(await getCachedCrlDownloadFailures(agentContext, FULL_URL)).toBeNull()
+    dateNowSpy.mockRestore()
+  })
+
+  it('fails concurrent checks with the one failed download they share', async () => {
+    const leaf = await createLeaf({ serialNumber: '1018', crlDistributionPoints: { urls: [FULL_URL] } })
+    // A single interceptor: a second download would get the recovered CRL and succeed
+    mockCrlNetworkError(FULL_URL)
+    const recovered = mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+
+    const results = await Promise.all(
+      [1, 2, 3].map(() => checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require }))
+    )
+
+    expect(results.map((result) => result.isValid)).toEqual([false, false, false])
+    expect(recovered.isDone()).toBe(false)
+    nock.cleanAll()
+  })
+
+  it('downloads on every check when crlUnavailableCacheExpirySeconds is 0', async () => {
+    const leaf = await createLeaf({ serialNumber: '1016', crlDistributionPoints: { urls: [FULL_URL] } })
+    const options = { mode: X509RevocationCheckMode.Require, crlUnavailableCacheExpirySeconds: 0 }
+    mockCrlNetworkError(FULL_URL, { times: 3 })
+    for (let i = 0; i < 3; i++) expect((await checkRevocation(leaf, issuerCertificate, options)).isValid).toBe(false)
+
+    mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+    expect((await checkRevocation(leaf, issuerCertificate, options)).isValid).toBe(true)
+  })
+
+  it('forgets the failed downloads after a successful download with crlUnavailableCacheExpirySeconds 0', async () => {
+    const leaf = await createLeaf({ serialNumber: '101b', crlDistributionPoints: { urls: [FULL_URL] } })
+    mockCrlNetworkError(FULL_URL, { times: 3 })
+    for (let i = 0; i < 3; i++)
+      await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+
+    mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+    const options = { mode: X509RevocationCheckMode.Require, crlUnavailableCacheExpirySeconds: 0 }
+    expect((await checkRevocation(leaf, issuerCertificate, options)).isValid).toBe(true)
+    expect(await getCachedCrlDownloadFailures(agentContext, FULL_URL)).toBeNull()
+  })
+
+  it('does not share a download between concurrent checks with different download limits', async () => {
+    const leaf = await createLeaf({ serialNumber: '101c', crlDistributionPoints: { urls: [FULL_URL] } })
+    mockCrl(FULL_URL, await crlBytes({ entries: [] }), { times: 2 })
+
+    const [tooSmall, fits] = await Promise.all([
+      checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require, maxCrlSizeBytes: 10 }),
+      checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require }),
+    ])
+
+    expect(tooSmall.isValid).toBe(false)
+    expect(fits.isValid).toBe(true)
+  })
+
+  it('downloads and parses a CRL once for concurrent checks', async () => {
+    const fromRawSpy = vi.spyOn(X509CertificateRevocationList, 'fromRaw')
+    const leaf = await createLeaf({ serialNumber: '1017', crlDistributionPoints: { urls: [FULL_URL] } })
+    // A single interceptor: a second download would fail
+    mockCrl(FULL_URL, await crlBytes({ entries: [{ serialNumber: 'dead' }] }))
+
+    const results = await Promise.all(
+      [1, 2, 3].map(() => checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require }))
+    )
+
+    expect(results.map((result) => result.isValid)).toEqual([true, true, true])
+    expect(fromRawSpy).toHaveBeenCalledTimes(1)
+    fromRawSpy.mockRestore()
+  })
+
+  it('downloads a CRL once for concurrent checks when the cache does not keep it', async () => {
+    const cacheSetSpy = vi.spyOn(cache, 'set').mockResolvedValue(undefined)
+    const leaf = await createLeaf({ serialNumber: '101a', crlDistributionPoints: { urls: [FULL_URL] } })
+    // A single interceptor: a second download would fail
+    mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+
+    const results = await Promise.all(
+      [1, 2, 3].map(() => checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require }))
+    )
+
+    expect(results.map((result) => result.isValid)).toEqual([true, true, true])
+    expect(await getCachedCrlSummary(agentContext, FULL_URL)).toBeNull()
+    cacheSetSpy.mockRestore()
   })
 
   it('treats an HTTP error response as a fetch failure', async () => {
@@ -754,6 +895,51 @@ describe('X509RevocationService', () => {
       })
       expect(second.isValid).toBe(false)
       expect(second.error?.message).toContain('signature')
+    })
+
+    it('does not reuse a summary for an issuer certificate with the same key but a different name', async () => {
+      const differentNameSameKeyIssuer = await X509Service.createCertificate(agentContext, {
+        serialNumber: '11',
+        issuer: { commonName: 'Other CA' },
+        authorityKey: issuerKey,
+        validity: { notBefore: lastMonth, notAfter: nextMonth },
+        extensions: { basicConstraints: { ca: true } },
+      })
+      const leaf = await createLeaf({ serialNumber: '5012', crlDistributionPoints: { urls: [FULL_URL] } })
+      // The gate miss refetches, so both checks fetch.
+      const download = mockCrl(FULL_URL, await crlBytes({ entries: [] }), { times: 2 })
+
+      const first = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(first.isValid).toBe(true)
+
+      const second = await checkRevocation(leaf, differentNameSameKeyIssuer, {
+        mode: X509RevocationCheckMode.SoftFail,
+      })
+      expect(second.isValid).toBe(false)
+      expect(download.isDone()).toBe(true)
+    })
+
+    it('does not reuse the summary of a concurrent download for an issuer certificate with a different key', async () => {
+      const sameNameDifferentKeyIssuer = await X509Service.createCertificate(agentContext, {
+        serialNumber: '12',
+        issuer: { commonName: 'Issuer CA' },
+        authorityKey: otherIssuerKey,
+        validity: { notBefore: lastMonth, notAfter: nextMonth },
+        extensions: { basicConstraints: { ca: true } },
+      })
+      const leaf = await createLeaf({ serialNumber: '5013', crlDistributionPoints: { urls: [FULL_URL] } })
+      // The second check waits for the first download, misses the gate on its summary and downloads again
+      const download = mockCrl(FULL_URL, await crlBytes({ entries: [] }), { times: 2 })
+
+      const [first, second] = await Promise.all([
+        checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require }),
+        checkRevocation(leaf, sameNameDifferentKeyIssuer, { mode: X509RevocationCheckMode.SoftFail }),
+      ])
+
+      expect(first.isValid).toBe(true)
+      expect(second.isValid).toBe(false)
+      expect(second.error?.message).toContain('signature')
+      expect(download.isDone()).toBe(true)
     })
 
     it('falls back to full verification when the summary window does not cover the verification date', async () => {

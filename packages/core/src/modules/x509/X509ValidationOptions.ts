@@ -68,6 +68,14 @@ export interface X509RevocationCheckOptions {
   crlCacheExpirySeconds?: number
 
   /**
+   * How long (in seconds) a CRL url is treated as unavailable without a new download, after 3 failed
+   * downloads in a row. Set to 0 to try the download on every check.
+   *
+   * @default 10
+   */
+  crlUnavailableCacheExpirySeconds?: number
+
+  /**
    * The date/time to use for revocation checking
    * Used to verify CRL validity (thisUpdate/nextUpdate) and revocation dates
    * @default new Date() (current time)
@@ -98,7 +106,12 @@ export type X509RevocationCheckOptionsWithDefaults = X509RevocationCheckOptions 
   Required<
     Pick<
       X509RevocationCheckOptions,
-      'mode' | 'checkFullChain' | 'timeoutMs' | 'maxCrlSizeBytes' | 'crlCacheExpirySeconds'
+      | 'mode'
+      | 'checkFullChain'
+      | 'timeoutMs'
+      | 'maxCrlSizeBytes'
+      | 'crlCacheExpirySeconds'
+      | 'crlUnavailableCacheExpirySeconds'
     >
   >
 
@@ -111,6 +124,7 @@ export const defaultX509RevocationCheckOptions = {
   timeoutMs: 5000,
   maxCrlSizeBytes: 10 * 1024 * 1024,
   crlCacheExpirySeconds: 3600,
+  crlUnavailableCacheExpirySeconds: 10,
 } as const satisfies X509RevocationCheckOptionsWithDefaults
 
 /**
