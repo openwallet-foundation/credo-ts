@@ -1,11 +1,11 @@
 import type { AgentContext, Constructor, DependencyManager, Module, Update } from '@credo-ts/core'
-import { AgentConfig, CredoError, EventEmitter, InjectionSymbols } from '@credo-ts/core'
+import { AgentConfig, EventEmitter, InjectionSymbols } from '@credo-ts/core'
 import type { Subject } from 'rxjs'
 import { mergeMap, takeUntil } from 'rxjs'
 import { DidCommApi } from './DidCommApi'
 import { DidCommDispatcher } from './DidCommDispatcher'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
-import type { DidCommMessageProcessingFailedEvent, DidCommMessageReceivedEvent } from './DidCommEvents'
+import type { DidCommMessageReceivedEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
@@ -195,39 +195,12 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
         takeUntil(stop$),
         mergeMap(
           (e) =>
-            messageReceiver
-              .receiveMessage(e.payload.message, {
-                connection: e.payload.connection,
-                contextCorrelationId: e.payload.contextCorrelationId,
-                session: e.payload.session,
-                receivedAt: e.payload.receivedAt,
-              })
-              .catch((error) => {
-                // A warning, as it's mostly the sender's message that is wrong. Services log their own failures as errors
-                agentContext.config.logger.warn('Failed to process message', { error })
-                const processingError =
-                  error instanceof Error
-                    ? error
-                    : new CredoError('Failed to process message', { cause: new Error(String(error)) })
-
-                try {
-                  eventEmitter.emit<DidCommMessageProcessingFailedEvent>(agentContext, {
-                    type: DidCommEventTypes.DidCommMessageProcessingFailed,
-                    payload: {
-                      error: processingError,
-                      message: e.payload.message,
-                      connection: e.payload.connection,
-                      contextCorrelationId: e.payload.contextCorrelationId,
-                      receivedAt: e.payload.receivedAt,
-                    },
-                  })
-                } catch (eventError) {
-                  agentContext.config.logger.error('Failed to emit message processing failure event', {
-                    error: eventError,
-                    processingError,
-                  })
-                }
-              }),
+            messageReceiver.receiveMessageAndReportFailure(agentContext, e.payload.message, {
+              connection: e.payload.connection,
+              contextCorrelationId: e.payload.contextCorrelationId,
+              session: e.payload.session,
+              receivedAt: e.payload.receivedAt,
+            }),
           this.config.processDidCommMessagesConcurrently ? undefined : 1
         )
       )

@@ -1,13 +1,23 @@
+import type { AgentContextProvider } from '@credo-ts/core'
 import { JsonEncoder, utils } from '@credo-ts/core'
+import { Subject } from 'rxjs'
 import { Agent } from '../../../core/src/agent/Agent'
-import { getAgentOptions, getMockConnection } from '../../../core/tests/helpers'
+import { EventEmitter } from '../../../core/src/agent/EventEmitter'
+import { getAgentConfig, getAgentContext, getAgentOptions, getMockConnection } from '../../../core/tests/helpers'
 import { setupSubjectTransports } from '../../../core/tests/transport'
 import { DidCommDispatcher } from '../DidCommDispatcher'
+import { DidCommEventTypes } from '../DidCommEvents'
+import { DidCommMessageHandlerRegistry } from '../DidCommMessageHandlerRegistry'
 import { DidCommMessageReceiver } from '../DidCommMessageReceiver'
 import { DidCommMessageSender } from '../DidCommMessageSender'
+import type { DidCommTransportService } from '../DidCommTransportService'
+import type { DidCommEnvelopeRegistry } from '../envelope'
 import { DidCommProblemReportV2Message } from '../messages'
+import type { DidCommConnectionsModuleConfig } from '../modules/connections'
 import { DidCommTrustPingMessage } from '../modules/connections/messages'
+import type { DidCommConnectionService } from '../modules/connections/services'
 import { toAbsoluteDidUrl } from '../modules/connections/services/helpers'
+import type { DidCommOutOfBandService } from '../modules/oob/DidCommOutOfBandService'
 import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from '../util/didcommVersion'
 import { DidCommV2EnvelopeService } from '../v2'
 
@@ -232,5 +242,83 @@ describe('DidCommMessageReceiver', () => {
         expect(await transformInvalidPing({ '@id': 'bad id!', '~thread': { thid: 'thread-1' } })).toEqual([])
       })
     })
+  })
+})
+
+describe('DidCommMessageReceiver failure reporting', () => {
+  const agentConfig = getAgentConfig('DidCommMessageReceiver')
+  const encryptedMessage = { protected: 'base64url', iv: 'base64url', ciphertext: 'base64url', tag: 'base64url' }
+  const trustPing = { '@type': DidCommTrustPingMessage.type.messageTypeUri, '@id': 'trust-ping-id' }
+
+  let agentContext: ReturnType<typeof getAgentContext>
+  let eventEmitter: EventEmitter
+  let envelope: { version: 'v1'; unpack: ReturnType<typeof vi.fn> }
+  let dispatcher: { dispatch: ReturnType<typeof vi.fn> }
+  let agentContextProvider: { getContextForInboundMessage: ReturnType<typeof vi.fn> }
+  let receiver: DidCommMessageReceiver
+
+  beforeEach(() => {
+    agentContext = getAgentContext({ agentConfig })
+    eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
+    envelope = { version: 'v1', unpack: vi.fn() }
+    dispatcher = { dispatch: vi.fn() }
+    agentContextProvider = { getContextForInboundMessage: vi.fn().mockResolvedValue(agentContext) }
+
+    const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
+    messageHandlerRegistry.registerMessageHandler({ supportedMessages: [DidCommTrustPingMessage], handle: vi.fn() })
+
+    receiver = new DidCommMessageReceiver(
+      { getEnvelopeForInbound: vi.fn().mockReturnValue(envelope) } as unknown as DidCommEnvelopeRegistry,
+      {} as DidCommTransportService,
+      {} as DidCommMessageSender,
+      { findByKeys: vi.fn().mockResolvedValue(null) } as unknown as DidCommConnectionService,
+      {} as DidCommOutOfBandService,
+      {} as DidCommConnectionsModuleConfig,
+      dispatcher as unknown as DidCommDispatcher,
+      messageHandlerRegistry,
+      eventEmitter,
+      agentContextProvider as unknown as AgentContextProvider,
+      agentConfig.logger
+    )
+  })
+
+  test('reports a message it cannot decrypt as unreadable', async () => {
+    envelope.unpack.mockRejectedValue(new Error('decryption failed'))
+    const listener = vi.fn()
+    eventEmitter.on(DidCommEventTypes.DidCommMessageProcessingFailed, listener)
+
+    await expect(receiver.receiveMessageAndReportFailure(agentContext, encryptedMessage)).resolves.toBe('unreadable')
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({ payload: expect.objectContaining({ message: encryptedMessage }) })
+    )
+  })
+
+  test('reports a message it cannot parse as unreadable', async () => {
+    await expect(
+      receiver.receiveMessageAndReportFailure(agentContext, { '@type': 'https://didcomm.org/unknown/1.0/message' })
+    ).resolves.toBe('unreadable')
+  })
+
+  test('reports a message whose handling fails as failed', async () => {
+    dispatcher.dispatch.mockRejectedValue(new Error('storage unavailable'))
+
+    await expect(receiver.receiveMessageAndReportFailure(agentContext, trustPing)).resolves.toBe('failed')
+  })
+
+  test('reports a message it could not get an agent context for as failed', async () => {
+    agentContextProvider.getContextForInboundMessage.mockRejectedValue(new Error('session acquire timeout'))
+
+    await expect(receiver.receiveMessageAndReportFailure(agentContext, trustPing)).resolves.toBe('failed')
+  })
+
+  test('processes the message in the given agent context without opening or ending a session', async () => {
+    const endSession = vi.spyOn(agentContext, 'endSession')
+
+    await expect(receiver.receiveMessageAndReportFailure(agentContext, trustPing, { agentContext })).resolves.toBe(
+      'processed'
+    )
+    expect(agentContextProvider.getContextForInboundMessage).not.toHaveBeenCalled()
+    expect(endSession).not.toHaveBeenCalled()
+    expect(dispatcher.dispatch).toHaveBeenCalledWith(expect.objectContaining({ agentContext }))
   })
 })
