@@ -1,5 +1,10 @@
 import { JsonTransformer } from '../../../../../../core/src/utils'
-import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../models'
+import {
+  DidCommConnectionHangupReason,
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
+  DidCommHandshakeProtocol,
+} from '../../models'
 import { DidCommConnectionRecord } from '../DidCommConnectionRecord'
 
 describe('DidCommConnectionRecord', () => {
@@ -60,5 +65,53 @@ describe('DidCommConnectionRecord', () => {
     )
 
     expect(connectionRecord.protocol).toEqual(DidCommHandshakeProtocol.DidExchange)
+  })
+
+  describe('connections hung up before a hangup set the abandoned state', () => {
+    it('should abandon a connection that we hung up', () => {
+      const connectionRecord = JsonTransformer.fromJSON(
+        { state: 'completed', theirDid: 'their-did', previousDids: ['our-did'] },
+        DidCommConnectionRecord
+      )
+
+      expect(connectionRecord.state).toEqual(DidCommDidExchangeState.Abandoned)
+      expect(connectionRecord.errorMessage).toEqual(DidCommConnectionHangupReason.ByUs)
+      expect(connectionRecord.isReady).toBe(false)
+    })
+
+    it('should abandon a connection that the other party hung up', () => {
+      const connectionRecord = JsonTransformer.fromJSON(
+        { state: 'completed', did: 'our-did', previousTheirDids: ['their-did'] },
+        DidCommConnectionRecord
+      )
+
+      expect(connectionRecord.state).toEqual(DidCommDidExchangeState.Abandoned)
+      expect(connectionRecord.errorMessage).toEqual(DidCommConnectionHangupReason.ByOtherParty)
+    })
+
+    it('should not change a connection that rotated its dids', () => {
+      const connectionRecord = JsonTransformer.fromJSON(
+        {
+          state: 'completed',
+          did: 'our-did',
+          theirDid: 'their-did',
+          previousDids: ['our-previous-did'],
+          previousTheirDids: ['their-previous-did'],
+        },
+        DidCommConnectionRecord
+      )
+
+      expect(connectionRecord.state).toEqual(DidCommDidExchangeState.Completed)
+      expect(connectionRecord.errorMessage).toBeUndefined()
+    })
+
+    it('should not change a connection that is not established yet', () => {
+      const connectionRecord = JsonTransformer.fromJSON(
+        { state: 'request-sent', did: 'our-did' },
+        DidCommConnectionRecord
+      )
+
+      expect(connectionRecord.state).toEqual(DidCommDidExchangeState.RequestSent)
+    })
   })
 })
