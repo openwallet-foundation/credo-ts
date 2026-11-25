@@ -1,3 +1,4 @@
+export * from './DidCommConnectionHangupReason'
 export * from './DidCommConnectionType'
 export * from './DidCommDidExchangeRole'
 export * from './DidCommDidExchangeState'

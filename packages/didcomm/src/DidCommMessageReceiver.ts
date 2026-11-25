@@ -219,6 +219,7 @@ export class DidCommMessageReceiver {
     )
     // The peer that ends the relationship may authenticate as the DID it ends, so it is still the peer for this message
     const theirDidBeforeFromPrior = connection?.theirDid
+    const wasReadyBeforeFromPrior = connection?.isReady
 
     if (connection) {
       // DIDComm v2.1 DID Rotation: messages sent before a rotation that arrive after it MUST be ignored
@@ -281,6 +282,9 @@ export class DidCommMessageReceiver {
       await this.outOfBandService.processHandshakeReuseV2(agentContext, peerConnection, message, recipientDid)
     }
 
+    // A termination in the from_prior abandons the connection, but the message that carries it is still handled
+    const terminatesConnection = Boolean(wasReadyBeforeFromPrior && peerConnection && !peerConnection.isReady)
+
     // A v1 envelope carries Ed25519 keys, a v2 envelope carries key agreement keys; the context names each kind
     const sender = splitEnvelopeKey(senderKey)
     const recipient = splitEnvelopeKey(recipientKey)
@@ -288,7 +292,8 @@ export class DidCommMessageReceiver {
       // Only make the connection available in message context if the connection is ready
       // To prevent unwanted usage of unready connections. Connections can still be retrieved from
       // Storage if the specific protocol allows an unready connection to be used.
-      connection: peerConnection?.isReady ? peerConnection : undefined,
+      connection: peerConnection && (peerConnection.isReady || terminatesConnection) ? peerConnection : undefined,
+      terminatesConnection,
       senderKey: sender.ed25519Key,
       recipientKey: recipient.ed25519Key,
       senderKeyAgreementKey: sender.keyAgreementKey,

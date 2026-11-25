@@ -1,19 +1,16 @@
-import type { RegisterCredentialDefinitionReturnStateFinished } from '@credo-ts/anoncreds'
-import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
-import { TypedArrayEncoder, utils } from '@credo-ts/core'
-import type { DidCommConnectionRecord, DidCommConnectionStateChangedEvent } from '@credo-ts/didcomm'
+import { CREDENTIALS_CONTEXT_V1_URL, deepEquality, type KeyDidCreateOptions, utils } from '@credo-ts/core'
+import type {
+  DidCommConnectionRecord,
+  DidCommConnectionStateChangedEvent,
+  DidCommCredentialExchangeRecord,
+} from '@credo-ts/didcomm'
 import { DidCommConnectionEventTypes } from '@credo-ts/didcomm'
 import { BaseAgent } from './BaseAgent'
 import { Color, greenText, Output, purpleText, redText, writeOutput } from './OutputClass'
 
-export enum RegistryOptions {
-  cheqd = 'did:cheqd',
-}
-
 export class Faber extends BaseAgent {
   public outOfBandId?: string
-  public credentialDefinition?: RegisterCredentialDefinitionReturnStateFinished
-  public anonCredsIssuerId?: string
+  public issuerDid?: string
 
   public constructor(port: number, name: string) {
     super({ port, name })
@@ -25,43 +22,26 @@ export class Faber extends BaseAgent {
     return faber
   }
 
-  public async importDid(registry: string) {
-    // NOTE: we assume the did is already registered on the ledger, we just store the private key in the wallet
-    // and store the existing did in the wallet
-    const rootKeyIds: Record<string, string> = {
-      [RegistryOptions.cheqd]: '#key-1',
+  // The did:key is kept in Faber's wallet, so it is reused across runs.
+  private async getIssuerDid() {
+    if (this.issuerDid) return this.issuerDid
+
+    const [createdDid] = await this.agent.dids.getCreatedDids({ method: 'key' })
+    if (createdDid) {
+      this.issuerDid = createdDid.did
+      return this.issuerDid
     }
 
-    const Dids: Record<string, string> = {
-      [RegistryOptions.cheqd]: 'did:cheqd:testnet:d37eba59-513d-42d3-8f9f-d1df0548b675',
+    const { didState } = await this.agent.dids.create<KeyDidCreateOptions>({
+      method: 'key',
+      options: { createKey: { type: { kty: 'OKP', crv: 'Ed25519' } } },
+    })
+    if (didState.state !== 'finished') {
+      throw new Error(redText(`Error creating issuer did:key: ${didState.state === 'failed' ? didState.reason : ''}`))
     }
 
-    const didDocumentRelativeKeyId = rootKeyIds[registry]
-    const did = Dids[registry]
-
-    const { privateJwk } = transformPrivateKeyToPrivateJwk({
-      type: {
-        crv: 'Ed25519',
-        kty: 'OKP',
-      },
-      privateKey: TypedArrayEncoder.fromUtf8String('afjdemoverysercure00000000000000'),
-    })
-
-    const { keyId } = await this.agent.kms.importKey({
-      privateJwk,
-    })
-
-    await this.agent.dids.import({
-      did,
-      overwrite: true,
-      keys: [
-        {
-          didDocumentRelativeKeyId,
-          kmsKeyId: keyId,
-        },
-      ],
-    })
-    this.anonCredsIssuerId = did
+    this.issuerDid = didState.did
+    return this.issuerDid
   }
 
   private async getConnectionRecord() {
@@ -144,146 +124,130 @@ export class Faber extends BaseAgent {
     await this.waitForConnection()
   }
 
-  private printSchema(name: string, version: string, attributes: string[]) {
-    console.log('\n\nThe credential definition will look like this:\n')
-    console.log(purpleText(`Name: ${Color.Reset}${name}`))
-    console.log(purpleText(`Version: ${Color.Reset}${version}`))
-    console.log(purpleText(`Attributes: ${Color.Reset}${attributes[0]}, ${attributes[1]}, ${attributes[2]}\n`))
-  }
-
-  private async registerSchema() {
-    if (!this.anonCredsIssuerId) {
-      throw new Error(redText('Missing anoncreds issuerId'))
-    }
-    const schemaTemplate = {
-      name: `Faber College${utils.uuid()}`,
-      version: '1.0.0',
-      attrNames: ['name', 'degree', 'date'],
-      issuerId: this.anonCredsIssuerId,
-    }
-    this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attrNames)
-    writeOutput(greenText('\nRegistering schema...\n', false))
-
-    const { schemaState } = await this.agent.modules.anoncreds.registerSchema({
-      schema: schemaTemplate,
-      options: {
-        endorserMode: 'internal',
-        endorserDid: this.anonCredsIssuerId,
-      },
-    })
-
-    if (schemaState.state !== 'finished') {
-      throw new Error(
-        `Error registering schema: ${schemaState.state === 'failed' ? schemaState.reason : 'Not Finished'}`
-      )
-    }
-    writeOutput('\nSchema registered!\n')
-    return schemaState
-  }
-
-  private async registerCredentialDefinition(schemaId: string) {
-    if (!this.anonCredsIssuerId) {
-      throw new Error(redText('Missing anoncreds issuerId'))
-    }
-
-    writeOutput('\nRegistering credential definition...\n')
-    const { credentialDefinitionState } = await this.agent.modules.anoncreds.registerCredentialDefinition({
-      credentialDefinition: {
-        schemaId,
-        issuerId: this.anonCredsIssuerId,
-        tag: 'latest',
-      },
-      options: {
-        supportRevocation: false,
-        endorserMode: 'internal',
-        endorserDid: this.anonCredsIssuerId,
-      },
-    })
-
-    if (credentialDefinitionState.state !== 'finished') {
-      throw new Error(
-        `Error registering credential definition: ${
-          credentialDefinitionState.state === 'failed' ? credentialDefinitionState.reason : 'Not Finished'
-        }}`
-      )
-    }
-
-    this.credentialDefinition = credentialDefinitionState
-    writeOutput('\nCredential definition registered!!\n')
-    return this.credentialDefinition
-  }
-
   public async issueCredential() {
-    const schema = await this.registerSchema()
-    const credentialDefinition = await this.registerCredentialDefinition(schema.schemaId)
+    const issuerDid = await this.getIssuerDid()
     const connectionRecord = await this.getConnectionRecord()
 
+    // Alice adds her own DID as the subject id when she accepts the offer.
+    const credential = {
+      '@context': [CREDENTIALS_CONTEXT_V1_URL, 'http://schema.org/'],
+      type: ['VerifiableCredential'],
+      issuer: issuerDid,
+      issuanceDate: new Date().toISOString(),
+      credentialSubject: {
+        name: 'Alice Smith',
+        hasCredential: {
+          type: 'EducationalOccupationalCredential',
+          credentialCategory: 'degree',
+          name: 'Computer Science',
+          dateCreated: '2022-01-01',
+        },
+      },
+    }
+
+    console.log(purpleText(`\nIssuer: ${Color.Reset}${issuerDid}`))
     writeOutput('\nSending credential offer...\n')
 
     await this.agent.didcomm.credentials.offerCredential({
       connectionId: connectionRecord.id,
       protocolVersion: 'v2',
       credentialFormats: {
-        anoncreds: {
-          attributes: [
-            {
-              name: 'name',
-              value: 'Alice Smith',
-            },
-            {
-              name: 'degree',
-              value: 'Computer Science',
-            },
-            {
-              name: 'date',
-              value: '01/01/2022',
-            },
-          ],
-          credentialDefinitionId: credentialDefinition.credentialDefinitionId,
+        jsonld: {
+          credential,
+          options: { proofType: 'Ed25519Signature2018', proofPurpose: 'assertionMethod' },
         },
       },
     })
     writeOutput(`\nCredential offer sent!\n\nGo to the Alice agent to accept the credential offer\n\n${Color.Reset}`)
   }
 
-  private async printProofFlow(print: string) {
-    writeOutput(print)
-    await new Promise((f) => setTimeout(f, 2000))
-  }
+  // Accepts Alice's counter-proposal when the only change to the offered credential is her DID as the subject id.
+  public async acceptSubjectProposal(credentialExchangeRecord: DidCommCredentialExchangeRecord) {
+    const { offer, proposal } = await this.agent.didcomm.credentials.getFormatData(credentialExchangeRecord.id)
+    const offered = offer?.jsonld
+    const proposed = proposal?.jsonld
+    const proposedSubject = proposed?.credential.credentialSubject
 
-  private async newProofAttribute() {
-    await this.printProofFlow(greenText(`Creating new proof attribute for 'name' ...\n`))
-    const proofAttribute = {
-      name: {
-        name: 'name',
-        restrictions: [
-          {
-            cred_def_id: this.credentialDefinition?.credentialDefinitionId,
-          },
-        ],
-      },
+    const withoutSubjectId = (credential: NonNullable<typeof proposed>['credential']) => ({
+      ...credential,
+      credentialSubject: { ...credential.credentialSubject, id: undefined },
+    })
+    const onlySubjectIdChanged =
+      offered &&
+      proposed &&
+      proposedSubject &&
+      !Array.isArray(proposedSubject) &&
+      typeof proposedSubject.id === 'string' &&
+      proposedSubject.id.startsWith('did:') &&
+      deepEquality(offered.options, proposed.options) &&
+      deepEquality(withoutSubjectId(offered.credential), withoutSubjectId(proposed.credential))
+
+    if (!onlySubjectIdChanged) {
+      console.log(redText('\nRejected a credential proposal that changes more than the subject id.\n', true))
+      await this.agent.didcomm.credentials.sendProblemReport({
+        credentialExchangeRecordId: credentialExchangeRecord.id,
+        description: 'Only the credential subject id can be changed',
+      })
+      return
     }
 
-    return proofAttribute
+    await this.agent.didcomm.credentials.acceptProposal({ credentialExchangeRecordId: credentialExchangeRecord.id })
+    console.log(purpleText(`\nIssuing the credential to ${Color.Reset}${proposedSubject.id}\n`))
   }
 
   public async sendProofRequest() {
+    const issuerDid = await this.getIssuerDid()
     const connectionRecord = await this.getConnectionRecord()
-    const proofAttribute = await this.newProofAttribute()
-    await this.printProofFlow(greenText('\nRequesting proof...\n', false))
+    writeOutput(greenText('\nRequesting proof of a Faber College degree...\n', false))
 
     await this.agent.didcomm.proofs.requestProof({
       protocolVersion: 'v2',
       connectionId: connectionRecord.id,
       proofFormats: {
-        anoncreds: {
-          name: 'proof-request',
-          version: '1.0',
-          requested_attributes: proofAttribute,
+        presentationExchange: {
+          presentationDefinition: {
+            id: utils.uuid(),
+            input_descriptors: [
+              {
+                id: 'faber-degree',
+                name: 'Faber College degree',
+                purpose: 'Prove you hold a degree issued by Faber College',
+                schema: [{ uri: 'http://schema.org/' }],
+                constraints: {
+                  fields: [
+                    { path: ['$.issuer'], filter: { type: 'string', const: issuerDid } },
+                    { path: ['$.credentialSubject.hasCredential.name'] },
+                  ],
+                },
+              },
+            ],
+          },
         },
       },
     })
     writeOutput(`\nProof request sent!\n\nGo to the Alice agent to accept the proof request\n\n${Color.Reset}`)
+  }
+
+  public async printVerifiedPresentation(proofExchangeRecordId: string) {
+    const proofRecord = await this.agent.didcomm.proofs.getById(proofExchangeRecordId)
+    if (!proofRecord.isVerified) {
+      console.log(redText('\nThe presentation could not be verified.\n', true))
+      return
+    }
+
+    const { presentation } = await this.agent.didcomm.proofs.getFormatData(proofExchangeRecordId)
+    const verifiablePresentation = presentation?.presentationExchange
+    if (!verifiablePresentation || typeof verifiablePresentation === 'string') return
+
+    console.log(greenText('\nPresentation verified!', true))
+    console.log(purpleText(`Holder: ${Color.Reset}${verifiablePresentation.holder}`))
+    const credentials = [verifiablePresentation.verifiableCredential ?? []].flat()
+    for (const credential of credentials) {
+      if (typeof credential === 'string') continue
+      const issuer = typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id
+      console.log(purpleText(`Issuer: ${Color.Reset}${issuer}`))
+      console.log(purpleText(`Claims: ${Color.Reset}${JSON.stringify(credential.credentialSubject, null, 2)}\n`))
+    }
   }
 
   public async sendMessage(message: string) {

@@ -1,7 +1,6 @@
 import type { Agent, InitConfig } from '@credo-ts/core'
 import { LogLevel, utils } from '@credo-ts/core'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
-import path from 'path'
 import { setupEventReplaySubjects } from '../../core/tests/events'
 import { waitForBasicMessageSubject } from '../../core/tests/helpers'
 import { TestLogger } from '../../core/tests/logger'
@@ -12,12 +11,6 @@ import type { AskarPostgresStorageConfig } from '../src'
 import { AskarModule } from '../src/AskarModule'
 
 export { NativeAskar }
-
-export const genesisPath = process.env.GENESIS_TXN_PATH
-  ? path.resolve(process.env.GENESIS_TXN_PATH)
-  : path.join(__dirname, '../../../../network/genesis/local-genesis.txn')
-
-export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
 
 export const askarPostgresStorageConfig: AskarPostgresStorageConfig = {
   type: 'postgres',

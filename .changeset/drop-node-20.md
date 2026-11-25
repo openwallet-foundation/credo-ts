@@ -2,7 +2,6 @@
 "@credo-ts/anoncreds": minor
 "@credo-ts/askar": minor
 "@credo-ts/askar-to-drizzle-storage-migration": minor
-"@credo-ts/cheqd": minor
 "@credo-ts/core": minor
 "@credo-ts/didcomm": minor
 "@credo-ts/drizzle-storage": minor
