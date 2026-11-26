@@ -67,6 +67,15 @@ describe('PublicJwk AKP support', () => {
     })
   })
 
+  test('rejects base58btc multibase for AKP fingerprints', () => {
+    const fingerprint = MultiBaseEncoder.encode(
+      TypedArrayEncoder.concat([VarintEncoder.encode(0x1210), new Uint8Array(1312).fill(0x42)]),
+      'base58btc'
+    )
+
+    expect(() => PublicJwk.fromFingerprint(fingerprint)).toThrow('Unsupported multibase')
+  })
+
   test.each([
     { alg: 'ML-DSA-44', length: 1311 },
     { alg: 'ML-DSA-65', length: 1953 },

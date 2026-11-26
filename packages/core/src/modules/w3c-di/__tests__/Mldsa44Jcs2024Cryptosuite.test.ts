@@ -83,6 +83,23 @@ describe('Mldsa44Jcs2024Cryptosuite', () => {
     )
   })
 
+  test('verifies structurally equivalent inline contexts and preserves repeated object references', async () => {
+    const context = { name: 'https://example.org/name' }
+    const shared = { value: 'shared' }
+    const document = {
+      '@context': ['https://www.w3.org/ns/credentials/v2', context],
+      id: 'urn:example:1',
+      first: shared,
+      second: shared,
+    }
+    const proof = await cryptosuite.createProof(document, proofOptions)
+    const parsedDocument = JSON.parse(JSON.stringify(document))
+
+    await expect(cryptosuite.verifyProof({ unsecuredDocument: parsedDocument, proof })).resolves.toMatchObject({
+      verified: true,
+    })
+  })
+
   test('rejects signatures with an invalid encoding or length without calling verification', async () => {
     const document = { id: 'urn:example:1' }
     const invalidProofs = [

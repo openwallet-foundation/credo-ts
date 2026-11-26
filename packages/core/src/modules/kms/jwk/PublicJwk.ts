@@ -331,11 +331,15 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
    * Create a JWK instance based on a multibase-encoded multicodec key
    */
   public static fromFingerprint(fingerprint: string) {
-    const { data } = MultiBaseEncoder.decode(fingerprint)
+    const { data, baseName } = MultiBaseEncoder.decode(fingerprint)
     const [code, byteLength] = VarintEncoder.decode(data)
     const publicKey = data.slice(byteLength)
 
     if (AkpPublicJwk.supportsMulticodecPrefix(code)) {
+      if (baseName !== 'base64url') {
+        throw new KeyManagementError(`Unsupported multibase '${fingerprint[0]}' for AKP multicodec public key`)
+      }
+
       return PublicJwk.fromPublicJwk(AkpPublicJwk.fromMulticodecPrefix(code, publicKey).jwk)
     }
 

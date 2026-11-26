@@ -1,17 +1,14 @@
-import { canonicalizeEx } from 'json-canonicalize'
-
 import type { AgentContext } from '../../../../agent/context'
 import { Hasher } from '../../../../crypto'
-import { asArray, MultiBaseEncoder, TypedArrayEncoder } from '../../../../utils'
-import { isObject } from '../../../../utils/object'
+import { areObjectsEqual, asArray, MultiBaseEncoder, TypedArrayEncoder } from '../../../../utils'
 import { KeyManagementApi } from '../../../kms'
 import { AkpPublicJwk } from '../../../kms/jwk/kty/akp/AkpPublicJwk'
 import { isXsdDateTimeStamp } from '../../proof-processing/iso8601Datetime'
+import { canonicalizeJcsStrict } from '../../proof-processing/jcs'
 import {
   kmsPublicJwkFromVerificationMethodId,
   publicJwkFromVerificationMethodId,
 } from '../../proof-processing/keyUtils'
-import { omitUndefinedFields } from '../../proof-processing/normalization'
 import { W3cDataIntegrityProcessingError, W3cDataIntegrityProcessingErrorCode } from '../../W3cDataIntegrityError'
 import type {
   W3cDataIntegrityCryptosuiteProof,
@@ -34,16 +31,6 @@ export class Mldsa44Jcs2024Cryptosuite implements W3cDataIntegrityCryptosuite {
   public constructor(agentContext: AgentContext) {
     this.agentContext = agentContext
     this.keyManagementApi = agentContext.dependencyManager.resolve(KeyManagementApi)
-  }
-
-  private canonicalizeJcsStrict(value: unknown) {
-    const normalized = omitUndefinedFields(value)
-    assertJcsInput(normalized)
-    return canonicalizeEx(normalized, {
-      allowCircular: false,
-      filterUndefined: true,
-      undefinedInArrayToNull: false,
-    })
   }
 
   public async createProof(
@@ -84,7 +71,7 @@ export class Mldsa44Jcs2024Cryptosuite implements W3cDataIntegrityCryptosuite {
       const documentContext = asArray(unsecuredDocument['@context'])
       const hasMatchingContext =
         documentContext.length >= proofContext.length &&
-        proofContext.every((value, index) => documentContext[index] === value)
+        proofContext.every((value, index) => areObjectsEqual(documentContext[index], value))
 
       if (!hasMatchingContext) return { verified: false, verifiedDocument: null }
       unsecuredDocument['@context'] = proofOptions['@context']
@@ -103,7 +90,7 @@ export class Mldsa44Jcs2024Cryptosuite implements W3cDataIntegrityCryptosuite {
     proofOptions: W3cDataIntegrityCryptosuiteProofOptions
   ) {
     this.assertProofTypeAndCryptosuite(proofOptions, W3cDataIntegrityProcessingErrorCode.ProofTransformationError)
-    return this.canonicalizeJcsStrict(unsecuredDocument)
+    return canonicalizeJcsStrict(unsecuredDocument)
   }
 
   public hashing(transformedDocument: string, canonicalProofConfig: string) {
@@ -125,7 +112,7 @@ export class Mldsa44Jcs2024Cryptosuite implements W3cDataIntegrityCryptosuite {
       )
     }
 
-    return this.canonicalizeJcsStrict(proofOptions)
+    return canonicalizeJcsStrict(proofOptions)
   }
 
   public async proofSerialization(hashData: Uint8Array, options: W3cDataIntegrityCryptosuiteProofOptions) {
@@ -184,42 +171,6 @@ export class Mldsa44Jcs2024Cryptosuite implements W3cDataIntegrityCryptosuite {
   ) {
     if (!publicJwk.is(AkpPublicJwk) || publicJwk.toJson().alg !== 'ML-DSA-44') {
       throw new W3cDataIntegrityProcessingError(errorCode, `The verification method must use an ML-DSA-44 public key`)
-    }
-  }
-}
-
-function assertJcsInput(value: unknown, path = '$', seen = new WeakSet<object>()) {
-  if (value === undefined || typeof value === 'function' || typeof value === 'symbol' || typeof value === 'bigint') {
-    throw new W3cDataIntegrityProcessingError(
-      W3cDataIntegrityProcessingErrorCode.ProofTransformationError,
-      `JCS canonicalization input contains unsupported value at ${path}`
-    )
-  }
-
-  if (typeof value === 'number' && !Number.isFinite(value)) {
-    throw new W3cDataIntegrityProcessingError(
-      W3cDataIntegrityProcessingErrorCode.ProofTransformationError,
-      `JCS canonicalization input contains non-finite number at ${path}`
-    )
-  }
-
-  if (Array.isArray(value)) {
-    for (let i = 0; i < value.length; i++) assertJcsInput(value[i], `${path}[${i}]`, seen)
-    return
-  }
-
-  if (isObject(value)) {
-    const objectValue = value as object
-    if (seen.has(objectValue)) {
-      throw new W3cDataIntegrityProcessingError(
-        W3cDataIntegrityProcessingErrorCode.ProofTransformationError,
-        `JCS canonicalization input contains circular reference at ${path}`
-      )
-    }
-
-    seen.add(objectValue)
-    for (const [key, nestedValue] of Object.entries(value as Record<string, unknown>)) {
-      assertJcsInput(nestedValue, `${path}.${key}`, seen)
     }
   }
 }
