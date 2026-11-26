@@ -546,6 +546,7 @@ export class OpenId4VciHolderService {
     const {
       credentialConfigurationIds,
       credentialBindingResolver,
+      requireCryptographicHolderBinding = true,
       verifyCredentialStatus,
       allowedProofOfPossessionSignatureAlgorithms,
       credentialResponseEncryption: credentialResponseEncryptionMode,
@@ -573,8 +574,30 @@ export class OpenId4VciHolderService {
         return [id, offeredCredentialConfigurations[id]] as const
       }) ?? Object.entries(offeredCredentialConfigurations)
 
+    for (const [id, configuration] of credentialConfigurationsToRequest) {
+      if (this.isProofRequired(configuration, metadata)) continue
+
+      if (
+        configuration.format === OpenId4VciCredentialFormatProfile.MsoMdoc ||
+        configuration.cryptographic_binding_methods_supported
+      ) {
+        throw new CredoError(
+          `Credential configuration '${id}' does not specify proof_types_supported, while the credential is bound to a key.`
+        )
+      }
+
+      if (requireCryptographicHolderBinding) {
+        throw new CredoError(
+          `Credential configuration '${id}' does not specify proof_types_supported, so the credential would not be bound to a key. Set 'requireCryptographicHolderBinding' to false to request credentials without cryptographic holder binding.`
+        )
+      }
+    }
+
+    const [credentialConfigurationIdRequiringProof] =
+      credentialConfigurationsToRequest.find(([, configuration]) => this.isProofRequired(configuration, metadata)) ?? []
+
     // If we don't have a nonce yet, we need to first get one
-    if (!cNonce) {
+    if (!cNonce && credentialConfigurationIdRequiringProof) {
       // Best option is to use nonce endpoint (draft 14+)
       if (metadata.credentialIssuer.nonce_endpoint) {
         const nonceResponse = await client.requestNonce({ issuerMetadata: metadata })
@@ -585,7 +608,7 @@ export class OpenId4VciHolderService {
           .retrieveCredentials({
             issuerMetadata: metadata,
             accessToken: options.accessToken,
-            credentialConfigurationId: credentialConfigurationsToRequest[0][0],
+            credentialConfigurationId: credentialConfigurationIdRequiringProof,
             dpop: options.dpop
               ? await getDpopOptions(agentContext, {
                   ...options.dpop,
@@ -602,7 +625,7 @@ export class OpenId4VciHolderService {
       }
     }
 
-    if (!cNonce) {
+    if (!cNonce && credentialConfigurationIdRequiringProof) {
       throw new CredoError('No cNonce provided and unable to acquire cNonce from the credential issuer')
     }
 
@@ -615,20 +638,23 @@ export class OpenId4VciHolderService {
 
     try {
       for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationsToRequest) {
-        const { proofs, jwkThumbprintKmsKeyIdMapping } = await this.getCredentialRequestOptions(agentContext, {
-          allowedProofOfPossessionAlgorithms:
-            allowedProofOfPossessionSignatureAlgorithms ??
-            agentContext.resolve(Kms.KeyManagementApi).supportedJwaSignatureAlgorithms(),
-          metadata,
-          offeredCredential: {
-            id: offeredCredentialId,
-            configuration: offeredCredentialConfiguration,
-          },
-          clientId: options.clientId,
-          // We already checked whether nonce exists above
-          cNonce: cNonce as string,
-          credentialBindingResolver,
-        })
+        const isProofRequired = this.isProofRequired(offeredCredentialConfiguration, metadata)
+        const { proofs, jwkThumbprintKmsKeyIdMapping } = isProofRequired
+          ? await this.getCredentialRequestOptions(agentContext, {
+              allowedProofOfPossessionAlgorithms:
+                allowedProofOfPossessionSignatureAlgorithms ??
+                agentContext.resolve(Kms.KeyManagementApi).supportedJwaSignatureAlgorithms(),
+              metadata,
+              offeredCredential: {
+                id: offeredCredentialId,
+                configuration: offeredCredentialConfiguration,
+              },
+              clientId: options.clientId,
+              // We already checked whether nonce exists above
+              cNonce: cNonce as string,
+              credentialBindingResolver,
+            })
+          : { proofs: undefined, jwkThumbprintKmsKeyIdMapping: undefined }
 
         this.logger.debug('Generated credential request proof of possession', { proofs })
 
@@ -638,7 +664,7 @@ export class OpenId4VciHolderService {
             // Draft 14 allows both proof and proofs. Try to use proof when it makes to improve interoperability
             (metadata.originalDraftVersion === Openid4vciVersion.Draft14 &&
               metadata.credentialIssuer.batch_credential_issuance === undefined)) &&
-          proofs.jwt?.length === 1
+          proofs?.jwt?.length === 1
             ? ({
                 proof_type: 'jwt',
                 jwt: proofs.jwt[0],
@@ -699,6 +725,7 @@ export class OpenId4VciHolderService {
             credentialConfigurationId: offeredCredentialId,
             credentialConfiguration: offeredCredentialConfiguration,
             jwkThumbprintKmsKeyIdMapping,
+            isBoundToHolder: isProofRequired,
           })
 
           // Decoding the credential is only needed for the log
@@ -823,6 +850,7 @@ export class OpenId4VciHolderService {
           credentialConfigurationId: credentialConfigurationId,
           credentialConfiguration: credentialConfiguration,
           jwkThumbprintKmsKeyIdMapping,
+          isBoundToHolder: this.isProofRequired(credentialConfiguration, issuerMetadata),
         })
 
         // Decoding the credential is only needed for the log
@@ -867,7 +895,7 @@ export class OpenId4VciHolderService {
     agentContext: AgentContext,
     options: {
       metadata: OpenId4VciResolvedCredentialOffer['metadata']
-      credentialBindingResolver: OpenId4VciCredentialBindingResolver
+      credentialBindingResolver?: OpenId4VciCredentialBindingResolver
       allowedProofOfPossessionAlgorithms: Kms.KnownJwaSignatureAlgorithm[]
       clientId?: string
       cNonce: string
@@ -878,8 +906,15 @@ export class OpenId4VciHolderService {
     }
   ) {
     const dids = agentContext.resolve(DidsApi)
-    const { allowedProofOfPossessionAlgorithms, offeredCredential } = options
+    const { allowedProofOfPossessionAlgorithms, offeredCredential, credentialBindingResolver } = options
     const { configuration, id: configurationId } = offeredCredential
+
+    if (!credentialBindingResolver) {
+      throw new CredoError(
+        `Credential configuration '${configurationId}' requires a proof, but no 'credentialBindingResolver' was provided.`
+      )
+    }
+
     const supportedJwaSignatureAlgorithms = agentContext.resolve(Kms.KeyManagementApi).supportedJwaSignatureAlgorithms()
 
     const possibleProofOfPossessionSignatureAlgorithms = allowedProofOfPossessionAlgorithms
@@ -899,7 +934,6 @@ export class OpenId4VciHolderService {
     const { proofTypes, supportedDidMethods, supportsAllDidMethods, supportsJwk } =
       this.getProofOfPossessionRequirements(agentContext, {
         credentialToRequest: options.offeredCredential,
-        metadata: options.metadata,
         possibleProofOfPossessionSignatureAlgorithms,
       })
 
@@ -908,7 +942,7 @@ export class OpenId4VciHolderService {
     const issuerMaxBatchSize = options.metadata.credentialIssuer.batch_credential_issuance?.batch_size ?? 1
 
     // Now we need to determine how the credential will be bound to us
-    const credentialBinding = await options.credentialBindingResolver({
+    const credentialBinding = await credentialBindingResolver({
       agentContext,
       credentialFormat: format as OpenId4VciSupportedCredentialFormats,
       credentialConfigurationId: configurationId,
@@ -1175,6 +1209,16 @@ export class OpenId4VciHolderService {
     throw new CredoError(`Unsupported credential binding method ${credentialBinding.method}`)
   }
 
+  // `proof_types_supported` does not exist in draft 11, where a jwt proof is always expected
+  private isProofRequired(
+    configuration: OpenId4VciCredentialConfigurationSupportedWithFormats,
+    metadata: IssuerMetadataResult
+  ) {
+    return (
+      configuration.proof_types_supported !== undefined || metadata.originalDraftVersion === Openid4vciVersion.Draft11
+    )
+  }
+
   /**
    * Get the requirements for creating the proof of possession. Based on the allowed
    * credential formats, the allowed proof of possession signature algorithms, and the
@@ -1184,7 +1228,6 @@ export class OpenId4VciHolderService {
   private getProofOfPossessionRequirements(
     agentContext: AgentContext,
     options: {
-      metadata: IssuerMetadataResult
       credentialToRequest: {
         id: string
         configuration: OpenId4VciCredentialConfigurationSupportedWithFormats
@@ -1192,8 +1235,8 @@ export class OpenId4VciHolderService {
       possibleProofOfPossessionSignatureAlgorithms: Kms.KnownJwaSignatureAlgorithm[]
     }
   ): OpenId4VciProofOfPossessionRequirements {
-    const { credentialToRequest, possibleProofOfPossessionSignatureAlgorithms, metadata } = options
-    const { configuration, id: configurationId } = credentialToRequest
+    const { credentialToRequest, possibleProofOfPossessionSignatureAlgorithms } = options
+    const { configuration } = credentialToRequest
 
     if (!openId4VciSupportedCredentialFormats.includes(configuration.format as OpenId4VciSupportedCredentialFormats)) {
       throw new CredoError(
@@ -1208,21 +1251,11 @@ export class OpenId4VciHolderService {
     // For each of the supported algs, find the key types, then find the proof types
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
-    let proofTypesSupported = configuration.proof_types_supported
-    if (!proofTypesSupported) {
-      // For draft above 11 we do not allow no proof_type (we do not support no key binding for now)
-      if (metadata.originalDraftVersion !== Openid4vciVersion.Draft11) {
-        throw new CredoError(
-          `Credential configuration '${configurationId}' does not specify proof_types_supported. Credentials not bound to keys are not supported at the moment`
-        )
-      }
-
-      // For draft 11 we fall back to jwt proof type
-      proofTypesSupported = {
-        jwt: {
-          proof_signing_alg_values_supported: possibleProofOfPossessionSignatureAlgorithms,
-        },
-      }
+    // For draft 11 we fall back to jwt proof type
+    const proofTypesSupported = configuration.proof_types_supported ?? {
+      jwt: {
+        proof_signing_alg_values_supported: possibleProofOfPossessionSignatureAlgorithms,
+      },
     }
 
     const proofTypes: OpenId4VciProofOfPossessionRequirements['proofTypes'] = {
@@ -1313,6 +1346,7 @@ export class OpenId4VciHolderService {
       credentialConfigurationId: string
       credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
       jwkThumbprintKmsKeyIdMapping?: Record<string, OpenId4VciKmsKeyIdMappingValue>
+      isBoundToHolder?: boolean
     }
   ): Promise<OpenId4VciCredentialResponse> {
     const { verifyCredentialStatus, credentialConfigurationId, credentialConfiguration } = options
@@ -1350,6 +1384,12 @@ export class OpenId4VciHolderService {
               // Only load and verify it for the first instance
               fetchTypeMetadata: index === 0,
             })
+
+            if (options.isBoundToHolder === false && result.sdJwtVc?.holder) {
+              throw new CredoError(
+                'Received a credential that is bound to a key, while the credential request contained no proofs.'
+              )
+            }
 
             // Link key id with credential
             if (result.sdJwtVc?.holder?.method === 'jwk') {

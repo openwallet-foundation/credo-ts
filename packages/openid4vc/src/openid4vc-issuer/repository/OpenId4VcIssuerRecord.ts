@@ -14,7 +14,6 @@ import { credentialsSupportedToCredentialConfigurationsSupported } from '@openid
 import { z } from 'zod'
 import type {
   OpenId4VciAuthorizationServerConfig,
-  OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
   OpenId4VciIssuerInfo,
   OpenId4VcJwtIssuerEncoded,
@@ -23,6 +22,7 @@ import { getThumbprintKid } from '../../shared/utils'
 import type {
   OpenId4VciBatchCredentialIssuanceOptions,
   OpenId4VciCredentialResponseEncryptionOptions,
+  OpenId4VciIssuerCredentialConfigurationsSupported,
 } from '../OpenId4VcIssuerServiceOptions'
 
 export type OpenId4VcIssuerRecordTags = RecordTags<OpenId4VcIssuerRecord>
@@ -110,7 +110,7 @@ export type OpenId4VcIssuerRecordProps = {
   issuerInfo?: OpenId4VciIssuerInfo
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 
-  credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
+  credentialConfigurationsSupported: OpenId4VciIssuerCredentialConfigurationsSupported
 
   /**
    * Indicate support for batch issuance of credentials
@@ -135,7 +135,7 @@ const openId4VcIssuerRecordEncodingSchema = createRecordEncodingSchema(
     accessTokenKey: zTypedObject<OpenId4VcIssuerRecordKey>().nullish(),
     accessTokenSignerKmsBackend: z.string().nullish(),
     previousAccessTokenKeys: z.array(zTypedObject<OpenId4VcIssuerRecordKey>()).nullish(),
-    credentialConfigurationsSupported: zTypedObject<OpenId4VciCredentialConfigurationsSupportedWithFormats>().nullish(),
+    credentialConfigurationsSupported: zTypedObject<OpenId4VciIssuerCredentialConfigurationsSupported>().nullish(),
     // Draft 11 to draft 13+ syntax
     display: zWithUpgrade(z.array(zTypedObject<OpenId4VciCredentialIssuerMetadataDisplay>()), (value) => {
       if (!Array.isArray(value)) return value
@@ -229,7 +229,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public accessTokenKey?: OpenId4VcIssuerRecordKey
   public previousAccessTokenKeys?: OpenId4VcIssuerRecordKey[]
 
-  public credentialConfigurationsSupported!: OpenId4VciCredentialConfigurationsSupportedWithFormats
+  public credentialConfigurationsSupported!: OpenId4VciIssuerCredentialConfigurationsSupported
 
   public display?: OpenId4VciCredentialIssuerMetadataDisplay[]
 

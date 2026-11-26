@@ -1,5 +1,8 @@
 import { Kms } from '@credo-ts/core'
-import type { OpenId4VciCredentialConfigurationSupportedWithFormats } from '../src'
+import type {
+  OpenId4VciCredentialConfigurationSupportedWithFormats,
+  OpenId4VciIssuerCredentialConfigurationSupported,
+} from '../src'
 
 import { OpenId4VciCredentialFormatProfile } from '../src'
 
@@ -122,3 +125,10 @@ export const universityDegreeCredentialSdJwt2 = {
   // FIXME: should this be dynamically generated? I think static is fine for now
   cryptographic_binding_methods_supported: ['jwk'],
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
+
+export const universityDegreeCredentialConfigurationSupportedBearer = {
+  format: OpenId4VciCredentialFormatProfile.SdJwtDc,
+  scope: 'UniversityDegreeCredential',
+  vct: 'UniversityDegreeCredential',
+  requireCryptographicHolderBinding: false,
+} satisfies OpenId4VciIssuerCredentialConfigurationSupported

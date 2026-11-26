@@ -20,7 +20,6 @@ import {
   W3cV2Issuer,
   w3cDate,
 } from '@credo-ts/core'
-import type { IssuerMetadataResult } from '@openid4vc/openid4vci'
 import nock from 'nock'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
@@ -410,8 +409,6 @@ describe('OpenId4VcHolder', () => {
 
       // biome-ignore lint/complexity/useLiteralKeys: bracket access calls the private method with its real types
       return holderService['getProofOfPossessionRequirements'](holder.context, {
-        // Only read when the configuration has no proof_types_supported
-        metadata: {} as IssuerMetadataResult,
         credentialToRequest: {
           id: 'ldpVc',
           configuration: {

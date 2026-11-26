@@ -657,8 +657,11 @@ export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
    *
    * All keys and dids have a verified proof, or in the case a key attestation is provided
    * are attested by a key attestation. Ensure the issuer of the key attestation is trusted.
+   *
+   * Only undefined for a credential configuration with `requireCryptographicHolderBinding` set to false, when
+   * the credential request contained no proofs. A single credential without holder binding must be returned then.
    */
-  holderBinding: VerifiedOpenId4VcCredentialHolderBinding
+  holderBinding?: VerifiedOpenId4VcCredentialHolderBinding
 
   /**
    * The credential configurations supported entry from the issuer metadata
@@ -828,7 +831,10 @@ export type OpenId4VciCreateIssuerOptions = {
   clientAttestationSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   clientAttestationPopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
 
-  credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
+  /**
+   * Each configuration has to declare `proof_types_supported`, or set `requireCryptographicHolderBinding` to false.
+   */
+  credentialConfigurationsSupported: OpenId4VciIssuerCredentialConfigurationsSupported
 
   /**
    * Indicate support for batch issuance of credentials
@@ -850,6 +856,22 @@ export type OpenId4VciCreateIssuerOptions = {
    */
   metadataSigner?: OpenId4VcJwtIssuerDid | OpenId4VcJwtIssuerX5c
 }
+
+export type OpenId4VciIssuerCredentialConfigurationSupported = OpenId4VciCredentialConfigurationSupportedWithFormats & {
+  /**
+   * Set to false to issue the credential without holder binding, to a credential request without proofs. Only allowed
+   * for a configuration that declares neither `proof_types_supported` nor `cryptographic_binding_methods_supported`,
+   * and never for an mdoc. Not published in the issuer metadata.
+   *
+   * @default true
+   */
+  requireCryptographicHolderBinding?: boolean
+}
+
+export type OpenId4VciIssuerCredentialConfigurationsSupported = Record<
+  string,
+  OpenId4VciIssuerCredentialConfigurationSupported
+>
 
 export interface OpenId4VcUpdateIssuerOptions {
   /**
