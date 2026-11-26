@@ -323,10 +323,12 @@ export class AskarToDrizzleStorageMigrator {
         let recordCount = 0
         await this.scanRecords({ ...scanOptions, category: recordType }, async (entryObject) => {
           const record = recordToInstance(entryObject, adapter.recordClass)
-          const values = adapter.getValuesWithBase(drizzleContext, record) as Record<string, unknown>
+          // Passed to the insert, which would otherwise encode the record again
+          const values = adapter.getValuesWithBase(drizzleContext, record)
+          const columnValues = values as Record<string, unknown>
 
           const missingParent = foreignKeys.find(({ parent, columns, parentColumns }) => {
-            const key = columns.map((column) => values[column])
+            const key = columns.map((column) => columnValues[column])
             // The database does not check a foreign key with a null column either
             if (key.some((value) => value === null || value === undefined)) return false
             return !migratedKeys.has(getMigratedKey(parent, parentColumns, key))
@@ -350,7 +352,7 @@ export class AskarToDrizzleStorageMigrator {
             this.logger.debug(
               `Inserting record '${record.id}' with type '${record.type}' into drizzle storage for context '${askarContext.contextCorrelationId}'`
             )
-            await adapter.insert(drizzleContext, record)
+            await adapter.insert(drizzleContext, record, values)
           }
 
           for (const columns of referencedColumns) {
@@ -358,7 +360,7 @@ export class AskarToDrizzleStorageMigrator {
               getMigratedKey(
                 adapter,
                 columns,
-                columns.map((column) => values[column])
+                columns.map((column) => columnValues[column])
               )
             )
           }
