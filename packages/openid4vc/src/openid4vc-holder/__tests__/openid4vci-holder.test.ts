@@ -1,14 +1,24 @@
 import '@openwallet-foundation/askar-nodejs'
 import {
   Agent,
+  ClaimFormat,
   DidKey,
   type KeyDidCreateOptions,
   Kms,
+  MdocRecord,
   SdJwtVcRecord,
   TypedArrayEncoder,
+  W3cCredential,
   W3cCredentialRecord,
   W3cCredentialService,
+  W3cCredentialSubject,
+  W3cIssuer,
   W3cJwtVerifiableCredential,
+  W3cV2Credential,
+  W3cV2CredentialRecord,
+  W3cV2CredentialSubject,
+  W3cV2Issuer,
+  w3cDate,
 } from '@credo-ts/core'
 import type { IssuerMetadataResult } from '@openid4vc/openid4vci'
 import nock from 'nock'
@@ -16,7 +26,10 @@ import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcModule } from '../../OpenId4VcModule'
-import { OpenId4VciCredentialFormatProfile } from '../../shared'
+import {
+  type OpenId4VciCredentialConfigurationSupportedWithFormats,
+  OpenId4VciCredentialFormatProfile,
+} from '../../shared'
 import { OpenId4VciHolderService } from '../OpenId4VciHolderService'
 import { OpenId4VciAuthorizationFlow } from '../OpenId4VciHolderServiceOptions'
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
@@ -418,6 +431,230 @@ describe('OpenId4VcHolder', () => {
       [['EcdsaSecp256r1Signature2019'], []],
     ])('keeps the algorithms for which a suite with an ldp_vc proof type in %j exists', (proofTypes, algorithms) => {
       expect(getSupportedSignatureAlgorithms(proofTypes)).toEqual(algorithms)
+    })
+  })
+
+  describe('type of an issued credential', () => {
+    afterEach(() => {
+      nock.cleanAll()
+      holder.x509.config.setTrustedCertificates(undefined)
+    })
+
+    const handleCredentialResponse = (
+      {
+        credential,
+        jwkThumbprintKmsKeyIdMapping,
+      }: { credential: string | Record<string, unknown>; jwkThumbprintKmsKeyIdMapping?: Record<string, string> },
+      credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
+    ) => {
+      const holderService = holder.dependencyManager.resolve(OpenId4VciHolderService)
+
+      // biome-ignore lint/complexity/useLiteralKeys: bracket access calls the private method with its real types
+      return holderService['handleCredentialResponse'](
+        holder.context,
+        { credentials: [{ credential }] },
+        {
+          verifyCredentialStatus: false,
+          format: credentialConfiguration.format as OpenId4VciCredentialFormatProfile,
+          credentialConfigurationId: 'configurationId',
+          credentialConfiguration,
+          jwkThumbprintKmsKeyIdMapping,
+        }
+      )
+    }
+
+    it('accepts a jwt_vc_json credential for its credential configuration, and rejects it for another type', async () => {
+      const issuerKey = await holder.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const {
+        didState: { did: issuerDid },
+      } = await holder.dids.create<KeyDidCreateOptions>({ method: 'key', options: { keyId: issuerKey.keyId } })
+      if (!issuerDid) throw new Error('expected did')
+      const issuerDidKey = DidKey.fromDid(issuerDid)
+
+      const { encoded } = await holder.w3cCredentials.signCredential({
+        format: ClaimFormat.JwtVc,
+        credential: new W3cCredential({
+          type: ['VerifiableCredential', 'BarCredential'],
+          issuer: new W3cIssuer({ id: issuerDidKey.did }),
+          credentialSubject: new W3cCredentialSubject({ id: holderDid, claims: { number: '123456789' } }),
+          issuanceDate: w3cDate(Date.now()),
+        }),
+        verificationMethod: `${issuerDidKey.did}#${issuerDidKey.publicJwk.fingerprint}`,
+        alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
+      })
+
+      await expect(
+        handleCredentialResponse(
+          { credential: encoded },
+          {
+            format: OpenId4VciCredentialFormatProfile.JwtVcJson,
+            credential_definition: { type: ['VerifiableCredential', 'BarCredential'] },
+          }
+        )
+      ).resolves.toMatchObject({ record: expect.any(W3cCredentialRecord) })
+      await expect(
+        handleCredentialResponse(
+          { credential: encoded },
+          {
+            proof_types_supported: {
+              jwt: { proof_signing_alg_values_supported: ['EdDSA', 'ES256', 'ES256K'] },
+            },
+            format: OpenId4VciCredentialFormatProfile.JwtVcJson,
+            credential_definition: { type: ['VerifiableCredential', 'FooCredential'] },
+          }
+        )
+      ).rejects.toThrow(
+        "Expected the credential type to include each type of the credential configuration, 'VerifiableCredential', 'FooCredential', received 'VerifiableCredential', 'BarCredential'."
+      )
+    })
+
+    it('accepts an ldp_vc credential for its credential configuration, and rejects it for another type', async () => {
+      const { encoded } = await holder.w3cCredentials.signCredential({
+        format: ClaimFormat.LdpVc,
+        credential: new W3cCredential({
+          type: ['VerifiableCredential'],
+          issuer: new W3cIssuer({ id: holderDid }),
+          credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+          issuanceDate: w3cDate(Date.now()),
+        }),
+        verificationMethod: holderVerificationMethod,
+      })
+      const credential = { credential: encoded as Record<string, unknown> }
+
+      await expect(
+        handleCredentialResponse(credential, {
+          format: OpenId4VciCredentialFormatProfile.LdpVc,
+          credential_definition: {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential'],
+          },
+        })
+      ).resolves.toMatchObject({ record: expect.any(W3cCredentialRecord) })
+      await expect(
+        handleCredentialResponse(credential, {
+          format: OpenId4VciCredentialFormatProfile.LdpVc,
+          credential_definition: {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential', 'OpenBadgeCredential'],
+          },
+        })
+      ).rejects.toThrow(
+        "Expected the credential type to include each type of the credential configuration, 'VerifiableCredential', 'OpenBadgeCredential', received 'VerifiableCredential'."
+      )
+    })
+
+    it('accepts a W3C vc+sd-jwt credential for its credential configuration, and rejects it for another type', async () => {
+      const { encoded } = await holder.w3cV2Credentials.signCredential({
+        format: ClaimFormat.SdJwtW3cVc,
+        credential: new W3cV2Credential({
+          type: ['VerifiableCredential', 'OpenBadgeCredential'],
+          issuer: new W3cV2Issuer({ id: holderDid }),
+          credentialSubject: new W3cV2CredentialSubject({ id: holderDid }),
+          validFrom: w3cDate(Date.now()),
+        }),
+        verificationMethod: holderVerificationMethod,
+        alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
+      })
+
+      await expect(
+        handleCredentialResponse(
+          { credential: encoded },
+          {
+            format: OpenId4VciCredentialFormatProfile.SdJwtVc,
+            credential_definition: { type: ['VerifiableCredential', 'OpenBadgeCredential'] },
+          }
+        )
+      ).resolves.toMatchObject({ record: expect.any(W3cV2CredentialRecord) })
+      await expect(
+        handleCredentialResponse(
+          { credential: encoded },
+          {
+            format: OpenId4VciCredentialFormatProfile.SdJwtVc,
+            credential_definition: { type: ['VerifiableCredential', 'UniversityDegreeCredential'] },
+          }
+        )
+      ).rejects.toThrow(
+        "Expected the credential type to include each type of the credential configuration, 'VerifiableCredential', 'UniversityDegreeCredential', received 'VerifiableCredential', 'OpenBadgeCredential'."
+      )
+    })
+
+    it('accepts an mdoc for its credential configuration, and rejects it for another doctype', async () => {
+      const issuerCertificate = await holder.x509.createCertificate({
+        authorityKey: Kms.PublicJwk.fromPublicJwk(
+          (await holder.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+        ),
+        issuer: 'C=NL',
+      })
+      holder.x509.config.setTrustedCertificates([issuerCertificate])
+
+      const deviceKey = Kms.PublicJwk.fromPublicJwk(
+        (await holder.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+      )
+      const mdoc = await holder.mdoc.sign({
+        docType: 'org.iso.18013.5.1.mDL',
+        validityInfo: { validUntil: new Date(Date.now() + 60 * 60 * 1000) },
+        holderKey: deviceKey,
+        issuerCertificate,
+        namespaces: { 'org.iso.18013.5.1': { given_name: 'Jane' } },
+      })
+      const credential = {
+        credential: mdoc.base64Url,
+        jwkThumbprintKmsKeyIdMapping: {
+          [TypedArrayEncoder.toBase64(deviceKey.getJwkThumbprint())]: deviceKey.keyId,
+        },
+      }
+
+      await expect(
+        handleCredentialResponse(credential, {
+          format: OpenId4VciCredentialFormatProfile.MsoMdoc,
+          doctype: 'org.iso.18013.5.1.mDL',
+        })
+      ).resolves.toMatchObject({ record: expect.any(MdocRecord) })
+      await expect(
+        handleCredentialResponse(credential, {
+          format: OpenId4VciCredentialFormatProfile.MsoMdoc,
+          doctype: 'org.iso.23220.photoid.1',
+        })
+      ).rejects.toThrow(
+        "Expected the credential doctype to be the doctype of the credential configuration, 'org.iso.23220.photoid.1', received 'org.iso.18013.5.1.mDL'."
+      )
+    })
+
+    const pidConfiguration = {
+      format: OpenId4VciCredentialFormatProfile.SdJwtDc,
+      vct: 'https://example.com/pid',
+    } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
+
+    const signSdJwtVc = async (vct: string) => ({
+      credential: (
+        await holder.sdJwtVc.sign({
+          payload: { vct },
+          holder: { method: 'did', didUrl: holderVerificationMethod },
+          issuer: { method: 'did', didUrl: holderVerificationMethod },
+        })
+      ).compact,
+    })
+
+    it('accepts an SD-JWT VC whose vct extends the vct of the credential configuration', async () => {
+      nock('https://example.com')
+        .get('/pid-extended')
+        .reply(200, { vct: 'https://example.com/pid-extended', extends: pidConfiguration.vct })
+        .get('/pid')
+        .reply(200, { vct: pidConfiguration.vct })
+
+      await expect(
+        handleCredentialResponse(await signSdJwtVc('https://example.com/pid-extended'), pidConfiguration)
+      ).resolves.toMatchObject({ record: expect.any(SdJwtVcRecord) })
+    })
+
+    it('rejects an SD-JWT VC with another vct than the credential configuration', async () => {
+      nock('https://example.com').get('/other').reply(200, { vct: 'https://example.com/other' })
+
+      await expect(
+        handleCredentialResponse(await signSdJwtVc('https://example.com/other'), pidConfiguration)
+      ).rejects.toThrow(
+        "Expected the credential vct to be the vct of the credential configuration, 'https://example.com/pid', or one that extends it, received 'https://example.com/other'."
+      )
     })
   })
 })

@@ -66,12 +66,16 @@ import { keyAttestationLevelSatisfies, OpenId4VciCredentialFormatProfile } from 
 import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
 import { getDpopOptions } from '../shared/dpop'
 import {
+  assertW3cCredentialTypeMatchesConfiguration,
   getCredentialConfigurationsSupportedForScopes,
   getOfferedCredentials,
   getScopesFromCredentialConfigurationsSupported,
 } from '../shared/issuerMetadataUtils'
 import { getLocalAccessTokenJwks, getOid4vcLocalJwksCallback } from '../shared/localJwks'
-import type { OpenId4VciChainedAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
+import type {
+  OpenId4VciChainedAuthorizationServerConfig,
+  OpenId4VciChainedAuthorizationServerDpopPolicy,
+} from '../shared/models/OpenId4VciAuthorizationServerConfig'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import {
   credoJwtIssuerToOpenId4VcJwtIssuer,
@@ -1992,6 +1996,8 @@ export class OpenId4VcIssuerService {
       authorizationServerMetadata: AuthorizationServerMetadata
       // Only the authorization request creates a key, later requests reuse the persisted one.
       createKey?: boolean
+      // Overrides the policy of the authorization server config. Only used by the authorization request.
+      policy?: OpenId4VciChainedAuthorizationServerDpopPolicy
     }
   ): Promise<{
     dpop?: RequestDpopOptions
@@ -1999,16 +2005,17 @@ export class OpenId4VcIssuerService {
   }> {
     const persisted = options.issuanceSession.chainedIdentity?.externalDpop
     const dpopConfig = options.chainedAuthorizationServerConfig.dpop
+    const policy = options.policy ?? dpopConfig?.policy
     const supportedSigningAlgorithms = options.authorizationServerMetadata.dpop_signing_alg_values_supported
 
-    // A session that started with DPoP keeps the key it started with.
-    if (dpopConfig?.policy === 'disallowed' && !persisted) return {}
+    // The authorization request decides on DPoP. Later requests use the key it stored, or no DPoP without one.
+    if (!persisted && (!options.createKey || policy === 'disallowed')) return {}
 
     if (!supportedSigningAlgorithms) {
       if (persisted) {
         throw new CredoError('Authorization server no longer advertises DPoP support for this issuance session.')
       }
-      if (dpopConfig?.policy === 'required') {
+      if (policy === 'required') {
         throw new CredoError(`Authorization server does not support DPoP.`)
       }
 
@@ -2018,10 +2025,6 @@ export class OpenId4VcIssuerService {
     if (supportedSigningAlgorithms.length === 0) {
       throw new CredoError(`Authorization server advertises DPoP support without any signing algorithms.`)
     }
-    if (!persisted && !options.createKey) {
-      throw new CredoError('Chained DPoP key was not initialized during the authorization request.')
-    }
-
     const persistedPublicJwk = persisted?.publicJwk
       ? Kms.PublicJwk.fromKmsKey({
           keyId: persisted.keyId,
@@ -2395,18 +2398,27 @@ export class OpenId4VcIssuerService {
       )
     }
 
-    if (signOptions.format === ClaimFormat.JwtVc || signOptions.format === ClaimFormat.LdpVc) {
-      const oid4vciFormatMap: Record<string, ClaimFormat.JwtVc | ClaimFormat.LdpVc> = {
-        [OpenId4VciCredentialFormatProfile.JwtVcJson]: ClaimFormat.JwtVc,
-        [OpenId4VciCredentialFormatProfile.JwtVcJsonLd]: ClaimFormat.JwtVc,
-        [OpenId4VciCredentialFormatProfile.LdpVc]: ClaimFormat.LdpVc,
-      }
+    const claimFormats: Record<string, ClaimFormat> = {
+      [OpenId4VciCredentialFormatProfile.JwtVcJson]: ClaimFormat.JwtVc,
+      [OpenId4VciCredentialFormatProfile.JwtVcJsonLd]: ClaimFormat.JwtVc,
+      [OpenId4VciCredentialFormatProfile.LdpVc]: ClaimFormat.LdpVc,
+      [OpenId4VciCredentialFormatProfile.MsoMdoc]: ClaimFormat.MsoMdoc,
+      [OpenId4VciCredentialFormatProfile.SdJwtDc]: ClaimFormat.SdJwtDc,
+      // A vc+sd-jwt configuration with a vct is an SD-JWT VC, otherwise a W3C VC secured with SD-JWT
+      [OpenId4VciCredentialFormatProfile.SdJwtVc]: credentialConfiguration.vct
+        ? ClaimFormat.SdJwtDc
+        : ClaimFormat.SdJwtW3cVc,
+    }
+    const expectedClaimFormat = claimFormats[credentialConfiguration.format]
+    if (signOptions.format !== expectedClaimFormat) {
+      throw new CredoError(
+        `Invalid credential format returned by sign options. Expected '${expectedClaimFormat}', received '${signOptions.format}'.`
+      )
+    }
 
-      const expectedClaimFormat = oid4vciFormatMap[credentialConfiguration.format]
-      if (signOptions.format !== expectedClaimFormat) {
-        throw new CredoError(
-          `Invalid credential format returned by sign options. Expected '${expectedClaimFormat}', received '${signOptions.format}'.`
-        )
+    if (signOptions.format === ClaimFormat.JwtVc || signOptions.format === ClaimFormat.LdpVc) {
+      for (const { credential } of signOptions.credentials) {
+        assertW3cCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
       }
 
       return {
@@ -2419,15 +2431,6 @@ export class OpenId4VcIssuerService {
       }
     }
     if (signOptions.format === ClaimFormat.SdJwtDc) {
-      if (
-        credentialConfiguration.format !== OpenId4VciCredentialFormatProfile.SdJwtVc &&
-        credentialConfiguration.format !== OpenId4VciCredentialFormatProfile.SdJwtDc
-      ) {
-        throw new CredoError(
-          `Invalid credential format returned by sign options. Expected '${ClaimFormat.SdJwtDc}', received '${signOptions.format}'.`
-        )
-      }
-
       if (!signOptions.credentials.every((c) => c.payload.vct === credentialConfiguration.vct)) {
         throw new CredoError(
           `One or more vct values of the offered credential(s) do not match the vct of the requested credential. Offered ${Array.from(
@@ -2445,7 +2448,10 @@ export class OpenId4VcIssuerService {
               .sign({
                 ...credential,
                 // Set header type based on the oid4vci format
-                headerType: credentialConfiguration.format,
+                headerType:
+                  credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc
+                    ? OpenId4VciCredentialFormatProfile.SdJwtVc
+                    : OpenId4VciCredentialFormatProfile.SdJwtDc,
               })
               .then((signed) => signed.compact)
           )
@@ -2453,11 +2459,6 @@ export class OpenId4VcIssuerService {
       }
     }
     if (signOptions.format === ClaimFormat.MsoMdoc) {
-      if (signOptions.format !== credentialConfiguration.format) {
-        throw new CredoError(
-          `Invalid credential format returned by sign options. Expected '${credentialConfiguration.format}', received '${signOptions.format}'.`
-        )
-      }
       if (!signOptions.credentials.every((c) => c.docType === credentialConfiguration.doctype)) {
         throw new CredoError(
           `One or more doctype values of the offered credential(s) do not match the doctype of the requested credential. Offered ${Array.from(
@@ -2475,6 +2476,10 @@ export class OpenId4VcIssuerService {
       }
     }
     if (signOptions.format === ClaimFormat.SdJwtW3cVc) {
+      for (const { credential } of signOptions.credentials) {
+        assertW3cCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
+      }
+
       return {
         format: credentialConfiguration.format,
         credentials: (await Promise.all(

@@ -66,7 +66,11 @@ import type { OpenId4VciCredentialConfigurationSupportedWithFormats, OpenId4VciM
 import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { getDpopOptions } from '../shared/dpop'
-import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
+import {
+  assertW3cCredentialTypeMatchesConfiguration,
+  getOfferedCredentials,
+  getScopesFromCredentialConfigurationsSupported,
+} from '../shared/issuerMetadataUtils'
 import {
   getCredentialRequestEncryption,
   getJwkSigner,
@@ -1375,6 +1379,20 @@ export class OpenId4VciHolderService {
           )
         }
 
+        // A vct that extends the vct of the configuration is accepted. Type metadata is only fetched for the first
+        // credential, so only the credentials with its vct can extend it.
+        const [{ sdJwtVc: firstSdJwtVc, typeMetadataChain }] = verificationResults
+        const acceptedVcts = typeMetadataChain?.some(({ vct }) => vct === credentialConfiguration.vct)
+          ? [credentialConfiguration.vct, firstSdJwtVc.payload.vct]
+          : [credentialConfiguration.vct]
+        for (const { sdJwtVc } of verificationResults) {
+          if (!acceptedVcts.includes(sdJwtVc.payload.vct)) {
+            throw new CredoError(
+              `Expected the credential vct to be the vct of the credential configuration, '${credentialConfiguration.vct}', or one that extends it, received '${sdJwtVc.payload.vct}'.`
+            )
+          }
+        }
+
         return {
           record: new SdJwtVcRecord({
             credentialInstances: verificationResults.map((r) => ({
@@ -1394,6 +1412,7 @@ export class OpenId4VciHolderService {
       const result = await Promise.all(
         credentials.map(async (c) => {
           const credential = W3cV2SdJwtVerifiableCredential.fromCompact(c)
+          assertW3cCredentialTypeMatchesConfiguration(credential.resolvedCredential.type, credentialConfiguration)
           const result = await this.w3cV2CredentialService.verifyCredential(agentContext, {
             credential,
           })
@@ -1439,6 +1458,7 @@ export class OpenId4VciHolderService {
       const result = await Promise.all(
         credentials.map(async (c) => {
           const credential = W3cJwtVerifiableCredential.fromSerializedJwt(c)
+          assertW3cCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
           const result = await this.w3cCredentialService.verifyCredential(agentContext, {
             credential,
             verifyCredentialStatus,
@@ -1482,6 +1502,7 @@ export class OpenId4VciHolderService {
       const result = await Promise.all(
         credentials.map(async (c) => {
           const credential = W3cJsonLdVerifiableCredential.fromJson(c)
+          assertW3cCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
           const result = await this.w3cCredentialService.verifyCredential(agentContext, {
             credential,
             verifyCredentialStatus,
@@ -1533,6 +1554,11 @@ export class OpenId4VciHolderService {
       const result = await Promise.all(
         credentials.map(async (credential) => {
           const mdoc = Mdoc.fromBase64Url(credential)
+          if (mdoc.docType !== credentialConfiguration.doctype) {
+            throw new CredoError(
+              `Expected the credential doctype to be the doctype of the credential configuration, '${credentialConfiguration.doctype}', received '${mdoc.docType}'.`
+            )
+          }
           const result = await mdocApi.verify(mdoc, {})
 
           const jwkThumbprint = TypedArrayEncoder.toBase64(mdoc.deviceKey.getJwkThumbprint())

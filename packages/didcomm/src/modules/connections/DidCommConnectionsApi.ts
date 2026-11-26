@@ -383,8 +383,9 @@ export class DidCommConnectionsApi {
   }
 
   /**
-   * Terminate a connection by sending a hang-up message to the other party. The connection record itself and any
-   * keys used for mediation will only be deleted if `deleteAfterHangup` flag is set.
+   * Terminate a connection by sending a hang-up message to the other party. The connection moves to the `abandoned`
+   * state. The connection record itself and any keys used for mediation will only be deleted if `deleteAfterHangup`
+   * flag is set.
    *
    * @param options connectionId
    */

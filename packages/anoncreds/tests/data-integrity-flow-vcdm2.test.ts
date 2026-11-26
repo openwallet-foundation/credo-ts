@@ -1,8 +1,10 @@
-import type { DidRepository, JsonObject } from '@credo-ts/core'
+import type { DidRepository, JsonObject, KeyDidCreateOptions } from '@credo-ts/core'
 import {
   AgentContext,
   CacheModuleConfig,
+  DidKey,
   DidResolverService,
+  DidsApi,
   DidsModuleConfig,
   defaultDocumentLoader,
   InjectionSymbols,
@@ -28,6 +30,7 @@ import {
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
 // Registered by the W3cDataIntegrityModule in a real agent, wired manually here
+import { EcdsaJcs2019Cryptosuite } from '../../core/src/modules/w3c-di/cryptosuites/ecdsa-jcs-2019/EcdsaJcs2019Cryptosuite'
 import { EddsaJcs2022Cryptosuite } from '../../core/src/modules/w3c-di/cryptosuites/eddsa-jcs-2022/EddsaJcs2022Cryptosuite'
 import { W3cDataIntegrityCryptosuiteToken } from '../../core/src/modules/w3c-di/cryptosuites/types'
 import {
@@ -64,6 +67,14 @@ const agentContext = getAgentContext({
         cryptosuiteClass: EddsaJcs2022Cryptosuite,
         cryptosuite: 'eddsa-jcs-2022',
         supportedPublicJwkTypes: [Kms.Ed25519PublicJwk],
+      },
+    ],
+    [
+      W3cDataIntegrityCryptosuiteToken,
+      {
+        cryptosuiteClass: EcdsaJcs2019Cryptosuite,
+        cryptosuite: 'ecdsa-jcs-2019',
+        supportedPublicJwkTypes: [Kms.P256PublicJwk, Kms.P384PublicJwk],
       },
     ],
     [CacheModuleConfig, new CacheModuleConfig({ cache: new InMemoryLruCache({ limit: 500 }) })],
@@ -118,6 +129,7 @@ async function offerAndRequest(issuerDid: string, credentialSubject: JsonObject 
 describe('data integrity format service (vcdm 2.0)', () => {
   afterEach(async () => {
     inMemoryStorageService.contextCorrelationIdToRecords = {}
+    vi.restoreAllMocks()
   })
 
   test('issuance flow for a data model 2.0 credential secured with a DataIntegrityProof', async () => {
@@ -272,6 +284,52 @@ describe('data integrity format service (vcdm 2.0)', () => {
       proof: { type: 'DataIntegrityProof', cryptosuite: 'eddsa-jcs-2022' },
     })
   })
+
+  test.each(['P-256', 'P-384'] as const)(
+    'selects ecdsa-jcs-2019 for a %s issuer key and the holder accepts the credential',
+    async (crv) => {
+      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+      const { keyId } = await kms.createKey({ type: { kty: 'EC', crv } })
+      const { didState } = await agentContext.dependencyManager
+        .resolve(DidsApi)
+        .create<KeyDidCreateOptions>({ method: 'key', options: { keyId } })
+      const did = didState.did as string
+      const verificationMethod = didState.didDocument?.dereferenceKey(
+        `${did}#${DidKey.fromDid(did).publicJwk.fingerprint}`,
+        ['assertionMethod']
+      )
+      if (!verificationMethod) throw new Error('No verification method found')
+
+      const { offerAttachment, requestAttachment, credentialExchangeRecord } = await offerAndRequest(did)
+
+      const { attachment: credentialAttachment } = await dataIntegrityCredentialFormatService.acceptRequest(
+        agentContext,
+        {
+          credentialExchangeRecord,
+          offerAttachment,
+          requestAttachment,
+          credentialFormats: { dataIntegrity: { issuerVerificationMethod: verificationMethod.id } },
+        }
+      )
+
+      const { credential: issuedCredential } = credentialAttachment.getDataAsJson<DataIntegrityCredential>()
+      expect(issuedCredential).toMatchObject({
+        proof: { type: 'DataIntegrityProof', cryptosuite: 'ecdsa-jcs-2019', verificationMethod: verificationMethod.id },
+      })
+
+      // The holder verifies the proof before storing the credential
+      const verifyProofSpy = vi.spyOn(EcdsaJcs2019Cryptosuite.prototype, 'verifyProof')
+      await dataIntegrityCredentialFormatService.processCredential(agentContext, {
+        credentialExchangeRecord,
+        attachment: credentialAttachment,
+        requestAttachment,
+        offerAttachment,
+      })
+      expect(verifyProofSpy).toHaveBeenCalledOnce()
+      await expect(verifyProofSpy.mock.results[0].value).resolves.toMatchObject({ verified: true })
+      expect(credentialExchangeRecord.credentials).toHaveLength(1)
+    }
+  )
 
   test('rejects the anoncreds cryptosuite for a data model 2.0 credential', async () => {
     const { did } = await createDidKidVerificationMethod(agentContext)

@@ -33,6 +33,7 @@ import type {
 import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciChainedAuthorizationServerConfig,
+  OpenId4VciChainedAuthorizationServerDpopPolicy,
 } from '../shared/models/OpenId4VciAuthorizationServerConfig'
 import type {
   supportedResponseEncryptionContentAlgorithms,
@@ -594,6 +595,12 @@ export type OpenId4VciGetChainedAuthorizationRequestParameters = (options: {
    * with the same name in the authorization request. Please use it carefully.
    */
   additionalPayload?: Record<string, string>
+
+  /**
+   * Whether to use DPoP towards the chained authorization server for this issuance session. If not
+   * provided, `dpop.policy` from the chained authorization server config is used.
+   */
+  dpopPolicy?: OpenId4VciChainedAuthorizationServerDpopPolicy
 }>
 
 export interface OpenId4VciCredentialRequestToCredentialMapperOptions {

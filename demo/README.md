@@ -4,6 +4,8 @@ This is the Credo demo. Walk through the Credo flow yourself together with agent
 
 Alice, a former student of Faber College, connects with the College, is issued a credential about her degree and then is asked by the College for a proof.
 
+The credential is a W3C Verifiable Credential in JSON-LD format (`ldp_vc`) signed with `Ed25519Signature2018`, issued over issue-credential v2. The proof uses DIF Presentation Exchange over present-proof v2. Faber and Alice each use a `did:key`, so the demo runs offline without a ledger.
+
 ## Features
 
 - ✅ Creating a connection
@@ -76,15 +78,17 @@ To set up a connection:
 To offer a credential:
 
 - Select 'offer credential' in Faber
-- Faber will start with registering a schema and the credential definition accordingly
-- You have now send a credential offer to Alice!
-- Go to Alice to accept the incoming credential offer by selecting 'yes'.
+- Faber creates its issuer `did:key` the first time and sends the credential offer to Alice
+- Go to Alice to accept the incoming credential offer by selecting 'yes'
+- Alice accepts by proposing the same credential with her own `did:key` as the subject. She signs her presentations with this DID, which Faber can't know when it makes the offer
+- Faber checks that only the subject changed and issues the credential
 
 To request a proof:
 
 - Select 'request proof' in Faber
-- Faber will create a new proof attribute and will then send a proof request to Alice!
-- Go to Alice to accept the incoming proof request
+- Faber sends a Presentation Exchange request for a degree credential that it issued
+- Go to Alice to accept the incoming proof request. She signs the presentation with her `did:key`
+- Faber verifies the presentation and prints the holder, issuer and claims
 
 To send a basic message:
 

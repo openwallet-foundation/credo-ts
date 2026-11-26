@@ -23,6 +23,8 @@ export interface MessageContextParams {
   agentContext: AgentContext
   receivedAt?: Date
   encryptedMessage?: DidCommEncryptedMessage
+  /** The message carries the termination of its connection, as a DIDComm v2 rotation to nothing does. */
+  terminatesConnection?: boolean
 }
 
 export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMessage> {
@@ -48,6 +50,8 @@ export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMess
   public messageHandler?: DidCommMessageHandler
   public responseMessage?: DidCommOutboundMessageContext
   public encryptedMessage?: DidCommEncryptedMessage
+  /** The message carries the termination of its connection, as a DIDComm v2 rotation to nothing does. */
+  public readonly terminatesConnection: boolean
 
   public constructor(message: T, context: MessageContextParams) {
     this.message = message
@@ -62,6 +66,7 @@ export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMess
     this.agentContext = context.agentContext
     this.receivedAt = context.receivedAt ?? new Date()
     this.encryptedMessage = context.encryptedMessage
+    this.terminatesConnection = context.terminatesConnection ?? false
   }
 
   public setMessageHandler(messageHandler: DidCommMessageHandler) {
@@ -86,8 +91,8 @@ export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMess
       throw new CredoError(`No connection associated with incoming message ${this.message.type}`)
     }
 
-    // Make sure connection is ready
-    this.connection.assertReady()
+    // Make sure connection is ready. The message that terminates a connection is still its last message.
+    if (!this.terminatesConnection) this.connection.assertReady()
 
     if (!options?.allowUnauthenticatedSender && !this.senderKey && !this.senderDid) {
       throw new CredoError(

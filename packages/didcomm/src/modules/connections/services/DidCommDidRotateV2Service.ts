@@ -33,6 +33,7 @@ import { DidCommRoutingService } from '../../routing/services/DidCommRoutingServ
 import { getMediationRecordForDidDocument } from '../../routing/services/helpers'
 import type { DidCommConnectionDidRotatedEvent } from '../DidCommConnectionEvents'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
+import { DidCommConnectionHangupReason, DidCommDidExchangeState } from '../models'
 import type { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from './DidCommConnectionService'
@@ -313,7 +314,10 @@ export class DidCommDidRotateV2Service {
     }
     const previousTheirDid = connection.theirDid
     connection.theirDid = undefined
-    await agentContext.dependencyManager.resolve(DidCommConnectionService).update(agentContext, connection)
+    connection.errorMessage = DidCommConnectionHangupReason.ByOtherParty
+    await agentContext
+      .resolve(DidCommConnectionService)
+      .updateState(agentContext, connection, DidCommDidExchangeState.Abandoned)
     this.emitDidRotatedEvent(agentContext, connection, { previousTheirDid })
   }
 
