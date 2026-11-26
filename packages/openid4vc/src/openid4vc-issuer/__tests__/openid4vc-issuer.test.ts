@@ -1136,6 +1136,118 @@ describe('OpenId4VcIssuer', () => {
     await handleCredentialResponse(holder.context, credentialResponse.credential, openBadgeCredential)
   })
 
+  describe('credential of another type or format than the requested credential configuration', () => {
+    const createCredentialResponse = async (
+      credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats & { id: string },
+      credentialRequestToCredentialMapper: OpenId4VciCredentialRequestToCredentialMapper
+    ) => {
+      const result = await issuer.openid4vc.issuer.createCredentialOffer({
+        issuerId: openId4VcIssuer.issuerId,
+        credentialConfigurationIds: [credentialConfiguration.id],
+        preAuthorizedCodeFlowConfig: { preAuthorizedCode: '1234567890' },
+      })
+
+      const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+      result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+      await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
+
+      const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+      const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
+      const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
+
+      return issuer.openid4vc.issuer.createCredentialResponse({
+        issuanceSessionId: result.issuanceSession.id,
+        authorization: {
+          authorizationServer: 'https://authorization.com',
+          accessToken: {
+            payload: { active: true, sub: 'something', 'pre-authorized_code': 'some' },
+            value: 'the-access-token',
+          },
+        },
+        credentialRequestToCredentialMapper,
+        parsedCredentialRequest: await parseCredentialRequestAsWallet(
+          await createCredentialRequest(holder.context, {
+            credentialConfiguration,
+            issuerMetadata,
+            kid: holderKid,
+            nonce: cNonce,
+          })
+        ),
+      })
+    }
+
+    it('rejects a jwt_vc_json credential of another type than the requested credential configuration', async () => {
+      await expect(
+        createCredentialResponse(openBadgeCredential, () => ({
+          type: 'credentials',
+          format: 'jwt_vc',
+          credentialConfigurationId: openBadgeCredential.id,
+          credentials: [
+            {
+              credential: new W3cCredential({
+                type: universityDegreeCredential.credential_definition.type,
+                issuer: new W3cIssuer({ id: issuerDid }),
+                credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+                issuanceDate: w3cDate(Date.now()),
+              }),
+              verificationMethod: issuerVerificationMethod.id,
+            },
+          ],
+        }))
+      ).rejects.toThrow(
+        "Expected the credential type to include each type of the credential configuration, 'VerifiableCredential', 'OpenBadgeCredential', received 'VerifiableCredential', 'UniversityDegreeCredential'."
+      )
+    })
+
+    it('rejects a W3C vc+sd-jwt credential of another type than the requested credential configuration', async () => {
+      await expect(
+        createCredentialResponse(openBadgeCredentialSdJwtVc, () => ({
+          type: 'credentials',
+          format: 'vc+sd-jwt',
+          credentialConfigurationId: openBadgeCredentialSdJwtVc.id,
+          credentials: [
+            {
+              alg: 'EdDSA',
+              verificationMethod: issuerVerificationMethod.id,
+              credential: new W3cV2Credential({
+                type: universityDegreeCredential.credential_definition.type,
+                issuer: new W3cV2Issuer({ id: issuerDid }),
+                credentialSubject: new W3cV2CredentialSubject({ id: holderDid }),
+                validFrom: w3cDate(Date.now()),
+              }),
+            },
+          ],
+        }))
+      ).rejects.toThrow(
+        "Expected the credential type to include each type of the credential configuration, 'VerifiableCredential', 'OpenBadgeCredentialSdJwtVc', received 'VerifiableCredential', 'UniversityDegreeCredential'."
+      )
+    })
+
+    it('rejects a W3C vc+sd-jwt credential for a requested credential configuration of another format', async () => {
+      await expect(
+        createCredentialResponse(openBadgeCredential, () => ({
+          type: 'credentials',
+          format: 'vc+sd-jwt',
+          credentialConfigurationId: openBadgeCredential.id,
+          credentials: [
+            {
+              alg: 'EdDSA',
+              verificationMethod: issuerVerificationMethod.id,
+              credential: new W3cV2Credential({
+                type: openBadgeCredential.credential_definition.type,
+                issuer: new W3cV2Issuer({ id: issuerDid }),
+                credentialSubject: new W3cV2CredentialSubject({ id: holderDid }),
+                validFrom: w3cDate(Date.now()),
+              }),
+            },
+          ],
+        }))
+      ).rejects.toThrow(
+        "Invalid credential format returned by sign options. Expected 'jwt_vc_json', received 'vc+sd-jwt'."
+      )
+    })
+  })
+
   describe('pre authorized code flow (ldp_vc)', () => {
     type Purpose = 'authentication' | 'assertionMethod'
 
