@@ -1,5 +1,5 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import { EventEmitter } from '@credo-ts/core'
+import { EventEmitter, RecordNotFoundError } from '@credo-ts/core'
 import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
@@ -14,6 +14,7 @@ import type { DidCommCredentialRole } from '../models'
 import { DidCommCredentialState } from '../models/DidCommCredentialState'
 import type { DidCommCredentialExchangeRecord } from '../repository'
 import { DidCommCredentialExchangeRepository } from '../repository'
+import { deleteExchangeHolderBinding } from '../util/holderBinding'
 import type { DidCommCredentialProtocol } from './DidCommCredentialProtocol'
 import type {
   AcceptCredentialOfferOptions,
@@ -275,17 +276,28 @@ export abstract class DidCommBaseCredentialProtocol<
     const credentialRepository = agentContext.dependencyManager.resolve(DidCommCredentialExchangeRepository)
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
-    await credentialRepository.delete(agentContext, credentialExchangeRecord)
-
     const deleteAssociatedCredentials = options?.deleteAssociatedCredentials ?? true
     const deleteAssociatedDidCommMessages = options?.deleteAssociatedDidCommMessages ?? true
 
+    // The exchange record is deleted after the credentials and keys, so a call that failed on a key can be retried
     if (deleteAssociatedCredentials) {
       for (const credential of credentialExchangeRecord.credentials) {
         const formatService = this.getFormatServiceForRecordType(credential.credentialRecordType)
-        await formatService.deleteCredentialById(agentContext, credential.credentialRecordId)
+        try {
+          await formatService.deleteCredentialById(agentContext, credential.credentialRecordId, {
+            deleteAssociatedKeys: options?.deleteAssociatedKeys,
+          })
+        } catch (error) {
+          // Deleted by an earlier call that failed afterwards
+          if (!(error instanceof RecordNotFoundError)) throw error
+        }
       }
     }
+
+    // Only DIDs of credentials that weren't stored: a stored credential record took over its own
+    if (options?.deleteAssociatedKeys) await deleteExchangeHolderBinding(agentContext, credentialExchangeRecord)
+
+    await credentialRepository.delete(agentContext, credentialExchangeRecord)
 
     if (deleteAssociatedDidCommMessages) {
       const didCommMessages = await didCommMessageRepository.findByQuery(agentContext, {

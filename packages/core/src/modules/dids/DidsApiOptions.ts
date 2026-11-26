@@ -44,3 +44,15 @@ export interface ImportDidOptions {
    */
   overwrite?: boolean
 }
+
+export interface DeleteCreatedDidOptions {
+  /**
+   * The created did to delete.
+   */
+  did: string
+
+  /**
+   * Whether to also delete the keys of the did from the kms. Only delete them when nothing else uses them.
+   */
+  deleteAssociatedKeys: boolean
+}

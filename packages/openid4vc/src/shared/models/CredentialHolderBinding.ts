@@ -40,6 +40,15 @@ export type OpenId4VcCredentialHolderAttestationBinding = {
 export interface OpenId4VcCredentialHolderDidBinding {
   method: 'did'
   didUrls: string[]
+
+  /**
+   * Whether the DIDs were created only for this credential. The credential record then stores them, and deleting it
+   * with `deleteAssociatedKeys` deletes the DID records and their keys. Don't set it for DIDs that need deactivating
+   * or that something else uses.
+   *
+   * @default false
+   */
+  createdForCredential?: boolean
 }
 
 export interface OpenId4VcCredentialHolderJwkBinding {

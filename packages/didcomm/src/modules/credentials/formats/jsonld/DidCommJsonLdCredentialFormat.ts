@@ -23,6 +23,20 @@ export interface DidCommJsonLdCredentialDetailFormat {
   }
 }
 
+export interface DidCommJsonLdHolderBindingFormat {
+  /**
+   * A DID in `credentialSubject.id` that was created only for this credential. The credential record then stores it,
+   * and deleting the credential with `deleteAssociatedKeys` deletes the DID record and its keys.
+   */
+  didCreatedForCredential?: string
+}
+
+/**
+ * Format for creating a jsonld proposal or request as the holder.
+ */
+export type DidCommJsonLdHolderCredentialDetailFormat = DidCommJsonLdCredentialDetailFormat &
+  DidCommJsonLdHolderBindingFormat
+
 // use empty object in the acceptXXX jsonld format interface so we indicate that
 // the jsonld format service needs to be invoked
 type EmptyObject = Record<string, never>
@@ -39,11 +53,11 @@ export interface DidCommJsonLdCredentialFormat extends DidCommCredentialFormat {
   formatKey: 'jsonld'
   credentialRecordType: 'w3c'
   credentialFormats: {
-    createProposal: DidCommJsonLdCredentialDetailFormat
+    createProposal: DidCommJsonLdHolderCredentialDetailFormat
     acceptProposal: EmptyObject
     createOffer: DidCommJsonLdCredentialDetailFormat
-    acceptOffer: EmptyObject
-    createRequest: DidCommJsonLdCredentialDetailFormat
+    acceptOffer: DidCommJsonLdHolderBindingFormat
+    createRequest: DidCommJsonLdHolderCredentialDetailFormat
     acceptRequest: DidCommJsonLdAcceptRequestFormat
   }
   formatData: {

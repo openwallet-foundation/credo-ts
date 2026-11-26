@@ -29,8 +29,14 @@ export class W3cV2CredentialsApi {
     return this.w3cV2CredentialService.storeCredential(this.agentContext, options)
   }
 
-  public async deleteById(id: string) {
-    return this.w3cV2CredentialService.removeCredentialRecord(this.agentContext, id)
+  /**
+   * Delete a credential record by id.
+   *
+   * @param options.deleteAssociatedKeys also delete the DIDs marked as created for the credential
+   * (`createdForCredential`) with their keys. Defaults to `false`.
+   */
+  public async deleteById(id: string, options?: { deleteAssociatedKeys?: boolean }) {
+    return this.w3cV2CredentialService.removeCredentialRecord(this.agentContext, id, options)
   }
 
   public async getAll(): Promise<W3cV2CredentialRecord[]> {

@@ -32,6 +32,7 @@ import type { ParsedMessageType } from '../../util/messageType'
 import { DidCommOutOfBandRole } from '../oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../oob/domain/DidCommOutOfBandState'
 import type { DidCommOutOfBandRecord } from '../oob/repository'
+import { DidCommOutOfBandRecordMetadataKeys } from '../oob/repository/outOfBandRecordMetadataTypes'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
 import { DidExchangeStateMachine } from './DidExchangeStateMachine'
@@ -43,9 +44,12 @@ import {
 } from './messages'
 import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from './models'
 import type { DidCommConnectionRecord } from './repository'
+import type { DidCommCreatedKey } from './repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from './services'
 import {
+  addCreatedKeys,
   addSharedDid,
+  createdRoutingKmsKeys,
   createPeerDidFromServices,
   getResolvedDidcommServiceWithSigningKeyId,
   routingToServices,
@@ -103,6 +107,7 @@ export class DidExchangeProtocol {
     let didDocument: DidDocument
     let keys: DidDocumentKey[] | undefined
     let mediatorId: string | undefined
+    let createdKmsKeys: DidCommCreatedKey[] | undefined
 
     // If our did is specified, make sure we have all key material for it
     if (did) {
@@ -124,6 +129,7 @@ export class DidExchangeProtocol {
       didDocument = resolved.didDocument
       keys = resolved.keys
       mediatorId = routing.mediatorId
+      createdKmsKeys = createdRoutingKmsKeys(routing, outOfBandRecord)
     }
 
     const parentThreadId = outOfBandRecord.outOfBandInvitation.id
@@ -169,6 +175,7 @@ export class DidExchangeProtocol {
     connectionRecord.did = didDocument.id
     connectionRecord.threadId = message.id
     if (did) addSharedDid(connectionRecord, didDocument.id)
+    if (createdKmsKeys) addCreatedKeys(connectionRecord, { did: didDocument.id, keys: createdKmsKeys })
 
     if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
       connectionRecord.autoAcceptConnection = autoAcceptConnection
@@ -352,6 +359,13 @@ export class DidExchangeProtocol {
     }
 
     connectionRecord.did = didDocument.id
+    addCreatedKeys(connectionRecord, {
+      did: didDocument.id,
+      // Without routing the did uses the invitation keys, which a single-use invitation passes on
+      keys: routing
+        ? createdRoutingKmsKeys(routing, outOfBandRecord)
+        : (outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.CreatedKeys)?.keys ?? []),
+    })
 
     await this.updateState(agentContext, DidCommDidExchangeResponseMessage.type, connectionRecord)
     this.logger.debug(`Create message ${DidCommDidExchangeResponseMessage.type.messageTypeUri} end`, {

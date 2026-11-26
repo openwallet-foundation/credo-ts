@@ -37,7 +37,8 @@ import { DidCommConnectionHangupReason, DidCommDidExchangeState } from '../model
 import type { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from './DidCommConnectionService'
-import { addSharedDid, createPeerDidForV2OOB, toAbsoluteDidUrl } from './helpers'
+import { deleteCreatedDidsAndKeys } from './deleteCreatedDidsAndKeys'
+import { addCreatedKeys, addSharedDid, createPeerDidForV2OOB, routingKmsKeys, toAbsoluteDidUrl } from './helpers'
 
 const FROM_PRIOR_CLAIMS = ['iss', 'sub', 'iat']
 
@@ -79,7 +80,11 @@ export class DidCommDidRotateV2Service {
   public async rotateOurDid(
     agentContext: AgentContext,
     connection: DidCommConnectionRecord,
-    options: { toDid?: string; routing?: DidCommRouting; save?: boolean }
+    options: {
+      toDid?: string
+      routing?: DidCommRouting
+      save?: boolean
+    }
   ): Promise<{ newDid: string; fromPriorJwt: string }> {
     const { toDid, routing, save = true } = options
     if (!connection.did) {
@@ -97,26 +102,39 @@ export class DidCommDidRotateV2Service {
     const priorDid = connection.did
     let newDid: string
     let mediatorId: string | undefined
+    let fromPriorJwt: string
 
     if (toDid) {
       const dids = agentContext.dependencyManager.resolve(DidsApi)
       const { didDocument } = await dids.resolveCreatedDidDocumentWithKeys(toDid)
       newDid = didDocument.id
       mediatorId = (await getMediationRecordForDidDocument(agentContext, didDocument))?.id
+      fromPriorJwt = await this.createFromPriorForRotation(agentContext, priorDid, newDid)
     } else {
       if (!routing) {
         throw new CredoError('Routing configuration must be defined when rotating to a new peer did')
       }
       const created = await createPeerDidForV2OOB(agentContext, routing)
-      // Register the rotated DID with the mediator BEFORE committing the rotation, so a failed
-      // registration cannot leave a connection whose inbound forwards the mediator can't route.
-      const routingService = agentContext.dependencyManager.resolve(DidCommRoutingService)
-      await routingService.registerRecipientDidForV2Routing(agentContext, routing, created.did)
       newDid = created.did
       mediatorId = routing.mediatorId
+      try {
+        // Register the rotated DID with the mediator BEFORE committing the rotation, so a failed
+        // registration cannot leave a connection whose inbound forwards the mediator can't route.
+        const routingService = agentContext.dependencyManager.resolve(DidCommRoutingService)
+        await routingService.registerRecipientDidForV2Routing(agentContext, routing, newDid)
+        fromPriorJwt = await this.createFromPriorForRotation(agentContext, priorDid, newDid)
+      } catch (error) {
+        // Only the did was created here, the routing is the caller's
+        await deleteCreatedDidsAndKeys(agentContext, { dids: [newDid], keys: [] }, []).catch((deleteError) =>
+          agentContext.config.logger.warn(`Failed to delete did '${newDid}' of a failed rotation`, { deleteError })
+        )
+        throw error
+      }
+      addCreatedKeys(connection, {
+        did: newDid,
+        keys: routing.deleteWithRecord ? routingKmsKeys(routing) : [],
+      })
     }
-
-    const fromPriorJwt = await this.createFromPriorForRotation(agentContext, priorDid, newDid)
 
     connection.previousDids = [...connection.previousDids, priorDid]
     connection.did = newDid

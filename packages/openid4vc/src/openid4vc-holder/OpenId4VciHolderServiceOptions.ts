@@ -106,6 +106,12 @@ export interface OpenId4VciDeferredCredentialResponse {
   jwkThumbprintKmsKeyIdMapping?: Record<string, OpenId4VciKmsKeyIdMappingValue>
 
   /**
+   * The DIDs the binding resolver created for this credential (`createdForCredential`). Pass them on when
+   * retrieving the deferred credentials, so the credential record stores them.
+   */
+  holderBindingDids?: string[]
+
+  /**
    * The `credentialResponseEncryption` value of the credential request. Pass it on when retrieving the
    * deferred credentials.
    */
@@ -395,6 +401,11 @@ export interface OpenId4VciDeferredCredentialRequestOptions {
    * of possession of the credential request
    */
   jwkThumbprintKmsKeyIdMapping?: Record<string, OpenId4VciKmsKeyIdMappingValue>
+
+  /**
+   * The DIDs created for this credential, returned in the deferred credential return value.
+   */
+  holderBindingDids?: string[]
 
   /**
    * Whether to request an encrypted deferred credential response, see the `credentialResponseEncryption`

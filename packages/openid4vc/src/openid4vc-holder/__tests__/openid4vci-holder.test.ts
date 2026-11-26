@@ -3,6 +3,7 @@ import {
   Agent,
   ClaimFormat,
   DidKey,
+  getCredentialHolderBindingDids,
   type KeyDidCreateOptions,
   Kms,
   MdocRecord,
@@ -145,7 +146,11 @@ describe('OpenId4VcHolder', () => {
         credentialConfigurationIds: Object.entries(resolved.offeredCredentialConfigurations)
           .filter(([, configuration]) => configuration.format === 'jwt_vc_json')
           .map(([id]) => id),
-        credentialBindingResolver: () => ({ method: 'did', didUrls: [holderVerificationMethod] }),
+        credentialBindingResolver: () => ({
+          method: 'did',
+          didUrls: [holderVerificationMethod],
+          createdForCredential: true,
+        }),
       })
 
       expect(credentialsResult.credentials).toHaveLength(1)
@@ -154,6 +159,9 @@ describe('OpenId4VcHolder', () => {
 
       expect(w3cCredential.type).toEqual(['VerifiableCredential', 'OpenBadgeCredential'])
       expect(w3cCredential.credentialSubjectIds[0]).toEqual(holderDid)
+
+      // Stored so that deleting the credential with `deleteAssociatedKeys` also deletes the DID
+      expect(getCredentialHolderBindingDids(credentialsResult.credentials[0].record)).toEqual([holderDid])
     })
 
     it('Should successfully receive credential from walt.id using the pre-authorized flow using a did:key Ed25519 subject and jwt_vc_json credential', async () => {

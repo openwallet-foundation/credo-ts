@@ -21,6 +21,7 @@ import { exhaustMap, filter, first, takeUntil, tap, timeout } from 'rxjs/operato
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { MessageSendingError } from '../../errors'
+import type { DidCommRouting } from '../../models'
 import { DidCommOutboundMessageContext } from '../../models'
 import type { DidCommOutboundWebSocketClosedEvent } from '../../transport'
 import { DidCommTransportEventTypes } from '../../transport'
@@ -28,6 +29,7 @@ import { assertDidCommV1Connection, assertDidCommV2Connection } from '../../util
 import { DidCommConnectionRecord } from '../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../connections/services'
+import { routingKmsKeys } from '../connections/services/helpers'
 import { DidCommDiscoverFeaturesApi } from '../discover-features'
 import { DidCommMessagePickupApi } from '../message-pickup/DidCommMessagePickupApi'
 import { DidCommBatchPickupMessage } from '../message-pickup/protocol/v1'
@@ -743,5 +745,13 @@ export class DidCommMediationRecipientApi {
 
   public async getRouting(options: GetRoutingOptions) {
     return this.routingService.getRouting(this.agentContext, options)
+  }
+
+  /**
+   * Delete the keys of routing created with {@link getRouting}, after removing them from the mediator and from the
+   * tenant routing. Credo never deletes routing you created yourself.
+   */
+  public async deleteRouting(routing: DidCommRouting) {
+    await this.routingService.deleteRouting(this.agentContext, { keys: routingKmsKeys(routing) })
   }
 }

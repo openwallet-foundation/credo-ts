@@ -28,6 +28,13 @@ export type W3cCredentialRecordInstances = NonEmptyArray<{
   credential: string | W3cJsonCredential
 
   // no kmsKeyId for w3c credential record, since all credentials are bound to a DID
+
+  /**
+   * How many times this instance was used through DCQL. Presentation Exchange and
+   * AnonCreds proofs use the first instance without counting it. Not set before its
+   * first use. Counting started in Credo 0.8, so uses before that are not counted.
+   */
+  usageCount?: number
 }>
 
 export type CustomW3cCredentialTags = {
@@ -63,6 +70,7 @@ const w3cCredentialRecordEncodingSchema = createRecordEncodingSchema(
     credentialInstances: zNonEmptyArray(
       z.object({
         credential: z.union([z.string(), zTypedObject<W3cJsonCredential>()]),
+        usageCount: z.number().optional(),
       })
     ).nullish(),
     multiInstanceState: z.string().nullish(),

@@ -1,9 +1,12 @@
+import { generateKeyPairSync } from 'node:crypto'
 import { JsonEncoder, Jwt, Kms, RecordNotFoundError, utils } from '@credo-ts/core'
 import type { TransactionDataEntry } from '@openid4vc/openid4vp'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { type AgentType, createAgentFromModules } from '../../../tests/utils'
 import { openBadgeDcqlQuery, universityDegreePresentationDefinition } from '../../../tests/utilsVp'
 import { OpenId4VcModule } from '../../OpenId4VcModule'
+import { OpenId4VcVerifierEvents } from '../OpenId4VcVerifierEvents'
+import { OpenId4VcVerificationSessionRepository } from '../repository'
 
 const modules = {
   openid4vc: new OpenId4VcModule({
@@ -227,11 +230,137 @@ describe('OpenId4VcVerifier', () => {
         },
       })
 
+      const keyId = verificationSession.responseEncryptionKey?.keyId as string
+      await expect(verifier.agent.kms.getPublicKey({ keyId })).resolves.toBeDefined()
+
       await verifier.agent.openid4vc.verifier.deleteVerificationSessionById(verificationSession.id)
 
       await expect(
         verifier.agent.openid4vc.verifier.getVerificationSessionById(verificationSession.id)
       ).rejects.toThrow(RecordNotFoundError)
+      await expect(verifier.agent.kms.getPublicKey({ keyId })).rejects.toThrow('not found')
+    })
+
+    it('deletes the response encryption key of a session that published the KMS key id as kid', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        requestSigner: { method: 'none' },
+        verifierId: openIdVerifier.verifierId,
+        responseMode: 'direct_post.jwt',
+        dcql: { query: openBadgeDcqlQuery },
+        version: 'v1',
+      })
+      const keyId = verificationSession.responseEncryptionKey?.keyId as string
+      const requestPayload = verificationSession.authorizationRequestPayload
+      const encryptionJwk = requestPayload?.client_metadata?.jwks?.keys[0]
+      if (!requestPayload || !encryptionJwk) throw new Error('Expected an encryption key')
+
+      // A session created before the thumbprint was used published the KMS key id as kid, and stored no key
+      verificationSession.responseEncryptionKey = undefined
+      verificationSession.authorizationRequestPayload = {
+        ...requestPayload,
+        client_metadata: { ...requestPayload.client_metadata, jwks: { keys: [{ ...encryptionJwk, kid: keyId }] } },
+      }
+      await verifier.agent.dependencyManager
+        .resolve(OpenId4VcVerificationSessionRepository)
+        .update(verifier.agent.context, verificationSession)
+
+      await verifier.agent.openid4vc.verifier.deleteVerificationSessionById(verificationSession.id)
+
+      await expect(verifier.agent.kms.getPublicKey({ keyId })).rejects.toThrow('not found')
+    })
+
+    it('deletes the response encryption key of a session from before Credo 0.6 that published the fingerprint as kid', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        requestSigner: { method: 'none' },
+        verifierId: openIdVerifier.verifierId,
+        responseMode: 'direct_post.jwt',
+        dcql: { query: openBadgeDcqlQuery },
+        version: 'v1',
+      })
+      const requestPayload = verificationSession.authorizationRequestPayload
+      if (!requestPayload) throw new Error('Expected a request payload')
+
+      // Before Credo 0.6 the key was stored under its legacy key id and published with the fingerprint as kid
+      const { d, ...publicKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' }).privateKey.export({
+        format: 'jwk',
+      })
+      const publicJwk = Kms.PublicJwk.fromUnknown(publicKey)
+      const { keyId } = await verifier.agent.kms.importKey({
+        privateJwk: { ...publicKey, d, kid: publicJwk.legacyKeyId } as Kms.KmsJwkPrivate,
+      })
+      verificationSession.responseEncryptionKey = undefined
+      verificationSession.authorizationRequestPayload = {
+        ...requestPayload,
+        client_metadata: {
+          ...requestPayload.client_metadata,
+          jwks: { keys: [{ ...publicJwk.toJson(), kid: publicJwk.fingerprint, use: 'enc' }] },
+        },
+      }
+      await verifier.agent.dependencyManager
+        .resolve(OpenId4VcVerificationSessionRepository)
+        .update(verifier.agent.context, verificationSession)
+
+      await verifier.agent.openid4vc.verifier.deleteVerificationSessionById(verificationSession.id)
+
+      await expect(verifier.agent.kms.getPublicKey({ keyId })).rejects.toThrow('not found')
+    })
+
+    it('keeps the response encryption key when deleteAssociatedKey is false', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        requestSigner: { method: 'did', didUrl: verifier.kid },
+        verifierId: openIdVerifier.verifierId,
+        dcql: { query: openBadgeDcqlQuery },
+      })
+
+      await verifier.agent.openid4vc.verifier.deleteVerificationSessionById(verificationSession.id, {
+        deleteAssociatedKey: false,
+      })
+
+      const keyId = verificationSession.responseEncryptionKey?.keyId as string
+      await expect(verifier.agent.kms.getPublicKey({ keyId })).resolves.toBeDefined()
+    })
+
+    it('deletes the response encryption key when creating the authorization request fails', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const createKeySpy = vi.spyOn(Kms.KeyManagementApi.prototype, 'createKey')
+      vi.spyOn(OpenId4VcVerificationSessionRepository.prototype, 'save').mockRejectedValueOnce(new Error('save failed'))
+
+      await expect(
+        verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+          requestSigner: { method: 'did', didUrl: verifier.kid },
+          verifierId: openIdVerifier.verifierId,
+          dcql: { query: openBadgeDcqlQuery },
+        })
+      ).rejects.toThrow('save failed')
+
+      const { keyId } = await (createKeySpy.mock.results[0].value as ReturnType<Kms.KeyManagementApi['createKey']>)
+      vi.restoreAllMocks()
+      await expect(verifier.agent.kms.getPublicKey({ keyId })).rejects.toThrow('not found')
+    })
+
+    it('keeps the response encryption key when a listener throws after the session is stored', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const createKeySpy = vi.spyOn(Kms.KeyManagementApi.prototype, 'createKey')
+      const listener = () => {
+        throw new Error('listener failed')
+      }
+      verifier.agent.events.on(OpenId4VcVerifierEvents.VerificationSessionStateChanged, listener)
+
+      await expect(
+        verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+          requestSigner: { method: 'did', didUrl: verifier.kid },
+          verifierId: openIdVerifier.verifierId,
+          dcql: { query: openBadgeDcqlQuery },
+        })
+      ).rejects.toThrow('listener failed')
+
+      verifier.agent.events.off(OpenId4VcVerifierEvents.VerificationSessionStateChanged, listener)
+      const { keyId } = await (createKeySpy.mock.results[0].value as ReturnType<Kms.KeyManagementApi['createKey']>)
+      vi.restoreAllMocks()
+      await expect(verifier.agent.kms.getPublicKey({ keyId })).resolves.toBeDefined()
     })
 
     it('throws an error when deleting a non-existent verification session', async () => {

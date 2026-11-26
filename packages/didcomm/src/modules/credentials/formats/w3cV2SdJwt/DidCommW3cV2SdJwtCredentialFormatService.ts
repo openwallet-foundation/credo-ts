@@ -1,5 +1,6 @@
 import type { AgentContext, JsonObject, SdJwtVcHolderBinding, SingleOrArray } from '@credo-ts/core'
 import {
+  addCredentialHolderBindingDids,
   ClaimFormat,
   CredoError,
   deepEquality,
@@ -26,6 +27,7 @@ import {
 } from '../../util/didCommSignedAttachment'
 import type { DidCommSignedAttachmentCredentialRequestBindingProof } from '../../util/didCommSignedAttachmentBinding'
 import { findSentOfferAttachment, getFormatDataAttachment } from '../../util/formatData'
+import { addExchangeHolderBindingDids, takeExchangeHolderBindingDids } from '../../util/holderBinding'
 import { selectJwaSignatureAlgorithm } from '../../util/signatureAlgorithm'
 import { getIssuerVerificationMethod } from '../../util/verificationMethod'
 import type { DidCommCredentialFormatService } from '../DidCommCredentialFormatService'
@@ -168,6 +170,7 @@ export class DidCommW3cV2SdJwtCredentialFormatService
   public async acceptOffer(
     agentContext: AgentContext,
     {
+      credentialExchangeRecord,
       offerAttachment,
       attachmentId,
       credentialFormats,
@@ -199,6 +202,12 @@ export class DidCommW3cV2SdJwtCredentialFormatService
 
       bindingProof = {
         didcomm_signed_attachment: { attachment_id: signedAttachment.id },
+      }
+
+      if (didCommSignedAttachmentOptions.createdForCredential) {
+        addExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey, [
+          parseDid(didCommSignedAttachmentOptions.kid).did,
+        ])
       }
     }
 
@@ -385,9 +394,12 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     this.verifyCredentialBinding(verifiableCredential, requestAttachment, requestAppendAttachments)
 
     // Store credential
-    const record = await w3cV2CredentialService.storeCredential(agentContext, {
-      record: W3cV2CredentialRecord.fromCredential(verifiableCredential),
-    })
+    const credentialRecord = W3cV2CredentialRecord.fromCredential(verifiableCredential)
+    addCredentialHolderBindingDids(
+      credentialRecord,
+      takeExchangeHolderBindingDids(credentialExchangeRecord, this.formatKey)
+    )
+    const record = await w3cV2CredentialService.storeCredential(agentContext, { record: credentialRecord })
 
     credentialExchangeRecord.credentials.push({
       credentialRecordType: this.credentialRecordType,
@@ -460,9 +472,13 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     return [W3C_V2_SD_JWT_OFFER, W3C_V2_SD_JWT_REQUEST, W3C_V2_SD_JWT_CREDENTIAL].includes(format)
   }
 
-  public async deleteCredentialById(agentContext: AgentContext, credentialRecordId: string): Promise<void> {
+  public async deleteCredentialById(
+    agentContext: AgentContext,
+    credentialRecordId: string,
+    options?: { deleteAssociatedKeys?: boolean }
+  ): Promise<void> {
     const w3cV2CredentialService = agentContext.dependencyManager.resolve(W3cV2CredentialService)
-    await w3cV2CredentialService.removeCredentialRecord(agentContext, credentialRecordId)
+    await w3cV2CredentialService.removeCredentialRecord(agentContext, credentialRecordId, options)
   }
 
   public async shouldAutoRespondToProposal(

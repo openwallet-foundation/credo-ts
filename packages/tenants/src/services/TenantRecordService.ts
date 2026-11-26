@@ -103,6 +103,20 @@ export class TenantRecordService {
     return this.tenantRoutingRepository.findByRecipientKey(agentContext, recipientKey)
   }
 
+  public async deleteTenantRoutingRecord(agentContext: AgentContext, tenantId: string, recipientKey: Kms.PublicJwk) {
+    const tenantRoutingRecord = await this.tenantRoutingRepository.findByRecipientKey(agentContext, recipientKey)
+    if (!tenantRoutingRecord) return
+
+    if (tenantRoutingRecord.tenantId !== tenantId) {
+      agentContext.config.logger.error(
+        `Not deleting tenant routing record for recipient key ${recipientKey.fingerprint}: it belongs to tenant '${tenantRoutingRecord.tenantId}', not '${tenantId}'.`
+      )
+      return
+    }
+
+    await this.tenantRoutingRepository.delete(agentContext, tenantRoutingRecord)
+  }
+
   public async addTenantRoutingRecord(
     agentContext: AgentContext,
     tenantId: string,

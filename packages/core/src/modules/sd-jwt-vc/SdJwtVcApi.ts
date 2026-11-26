@@ -95,8 +95,14 @@ export class SdJwtVcApi {
     return await this.sdJwtVcService.findByQuery(this.agentContext, query, queryOptions)
   }
 
-  public async deleteById(id: string) {
-    return await this.sdJwtVcService.deleteById(this.agentContext, id)
+  /**
+   * Delete a credential record by id.
+   *
+   * @param options.deleteAssociatedKeys also delete the holder binding keys of the credential, and the DIDs marked as
+   * created for it (`createdForCredential`) with their keys. Defaults to `false`.
+   */
+  public async deleteById(id: string, options?: { deleteAssociatedKeys?: boolean }) {
+    return await this.sdJwtVcService.deleteById(this.agentContext, id, options)
   }
 
   public async update(sdJwtVcRecord: SdJwtVcRecord) {

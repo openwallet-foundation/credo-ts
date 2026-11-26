@@ -1665,6 +1665,32 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
     expect(inviterCleared?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)).toBeFalsy()
   })
 
+  test('a failed inviter rotation deletes the DID and keys it created and keeps the invitation DID', async () => {
+    const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2', multiUseInvitation: true })
+    const invitationDid = invitation.outOfBandInvitation.v2Invitation?.from
+    const { connectionRecord: accepterConnection } = await accepter.didcomm.oob.receiveInvitation(
+      invitation.outOfBandInvitation,
+      { label: '' }
+    )
+
+    const routingService = inviter.dependencyManager.resolve(DidCommRoutingService)
+    const getRouting = vi.spyOn(routingService, 'getRouting')
+    vi.spyOn(routingService, 'registerRecipientDidForV2Routing').mockRejectedValueOnce(new Error('mediator down'))
+    const createdDids = await inviter.dids.getCreatedDids()
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await accepter.didcomm.basicMessages.sendMessage(accepterConnection?.id!, 'hi from accepter')
+    await waitForBasicMessageSubject(inviterReplay, { content: 'hi from accepter' })
+
+    const [inviterConnection] = await inviter.didcomm.connections.findAllByOutOfBandId(invitation.id)
+    expect(inviterConnection.did).toEqual(invitationDid)
+    expect(await inviter.dids.getCreatedDids()).toHaveLength(createdDids.length)
+
+    const routing = await getRouting.mock.results[0].value
+    await expect(inviter.kms.getPublicKey({ keyId: routing.recipientKey.keyId })).rejects.toThrow('not found')
+    await expect(inviter.kms.getPublicKey({ keyId: routing.keyAgreementKey.keyId })).rejects.toThrow('not found')
+  })
+
   test('two accepters on the same multi-use invitation get distinct inviter DIDs (no correlator)', async () => {
     const invitation = await inviter.didcomm.oob.createInvitation({
       didCommVersion: 'v2',

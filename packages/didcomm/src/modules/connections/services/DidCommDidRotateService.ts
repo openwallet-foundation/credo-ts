@@ -32,7 +32,7 @@ import type { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 
 import { DidCommConnectionService } from './DidCommConnectionService'
-import { addSharedDid, createPeerDidFromServices, routingToServices } from './helpers'
+import { addCreatedKeys, addSharedDid, createPeerDidFromServices, routingKmsKeys, routingToServices } from './helpers'
 
 @injectable()
 export class DidCommDidRotateService {
@@ -52,7 +52,11 @@ export class DidCommDidRotateService {
 
   public async createRotate(
     agentContext: AgentContext,
-    options: { connection: DidCommConnectionRecord; toDid?: string; routing?: DidCommRouting }
+    options: {
+      connection: DidCommConnectionRecord
+      toDid?: string
+      routing?: DidCommRouting
+    }
   ) {
     const { connection, toDid, routing } = options
 
@@ -85,6 +89,10 @@ export class DidCommDidRotateService {
         config.peerNumAlgoForDidRotation
       )
       mediatorId = routing.mediatorId
+      addCreatedKeys(connection, {
+        did: resolvedDid.didDocument.id,
+        keys: routing.deleteWithRecord ? routingKmsKeys(routing) : [],
+      })
     }
 
     const message = new DidCommDidRotateMessage({ toDid: resolvedDid.didDocument.id })

@@ -74,8 +74,14 @@ export class MdocApi {
     return await this.mdocService.findByQuery(this.agentContext, query, queryOptions)
   }
 
-  public async deleteById(id: string) {
-    return await this.mdocService.deleteById(this.agentContext, id)
+  /**
+   * Delete a credential record by id.
+   *
+   * @param options.deleteAssociatedKeys also delete the device keys (`credentialInstances[].kmsKeyId`) of the
+   * credential. Defaults to `false`.
+   */
+  public async deleteById(id: string, options?: { deleteAssociatedKeys?: boolean }) {
+    return await this.mdocService.deleteById(this.agentContext, id, options)
   }
 
   public async update(mdocRecord: MdocRecord) {

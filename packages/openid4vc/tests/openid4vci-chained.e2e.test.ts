@@ -2152,7 +2152,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       await expect(dpopAgent.agent.kms.getPublicKey({ keyId: secondDpop.keyId })).resolves.toBeDefined()
     })
 
-    it('keeps a generated chained DPoP key when deleteChainedDpopKey is false', async () => {
+    it('keeps a generated chained DPoP key when deleteAssociatedDpopKey is false', async () => {
       const issuanceSession = createDpopIssuanceSession()
       const dpop = await issuerService.getChainedDpopOptions(dpopAgent.agent.context, {
         createKey: true,
@@ -2169,7 +2169,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       await repository.save(dpopAgent.agent.context, issuanceSession)
 
       await issuerService.deleteIssuanceSessionById(dpopAgent.agent.context, issuanceSession.id, {
-        deleteChainedDpopKey: false,
+        deleteAssociatedDpopKey: false,
       })
 
       await expect(repository.findById(dpopAgent.agent.context, issuanceSession.id)).resolves.toBeNull()

@@ -798,6 +798,18 @@ export type OpenId4VciAccessTokenSigner =
       >
     }
 
+/**
+ * A credential request encryption key: a key in the KMS, or `createKey` options to create one.
+ */
+export type OpenId4VciCredentialRequestEncryptionKey =
+  | Kms.PublicJwk
+  | Kms.KmsKeyReference
+  | {
+      createKey: Kms.WithCreateKeyBackend<
+        Kms.KmsCreateKeyOptions<Kms.KmsCreateKeyTypeEc | (Kms.KmsCreateKeyTypeOkp & { crv: 'X25519' })>
+      >
+    }
+
 export type OpenId4VciCreateIssuerOptions = {
   /**
    * Id of the issuer, not the id of the issuer record. Will be exposed publicly
@@ -864,6 +876,16 @@ export interface OpenId4VcUpdateIssuerOptions {
    * See {@link OpenId4VciCreateIssuerOptions.metadataSigner} for the signing behaviour.
    */
   metadataSigner?: OpenId4VcJwtIssuerDid | OpenId4VcJwtIssuerX5c | null
+}
+
+export interface OpenId4VcDeleteIssuanceSessionOptions {
+  /**
+   * Also delete the DPoP key Credo generated for the session towards a chained authorization server. A key configured
+   * with `dpop.keyId` is never deleted.
+   *
+   * @default true
+   */
+  deleteAssociatedDpopKey?: boolean
 }
 
 export type OpenId4VcUpdateIssuerRecordOptions = Pick<

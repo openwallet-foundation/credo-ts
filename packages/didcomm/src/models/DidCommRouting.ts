@@ -21,4 +21,12 @@ export interface DidCommRouting {
    * service endpoint, and DIDComm v1 services resolve it to the mediator endpoint and routing keys.
    */
   routingDid?: string
+  /**
+   * Record the routing keys as created for the connection or out-of-band record that uses this routing, so deleting
+   * that record with `deleteAssociatedKeys` deletes them, also when another record still uses the keys. Only set it on
+   * routing you use for one record.
+   *
+   * @default false
+   */
+  deleteWithRecord?: boolean
 }
