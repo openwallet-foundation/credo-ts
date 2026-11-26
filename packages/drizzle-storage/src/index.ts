@@ -2,8 +2,11 @@
 export {
   type AnyDrizzleAdapter,
   BaseDrizzleRecordAdapter,
+  type DrizzleAdapterForeignKey,
   type DrizzleAdapterRecordValues,
   type DrizzleAdapterValues,
+  getAdapterForeignKeys,
+  sortAdaptersByForeignKeys,
 } from './adapter'
 export {
   applyReactNativeMigrations,

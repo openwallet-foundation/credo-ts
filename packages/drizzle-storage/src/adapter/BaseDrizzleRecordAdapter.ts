@@ -516,17 +516,23 @@ export abstract class BaseDrizzleRecordAdapter<
     throw new CredoDrizzleStorageError('Unsupported database type')
   }
 
-  public async insert(agentContext: AgentContext, record: CredoRecord) {
+  /**
+   * @param values The result of {@link getValuesWithBase} for `record`, so a caller that already has them does not
+   * encode the record again.
+   */
+  public async insert(agentContext: AgentContext, record: CredoRecord, values?: ReturnType<this['getValuesWithBase']>) {
     try {
+      const insertValues = values ?? this.getValuesWithBase(agentContext, record)
+
       if (isDrizzlePostgresDatabase(this.database)) {
         // biome-ignore lint/suspicious/noExplicitAny: no explanation
-        await this.database.insert(this.table.postgres).values(this.getValuesWithBase(agentContext, record) as any)
+        await this.database.insert(this.table.postgres).values(insertValues as any)
         return
       }
 
       if (isDrizzleSqliteDatabase(this.database)) {
         // biome-ignore lint/suspicious/noExplicitAny: no explanation
-        await this.database.insert(this.table.sqlite).values(this.getValuesWithBase(agentContext, record) as any)
+        await this.database.insert(this.table.sqlite).values(insertValues as any)
         return
       }
     } catch (error) {
