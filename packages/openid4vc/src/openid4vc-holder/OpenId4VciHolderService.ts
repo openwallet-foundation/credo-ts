@@ -67,7 +67,7 @@ import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { getDpopOptions } from '../shared/dpop'
 import {
-  assertCredentialTypeMatchesConfiguration,
+  assertW3cCredentialTypeMatchesConfiguration,
   getOfferedCredentials,
   getScopesFromCredentialConfigurationsSupported,
 } from '../shared/issuerMetadataUtils'
@@ -1412,7 +1412,7 @@ export class OpenId4VciHolderService {
       const result = await Promise.all(
         credentials.map(async (c) => {
           const credential = W3cV2SdJwtVerifiableCredential.fromCompact(c)
-          assertCredentialTypeMatchesConfiguration(credential.resolvedCredential.type, credentialConfiguration)
+          assertW3cCredentialTypeMatchesConfiguration(credential.resolvedCredential.type, credentialConfiguration)
           const result = await this.w3cV2CredentialService.verifyCredential(agentContext, {
             credential,
           })
@@ -1458,7 +1458,7 @@ export class OpenId4VciHolderService {
       const result = await Promise.all(
         credentials.map(async (c) => {
           const credential = W3cJwtVerifiableCredential.fromSerializedJwt(c)
-          assertCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
+          assertW3cCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
           const result = await this.w3cCredentialService.verifyCredential(agentContext, {
             credential,
             verifyCredentialStatus,
@@ -1502,7 +1502,7 @@ export class OpenId4VciHolderService {
       const result = await Promise.all(
         credentials.map(async (c) => {
           const credential = W3cJsonLdVerifiableCredential.fromJson(c)
-          assertCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
+          assertW3cCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
           const result = await this.w3cCredentialService.verifyCredential(agentContext, {
             credential,
             verifyCredentialStatus,

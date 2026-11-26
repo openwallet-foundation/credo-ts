@@ -11,7 +11,7 @@ import { OpenId4VciCredentialFormatProfile } from './models'
  * Throws when the `type` of a W3C credential does not include each type of the `credential_definition` of the
  * credential configuration it is issued for (OpenID4VCI 1.0 Appendix A.1). Extra types are allowed.
  */
-export function assertCredentialTypeMatchesConfiguration(
+export function assertW3cCredentialTypeMatchesConfiguration(
   credentialType: SingleOrArray<string>,
   credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
 ) {

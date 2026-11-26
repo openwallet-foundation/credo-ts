@@ -66,7 +66,7 @@ import { keyAttestationLevelSatisfies, OpenId4VciCredentialFormatProfile } from 
 import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
 import { getDpopOptions } from '../shared/dpop'
 import {
-  assertCredentialTypeMatchesConfiguration,
+  assertW3cCredentialTypeMatchesConfiguration,
   getCredentialConfigurationsSupportedForScopes,
   getOfferedCredentials,
   getScopesFromCredentialConfigurationsSupported,
@@ -2418,7 +2418,7 @@ export class OpenId4VcIssuerService {
 
     if (signOptions.format === ClaimFormat.JwtVc || signOptions.format === ClaimFormat.LdpVc) {
       for (const { credential } of signOptions.credentials) {
-        assertCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
+        assertW3cCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
       }
 
       return {
@@ -2477,7 +2477,7 @@ export class OpenId4VcIssuerService {
     }
     if (signOptions.format === ClaimFormat.SdJwtW3cVc) {
       for (const { credential } of signOptions.credentials) {
-        assertCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
+        assertW3cCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
       }
 
       return {
