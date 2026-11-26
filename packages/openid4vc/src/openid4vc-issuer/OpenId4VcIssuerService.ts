@@ -66,6 +66,7 @@ import { keyAttestationLevelSatisfies, OpenId4VciCredentialFormatProfile } from 
 import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
 import { getDpopOptions } from '../shared/dpop'
 import {
+  assertCredentialTypeMatchesConfiguration,
   getCredentialConfigurationsSupportedForScopes,
   getOfferedCredentials,
   getScopesFromCredentialConfigurationsSupported,
@@ -2410,6 +2411,9 @@ export class OpenId4VcIssuerService {
           `Invalid credential format returned by sign options. Expected '${expectedClaimFormat}', received '${signOptions.format}'.`
         )
       }
+      for (const { credential } of signOptions.credentials) {
+        assertCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
+      }
 
       return {
         format: credentialConfiguration.format,
@@ -2477,6 +2481,15 @@ export class OpenId4VcIssuerService {
       }
     }
     if (signOptions.format === ClaimFormat.SdJwtW3cVc) {
+      if (credentialConfiguration.format !== OpenId4VciCredentialFormatProfile.SdJwtVc) {
+        throw new CredoError(
+          `Invalid credential format returned by sign options. Expected '${credentialConfiguration.format}', received '${signOptions.format}'.`
+        )
+      }
+      for (const { credential } of signOptions.credentials) {
+        assertCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
+      }
+
       return {
         format: credentialConfiguration.format,
         credentials: (await Promise.all(
