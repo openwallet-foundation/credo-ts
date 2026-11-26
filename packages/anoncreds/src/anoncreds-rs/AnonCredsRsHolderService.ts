@@ -1,9 +1,11 @@
 import type { AgentContext, Query, SimpleQuery } from '@credo-ts/core'
 import {
+  CredentialMultiInstanceUseMode,
   CredoError,
   injectable,
   JsonTransformer,
   Kms,
+  useInstanceFromCredentialRecord,
   utils,
   W3cCredentialRecord,
   W3cCredentialRepository,
@@ -255,6 +257,17 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       const linkSecretIds = credentials.map((item) => item.linkSecretId)
       const linkSecretId = assertLinkSecretsMatch(agentContext, linkSecretIds)
       const linkSecret = await getLinkSecret(agentContext, linkSecretId)
+
+      // The proof is created from the first instance of each credential. Its use is stored before creating the proof,
+      // so a failed update can't lead to presenting it without counting.
+      for (const credentialRecord of retrievedCredentials.values()) {
+        if (!(credentialRecord instanceof W3cCredentialRecord)) continue
+        await useInstanceFromCredentialRecord({
+          agentContext,
+          credentialRecord,
+          useMode: CredentialMultiInstanceUseMode.First,
+        })
+      }
 
       presentation = Presentation.create({
         credentialDefinitions: withIdentifierVariantKeys(agentContext, rsCredentialDefinitions),
