@@ -18,7 +18,8 @@
       "!**/.idea",
       "!**/coverage",
       "!**/pnpm-lock.yaml",
-      "!**/.changeset"
+      "!**/.changeset",
+      "!**/sd-jwt-vc/__tests__/polaris-negative-vectors/vectors.json"
     ]
   },
   "javascript": {
