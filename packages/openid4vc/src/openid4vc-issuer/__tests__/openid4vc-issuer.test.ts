@@ -1223,18 +1223,18 @@ describe('OpenId4VcIssuer', () => {
       )
     })
 
-    it('rejects a W3C vc+sd-jwt credential for a requested credential configuration of another format', async () => {
+    it('rejects a W3C vc+sd-jwt credential for a requested SD-JWT VC credential configuration', async () => {
       await expect(
-        createCredentialResponse(openBadgeCredential, () => ({
+        createCredentialResponse(universityDegreeCredentialSdJwt, () => ({
           type: 'credentials',
           format: 'vc+sd-jwt',
-          credentialConfigurationId: openBadgeCredential.id,
+          credentialConfigurationId: universityDegreeCredentialSdJwt.id,
           credentials: [
             {
               alg: 'EdDSA',
               verificationMethod: issuerVerificationMethod.id,
               credential: new W3cV2Credential({
-                type: openBadgeCredential.credential_definition.type,
+                type: universityDegreeCredential.credential_definition.type,
                 issuer: new W3cV2Issuer({ id: issuerDid }),
                 credentialSubject: new W3cV2CredentialSubject({ id: holderDid }),
                 validFrom: w3cDate(Date.now()),
@@ -1243,7 +1243,7 @@ describe('OpenId4VcIssuer', () => {
           ],
         }))
       ).rejects.toThrow(
-        "Invalid credential format returned by sign options. Expected 'jwt_vc_json', received 'vc+sd-jwt'."
+        "Invalid credential format returned by sign options. Expected 'dc+sd-jwt', received 'vc+sd-jwt'."
       )
     })
   })

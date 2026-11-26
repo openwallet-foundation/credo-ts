@@ -2398,19 +2398,25 @@ export class OpenId4VcIssuerService {
       )
     }
 
-    if (signOptions.format === ClaimFormat.JwtVc || signOptions.format === ClaimFormat.LdpVc) {
-      const oid4vciFormatMap: Record<string, ClaimFormat.JwtVc | ClaimFormat.LdpVc> = {
-        [OpenId4VciCredentialFormatProfile.JwtVcJson]: ClaimFormat.JwtVc,
-        [OpenId4VciCredentialFormatProfile.JwtVcJsonLd]: ClaimFormat.JwtVc,
-        [OpenId4VciCredentialFormatProfile.LdpVc]: ClaimFormat.LdpVc,
-      }
+    const claimFormats: Record<string, ClaimFormat> = {
+      [OpenId4VciCredentialFormatProfile.JwtVcJson]: ClaimFormat.JwtVc,
+      [OpenId4VciCredentialFormatProfile.JwtVcJsonLd]: ClaimFormat.JwtVc,
+      [OpenId4VciCredentialFormatProfile.LdpVc]: ClaimFormat.LdpVc,
+      [OpenId4VciCredentialFormatProfile.MsoMdoc]: ClaimFormat.MsoMdoc,
+      [OpenId4VciCredentialFormatProfile.SdJwtDc]: ClaimFormat.SdJwtDc,
+      // A vc+sd-jwt configuration with a vct is an SD-JWT VC, otherwise a W3C VC secured with SD-JWT
+      [OpenId4VciCredentialFormatProfile.SdJwtVc]: credentialConfiguration.vct
+        ? ClaimFormat.SdJwtDc
+        : ClaimFormat.SdJwtW3cVc,
+    }
+    const expectedClaimFormat = claimFormats[credentialConfiguration.format]
+    if (signOptions.format !== expectedClaimFormat) {
+      throw new CredoError(
+        `Invalid credential format returned by sign options. Expected '${expectedClaimFormat}', received '${signOptions.format}'.`
+      )
+    }
 
-      const expectedClaimFormat = oid4vciFormatMap[credentialConfiguration.format]
-      if (signOptions.format !== expectedClaimFormat) {
-        throw new CredoError(
-          `Invalid credential format returned by sign options. Expected '${expectedClaimFormat}', received '${signOptions.format}'.`
-        )
-      }
+    if (signOptions.format === ClaimFormat.JwtVc || signOptions.format === ClaimFormat.LdpVc) {
       for (const { credential } of signOptions.credentials) {
         assertCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
       }
@@ -2425,15 +2431,6 @@ export class OpenId4VcIssuerService {
       }
     }
     if (signOptions.format === ClaimFormat.SdJwtDc) {
-      if (
-        credentialConfiguration.format !== OpenId4VciCredentialFormatProfile.SdJwtVc &&
-        credentialConfiguration.format !== OpenId4VciCredentialFormatProfile.SdJwtDc
-      ) {
-        throw new CredoError(
-          `Invalid credential format returned by sign options. Expected '${ClaimFormat.SdJwtDc}', received '${signOptions.format}'.`
-        )
-      }
-
       if (!signOptions.credentials.every((c) => c.payload.vct === credentialConfiguration.vct)) {
         throw new CredoError(
           `One or more vct values of the offered credential(s) do not match the vct of the requested credential. Offered ${Array.from(
@@ -2451,7 +2448,10 @@ export class OpenId4VcIssuerService {
               .sign({
                 ...credential,
                 // Set header type based on the oid4vci format
-                headerType: credentialConfiguration.format,
+                headerType:
+                  credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc
+                    ? OpenId4VciCredentialFormatProfile.SdJwtVc
+                    : OpenId4VciCredentialFormatProfile.SdJwtDc,
               })
               .then((signed) => signed.compact)
           )
@@ -2459,11 +2459,6 @@ export class OpenId4VcIssuerService {
       }
     }
     if (signOptions.format === ClaimFormat.MsoMdoc) {
-      if (signOptions.format !== credentialConfiguration.format) {
-        throw new CredoError(
-          `Invalid credential format returned by sign options. Expected '${credentialConfiguration.format}', received '${signOptions.format}'.`
-        )
-      }
       if (!signOptions.credentials.every((c) => c.docType === credentialConfiguration.doctype)) {
         throw new CredoError(
           `One or more doctype values of the offered credential(s) do not match the doctype of the requested credential. Offered ${Array.from(
@@ -2481,11 +2476,6 @@ export class OpenId4VcIssuerService {
       }
     }
     if (signOptions.format === ClaimFormat.SdJwtW3cVc) {
-      if (credentialConfiguration.format !== OpenId4VciCredentialFormatProfile.SdJwtVc) {
-        throw new CredoError(
-          `Invalid credential format returned by sign options. Expected '${credentialConfiguration.format}', received '${signOptions.format}'.`
-        )
-      }
       for (const { credential } of signOptions.credentials) {
         assertCredentialTypeMatchesConfiguration(credential.type, credentialConfiguration)
       }
