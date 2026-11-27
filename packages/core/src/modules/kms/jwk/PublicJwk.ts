@@ -336,8 +336,8 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     const prefixBytes = VarintEncoder.encode(this.jwk.multicodecPrefix)
     const prefixedPublicKey = new Uint8Array([...prefixBytes, ...this.jwk.multicodec])
 
-    const multibaseEncoding = 'multibaseEncoding' in this.jwk ? this.jwk.multibaseEncoding : undefined
-    return MultiBaseEncoder.encode(prefixedPublicKey, multibaseEncoding ?? 'base58btc')
+    const multibaseEncoding = 'multibaseEncoding' in this.JwkClass ? this.JwkClass.multibaseEncoding : 'base58btc'
+    return MultiBaseEncoder.encode(prefixedPublicKey, multibaseEncoding)
   }
 
   /**
@@ -353,16 +353,14 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
       throw new KeyManagementError(`Unsupported multicodec public key with prefix '${code}'`)
     }
 
-    const jwk = PublicJwkClass.fromMulticodec(publicKey)
-    const publicJwk = new PublicJwk(jwk)
-    const multibaseEncoding = 'multibaseEncoding' in publicJwk.jwk ? publicJwk.jwk.multibaseEncoding : undefined
-    if (baseName !== (multibaseEncoding ?? 'base58btc')) {
+    const multibaseEncoding = 'multibaseEncoding' in PublicJwkClass ? PublicJwkClass.multibaseEncoding : 'base58btc'
+    if (baseName !== multibaseEncoding) {
       throw new KeyManagementError(
         `Unsupported multibase '${fingerprint[0]}' for multicodec public key with prefix '${code}'`
       )
     }
 
-    return publicJwk
+    return new PublicJwk(PublicJwkClass.fromMulticodec(publicKey))
   }
 
   /**

@@ -15,7 +15,6 @@ const publicKeyLengths: Record<AkpSignatureAlgorithm, number> = {
 export abstract class AkpPublicJwkBase<Jwk extends KmsJwkPublicAkp> implements PublicJwkType<Jwk> {
   public abstract supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[]
   public abstract multicodecPrefix: number
-  public readonly multibaseEncoding = 'base64url' as const
   public supportedEncryptionKeyAgreementAlgorithms: KnownJwaKeyAgreementAlgorithm[] = []
 
   protected constructor(public readonly jwk: Jwk) {}

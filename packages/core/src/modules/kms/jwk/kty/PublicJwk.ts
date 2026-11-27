@@ -9,5 +9,4 @@ export interface PublicJwkType<Jwk extends KmsJwkPublicAsymmetric = KmsJwkPublic
 
   multicodec: Uint8Array
   multicodecPrefix: number
-  multibaseEncoding?: 'base58btc' | 'base64url'
 }

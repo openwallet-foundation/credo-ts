@@ -8,6 +8,7 @@ type Jwk = KmsJwkPublicAkp & { alg: 'ML-DSA-87' }
 export class MlDsa87PublicJwk extends AkpPublicJwkBase<Jwk> {
   public static supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] = ['ML-DSA-87']
   public static multicodecPrefix = 0x1212
+  public static multibaseEncoding = 'base64url' as const
   public supportedSignatureAlgorithms = MlDsa87PublicJwk.supportedSignatureAlgorithms
   public multicodecPrefix = MlDsa87PublicJwk.multicodecPrefix
 
