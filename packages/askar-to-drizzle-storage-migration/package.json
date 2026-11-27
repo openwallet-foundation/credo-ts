@@ -30,7 +30,6 @@
   },
   "dependencies": {
     "@credo-ts/askar": "workspace:*",
-    "@credo-ts/tenants": "workspace:*",
     "@credo-ts/drizzle-storage": "workspace:*",
     "@credo-ts/core": "workspace:*"
   },

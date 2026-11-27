@@ -6,9 +6,11 @@ import {
   BaseRecord,
   CacheModule,
   ConsoleLogger,
+  type Constructor,
   InMemoryLruCache,
   type Logger,
   LogLevel,
+  type Module,
   StorageVersionRecord,
 } from '@credo-ts/core'
 import {
@@ -19,7 +21,6 @@ import {
   getAdapterForeignKeys,
   sortAdaptersByForeignKeys,
 } from '@credo-ts/drizzle-storage'
-import { TenantsModule } from '@credo-ts/tenants'
 import {
   type Askar,
   EntryList,
@@ -32,6 +33,17 @@ import { AskarToDrizzleStorageMigrationError } from './errors/AskarToDrizzleStor
 
 function getMigratedKey(adapter: AnyDrizzleAdapter, columns: string[], key: unknown[]) {
   return JSON.stringify([adapter.recordClass.type, columns, key])
+}
+
+// Matches TenantsModule structurally, so @credo-ts/tenants is only needed by agents that use multi-tenancy.
+export interface MigratorTenantsModule extends Module {
+  api: Constructor<{
+    getAllTenants(): Promise<Array<{ id: string }>>
+    withTenantAgent<ReturnValue>(
+      options: { tenantId: string },
+      callback: (tenantAgent: { context: AgentContext }) => Promise<ReturnValue>
+    ): Promise<ReturnValue>
+  }>
 }
 
 interface ScanOptions {
@@ -99,7 +111,7 @@ export class AskarToDrizzleStorageMigrator {
     private agentDependencies: AgentDependencies,
     private logger: Logger,
     private skipMigrationforMissingAdapter: boolean,
-    private tenantsModule?: TenantsModule
+    private tenantsModule?: MigratorTenantsModule
   ) {}
 
   public static async initialize({
@@ -114,7 +126,7 @@ export class AskarToDrizzleStorageMigrator {
     askarModule: AskarModule
     agentDependencies: AgentDependencies
     logger: Logger
-    tenantsModule?: TenantsModule
+    tenantsModule?: MigratorTenantsModule
 
     /**
      * When set to `true`, the migration of any records in the Askar store that don't
@@ -184,8 +196,8 @@ export class AskarToDrizzleStorageMigrator {
       this.logger.info('Succesfully migrated default agent context')
 
       if (this.tenantsModule) {
-        const askarAgentWithTenants = this.askarAgent as Agent<{ tenants: TenantsModule }>
-        const drizzleAgentWithTenants = this.drizzleAgent as Agent<{ tenants: TenantsModule }>
+        const askarAgentWithTenants = this.askarAgent as Agent<{ tenants: MigratorTenantsModule }>
+        const drizzleAgentWithTenants = this.drizzleAgent as Agent<{ tenants: MigratorTenantsModule }>
 
         this.logger.info('Detected tenants module, migrating tenants context')
         const allTenants = await askarAgentWithTenants.modules.tenants.getAllTenants()
@@ -230,7 +242,7 @@ export class AskarToDrizzleStorageMigrator {
       this.logger.info('Successfully initialized askar agent')
 
       if (this.tenantsModule) {
-        const askarAgentWithTenants = this.askarAgent as Agent<{ tenants: TenantsModule }>
+        const askarAgentWithTenants = this.askarAgent as Agent<{ tenants: MigratorTenantsModule }>
 
         this.logger.info('Detected tenants module, deleting tenant records')
         const allTenants = await askarAgentWithTenants.modules.tenants.getAllTenants()
