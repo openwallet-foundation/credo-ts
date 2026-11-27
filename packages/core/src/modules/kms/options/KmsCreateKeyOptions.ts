@@ -8,6 +8,12 @@ import { zKmsJwkPublicOkp } from '../jwk/kty/okp/okpJwk'
 import { zKmsJwkPublicRsa } from '../jwk/kty/rsa/rsaJwk'
 import { zKmsKeyId } from './common'
 
+const zKmsCreateKeyTypeAkp = z.object({
+  kty: z.literal('AKP'),
+  alg: z.enum(['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87']),
+})
+export type KmsCreateKeyTypeAkp = z.output<typeof zKmsCreateKeyTypeAkp>
+
 const zKmsCreateKeyTypeEc = zKmsJwkPublicEc.pick({ kty: true, crv: true })
 export type KmsCreateKeyTypeEc = z.output<typeof zKmsCreateKeyTypeEc>
 
@@ -58,11 +64,17 @@ export const zKmsCreateKeyTypeOct = z.discriminatedUnion('algorithm', [
 ])
 export type KmsCreateKeyTypeOct = z.output<typeof zKmsCreateKeyTypeOct>
 
-export const zKmsCreateKeyTypeAsymmetric = z.union([zKmsCreateKeyTypeEc, zKmsCreateKeyTypeOkp, zKmsCreateKeyTypeRsa])
+export const zKmsCreateKeyTypeAsymmetric = z.union([
+  zKmsCreateKeyTypeAkp,
+  zKmsCreateKeyTypeEc,
+  zKmsCreateKeyTypeOkp,
+  zKmsCreateKeyTypeRsa,
+])
 export type KmsCreateKeyTypeAsymmetric = z.output<typeof zKmsCreateKeyTypeAsymmetric>
 
 // TODO: see if we can use nested discriminated union with zod?
 export const zKmsCreateKeyType = z.union([
+  zKmsCreateKeyTypeAkp,
   zKmsCreateKeyTypeEc,
   zKmsCreateKeyTypeOkp,
   zKmsCreateKeyTypeRsa,

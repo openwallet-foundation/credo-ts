@@ -11,7 +11,7 @@ import {
 } from '@openwallet-foundation/askar-shared'
 import { AskarModuleConfig } from '../AskarModuleConfig'
 import { AskarStoreManager } from '../AskarStoreManager'
-import { AskarErrorCode, isAskarError, jwkCrvToAskarAlg, jwkEncToAskarAlg } from '../utils'
+import { AskarErrorCode, isAskarError, jwkAkpAlgToAskarAlg, jwkCrvToAskarAlg, jwkEncToAskarAlg } from '../utils'
 import { aeadDecrypt } from './crypto/decrypt'
 import {
   type AskarEcdhKeyAgreementEncryptOptions,
@@ -35,6 +35,9 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
   public readonly backend = AskarKeyManagementService.backend
 
   private static algToSigType: Partial<Record<Kms.KnownJwaSignatureAlgorithm, SignatureAlgorithm>> = {
+    'ML-DSA-44': SignatureAlgorithm.MlDsa44,
+    'ML-DSA-65': SignatureAlgorithm.MlDsa65,
+    'ML-DSA-87': SignatureAlgorithm.MlDsa87,
     EdDSA: SignatureAlgorithm.EdDSA,
     Ed25519: SignatureAlgorithm.EdDSA,
     ES256K: SignatureAlgorithm.ES256K,
@@ -51,6 +54,8 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     if (operation.operation === 'randomBytes') return true
 
     if (operation.operation === 'importKey') {
+      if (operation.privateJwk.kty === 'AKP') return jwkAkpAlgToAskarAlg[operation.privateJwk.alg] !== undefined
+
       if (operation.privateJwk.kty === 'EC' || operation.privateJwk.kty === 'OKP') {
         return jwkCrvToAskarAlg[operation.privateJwk.crv] !== undefined
       }
@@ -60,6 +65,8 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     }
 
     if (operation.operation === 'createKey') {
+      if (operation.type.kty === 'AKP') return jwkAkpAlgToAskarAlg[operation.type.alg] !== undefined
+
       if (operation.type.kty === 'EC' || operation.type.kty === 'OKP') {
         return jwkCrvToAskarAlg[operation.type.crv] !== undefined
       }
@@ -118,7 +125,12 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       return (
         askarSupportedKeyAgreementAlgorithms.includes(
           keyAgreement.algorithm as (typeof askarSupportedKeyAgreementAlgorithms)[number]
-        ) && publicJwks.every((jwk) => Kms.supportedKeyDerivationAlgsForKey(jwk).includes(keyAgreement.algorithm))
+        ) &&
+        publicJwks.every(
+          (jwk) =>
+            (jwk.kty === 'EC' || jwk.kty === 'OKP') &&
+            Kms.supportedKeyDerivationAlgsForKey(jwk).includes(keyAgreement.algorithm)
+        )
       )
     }
 
@@ -161,7 +173,15 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           this.backend
         )
       }
-      if (privateJwk.kty === 'EC' || privateJwk.kty === 'OKP') {
+      if (privateJwk.kty === 'AKP') {
+        if (!jwkAkpAlgToAskarAlg[privateJwk.alg]) {
+          throw new Kms.KeyManagementAlgorithmNotSupportedError(
+            `alg '${privateJwk.alg}' for kty '${privateJwk.kty}'`,
+            this.backend
+          )
+        }
+        key = Key.fromJwk({ jwk: Jwk.fromJson(privateJwk as unknown as JwkProps) })
+      } else if (privateJwk.kty === 'EC' || privateJwk.kty === 'OKP') {
         // Throws error if not supported
         this.assertAskarAlgForJwkCrv(privateJwk.kty, privateJwk.crv)
 
@@ -222,7 +242,13 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     const kid = keyId ?? utils.uuid()
     let askarKey: Key | undefined
     try {
-      if (type.kty === 'EC' || type.kty === 'OKP') {
+      if (type.kty === 'AKP') {
+        const keyAlg = jwkAkpAlgToAskarAlg[type.alg]
+        if (!keyAlg) {
+          throw new Kms.KeyManagementAlgorithmNotSupportedError(`alg '${type.alg}' for kty '${type.kty}'`, this.backend)
+        }
+        askarKey = Key.generate(keyAlg)
+      } else if (type.kty === 'EC' || type.kty === 'OKP') {
         const keyAlg = this.assertAskarAlgForJwkCrv(type.kty, type.crv)
         askarKey = Key.generate(keyAlg)
       } else if (type.kty === 'oct') {
@@ -262,7 +288,10 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${type.kty}'`, this.backend)
       }
 
-      const publicJwk = this.publicJwkFromKey(agentContext, _key, { kid }) as Kms.KmsCreateKeyReturn<Type>['publicJwk']
+      const publicJwk = this.publicJwkFromKey(agentContext, _key, {
+        kid,
+        ...(type.kty === 'AKP' ? { alg: type.alg } : {}),
+      }) as Kms.KmsCreateKeyReturn<Type>['publicJwk']
       await this.withSession(agentContext, (session) => session.insertKey({ name: kid, key: _key }))
 
       return {
@@ -364,6 +393,8 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     try {
       if (keyInput.keyId) {
         askarKey = (await this.getKeyAsserted(agentContext, keyInput.keyId)).key
+      } else if (keyInput.publicJwk?.kty === 'AKP') {
+        askarKey = Key.fromJwk({ jwk: Jwk.fromJson(keyInput.publicJwk as unknown as JwkProps) })
       } else if (keyInput.publicJwk?.kty === 'EC' || keyInput.publicJwk?.kty === 'OKP') {
         // Throws error if not supported
         this.assertAskarAlgForJwkCrv(keyInput.publicJwk.kty, keyInput.publicJwk.crv)
@@ -902,7 +933,11 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       })
     )
 
-    return Kms.publicJwkFromPrivateJwk({ ...partialJwkPublic, ...jwkPublic } as Kms.KmsJwkPublic)
+    return Kms.publicJwkFromPrivateJwk({
+      ...partialJwkPublic,
+      ...jwkPublic,
+      ...(jwkPublic.kty === 'AKP' ? { alg } : {}),
+    } as Kms.KmsJwkPublic)
   }
 
   private privateJwkFromKey(agentContext: AgentContext, key: Key, partialJwkPrivate?: Partial<Kms.KmsJwkPrivate>) {
@@ -920,6 +955,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     return {
       ...partialJwkPrivate,
       ...jwkSecret,
+      ...(jwkSecret.kty === 'AKP' ? { alg } : {}),
     } as Kms.KmsJwkPrivate
   }
 

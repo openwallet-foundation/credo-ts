@@ -5,6 +5,7 @@ import type { SupportedPublicJwkClass } from '../../../kms/jwk/PublicJwk'
 import type { VerificationMethod } from '../verificationMethod'
 import { getPublicJwkFromMultikey, isMultikey } from '../verificationMethod'
 import { getPublicJwkFromJsonWebKey2020, isJsonWebKey2020 } from '../verificationMethod/JsonWebKey2020'
+import { keyDidAkp } from './akp'
 import { keyDidEd25519 } from './ed25519'
 import { keyDidJsonWebKey } from './keyDidJsonWebKey'
 import { keyDidSecp256k1 } from './secp256k1'
@@ -19,7 +20,7 @@ export interface KeyDidMapping<
   supportedVerificationMethodTypes: string[]
 }
 
-const supportedKeyDids = [keyDidEd25519, keyDidX25519, keyDidJsonWebKey, keyDidSecp256k1]
+const supportedKeyDids = [keyDidAkp, keyDidEd25519, keyDidX25519, keyDidJsonWebKey, keyDidSecp256k1]
 
 // TODO: at some point we should update all usages to Jwk / Multikey methods
 // so we don't need key type specific verification methods anymore

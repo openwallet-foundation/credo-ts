@@ -1,5 +1,6 @@
 import { CredoError } from '../../../error'
-import { Ed25519PublicJwk } from '../../kms'
+import { TypedArrayEncoder } from '../../../utils'
+import { Ed25519PublicJwk, MlDsa44PublicJwk, MlDsa65PublicJwk, PublicJwk } from '../../kms'
 import { EddsaJcs2022Cryptosuite } from '../cryptosuites/eddsa-jcs-2022/EddsaJcs2022Cryptosuite'
 import type { W3cDataIntegrityCryptosuiteInfo } from '../cryptosuites/types'
 import { W3cDataIntegrityCryptosuiteRegistry } from '../W3cDataIntegrityCryptosuiteRegistry'
@@ -8,6 +9,12 @@ const cryptosuiteInfo = {
   cryptosuiteClass: EddsaJcs2022Cryptosuite,
   cryptosuite: 'eddsa-jcs-2022',
   supportedPublicJwkTypes: [Ed25519PublicJwk],
+} satisfies W3cDataIntegrityCryptosuiteInfo
+
+const mldsa44CryptosuiteInfo = {
+  ...cryptosuiteInfo,
+  cryptosuite: 'mldsa44-jcs-2024',
+  supportedPublicJwkTypes: [MlDsa44PublicJwk],
 } satisfies W3cDataIntegrityCryptosuiteInfo
 
 describe('W3cDataIntegrityCryptosuiteRegistry', () => {
@@ -22,6 +29,26 @@ describe('W3cDataIntegrityCryptosuiteRegistry', () => {
     const registry = new W3cDataIntegrityCryptosuiteRegistry([cryptosuiteInfo])
 
     expect(registry.getAllByPublicJwkType(Ed25519PublicJwk)).toEqual([cryptosuiteInfo])
+  })
+
+  test('returns the ML-DSA-44 cryptosuite only for ML-DSA-44 keys', () => {
+    const registry = new W3cDataIntegrityCryptosuiteRegistry([mldsa44CryptosuiteInfo])
+    const mldsa44 = PublicJwk.fromUnknown({
+      kty: 'AKP',
+      alg: 'ML-DSA-44',
+      pub: TypedArrayEncoder.toBase64Url(new Uint8Array(1312).fill(1)),
+    })
+    const mldsa65 = PublicJwk.fromUnknown({
+      kty: 'AKP',
+      alg: 'ML-DSA-65',
+      pub: TypedArrayEncoder.toBase64Url(new Uint8Array(1952).fill(1)),
+    })
+
+    expect(registry.getAllByPublicJwkType(mldsa44)).toEqual([mldsa44CryptosuiteInfo])
+    expect(registry.getAllByPublicJwkType(MlDsa44PublicJwk)).toEqual([mldsa44CryptosuiteInfo])
+    expect(registry.getAllByPublicJwkType(mldsa65)).toEqual([])
+    expect(registry.getAllByPublicJwkType(MlDsa65PublicJwk)).toEqual([])
+    expect(registry.getByCryptosuite('mldsa44-jcs-2024')).toEqual(mldsa44CryptosuiteInfo)
   })
 
   test('throws for unknown cryptosuite', () => {

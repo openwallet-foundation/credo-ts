@@ -25,6 +25,10 @@ export function asymmetricJwkKeyTypeMatches(
     return first.crv === second.crv
   }
 
+  if (first.kty === 'AKP' && second.kty === 'AKP') {
+    return first.alg === second.alg
+  }
+
   if (first.kty === 'RSA' && second.kty === 'RSA') {
     // RSA doesn't have curve parameter, so key type match is sufficient
     return true
@@ -67,6 +71,11 @@ export function asymmetricPublicJwkMatches(first: KmsJwkPublicAsymmetric, second
   // For OKP keys, compare x coordinate (Ed25519, X25519, etc.)
   if (first.kty === 'OKP' && second.kty === 'OKP') {
     return first.x === second.x
+  }
+
+  // For AKP keys, compare public key bytes
+  if (first.kty === 'AKP' && second.kty === 'AKP') {
+    return first.pub === second.pub
   }
 
   // For RSA keys, compare modulus (n) and exponent (e)

@@ -49,6 +49,17 @@ export function assertAllowedSigningAlgForKey(
 export function supportedSigningAlgsForKey(
   jwk: KmsJwkPrivate | Exclude<KmsJwkPublic, KmsJwkPublicOct>
 ): KnownJwaSignatureAlgorithm[] {
+  if (jwk.kty === 'AKP') {
+    switch (jwk.alg) {
+      case 'ML-DSA-44':
+      case 'ML-DSA-65':
+      case 'ML-DSA-87':
+        return [jwk.alg]
+      default:
+        return []
+    }
+  }
+
   if (jwk.kty === 'EC' || jwk.kty === 'OKP') {
     switch (jwk.crv) {
       case 'secp256k1':
@@ -96,6 +107,13 @@ export function supportedSigningAlgsForKey(
 // TODO: Can we move this to the JWK classes?
 export function createKeyTypeForSigningAlgorithm(algorithm: KnownJwaSignatureAlgorithm): KmsCreateKeyType {
   // On JWK class we can have
+  if (algorithm === 'ML-DSA-44' || algorithm === 'ML-DSA-65' || algorithm === 'ML-DSA-87') {
+    return {
+      kty: 'AKP',
+      alg: algorithm,
+    }
+  }
+
   if (algorithm === 'ES256') {
     return {
       kty: 'EC',

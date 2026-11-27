@@ -32,8 +32,15 @@ export class W3cDataIntegrityCryptosuiteRegistry {
   }
 
   public getAllByPublicJwkType(publicJwkType: SupportedPublicJwkClass | PublicJwk) {
-    const publicJwkClass = publicJwkType instanceof PublicJwk ? publicJwkType.JwkClass : publicJwkType
-    return this.cryptosuiteMapping.filter((x) => x.supportedPublicJwkTypes.includes(publicJwkClass))
+    if (publicJwkType instanceof PublicJwk) {
+      return this.cryptosuiteMapping.filter((cryptosuiteInfo) =>
+        cryptosuiteInfo.supportedPublicJwkTypes.includes(publicJwkType.JwkClass)
+      )
+    }
+
+    return this.cryptosuiteMapping.filter((cryptosuiteInfo) =>
+      cryptosuiteInfo.supportedPublicJwkTypes.includes(publicJwkType)
+    )
   }
 
   public createByCryptosuite(agentContext: AgentContext, cryptosuite: string) {

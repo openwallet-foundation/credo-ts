@@ -10,6 +10,10 @@ import type { KmsJwkPrivate, KmsJwkPublic } from './knownJwk'
  * - `'<kty>' key`
  */
 export function getJwkHumanDescription(jwk: KmsJwkPrivate | KmsJwkPublic) {
+  if (jwk.kty === 'AKP') {
+    return `${jwk.kty} key with alg '${jwk.alg}'`
+  }
+
   if (jwk.kty === 'EC' || jwk.kty === 'OKP') {
     return `${jwk.kty} key with crv '${jwk.crv}'`
   }

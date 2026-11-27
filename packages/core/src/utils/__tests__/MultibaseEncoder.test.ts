@@ -20,6 +20,12 @@ describe('MultiBaseEncoder', () => {
       expect(baseName).toEqual('base58btc')
     })
 
+    it('encodes and decodes base64url multibase', () => {
+      const multibase = MultiBaseEncoder.encode(validData, 'base64url')
+      expect(multibase).toBe(`u${TypedArrayEncoder.toBase64Url(validData)}`)
+      expect(MultiBaseEncoder.decode(multibase)).toEqual({ data: validData, baseName: 'base64url' })
+    })
+
     it('Decodes invalid multibase', () => {
       expect(() => {
         MultiBaseEncoder.decode(invalidMultiBase)

@@ -1,7 +1,8 @@
 import type { DependencyManager } from '../../../plugins'
-import { Ed25519PublicJwk, P256PublicJwk, P384PublicJwk } from '../../kms'
+import { Ed25519PublicJwk, MlDsa44PublicJwk, P256PublicJwk, P384PublicJwk } from '../../kms'
 import { EcdsaJcs2019Cryptosuite } from '../cryptosuites/ecdsa-jcs-2019/EcdsaJcs2019Cryptosuite'
 import { EddsaJcs2022Cryptosuite } from '../cryptosuites/eddsa-jcs-2022/EddsaJcs2022Cryptosuite'
+import { Mldsa44Jcs2024Cryptosuite } from '../cryptosuites/mldsa44-jcs-2024/Mldsa44Jcs2024Cryptosuite'
 import { W3cDataIntegrityCryptosuiteToken } from '../cryptosuites/types'
 import { W3cDataIntegrityApi } from '../W3cDataIntegrityApi'
 import { W3cDataIntegrityCryptosuiteRegistry } from '../W3cDataIntegrityCryptosuiteRegistry'
@@ -43,6 +44,18 @@ describe('W3cDataIntegrityModule wiring', () => {
       cryptosuiteClass: EcdsaJcs2019Cryptosuite,
       cryptosuite: 'ecdsa-jcs-2019',
       supportedPublicJwkTypes: [P256PublicJwk, P384PublicJwk],
+    })
+  })
+
+  test('registers ML-DSA-44 for ML-DSA-44 keys', () => {
+    const module = new W3cDataIntegrityModule()
+
+    module.register(dependencyManager)
+
+    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(W3cDataIntegrityCryptosuiteToken, {
+      cryptosuiteClass: Mldsa44Jcs2024Cryptosuite,
+      cryptosuite: 'mldsa44-jcs-2024',
+      supportedPublicJwkTypes: [MlDsa44PublicJwk],
     })
   })
 

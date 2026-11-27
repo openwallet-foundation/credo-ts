@@ -39,10 +39,8 @@ describe('DidKey', () => {
       if (publicKey.kty !== 'EC') throw new Error('Expected an EC fixture')
       expect(PublicJwk.fromPublicKey(publicKey).fingerprint).toBe(key.fingerprint)
 
-      const uncompressed = TypedArrayEncoder.concat([
-        VarintEncoder.encode(key.JwkClass.multicodecPrefix),
-        publicKey.publicKey,
-      ])
+      const multicodecPrefix = key.JwkClass.multicodecPrefix
+      const uncompressed = TypedArrayEncoder.concat([VarintEncoder.encode(multicodecPrefix), publicKey.publicKey])
       expect(() => PublicJwk.fromFingerprint(MultiBaseEncoder.encode(uncompressed, 'base58btc'))).toThrow(
         'Invalid public key length'
       )
@@ -69,11 +67,55 @@ describe('DidKey', () => {
     expect(() => DidKey.fromDid(`did:key:${fingerprint}`)).toThrow(message)
   })
 
-  it('rejects base64url multibase fingerprints', () => {
+  it('rejects base64url multibase fingerprints for Ed25519 did:key identifiers', () => {
     const { data } = MultiBaseEncoder.decode(didKeyEd25519.id.slice('did:key:'.length))
     const fingerprint = `u${TypedArrayEncoder.toBase64Url(data)}`
-    expect(() => PublicJwk.fromFingerprint(fingerprint)).toThrow("No decoder found for multibase prefix 'u'")
-    expect(() => DidKey.fromDid(`did:key:${fingerprint}`)).toThrow("No decoder found for multibase prefix 'u'")
+    expect(() => PublicJwk.fromFingerprint(fingerprint)).toThrow("Unsupported multibase 'u'")
+    expect(() => DidKey.fromDid(`did:key:${fingerprint}`)).toThrow("Unsupported multibase 'u'")
+  })
+
+  it.each([
+    ['ML-DSA-44', 1312],
+    ['ML-DSA-65', 1952],
+    ['ML-DSA-87', 2592],
+  ] as const)('creates and resolves a did:key for %s', (alg, publicKeyLength) => {
+    const publicJwk = PublicJwk.fromUnknown({
+      kty: 'AKP',
+      alg,
+      pub: TypedArrayEncoder.toBase64Url(new Uint8Array(publicKeyLength).fill(0x42)),
+    })
+    const didKey = new DidKey(publicJwk)
+    const resolvedDidKey = DidKey.fromDid(didKey.did)
+    const didDocument = resolvedDidKey.didDocument.toJSON()
+    const verificationMethod = didDocument.verificationMethod?.[0]
+
+    expect(resolvedDidKey.publicJwk.toJson()).toEqual(publicJwk.toJson())
+    expect(publicJwk.fingerprint[0]).toBe('u')
+    expect(verificationMethod).toMatchObject({
+      id: `${didKey.did}#${publicJwk.fingerprint}`,
+      type: 'Multikey',
+      controller: didKey.did,
+      publicKeyMultibase: publicJwk.fingerprint,
+    })
+    expect(didDocument['@context']).toContain('https://w3id.org/security/multikey/v1')
+    expect(didDocument.authentication).toContain(verificationMethod?.id)
+    expect(didDocument.assertionMethod).toContain(verificationMethod?.id)
+  })
+
+  it.each([
+    ['ML-DSA-44', 1312],
+    ['ML-DSA-65', 1952],
+    ['ML-DSA-87', 2592],
+  ] as const)('rejects malformed %s did:key public key lengths', (alg, publicKeyLength) => {
+    const publicJwk = PublicJwk.fromUnknown({
+      kty: 'AKP',
+      alg,
+      pub: TypedArrayEncoder.toBase64Url(new Uint8Array(publicKeyLength).fill(0x42)),
+    })
+    const { data } = MultiBaseEncoder.decode(new DidKey(publicJwk).did.slice('did:key:'.length))
+    const malformedFingerprint = MultiBaseEncoder.encode(data.slice(0, -1), 'base64url')
+
+    expect(() => DidKey.fromDid(`did:key:${malformedFingerprint}`)).toThrow('Invalid public key length')
   })
 
   it('creates a DidKey instance from a key instance', async () => {

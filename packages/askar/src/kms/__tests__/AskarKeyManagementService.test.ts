@@ -5,6 +5,8 @@ import { p521 } from '@noble/curves/nist.js'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import {
   AskarError,
+  Key,
+  KeyAlgorithm,
   KeyEntryList,
   KeyEntryListHandle,
   LocalKeyHandle,
@@ -45,6 +47,11 @@ const agentContext = getAgentContext({
 const service = new AskarKeyManagementService()
 
 describe('AskarKeyManagementService', () => {
+  const keyManagementApi = new Kms.KeyManagementApi(
+    new Kms.KeyManagementModuleConfig({ backends: [service] }),
+    agentContext
+  )
+
   afterEach(() => {
     vi.restoreAllMocks()
   })
@@ -77,6 +84,45 @@ describe('AskarKeyManagementService', () => {
   })
 
   describe('createKey', () => {
+    test.each(['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'] as const)(
+      'supports creating an %s key through KeyManagementApi',
+      async (algorithm) => {
+        expect(keyManagementApi.supportedJwaSignatureAlgorithms()).toContain(algorithm)
+        const result = await keyManagementApi.createKeyForSignatureAlgorithm({ algorithm })
+        expect(result.publicJwk).toMatchObject({ kty: 'AKP', alg: algorithm, pub: expect.any(String) })
+
+        const data = new Uint8Array([3, 2, 1])
+        const { signature } = await keyManagementApi.sign({
+          keyId: result.keyId,
+          algorithm,
+          data,
+          expectedPublicJwk: result.publicJwk,
+        })
+        await expect(
+          keyManagementApi.verify({ key: { publicJwk: result.publicJwk }, algorithm, data, signature })
+        ).resolves.toMatchObject({ verified: true })
+      }
+    )
+
+    test.each(['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'] as const)('creates an %s key successfully', async (algorithm) => {
+      expect(
+        service.isOperationSupported(agentContext, { operation: 'createKey', type: { kty: 'AKP', alg: algorithm } })
+      ).toBe(true)
+
+      const result = await service.createKey(agentContext, {
+        type: { kty: 'AKP', alg: algorithm },
+      })
+
+      expect(result.publicJwk).toMatchObject({
+        kty: 'AKP',
+        alg: algorithm,
+        pub: expect.any(String),
+        kid: result.keyId,
+      })
+      expect(result.publicJwk).not.toHaveProperty('priv')
+      expect(await service.getPublicKey(agentContext, result.keyId)).toEqual(result.publicJwk)
+    })
+
     it('throws error if key id already exists', async () => {
       const keyId = 'test-key'
       await service.createKey(agentContext, {
@@ -377,6 +423,27 @@ describe('AskarKeyManagementService', () => {
       })
     })
 
+    test.each([
+      { algorithm: 'ML-DSA-44', signatureLength: 2420 },
+      { algorithm: 'ML-DSA-65', signatureLength: 3309 },
+      { algorithm: 'ML-DSA-87', signatureLength: 4627 },
+    ] as const)('signs with $algorithm', async ({ algorithm, signatureLength }) => {
+      const { keyId } = await service.createKey(agentContext, {
+        type: { kty: 'AKP', alg: algorithm },
+      })
+      const data = new Uint8Array([1, 2, 3])
+
+      expect(service.isOperationSupported(agentContext, { operation: 'sign', algorithm })).toBe(true)
+      const { signature } = await service.sign(agentContext, {
+        keyId,
+        algorithm,
+        data,
+        expectedPublicJwk: null,
+      })
+
+      expect(signature).toHaveLength(signatureLength)
+    })
+
     it('throws error if algorithm is not supported by backend', async () => {
       const { keyId } = await service.createKey(agentContext, {
         type: { kty: 'EC', crv: 'P-256' },
@@ -491,6 +558,39 @@ describe('AskarKeyManagementService', () => {
         })
       ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', [service.backend]))
     })
+
+    test.each(['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'] as const)(
+      'verifies %s signature with key id and external public JWK',
+      async (algorithm) => {
+        const { keyId, publicJwk } = await service.createKey(agentContext, {
+          type: { kty: 'AKP', alg: algorithm },
+        })
+        const data = new Uint8Array([1, 2, 3])
+        const { signature } = await service.sign(agentContext, {
+          keyId,
+          algorithm,
+          data,
+          expectedPublicJwk: null,
+        })
+
+        expect(service.isOperationSupported(agentContext, { operation: 'verify', algorithm })).toBe(true)
+        await expect(service.verify(agentContext, { key: { keyId }, algorithm, data, signature })).resolves.toEqual({
+          verified: true,
+          publicJwk,
+        })
+        await expect(service.verify(agentContext, { key: { publicJwk }, algorithm, data, signature })).resolves.toEqual(
+          { verified: true, publicJwk }
+        )
+        await expect(
+          service.verify(agentContext, {
+            key: { publicJwk },
+            algorithm,
+            data: new Uint8Array([1, 2, 4]),
+            signature,
+          })
+        ).resolves.toEqual({ verified: false })
+      }
+    )
 
     it('verifies ES256 signature', async () => {
       const { keyId, publicJwk } = await service.createKey(agentContext, {
@@ -755,6 +855,27 @@ describe('AskarKeyManagementService', () => {
   })
 
   describe('importKey', () => {
+    test.each([
+      { algorithm: 'ML-DSA-44', askarAlgorithm: KeyAlgorithm.MlDsa44 },
+      { algorithm: 'ML-DSA-65', askarAlgorithm: KeyAlgorithm.MlDsa65 },
+      { algorithm: 'ML-DSA-87', askarAlgorithm: KeyAlgorithm.MlDsa87 },
+    ] as const)('imports an $algorithm private JWK', async ({ algorithm, askarAlgorithm }) => {
+      const generatedKey = Key.generate(askarAlgorithm)
+      const privateJwk = JSON.parse(JSON.stringify(generatedKey.jwkSecret)) as Kms.KmsJwkPrivateAkp
+      const generatedPublicJwk = JSON.parse(JSON.stringify(generatedKey.jwkPublic)) as Kms.KmsJwkPublicAkp
+      generatedKey.handle.free()
+
+      expect(privateJwk.alg).toBe(algorithm)
+      expect(service.isOperationSupported(agentContext, { operation: 'importKey', privateJwk })).toBe(true)
+      const result = await service.importKey(agentContext, {
+        privateJwk: { ...privateJwk, kid: `imported-${algorithm}` },
+      })
+      expect(result).toEqual({
+        keyId: `imported-${algorithm}`,
+        publicJwk: { ...generatedPublicJwk, kid: `imported-${algorithm}` },
+      })
+    })
+
     it('throws error when importing RSA key', async () => {
       await expect(
         service.importKey(agentContext, {
