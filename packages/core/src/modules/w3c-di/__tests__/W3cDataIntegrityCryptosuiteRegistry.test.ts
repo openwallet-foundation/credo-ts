@@ -15,8 +15,6 @@ const mldsa44CryptosuiteInfo = {
   ...cryptosuiteInfo,
   cryptosuite: 'mldsa44-jcs-2024',
   supportedPublicJwkTypes: [MlDsa44PublicJwk],
-  supportedSignatureAlgorithms: ['ML-DSA-44'],
-  autoSelect: false,
 } satisfies W3cDataIntegrityCryptosuiteInfo
 
 describe('W3cDataIntegrityCryptosuiteRegistry', () => {
@@ -33,7 +31,7 @@ describe('W3cDataIntegrityCryptosuiteRegistry', () => {
     expect(registry.getAllByPublicJwkType(Ed25519PublicJwk)).toEqual([cryptosuiteInfo])
   })
 
-  test('does not auto-select the explicit ML-DSA-44 cryptosuite or mismatch AKP variants', () => {
+  test('returns the ML-DSA-44 cryptosuite only for ML-DSA-44 keys', () => {
     const registry = new W3cDataIntegrityCryptosuiteRegistry([mldsa44CryptosuiteInfo])
     const mldsa44 = PublicJwk.fromUnknown({
       kty: 'AKP',
@@ -46,7 +44,8 @@ describe('W3cDataIntegrityCryptosuiteRegistry', () => {
       pub: TypedArrayEncoder.toBase64Url(new Uint8Array(1952).fill(1)),
     })
 
-    expect(registry.getAllByPublicJwkType(mldsa44)).toEqual([])
+    expect(registry.getAllByPublicJwkType(mldsa44)).toEqual([mldsa44CryptosuiteInfo])
+    expect(registry.getAllByPublicJwkType(MlDsa44PublicJwk)).toEqual([mldsa44CryptosuiteInfo])
     expect(registry.getAllByPublicJwkType(mldsa65)).toEqual([])
     expect(registry.getAllByPublicJwkType(MlDsa65PublicJwk)).toEqual([])
     expect(registry.getByCryptosuite('mldsa44-jcs-2024')).toEqual(mldsa44CryptosuiteInfo)

@@ -41,7 +41,7 @@ describe('W3cDataIntegrityModule wiring', () => {
     })
   })
 
-  test('registers ML-DSA-44 without making it eligible for automatic selection', () => {
+  test('registers ML-DSA-44 for ML-DSA-44 keys', () => {
     const module = new W3cDataIntegrityModule()
 
     module.register(dependencyManager)
@@ -50,8 +50,6 @@ describe('W3cDataIntegrityModule wiring', () => {
       cryptosuiteClass: Mldsa44Jcs2024Cryptosuite,
       cryptosuite: 'mldsa44-jcs-2024',
       supportedPublicJwkTypes: [MlDsa44PublicJwk],
-      supportedSignatureAlgorithms: ['ML-DSA-44'],
-      autoSelect: false,
     })
   })
 
