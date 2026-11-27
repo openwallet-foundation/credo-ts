@@ -13,6 +13,9 @@ import { assertJwkAsymmetric, type KmsJwkPublicAsymmetric, publicJwkFromPrivateJ
 import {
   AkpPublicJwk,
   Ed25519PublicJwk,
+  MlDsa44PublicJwk,
+  MlDsa65PublicJwk,
+  MlDsa87PublicJwk,
   P256PublicJwk,
   P384PublicJwk,
   P521PublicJwk,
@@ -22,6 +25,9 @@ import {
 } from './kty'
 
 export const SupportedPublicJwks = [
+  MlDsa44PublicJwk,
+  MlDsa65PublicJwk,
+  MlDsa87PublicJwk,
   AkpPublicJwk,
   Ed25519PublicJwk,
   P256PublicJwk,
@@ -34,6 +40,9 @@ export const SupportedPublicJwks = [
 export type SupportedPublicJwkClass = (typeof SupportedPublicJwks)[number]
 export type SupportedPublicJwk =
   | AkpPublicJwk
+  | MlDsa44PublicJwk
+  | MlDsa65PublicJwk
+  | MlDsa87PublicJwk
   | Ed25519PublicJwk
   | P256PublicJwk
   | P384PublicJwk
@@ -61,7 +70,13 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
 
     let jwkInstance: SupportedPublicJwk
     if (publicJwk.kty === 'AKP') {
-      jwkInstance = new AkpPublicJwk(publicJwk)
+      if (publicJwk.alg === 'ML-DSA-44') {
+        jwkInstance = new MlDsa44PublicJwk(publicJwk as ConstructorParameters<typeof MlDsa44PublicJwk>[0])
+      } else if (publicJwk.alg === 'ML-DSA-65') {
+        jwkInstance = new MlDsa65PublicJwk(publicJwk as ConstructorParameters<typeof MlDsa65PublicJwk>[0])
+      } else {
+        jwkInstance = new MlDsa87PublicJwk(publicJwk as ConstructorParameters<typeof MlDsa87PublicJwk>[0])
+      }
     } else if (publicJwk.kty === 'RSA') {
       jwkInstance = new RsaPublicJwk(publicJwk)
     } else if (publicJwk.kty === 'EC') {

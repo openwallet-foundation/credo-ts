@@ -1,6 +1,6 @@
 import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../../../../../utils'
 import { PublicJwk } from '../../../../kms'
-import { AkpPublicJwk } from '../../../../kms/jwk/kty/akp/AkpPublicJwk'
+import { MlDsa44PublicJwk } from '../../../../kms/jwk/kty/akp/MlDsa44PublicJwk'
 import { getMultikey, getPublicJwkFromMultikey, isMultikey } from '../Multikey'
 
 const did = 'did:example:123'
@@ -34,7 +34,7 @@ describe('Multikey', () => {
     const publicJwk = getPublicJwkFromMultikey(verificationMethod)
 
     expect(publicKeyMultibase[0]).toBe('u')
-    expect(publicJwk.is(AkpPublicJwk)).toBe(true)
+    expect(publicJwk.is(MlDsa44PublicJwk)).toBe(true)
     expect(publicJwk.toJson()).toEqual({
       kty: 'AKP',
       alg: 'ML-DSA-44',

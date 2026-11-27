@@ -1,18 +1,22 @@
 import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../../../../utils'
 import { KeyManagementError } from '../../error/KeyManagementError'
-import { AkpPublicJwk } from '../kty'
+import { MlDsa44PublicJwk, MlDsa65PublicJwk, MlDsa87PublicJwk } from '../kty'
 import { PublicJwk } from '../PublicJwk'
 
 describe('PublicJwk AKP support', () => {
-  test.each(['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'] as const)('parses and serializes %s JWKs', (alg) => {
+  test.each([
+    ['ML-DSA-44', MlDsa44PublicJwk],
+    ['ML-DSA-65', MlDsa65PublicJwk],
+    ['ML-DSA-87', MlDsa87PublicJwk],
+  ] as const)('parses and serializes %s JWKs', (alg, jwkClass) => {
     const jwk = { kty: 'AKP', alg, pub: 'cHVibGlj' } as const
     const publicJwk = PublicJwk.fromUnknown(jwk)
 
-    expect(publicJwk.JwkClass).toBe(AkpPublicJwk)
+    expect(publicJwk.JwkClass).toBe(jwkClass)
     expect(publicJwk.toJson()).toEqual(jwk)
     expect(publicJwk.supportedSignatureAlgorithms).toEqual([alg])
     expect(publicJwk.signatureAlgorithm).toBe(alg)
-    expect(PublicJwk.supportedPublicJwkClassForSignatureAlgorithm(alg)).toBe(AkpPublicJwk)
+    expect(PublicJwk.supportedPublicJwkClassForSignatureAlgorithm(alg)).toBe(jwkClass)
   })
 
   test.each(['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'] as const)('clones and compares %s JWKs', (alg) => {

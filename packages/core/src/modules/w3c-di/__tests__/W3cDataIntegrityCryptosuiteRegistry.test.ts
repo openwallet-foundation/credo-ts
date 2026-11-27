@@ -1,6 +1,6 @@
 import { CredoError } from '../../../error'
 import { TypedArrayEncoder } from '../../../utils'
-import { AkpPublicJwk, Ed25519PublicJwk, PublicJwk } from '../../kms'
+import { Ed25519PublicJwk, MlDsa44PublicJwk, MlDsa65PublicJwk, PublicJwk } from '../../kms'
 import { EddsaJcs2022Cryptosuite } from '../cryptosuites/eddsa-jcs-2022/EddsaJcs2022Cryptosuite'
 import type { W3cDataIntegrityCryptosuiteInfo } from '../cryptosuites/types'
 import { W3cDataIntegrityCryptosuiteRegistry } from '../W3cDataIntegrityCryptosuiteRegistry'
@@ -14,7 +14,7 @@ const cryptosuiteInfo = {
 const mldsa44CryptosuiteInfo = {
   ...cryptosuiteInfo,
   cryptosuite: 'mldsa44-jcs-2024',
-  supportedPublicJwkTypes: [AkpPublicJwk],
+  supportedPublicJwkTypes: [MlDsa44PublicJwk],
   supportedSignatureAlgorithms: ['ML-DSA-44'],
   autoSelect: false,
 } satisfies W3cDataIntegrityCryptosuiteInfo
@@ -48,7 +48,7 @@ describe('W3cDataIntegrityCryptosuiteRegistry', () => {
 
     expect(registry.getAllByPublicJwkType(mldsa44)).toEqual([])
     expect(registry.getAllByPublicJwkType(mldsa65)).toEqual([])
-    expect(registry.getAllByPublicJwkType(AkpPublicJwk)).toEqual([])
+    expect(registry.getAllByPublicJwkType(MlDsa65PublicJwk)).toEqual([])
     expect(registry.getByCryptosuite('mldsa44-jcs-2024')).toEqual(mldsa44CryptosuiteInfo)
   })
 

@@ -1,6 +1,6 @@
 import type { DependencyManager, Module } from '../../plugins'
 import { injectable } from '../../plugins'
-import { AkpPublicJwk, Ed25519PublicJwk, P256PublicJwk, P384PublicJwk } from '../kms/jwk'
+import { Ed25519PublicJwk, MlDsa44PublicJwk, P256PublicJwk, P384PublicJwk } from '../kms/jwk'
 import { EcdsaJcs2019Cryptosuite } from './cryptosuites/ecdsa-jcs-2019/EcdsaJcs2019Cryptosuite'
 import { EddsaJcs2022Cryptosuite } from './cryptosuites/eddsa-jcs-2022/EddsaJcs2022Cryptosuite'
 import { Mldsa44Jcs2024Cryptosuite } from './cryptosuites/mldsa44-jcs-2024/Mldsa44Jcs2024Cryptosuite'
@@ -32,7 +32,7 @@ export class W3cDataIntegrityModule implements Module {
     dependencyManager.registerInstance(W3cDataIntegrityCryptosuiteToken, {
       cryptosuiteClass: Mldsa44Jcs2024Cryptosuite,
       cryptosuite: 'mldsa44-jcs-2024',
-      supportedPublicJwkTypes: [AkpPublicJwk],
+      supportedPublicJwkTypes: [MlDsa44PublicJwk],
       supportedSignatureAlgorithms: ['ML-DSA-44'],
       autoSelect: false,
     })

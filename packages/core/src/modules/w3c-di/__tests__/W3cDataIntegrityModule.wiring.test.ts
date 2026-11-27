@@ -1,5 +1,5 @@
 import type { DependencyManager } from '../../../plugins'
-import { AkpPublicJwk, P256PublicJwk, P384PublicJwk } from '../../kms'
+import { MlDsa44PublicJwk, P256PublicJwk, P384PublicJwk } from '../../kms'
 import { EcdsaJcs2019Cryptosuite } from '../cryptosuites/ecdsa-jcs-2019/EcdsaJcs2019Cryptosuite'
 import { Mldsa44Jcs2024Cryptosuite } from '../cryptosuites/mldsa44-jcs-2024/Mldsa44Jcs2024Cryptosuite'
 import { W3cDataIntegrityCryptosuiteToken } from '../cryptosuites/types'
@@ -49,7 +49,7 @@ describe('W3cDataIntegrityModule wiring', () => {
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(W3cDataIntegrityCryptosuiteToken, {
       cryptosuiteClass: Mldsa44Jcs2024Cryptosuite,
       cryptosuite: 'mldsa44-jcs-2024',
-      supportedPublicJwkTypes: [AkpPublicJwk],
+      supportedPublicJwkTypes: [MlDsa44PublicJwk],
       supportedSignatureAlgorithms: ['ML-DSA-44'],
       autoSelect: false,
     })
