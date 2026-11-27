@@ -1,12 +1,11 @@
 import { Hasher, type HashName } from '../../../crypto/hashes/Hasher'
 import { TypedArrayEncoder } from '../../../utils'
 import { zParseWithErrorHandling } from '../../../utils/zod'
-import { KeyManagementError } from '../error/KeyManagementError'
 import { type KmsJwkPublic, zKmsJwkPublic } from './knownJwk'
 
 export const zJwkThumbprintComponents = zKmsJwkPublic.transform((data) => {
   if (data.kty === 'AKP') {
-    throw new KeyManagementError('JWK thumbprints are not supported for AKP JWKs')
+    return { alg: data.alg, kty: data.kty, pub: data.pub }
   }
 
   if (data.kty === 'EC') {
