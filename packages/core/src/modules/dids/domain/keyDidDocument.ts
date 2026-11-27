@@ -3,6 +3,9 @@ import {
   AkpPublicJwk,
   Ed25519PublicJwk,
   getJwkHumanDescription,
+  MlDsa44PublicJwk,
+  MlDsa65PublicJwk,
+  MlDsa87PublicJwk,
   P256PublicJwk,
   P384PublicJwk,
   P521PublicJwk,
@@ -29,7 +32,12 @@ export function getDidDocumentForPublicJwk(did: string, publicJwk: PublicJwk) {
   if (publicJwk.is(X25519PublicJwk)) {
     return getX25519DidDoc(did, publicJwk as PublicJwk<X25519PublicJwk>)
   }
-  if (publicJwk.is(AkpPublicJwk)) {
+  if (
+    publicJwk.is(AkpPublicJwk) ||
+    publicJwk.is(MlDsa44PublicJwk) ||
+    publicJwk.is(MlDsa65PublicJwk) ||
+    publicJwk.is(MlDsa87PublicJwk)
+  ) {
     const verificationMethod = getVerificationMethodsForPublicJwk(publicJwk, did)[0]
     const didDocumentBuilder = new DidDocumentBuilder(did)
       .addContext(SECURITY_MULTIKEY_CONTEXT_URL)

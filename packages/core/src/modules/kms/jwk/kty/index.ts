@@ -6,6 +6,9 @@ export {
   zKmsJwkPrivateToPublicAkp,
   zKmsJwkPublicAkp,
 } from './akp/akpJwk'
+export { MlDsa44PublicJwk } from './akp/MlDsa44PublicJwk'
+export { MlDsa65PublicJwk } from './akp/MlDsa65PublicJwk'
+export { MlDsa87PublicJwk } from './akp/MlDsa87PublicJwk'
 export {
   type KmsJwkPrivateEc,
   type KmsJwkPublicEc,

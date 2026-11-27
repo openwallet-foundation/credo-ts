@@ -2,7 +2,7 @@ import type { AgentContext } from '../../../../agent/context'
 import { Hasher } from '../../../../crypto'
 import { areObjectsEqual, asArray, MultiBaseEncoder, TypedArrayEncoder } from '../../../../utils'
 import { KeyManagementApi } from '../../../kms'
-import { AkpPublicJwk } from '../../../kms/jwk/kty/akp/AkpPublicJwk'
+import { MlDsa44PublicJwk } from '../../../kms/jwk/kty/akp/MlDsa44PublicJwk'
 import { isXsdDateTimeStamp } from '../../proof-processing/iso8601Datetime'
 import { canonicalizeJcsStrict } from '../../proof-processing/jcs'
 import {
@@ -169,7 +169,7 @@ export class Mldsa44Jcs2024Cryptosuite implements W3cDataIntegrityCryptosuite {
     publicJwk: Awaited<ReturnType<typeof publicJwkFromVerificationMethodId>>,
     errorCode: W3cDataIntegrityProcessingErrorCode
   ) {
-    if (!publicJwk.is(AkpPublicJwk) || publicJwk.toJson().alg !== 'ML-DSA-44') {
+    if (!publicJwk.is(MlDsa44PublicJwk) || publicJwk.alg !== 'ML-DSA-44') {
       throw new W3cDataIntegrityProcessingError(errorCode, `The verification method must use an ML-DSA-44 public key`)
     }
   }
