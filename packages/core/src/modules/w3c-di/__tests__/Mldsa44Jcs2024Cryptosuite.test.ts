@@ -103,7 +103,7 @@ describe('Mldsa44Jcs2024Cryptosuite', () => {
   test('rejects signatures with an invalid encoding or length without calling verification', async () => {
     const document = { id: 'urn:example:1' }
     const invalidProofs = [
-      { ...proofOptions, proofValue: MultiBaseEncoder.encode(new Uint8Array(2420), 'base58btc') },
+      { ...proofOptions, proofValue: MultiBaseEncoder.encode(new Uint8Array([32]), 'base58btc') },
       { ...proofOptions, proofValue: MultiBaseEncoder.encode(new Uint8Array(2419), 'base64url') },
     ]
 

@@ -51,7 +51,11 @@ describe('PublicJwk AKP support', () => {
     )
 
     expect(publicJwk.fingerprint).toBe(expectedFingerprint)
-    expect(PublicJwk.fromFingerprint(expectedFingerprint).toJson()).toEqual(publicJwk.toJson())
+    const decodedPublicJwk = PublicJwk.fromFingerprint(expectedFingerprint)
+    expect(decodedPublicJwk.toJson()).toEqual(publicJwk.toJson())
+    expect(decodedPublicJwk.JwkClass).toBe(publicJwk.JwkClass)
+    expect(decodedPublicJwk.JwkClass.multicodecPrefix).toBe(prefix)
+    expect(decodedPublicJwk.supportedSignatureAlgorithms).toEqual([alg])
   })
 
   test('decodes a base64url multibase ML-DSA-44 Multikey fingerprint', () => {

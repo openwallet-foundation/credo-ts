@@ -1,8 +1,7 @@
-import { Agent, ClaimFormat, W3cV2DataIntegrityVerifiableCredential, type W3cV2Credential } from '@credo-ts/core'
+import { Agent, ClaimFormat, type W3cV2Credential, W3cV2DataIntegrityVerifiableCredential } from '@credo-ts/core'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { agentDependencies, getAgentConfig, getAskarStoreConfig } from '../../core/tests'
 import { AskarModule } from '../src/AskarModule'
-import { AskarStoreManager } from '../src/AskarStoreManager'
 
 describe('ML-DSA-44 W3C VC 2.0 integration', () => {
   const issuerOptions = {

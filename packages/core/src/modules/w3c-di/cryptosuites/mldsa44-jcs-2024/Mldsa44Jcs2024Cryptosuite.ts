@@ -169,7 +169,7 @@ export class Mldsa44Jcs2024Cryptosuite implements W3cDataIntegrityCryptosuite {
     publicJwk: Awaited<ReturnType<typeof publicJwkFromVerificationMethodId>>,
     errorCode: W3cDataIntegrityProcessingErrorCode
   ) {
-    if (!publicJwk.is(MlDsa44PublicJwk) || publicJwk.alg !== 'ML-DSA-44') {
+    if (!publicJwk.is(MlDsa44PublicJwk)) {
       throw new W3cDataIntegrityProcessingError(errorCode, `The verification method must use an ML-DSA-44 public key`)
     }
   }

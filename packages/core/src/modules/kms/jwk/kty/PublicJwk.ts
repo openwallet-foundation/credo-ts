@@ -8,5 +8,6 @@ export interface PublicJwkType<Jwk extends KmsJwkPublicAsymmetric = KmsJwkPublic
   supportedEncryptionKeyAgreementAlgorithms: KnownJwaKeyAgreementAlgorithm[] | undefined
 
   multicodec: Uint8Array
-  multicodecPrefix?: number
+  multicodecPrefix: number
+  multibaseEncoding?: 'base58btc' | 'base64url'
 }
