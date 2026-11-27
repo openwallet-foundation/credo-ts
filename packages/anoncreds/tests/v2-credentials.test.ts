@@ -398,6 +398,41 @@ describe('IC V2 AnonCreds credentials', () => {
     })
   })
 
+  test('Faber offers with a parent thread id, which Alice stores and sends on her request', async () => {
+    const parentThreadId = 'e6e3b0f6-4c7b-4d3a-9f0e-1c2d3e4f5a6b'
+
+    const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+      state: DidCommCredentialState.OfferReceived,
+    })
+
+    const faberCredentialRecord = await faberAgent.didcomm.credentials.offerCredential({
+      connectionId: faberConnectionId,
+      credentialFormats: {
+        anoncreds: {
+          attributes: credentialPreview.attributes,
+          credentialDefinitionId: credentialDefinitionId,
+        },
+      },
+      protocolVersion: 'v2',
+      parentThreadId,
+    })
+    expect(faberCredentialRecord.parentThreadId).toBe(parentThreadId)
+
+    const aliceCredentialRecord = await aliceCredentialRecordPromise
+    expect(aliceCredentialRecord.threadId).toBe(faberCredentialRecord.threadId)
+    expect(aliceCredentialRecord.parentThreadId).toBe(parentThreadId)
+
+    const faberCredentialRecordPromise = waitForCredentialRecord(faberAgent, {
+      threadId: faberCredentialRecord.threadId,
+      state: DidCommCredentialState.RequestReceived,
+    })
+    await aliceAgent.didcomm.credentials.acceptOffer({ credentialExchangeRecordId: aliceCredentialRecord.id })
+    await faberCredentialRecordPromise
+
+    const faberCredentialRequest = await faberAgent.didcomm.credentials.findRequestMessage(faberCredentialRecord.id)
+    expect(faberCredentialRequest?.thread).toMatchObject({ threadId: faberCredentialRecord.threadId, parentThreadId })
+  })
+
   test('Faber starts with offer, alice sends counter proposal, faber sends second offer, alice sends second proposal', async () => {
     let aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
       state: DidCommCredentialState.OfferReceived,

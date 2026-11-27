@@ -185,6 +185,18 @@ export class DidCommOutOfBandApi {
    * @returns out-of-band record
    */
   public async createInvitation(config: CreateOutOfBandInvitationConfig = {}): Promise<DidCommOutOfBandRecord> {
+    // The response to an invitation takes the invitation id as its pthid, so an attached message cannot name another parent
+    const messageWithParentThread = config.messages?.find((message) => message.thread?.parentThreadId)
+    if (messageWithParentThread) {
+      throw new CredoError(
+        `Message ${messageWithParentThread.id} has parent thread id ${messageWithParentThread.thread?.parentThreadId}. A message attached to an out-of-band invitation cannot have a parent thread id, because the invitation is its parent thread.`
+      )
+    }
+
+    return this.createInvitationRecord(config)
+  }
+
+  private async createInvitationRecord(config: CreateOutOfBandInvitationConfig): Promise<DidCommOutOfBandRecord> {
     const handshake = config.handshake ?? true
     const hasMessages = (config.messages && config.messages.length > 0) || false
     const hasAppendedAttachments = (config.appendedAttachments && config.appendedAttachments.length > 0) || false
@@ -446,7 +458,8 @@ export class DidCommOutOfBandApi {
     routing?: DidCommRouting
   }): Promise<{ message: Message; invitationUrl: string; outOfBandRecord: DidCommOutOfBandRecord }> {
     // Legacy connectionless uses v1 ~service (recipientKeys); v2 OOB format does not map to it.
-    const outOfBandRecord = await this.createInvitation({
+    // No invitation id is sent, so the message can keep its own parent thread id.
+    const outOfBandRecord = await this.createInvitationRecord({
       messages: [config.message],
       routing: config.routing,
       didCommVersion: 'v1',
@@ -1171,6 +1184,12 @@ export class DidCommOutOfBandApi {
   private ensureParentThreadId(outOfBandRecord: DidCommOutOfBandRecord, plaintextMessage: DidCommPlaintextMessage) {
     const legacyInvitationMetadata = outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.LegacyInvitation)
 
+    // If the invitation is created from a legacy connectionless invitation, we don't need to set the pthid
+    // as that's not expected, and it's generated on our side only. The message keeps the pthid it came with.
+    if (legacyInvitationMetadata?.legacyInvitationType === DidCommInvitationType.Connectionless) {
+      return
+    }
+
     // We need to set the parent thread id to the invitation id, according to RFC 0434.
     // So if it already has a pthid and it is not the same as the invitation id, we throw an error
     if (
@@ -1180,12 +1199,6 @@ export class DidCommOutOfBandApi {
       throw new CredoError(
         `Out of band invitation requests~attach message contains parent thread id ${plaintextMessage['~thread'].pthid} that does not match the invitation id ${outOfBandRecord.outOfBandInvitation.id}`
       )
-    }
-
-    // If the invitation is created from a legacy connectionless invitation, we don't need to set the pthid
-    // as that's not expected, and it's generated on our side only
-    if (legacyInvitationMetadata?.legacyInvitationType === DidCommInvitationType.Connectionless) {
-      return
     }
 
     if (!plaintextMessage['~thread']) {

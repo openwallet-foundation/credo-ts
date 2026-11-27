@@ -163,6 +163,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
   /**
    * Initiate a new presentation exchange as prover by sending an out of band proof proposal message
    *
+   * A proposal with a `parentThreadId` cannot be attached to an out-of-band invitation, because the invitation is its parent thread.
    * @param options multiple properties like protocol version, proof Formats to build the proof request
    * @returns the message itself and the proof record associated with the sent request message
    */
@@ -411,6 +412,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
    * Initiate a new presentation exchange as verifier by sending an out of band presentation
    * request message
    *
+   * A request with a `parentThreadId` cannot be attached to an out-of-band invitation, because the invitation is its parent thread.
    * @param options multiple properties like protocol version, proof Formats to build the proof request
    * @returns the message itself and the proof record associated with the sent request message
    */

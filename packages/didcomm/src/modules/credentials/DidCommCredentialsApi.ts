@@ -395,6 +395,8 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
   /**
    * Initiate a new credential exchange as issuer by creating a credential offer
    * not bound to any connection. The offer must be delivered out-of-band to the holder
+   *
+   * An offer with a `parentThreadId` cannot be attached to an out-of-band invitation, because the invitation is its parent thread.
    * @param options The credential options to use for the offer
    * @returns The credential record and credential offer message
    */

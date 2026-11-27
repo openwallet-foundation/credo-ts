@@ -226,11 +226,16 @@ export class DidCommConnectionService {
     const outOfBandInvitationId = messageContext.message.thread?.parentThreadId
 
     // Find the out of band record that is associated with this request
-    const outOfBandRecord = await outOfBandRepository.findSingleByQuery(messageContext.agentContext, {
-      invitationId: outOfBandInvitationId,
+    const query = {
       role: DidCommOutOfBandRole.Sender,
       invitationRequestsThreadIds: [messageContext.message.threadId],
-    })
+    }
+    // The pthid of a response to a legacy connectionless invitation is the one of the attached message, not an invitation id
+    const outOfBandRecord =
+      (await outOfBandRepository.findSingleByQuery(messageContext.agentContext, {
+        ...query,
+        invitationId: outOfBandInvitationId,
+      })) ?? (await outOfBandRepository.findSingleByQuery(messageContext.agentContext, query))
 
     // There is no out of band record
     if (!outOfBandRecord) {
