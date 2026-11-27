@@ -15,9 +15,9 @@ export const jwkCrvToAskarAlg: Partial<
 }
 
 export const jwkAkpAlgToAskarAlg: Partial<Record<Kms.KmsJwkPublicAkp['alg'], KeyAlgorithm | undefined>> = {
-  'ML-DSA-44': 'mldsa44' as KeyAlgorithm,
-  'ML-DSA-65': 'mldsa65' as KeyAlgorithm,
-  'ML-DSA-87': 'mldsa87' as KeyAlgorithm,
+  'ML-DSA-44': KeyAlgorithm.MlDsa44,
+  'ML-DSA-65': KeyAlgorithm.MlDsa65,
+  'ML-DSA-87': KeyAlgorithm.MlDsa87,
 }
 
 export const jwkEncToAskarAlg = {

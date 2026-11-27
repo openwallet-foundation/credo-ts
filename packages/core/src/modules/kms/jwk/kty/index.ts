@@ -1,4 +1,3 @@
-export { AkpPublicJwk } from './akp/AkpPublicJwk'
 export {
   type KmsJwkPrivateAkp,
   type KmsJwkPublicAkp,

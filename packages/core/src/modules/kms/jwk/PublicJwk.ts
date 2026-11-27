@@ -11,7 +11,6 @@ import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from '
 import { calculateJwkThumbprint } from './jwkThumbprint'
 import { assertJwkAsymmetric, type KmsJwkPublicAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
 import {
-  AkpPublicJwk,
   Ed25519PublicJwk,
   MlDsa44PublicJwk,
   MlDsa65PublicJwk,
@@ -28,7 +27,6 @@ export const SupportedPublicJwks = [
   MlDsa44PublicJwk,
   MlDsa65PublicJwk,
   MlDsa87PublicJwk,
-  AkpPublicJwk,
   Ed25519PublicJwk,
   P256PublicJwk,
   P384PublicJwk,
@@ -39,7 +37,6 @@ export const SupportedPublicJwks = [
 ]
 export type SupportedPublicJwkClass = (typeof SupportedPublicJwks)[number]
 export type SupportedPublicJwk =
-  | AkpPublicJwk
   | MlDsa44PublicJwk
   | MlDsa65PublicJwk
   | MlDsa87PublicJwk
@@ -339,7 +336,8 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     const prefixBytes = VarintEncoder.encode(this.jwk.multicodecPrefix)
     const prefixedPublicKey = new Uint8Array([...prefixBytes, ...this.jwk.multicodec])
 
-    return MultiBaseEncoder.encode(prefixedPublicKey, this.jwk.jwk.kty === 'AKP' ? 'base64url' : 'base58btc')
+    const multibaseEncoding = 'multibaseEncoding' in this.JwkClass ? this.JwkClass.multibaseEncoding : 'base58btc'
+    return MultiBaseEncoder.encode(prefixedPublicKey, multibaseEncoding)
   }
 
   /**
@@ -350,29 +348,19 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     const [code, byteLength] = VarintEncoder.decode(data)
     const publicKey = data.slice(byteLength)
 
-    if (AkpPublicJwk.supportsMulticodecPrefix(code)) {
-      if (baseName !== 'base64url') {
-        throw new KeyManagementError(`Unsupported multibase '${fingerprint[0]}' for AKP multicodec public key`)
-      }
-
-      return PublicJwk.fromPublicJwk(AkpPublicJwk.fromMulticodecPrefix(code, publicKey).jwk)
+    const PublicJwkClass = SupportedPublicJwks.find((JwkClass) => JwkClass.multicodecPrefix === code)
+    if (!PublicJwkClass) {
+      throw new KeyManagementError(`Unsupported multicodec public key with prefix '${code}'`)
     }
 
-    if (fingerprint[0] !== 'z') {
+    const multibaseEncoding = 'multibaseEncoding' in PublicJwkClass ? PublicJwkClass.multibaseEncoding : 'base58btc'
+    if (baseName !== multibaseEncoding) {
       throw new KeyManagementError(
         `Unsupported multibase '${fingerprint[0]}' for multicodec public key with prefix '${code}'`
       )
     }
 
-    const PublicJwkClass = SupportedPublicJwks.find(
-      (JwkClass) => JwkClass.multicodecPrefix !== undefined && JwkClass.multicodecPrefix === code
-    )
-    if (!PublicJwkClass) {
-      throw new KeyManagementError(`Unsupported multicodec public key with prefix '${code}'`)
-    }
-
-    const jwk = PublicJwkClass.fromMulticodec(publicKey)
-    return new PublicJwk(jwk)
+    return new PublicJwk(PublicJwkClass.fromMulticodec(publicKey))
   }
 
   /**

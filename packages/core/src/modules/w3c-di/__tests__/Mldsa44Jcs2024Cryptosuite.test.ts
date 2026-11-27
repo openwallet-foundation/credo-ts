@@ -3,14 +3,14 @@ import type { AgentContext } from '../../../agent/context'
 import { Hasher } from '../../../crypto'
 import { MultiBaseEncoder, TypedArrayEncoder } from '../../../utils'
 import { DidsApi } from '../../dids'
-import { KeyManagementApi } from '../../kms'
+import { KeyManagementApi, PublicJwk } from '../../kms'
 import { Mldsa44Jcs2024Cryptosuite } from '../cryptosuites/mldsa44-jcs-2024/Mldsa44Jcs2024Cryptosuite'
 import type { W3cDataIntegrityCryptosuiteProofOptions } from '../W3cDataIntegrityProof'
 
 const verificationMethod = 'did:key:z6Mkexample#z6Mkexample'
 const publicJwk = {
-  kty: 'AKP',
-  alg: 'ML-DSA-44',
+  kty: 'AKP' as const,
+  alg: 'ML-DSA-44' as const,
   pub: TypedArrayEncoder.toBase64Url(new Uint8Array(1312).fill(1)),
 }
 const proofOptions: W3cDataIntegrityCryptosuiteProofOptions = {
@@ -62,7 +62,13 @@ describe('Mldsa44Jcs2024Cryptosuite', () => {
     const expectedHashData = new Uint8Array(64)
     expectedHashData.set(Hasher.hash(TypedArrayEncoder.fromUtf8String(proofConfig), 'sha-256'), 0)
     expectedHashData.set(Hasher.hash(TypedArrayEncoder.fromUtf8String(document), 'sha-256'), 32)
-    expect(cryptosuite.hashing(document, proofConfig)).toEqual(expectedHashData)
+    expect(cryptosuite.hashing(document, proofConfig, PublicJwk.fromPublicJwk(publicJwk))).toEqual(expectedHashData)
+  })
+
+  test('uses shared timestamp validation', () => {
+    expect(() => cryptosuite.proofConfiguration({ ...proofOptions, created: '2026-11-17T00:00:00' })).toThrow(
+      'Proof created must be a valid dateTimeStamp'
+    )
   })
 
   test('creates and verifies a 2420-byte ML-DSA-44 signature', async () => {
@@ -103,7 +109,7 @@ describe('Mldsa44Jcs2024Cryptosuite', () => {
   test('rejects signatures with an invalid encoding or length without calling verification', async () => {
     const document = { id: 'urn:example:1' }
     const invalidProofs = [
-      { ...proofOptions, proofValue: MultiBaseEncoder.encode(new Uint8Array(2420), 'base58btc') },
+      { ...proofOptions, proofValue: MultiBaseEncoder.encode(new Uint8Array([32]), 'base58btc') },
       { ...proofOptions, proofValue: MultiBaseEncoder.encode(new Uint8Array(2419), 'base64url') },
     ]
 
@@ -131,7 +137,7 @@ describe('Mldsa44Jcs2024Cryptosuite', () => {
     } as never)
 
     await expect(cryptosuite.createProof({ id: 'urn:example:1' }, proofOptions)).rejects.toThrow(
-      'verification method must use an ML-DSA-44 public key'
+      'only supports ML-DSA-44 keys'
     )
     expect(keyManagementApi.sign).not.toHaveBeenCalled()
   })

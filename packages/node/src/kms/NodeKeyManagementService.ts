@@ -82,14 +82,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
     }
 
     if (operation.operation === 'sign' || operation.operation === 'verify') {
-      if (
-        operation.algorithm === 'ML-DSA-44' ||
-        operation.algorithm === 'ML-DSA-65' ||
-        operation.algorithm === 'ML-DSA-87'
-      ) {
-        return false
-      }
-      return nodeSupportedJwaAlgorithm.includes(operation.algorithm)
+      return nodeSupportedJwaAlgorithm.some((algorithm) => algorithm === operation.algorithm)
     }
 
     if (operation.operation === 'encrypt' || operation.operation === 'decrypt') {

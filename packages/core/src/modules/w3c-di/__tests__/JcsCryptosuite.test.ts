@@ -100,7 +100,9 @@ describe('JcsCryptosuite', () => {
       algorithm: 'ES256',
       data: new Uint8Array([...proofConfigHash, ...documentHash]),
     })
-    expect(MultiBaseEncoder.decode(proof.proofValue).data).toHaveLength(64)
+    const decodedProof = MultiBaseEncoder.decode(proof.proofValue)
+    expect(decodedProof.baseName).toBe('base58btc')
+    expect(decodedProof.data).toHaveLength(64)
   })
 
   it('verifies with the signature algorithm of the key parameters', async () => {
@@ -141,6 +143,16 @@ describe('JcsCryptosuite', () => {
       unsupportedKeyMessage
     )
     expect(keyManagementApi.sign).not.toHaveBeenCalled()
+    expect(keyManagementApi.verify).not.toHaveBeenCalled()
+  })
+
+  it('rejects proof values that use a different multibase encoding', async () => {
+    const proof = await cryptosuite.createProof(document, proofOptions)
+    const wrongBaseProofValue = MultiBaseEncoder.encode(MultiBaseEncoder.decode(proof.proofValue).data, 'base64url')
+
+    await expect(
+      cryptosuite.verifyProof({ unsecuredDocument: document, proof: { ...proof, proofValue: wrongBaseProofValue } })
+    ).resolves.toEqual({ verified: false, verifiedDocument: null })
     expect(keyManagementApi.verify).not.toHaveBeenCalled()
   })
 

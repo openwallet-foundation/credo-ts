@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../agent/context'
 import { Hasher, type HashName } from '../../../crypto'
-import { areObjectsEqual, asArray, MultiBaseEncoder, TypedArrayEncoder } from '../../../utils'
+import { areObjectsEqual, asArray, type BaseName, MultiBaseEncoder, TypedArrayEncoder } from '../../../utils'
 import { KeyManagementApi, type KnownJwaSignatureAlgorithm, type PublicJwk } from '../../kms'
 import { isXsdDateTimeStamp } from '../proof-processing/iso8601Datetime'
 import { canonicalizeJcsStrict } from '../proof-processing/jcs'
@@ -35,6 +35,7 @@ export abstract class JcsCryptosuite implements W3cDataIntegrityCryptosuite {
    * The supported key types, as shown in errors.
    */
   protected abstract readonly supportedKeys: string
+  protected readonly proofValueMultibase: BaseName = 'base58btc'
 
   private keyManagementApi: KeyManagementApi
   private agentContext: AgentContext
@@ -73,7 +74,7 @@ export abstract class JcsCryptosuite implements W3cDataIntegrityCryptosuite {
     const publicJwk = await kmsPublicJwkFromVerificationMethodId(this.agentContext, options.verificationMethod)
     const hashData = this.hashing(transformedDocument, proofConfig, publicJwk) // 5
     const proofBytes = await this.proofSerialization(hashData, options, publicJwk) // 6
-    const proofValue = MultiBaseEncoder.encode(proofBytes, 'base58btc') // 7
+    const proofValue = MultiBaseEncoder.encode(proofBytes, this.proofValueMultibase) // 7
 
     return {
       ...proof,
@@ -95,7 +96,14 @@ export abstract class JcsCryptosuite implements W3cDataIntegrityCryptosuite {
 
     this.assertProofTypeAndCryptosuite(proofOptions, W3cDataIntegrityProcessingErrorCode.ProofVerificationError)
 
-    const proofBytes = MultiBaseEncoder.decode(proofValue).data // 3
+    const decodedProof = MultiBaseEncoder.decode(proofValue) // 3
+    if (decodedProof.baseName !== this.proofValueMultibase) {
+      return {
+        verified: false,
+        verifiedDocument: null,
+      }
+    }
+    const proofBytes = decodedProof.data
 
     if ('@context' in proofOptions) {
       // 4

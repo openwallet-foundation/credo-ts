@@ -40,7 +40,6 @@ describe('DidKey', () => {
       expect(PublicJwk.fromPublicKey(publicKey).fingerprint).toBe(key.fingerprint)
 
       const multicodecPrefix = key.JwkClass.multicodecPrefix
-      if (multicodecPrefix === undefined) throw new Error('Expected a multicodec prefix')
       const uncompressed = TypedArrayEncoder.concat([VarintEncoder.encode(multicodecPrefix), publicKey.publicKey])
       expect(() => PublicJwk.fromFingerprint(MultiBaseEncoder.encode(uncompressed, 'base58btc'))).toThrow(
         'Invalid public key length'

@@ -51,7 +51,11 @@ describe('PublicJwk AKP support', () => {
     )
 
     expect(publicJwk.fingerprint).toBe(expectedFingerprint)
-    expect(PublicJwk.fromFingerprint(expectedFingerprint).toJson()).toEqual(publicJwk.toJson())
+    const decodedPublicJwk = PublicJwk.fromFingerprint(expectedFingerprint)
+    expect(decodedPublicJwk.toJson()).toEqual(publicJwk.toJson())
+    expect(decodedPublicJwk.JwkClass).toBe(publicJwk.JwkClass)
+    expect(decodedPublicJwk.JwkClass.multicodecPrefix).toBe(prefix)
+    expect(decodedPublicJwk.supportedSignatureAlgorithms).toEqual([alg])
   })
 
   test('decodes a base64url multibase ML-DSA-44 Multikey fingerprint', () => {
@@ -106,10 +110,12 @@ describe('PublicJwk AKP support', () => {
     expect(() => publicJwk.legacyKeyId).toThrow(KeyManagementError)
   })
 
-  test('rejects AKP thumbprints explicitly', () => {
+  test('calculates AKP thumbprints using RFC 9964 member order', () => {
     const publicJwk = PublicJwk.fromUnknown({ kty: 'AKP', alg: 'ML-DSA-44', pub: 'cHVibGlj' })
 
-    expect(() => publicJwk.getJwkThumbprint()).toThrow('JWK thumbprints are not supported for AKP JWKs')
+    expect(TypedArrayEncoder.toBase64Url(publicJwk.getJwkThumbprint())).toBe(
+      'XzDEL3lxTPxQMY6_-r4wq5w4bda-A1bMUDtUxTy_pa0'
+    )
   })
 
   test('does not parse AKP JWKs without a valid algorithm', () => {

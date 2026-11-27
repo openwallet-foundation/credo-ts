@@ -856,11 +856,11 @@ describe('AskarKeyManagementService', () => {
 
   describe('importKey', () => {
     test.each([
-      { algorithm: 'ML-DSA-44', askarAlgorithm: 'mldsa44' },
-      { algorithm: 'ML-DSA-65', askarAlgorithm: 'mldsa65' },
-      { algorithm: 'ML-DSA-87', askarAlgorithm: 'mldsa87' },
+      { algorithm: 'ML-DSA-44', askarAlgorithm: KeyAlgorithm.MlDsa44 },
+      { algorithm: 'ML-DSA-65', askarAlgorithm: KeyAlgorithm.MlDsa65 },
+      { algorithm: 'ML-DSA-87', askarAlgorithm: KeyAlgorithm.MlDsa87 },
     ] as const)('imports an $algorithm private JWK', async ({ algorithm, askarAlgorithm }) => {
-      const generatedKey = Key.generate(askarAlgorithm as KeyAlgorithm)
+      const generatedKey = Key.generate(askarAlgorithm)
       const privateJwk = JSON.parse(JSON.stringify(generatedKey.jwkSecret)) as Kms.KmsJwkPrivateAkp
       const generatedPublicJwk = JSON.parse(JSON.stringify(generatedKey.jwkPublic)) as Kms.KmsJwkPublicAkp
       generatedKey.handle.free()

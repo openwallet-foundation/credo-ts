@@ -33,20 +33,13 @@ export class W3cDataIntegrityCryptosuiteRegistry {
 
   public getAllByPublicJwkType(publicJwkType: SupportedPublicJwkClass | PublicJwk) {
     if (publicJwkType instanceof PublicJwk) {
-      return this.cryptosuiteMapping.filter(
-        (cryptosuiteInfo) =>
-          cryptosuiteInfo.supportedPublicJwkTypes.includes(publicJwkType.JwkClass) &&
-          (!cryptosuiteInfo.supportedSignatureAlgorithms ||
-            cryptosuiteInfo.supportedSignatureAlgorithms.some((algorithm) =>
-              publicJwkType.supportedSignatureAlgorithms.includes(algorithm)
-            )) &&
-          cryptosuiteInfo.autoSelect !== false
+      return this.cryptosuiteMapping.filter((cryptosuiteInfo) =>
+        cryptosuiteInfo.supportedPublicJwkTypes.includes(publicJwkType.JwkClass)
       )
     }
 
-    return this.cryptosuiteMapping.filter(
-      (cryptosuiteInfo) =>
-        cryptosuiteInfo.supportedPublicJwkTypes.includes(publicJwkType) && cryptosuiteInfo.autoSelect !== false
+    return this.cryptosuiteMapping.filter((cryptosuiteInfo) =>
+      cryptosuiteInfo.supportedPublicJwkTypes.includes(publicJwkType)
     )
   }
 

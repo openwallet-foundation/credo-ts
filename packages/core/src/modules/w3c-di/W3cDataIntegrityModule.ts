@@ -33,8 +33,6 @@ export class W3cDataIntegrityModule implements Module {
       cryptosuiteClass: Mldsa44Jcs2024Cryptosuite,
       cryptosuite: 'mldsa44-jcs-2024',
       supportedPublicJwkTypes: [MlDsa44PublicJwk],
-      supportedSignatureAlgorithms: ['ML-DSA-44'],
-      autoSelect: false,
     })
   }
 }

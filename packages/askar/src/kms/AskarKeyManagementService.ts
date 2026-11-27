@@ -35,9 +35,9 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
   public readonly backend = AskarKeyManagementService.backend
 
   private static algToSigType: Partial<Record<Kms.KnownJwaSignatureAlgorithm, SignatureAlgorithm>> = {
-    'ML-DSA-44': 'mldsa44' as SignatureAlgorithm,
-    'ML-DSA-65': 'mldsa65' as SignatureAlgorithm,
-    'ML-DSA-87': 'mldsa87' as SignatureAlgorithm,
+    'ML-DSA-44': SignatureAlgorithm.MlDsa44,
+    'ML-DSA-65': SignatureAlgorithm.MlDsa65,
+    'ML-DSA-87': SignatureAlgorithm.MlDsa87,
     EdDSA: SignatureAlgorithm.EdDSA,
     Ed25519: SignatureAlgorithm.EdDSA,
     ES256K: SignatureAlgorithm.ES256K,

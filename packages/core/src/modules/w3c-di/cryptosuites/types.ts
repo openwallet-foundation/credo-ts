@@ -1,5 +1,4 @@
 import type { AgentContext } from '../../../agent/context'
-import type { KnownJwaSignatureAlgorithm } from '../../kms/jwk/jwa'
 import type { SupportedPublicJwkClass } from '../../kms/jwk/PublicJwk'
 import type {
   W3cDataIntegrityCryptosuiteProof,
@@ -15,8 +14,6 @@ export interface W3cDataIntegrityCryptosuiteInfo {
   cryptosuiteClass: W3cDataIntegrityCryptosuiteClass
   cryptosuite: string
   supportedPublicJwkTypes: SupportedPublicJwkClass[]
-  supportedSignatureAlgorithms?: KnownJwaSignatureAlgorithm[]
-  autoSelect?: boolean
 }
 
 export interface W3cDataIntegrityProofVerificationInput {

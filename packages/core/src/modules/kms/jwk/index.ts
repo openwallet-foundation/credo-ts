@@ -62,7 +62,6 @@ export type {
   KmsJwkPublicRsa,
 } from './kty'
 export {
-  AkpPublicJwk,
   derEcSignatureToRaw,
   Ed25519PublicJwk,
   MlDsa44PublicJwk,
