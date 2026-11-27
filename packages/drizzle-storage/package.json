@@ -87,11 +87,7 @@
     "cli:local:studio:sqlite": "pnpm cli:local studio --dialect sqlite --database-url \"file:../../db.db\""
   },
   "dependencies": {
-    "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
-    "@credo-ts/didcomm": "workspace:*",
-    "@credo-ts/openid4vc": "workspace:*",
-    "@credo-ts/tenants": "workspace:*",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
     "drizzle-kit": "^0.31.11",
@@ -100,9 +96,31 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
+    "@credo-ts/anoncreds": "workspace:*",
+    "@credo-ts/didcomm": "workspace:*",
+    "@credo-ts/openid4vc": "workspace:*",
+    "@credo-ts/tenants": "workspace:*",
     "drizzle-orm": "^0.45.4"
   },
+  "peerDependenciesMeta": {
+    "@credo-ts/anoncreds": {
+      "optional": true
+    },
+    "@credo-ts/didcomm": {
+      "optional": true
+    },
+    "@credo-ts/openid4vc": {
+      "optional": true
+    },
+    "@credo-ts/tenants": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@credo-ts/anoncreds": "workspace:*",
+    "@credo-ts/didcomm": "workspace:*",
+    "@credo-ts/openid4vc": "workspace:*",
+    "@credo-ts/tenants": "workspace:*",
     "@libsql/client": "^0.18.0",
     "@types/pg": "^8.23.1",
     "@types/yargs": "^17.0.35",
