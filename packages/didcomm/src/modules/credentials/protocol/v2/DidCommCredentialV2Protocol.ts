@@ -126,6 +126,7 @@ export class DidCommCredentialV2Protocol<
       goal,
       goalCode,
       autoAcceptCredential,
+      parentThreadId,
     }: CreateCredentialProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>> {
     agentContext.config.logger.debug('Get the Format Service and Create Proposal Message')
@@ -140,6 +141,7 @@ export class DidCommCredentialV2Protocol<
     const credentialExchangeRecord = new DidCommCredentialExchangeRecord({
       connectionId: connectionRecord.id,
       threadId: utils.uuid(),
+      parentThreadId,
       state: DidCommCredentialState.ProposalSent,
       role: DidCommCredentialRole.Holder,
       autoAcceptCredential,
@@ -382,6 +384,7 @@ export class DidCommCredentialV2Protocol<
       goal,
       goalCode,
       connectionRecord,
+      parentThreadId,
     }: CreateCredentialOfferOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<DidCommOfferCredentialV2Message>> {
     const credentialRepository = agentContext.dependencyManager.resolve(DidCommCredentialExchangeRepository)
@@ -394,6 +397,7 @@ export class DidCommCredentialV2Protocol<
     const credentialExchangeRecord = new DidCommCredentialExchangeRecord({
       connectionId: connectionRecord?.id,
       threadId: utils.uuid(),
+      parentThreadId,
       state: DidCommCredentialState.OfferSent,
       role: DidCommCredentialRole.Issuer,
       autoAcceptCredential,

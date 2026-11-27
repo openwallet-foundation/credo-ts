@@ -48,6 +48,7 @@ export interface ProposeCredentialOptions<CPs extends DidCommCredentialProtocol[
   connectionId: string
   protocolVersion: CredentialProtocolVersionType<CPs>
   credentialFormats: DidCommCredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createProposal'>
+  parentThreadId?: string
 }
 
 /**
@@ -78,6 +79,7 @@ export interface CreateCredentialOfferOptions<CPs extends DidCommCredentialProto
   extends BaseOptions {
   protocolVersion: CredentialProtocolVersionType<CPs>
   credentialFormats: DidCommCredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createOffer'>
+  parentThreadId?: string
 }
 
 /**

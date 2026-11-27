@@ -153,6 +153,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       autoAcceptCredential: options.autoAcceptCredential,
       goalCode: options.goalCode,
       goal: options.goal,
+      parentThreadId: options.parentThreadId,
     })
 
     const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
@@ -278,6 +279,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       connectionRecord,
       goalCode: options.goalCode,
       goal: options.goal,
+      parentThreadId: options.parentThreadId,
     })
 
     this.logger.debug('Offer Message successfully created; message= ', message)
@@ -409,6 +411,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       autoAcceptCredential: options.autoAcceptCredential,
       goalCode: options.goalCode,
       goal: options.goal,
+      parentThreadId: options.parentThreadId,
     })
 
     this.logger.debug('Offer Message successfully created', { message })
