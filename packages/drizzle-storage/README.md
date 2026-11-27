@@ -96,13 +96,13 @@ You can configure `expo-sqlite` to use `SQLCipher` as the SQLite implementation,
 
 The bundles provide the agent with the needed context about which record types are used. For each of the modules you use with Credo that provides Record classes, the respective drizzle record MUST be registered, otherwise you cannot use the record, and an error will be thrown when such a record is retrieved, stored, updated or deleted. The `coreDrizzleBundle` is always registered, as these are required to use Credo.
 
-The following bundles are provided out of the box by the Drizzle storage module:
+`@credo-ts/drizzle-storage` includes the bundles for the Credo modules below. Import a bundle from its subpath, such as `@credo-ts/drizzle-storage/didcomm`; the name in brackets is the bundle name for the CLI. For every bundle except `core`, the module's own package must also be installed, which it already is if your agent uses the module. For example, to use DIDComm with Drizzle storage, install `@credo-ts/didcomm` and `@credo-ts/drizzle-storage`, and import `didcommBundle` from `@credo-ts/drizzle-storage/didcomm`.
 
 - `coreBundle` from `@credo-ts/drizzle-storage/core` (`core`)
-- `didcommBundle` from `@credo-ts/drizzle-storage/didcomm` (`didcomm`)
-- `anonCredsBundle` from `@credo-ts/drizzle-storage/anoncreds` (`anoncreds`)
-- `openid4vcBundle` from `@credo-ts/drizzle-storage/openid4vc` (`openid4vc`)
-- `tenantsBundle` from `@credo-ts/drizzle-storage/tenants` (`tenants`)
+- `didcommBundle` from `@credo-ts/drizzle-storage/didcomm` (`didcomm`), for `@credo-ts/didcomm`
+- `anoncredsBundle` from `@credo-ts/drizzle-storage/anoncreds` (`anoncreds`), for `@credo-ts/anoncreds`
+- `openid4vcBundle` from `@credo-ts/drizzle-storage/openid4vc` (`openid4vc`), for `@credo-ts/openid4vc`
+- `tenantsBundle` from `@credo-ts/drizzle-storage/tenants` (`tenants`), for `@credo-ts/tenants`
 
 The bundles of the DIDComm extension modules are provided by the module packages themselves, under their `/drizzle` subpath. For example, `@credo-ts/didcomm-action-menu/drizzle` provides the `action-menu` bundle, `@credo-ts/didcomm-drpc/drizzle` the `drpc` bundle, and `@credo-ts/didcomm-question-answer/drizzle` the `question-answer` bundle. See the [Credo DIDComm extensions repository](https://github.com/openwallet-foundation/credo-ts-didcomm-ext) for the full list.
 
@@ -133,7 +133,7 @@ In the example below we're assuming `postgres` is used as the database dialect, 
 - `dialect` - the dialect to use for migrations. Either `postgres` or `sqlite` and MUST match with the database being used during runtime in your Credo agent.
 - `database-url` - the url to connect to the database. You can also provide this using the `DRIZZLE_DATABASE_URL` environment variable (recommended).
 
-If the `@credo-ts/drizzle-storage` package is already installed in your project, you can directly use it to run the CLI with the `drizzle-storage` command. You can also use `npx` to execute the CLI, but make sure that you install the correct version matching the version that is used for your runtime agent. You also need to make sure that all extension modules are installed so the migration files can be resolved (which can be done using `--project` in `npx`).
+If the `@credo-ts/drizzle-storage` package is already installed in your project, you can directly use it to run the CLI with the `drizzle-storage` command. You can also use `npx` to execute the CLI, but make sure that you install the correct version matching the version that is used for your runtime agent. You also need to make sure that the module package of every bundle you pass is installed, so the bundle and its migration files can be resolved. This applies to the bundles in this package (`--bundle didcomm` needs `@credo-ts/didcomm`, and the same holds for `anoncreds`, `openid4vc` and `tenants`) and to the bundles of extension modules. With `npx`, install them alongside the CLI using `--package`.
 
 > [!NOTE]  
 > When running migrations always make sure to provide the core module. While for the `bundles` in the `DrizzleStorageModule` the `core` bundle is added by default, due to imcreased control over the migration process, no bundles are added by default in the migration command.
@@ -146,12 +146,8 @@ pnpm drizzle-storage --bundle core --bundle didcomm --bundle anoncreds --bundle 
 # SQL
 pnpm drizzle-storage --bundle core --bundle didcomm --bundle anoncreds --bundle @credo-ts/didcomm-action-menu/drizzle migrate --dialect sqlite --database-url "file:./sqlite_agent.db"
 
-# using npx
-npx @credo-ts/drizzle-storage@^x.x migrate
-```
-
-# using npx
-npx @credo-ts/drizzle-storage@^x.x migrate
+# using npx, installing the module package of each bundle alongside the CLI
+npx --package @credo-ts/drizzle-storage@^x.x --package @credo-ts/didcomm@^x.x drizzle-storage --bundle core --bundle didcomm migrate --dialect sqlite --database-url "file:./sqlite_agent.db"
 ```
 
 ### React Native
