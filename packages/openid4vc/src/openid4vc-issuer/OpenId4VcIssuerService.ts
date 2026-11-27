@@ -92,6 +92,7 @@ import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import { type OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import type {
+  OpenId4VcDpopRequirement,
   OpenId4VciAccessTokenSigner,
   OpenId4VciAuthorizationCodeFlowConfig,
   OpenId4VciCreateCredentialOfferOptions,
@@ -420,8 +421,8 @@ export class OpenId4VcIssuerService {
           authorizationFlow: 'external',
           credentialConfigurationIds: Object.keys(requestedCredentialConfigurations),
         },
-        // The legacy dynamic issuance session honors the global `dpopRequired` config.
-        requireDpop: this.openId4VcIssuerConfig.dpopRequired,
+        // The legacy dynamic issuance session honors the global token endpoint DPoP requirement.
+        requireDpop: this.openId4VcIssuerConfig.dpopRequired !== false,
       })
     }
 
@@ -498,11 +499,11 @@ export class OpenId4VcIssuerService {
       accessTokenPayload?: AccessTokenProfileJwtPayload | TokenIntrospectionResponse
 
       /**
-       * Whether DPoP is required for the session. Only used for the legacy `external` flow fallback
-       * based on the deprecated `allowDynamicIssuanceSessions` config (for the other flows DPoP is
-       * configured through the session options).
+       * DPoP policy for the session. Only used for the legacy `external` flow fallback based on the
+       * deprecated `allowDynamicIssuanceSessions` config (for the other flows DPoP is configured through
+       * the session options).
        */
-      requireDpop?: boolean
+      requireDpop?: OpenId4VcDpopRequirement
     }
   ): Promise<OpenId4VcIssuanceSessionRecord> {
     const { issuer, sessionOptions, accessTokenPayload } = options
@@ -2521,9 +2522,12 @@ export class OpenId4VcIssuerService {
   }
 
   // Refresh tokens are only issued bound to a DPoP key, as a wallet is a public client (RFC 9700 §2.2.2)
-  private assertRefreshTokensRequireDpop(options: { generateRefreshTokens?: boolean; requireDpop?: boolean }) {
+  private assertRefreshTokensRequireDpop(options: {
+    generateRefreshTokens?: boolean
+    requireDpop?: OpenId4VcDpopRequirement
+  }) {
     const generateRefreshTokens = options.generateRefreshTokens ?? this.openId4VcIssuerConfig.generateRefreshTokens
-    const requireDpop = options.requireDpop ?? this.openId4VcIssuerConfig.dpopRequired
+    const requireDpop = (options.requireDpop ?? this.openId4VcIssuerConfig.dpopRequired) !== false
 
     if (generateRefreshTokens && !requireDpop) {
       throw new CredoError(

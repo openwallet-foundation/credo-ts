@@ -56,6 +56,8 @@ export interface OpenId4VciCredentialRequestAuthorization {
 
 export type OpenId4VciVersion = 'v1.draft11-14' | 'v1.draft15' | 'v1'
 
+export type OpenId4VcDpopRequirement = boolean | 'atTokenEndpoint'
+
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   preAuthorizedCode?: string
 
@@ -171,17 +173,18 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
     requireWalletAttestation?: boolean
 
     /**
-     * Whether DPoP is required.
+     * Controls when DPoP is required for this issuance session. If not provided, the global config value is used.
      *
-     * If not provided, the value from the global agent config will be used. If `false`, DPoP is not required
-     * for this issuance session, even if it is required in the global agent config.
+     * - `true` requires DPoP in authorization requests and at the token endpoint.
+     * - `false` does not require DPoP.
+     * - `'atTokenEndpoint'` permits authorization requests without DPoP, but requires it at the token endpoint.
      *
      * NOTE: it's up to the authorization server to enforce DPoP binding. So if an external authorization server
      * is used, and DPoP is required, you should ensure the authorization server enforces DPoP. If DPoP is required
      * but not bound to the access token created by an external authorization server, the issuance will fail when the
      * credential endpoint is called.
      */
-    requireDpop?: boolean
+    requireDpop?: OpenId4VcDpopRequirement
 
     /**
      * Whether PKCE is required for the authorization code flow. When required, authorization requests
@@ -353,11 +356,10 @@ interface OpenId4VciDynamicIssuanceSessionOptionsBase {
  */
 interface OpenId4VciInternalDynamicIssuanceSessionOptionsBase extends OpenId4VciDynamicIssuanceSessionOptionsBase {
   /**
-   * Whether DPoP is required for this issuance session. If not provided, the global config value is used.
-   * If `false`, DPoP is not required for this issuance session, even if it is required in the global config.
+   * Controls when DPoP is required for this issuance session. If not provided, the global config value is used.
+   * Use `'atTokenEndpoint'` to permit authorization requests without DPoP while requiring it at the token endpoint.
    */
-  requireDpop?: boolean
-
+  requireDpop?: OpenId4VcDpopRequirement
   /**
    * Whether wallet attestations are required for this issuance session. If not provided, the global config
    * value is used. If `false`, wallet attestations are not required for this issuance session, even if they

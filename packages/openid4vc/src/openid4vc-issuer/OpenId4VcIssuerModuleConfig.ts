@@ -1,6 +1,7 @@
 import type { Kms } from '@credo-ts/core'
 import type { Express } from 'express'
 import type {
+  OpenId4VcDpopRequirement,
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciDeferredCredentialRequestToCredentialMapper,
   OpenId4VciGetChainedAuthorizationRequestParameters,
@@ -95,15 +96,18 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   requestUriExpiresInSeconds?: number
 
   /**
-   * Whether DPoP is required for all issuance sessions. If dpop is not required, but used by a client in the
-   * first request to credo, DPoP will be required going forward.
+   * Controls when DPoP is required for all issuance sessions.
+   *
+   * - `true` requires DPoP in authorization requests and at the token endpoint.
+   * - `false` does not require DPoP. A supplied proof is still validated and binds later requests to its key.
+   * - `'atTokenEndpoint'` permits authorization requests without DPoP, but requires it at the token endpoint.
    *
    * This value can be overridden per issuance session when creating a credential offer (`authorization.requireDpop`)
    * or in the `getDynamicIssuanceSession` callback (`requireDpop`).
    *
-   * @default true
+   * @default 'atTokenEndpoint'
    */
-  dpopRequired?: boolean
+  dpopRequired?: OpenId4VcDpopRequirement
 
   /**
    * The DPoP signing algorithms supported by all issuers. Can be overridden per issuer with
@@ -446,16 +450,12 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
-   * Whether DPoP is required for all issuance sessions. If dpop is not required, but used by a client in the
-   * first request to credo, DPoP will be required going forward.
+   * Controls when DPoP is required for all issuance sessions.
    *
-   * This value can be overridden per issuance session when creating a credential offer (`authorization.requireDpop`)
-   * or in the `getDynamicIssuanceSession` callback (`requireDpop`).
-   *
-   * @default true
+   * @default 'atTokenEndpoint'
    */
-  public get dpopRequired(): boolean {
-    return this.options.dpopRequired ?? true
+  public get dpopRequired(): OpenId4VcDpopRequirement {
+    return this.options.dpopRequired ?? 'atTokenEndpoint'
   }
 
   /**
