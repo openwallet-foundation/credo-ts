@@ -1,6 +1,6 @@
 import { TypedArrayEncoder } from './TypedArrayEncoder'
 
-export type BaseName = 'base58btc'
+export type BaseName = 'base58btc' | 'base64url'
 
 type EncodingMap = {
   [key in BaseName]: (data: Uint8Array) => string
@@ -12,10 +12,12 @@ type DecodingMap = {
 
 const multibaseEncodingMap: EncodingMap = {
   base58btc: (data) => `z${TypedArrayEncoder.toBase58(data)}`,
+  base64url: (data) => `u${TypedArrayEncoder.toBase64Url(data)}`,
 }
 
 const multibaseDecodingMap: DecodingMap = {
   z: (data) => ({ data: TypedArrayEncoder.fromBase58(data.substring(1)), baseName: 'base58btc' }),
+  u: (data) => ({ data: TypedArrayEncoder.fromBase64Url(data.substring(1)), baseName: 'base64url' }),
 }
 
 // biome-ignore lint/complexity/noStaticOnlyClass: no explanation

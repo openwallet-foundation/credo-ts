@@ -1,6 +1,6 @@
 import type { HashName } from '../../../crypto'
 import { CredoError } from '../../../error'
-import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../../../utils'
+import { MultiBaseEncoder, VarintEncoder } from '../../../utils'
 import type { Constructor } from '../../../utils/mixins'
 import { zParseWithErrorHandling } from '../../../utils/zod'
 import { KeyManagementError } from '../error/KeyManagementError'
@@ -12,6 +12,9 @@ import { calculateJwkThumbprint } from './jwkThumbprint'
 import { assertJwkAsymmetric, type KmsJwkPublicAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
 import {
   Ed25519PublicJwk,
+  MlDsa44PublicJwk,
+  MlDsa65PublicJwk,
+  MlDsa87PublicJwk,
   P256PublicJwk,
   P384PublicJwk,
   P521PublicJwk,
@@ -21,6 +24,9 @@ import {
 } from './kty'
 
 export const SupportedPublicJwks = [
+  MlDsa44PublicJwk,
+  MlDsa65PublicJwk,
+  MlDsa87PublicJwk,
   Ed25519PublicJwk,
   P256PublicJwk,
   P384PublicJwk,
@@ -31,6 +37,9 @@ export const SupportedPublicJwks = [
 ]
 export type SupportedPublicJwkClass = (typeof SupportedPublicJwks)[number]
 export type SupportedPublicJwk =
+  | MlDsa44PublicJwk
+  | MlDsa65PublicJwk
+  | MlDsa87PublicJwk
   | Ed25519PublicJwk
   | P256PublicJwk
   | P384PublicJwk
@@ -57,8 +66,16 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     assertJwkAsymmetric(publicJwk)
 
     let jwkInstance: SupportedPublicJwk
-    if (publicJwk.kty === 'RSA') {
-      jwkInstance = new RsaPublicJwk({ ...publicJwk })
+    if (publicJwk.kty === 'AKP') {
+      if (publicJwk.alg === 'ML-DSA-44') {
+        jwkInstance = new MlDsa44PublicJwk(publicJwk as ConstructorParameters<typeof MlDsa44PublicJwk>[0])
+      } else if (publicJwk.alg === 'ML-DSA-65') {
+        jwkInstance = new MlDsa65PublicJwk(publicJwk as ConstructorParameters<typeof MlDsa65PublicJwk>[0])
+      } else {
+        jwkInstance = new MlDsa87PublicJwk(publicJwk as ConstructorParameters<typeof MlDsa87PublicJwk>[0])
+      }
+    } else if (publicJwk.kty === 'RSA') {
+      jwkInstance = new RsaPublicJwk(publicJwk)
     } else if (publicJwk.kty === 'EC') {
       if (publicJwk.crv === 'P-256') {
         jwkInstance = new P256PublicJwk({
@@ -255,7 +272,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
    */
   public set alg(alg: KnownJwaSignatureAlgorithm | KnownJwaKeyAgreementAlgorithm) {
     const supportedAlgorithms: Array<KnownJwaSignatureAlgorithm | KnownJwaKeyAgreementAlgorithm> = [
-      ...(this.jwk.supportedSignatureAlgorithms ?? []),
+      ...this.supportedSignatureAlgorithms,
       ...(this.jwk.supportedEncryptionKeyAgreementAlgorithms ?? []),
     ]
 
@@ -309,20 +326,25 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
   }
 
   /**
-   * Returns the jwk encoded a Base58 multibase encoded multicodec key
+   * Returns the JWK encoded as a multibase-encoded multicodec key
    */
   public get fingerprint() {
+    if (this.jwk.multicodecPrefix === undefined) {
+      throw new KeyManagementError(`Multicodec fingerprint is not supported for ${this.jwkTypeHumanDescription}`)
+    }
+
     const prefixBytes = VarintEncoder.encode(this.jwk.multicodecPrefix)
     const prefixedPublicKey = new Uint8Array([...prefixBytes, ...this.jwk.multicodec])
 
-    return `z${TypedArrayEncoder.toBase58(prefixedPublicKey)}`
+    const multibaseEncoding = 'multibaseEncoding' in this.JwkClass ? this.JwkClass.multibaseEncoding : 'base58btc'
+    return MultiBaseEncoder.encode(prefixedPublicKey, multibaseEncoding)
   }
 
   /**
-   * Create a jwk instance based on a Base58 multibase encoded multicodec key
+   * Create a JWK instance based on a multibase-encoded multicodec key
    */
   public static fromFingerprint(fingerprint: string) {
-    const { data } = MultiBaseEncoder.decode(fingerprint)
+    const { data, baseName } = MultiBaseEncoder.decode(fingerprint)
     const [code, byteLength] = VarintEncoder.decode(data)
     const publicKey = data.slice(byteLength)
 
@@ -331,8 +353,14 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
       throw new KeyManagementError(`Unsupported multicodec public key with prefix '${code}'`)
     }
 
-    const jwk = PublicJwkClass.fromMulticodec(publicKey)
-    return new PublicJwk(jwk)
+    const multibaseEncoding = 'multibaseEncoding' in PublicJwkClass ? PublicJwkClass.multibaseEncoding : 'base58btc'
+    if (baseName !== multibaseEncoding) {
+      throw new KeyManagementError(
+        `Unsupported multibase '${fingerprint[0]}' for multicodec public key with prefix '${code}'`
+      )
+    }
+
+    return new PublicJwk(PublicJwkClass.fromMulticodec(publicKey))
   }
 
   /**

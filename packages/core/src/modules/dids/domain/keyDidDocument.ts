@@ -2,6 +2,9 @@ import { CredoError } from '../../../error'
 import {
   Ed25519PublicJwk,
   getJwkHumanDescription,
+  MlDsa44PublicJwk,
+  MlDsa65PublicJwk,
+  MlDsa87PublicJwk,
   P256PublicJwk,
   P384PublicJwk,
   P521PublicJwk,
@@ -12,10 +15,12 @@ import { PublicJwk } from '../../kms/jwk/PublicJwk'
 import {
   SECURITY_ED25519_2018_CONTEXT_URL,
   SECURITY_JWS_CONTEXT_URL,
+  SECURITY_MULTIKEY_CONTEXT_URL,
   SECURITY_X25519_CONTEXT_URL,
 } from '../../vc/constants'
 import { DidDocumentBuilder } from './DidDocumentBuilder'
 import { convertPublicKeyToX25519 } from './key-type/ed25519'
+import { getVerificationMethodsForPublicJwk } from './key-type/keyDidMapping'
 import { getEd25519VerificationKey2018, getJsonWebKey2020, getX25519KeyAgreementKey2019 } from './verificationMethod'
 import type { VerificationMethod } from './verificationMethod/VerificationMethod'
 
@@ -25,6 +30,20 @@ export function getDidDocumentForPublicJwk(did: string, publicJwk: PublicJwk) {
   }
   if (publicJwk.is(X25519PublicJwk)) {
     return getX25519DidDoc(did, publicJwk as PublicJwk<X25519PublicJwk>)
+  }
+  if (publicJwk.is(MlDsa44PublicJwk) || publicJwk.is(MlDsa65PublicJwk) || publicJwk.is(MlDsa87PublicJwk)) {
+    const verificationMethod = getVerificationMethodsForPublicJwk(publicJwk, did)[0]
+    const didDocumentBuilder = new DidDocumentBuilder(did)
+      .addContext(SECURITY_MULTIKEY_CONTEXT_URL)
+      .addVerificationMethod(verificationMethod)
+    const keyId = verificationMethod.id
+
+    return didDocumentBuilder
+      .addAuthentication(keyId)
+      .addAssertionMethod(keyId)
+      .addCapabilityDelegation(keyId)
+      .addCapabilityInvocation(keyId)
+      .build()
   }
   if (
     publicJwk.is(P256PublicJwk) ||

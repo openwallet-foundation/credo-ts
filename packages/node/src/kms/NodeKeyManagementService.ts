@@ -74,13 +74,15 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
           assertNodeSupportedOkpCrv({ kty: operation.privateJwk.kty, crv: operation.privateJwk.crv })
           return true
         }
+
+        if (operation.privateJwk.kty === 'AKP') return false
       } catch {
         return false
       }
     }
 
     if (operation.operation === 'sign' || operation.operation === 'verify') {
-      return nodeSupportedJwaAlgorithm.includes(operation.algorithm)
+      return nodeSupportedJwaAlgorithm.some((algorithm) => algorithm === operation.algorithm)
     }
 
     if (operation.operation === 'encrypt' || operation.operation === 'decrypt') {
@@ -168,6 +170,8 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
           format: 'jwk',
           key: privateJwk,
         })
+      } else if (privateJwk.kty === 'AKP') {
+        throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${privateJwk.kty}'`, this.backend)
       } else if (privateJwk.kty === 'RSA') {
         // This validates the JWK
         createPrivateKey({
@@ -222,6 +226,8 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       } else if (type.kty === 'oct') {
         assertNodeSupportedOctAlgorithm(type)
         jwks = await createOctKey(type)
+      } else if (type.kty === 'AKP') {
+        throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${type.kty}'`, this.backend)
       } else {
         // @ts-expect-error
         throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${type.kty}'`, this.backend)
@@ -285,6 +291,8 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
         key = options.key.publicJwk
       } else if (options.key.publicJwk?.kty === 'RSA') {
         key = options.key.publicJwk
+      } else if (options.key.publicJwk?.kty === 'AKP') {
+        throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty 'AKP'`, this.backend)
       } else {
         // @ts-expect-error
         throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty ${options.key.kty}`, this.backend)

@@ -8,6 +8,10 @@ import type { PublicJwk } from './jwk/PublicJwk'
  * This is what was has been used by askar
  */
 export function legacyKeyIdFromPublicJwk(publicJwk: PublicJwk) {
+  if (publicJwk.kty === 'AKP') {
+    throw new KeyManagementError('Legacy key IDs are not supported for AKP JWKs')
+  }
+
   // Compressed public keys were used for legacy key ids
   const compressedPublicKey = publicJwk.compressedPublicKey
   if (compressedPublicKey) {
