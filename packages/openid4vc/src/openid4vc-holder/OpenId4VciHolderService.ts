@@ -1349,6 +1349,7 @@ export class OpenId4VciHolderService {
               sdJwtVc: compactSdJwtVc,
               // Only load and verify it for the first instance
               fetchTypeMetadata: index === 0,
+              disableStatusValidation: !verifyCredentialStatus,
             })
 
             // Link key id with credential
@@ -1415,6 +1416,7 @@ export class OpenId4VciHolderService {
           assertW3cCredentialTypeMatchesConfiguration(credential.resolvedCredential.type, credentialConfiguration)
           const result = await this.w3cV2CredentialService.verifyCredential(agentContext, {
             credential,
+            verifyCredentialStatus,
           })
 
           return { credential, result }
