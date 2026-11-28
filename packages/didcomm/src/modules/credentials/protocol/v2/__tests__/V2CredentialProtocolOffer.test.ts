@@ -217,6 +217,28 @@ describe('V2CredentialProtocolOffer', () => {
         'offers~attach': [JsonTransformer.toJSON(offerAttachment)],
       })
     })
+
+    test('stores the parent thread id on the record and sends it as the parent thread of the offer', async () => {
+      const { message, credentialExchangeRecord } = await credentialProtocol.createOffer(agentContext, {
+        ...offerOptions,
+        parentThreadId: 'parent-thread-id',
+      })
+
+      expect(credentialExchangeRecord.parentThreadId).toBe('parent-thread-id')
+      expect(message.thread?.threadId).toBe(credentialExchangeRecord.threadId)
+      expect(message.thread?.parentThreadId).toBe('parent-thread-id')
+      expect(credentialRepository.save).toHaveBeenCalledWith(
+        agentContext,
+        expect.objectContaining({ parentThreadId: 'parent-thread-id' })
+      )
+    })
+
+    test('sends no parent thread when none is given', async () => {
+      const { message, credentialExchangeRecord } = await credentialProtocol.createOffer(agentContext, offerOptions)
+
+      expect(credentialExchangeRecord.parentThreadId).toBeUndefined()
+      expect(message.thread?.parentThreadId).toBeUndefined()
+    })
   })
 
   describe('processOffer', () => {

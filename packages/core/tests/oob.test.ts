@@ -200,6 +200,19 @@ describe('out of band', () => {
       )
     })
 
+    test('throw error when an attached message has a parent thread id', async () => {
+      const parentThreadId = 'e6e3b0f6-4c7b-4d3a-9f0e-1c2d3e4f5a6b'
+      const { message } = await faberAgent.didcomm.credentials.createOffer({ ...credentialTemplate, parentThreadId })
+
+      for (const handshake of [true, false]) {
+        await expect(faberAgent.didcomm.oob.createInvitation({ handshake, messages: [message] })).rejects.toEqual(
+          new CredoError(
+            `Message ${message.id} has parent thread id ${parentThreadId}. A message attached to an out-of-band invitation cannot have a parent thread id, because the invitation is its parent thread.`
+          )
+        )
+      }
+    })
+
     test('handles empty messages array as no messages being passed', async () => {
       await expect(
         faberAgent.didcomm.oob.createInvitation({
@@ -1175,6 +1188,55 @@ describe('out of band', () => {
       })
 
       await faberCredentialRecordPromise
+    })
+
+    test('legacy connectionless exchange keeps the parent thread id of the message', async () => {
+      const parentThreadId = 'e6e3b0f6-4c7b-4d3a-9f0e-1c2d3e4f5a6b'
+      const { message } = await faberAgent.didcomm.credentials.createOffer({ ...credentialTemplate, parentThreadId })
+      const { invitationUrl } = await faberAgent.didcomm.oob.createLegacyConnectionlessInvitation({
+        domain: 'http://example.com',
+        message,
+      })
+
+      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+        state: DidCommCredentialState.OfferReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+      await aliceAgent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
+
+      const aliceCredentialRecord = await aliceCredentialRecordPromise
+      expect(aliceCredentialRecord.parentThreadId).toBe(parentThreadId)
+
+      const faberCredentialRecordPromise = waitForCredentialRecord(faberAgent, {
+        state: DidCommCredentialState.RequestReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+
+      await aliceAgent.didcomm.credentials.acceptOffer({
+        credentialExchangeRecordId: aliceCredentialRecord.id,
+      })
+
+      const faberCredentialRecord = await faberCredentialRecordPromise
+      const faberCredentialRequest = await faberAgent.didcomm.credentials.findRequestMessage(faberCredentialRecord.id)
+      expect(faberCredentialRequest?.thread?.parentThreadId).toBe(parentThreadId)
+
+      const aliceCredentialReceivedPromise = waitForCredentialRecord(aliceAgent, {
+        state: DidCommCredentialState.CredentialReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+      await faberAgent.didcomm.credentials.acceptRequest({ credentialExchangeRecordId: faberCredentialRecord.id })
+      await aliceCredentialReceivedPromise
+
+      const faberCredentialDonePromise = waitForCredentialRecord(faberAgent, {
+        state: DidCommCredentialState.Done,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+      await aliceAgent.didcomm.credentials.acceptCredential({ credentialExchangeRecordId: aliceCredentialRecord.id })
+      await faberCredentialDonePromise
     })
 
     test('legacy connectionless exchange where response is received to invitation and custom routing is used on recipient', async () => {

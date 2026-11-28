@@ -109,6 +109,7 @@ interface BaseOptions {
 export interface CreateCredentialProposalOptions<CFs extends DidCommCredentialFormatService[]> extends BaseOptions {
   connectionRecord: DidCommConnectionRecord
   credentialFormats: DidCommCredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createProposal'>
+  parentThreadId?: string
 }
 
 export interface AcceptCredentialProposalOptions<CFs extends DidCommCredentialFormatService[]> extends BaseOptions {
@@ -137,6 +138,7 @@ export interface CreateCredentialOfferOptions<CFs extends DidCommCredentialForma
   // Create offer can also be used for connection-less, so connection is optional
   connectionRecord?: DidCommConnectionRecord
   credentialFormats: DidCommCredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createOffer'>
+  parentThreadId?: string
 }
 
 export interface AcceptCredentialOfferOptions<CFs extends DidCommCredentialFormatService[]> extends BaseOptions {
