@@ -1,5 +1,143 @@
 # @credo-ts/redis-cache
 
+## 0.8.0
+
+### Minor Changes
+
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+
+### Patch Changes
+
+- c452dfc: `RedisCache` and `SingleContextStorageLruCache` no longer throw when the cache can't be reached. `get` returns `null` and `set` does nothing, and both log a warning. `remove` does nothing and logs an error, as the entry can be served outdated until it expires. This keeps the agent working from storage during a cache outage. Before, deleting a cached record, or updating or deactivating a DID, failed. A custom `Cache` should not throw either, as a cache is optional and must not fail the flow that uses it.
+- a75afb3: A cache can implement `shutdown`, which the agent calls when it shuts down. The Redis cache closes the client it created then. A client passed in stays open, as it belongs to the app.
+- 82a6efd: Update the TypeScript development dependency to TypeScript 7 (`typescript@^7.0.2`, installed as `@typescript/native`) for type checking. The `typescript` package is now an alias of `@typescript/typescript6@^6.0.2`, so tools that use the TypeScript compiler API, such as `tsdown` when generating declaration files, keep working.
+  
+  This has no effect on runtime behaviour. `getPublicJwkFromDid` in `@credo-ts/openid4vc` now declares its `Promise<PublicJwk>` return type, which is the type it already returned.
+- 526a989: feat: support node 26
+- a75afb3: Fixes in the Redis cache:
+  
+  - A client from another copy of ioredis is now used, instead of being taken as options for a new client on `localhost:6379`.
+  - An expiry that isn't a whole number of seconds is rounded up. Before, Redis rejected it and the entry wasn't stored.
+  - `destroy` now removes the entries when ioredis' `keyPrefix` is set, and no longer removes entries of other contexts when the context id contains glob characters.
+  - Connection errors of a client the cache created no longer go to the console. Failed operations are still logged with the agent's logger.
+- a75afb3: The Redis cache no longer sends a `PING` before every command, so a cache read or write takes one round trip instead of two. `disconnect` now resolves once the connection has closed.
+- a75afb3: Redis cache operations now give up after `operationTimeoutMs` (default 1000), and `get` and `set` treat that as a miss. After a failed or timed out operation, and while ioredis reconnects, `get` and `set` skip Redis for `cooldownMs` (default 5000), so an unreachable Redis slows down one request instead of every one. `remove` always tries Redis. Before, an unreachable Redis held up every cache operation for about 10 seconds. The timeout and the cooldown also apply to a client passed in with the new `client` option, so an app can share its client without changing that client's own retry behaviour.
+- Updated dependencies [c2bb4d5]
+- Updated dependencies [0b9531a]
+- Updated dependencies [c452dfc]
+- Updated dependencies [a75afb3]
+- Updated dependencies [a75afb3]
+- Updated dependencies [2c4e3a2]
+- Updated dependencies [0693029]
+- Updated dependencies [798c401]
+- Updated dependencies [b77a2c3]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [8abea64]
+- Updated dependencies [3564660]
+- Updated dependencies [8a6af0b]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [33d3f53]
+- Updated dependencies [6849789]
+- Updated dependencies [93907de]
+- Updated dependencies [f3d537a]
+- Updated dependencies [de1c035]
+- Updated dependencies [2485e36]
+- Updated dependencies [51bd389]
+- Updated dependencies [9eadcb8]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [14e84ce]
+- Updated dependencies [92f08a0]
+- Updated dependencies [3985e5b]
+- Updated dependencies [77fe670]
+- Updated dependencies [526a989]
+- Updated dependencies [6849789]
+- Updated dependencies [6849789]
+- Updated dependencies [820d809]
+- Updated dependencies [c452dfc]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [3354c95]
+- Updated dependencies [e243cc9]
+- Updated dependencies [a362176]
+- Updated dependencies [4500aca]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [165329c]
+- Updated dependencies [4c2f93b]
+- Updated dependencies [82a2e7c]
+- Updated dependencies [4fc9f29]
+- Updated dependencies [1de1ead]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [820d809]
+- Updated dependencies [0a8066d]
+- Updated dependencies [716cb84]
+- Updated dependencies [0a8066d]
+- Updated dependencies [56734e3]
+- Updated dependencies [82a6efd]
+- Updated dependencies [667c462]
+- Updated dependencies [9303c90]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [87e9c1a]
+- Updated dependencies [d865973]
+- Updated dependencies [1bbcdc3]
+- Updated dependencies [0a8066d]
+- Updated dependencies [cf46149]
+- Updated dependencies [56516ee]
+- Updated dependencies [333bfb7]
+- Updated dependencies [0aa231d]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [e930e66]
+- Updated dependencies [ae0fe8e]
+- Updated dependencies [ee69f9d]
+- Updated dependencies [357a5da]
+- Updated dependencies [0814729]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [fb99743]
+- Updated dependencies [b9c051d]
+- Updated dependencies [d93f2c5]
+- Updated dependencies [526a989]
+- Updated dependencies [4fc9f29]
+- Updated dependencies [d086b7a]
+- Updated dependencies [c705815]
+- Updated dependencies [b21bba5]
+- Updated dependencies [0a8066d]
+- Updated dependencies [d865973]
+- Updated dependencies [3354c95]
+- Updated dependencies [0523bd0]
+- Updated dependencies [d865973]
+- Updated dependencies [0b7ba8d]
+- Updated dependencies [8a6af0b]
+- Updated dependencies [e37b36e]
+- Updated dependencies [8178149]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [0a8066d]
+- Updated dependencies [194cf1e]
+- Updated dependencies [ac3b95b]
+- Updated dependencies [ae0fe8e]
+- Updated dependencies [cbfe06b]
+- Updated dependencies [47691c2]
+- Updated dependencies [1ee57f6]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [56ae9a6]
+- Updated dependencies [47691c2]
+- Updated dependencies [93907de]
+- Updated dependencies [94faeed]
+- Updated dependencies [dbbef02]
+- Updated dependencies [faaf1e0]
+- Updated dependencies [47691c2]
+- Updated dependencies [dbafd1e]
+- Updated dependencies [2151443]
+- Updated dependencies [d865973]
+- Updated dependencies [8ce03d9]
+- Updated dependencies [c05145a]
+- Updated dependencies [d865973]
+- Updated dependencies [ad928f5]
+- Updated dependencies [808e873]
+- Updated dependencies [d865973]
+- Updated dependencies [81265f5]
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes
