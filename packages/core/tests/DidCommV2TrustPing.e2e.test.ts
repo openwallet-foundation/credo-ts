@@ -175,8 +175,9 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       expect(aliceConnection.metadata.get(DidCommConnectionMetadataKeys.OutOfBandV2ParentThreadId)).toBeNull()
     })
 
-    it('v2 OOB (no handshake): a first message with its own pthid keeps it', async () => {
+    it('v2 OOB (no handshake): a first message with its own pthid keeps it and the next message carries the invitation id', async () => {
       const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+      const invitationId = faberOutOfBandRecord.outOfBandInvitation.id
 
       const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
         faberOutOfBandRecord.outOfBandInvitation,
@@ -195,10 +196,21 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       await aliceAgent.didcomm.basicMessages.sendMessage(connectionRecord.id, 'hello', 'custom-pthid')
       const basicMessageReceived = await waitForBasicMessageSubject(faberReplay, { content: 'hello' })
       expect(basicMessageReceived.thread?.parentThreadId).toBe('custom-pthid')
+      expect(
+        (await aliceAgent.didcomm.connections.getById(connectionRecord.id)).metadata.get(
+          DidCommConnectionMetadataKeys.OutOfBandV2ParentThreadId
+        )
+      ).toEqual({ parentThreadId: invitationId })
 
       const ping = await aliceAgent.didcomm.connections.sendPing(connectionRecord.id, {})
       const pingReceived = await waitForTrustPingReceivedEventSubject(faberReplay, { threadId: ping.threadId })
-      expect(pingReceived.thread?.parentThreadId).toBeUndefined()
+      expect(pingReceived.thread?.parentThreadId).toBe(invitationId)
+
+      const secondPing = await aliceAgent.didcomm.connections.sendPing(connectionRecord.id, {})
+      const secondPingReceived = await waitForTrustPingReceivedEventSubject(faberReplay, {
+        threadId: secondPing.threadId,
+      })
+      expect(secondPingReceived.thread?.parentThreadId).toBeUndefined()
     })
 
     it('v2 OOB with an attached request: the reply carries the invitation id as pthid', async () => {

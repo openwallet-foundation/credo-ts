@@ -724,9 +724,13 @@ export class DidCommMessageSender {
     const pending = connection.metadata.get(DidCommConnectionMetadataKeys.OutOfBandV2ParentThreadId)
     if (!pending) return false
 
+    // A message with another parent, such as a problem report, leaves the invitation id for the next message
+    const parentThreadId = message.thread?.parentThreadId
+    if (parentThreadId && parentThreadId !== pending.parentThreadId) return false
+
     if (!message.thread) {
       message.setThread({ parentThreadId: pending.parentThreadId })
-    } else if (!message.thread.parentThreadId) {
+    } else {
       message.thread.parentThreadId = pending.parentThreadId
     }
     return true
